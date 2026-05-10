@@ -1,6 +1,9 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, Phase 5 resume diagnostics, Phase 7 first slice, and Phase 8 first slice implemented. Phase 9 is the next recommended slice.
+**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4
+first slice, Phase 5 resume diagnostics, Phase 7 first slice, and Phase 8 first
+slice implemented. Phase 9 is partially implemented; the next move is the
+liveness-checked control client slice.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -19,7 +22,12 @@ Current runtime checkpoint:
 - guard triggers are durable `guard.triggered` events with workflow/session trace fields,
 - `guard.blocked-count-15m` is the active guard-block health signal,
 - `project.iterations-24h` is watch-only, not a health target,
-- the running instance can reach zero open metric alerts when metrics are calibrated to actionable work.
+- the running instance can reach zero open metric alerts when metrics are calibrated to actionable work,
+- `packages/control` now owns the socket protocol, client, and server core,
+- Web UI steering and CLI send use the control client package,
+- socket server is daemon-instance scoped, even though the legacy filename still
+  includes the interface agent name,
+- Telegram still runs in the daemon process and uses daemon internals directly.
 
 ## Principles
 
@@ -285,7 +293,7 @@ Next validation:
 
 ## Phase 9: Universal Control Surface Reliability
 
-Status: proposed next slice.
+Status: partially implemented.
 
 Problem: the socket is intended to be the universal interface for CLI, Web UI,
 Telegram, tests, and manual operations, but host/container endpoint discovery is
@@ -300,19 +308,27 @@ thin adapter -> control client -> daemon socket -> event bus
 
 Minimum slice:
 
-- make control client endpoint discovery prove liveness by connecting before
+- [x] extract protocol/client/server into `packages/control`,
+- [x] keep the server instance-scoped, not per-agent,
+- [x] normalize non-control socket frames into daemon events,
+- [x] ack daemon events before async dispatch,
+- [x] Web UI steering sends daemon event frames through the control client,
+- [x] CLI send uses the control client package,
+- [ ] make control client endpoint discovery prove liveness by connecting before
   returning a socket path,
-- remove or ignore stale socket candidates,
-- provide one small script or command for `emit event` so operators do not need
-  ad hoc `docker exec bun -e ...`,
-- verify `trigger.metrics-snapshot` can be emitted from the normal host command
-  path and from inside the container,
-- keep the protocol async: client sends event, daemon acks, handlers/workflows
-  move the loop.
+- [ ] remove or ignore stale socket candidates,
+- [ ] provide one small script or command for `emit event` so operators do not
+  need ad hoc `docker exec bun -e ...`,
+- [ ] verify `trigger.metrics-snapshot` can be emitted from the normal host
+  command path and from inside the container,
+- [ ] keep Telegram as a thin adapter over daemon events when it needs to steer
+  sessions/projects. Do not split the process until socket reliability is solid.
 
 Validation:
 
-- [ ] Unit test for stale socket candidate fallback.
+- [x] Unit tests for protocol ack, status, subscription filter, invalid frame handling.
+- [x] Unit tests for daemon-vs-job socket ranking.
+- [ ] Unit test for stale but unreachable socket candidate fallback.
 - [ ] Integration/smoke test for `trigger.metrics-snapshot` through the normal
   control client.
 - [ ] Web UI, Telegram, and CLI use the same control client package rather than
@@ -333,10 +349,29 @@ This gives immediate value and keeps the change set small.
 
 ## Recommended Next Slice
 
-Start Phase 9 before adding more agent behavior. The loop is now observable, but
-manual and adapter-triggered events still depend on knowing where the live socket
-is. A reliable control surface will make every later workflow/metric iteration
-faster to test without introducing new agent work.
+Finish Phase 9a before adding more agent behavior. The loop is observable, but
+manual and adapter-triggered events still depend on finding the live daemon
+socket correctly.
+
+Phase 9a should be intentionally small:
+
+1. Add an async liveness-checked discovery API in `packages/control/src/client.ts`
+   that tries ranked socket candidates and returns the first one that accepts a
+   connection.
+2. Keep the existing sync `findDaemonSocket` as a compatibility/ranking helper
+   unless all callers can migrate cleanly in one pass.
+3. Move Web UI and CLI send to the liveness-checked API.
+4. Add a tiny operator command for `emit event`, backed by the same control
+   client.
+5. Smoke-test `trigger.metrics-snapshot` from the host path and from inside the
+   container.
+
+After Phase 9a, use the control surface to validate later slices quickly:
+
+- Phase 8 UI labels for health/gauge/watch-only metrics,
+- alert reactor behavior for retired metrics,
+- a real guard trigger opening and clearing `guard.blocked-count-15m`,
+- Telegram reply/project-comment steering through the same event path.
 
 ## Non-Goals
 

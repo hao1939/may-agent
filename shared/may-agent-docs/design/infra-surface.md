@@ -1,8 +1,8 @@
 # Infra Surface Design
 
-**Status**: Draft north-star for review. If accepted, fold this framing into
-`architecture.md`, `sdk.md`, `events.md`, `metrics.md`, `cron.md`, and
-`work-model.md`.
+**Status**: Accepted direction, partially implemented. Keep this as the
+north-star while folding stable pieces into `architecture.md`, `sdk.md`,
+`events.md`, `metrics.md`, `cron.md`, and `work-model.md`.
 
 This doc reframes may-agent around a simpler split:
 
@@ -279,6 +279,18 @@ Read path should stay pragmatic:
 - Historical/dashboard reads can use DB projections directly.
 
 Do not turn the socket into a large query API until there is a clear need.
+
+Current state:
+
+- `packages/control` owns the protocol, client helpers, and server core.
+- The daemon socket is shared by the running instance. It is not one socket per
+  agent, even though the legacy filename still includes the interface agent.
+- Web UI steering and CLI send already use the control client package.
+- The server removes stale socket files when it can prove no process owns them.
+- Client discovery ranks instance sockets from `.state/instances`, but still
+  needs an async liveness-checked API that connects before returning a path.
+- Telegram is still attached inside the daemon process. Treat that as acceptable
+  until the control client is reliable; do not split the process first.
 
 ## Public Surfaces
 
@@ -572,11 +584,13 @@ Existing pieces already align with this direction:
 | Web UI projection reader | `packages/webui/src/server.ts` |
 | Agent patterns | `agents/shared/workflows/*`, project docs, heartbeat docs |
 
-The main gap is not a missing grand architecture. The gap is boundary clarity:
+The main gap is not a missing grand architecture. The gap is boundary clarity
+and a few reliability seams:
 
 - make Agent Bridge explicit,
 - add a safe SDK query facade,
 - keep adapters thin through socket events,
+- make control client endpoint discovery prove liveness,
 - move special behavior into workflows/patterns,
 - treat `getDb()` as an escape hatch over time.
 
@@ -592,6 +606,7 @@ Keep this incremental.
 6. Move any heartbeat/project-specific daemon branches into workflow patterns.
 7. Make new judgment/action handlers event-to-workflow bridges by default.
 8. Add tests for surface behavior: socket event normalization, SDK query bounds, metric owner resolution, and event-to-workflow dispatch.
+9. Finish liveness-checked socket discovery before adding more adapter features.
 
 ## Implementation Checklist
 
@@ -608,6 +623,9 @@ Keep this incremental.
 7. Add a shared execution-result view for session/workflow run/resume results.
 8. Audit existing handlers: keep mechanical handlers direct; move
    judgment/action handlers toward workflow dispatch.
+9. Add liveness-checked control client discovery and migrate Web UI/CLI callers.
+10. Add a small operator event-emission command and smoke-test
+    `trigger.metrics-snapshot` through it.
 
 The target principle:
 
