@@ -109,6 +109,10 @@
 - Symptom: a session under one agent label ships a committed artifact inside another agent's tracked tree (for example an `arc` session appending `may/heartbeat-log.md`).
 - Fix: separate deliverable integrity from scope quality. If the commit landed and the file content is real, do not mark it as fake output; instead credit the narrow operational value and note the ownership/lane miss as an output-quality downgrade unless there is explicit cross-agent handoff authority.
 
+## Pattern: shared repo-level workspace writes can hide an ownership mismatch
+- Symptom: a session satisfies an artifact gate by writing to `/app/agents/workspace/...` (the repo-level shared workspace), but the content is branded as another agent's heartbeat or operating log and does not advance the current session owner's lane.
+- Fix: inspect both the artifact path and the artifact identity. A real read-backed commit in shared `workspace/` still counts as shipped output, but downgrade scope/output quality when the content belongs to another agent or another lane. Judge it as partial operational value, not as a clean success for the session owner.
+
 ## Pattern: ignored workspace artifact can still count when explicitly force-added and shipped
 - Symptom: a session writes a useful artifact under an ignored `workspace/` path, hits an initial `git add` failure, then force-adds the exact file and lands a clean commit containing that artifact.
 - Fix: do not dismiss the output just because the first add failed or because the file lives under `workspace/`. Inspect the landed commit/diff: if the agent explicitly used `git add -f <exact path>`, committed only the intended artifact, and the reviewed content matches the diff, treat it as real shipped output. Penalize only the minor recovery overhead, not the final deliverable.
