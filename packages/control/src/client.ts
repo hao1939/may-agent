@@ -17,6 +17,17 @@ export function connectSocketEndpoint(endpoint: SocketEndpoint): Socket | Duplex
   return typeof endpoint === "string" ? connect(endpoint) : connect(endpoint);
 }
 
+export interface DaemonSocketPathOptions {
+  instance?: string;
+  interfaceAgent?: string;
+}
+
+export function daemonSocketPath(persistDir: string, opts: DaemonSocketPathOptions = {}): string {
+  const instance = opts.instance?.trim() || "default";
+  const interfaceAgent = opts.interfaceAgent?.trim() || "may";
+  return resolve(persistDir, "instances", instance, `${interfaceAgent}.sock`);
+}
+
 export interface FindDaemonSocketOptions {
   agent?: string;
   preferRunning?: boolean;
