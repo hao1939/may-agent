@@ -1125,3 +1125,19 @@ The artifact gate required a durable heartbeat write after a prior no-write sess
 Finding: the agents repository already contains many unrelated dirty paths owned by other agents or shared documentation/project work (for example `arc/last-session.md`, evaluator/scout workspace notes, many `shared/may-agent-docs/*` files, shared project files, and `shared/work-queue.md`). Because those changes are not Dev-owned deliverables from this session, they should not be staged by this heartbeat. The only intentional Dev deliverable from this recovery pass is this heartbeat-log entry.
 
 Next action: stage only `dev/workspace/heartbeat-log.md` if committing is possible, then report the remaining unrelated dirty paths explicitly instead of cleaning or committing them.
+
+## 2026-05-10 Dev Heartbeat Triage - 19:28Z Runtime Check
+
+Fresh heartbeat evidence found no approved implementation item and no dev-owned alert, but did surface a short-lived handler failure cluster worth recording for watch-only follow-up.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved is empty; implementation candidates remain Proposed and should not be picked up without approval.
+- Core metrics are healthy for dev triage: `session.error-rate-6h=0.0531` versus threshold `0.3`, `handler.success-rate=0.9796` versus threshold `0.8`, zero unresolved metric alerts, and zero active metrics missing a snapshot in the last hour.
+- Recent handler failure aggregation showed five `workflow-handler.js` module-resolution failures plus two scout shared-knowledge guard failures in the 6h window, but the direct 1h check returned `recent_module_resolution_failures=0` and `errors_1h=0`; treat this as recovered unless it recurs.
+- Owned project state remains unchanged: `finish-blocked-hygiene-reduction` is still blocked because the split finish-blocked metrics are absent from `metrics`, while `eval-llm-lane-restoration` remains pending-review and healthy (`eval.llm-coverage-lag-h=0.01`, `eval.llm-evals-24h=32`).
+
+Signal dispositions:
+- Replayed artifact-gate/session lifecycle events: acted by making this heartbeat artifact and rechecking current runtime health instead of creating a synthetic project.
+- Older handler failures: dismissed for immediate patching because current-window evidence shows no recurrence and top-level metrics remain inside thresholds; monitor next heartbeat for a fresh cluster.
+- Owned blocked/pending-review projects: held at their current statuses with fresh validation evidence.
+- Dirty worktree state: unrelated runtime, docs, project, and workflow paths remain outside this deliverable; stage only `dev/workspace/heartbeat-log.md`.
