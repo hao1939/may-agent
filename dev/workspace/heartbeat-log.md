@@ -635,3 +635,24 @@ Disposition:
 - Artifact gate: satisfied by this meaningful workspace write.
 - Schema-footgun signal: acted by documenting the exact wrong columns and corrected columns.
 - No shared code/project mutation is warranted until an Approved queue item appears or May/human performs the safe DB registration for the blocked split metrics.
+
+## 2026-05-10 Heartbeat: Routine Triage With External Blockers Held
+
+Routine dev heartbeat with no Approved implementation item and no dev-owned active alert.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty; implementation candidates remain Proposed and are not directly actionable by dev.
+- Core dev/runtime signals are healthy: `handler.success-rate=1`, `handler.failed-count=0`, and `session.error-rate-6h=0.0196` in the active metrics snapshot.
+- Recent `handler.failed` rows are historical; current `handler.failed-count=0` means no live handler failure pattern needs a dev patch this turn.
+- Unresolved metric alerts are non-dev-owned: `project.iterations-24h` and `capability.message-conversation-close-rate` are may-owned; `scout.good-session-rate-24h` and `scout.operational-friction-rate-24h` are scout-owned.
+- `eval-llm-lane-restoration` remains correctly pending-review: latest non-heuristic evaluation is `2026-05-10 08:59:18` UTC, lag about `0.46h`, with 29 non-heuristic evaluations in the last 24h and the registered metric `eval.llm-coverage-lag-h=0.38` below its 4h threshold.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the required split metrics are still absent from the live `metrics` table, so the remaining step is still May/human safe runtime DB registration from the project packet, not a dev-local write.
+- Active metrics without a recent snapshot are limited to the two scout knowledge metrics; no dev-owned snapshot gap was found.
+
+Pending event dispositions:
+- Recent dev `session.end` heartbeat/blocked-state summaries: dismissed as already acted; this heartbeat revalidated the same blocker and lane-health state.
+- Duplicate `session.start` heartbeat events: dismissed as lifecycle noise after queue/metric/project checks.
+- May P1 blocked-project nudges: acted/escalated-by-evidence; the project remains blocked on external safe DB write authority.
+- Artifact-gate/recovery events: acted by appending this current evidence-bearing entry and committing only the intentional dev artifact.
+
+Judgment: no code patch, new shared project, or unsafe DB action is warranted. Continue to hold the blocked project until May/human registers the split metrics, and keep watching the LLM-eval lane while it remains live.
