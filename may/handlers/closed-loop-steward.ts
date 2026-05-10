@@ -70,6 +70,17 @@ const DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
 const DEFAULT_TRIAGE_LIMIT = 3;
 const RETRIAGE_COOLDOWN_MS = 15 * 60_000;
 
+function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unknown> = {}): void {
+  ctx.sdk.log("info", `[closed-loop-steward] ${reason}`);
+  try {
+    ctx.sdk.emit("handler.skipped", {
+      handler: "closed-loop-steward",
+      reason,
+      ...data,
+    });
+  } catch { /* best-effort */ }
+}
+
 function age(now: number, timestamp?: number | null): string {
   if (!timestamp) return "unknown";
   const minutes = Math.max(0, Math.round((now - timestamp) / 60_000));
@@ -152,12 +163,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const schemaBrief = loadSchemaBrief(db);
 
     const running = db.prepare(
-      `SELECT sessionId FROM sessions
-       WHERE agent = 'may' AND source = 'closed-loop-steward' AND status = 'running'
+      `SELECT runId FROM workflow_runs
+       WHERE workflow = 'closed-loop-steward' AND status = 'running'
        LIMIT 1`,
-    ).get() as { sessionId: string } | null;
+    ).get() as { runId: string } | null;
     if (running) {
-      ctx.sdk.log("info", `[closed-loop-steward] Skip: prior steward session still running (${running.sessionId}).`);
+      emitSkip(ctx, `Skip: prior steward workflow still running (${running.runId}).`, { workflowRunId: running.runId });
       return;
     }
 
@@ -184,7 +195,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     ).all(now - lookbackMs, deliveryFailureLimit) as EventRow[];
 
     if (alerts.length === 0 && failures.length === 0) {
-      ctx.sdk.log("info", "[closed-loop-steward] Skip: no open metric alerts or recent delivery failures.");
+      emitSkip(ctx, "Skip: no open metric alerts or recent delivery failures.");
       return;
     }
 
@@ -292,10 +303,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       ctx.sdk.runWorkflow("metric-alert-triage", task, { source: candidate.owner })
         .then((result) => {
           ctx.sdk.log("info", `[closed-loop-steward] Routed ${candidate.alert.metric_id} to metric-alert-triage: ${String((result as any)?.status ?? "done")}`);
+          ctx.sdk.emit("handler.workflow_dispatched", {
+            handler: "closed-loop-steward",
+            workflow: "metric-alert-triage",
+            metricId: candidate.alert.metric_id,
+            alertId: candidate.alert.id,
+            source: candidate.owner,
+            workflowRunId: result.runId ?? null,
+            status: result.status,
+            reason: candidate.reason,
+          });
         })
         .catch((err) => {
           const msg = err instanceof Error ? err.message : String(err);
           ctx.sdk.log("info", `[closed-loop-steward] Failed to route ${candidate.alert.metric_id}: ${msg.slice(0, 200)}`);
+          ctx.sdk.emit("handler.failed", {
+            handler: "closed-loop-steward",
+            agent: ctx.agentName,
+            workflow: "metric-alert-triage",
+            metricId: candidate.alert.metric_id,
+            alertId: candidate.alert.id,
+            error: msg.slice(0, 200),
+            durationMs: 0,
+          });
         });
     }
 
@@ -353,18 +383,34 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     ].join("\n");
 
     try {
-      ctx.sdk.runAgent("may", task, { source: "closed-loop-steward" })
-        .then(() => {
-          ctx.sdk.log("info", `[closed-loop-steward] May session completed for ${alerts.length} alert(s), ${failures.length} delivery failure(s).`);
+      ctx.sdk.runWorkflow("closed-loop-steward", task, { source: "may" })
+        .then((result) => {
+          ctx.sdk.log("info", `[closed-loop-steward] Workflow completed for ${alerts.length} alert(s), ${failures.length} delivery failure(s): ${result.status}${result.runId ? ` (${result.runId})` : ""}`);
+          ctx.sdk.emit("handler.workflow_dispatched", {
+            handler: "closed-loop-steward",
+            workflow: "closed-loop-steward",
+            source: "may",
+            workflowRunId: result.runId ?? null,
+            status: result.status,
+            alertCount: alerts.length,
+            deliveryFailureCount: failures.length,
+          });
         })
         .catch((err) => {
           const msg = err instanceof Error ? err.message : String(err);
-          ctx.sdk.log("info", `[closed-loop-steward] May session failed: ${msg.slice(0, 200)}`);
+          ctx.sdk.log("info", `[closed-loop-steward] Workflow failed: ${msg.slice(0, 200)}`);
+          ctx.sdk.emit("handler.failed", {
+            handler: "closed-loop-steward",
+            agent: ctx.agentName,
+            workflow: "closed-loop-steward",
+            error: msg.slice(0, 200),
+            durationMs: 0,
+          });
         });
-      ctx.sdk.log("info", `[closed-loop-steward] Dispatched may with ${alerts.length} alert(s), ${failures.length} delivery failure(s).`);
+      ctx.sdk.log("info", `[closed-loop-steward] Dispatched workflow with ${alerts.length} alert(s), ${failures.length} delivery failure(s).`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      ctx.sdk.log("info", `[closed-loop-steward] Failed to dispatch may: ${msg.slice(0, 200)}`);
+      ctx.sdk.log("info", `[closed-loop-steward] Failed to dispatch workflow: ${msg.slice(0, 200)}`);
     }
   };
 };
