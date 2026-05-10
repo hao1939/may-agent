@@ -92,6 +92,10 @@
 - Symptom: a heartbeat makes no repo edits or new artifacts, but it runs live checks that confirm a previously observed incident has actually stayed recovered and that apparent hygiene dirt is ambient rather than the agent's responsibility.
 - Fix: do not require file output as the only signal of value. Verify the fresh DB/query evidence and lane-aware judgment directly from the transcript and current repo state; credit the session as acceptable/good operational maintenance when it prevents unnecessary churn, while still noting that it is not a material knowledge update or code change.
 
+## Pattern: claimed escalation in prose is not an actual escalation
+- Symptom: a session summary or heartbeat log says a blocker was "escalated to human" or similar, but the transcript shows no `message()` call, no project update, and no other durable state change that actually performed the escalation.
+- Fix: verify the operational action from tool evidence, not prose. Credit the underlying diagnosis if it is supported by live checks, but downgrade output quality when the session only documents intended escalation instead of performing one.
+
 ## Pattern: heartbeat-to-project escalation can be substantive output
 - Symptom: a heartbeat does not ship code, but it uses fresh runtime evidence to identify a repeated cross-workflow problem with no active owner and turns it into a new shared project with baselines, validation queries, and a concrete next intervention.
 - Fix: inspect the created project artifact and commit rather than downgrading the session as mere maintenance. Credit it as good material output when the project is properly scoped, grounded in live evidence, and creates a durable ownership/validation path for follow-through.
