@@ -15,10 +15,10 @@ triggers: When discussing agent architecture, evaluating new frameworks, or desi
 
 Based on developer community discussions (primarily XHS), the AI Agent framework landscape is undergoing a significant shift:
 
-1.  **Rejection of Heavy Frameworks:** There is widespread frustration with complex, monolithic frameworks (often comparing older StateGraph approaches unfavorably).
-2.  **Rise of "Super Agents" & Micro-Agents:** Frameworks like ByteDance's **DeerFlow (2.0)** and **OpenClaw** are dominating the conversation. The trend is toward either highly capable single "super agents" or systems composed of extremely specialized "micro-agents" that handle very narrow tasks.
+1.  **Rejection of Heavy Frameworks:** There is widespread frustration with complex, monolithic frameworks (like LangChain or heavy StateGraph approaches). The community is actively moving away from heavy orchestration.
+2.  **Rise of "Super Agents" & Micro-Agents:** Frameworks like ByteDance's **DeerFlow (2.0)** and **OpenClaw** are dominating the conversation. The trend is toward either highly capable single "super agents" or systems composed of extremely specialized "micro-agents" that handle very narrow, atomic tasks (e.g., a dedicated 'Status Evaluation Agent' or 'Intent Classification Agent').
 3.  **Skill Synthesis & Evolution:** Concepts like "EvoSkills" and "SkillOS" are emerging, focusing on an agent's ability to recursively synthesize new skills from failures or generate its own tool abstractions.
-4.  **Memory over Context:** Long-context windows are no longer seen as the silver bullet. Instead, the focus has shifted to structured, hierarchical memory systems (e.g., MemFactory, MemOS) that allow agents to retain insights across sessions efficiently.
+4.  **Memory & Precision over Long Context:** Long-context windows (e.g., 1M tokens) are increasingly seen as a source of hallucinations rather than a silver bullet. The focus is shifting toward exact knowledge graph retrieval and short, precise context blocks over long, noisy RAG context.
 5.  **Direct Execution:** A preference for "close to the metal" tools (like direct `grep` instead of vector search/RAG) is growing, as it reduces hallucination and improves reliability.
 
 ## Strategic Takeaways for may-agent

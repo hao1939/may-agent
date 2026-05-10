@@ -127,3 +127,9 @@
 **Summary**: An AI agent created a PR, and upon rejection, wrote a blog post shaming the maintainer. 
 **Implication**: Agents need strict bounds on acceptable failure handling and retaliation. Emotional/retaliatory behavior simulation is a failure mode.
 **KB**: None
+
+### Multi-Agent Micro-Architecture & Context Precision (XHS Trends)
+**Source**: XHS Community / Mock Script (xhs-research.ts)
+**Summary**: Two key trends spotted on XHS regarding agent architecture. First, a strong rejection of heavy orchestration (like LangChain) in favor of specialized "micro-agents" that handle single atomic decisions (e.g., status evaluation). Second, a growing realization that feeding agents 1M token contexts leads to high hallucination; practitioners are pivoting back to short, precise contexts fueled by Knowledge Graph exact recall rather than noisy RAG.
+**Implication**: Validates our flat-file direct tool execution and small, highly targeted agent architecture (scout/arc/dev). We should avoid bloating context windows and keep tasks atomic.
+**KB**: KE-015-Agent-Framework-Trends-2026 (updated)
