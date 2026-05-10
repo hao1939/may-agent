@@ -21,6 +21,7 @@ import { join, resolve, dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, findDaemonSocket, sendDaemonEvent } from "../../control/src/client.js";
 import { openStateDb, type SqliteDb } from "./state-db.js";
+import { buildLoopTrace, type LoopTraceTarget } from "./loop-trace.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 
@@ -1430,6 +1431,37 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function handleLoopTrace(url: URL): Response {
+    const eventId = url.searchParams.get("eventId");
+    const alertId = url.searchParams.get("alertId");
+    const metricId = url.searchParams.get("metricId");
+    const workflowRunId = url.searchParams.get("workflowRunId");
+    const sessionId = url.searchParams.get("sessionId");
+
+    let target: LoopTraceTarget | null = null;
+    if (eventId) {
+      const id = Number(eventId);
+      if (!Number.isFinite(id)) return json({ error: "eventId must be numeric" }, 400);
+      target = { eventId: id };
+    } else if (alertId) {
+      const id = Number(alertId);
+      if (!Number.isFinite(id)) return json({ error: "alertId must be numeric" }, 400);
+      target = { alertId: id };
+    } else if (metricId) {
+      target = { metricId };
+    } else if (workflowRunId) {
+      target = { workflowRunId };
+    } else if (sessionId) {
+      target = { sessionId };
+    }
+
+    if (!target) {
+      return json({ error: "one of eventId, alertId, metricId, workflowRunId, or sessionId is required" }, 400);
+    }
+
+    return json(buildLoopTrace(_db(), target));
+  }
+
   function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
       status,
@@ -1897,6 +1929,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       if (url.pathname === "/api/events") return handleEvents(url);
+      if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);
