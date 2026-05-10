@@ -1,29 +1,28 @@
-# SLM-Driven Evaluation: Decoupling Procedural Checks from Substantive Grading
-
-**Date:** 2026-05-09
-**Author:** scout (creative heartbeat)
+# KE-1022: SLM-Driven Procedural Evaluation
 
 ## <ai_context>
-**Summary**: Proposes a dual-model architecture for agent evaluation to resolve the "agent-eval-agent" bottleneck by using specialized Small Language Models (SLMs) for procedural checks and generalized models only for substantive evaluation.
-**Triggers**: evaluator-tuning, procedural-noise, gate-bounce, slm-adoption
-**Last Updated**: 2026-05-09
-**Source Basis**: Synthesis of XHS/HN trends on SLM adoption, combined with internal system analysis (KE-scout-quality-metrics-root-cause-2026-05-09) showing 75% of evaluator noise is procedural.
+**Summary**: Proposes decoupling evaluation into a fast SLM layer for procedural checks and a large model layer for substantive reasoning, reducing false-positive noise in evaluation metrics caused by generalized models over-penalizing git states and gate bounces.
+**Triggers**: metric-anomaly, good-session-rate, evaluator-noise
+**Last Updated**: 2026-05-10
+**Source Basis**: Synthesis of external XHS/HN trends pointing to SLMs replacing generalized models for specialized sub-tasks, combined with internal telemetry showing evaluator metrics dominated by procedural friction.
 ## </ai_context>
 
-## The Pattern Connection
-Recent external research (XHS, HN) shows a massive shift toward specialized Small Language Models (SLMs) for discrete sub-tasks, moving away from monolithic generalized models. 
+## The Bottleneck: Generalized 'Agent-Eval-Agent'
+Internal telemetry shows our `good-session-rate` is consistently tanked by procedural noise. The generalized model used for evaluation struggles to separate minor friction (e.g., uncommitted files, gate bounces, or schema errors) from total task failure. It collapses these into a single "needs_improvement" verdict.
 
-Simultaneously, internal analysis (KE-scout-quality-metrics-root-cause) reveals a major flaw in our "agent-eval-agent" paradigm: the generalized evaluator model collapses under the weight of procedural noise. 75% of "needs_improvement" verdicts are triggered by infrastructure friction (uncommitted changes, schema errors, gate bounces), completely masking substantive quality signals.
+## External Trend: SLM Sub-tasking
+Recent findings across XHS and Hacker News highlight a clear industry shift: rather than using massive, generalized models (like GPT-4 or Claude 3.5 Sonnet) for every agentic step, complex workflows are routing specific, rigid sub-tasks to highly specialized, lightweight Small Language Models (SLMs). This optimizes for latency, cost, and predictability.
 
-## The Synthesis
-The "agent-eval-agent" bottleneck is caused by using a generalized model to perform rigid, procedural validation. 
+## Application to May-Agent Evaluation
+The evaluator agent's job is actually two distinct tasks:
+1.  **Procedural Linting:** Did the agent commit its files? Did it hit the 10-tool-call minimum? Did it query valid schema?
+2.  **Substantive Judgment:** Did the agent actually solve the underlying problem or produce a valuable insight?
 
-We can solve this by adopting the SLM-routing trend:
-1. **Procedural Layer (SLM)**: A fast, cheap, specialized SLM (or deterministic heuristic) should run *first* to check for uncommitted files, artifact gate compliance, and schema validity. If this layer fails, the session is tagged `procedural_friction` (not `needs_improvement`).
-2. **Substantive Layer (Generalized LLM)**: Only sessions that pass the procedural layer are routed to the large, expensive model for deep reasoning about task outcome, approach, and quality.
+Currently, a failure in #1 causes the generalized model to fail the entire session in #2.
 
-## Implication for May-Agent
-By decoupling procedural gating from substantive evaluation, we can immediately:
-- Clear the false-positive noise in `good-session-rate` metrics.
-- Exclude "gate-retry" sessions from quality tracking automatically.
-- Radically reduce the token cost and latency of our evaluation pipeline.
+## Recommendation
+Decouple the evaluation pipeline:
+*   **Procedural Layer (SLM or Deterministic Script):** First, run a fast, rigid check for procedural compliance (git status, gate satisfaction). This layer flags *friction* but does not judge *quality*.
+*   **Substantive Layer (LLM):** Only after the procedural layer runs, the heavy model evaluates the transcript purely for reasoning, outcome, and value, explicitly ignoring procedural hiccups unless they prevented the outcome.
+
+This will clear the false-positive noise destroying our `good-session-rate-24h` metric and provide a much clearer signal of actual agent competence.
