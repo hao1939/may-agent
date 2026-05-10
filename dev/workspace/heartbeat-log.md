@@ -1052,3 +1052,18 @@ Signal dispositions:
 - Prior provider-auth signal: dismissed for action now because the current first-turn error metric is clean.
 - Prior scout guard-block signal: dismissed for dev action now because short-window handler failures are zero and the guard did its job; Scout/May source-behavior follow-up has already happened.
 - `eval-llm-lane-restoration`: hold pending-review; the LLM lane is live and below lag threshold.
+
+## 2026-05-10 Artifact Gate Recovery - Dirty Worktree Classification
+
+The session was reopened by the artifact gate because the prior heartbeat produced no write. I produced this durable workspace artifact and classified the current `/app/agents` dirty state before any staging.
+
+Intentional deliverable for this recovery:
+- `dev/workspace/heartbeat-log.md` — this artifact entry only.
+
+Dirty paths observed before staging were not created by this recovery session and should not be staged by dev:
+- Runtime/generated session state: `arc/last-session.md`, `dev/last-session.md`, `evaluator/last-session.md`, `may/last-session.md`, `scout/last-session.md`.
+- Runtime/gate logs: `shared/duration-gate-triggers.log`, `shared/gate-outcomes.log`.
+- Other agents' active work/artifacts: `arc/workspace/heartbeat-log.md`, `shared/projects/daily-alert-review/*`, `shared/projects/ruflo-learning-loop/project.md`, `shared/projects/v2-spec-coverage-buildout/journal.md`.
+- Shared docs currently dirty outside this recovery scope: multiple files under `shared/may-agent-docs/`.
+
+Disposition: stage and commit only the intentional dev heartbeat artifact. If the unrelated dirty paths remain afterward, finish cannot honestly claim a clean worktree; report them as an external hygiene blocker rather than committing unrelated work.
