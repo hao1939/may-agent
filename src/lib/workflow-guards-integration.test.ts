@@ -125,6 +125,7 @@ describe("Guard integration: warn demand delivery", () => {
         action: "warned",
         sourceEventType: "step_done",
         step: "step-one",
+        sessionId: expect.any(String),
       }));
     } finally {
       if (origDisabled === undefined) {
@@ -226,6 +227,7 @@ describe("Guard integration: run_step demand injection", () => {
         guard: "test-inject-step",
         demandType: "run_step",
         action: "injected",
+        sessionId: expect.any(String),
         injectedStepLabel: "guard:verify-step-one",
         injectedAgent: "verifier",
       }));
@@ -316,6 +318,7 @@ describe("Guard integration: block demand", () => {
         demandType: "block",
         action: "blocked",
         sourceEventType: "step_done",
+        sessionId: expect.any(String),
       }));
     } finally {
       if (origDisabled === undefined) {

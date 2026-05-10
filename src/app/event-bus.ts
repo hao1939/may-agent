@@ -132,6 +132,7 @@ export type SystemEvent =
       workflowRunId: string;
       projectId?: string;
       parentSessionId?: string;
+      sessionId?: string;
       guard: string;
       demandType: "warn" | "block" | "run_step";
       action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";

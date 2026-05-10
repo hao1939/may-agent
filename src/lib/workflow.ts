@@ -18,7 +18,7 @@ export type WorkflowEvent =
 
 /** Events the workflow runtime emits. Guards subscribe to these. */
 export type WorkflowGuardEvent =
-  | { type: "step_done"; source: "agent" | "function"; step: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
+  | { type: "step_done"; source: "agent" | "function"; step: string; sessionId?: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
   | { type: "step_start"; source: "agent" | "function"; step: string; task: string; completedSteps: CompletedStep[] }
   | { type: "workflow_start"; workflow: string; task: string }
   | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };

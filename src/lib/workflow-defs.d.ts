@@ -199,7 +199,7 @@ interface Demand {
 /** Events that guards can subscribe to. */
 type WorkflowGuardEvent =
   | { type: "workflow_start"; workflow: string; task: string }
-  | { type: "step_done"; source: "agent" | "function"; step: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
+  | { type: "step_done"; source: "agent" | "function"; step: string; sessionId?: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
   | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
 
 /** A guard module that inspects workflow events and returns demands. */
