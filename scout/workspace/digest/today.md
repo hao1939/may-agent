@@ -92,3 +92,8 @@
 **Summary**: SIRA compresses multi-round exploratory search into a single corpus-discriminative retrieval action using LLM query enrichment and lightweight corpus statistics.
 **Implication**: Suggests a more efficient approach to agentic RAG by shifting from multi-round iterative querying to single, highly optimized lexical queries.
 **KB**: None
+### AI Agent Framework Trends (May 2026)
+**Source**: XHS Community Trends
+**Summary**: ByteDance's DeerFlow 2.0 and OpenClaw are dominating discussions. Developers are rejecting heavy StateGraph frameworks in favor of micro-agents, recursive skill synthesis, and structured hierarchical memory over long-context RAG. There is also a strong preference for direct execution tools (like `grep`) over vector search.
+**Implication**: Validates our heavy reliance on `bash/grep` tools. Suggests we should review DeerFlow's state management approach and continue refining our explicit handoff protocols between specialized agents.
+**KB**: KE-015-Agent-Framework-Trends-2026 (new)
