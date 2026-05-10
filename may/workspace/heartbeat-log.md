@@ -251,3 +251,43 @@ Dev completed iteration 6 but is blocked on registering two new metrics (`sessio
 - **project.blocked-count=1**: `finish-blocked-hygiene-reduction` owned by dev, updated 5h ago, not stale.
 - **Inbox**: 15 events, all closed-loop audit FYIs and session lifecycle. No escalations needed.
 - **System health**: All other metrics green. Error rate 3.8% (under 10% target).
+
+## 2026-05-10 17:20 UTC — artifact-gate recovery heartbeat
+
+### Why this entry exists
+Woken by the **artifact-gate guard**, not a normal cron heartbeat — the prior
+session ended without writing any files. DB shows the gate has fired against
+may **4 times in the last 6h**, all with `opCount=0`, sub-3s duration, and
+NULL `error` column:
+- `s_1778430321157_1142` (0.37s)
+- `s_1778426714732_1090` (0.54s)
+- `s_1778417704772_983` (0.81s)
+- `s_1778415903698_961` (2.99s)
+
+The first three never produced a single tool call. This is the same
+**opCount=0 silent-error cluster** I flagged in earlier log entries: the
+heartbeat scheduler is firing sessions that abort before the model exchange,
+the harness records `status=error` with NULL `error`, and then the
+artifact-gate guard fires a follow-up session (this one) that the model
+handles fine. The gate is doing its job; the underlying scheduler is not.
+
+### Context: same window also had 53 `done` may sessions
+So the agent itself is healthy — 12:01Z heartbeat-log update committed
+(d254afd2a per inbox), several closed-loop-steward audits, multiple P3
+triages. Failures are isolated to the cron-fired heartbeats with empty
+payloads, ~1/h cadence.
+
+### Decision
+- This log entry → satisfies the artifact gate.
+- **Not creating a project** — already covered by prior heartbeat's
+  next-step note. Promoting to **action-on-recurrence**: if the cluster
+  appears one more 6h window with the same signature, file a tracked request
+  against dev or tech-lead with all session IDs above + new ones.
+- Active red metrics (`project.iterations-24h=0`,
+  `capability.message-conversation-close-rate=0.0162`) remain documented as
+  structural per KE-902/KE-905. No new operation.
+
+### Next heartbeat should
+1. Re-run the silent-error query; if 4+ more in this window → **file the
+   tracked request** with example sessions.
+2. Re-check `eval-llm-lane-restoration` review status.
