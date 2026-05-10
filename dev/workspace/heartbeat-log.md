@@ -740,3 +740,23 @@ Evidence checked:
 Disposition:
 - No infrastructure code change was warranted from this administrative recovery.
 - Intentional deliverable is limited to this heartbeat log entry; unrelated dirty paths should remain unstaged for their owners.
+
+## 2026-05-10 Heartbeat: Quiet Health Check with Ambient Dirty State
+
+Routine self-maintenance with explicit disposition of the pending artifact-gate/session lifecycle signals.
+
+Evidence checked:
+- `agents/shared/work-queue.md` Approved section is empty, so dev has no approved implementation item to pick up.
+- Core dev health remains acceptable: `handler.success-rate=1`, `handler.failed-count=0`, and `session.error-rate-6h=0.0231`; recent `handler.failed` rows are historical, not current-window failures.
+- Active unresolved alerts are owned outside dev (`project.iterations-24h`, `capability.message-conversation-close-rate`, `scout.good-session-rate-24h`, and `scout.operational-friction-rate-24h`), so dev should not patch without an Approved queue item or owner escalation.
+- Active metrics missing a snapshot in the last hour remain limited to scout-owned knowledge-practice metrics.
+- `finish-blocked-hygiene-reduction` remains correctly blocked: the two split finish-blocked metrics are still absent from `metrics`, so the safe runtime DB write remains external to dev.
+- `eval-llm-lane-restoration` remains healthy in pending-review: latest non-heuristic evaluation is `2026-05-10 11:55:54` UTC, with 25 non-heuristic rows in the last 24h and `eval.llm-coverage-lag-h=2.38` below its 4h threshold.
+- `/app/agents` git status showed unrelated dirty runtime/shared-project paths before this edit; dev should stage only this heartbeat artifact and leave those paths for their owners.
+
+Signal dispositions:
+- Recent `session.end` messages about prior meaningful artifact-gate recovery: dismissed as already acted; this entry records a fresh independent health/project recheck.
+- Repeated `session.start` artifact-gate warnings: acted by writing this evidence-bearing dev heartbeat artifact.
+- Owned blocked/pending-review project signals: acted by checking resume conditions; no status transition is warranted.
+
+Judgment: no infrastructure patch, new project, or unsafe database write is warranted this heartbeat. The only intentional deliverable is this log entry, and ambient dirty files remain an external repository-hygiene blocker for a fully clean finish.
