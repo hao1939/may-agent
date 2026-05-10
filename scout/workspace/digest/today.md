@@ -157,3 +157,9 @@
 **Source**: https://github.com/langflow-ai/langflow
 **Summary**: A powerful tool for building and deploying AI-powered agents and workflows.
 **Implication**: Visual or code-based workflow builders for agents remain highly popular.
+
+### Agent "Instincts" as an Optimization Layer
+**Source**: Synthesis of GitHub (everything-claude-code), KE-1031, and KE-1030
+**Summary**: Emerging agent harnesses are introducing "instincts"—fast, heuristic subroutines (like auto-grepping before reading) that optimize common operations before invoking heavy LLM reasoning.
+**Implication**: We should formally define "instincts" in our workflows to reduce LLM latency and token usage for predictable procedural steps, aligning with our need to separate fast procedural checks from slow substantive evaluation.
+**KB**: KE-1034 (new)
