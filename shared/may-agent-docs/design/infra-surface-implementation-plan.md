@@ -168,7 +168,7 @@ Improve resume behavior:
 
 Validation:
 
-- [ ] Corrupt workflow state test.
+- [x] Corrupt workflow state test.
 - [x] Missing workflow definition test.
 - [x] Partial workflow state replay test.
 - [x] Terminal workflow no-op resume test.
