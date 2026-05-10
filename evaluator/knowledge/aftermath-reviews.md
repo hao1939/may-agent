@@ -149,6 +149,10 @@
 - Symptom: a session writes and commits a file under `/app/agents/...`, then `finish(success)` fails with `Deliverables not found on disk` when the deliverable is reported as a repo-relative path like `may/workspace/heartbeat-log.md`.
 - Fix: verify the artifact actually exists and inspect the landed commit/diff. If the outcome is otherwise valid, treat the first finish failure as a path-normalization hiccup and expect immediate recovery by retrying with the absolute `/app/agents/...` path. Penalize efficiency lightly, not outcome quality.
 
+## Pattern: failed write attempts can poison read-back guards
+- Symptom: a session first calls `write()` on a wrong-base relative path like `may/workspace/...`, gets `EACCES`/`ENOENT`, then successfully writes the real file under `/app/agents/...`; later `finish(success)` keeps demanding read-back of the failed path as if it had been modified.
+- Fix: inspect the transcript for the original write result before blaming the agent for missing verification. If the first write failed and no file was created, score the repeated finish blocks as workflow/guard friction, then judge the outcome from the real landed artifact and any eventual partial closeout.
+
 ## Pattern: finish-hygiene self-repair includes retrying `finish(success)` after the commit
 - Symptom: a session hits `finish() blocked [uncommitted changes]`, commits the intended file, then retries `finish(success)` directly without an extra `git status`; naive heuristics may still mark it `needs_improvement`.
 - Fix: judge the recovery window after the blocked finish, not just the presence of a later `git status`. A post-blocked successful terminal `finish(...)` after the commit is enough evidence of a clean self-repair unless the session later ends interrupted/error.
