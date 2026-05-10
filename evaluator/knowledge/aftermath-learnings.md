@@ -40,3 +40,6 @@
 
 ## 2026-05-10 — s_1778408748359_875
 - For success-candidate heartbeat reviews, credit a process-correction session as real value when the agent directly addresses a prior aftermath/review request with a committed, evidence-backed per-signal disposition artifact. The lack of a new KE/project is acceptable if the session closes the specific behavioral gap, but finish/commit retry loops should still reduce efficiency.
+
+## 2026-05-10 — s_1778417468380_979
+- In XHS scout aftermath reviews, treat `xhs-browse.mjs search` output as only partial evidence. If `read <id>` results fall back to generic explore/landing-page content or unrelated posts, keep credit for the lightweight trend synthesis and committed artifacts, but cap output-quality confidence because the post-level claims were not fully verified.
