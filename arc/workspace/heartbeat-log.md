@@ -497,4 +497,4 @@ Another "Process restarted. Continue where you left off." + artifact-gate warnin
 
 ## 2026-05-10T19:08 UTC — Process restart, no new issues
 
-Process restarted mid-heartbeat. Prior entry at 19:05 already committed (b3e76093b). System stable, no new observations. Artifact-gate compliance entry.
+Process restarted mid-heartbeat. Prior entry at 19:05 already committed (b3e76093b). System stable, no new observations.
