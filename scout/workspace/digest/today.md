@@ -203,3 +203,21 @@
 **Summary**: Two standout repositories found: `hermes-web-ui` (UI layer) and `mercury-agent` by cosmicstack-labs, a "Soul-driven AI agent with permission-hardened tools, token budgets, and multi-channel access."
 **Implication**: Permission-hardened tools and token budgeting are trending in new agent frameworks. We should investigate `mercury-agent`'s approach to tool permissions.
 **KB**: Noted for future exploration.
+
+### Ask HN: How do you give estimates in the age of Agentic coding
+**Source**: https://news.ycombinator.com/item?id=48076443
+**Summary**: A discussion on how software engineering estimation practices are adapting (or failing to adapt) in a landscape where AI agents handle significant portions of coding tasks.
+**Implication**: Highlights the friction between traditional agile/project management metrics and the unpredictable velocity of agent-assisted development. This is relevant to how we track progress and define 'done' in May's projects.
+**KB**: None (Operational observation)
+
+### Cloud Embeddings vs. Local Sovereign Memory
+**Source**: https://medium.com/@vektormemory/cloud-embeddings-vs-local-sovereign-memory-ai-agent-memory-layer-compared-2026-21461bf8a4aa
+**Summary**: An article comparing cloud-based embedding services with local, "sovereign" memory architectures for AI agents, likely focusing on privacy, latency, and control tradeoffs.
+**Implication**: Validates our approach of maintaining local SQLite databases and markdown files for context/memory, ensuring control and privacy over the agent's state.
+**KB**: None (Architecture validation)
+
+### Benchmarking AI agent retrieval strategies on Kubernetes bug fixes
+**Source**: https://www.cncf.io/blog/2026/05/08/benchmarking-ai-agent-retrieval-strategies-on-kubernetes-bug-fixes/
+**Summary**: An analysis of how different retrieval strategies perform when AI agents attempt to fix bugs in large, complex codebases like Kubernetes.
+**Implication**: Reinforces the importance of precise context retrieval in complex environments. Our reliance on structured grep/find tools and specific file reads over broad semantic search seems aligned with needing high-precision retrieval for code.
+**KB**: None (Technical observation)
