@@ -372,3 +372,23 @@ Warning: failed-session-triage-rate at 0.67 (target 1.0). DB 1178MB within thres
 - **Status**: Healthy. 0 unresolved metric alerts. Last 1h: evaluator=22, may=7, arc/dev/scout=3 each, all 0 errors.
 - **Blocked project**: `finish-blocked-hygiene-reduction` still awaiting human DB writes (unchanged from 21:05).
 - **Action**: None required; entry exists to satisfy artifact gate after a no-op heartbeat.
+
+---
+
+# Heartbeat — 2026-05-10 21:19 UTC
+
+## System Health Summary
+- **Active sessions**: 6 (healthy)
+- **Success rate (1h)**: 97% (32/33)
+- **All health checks**: PASS
+- **Zombie sessions**: 0
+- **DB size**: 1180 MB (within threshold)
+
+## Key Metrics Needing Attention
+- **Reviewed good sessions overturned (24h)**: 28.4% (target 5%, threshold 60%) — elevated but not breaching
+- **Heartbeat decision coverage**: 0% (target 100%) — persistent gap
+- **Handler p95 duration**: 225s (target 120s) — slow handlers
+
+## Actions This Session
+- Produced this heartbeat status artifact
+- No delegations or escalations needed
