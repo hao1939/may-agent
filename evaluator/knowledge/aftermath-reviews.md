@@ -56,6 +56,10 @@
 - Symptom: routing labels a session as a `knowledge update`, but the transcript only reads an existing KE/article and then calls `finish()` with no written deliverables.
 - Fix: verify authorship and actual file changes before crediting material output. Reading a pre-existing knowledge file can justify a diagnosis, but it is not itself a new artifact or knowledge update.
 
+## Pattern: routing signals should key off write/edit evidence, not prose path mentions
+- Symptom: a route classifier marks a session as `success_candidate` with signals like `knowledge update` because the transcript text merely mentions a path under `agents/.../knowledge/`, even though the session only cited or read an existing KE.
+- Fix: inspect the routing heuristic itself and prefer anchors tied to `write`/`edit` tool-call payloads or committed diffs. Path-shape regexes over free-form transcript prose are too broad and create false-good aftermath reviews.
+
 ## Pattern: pre-existing mock research is not fresh exploration
 - Symptom: a session tasked with exploring an external source (for example XHS) only reads local mock scripts or prewritten workspace summaries, then finishes as if fresh research was performed.
 - Fix: inspect the transcript for real external collection or newly written source notes, and check mtimes/diffs on cited artifacts. If the session only consumed pre-existing mock/local material, credit it as lightweight synthesis at most, not as source exploration or a knowledge update.
