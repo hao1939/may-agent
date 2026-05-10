@@ -181,7 +181,7 @@ Ran `monitor-session.cjs --running`: 1 alert (`STALL` amy `s_1777626616591_0` id
 
 **Previous run**: 2026-04-04 08:46 — ran `node agents/evaluator/skills/monitor-session.cjs --running`; result: 5 checked, 4 healthy, 1 `PROTOCOL_VIOLATION` (coach P114 Experience Replay missing). Also ran `node agents/evaluator/skills/patrol.cjs` → status `CRITICAL` with error `Missing compliance-snapshot.json`.
 
-**P63 Extract Strategies — Last run**: 2026-05-09 04:15Z — artifacts sampled: 3 recent non-evaluator session logs (`.state/sessions/s_1778314995929_7/session.jsonl`, `.state/sessions/s_1778309936890_5/session.jsonl`, `.state/sessions/s_1778306527063_13/session.jsonl`); lessons proposed: 4 (see `agents/evaluator/workspace/proposed-strategies.md`).
+**P63 Extract Strategies — Last run**: 2026-05-10 04:31Z — artifacts sampled: 3 recent non-evaluator session logs (`.state/sessions/history/s_1778387165801_622/session.jsonl`, `.state/sessions/history/s_1778387148628_620/session.jsonl`, `.state/sessions/history/s_1778386911923_615/session.jsonl`); lessons proposed: 6 raw recovery lessons across the sample, and `agents/evaluator/skills/extract-strategy.cjs` was updated so `source_session` now emits the parent session id for `session.jsonl` inputs (see `agents/evaluator/workspace/proposed-strategies.md`).
 
 **Last run**: 2026-05-07 01:23Z — DB canonical check: `MAX(evaluations.createdAt)=1778085978617`; `MAX(sessions.endedAt)=1778116765770` → eval lag ≈8.55h. Last-24h volume: `sessions(endedAt>=cutoff)`=728 vs `evaluations(createdAt>=cutoff)`=39 → coverage ≈5.36%.
 
@@ -216,11 +216,11 @@ Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-sna
 
 Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
 
-**Last run**: 2026-05-10 02:01Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778378368134`; `MAX(sessions.startedAt)=1778378468851`; `MAX(sessions.endedAt)=1778378430428`; lag ≈100.7s vs `startedAt`, ≈62.3s vs `endedAt`; `evals_last24h=672`; `llm_evals_last24h=29`; `sessions_last24h=1456`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
+**Last run**: 2026-05-10 04:31Z — DB canonical check confirms both owned evaluation processes remain live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778387379538`; `MAX(sessions.startedAt)=1778387469008`; `MAX(sessions.endedAt)=1778387448321`; lag ≈89.5s vs `startedAt`, ≈68.8s vs `endedAt`; `evals_last24h=687`; `llm_evals_last24h=31`; `sessions_last24h=1466`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table.
 
-Inbox triage on the currently surfaced pending aftermath targets found completed artifacts already present for `s_1778367402610_366` and `s_1778378224602_511`, so the newest `session.*` / `evaluation.*` rows are best treated as already-handled backlog noise rather than dropped evaluator work.
+Inbox triage on the currently surfaced pending aftermath targets found completed artifacts already present for `s_1778387165801_622`, `s_1778386911923_615`, and `s_1778385365363_598`, so the newest `session.*` / `evaluation.*` rows are best treated as already-handled backlog noise rather than dropped evaluator work.
 
-Ran `monitor-session.cjs --running`: 2 checked, 1 healthy, 1 `PRODUCTIVITY_STALL` (active arc session `s_1778378148525_509`; evidence: `22 tool calls with 0 file writes. Agent has made 3 read/explore operations without producing any output.`; recommended action: warn). Notified May.
+Ran `monitor-session.cjs --running`: 3 checked, 1 healthy, 2 `PROTOCOL_VIOLATION` alerts — evaluator session `s_1778387358589_623` and arc session `s_1778387404625_625`, both with evidence `P114 Violation: Complex task attempted without Experience Replay (grep ERROR_LOG).`; recommended action: warn. Notified May.
 
 Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). Notified Bob.
 

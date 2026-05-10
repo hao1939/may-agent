@@ -91,5 +91,13 @@ Ran `extract-strategy.cjs` on 3 newer non-evaluator session logs:
 
 ## Recommended Follow-up
 1. Deduplicate repeated identical extractor lessons within a session so guard loops do not swamp the report.
-2. Fix `source_session` attribution for `session.jsonl` paths.
+2. ✅ Fixed 2026-05-10 in `agents/evaluator/skills/extract-strategy.cjs`: `source_session` now falls back to the parent directory name for `session.jsonl` inputs.
 3. Consider adding a lightweight evaluator criterion: repeated wrapper-block retries are an efficiency smell even when the final outcome is acceptable.
+
+## Verification Snapshot
+Validated the extractor fix against three recent history logs:
+- `.state/sessions/history/s_1778387165801_622/session.jsonl`
+- `.state/sessions/history/s_1778387148628_620/session.jsonl`
+- `.state/sessions/history/s_1778386911923_615/session.jsonl`
+
+Each run now emits the real session id in `source_session` (for example `s_1778387165801_622`) instead of the low-fidelity fallback `session`.

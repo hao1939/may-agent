@@ -10,6 +10,12 @@
 const fs = require('fs');
 const path = require('path');
 
+function getSourceSession(logPath) {
+  const base = path.basename(logPath, path.extname(logPath));
+  if (base && base !== 'session') return base;
+  return path.basename(path.dirname(logPath));
+}
+
 // Helper to format session snippet for LLM
 function formatSessionSnippet(logPath) {
   try {
@@ -106,7 +112,7 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
               context: toolName,
               confidence: 0.8,
               type: 'recovery',
-              source_session: path.basename(logPath, '.jsonl')
+              source_session: getSourceSession(logPath)
           });
       }
   }
@@ -144,7 +150,7 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
               context: seq.tool,
               confidence: 0.7,
               type: 'optimization',
-              source_session: path.basename(logPath, '.jsonl')
+              source_session: getSourceSession(logPath)
           });
       }
 
@@ -156,7 +162,7 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
               context: 'session',
               confidence: 0.6,
               type: 'optimization',
-              source_session: path.basename(logPath, '.jsonl')
+              source_session: getSourceSession(logPath)
           });
       } else if (totalCalls > 10) {
           lessons.push({
@@ -165,7 +171,7 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
               context: "General",
               confidence: 0.5,
               type: 'optimization',
-              source_session: path.basename(logPath, '.jsonl')
+              source_session: getSourceSession(logPath)
           });
       }
 
@@ -188,7 +194,7 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
               context: 'reasoning',
               confidence: 0.7,
               type: 'optimization',
-              source_session: path.basename(logPath, '.jsonl')
+              source_session: getSourceSession(logPath)
           });
       }
 
@@ -202,7 +208,7 @@ async function extractStrategy({ logPath, type = 'recovery' }) {
               context: "Navigation",
               confidence: 0.7,
               type: 'optimization',
-              source_session: path.basename(logPath, '.jsonl')
+              source_session: getSourceSession(logPath)
           });
       }
   }
