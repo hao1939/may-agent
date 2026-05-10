@@ -13,6 +13,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 
 
 ## Proposed (needs review)
+- [ ] [P1] Scope evaluator's "knowledge update" success signal to write/edit tool calls (one-line regex anchor) — KE-934: 5 aftermath reviews across 3 agents in 5 days flag the same false-good route from prose-only KE references — agents/arc/workspace/proposals/2026-05-09-evaluator-knowledge-update-signal-scoping.md (proposed: 2026-05-09)
 - [ ] [P1] Artifact-gate re-prompt should name the agent's own lane (Phase 1: text fix in `runGates`; Phase 2: post-write path predicate) — KE-927 + KE-930: arc satisfied the gate by writing into may/workspace then evaluator/workspace within 3 heartbeats — agents/arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md (proposed: 2026-05-09)
 - [ ] [P1] Reconcile common-sense.md Conventions table (sessions/metrics) with `query_db` doctrine — table still says `bun:sqlite readonly`, contradicts its own DB-access section; **bumped P2→P1 2026-05-09 ~14Z: 144 schema/query-error routed aftermaths in 24h across 4 agents (may=79, arc=23, dev=22, scout=20), KE-923**; KE-917 — agents/arc/workspace/proposals/2026-05-09-common-sense-conventions-table-query_db.md (proposed: 2026-05-09)
 - [ ] [P2] Notify `v2-spec-coverage-buildout` owner (may): its `waiting` state is the gating variable behind 20–22 open `dispatch_waiting` escalations (iter-4 closure_eligible_now=0/20; KE-903) — agents/arc/workspace/proposals/2026-05-08-v2-spec-coverage-buildout-is-the-load-bearing-waiting-project.md (proposed: 2026-05-08)
