@@ -26,7 +26,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
-import { emitDaemonEvent } from "../../packages/control/src/client.js";
+import { daemonSocketPath, emitDaemonEvent } from "../../packages/control/src/client.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -102,7 +102,12 @@ const MESSAGE_MODE = process.argv.includes("--message");
 const EMIT_MODE = (() => {
   const idx = process.argv.indexOf("--emit");
   if (idx !== -1 && process.argv[idx + 1]) {
-    return { event: process.argv[idx + 1], data: process.argv[idx + 2] ? JSON.parse(process.argv[idx + 2]) : undefined };
+    try {
+      return { event: process.argv[idx + 1], data: process.argv[idx + 2] ? JSON.parse(process.argv[idx + 2]) : undefined };
+    } catch (err) {
+      console.error(`Invalid --emit JSON payload: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
+    }
   }
   return null;
 })();
@@ -127,6 +132,48 @@ const INITIAL_TASK = (() => {
   return null;
 })();
 
+const interfaceAgent = (() => {
+  // Support both --agent <name> and --agent=<name>
+  const eqArg = process.argv.find((a) => a.startsWith("--agent="));
+  if (eqArg) return eqArg.split("=")[1]!;
+  const idx = process.argv.indexOf("--agent");
+  if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
+  return process.env.AGENT || "may";
+})();
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+if (EMIT_MODE) {
+  // ── Operator emit mode: send one event to the running daemon and exit ─
+  // Keep this before agent/model startup so operators have a small, reliable
+  // control command that does not boot another runtime-shaped process.
+  const socketPath = daemonSocketPath(PERSIST_DIR, {
+    instance: INSTANCE_LABEL,
+    interfaceAgent,
+  });
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      await emitDaemonEvent(socketPath, EMIT_MODE.event, EMIT_MODE.data || {}, { timeoutMs: 5000 });
+      console.log(`Event emitted: ${EMIT_MODE.event}`);
+      process.exit(0);
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      if (attempt === 1) {
+        console.error(`Failed to connect to daemon socket ${socketPath}: ${message}`);
+        console.error("Retrying once after a short recovery delay...");
+        await sleep(500);
+      }
+    }
+  }
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  console.error(`Failed to emit ${EMIT_MODE.event} via daemon socket ${socketPath}: ${message}`);
+  process.exit(1);
+}
+
 const WEB_ONLY_MODE = WEB_ENABLED
   && !CHAT_MODE
   && !CRON_ENABLED
@@ -135,7 +182,6 @@ const WEB_ONLY_MODE = WEB_ENABLED
   && !ONESHOT_MODE
   && !STATUS_MODE
   && !MESSAGE_MODE
-  && !EMIT_MODE
   && !RUN_WORKFLOW
   && !INITIAL_TASK;
 
@@ -461,15 +507,6 @@ for (const cron of getAgentCrons().values()) {
 
 // ── Event routing ──────────────────────────────────────────────────────
 
-const interfaceAgent = (() => {
-  // Support both --agent <name> and --agent=<name>
-  const eqArg = process.argv.find((a) => a.startsWith("--agent="));
-  if (eqArg) return eqArg.split("=")[1]!;
-  const idx = process.argv.indexOf("--agent");
-  if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
-  return process.env.AGENT || "may";
-})();
-
 // ── Context Learning ──────────────────────────────────────────────────
 // Moved to agents/may/handlers/context-learn.ts (event-driven handler).
 // Subscribes to "context-learn" events via cron.json `on` field.
@@ -645,19 +682,6 @@ if (MESSAGE_MODE) {
     await cliSend(sendOpts);
   }
   process.exit(0);
-}
-
-if (EMIT_MODE) {
-  // ── Emit mode: send event to running instance via socket ──────────
-  try {
-    await emitDaemonEvent(SOCKET_PATH, EMIT_MODE.event, EMIT_MODE.data || {});
-    console.log(`Event emitted: ${EMIT_MODE.event}`);
-    process.exit(0);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`Failed to connect to socket ${SOCKET_PATH}: ${message}`);
-    process.exit(1);
-  }
 }
 
 if (RUN_WORKFLOW) {
