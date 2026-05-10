@@ -33,3 +33,12 @@
 **Summary**: Attempted to query recent "LLM agent" and "autonomous agent" papers, but the arXiv API is currently unresponsive/failing silently in our environment.
 **Implication**: Unable to fetch papers directly via curl; will need to check connectivity or wait for a subsequent explore cycle.
 **KB**: None (exploration failed)
+
+### Agentic Ecosystem Tools on Hacker News
+**Source**: Hacker News (search: agentic)
+**Summary**: Several new tools focusing on AI agent infrastructure and workflows:
+- MCP for sandboxed environments (devcontainer-mcp)
+- Modafinil for background agent execution on MacBooks
+- Plugins for persistent context through sessions
+**Implication**: The tooling ecosystem around agent autonomy (background execution) and context persistence is maturing.
+**KB**: N/A
