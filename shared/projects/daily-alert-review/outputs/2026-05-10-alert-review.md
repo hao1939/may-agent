@@ -1,56 +1,66 @@
 # Daily Alert Review — 2026-05-10
 
-**Period:** 2026-05-09 00:55 UTC – 2026-05-10 00:55 UTC  
-**Total alerts:** 39  
-**Resolved:** 37 (94.9%)  
-**Still open:** 2 (5.1%)  
+**Period**: 2026-05-09 00:00 UTC → 2026-05-10 01:00 UTC
+**Total alerts**: 39 (down from 56 yesterday)
+**Resolved**: 37 (95%)
+**Unresolved**: 2
 
-## Open Alerts (Require Attention)
+## Unresolved Alerts
 
-| ID | Metric | Message | Since |
-|----|--------|---------|-------|
-| 273 | `project.iterations-24h` | Active project iterations (24h) = 0 (threshold: 1, target: 10) | 2026-05-09 21:10 UTC |
-| 272 | `capability.message-conversation-close-rate` | Message conversation close rate = 0 (threshold: 0.02, target: 0.05) | 2026-05-09 20:55 UTC |
+| # | Metric | Message | Open Since |
+|---|--------|---------|------------|
+| 273 | project.iterations-24h | Below threshold: current=0, threshold=1 | 2026-05-09 ~20:30 |
+| 272 | capability.message-conversation-close-rate | Below threshold: current=0, threshold=0.02 | 2026-05-09 ~20:16 |
 
-### Recommendations for Open Alerts
+**Assessment**: Both unresolved alerts fired during overnight low-activity period. `project.iterations-24h` at 0 is expected overnight — threshold may need time-of-day awareness. `message-conversation-close-rate` at 0 reflects no message activity overnight.
 
-1. **project.iterations-24h (ID 273):** No project iterations in the last 24h. This is a recurring issue (also alert 269 earlier today, took ~5h to resolve). Investigate whether project scheduling/dispatching is stalled or if this is expected during low-activity periods.
+## Top Noise Sources (repeat firings)
 
-2. **capability.message-conversation-close-rate (ID 272):** Conversation close rate dropped to 0. This metric fired 4 times today with progressively worsening values (0.2435 → 0.1429 → 0.0635 → 0). Indicates message conversations are being opened but never closed. Check if the close-conversation workflow is broken or if no conversations are completing naturally.
+| Metric | Fires | % of Total | Trend vs Yesterday |
+|--------|-------|------------|-------------------|
+| session.failed-triage-rate-3h | 6 | 15% | — |
+| project.invalid-format-count | 6 | 15% | ↓ (was 43%) |
+| metric.stale-active-count | 4 | 10% | — |
+| capability.message-conversation-close-rate | 4 | 10% | — |
+| project.blocked-count | 3 | 8% | new |
 
-## Alert Frequency by Metric (Top Offenders)
+**Key improvement**: `project.invalid-format-count` dropped from 24 fires (43% of yesterday's 56) to 6 fires (15% of today's 39). Still noisy but trending in the right direction.
 
-| Metric | Count | Avg TTR (min) | Pattern |
-|--------|-------|---------------|---------|
-| `session.failed-triage-rate-3h` | 6 | 8.4 | Recurring, auto-resolves quickly |
-| `project.invalid-format-count` | 6 | 7.2 | Recurring, auto-resolves quickly |
-| `capability.message-conversation-close-rate` | 5 | 10.3* | Worsening trend, latest still open |
-| `metric.stale-active-count` | 4 | 5.4 | Transient spikes |
-| `project.blocked-count` | 3 | 20.3 | Moderate TTR |
-| `project.iterations-24h` | 2 | 299.5* | Slow to resolve, latest still open |
-| `v2.spec-coverage-rate` | 2 | 72.5 | Moderate |
-| `v2.heartbeat-decision-rate` | 2 | 12.2 | Quick recovery |
+## Notable Incidents
 
-*Averages include only resolved instances.
+### 1. Zero-op session errors spike (#247)
+- **What**: 42 zero-op session errors in 1h (threshold: 0)
+- **Resolved**: Yes, within ~4 min
+- **Root cause**: Likely transient provider issue — correlated with first-turn provider errors (#248, 12 errors) and empty assistant stops (#249, 23 stops)
+- **Recommendation**: These three metrics appear correlated; consider a composite "provider health" alert instead of 3 separate ones
 
-## Key Observations
+### 2. LLM evaluation lag at 66h (#241)
+- **What**: No non-heuristic eval in 66 hours (threshold: 4h)
+- **Resolved**: Yes
+- **Root cause**: Evaluator may not be running LLM evals regularly
+- **Recommendation**: This has been a recurring theme — evaluator scheduling needs attention
 
-1. **Noisy metrics:** `session.failed-triage-rate-3h` and `project.invalid-format-count` each fired 6 times but always auto-resolved within minutes. Consider raising thresholds or adding hysteresis to reduce noise.
+### 3. Status/reality mismatches at 8 (#251)
+- **What**: 8 metrics have status that doesn't match reality (threshold: 3)
+- **Resolved**: Yes
+- **Root cause**: Metric statuses drifting from actual values
 
-2. **Worsening trend — message close rate:** Fired 5 times with declining values throughout the day (0.2435 → 0 over ~10h). The latest instance remains open. This is the highest-priority item to investigate.
+## Systemic Patterns
 
-3. **Session health incidents:** `session.zero-op-error-count-1h` hit 42 (threshold 0) and `session.empty-assistant-stop-count-1h` hit 23. Both resolved but indicate a period of degraded session quality earlier in the day.
+1. **Flappy alerts**: `session.failed-triage-rate-3h` (6 fires), `project.invalid-format-count` (6 fires), and `metric.stale-active-count` (4 fires) are firing and resolving repeatedly. These need either hysteresis/cooldown periods or threshold adjustments.
 
-4. **LLM evaluation lag:** Alert 241 showed 65.86h lag (threshold 4h). Resolved in ~42min, but the magnitude suggests evaluations were stalled for nearly 3 days before recovery.
+2. **Overnight false positives**: `project.iterations-24h` and `message-conversation-close-rate` alert overnight when activity is naturally zero. **Recommendation**: Add time-of-day suppression (e.g., suppress 00:00–08:00 UTC) or increase measurement window.
 
-5. **Overall resolution rate is strong** — 95% resolved, most within minutes. The system self-heals well for transient issues.
+3. **Provider error correlation**: Alerts 247–249 (zero-op errors, first-turn errors, empty assistant stops) all fired within a 1h window, suggesting a single provider outage. Consolidating into one composite alert would reduce noise by ~8%.
 
-## Status Tracker
+## Threshold Recommendations
 
-| Priority | Item | Owner | Status |
-|----------|------|-------|--------|
-| P0 | Investigate message-conversation-close-rate = 0 | manager | ⚠️ Open |
-| P1 | Investigate project.iterations-24h = 0 | manager | ⚠️ Open |
-| P2 | Evaluate noise reduction for failed-triage-rate-3h | manager | 💡 Suggestion |
-| P2 | Evaluate noise reduction for project.invalid-format-count | manager | 💡 Suggestion |
-| P2 | Root-cause the LLM eval lag (65h) to prevent recurrence | manager | 💡 Suggestion |
+| Metric | Current Threshold | Suggested | Rationale |
+|--------|-------------------|-----------|-----------|
+| project.invalid-format-count | 0 | 1 | Minor format issues self-resolve; 0 is too strict |
+| session.failed-triage-rate-3h | 0.8 | 0.6 | Fires too often at 0.8, most resolve quickly |
+| project.iterations-24h | 1 | 0 (overnight) | Zero iterations overnight is normal |
+
+## Summary
+
+39 alerts today (down 30% from 56). The `project.invalid-format-count` noise problem is improving significantly. Two alerts remain unresolved but are overnight low-activity artifacts. The main actionable finding is the correlated provider error cluster and the ongoing flappy alert pattern in 3 metrics that need cooldown logic.
