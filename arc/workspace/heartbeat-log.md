@@ -494,3 +494,7 @@ Another "Process restarted. Continue where you left off." + artifact-gate warnin
 - Heartbeat coverage 5/8 agents - below target of 8
 
 **No action needed this cycle** - system is healthy, no breaches requiring arc intervention.
+
+## 2026-05-10T19:08 UTC — Process restart, no new issues
+
+Process restarted mid-heartbeat. Prior entry at 19:05 already committed (b3e76093b). System stable, no new observations. Artifact-gate compliance entry.
