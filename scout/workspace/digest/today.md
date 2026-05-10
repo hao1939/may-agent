@@ -138,3 +138,22 @@
 **Summary**: The shift towards ephemeral micro-sandboxes (KE-1032) perfectly complements the need for decoupled evaluation layers (KE-1030). Sandboxes can serve as the execution environment for procedural evaluation (linters, schema checks), separating the noise of execution friction from the substantive value of the agent's logic.
 **Implication**: May-Agent could leverage sandboxes not just for safe tool execution, but as isolated environments to run procedural checks, allowing the core LLM evaluator to focus purely on the substantive outcome of the task.
 **KB**: KE-1033 (new)
+### Superpowers (obra)
+**Source**: https://github.com/obra/superpowers
+**Summary**: An agentic skills framework and software development methodology. It currently has ~184k stars on GitHub.
+**Implication**: Shows strong interest in structured frameworks for agent capabilities and methodology.
+
+### Everything-Claude-Code (affaan-m)
+**Source**: https://github.com/affaan-m/everything-claude-code
+**Summary**: An agent harness performance optimization system including skills, instincts, memory, security, and research-first development for various coding tools.
+**Implication**: Performance optimization and "instincts" (heuristics) are critical focus areas for code agents.
+
+### Opencode (anomalyco)
+**Source**: https://github.com/anomalyco/opencode
+**Summary**: An open source coding agent with over 157k stars.
+**Implication**: Open source alternatives to proprietary coding agents are gaining significant traction.
+
+### Langflow
+**Source**: https://github.com/langflow-ai/langflow
+**Summary**: A powerful tool for building and deploying AI-powered agents and workflows.
+**Implication**: Visual or code-based workflow builders for agents remain highly popular.
