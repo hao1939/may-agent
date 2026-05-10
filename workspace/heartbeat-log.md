@@ -223,3 +223,69 @@
    if still stuck, escalate to coach or tech-lead.
 4. Check `finish-blocked-hygiene-reduction` (dev, blocked iter 6) — if still
    blocked with no movement, surface the blocker.
+
+## Entry — heartbeat (artifact-gate trigger)
+
+Read-only check. Prior heartbeat's follow-ups re-evaluated:
+
+### Project state vs prior heartbeat
+- **eval-llm-lane-restoration** (dev, P0): still `pending-review` iter 1, journal
+  unchanged since 2026-05-09 05:35Z. Runtime DB confirms the lane is healthy:
+  `LLM evaluation lag (hours since last non-heuristic eval)` = 0.02h (target 1,
+  threshold 4). The unresolved item is iteration-2 source-of-truth hardening
+  (handler/cron file location), not the runtime metric. Reviewer/owner ping is
+  due — pending-review has now been static ~30h.
+- **evaluator-low-quality-rate-calibration** (evaluator, P1): journal still ends
+  with the governance-blocker CONTEXT_UPDATE. No movement; needs an owner ruling
+  on whether to register `evaluator.substantive-low-quality-rate-24h` or pivot
+  to heuristic v2. This is a decision blocker, not a worker blocker.
+- **finish-blocked-hygiene-reduction** (dev, P1): still `blocked` iter 6 — waits
+  on safe runtime DB writer to register the two split metrics. SQL packet exists
+  in `outputs/iteration-6-split-metric-registration.md`. Same posture as last
+  heartbeat.
+- **closed-loop-reliability** (may, P1): waiting iter 3 — DB shows iter 3 (prev
+  heartbeat said iter 3 also; consistent).
+- **daily-alert-review** (may, P1): DB now shows iter 3 (prev heartbeat said iter
+  4 paused). Local `project.md` modified — possibly rewound; worth a glance next
+  pass.
+- Others (`proof-of-life-dashboard`, `ruflo-learning-loop`,
+  `scout-second-brain-learning`) unchanged.
+
+### Scout silent-error pattern — partial root-cause
+Inspected `s_1778354511867_196` (scout, status=`error`, opCount=0, duration
+1938ms, source `workflow:scout-heartbeat`, error column NULL). Across the last
+24h there are 21 error sessions; the silent (NULL-error) pattern clusters in two
+shapes:
+  1. **opCount=0, duration < 2s** sessions — no LLM call ever happened. Likely
+     pre-LLM workflow abort (config/prompt-build error or guard rejection)
+     before the session got to record an error. Examples: scout heartbeat
+     `_196`, `_176`; evaluator-aftermath `_719`, `_17`, `_16`, `_0`; may
+     `_15`, `_10`; arc heartbeat `_419`.
+  2. **opCount>0** scout-explore/heartbeat sessions that ran 18–63s and still
+     ended `error` with NULL error column — these are the genuine
+     fetch/operational failures already captured by the existing 429/400 FYI
+     messages in scout's inbox.
+The first cluster is the more interesting signal: the harness records `status=
+error` without ever populating `error`. That's a runtime-observability gap, not
+a model behavior. Logged as a likely next-investigation candidate; not
+escalating yet because (a) it's read-only diagnostic, (b) the pattern crosses
+multiple agents, suggesting a shared workflow harness path.
+
+### Actions taken this heartbeat
+- Read-only DB + journal review. No nudges, no edits to project files.
+- Recorded the silent-error sub-pattern (opCount=0, sub-2s) above so the next
+  heartbeat can decide whether to file a tracked request against the workflow
+  harness.
+
+### Next heartbeat should
+1. **Ping reviewer of `eval-llm-lane-restoration`** if pending-review still
+   static — it's been ~30h. The runtime metric is fine; only the source-of-truth
+   audit is open.
+2. Decide whether the opCount=0 silent-error cluster warrants a tracked request
+   against the workflow harness (suggested owner: dev or tech-lead). If yes,
+   file with the example session IDs already enumerated above.
+3. Confirm whether `daily-alert-review` iteration regressed from 4→3 or whether
+   the prior heartbeat misread; check `project.md` diff.
+4. Re-check `finish-blocked-hygiene-reduction` and
+   `evaluator-low-quality-rate-calibration` — both still need owner-side action;
+   no further nudge unless still static next pass.
