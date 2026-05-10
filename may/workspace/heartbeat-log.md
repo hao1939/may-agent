@@ -1,5 +1,27 @@
 # Heartbeat Log — 2026-05-10
 
+## Entry 15:30Z (artifact-gate)
+- **Trigger**: Artifact gate fired — prior heartbeat produced no writes.
+- **Last steward action**: 15:30 UTC audit (s_1778426731747_1091) sent P1 to
+  scout re `sourced-artifacts-24h` source_command missing workspace `.md` files.
+  Three P3 alerts triaged, no escalation. Logged in `steward-audit-log.md`.
+- **Open alerts (last 6h, unresolved)**:
+  1. `scout.sourced-artifacts-24h` = 0 (P1 to scout already in flight)
+  2. `project.iterations-24h` = 0 (overnight low-activity artifact; recurring)
+- **Recently resolved**: `capability.message-conversation-close-rate` (auto),
+  `session.failed-triage-rate-3h` (transient).
+- **daily-alert-review**: status=waiting, iter=3 (regressed from earlier
+  iter=4 paused state — observed in `git diff shared/projects/daily-alert-
+  review/project.md`). Worker rewrote stop_reason and dropped
+  `resume_after`. Iterations 1–3 in journal all produced reviews; reviewer
+  flipped between CONTINUE and WAITING. **Concern**: no `resume_after`
+  guard means project will be re-picked sooner than next daily cycle. Not
+  fixing this heartbeat (worker just touched it; let it settle), but flagging
+  for next pass — if it iterates again before 2026-05-11 00:00 UTC, restore
+  the `resume_after` gate.
+- **No P0 breaches.** No nudges sent this heartbeat (steward already nudged
+  scout 0:00Z this hour).
+
 ## Entry 14:56Z
 - **System**: 95% success rate (41/43), 6 active sessions
 - **Red metrics**: project.iterations-24h=0, scout-good-rate=0.635 (⚠️), scout-friction=0.554 (⚠️), scout-sourced-artifacts=0
