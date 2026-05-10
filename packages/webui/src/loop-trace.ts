@@ -8,6 +8,12 @@ export type LoopTraceTarget =
   | { sessionId: string };
 
 type Row = Record<string, unknown>;
+const FAILOVER_EVENT_TYPES = new Set([
+  "workflow.resume_failed",
+  "workflow.resume_skipped",
+  "session.resume_failed",
+  "message.delivery_failed",
+]);
 
 export interface LoopTrace {
   target: { kind: "event" | "alert" | "metric" | "workflow" | "session"; id: string | number };
@@ -245,7 +251,11 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
       )
     : [];
 
-  const failoverEvents = safeAll(
+  const failoverEvents: Row[] = [];
+  if (typeof seed.origin?.event_type === "string" && FAILOVER_EVENT_TYPES.has(seed.origin.event_type)) {
+    failoverEvents.push(seed.origin);
+  }
+  failoverEvents.push(...safeAll(
     db,
     `SELECT * FROM events
      WHERE event_type IN ('workflow.resume_failed', 'workflow.resume_skipped', 'session.resume_failed', 'message.delivery_failed')
@@ -261,7 +271,8 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     seed.sessionId,
     metricId,
     metricId,
-  );
+  ));
+  const uniqueFailoverEvents = uniqBy(failoverEvents, "id");
 
   const metricSnapshots = metricId
     ? safeAll(db, "SELECT * FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 20", metricId)
@@ -279,14 +290,14 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     sessions: uniqueSessions,
     guardSignals,
     metricEvents,
-    failoverEvents,
+    failoverEvents: uniqueFailoverEvents,
     metricSnapshots,
     evidence: {
       workflowCount: uniqueWorkflows.length,
       sessionCount: uniqueSessions.length,
       guardSignalCount: guardSignals.length,
       metricEventCount: metricEvents.length,
-      failoverCount: failoverEvents.length,
+      failoverCount: uniqueFailoverEvents.length,
     },
   };
 }

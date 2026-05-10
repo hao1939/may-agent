@@ -3839,7 +3839,22 @@ function renderLoopTrace(trace) {
     html += `</div>`;
   }
   if (trace.failoverEvents?.length) {
-    html += `<div style="font-size:12px;margin-top:8px;color:var(--red)"><b>Failover</b> ${trace.failoverEvents.map(e => esc(e.event_type)).join(', ')}</div>`;
+    html += `<div style="font-size:12px;margin-top:8px"><b style="color:var(--red)">Failover</b></div>`;
+    html += `<div style="display:grid;gap:4px;margin-top:4px">`;
+    for (const ev of trace.failoverEvents.slice(0, 5)) {
+      let data = {};
+      try { data = ev.data ? JSON.parse(ev.data) : {}; } catch {}
+      const owner = ev.owner || data.owner || trace.owner || '—';
+      const category = data.category || data.action || ev.event_type || 'failure';
+      const recoverable = data.recoverable === false ? 'not recoverable' : data.recoverable === true ? 'recoverable' : '';
+      const reason = data.reason || data.message || ev.event_type || '';
+      html += `<div style="font-size:12px;color:var(--fg2);border-left:2px solid var(--red);padding-left:8px">`;
+      html += `<span style="color:var(--fg)">${esc(ev.event_type || '')}</span>`;
+      html += ` · owner ${esc(owner)} · ${esc(category)}${recoverable ? ` · ${esc(recoverable)}` : ''}`;
+      if (reason) html += `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(reason)}</div>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
   }
   html += `</div>`;
   return html;
