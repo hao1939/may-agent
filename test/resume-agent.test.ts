@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, mkdirSync, readFileSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../src/lib/manager.js";
+import { EventBus, type AgentEvent } from "../src/app/event-bus.js";
 import {
   ensureSessionDir,
   appendSessionMessage,
@@ -141,6 +142,9 @@ describe("SubagentManager.resumeStaleSessions()", () => {
   });
 
   it("interrupts sessions whose agent is not registered", () => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
     writeRegistryState(persistDir, {
       "session-x": {
         agent: "unknown-agent",
@@ -151,7 +155,7 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     });
     setupSession(persistDir, "session-x");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir, bus, infraRetryMax: 0 });
     // Do NOT register unknown-agent
 
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -163,6 +167,33 @@ describe("SubagentManager.resumeStaleSessions()", () => {
 
     const meta = readSessionMeta(persistDir, "session-x");
     expect(meta!.status).toBe("interrupted");
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "session.resume_failed",
+      source: "manager",
+      owner: "unknown-agent",
+      sessionId: "session-x",
+      agent: "unknown-agent",
+      category: "agent_not_registered",
+      recoverable: false,
+    }));
+  });
+
+  it("emits session.resume_failed when cold resume cannot find the session", () => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const manager = new SubagentManager({ persistDir, bus, infraRetryMax: 0 });
+
+    expect(() => manager.resumeSession("missing-session", "continue")).toThrow(/not found/);
+
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "session.resume_failed",
+      source: "manager",
+      owner: "may",
+      sessionId: "missing-session",
+      category: "session_not_found",
+      recoverable: false,
+    }));
   });
 
   it("releases stale heartbeat dispatch dedup leases on restart", () => {

@@ -266,6 +266,28 @@ export class SubagentManager {
     this._maxCallDepth = opts.maxCallDepth ?? 8;
   }
 
+  private emitSessionResumeFailed(
+    sessionId: string,
+    meta: { agent?: string; workflowRunId?: string; projectId?: string } | null | undefined,
+    reason: string,
+    category: string,
+    recoverable: boolean,
+  ): void {
+    this.bus?.emit({
+      type: "session.resume_failed",
+      source: "manager",
+      owner: meta?.agent ?? "may",
+      sessionId,
+      agent: meta?.agent,
+      workflowRunId: meta?.workflowRunId,
+      projectId: meta?.projectId,
+      reason,
+      category,
+      recoverable,
+      timestamp: Date.now(),
+    });
+  }
+
   // ── Registration ──
 
   register(def: SubagentDefinition): void {
@@ -626,26 +648,36 @@ export class SubagentManager {
         const error = "Process restarted (agent not registered)";
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
+        this.emitSessionResumeFailed(sessionId, persisted, error, "agent_not_registered", false);
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
         continue;
       }
 
       const resumeMessages = this.buildResumeMessages(sessionId);
-      this.run(persisted.agent, persisted.task, {
-        sessionId,
-        parentSessionId: persisted.parentSessionId,
-        workflowRunId: persisted.workflowRunId,
-        stepLabel: persisted.stepLabel,
-        source: persisted.source ?? "resumeStaleSessions",
-        kind: persisted.kind ?? "job",
-        autoClose: persisted.autoClose ?? "immediate",
-        requestId: persisted.requestId,
-        orderId: persisted.orderId,
-        startedAt: persisted.startedAt,
-        resumeMessages,
-      });
-      try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
-      resumed.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "running" }));
+      try {
+        this.run(persisted.agent, persisted.task, {
+          sessionId,
+          parentSessionId: persisted.parentSessionId,
+          workflowRunId: persisted.workflowRunId,
+          stepLabel: persisted.stepLabel,
+          source: persisted.source ?? "resumeStaleSessions",
+          kind: persisted.kind ?? "job",
+          autoClose: persisted.autoClose ?? "immediate",
+          requestId: persisted.requestId,
+          orderId: persisted.orderId,
+          startedAt: persisted.startedAt,
+          resumeMessages,
+        });
+        try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
+        resumed.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "running" }));
+      } catch (err) {
+        const error = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
+        this._registry.updateSessionStatus(sessionId, "interrupted", error);
+        updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
+        this.emitSessionResumeFailed(sessionId, persisted, error, "resume_run_failed", true);
+        try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
+        interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
+      }
     }
 
     this.cleanupStaleWorkflowRuns();
@@ -672,12 +704,20 @@ export class SubagentManager {
    */
   resumeSession(sessionId: string, message: string, opts?: { source?: string }): string {
     if (this._sessions.has(sessionId)) {
-      throw new Error(`Session "${sessionId}" is already active — use steer/input instead`);
+      const reason = `Session "${sessionId}" is already active — use steer/input instead`;
+      this.emitSessionResumeFailed(sessionId, this._registry.getSession(sessionId), reason, "already_active", true);
+      throw new Error(reason);
     }
     const meta = this._registry.getSession(sessionId);
-    if (!meta) throw new Error(`Session "${sessionId}" not found`);
+    if (!meta) {
+      const reason = `Session "${sessionId}" not found`;
+      this.emitSessionResumeFailed(sessionId, null, reason, "session_not_found", false);
+      throw new Error(reason);
+    }
     if (!this.agents.has(meta.agent)) {
-      throw new Error(`Agent "${meta.agent}" is not registered (cannot resume session ${sessionId})`);
+      const reason = `Agent "${meta.agent}" is not registered (cannot resume session ${sessionId})`;
+      this.emitSessionResumeFailed(sessionId, meta, reason, "agent_not_registered", false);
+      throw new Error(reason);
     }
 
     // Promote the JSONL/output dir back to live before reading the prior
@@ -720,19 +760,25 @@ export class SubagentManager {
       db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
     } catch { /* best-effort — manager.run will re-save the registry row */ }
 
-    this.run(meta.agent, meta.task, {
-      sessionId,
-      parentSessionId: meta.parentSessionId,
-      workflowRunId: meta.workflowRunId,
-      stepLabel: meta.stepLabel,
-      source: opts?.source ?? "resume",
-      kind: meta.kind ?? "job",
-      autoClose: meta.autoClose ?? "immediate",
-      requestId: meta.requestId,
-      orderId: meta.orderId,
-      startedAt: meta.startedAt,
-      resumeMessages,
-    });
+    try {
+      this.run(meta.agent, meta.task, {
+        sessionId,
+        parentSessionId: meta.parentSessionId,
+        workflowRunId: meta.workflowRunId,
+        stepLabel: meta.stepLabel,
+        source: opts?.source ?? "resume",
+        kind: meta.kind ?? "job",
+        autoClose: meta.autoClose ?? "immediate",
+        requestId: meta.requestId,
+        orderId: meta.orderId,
+        startedAt: meta.startedAt,
+        resumeMessages,
+      });
+    } catch (err) {
+      const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
+      this.emitSessionResumeFailed(sessionId, meta, reason, "resume_run_failed", true);
+      throw err;
+    }
     return sessionId;
   }
 

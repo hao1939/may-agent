@@ -142,6 +142,19 @@ export type SystemEvent =
       injectedAgent?: string;
     }
   | {
+      type: "session.resume_failed";
+      source: "manager";
+      owner: string;
+      sessionId: string;
+      agent?: string;
+      workflowRunId?: string;
+      projectId?: string;
+      reason: string;
+      category: string;
+      recoverable: boolean;
+      timestamp: number;
+    }
+  | {
       type: "workflow";
       agent: string;
       workflow: string;
