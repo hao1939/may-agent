@@ -143,14 +143,14 @@ Map these operations to the shared view:
 - [x] `runWorkflow` result mapping
 - [x] persisted session lookup
 - [x] persisted workflow lookup
-- [ ] `resumeSession` diagnostic result mapping
-- [ ] `resumeWorkflow` diagnostic result mapping
+- [x] `resumeSession` diagnostic result mapping
+- [x] `resumeWorkflow` diagnostic result mapping
 
 Validation:
 
 - [x] Unit tests for session result mapping.
 - [x] Unit tests for workflow result mapping.
-- [ ] UI/API can render session/workflow result cards with the same fields.
+- [x] UI/API can render session/workflow result cards with the same fields.
 
 ## Phase 5: Resume Diagnostics And Failover
 
@@ -172,7 +172,7 @@ Validation:
 - [x] Missing workflow definition test.
 - [x] Partial workflow state replay test.
 - [x] Terminal workflow no-op resume test.
-- [ ] Terminal session no-op resume test.
+- [x] Terminal session no-op resume test.
 - [ ] Container restart scenario verifies stale work is visible and recoverable.
 
 ## Phase 6: Handler Audit
