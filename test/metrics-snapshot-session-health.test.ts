@@ -233,8 +233,8 @@ describe("metrics-snapshot session health metrics", () => {
     const metric = db.prepare("SELECT type, target, threshold, config FROM metrics WHERE id = ?").get("project.iterations-24h") as any;
     expect(metric).toMatchObject({
       type: "gauge",
-      target: 10,
-      threshold: 1,
+      target: 0,
+      threshold: 0,
       config: null,
     });
   });
@@ -381,7 +381,7 @@ describe("metrics-snapshot session health metrics", () => {
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 20, priority: "P2" });
     expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 20, priority: "P2" });
-    expect(metric("guard.blocked-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
   });
 
