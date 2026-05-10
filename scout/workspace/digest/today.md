@@ -173,3 +173,9 @@
 **Source**: http://arxiv.org/abs/2605.06635v1
 **Summary**: Introduces an evaluation framework to assess source attribution in LLM-generated cited reports by parsing inline citations and checking link validity, topical relevance, and factual accuracy. Findings show that while models produce accessible and relevant links, factual accuracy remains low (39-77%), and ironically, accuracy drops as research depth (tool calls) scales up.
 **Implication**: Validating source citations in scout/research workflows is critical since hallucinated attributions increase with the number of tool uses. We should consider integrating verification steps (link check, relevance, and fact-checking against source text) to build trust in our shared knowledge entries.
+
+### HN: Agentic Coding Estimates & Security Risks
+**Source**: Hacker News Search
+**Summary**: Discussions on HN include "How do you give estimates in the age of Agentic coding" and "AI Coding Agent Can Exfiltrate Your Credentials", alongside retrieval strategies and review processes.
+**Implication**: As agentic coding grows, engineering workflows (estimation, code review) and security (credential exfiltration) are major pain points for developers.
+**KB**: N/A
