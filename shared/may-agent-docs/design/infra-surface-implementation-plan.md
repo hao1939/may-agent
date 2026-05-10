@@ -1,6 +1,6 @@
 # Infra Surface Implementation Plan
 
-**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, and Phase 5 first slice implemented.
+**Status**: Phase 1, Phase 2 first slice, Phase 3 guard observability, Phase 4 first slice, Phase 5 first slice, and Phase 7 first slice implemented.
 
 This plan turns [infra-surface.md](infra-surface.md) into small implementation
 slices. The goal is not a broad rewrite. Each phase should improve the system
@@ -204,6 +204,8 @@ Validation:
 
 ## Phase 7: Loop Visibility
 
+Status: first API/UI slice implemented via `GET /api/loop-trace`.
+
 Problem: we need to know whether the system closes the loop without manual DB
 digging.
 
@@ -215,21 +217,21 @@ event -> handler -> workflow -> session(s) -> evidence -> metrics/events
 
 Minimum useful UI/API fields:
 
-- originating event id/type,
-- handler name/status,
-- workflow run id/status,
-- child sessions,
-- owner,
-- project id,
-- guard signals,
-- metrics changed,
-- failure/failover path if any.
+- [x] originating event id/type,
+- [x] handler name/status,
+- [x] workflow run id/status,
+- [x] child sessions,
+- [x] owner,
+- [x] project id,
+- [x] guard signals,
+- [x] metrics changed,
+- [x] failure/failover path if any.
 
 Validation:
 
-- Pick one real event and show its full loop trace.
-- Pick one failure and show owner/fallback/escalation state.
-- Operator can answer "is the loop moving?" from the UI/API without ad hoc SQL.
+- [ ] Pick one real event and show its full loop trace.
+- [ ] Pick one failure and show owner/fallback/escalation state.
+- [x] Operator can answer "is the loop moving?" from the UI/API without ad hoc SQL.
 
 ## Recommended First Slice
 
