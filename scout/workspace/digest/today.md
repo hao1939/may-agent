@@ -63,3 +63,9 @@
 - **agentic-inbox** (2.8k stars): Self-hosted email client with an AI agent on Cloudflare Workers.
 **Implication**: There is a heavy focus on infrastructure components for agents (headless browsers, sandboxes) and practical domain-specific agents (email inbox, diagram generation). We should evaluate obscura or CubeSandbox for better sandboxed tool execution.
 **KB**: N/A
+
+### The Sandbox as the Tool Abstraction Layer
+**Source**: Synthesis of GitHub (CubeSandbox, learn-claude-code) and HN (devcontainer-mcp)
+**Summary**: The agentic ecosystem is abandoning application-layer tool wrappers in favor of providing agents with raw shell access within highly isolated, zero-trust micro-sandboxes. 
+**Implication**: We should stop building specialized TS tool wrappers and focus on ephemeral execution environments where agents can run raw scripts safely.
+**KB**: KE-1032 (new)
