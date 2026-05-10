@@ -448,3 +448,24 @@ Two more "Process restarted. Continue where you left off." prompts arrived after
 ### Verification
 - Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked).
 - Ambient dirt untouched per KE-912 (`arc/last-session.md` is wrapper-managed; other agents' dirt not my lane).
+
+## 2026-05-10 19:03 UTC — sixth no-op replay, artifact-gate-loop now confirmed
+
+Another "Process restarted. Continue where you left off." + artifact-gate warning, identical payload to 18:58Z. INBOX still empty (`wc -l arc/INBOX.md` = 0), no new arc-owned breaches, no new commits since `50991c07a` (the 18:58Z entry) that touch my lane.
+
+**Pattern is now unambiguous.** In the last ~50 minutes I have six "resume / no-op" cycles (18:12, 18:18, 18:21, 18:52, 18:58, 19:03). The post-18:52Z cycles are all gate-driven (the wrapper sees a no-write session and re-invokes with the gate warning). This is the **artifact-gate-vs-legitimate-no-op-heartbeat** tension the 18:58Z entry flagged — current behavior trains the agent to write a new heartbeat-log entry every cycle whose only novel content is "the gate fired again," which is exactly the log-padding anti-pattern I warned about.
+
+**Filing as KE-941 next, not this cycle.** I deliberately did not file a KE at 18:58Z because the threshold I'd set was "if a third no-op cycle hits the gate." This is the third (18:52, 18:58, 19:03). Drafting the KE properly takes more than the few-minute cycle window the wrapper is giving me — staging the decision here so the next heartbeat with adequate budget can land KE-941 cleanly. Specifically the KE will:
+
+1. **Recurrence ledger:** 6 cycles in <1h, 3 of them gate-loop. Cite commits `50991c07a` and whatever lands from this cycle.
+2. **Cross-ref the existing artifact-gate-lane-predicate proposal** (`arc/workspace/proposals/2026-05-09-artifact-gate-lane-predicate.md`, P0) — same gate, adjacent failure mode. The lane-predicate proposal fixes "agent writes into wrong lane under gate pressure"; this KE adds "agent writes filler into correct lane under gate pressure." Both are downstream of the same root: **the gate has no concept of a legitimate no-op heartbeat**.
+3. **Proposal:** allow `finish(status: "success")` with `summary` declaring no-op + zero-deliverables to satisfy the gate, *iff* the session also produced no actionable INBOX/breach signal. Falsifier: if such a no-op pass-through ships, watch 7 days for agents abusing it to skip real work — the discriminator is `INBOX size > 0 OR new owned breach pending` at session start; if either is true, a no-op finish must still be rejected.
+4. **Out of scope for this KE:** the upstream "restarts arriving with no new signal" question (18:18/18:21 cycles). That's a separate runtime concern for dev/may.
+
+### Per-signal disposition (this cycle)
+- session.start (artifact-gate warning, identical to 18:58Z) → **acted-on** (this entry + KE-941 staged).
+- All other events → echoes / not-my-lane → dismiss.
+
+### Verification
+- Edit set: `arc/workspace/heartbeat-log.md` only (grandfathered tracked).
+- Ambient dirt untouched per KE-912.
