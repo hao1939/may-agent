@@ -163,3 +163,13 @@
 **Summary**: Emerging agent harnesses are introducing "instincts"—fast, heuristic subroutines (like auto-grepping before reading) that optimize common operations before invoking heavy LLM reasoning.
 **Implication**: We should formally define "instincts" in our workflows to reduce LLM latency and token usage for predictable procedural steps, aligning with our need to separate fast procedural checks from slow substantive evaluation.
 **KB**: KE-1034 (new)
+
+### StraTA: Incentivizing Agentic Reinforcement Learning with Strategic Trajectory Abstraction
+**Source**: http://arxiv.org/abs/2605.06642v1
+**Summary**: Proposes a framework called StraTA that introduces an explicit trajectory-level strategy into agentic RL (Reinforcement Learning). StraTA conditions actions on a compact strategy and trains generation and execution jointly, improving sample efficiency and performance for long-horizon decision making over purely reactive methods.
+**Implication**: For may-agent's deep research or long-running workflows, incorporating an explicit, upfront trajectory planning phase (and judging it) rather than purely reactive chaining could yield better success rates and efficiency.
+
+### Cited but Not Verified: Parsing and Evaluating Source Attribution in LLM Deep Research Agents
+**Source**: http://arxiv.org/abs/2605.06635v1
+**Summary**: Introduces an evaluation framework to assess source attribution in LLM-generated cited reports by parsing inline citations and checking link validity, topical relevance, and factual accuracy. Findings show that while models produce accessible and relevant links, factual accuracy remains low (39-77%), and ironically, accuracy drops as research depth (tool calls) scales up.
+**Implication**: Validating source citations in scout/research workflows is critical since hallucinated attributions increase with the number of tool uses. We should consider integrating verification steps (link check, relevance, and fact-checking against source text) to build trust in our shared knowledge entries.
