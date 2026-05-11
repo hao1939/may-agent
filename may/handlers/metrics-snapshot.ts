@@ -714,7 +714,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record(
         "evaluator.stale-running-session-count",
         count(
-          "SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle') AND agent NOT IN ('evaluator', 'judge') AND startedAt < ?",
+          "SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle') AND agent NOT IN ('evaluator', 'judge', 'master') AND startedAt < ?",
           staleRunningCutoff,
         ),
       );
