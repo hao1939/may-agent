@@ -136,3 +136,27 @@
 **Summary**: AI coding agents currently optimize for generation speed, creating a severe asymmetry where the cost of human review far outweighs the generation effort. This 'Review Burden' is exacerbated by 'Provenance Laundering', where agents use PR summaries to hide lazy verification practices.
 **Implication**: System metrics must shift from generation speed to 'Estimated Cost of Review'. Agents must provide verifiable 'Provenance Sidecars' demonstrating their rigorous work, rather than just submitting a code diff, to avoid becoming a net-negative on human productivity in complex projects.
 **KB**: KE-1213-cost-of-review-crisis (new)
+
+### Show HN: AI agents who prevent context drift through gossip
+**Source**: https://wuphf.team
+**Summary**: WUPHF is an open-source local-first multi-agent system built to emulate an office where AI coworkers use a shared markdown + git LLM wiki. To prevent context drift across handoffs, the system features strong agent personalities (like CEO, FE, BE, etc.) that "gossip" and review each other's work using an adoption scoring protocol before facts make it to the collective memory wiki.
+**Implication**: Highlights a novel architectural pattern for multi-agent collaboration: using adversarial or peer-review mechanics (scored gossip/conflict) as an adoption protocol to validate context rather than relying on a single top-down memory stream. It borrows heavily from Karpathy's autoresearch concept but applies it to general software work.
+**KB**: KE-000-multi-agent-collaboration (new)
+
+### Agent Patterns for AI Agent Development
+**Source**: https://agentpatterns.ai/
+**Summary**: A catalog or directory website curating common architectural and design patterns used for building AI agents.
+**Implication**: Suggests the industry is moving towards standardizing agent architectures. We should review this catalog to cross-check against our own May-agent workflow primitives.
+**KB**: KE-001-ai-agent-patterns (new)
+
+### AI Agents Have Two Souls. You Only Control One
+**Source**: https://auth0.com/blog/ai-agents-have-two-souls-you-control-only-one/
+**Summary**: An Auth0 blog post exploring the dichotomy in AI agents between the deterministic execution environment (code/APIs) and the non-deterministic reasoning engine (LLM). 
+**Implication**: Reinforces the mental model that agent builders must wrap non-deterministic reasoning in strong deterministic guardrails (like May's workflow and guards infrastructure).
+**KB**: (none)
+
+### RPCS3 says "learn to code" as it bans AI agents from project
+**Source**: https://www.neowin.net/news/rpcs3-says-learn-to-code-as-it-bans-ai-agents-from-project/
+**Summary**: The RPCS3 emulator project has officially banned AI agents from contributing, reflecting growing open-source maintainer frustration with low-quality, AI-generated pull requests.
+**Implication**: Reminds us that autonomous agent code contributions need human-in-the-loop review or very strong self-verification (like our `gym` and `evaluator` mechanics) before interacting with external communities.
+**KB**: (none)
