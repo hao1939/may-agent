@@ -1024,6 +1024,8 @@ the focused module that owns the concern when practical.
 - [x] `src/lib/db/evaluations.ts`: evaluation query helpers.
 - [x] `src/lib/db/sessions.ts`: session mirror upsert/update helpers.
 - [x] `src/lib/db/workflows.ts`: workflow run persistence/query helpers.
+- [x] `src/lib/db/notifications.ts`: Telegram notification context store/read
+  helpers.
 - [x] `src/lib/requests.ts`: 26-line compatibility facade preserving existing
   public imports.
 
@@ -1032,6 +1034,7 @@ Root commits:
 - `83a7ce12` extract database schema module.
 - `d606bb1a` extract database connection module.
 - `aa4212ea` split database helper modules.
+- `65debc74` extract notification message DB helpers.
 
 Validation:
 
@@ -1065,6 +1068,7 @@ Current state:
   reads, event emission, and acknowledgements.
 - Root commit: `bb98d54b` extract Telegram reply router helpers.
 - Root commit: `77d69992` extract Telegram session reply context.
+- Root commit: `65debc74` move notification context SQL behind DB helpers.
 
 Validation:
 
