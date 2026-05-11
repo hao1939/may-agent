@@ -7,7 +7,6 @@ import {
   attachDaemonEventSubscribers,
   attachEventPersistence,
   createDaemonLifecycle,
-  formatDurationMs,
   prepareDaemonAgents,
   runDaemonKeepalive,
   runInteractiveLoop,
@@ -18,10 +17,8 @@ import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import { createRuntimeApiGate } from "./api-gate-runtime.js";
 import type { ModelRegistry } from "./model-registry.js";
-import { runMessageMode, runStatusMode } from "./modes/command.js";
-import { runOneshotMode } from "./modes/oneshot.js";
-import { runWorkflowMode } from "./modes/run-workflow.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
+import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachTelegramBot } from "./ui/telegram.js";
 
@@ -46,15 +43,8 @@ export async function runAppRuntime(opts: {
     socketEnabled: SOCKET_ENABLED,
     webEnabled: WEB_ENABLED,
     chatMode: CHAT_MODE,
-    oneshotMode: ONESHOT_MODE,
-    statusMode: STATUS_MODE,
-    messageMode: MESSAGE_MODE,
-    runWorkflow: RUN_WORKFLOW,
-    dryRun: DRY_RUN,
     initialTask: INITIAL_TASK,
     interfaceAgent,
-    oneshotTimeoutMinutes: ONESHOT_TIMEOUT_MINUTES,
-    notify: NOTIFY,
     envSessionId: ENV_SESSION_ID,
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
@@ -163,55 +153,16 @@ export async function runAppRuntime(opts: {
     }
   }
 
-  if (STATUS_MODE) {
-    await runStatusMode({ persistDir: opts.persistDir, notify: NOTIFY });
-    process.exit(0);
-  }
-
-  if (MESSAGE_MODE) {
-    process.exit(await runMessageMode({ argv: process.argv, persistDir: opts.persistDir, agentsRoot: opts.agentsRoot }));
-  }
-
-  if (RUN_WORKFLOW) {
-    try {
-      await runWorkflowMode({
-        mode: RUN_WORKFLOW,
-        dryRun: DRY_RUN,
-        agentsRoot: opts.agentsRoot,
-        projectRoot: opts.projectRoot,
-        persistDir: opts.persistDir,
-        bus,
-        manager,
-        models: opts.models,
-        apiKey: opts.litellmApiKey,
-      });
-      process.exit(0);
-    } catch (err) {
-      console.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
-  }
-
-  if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
-    console.error("Error: need --chat, --task, --oneshot, --status, --message, --emit, --web, --socket, --telegram, or --cron.");
-    process.exit(1);
-  }
-
-  if (ONESHOT_MODE) {
-    try {
-      const exitCode = await runOneshotMode({
-        task: INITIAL_TASK,
-        agentName: interfaceAgent,
-        manager,
-        timeoutMinutes: ONESHOT_TIMEOUT_MINUTES,
-        formatDurationMs,
-      });
-      process.exit(exitCode);
-    } catch (err) {
-      console.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
-  }
+  await runRequestedExitMode({
+    appArgs: opts.appArgs,
+    agentsRoot: opts.agentsRoot,
+    projectRoot: opts.projectRoot,
+    persistDir: opts.persistDir,
+    bus,
+    manager,
+    models: opts.models,
+    litellmApiKey: opts.litellmApiKey,
+  });
 
   ({ taskSessionId, chatSession } = await startRequestedSession({
     bus,
