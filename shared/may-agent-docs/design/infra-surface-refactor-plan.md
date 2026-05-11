@@ -968,20 +968,24 @@ Current proof:
   - `8175e024` split daemon event subscribers.
   - `58bc3a46` split daemon agent startup.
   - `57203cc9` split daemon interactive and keepalive loops.
+  - `f7b361e2` split task/chat session startup and fixed handler hot-reload
+    cache busting.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
 - `bun test test/daemon.test.ts` passes.
+- `bun test test/daemon.test.ts test/oneshot-mode.test.ts test/run-workflow-mode.test.ts test/emit-mode.test.ts test/web-mode.test.ts test/agent-loader.test.ts test/query-db-tool.test.ts`
+  passes.
 - `bun run check` passes.
 
 Current shape:
 
-- `src/app/may.ts`: 512 lines, still owns mode selection and remaining daemon
+- `src/app/may.ts`: 492 lines, still owns mode selection and remaining daemon
   assembly.
 - `src/app/daemon.ts`: lifecycle, event persistence, session side-effect
   subscribers, session-domain event translation, agent loading, heartbeat
   convention injection, cron bus subscription, heartbeat workflow preflight, and
-  runtime loops.
+  task/chat session startup, and runtime loops.
 
 Stop criteria:
 
