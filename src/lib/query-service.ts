@@ -55,12 +55,31 @@ export interface ProjectQuery extends QueryOptions {
   workflow?: string;
 }
 
+export interface MetricAlertContextQuery {
+  metricId: string;
+  alertId?: number | null;
+  relatedEventTypes?: string[];
+  since?: number;
+  snapshotLimit?: number;
+  eventLimit?: number;
+}
+
+export interface MetricAlertContext {
+  alert: Record<string, unknown> | null;
+  metric: Record<string, unknown> | null;
+  snapshots: Record<string, unknown>[];
+  relatedEvents: Record<string, unknown>[];
+  metricId: string;
+  alertId: number | null;
+}
+
 export interface QueryAPI {
   sessions(filter?: SessionQuery): QueryResult;
   events(filter?: EventQuery): QueryResult;
   metrics(filter?: MetricQuery): QueryResult;
   alerts(filter?: AlertQuery): QueryResult;
   projects(filter?: ProjectQuery): QueryResult;
+  metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
 
@@ -230,6 +249,64 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       return select(opts.getDb(), "projects", where, params, "updated_at DESC, id ASC", clampLimit(filter.limit, defaultLimit, maxLimit));
     },
 
+    metricAlertContext(filter) {
+      if (!filter.metricId) throw new Error("metricAlertContext requires metricId");
+      const db = opts.getDb();
+      const metricId = filter.metricId;
+      const snapshotLimit = clampLimit(filter.snapshotLimit, 10, maxLimit);
+      const eventLimit = clampLimit(filter.eventLimit, 20, maxLimit);
+      const metric = db.prepare(
+        `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
+                m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
+                m.project, m.status, m.updated_at, m.alert_op as alertOp
+         FROM metrics m
+         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+         WHERE m.id = ?`,
+      ).get(metricId) as Record<string, unknown> | null;
+
+      const alert = filter.alertId != null
+        ? db.prepare("SELECT * FROM metric_alerts WHERE id = ?").get(filter.alertId)
+        : db.prepare(
+          `SELECT * FROM metric_alerts
+           WHERE metric_id = ? AND resolved_at IS NULL
+           ORDER BY created_at DESC, id DESC
+           LIMIT 1`,
+        ).get(metricId);
+      const normalizedAlert = alert ? normalizeRows([alert as Record<string, unknown>])[0] : null;
+      const createdAt = typeof normalizedAlert?.created_at === "number" ? normalizedAlert.created_at : null;
+      const since = filter.since ?? createdAt ?? Date.now() - 24 * 60 * 60_000;
+
+      const snapshots = normalizeRows(db.prepare(
+        `SELECT value, sample_size, measured_at, measured_by, note
+         FROM metric_snapshots
+         WHERE metric_id = ?
+         ORDER BY measured_at DESC
+         LIMIT ?`,
+      ).all(metricId, snapshotLimit + 1) as Record<string, unknown>[]).slice(0, snapshotLimit);
+
+      const eventTypes = (filter.relatedEventTypes ?? []).filter((type) => type.trim() !== "");
+      const relatedEvents = eventTypes.length > 0
+        ? normalizeRows(db.prepare(
+          `SELECT id, event_type, source, owner, timestamp, data
+           FROM events
+           WHERE timestamp >= ?
+             AND event_type IN (${eventTypes.map(() => "?").join(", ")})
+           ORDER BY timestamp DESC, id DESC
+           LIMIT ?`,
+        ).all(since, ...eventTypes, eventLimit + 1) as Record<string, unknown>[]).slice(0, eventLimit)
+        : [];
+
+      return {
+        alert: normalizedAlert,
+        metric: metric ? normalizeRows([metric as Record<string, unknown>])[0] : null,
+        snapshots,
+        relatedEvents,
+        metricId,
+        alertId: filter.alertId ?? (typeof normalizedAlert?.id === "number" ? normalizedAlert.id : null),
+      };
+    },
+
     sql(input, params = [], queryOpts = {}) {
       const sql = normalizeSql(input);
       assertReadOnlySql(sql);
@@ -247,12 +324,16 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const fail = (): QueryResult => {
     throw new Error(reason);
   };
+  const failContext = (): MetricAlertContext => {
+    throw new Error(reason);
+  };
   return {
     sessions: fail,
     events: fail,
     metrics: fail,
     alerts: fail,
     projects: fail,
+    metricAlertContext: failContext,
     sql: fail,
   };
 }
