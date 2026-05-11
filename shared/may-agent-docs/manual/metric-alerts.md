@@ -99,11 +99,11 @@ responsible for judging whether the issue is actually fixed.
 Use when the metric is valid but the threshold, target, priority, or measurement
 is wrong.
 
-Allowed changes:
-
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\"UPDATE metrics SET threshold = ?, target = ?, updated_at = ? WHERE id = ?\").run(NEW_THRESHOLD, NEW_TARGET, Date.now(), 'metric.id');"
-```
+Allowed changes must go through the runtime's safe write path. Do **not** open
+`.state/*.db` directly from a session, workflow, heartbeat, or shell command.
+If you do not have an explicit write tool/workflow in the current environment,
+escalate the exact requested metric update to May/human with evidence instead of
+running ad hoc SQL.
 
 Keep calibration conservative:
 
@@ -115,11 +115,9 @@ Keep calibration conservative:
 Use when the metric is real, but there is solid evidence it should not interrupt
 current work at its current priority.
 
-Allowed downgrade:
-
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\"UPDATE metrics SET priority = ?, blocker = ?, updated_at = ? WHERE id = ?\").run('P2', 'downgraded: <evidence and review condition>', Date.now(), 'metric.id');"
-```
+Allowed downgrade requires a safe runtime write path; if the current workflow
+only has read-only DB access, escalate the requested priority/blocker update to
+May/human instead of editing the runtime DB directly.
 
 Rules:
 
@@ -133,11 +131,9 @@ Rules:
 Use when the alert is more severe than its current priority, or the owner cannot
 safely fix it.
 
-Upgrade priority when the system should react more aggressively:
-
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\"UPDATE metrics SET priority = ?, blocker = ?, updated_at = ? WHERE id = ?\").run('P0', 'upgraded: <evidence>', Date.now(), 'metric.id');"
-```
+Upgrade priority when the system should react more aggressively. Priority
+updates require a safe runtime write path; if unavailable, escalate the requested
+priority/blocker update with evidence.
 
 Escalate to human when:
 
@@ -160,11 +156,9 @@ Use only when the alert row is stale, duplicate, already recovered, or caused by
 a known measurement bug.
 
 Before resolving manually, verify the current value is in range or the alert row
-is invalid.
-
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\"UPDATE metric_alerts SET resolved_at = ? WHERE metric_id = ? AND resolved_at IS NULL\").run(Date.now(), 'metric.id');"
-```
+is invalid. Manual alert resolution requires a safe runtime write path; if the
+current environment only provides read-only DB tools, escalate the resolution
+request and evidence instead of editing `metric_alerts` directly.
 
 Manual resolve must include the reason in the session summary.
 
@@ -172,11 +166,10 @@ Manual resolve must include the reason in the session summary.
 
 Use when the breach is real but intentionally accepted for now.
 
-An exception should be rare and documented on the metric:
-
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); db.prepare(\"UPDATE metrics SET priority = 'P3', blocker = ?, updated_at = ? WHERE id = ?\").run('accepted until <condition/date>: <reason>', Date.now(), 'metric.id');"
-```
+An exception should be rare and documented on the metric through a safe runtime
+write path. If you only have read-only DB access, escalate the exact exception
+text, expiry/review condition, and evidence to May/human instead of writing the
+metric row directly.
 
 Do not resolve the alert just because an exception exists unless the owner also
 changes the threshold or disables the metric. A visible low-priority alert is
@@ -198,22 +191,32 @@ preferable to silent drift.
 
 ## SQL Reference
 
+Use the `query_db` tool for read-only inspection. Inspect schemas before using
+unfamiliar columns, and do not open `.state/*.db` from bash or ad hoc scripts.
+
 Read metric:
 
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(db.prepare(\"SELECT * FROM metrics WHERE id = ?\").get('metric.id'));"
+```sql
+SELECT * FROM metrics WHERE id = ?;
 ```
 
 Read recent snapshots:
 
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(db.prepare(\"SELECT value, measured_at, note FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10\").all('metric.id'));"
+```sql
+SELECT value, measured_at, note
+FROM metric_snapshots
+WHERE metric_id = ?
+ORDER BY measured_at DESC
+LIMIT 10;
 ```
 
 Read open alert:
 
-```bash
-bun -e "import {Database} from 'bun:sqlite'; const db = new Database('.state/may.db'); console.log(db.prepare(\"SELECT * FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL\").all('metric.id'));"
+```sql
+SELECT *
+FROM metric_alerts
+WHERE metric_id = ?
+  AND resolved_at IS NULL;
 ```
 
 ## Legacy Terms
