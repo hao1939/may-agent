@@ -1222,3 +1222,15 @@ Signal dispositions:
 - Artifact-gate `session.start` warnings and prior recovery `session.end`: acted by writing this concrete heartbeat note with live evidence rather than a no-op artifact.
 - Open alert #286: delegated/dismissed for dev action because it is May-owned and already under May/closed-loop handling with recovery evidence; no destructive or DB action is appropriate from dev.
 - Recent eval deep timeout handler failures: dismissed for immediate patch because handler health remains above threshold and LLM-eval liveness is green; watch for recurrence above `handler.failed-count` threshold or `eval.llm-coverage-lag-h` breach.
+
+## 2026-05-11 Artifact Gate Recovery
+
+The artifact gate reported that this heartbeat produced no file writes, so this workspace note records the recovery action and current repository hygiene finding.
+
+Observed from `/app/agents` before this write:
+- Numerous pre-existing dirty paths are present outside this heartbeat's intended scope, including `.state/iteration-log.json`, multiple `*/last-session.md` files, shared gate logs, shared docs, shared project files, and `shared/tests/eval-llm-scan.test.ts`.
+- This session's only intentional deliverable is `dev/workspace/heartbeat-log.md`.
+
+Disposition:
+- Do not stage or clean unrelated dirty paths; they may belong to other agents or runtime state.
+- Stage only this heartbeat log if committing is possible, then report any remaining unrelated dirty paths as a worktree hygiene blocker rather than committing them.
