@@ -30,14 +30,15 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Continue Phase 8 with the remaining workflow-library cleanup. The project-driver
+Phase 8 has removed the duplicate project-driver surface. The project-driver
 surface now has one live default: `project`.
 
 Next slice:
 
-1. Audit remaining stale docs/test names for references to retired project-driver
-   workflows.
-2. Validate cleanup with grep references, unit tests, and one real project trace.
+1. Continue Phase 2 by checking the remaining Telegram reply paths against the
+   normalized event path.
+2. Validate with event traces that Telegram, Web UI, and CLI produce comparable
+   daemon events for comparable actions.
 
 Recently completed:
 
@@ -57,9 +58,7 @@ agents about how to drive projects.
 
 | Gap | Risk | Phase |
 |---|---|---|
-| Shared `ExecutionResult` exists but is not the normal inspection surface | Sessions and workflows still feel different to debug | Phase 5 |
 | Telegram still has some adapter-specific behavior | Replies can diverge from Web UI/CLI event behavior | Phase 2 |
-| Workflow library has overlapping project-driver variants | Agents may copy the wrong driver pattern | Phase 8 |
 
 ## Phase 0: Design State Refresh
 
@@ -664,6 +663,10 @@ Stop criteria:
 
 - There is one default project-driving pattern unless a real project needs a
   different one.
+
+Status: complete for live project drivers. `project` is the only live default;
+`goal-driver` and `master-worker*` are retired from disk, and scanned shared
+projects reject `master-worker*` metadata.
 
 First slice, 2026-05-11:
 
