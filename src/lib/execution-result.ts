@@ -12,6 +12,7 @@ export interface ExecutionResult {
   status: ExecutionStatus;
   summary: string;
   traceId: string;
+  owner?: string;
   parentId?: string;
   projectId?: string;
   startedAt?: number;
@@ -102,6 +103,7 @@ export function taskResultToExecutionResult(result: TaskResult, opts: {
     status,
     summary: compact(result.error ?? result.lastAssistantText, `${opts.agent ?? "session"} ${status}`),
     traceId: result.sessionId,
+    owner: opts.agent,
     parentId: opts.parentId,
     projectId: opts.projectId,
     evidence: {
@@ -178,6 +180,7 @@ export function resumeDiagnosticToExecutionResult(diagnostic: ResumeDiagnostic):
     status,
     summary: compact(diagnostic.reason, `${diagnostic.kind} resume ${status}`),
     traceId: diagnostic.id,
+    owner: optionalString(diagnostic.owner ?? diagnostic.agent),
     parentId: diagnostic.parentId,
     projectId: optionalString(diagnostic.projectId),
     evidence: {
@@ -198,6 +201,7 @@ export function sessionRowToExecutionResult(row: SessionRow): ExecutionResult {
     status,
     summary: compact(row.error ?? row.outcome, `${row.agent} ${status}: ${row.task}`),
     traceId: row.workflowRunId ?? row.sessionId,
+    owner: row.agent,
     parentId: optionalString(row.parentSessionId),
     projectId: optionalString(row.projectId),
     startedAt: optionalNumber(row.startedAt),
