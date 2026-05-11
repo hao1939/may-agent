@@ -242,6 +242,26 @@ export class Cron {
    *  Also handles `heartbeat` events: triggers the matching heartbeat entry. */
   subscribeToBus(bus: EventBus): void {
     bus.subscribe((event) => {
+      // Convention trigger: any entry can be manually fired by emitting
+      // `trigger.<entry-name>`. This keeps operator/adapters simple and avoids
+      // per-entry `on` boilerplate for timer jobs.
+      if (event.type.startsWith("trigger.")) {
+        const entryName = event.type.slice("trigger.".length);
+        if (entryName) {
+          this.triggerNow(entryName, {
+            force: true,
+            triggerEvent: {
+              type: event.type,
+              source: "event",
+              entry: entryName,
+              data: event as Record<string, unknown>,
+              timestamp: Date.now(),
+            },
+          });
+        }
+        return;
+      }
+
       // Heartbeat event → trigger the matching cron entry
       if (event.type === "heartbeat" && "agent" in event) {
         const agent = (event as any).agent as string;
