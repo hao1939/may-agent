@@ -1205,3 +1205,20 @@ Disposition:
 The session was resumed by the artifact gate because the previous turn did not produce a file artifact. This entry is the required heartbeat artifact and documents the immediate remediation path: keep the write scoped to dev workspace status, verify it with `read()`, classify the agents worktree before staging, and commit only this intentional log update if no unrelated blocker remains.
 
 No production database or runtime handler state was modified. Next substantive dev heartbeat should return to normal failure/metric triage after this administrative recovery is committed.
+
+## 2026-05-11 Heartbeat Event Triage and Watch Notes
+
+Routine dev heartbeat with no Approved work-queue item and no dev-owned red alert.
+
+Evidence checked:
+- Approved queue is empty; all visible implementation candidates remain Proposed.
+- Current dev-critical metrics are in range or below alert threshold: `session.error-rate-6h=0.0955` (target `0.1`, threshold `0.3`), `handler.success-rate=0.9926` (target `0.95`, threshold `0.8`), `handler.failed-count=3` (threshold `10`), `session.finish-blocked-unresolved-count-24h=0`, and no active metric lacks a snapshot in the last hour.
+- The only unresolved metric alert is `#286 agent.heartbeat-dark-count-2h`, owned by May; the live metric row shows owner `may`, `current=1`, `threshold=0`. May/closed-loop evidence says scout recovery was already applied and the 2h lookback should clear naturally.
+- Recent handler failures are two `eval-llm-scan` deep-eval timeouts plus one already-recovered closed-loop JSON parse failure. The eval lane remains live (`eval.llm-coverage-lag-h=0.14`, `eval.llm-evals-24h=35`), so this is watch-only unless timeout volume grows or the pending-review lane restoration project resume condition fires.
+- Owned projects remain correctly non-active: `finish-blocked-hygiene-reduction` is paused after the strict unresolved metric recovered to 0; `eval-llm-lane-restoration` is pending review with non-heuristic evaluations still advancing.
+
+Signal dispositions:
+- `escalation.created`, `metric.breach`, `message.created` nudge, `handler.workflow_dispatched`, and `metric.alert_judged` for alert 284: acted/dismissed as recovered stale state; the live strict finish-blocked metric is now `0`, and the project journal records the calibration/recovery.
+- Artifact-gate `session.start` warnings and prior recovery `session.end`: acted by writing this concrete heartbeat note with live evidence rather than a no-op artifact.
+- Open alert #286: delegated/dismissed for dev action because it is May-owned and already under May/closed-loop handling with recovery evidence; no destructive or DB action is appropriate from dev.
+- Recent eval deep timeout handler failures: dismissed for immediate patch because handler health remains above threshold and LLM-eval liveness is green; watch for recurrence above `handler.failed-count` threshold or `eval.llm-coverage-lag-h` breach.
