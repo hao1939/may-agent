@@ -54,19 +54,19 @@ Current coaching work should focus on:
 ---
 
 ## ARCHIVE: EXP-740 — Deployed Gate Liveness Audit — RETIRED
-- **Problem**: All 3 deployed gates (EXP-630 duration, EXP-650 impact, EXP-720 fewshot) have ZERO log entries
-- **Phase 1 Finding**: H1+H2 CONFIRMED — 0% trigger rate. Duration gate's proxy scoring is dead code because artifact gate upstream inflates scores.
+- **Historical problem**: older heartbeat enforcement experiments produced no useful trigger evidence.
+- **Phase 1 finding**: the old proxy scoring path was structurally unreliable and was later retired.
 - **Historical fix**: Wall-clock time gate (90s threshold) replaced proxy-score in an older runtime.
 - **Current status**: retired with heartbeat gate reprompts on 2026-05-11.
 - **Design**: `agents/coach/workspace/EXP-740-gate-liveness-audit-design.md`
 - **Status**: RETIRED — no trigger monitoring needed.
 
-## P1: EXP-730 — Dormant Structural Gate Audit — CLOSED (SUPERSEDED by EXP-740)
-- **Problem**: EXP-630 (duration), EXP-650 (impact), EXP-720 (few-shot) all deployed with ZERO log entries
-- **Phase 1 Finding**: EXP-630 threshold `< 3` was dead code. Fixed to `< 5` but STILL dead.
-- **Phase 2 Finding**: Even with `< 5`, sessions score ≥5 because summary+output+deliverables are inflated by artifact gate's re-prompt. Gates are architecturally incompatible.
-- **True Root Cause**: Artifact gate (EXP-520) re-prompt inflates substanceScore; turnsUsed always 0 (never populated). Gates architecturally incompatible.
-- **Escalation**: Notified tech-lead (P1) with fix proposals — remove turnsUsed, simplify scoring, or combine gates.
+## ARCHIVE: EXP-730 — Dormant Structural-Gate Audit — CLOSED
+- **Historical problem**: older heartbeat enforcement experiments generated no useful liveness evidence.
+- **Phase 1 finding**: the old duration threshold path did not measure the behavior it claimed to measure.
+- **Phase 2 finding**: session summaries and forced deliverables made the old scoring approach unreliable.
+- **Root cause**: stacked enforcement converted weak sessions into quota-satisfying artifacts instead of better work.
+- **Historical escalation**: notified tech-lead with options; superseded by the current metric/evaluator signal model.
 - **Design**: `agents/coach/workspace/EXP-730-dormant-gate-audit-design.md`
 - **Phase 2 analysis**: `agents/coach/workspace/EXP-730-phase2-analysis.md`
 - **Pipeline status**: `agents/coach/workspace/experiment-pipeline-status-2026-05-03.md`
@@ -81,16 +81,16 @@ Current coaching work should focus on:
 - **Replacement question**: compare evaluator aftermath reviews against session transcripts and landed changes to learn what strong/weak sessions look like.
 
 ## ARCHIVE: EXP-735 — Impact Gate Trigger Condition Fix — RETIRED (2029-08-07)
-- **Problem**: EXP-650 impact gate never fires because `grep|rg` keyword appears in virtually all session outputs
-- **Root cause**: Gate checks for ANY grep mention in combined text, but agents always run searches
+- **Historical problem**: an older impact-scanning detector did not distinguish real impact analysis from ordinary search output.
+- **Root cause**: keyword detection was too broad.
 - **Historical fix**: Option C — semantic detection (grep + impact-related terms), checks summary for impact/downstream/consumer/caller
 - **Design**: `agents/coach/workspace/EXP-735-impact-gate-trigger-fix-design.md`
 - **Status**: RETIRED — no trigger monitoring needed.
 
 ## ARCHIVE: EXP-725 — Structural Anti-Shallow Gate — RETIRED (2029-08-07)
 - **Problem**: Anti-shallow text rule violated in 40% of sessions (EXP-715 Phase 1). Text rules fail per KE-480.
-- **Hypothesis**: Structural finish() rejection when tool_call_count < 10 → shallow rate ≤10%
-- **Historical fix**: re-prompt gate when tool_call_count < 10, with logging to anti-shallow-gate-triggers.log
+- **Historical hypothesis**: blocking short sessions by tool-call count would reduce shallow output.
+- **Historical fix**: forced re-prompt by tool-call count; retired because quota pressure caused busywork.
 - **Design**: `agents/coach/workspace/EXP-725-structural-anti-shallow-gate-design.md`
 - **Status**: RETIRED — shallow sessions are now reviewed by evaluator/metrics as signals rather than blocked by a heartbeat reprompt.
 
@@ -118,13 +118,13 @@ Current coaching work should focus on:
 - **KE written**: KE-715 (text rules work with concrete thresholds)
 - **Status**: CLOSED ✅ — no further action needed
 
-## P1: EXP-710 — Shallow Session Baseline Audit (Fresh Measurement) — CLOSED ✅ (CONFIRMED)
-- **Problem**: Duration gate (EXP-630) deployed but dead code — binary never rebuilt + heuristic broken
-- **Hypothesis**: Shallow rate still ~50% (unchanged from EXP-615). Duration gate has had zero effect.
+## ARCHIVE: EXP-710 — Shallow Session Baseline Audit — CLOSED
+- **Problem**: older shallow-session controls were not improving actual output quality.
+- **Hypothesis**: shallow rate remained high despite prior controls.
 - **Phase 1 results**: `agents/coach/workspace/EXP-710-shallow-session-baseline-audit.md`
-- **Finding**: H1 CONFIRMED — 50% (5/10) shallow. H2 CONFIRMED — no gate log, rate unchanged.
+- **Finding**: H1 CONFIRMED — 50% (5/10) shallow; rate unchanged.
 - **Resolution**: Root cause found (2029-05-04 notification) — no binary rebuild needed. Shallow sessions are orchestrator routing decisions by design, not agent failures.
-- **Status**: CLOSED ✅ — duration gate issue resolved without rebuild
+- **Status**: CLOSED — current policy evaluates session value after the fact instead of enforcing duration.
 
 ## P1: EXP-700 — Parallel Tool Calls (Batch Independent Calls) — CLOSED (INCONCLUSIVE)
 - **Problem**: Agents make sequential tool calls that could be batched, inflating session length
@@ -134,8 +134,8 @@ Current coaching work should focus on:
 - **Status**: CLOSED — INCONCLUSIVE. Do NOT deploy without stronger evidence.
 
 ## ARCHIVE: EXP-705 — Duration Gate Effectiveness Audit — CLOSED
-- **Problem**: EXP-630 duration gate deployed but `duration-gate-triggers.log` never created — gate appears dead
-- **Hypothesis**: H1: Gate never fires because `looksTrivia` threshold (200 chars) is too conservative. H2: Wall-clock time check (< 90s) would catch ≥40% of shallow sessions.
+- **Historical problem**: old duration-based enforcement did not produce useful live evidence.
+- **Hypothesis**: a wall-clock threshold might identify shallow sessions better than summary length.
 - **Phase 1 results**: `agents/coach/workspace/EXP-705-phase1-results.md`
 - **Finding**: H1 SUPPORTED — 0% recall on shallow sessions at 200-char threshold. Summary length is a poor proxy. Duration is the only reliable signal (all 4 shallow < 60s, all 4 substantive > 90s).
 - **Resolution**: Root cause found (2029-05-04) — no binary rebuild needed. Combined with EXP-715 finding that shallow sessions are orchestrator routing, not agent failure.
@@ -152,11 +152,11 @@ Current coaching work should focus on:
 
 ## ARCHIVE: EXP-650 — Structural Impact-Scanning Gate — RETIRED (2029-08-04)
 - **Problem**: impact-radius-check skill shows +100pp in gym but 6% scanning in production (EXP-645)
-- **Hypothesis**: Structural gate in genericHeartbeat() re-prompts when ≥2 edits + 0 greps → scanning rate from 6% to ≥40%
+- **Historical hypothesis**: workflow enforcement could raise impact-scanning behavior in production.
 - **Design**: `agents/coach/workspace/EXP-650-structural-impact-scanning-gate-design.md`
 - **Deployment**: `agents/coach/workspace/EXP-650-deployment-record.md`
 - **Implementation**: historical; removed from current heartbeat runtime.
-- **Logging**: historical `agents/shared/impact-gate-triggers.log`
+- **Logging**: historical local runtime log, now untracked.
 - **Status**: RETIRED — use evaluator review and targeted experiments for impact-scan regressions.
 
 ## P1: EXP-645 — Impact Radius Check Production Audit — CLOSED (H1 REJECTED)
@@ -166,8 +166,8 @@ Current coaching work should focus on:
 - **KE**: `agents/coach/knowledge/KE-645-cognitive-skills-fail-without-structural-gates.md`
 
 ## P1: EXP-640 — Duration Gate Production Audit — CLOSED (MOOT)
-- **Update 2029-05-04**: Binary rebuild NOT needed — workflows dynamically loaded. Duration gate IS live but substanceScore threshold (< 3) is too lenient — sessions with ≥1 deliverable + ≥300 char summary score ≥4, bypassing gate entirely.
-- **Root cause revised**: Gate is not dead code — it's just too lenient after artifact gate upstream filters no-deliverable sessions.
+- **Update 2029-05-04**: binary rebuild was not the issue; the old score threshold was too lenient.
+- **Root cause revised**: the old detector measured quota-satisfying output, not meaningful work.
 - **Status**: CLOSED — MOOT. Duration gate concept superseded by EXP-715 finding (shallow sessions = orchestrator routing by design).
 
 ## P1: EXP-635 — Threat-Framed Depth Commitment — CLOSED (CEILING)
@@ -179,18 +179,18 @@ Current coaching work should focus on:
 - **Status**: CLOSED — CEILING. Gym cannot reproduce production shallow-session problem.
 
 ## ARCHIVE: EXP-630 — Structural Duration Gate in genericHeartbeat() — RETIRED
-- **Problem**: 55% of sessions are ultra-short (<60s) with trivial artifacts. EXP-520 artifact gate allows gate-gaming.
-- **Hypothesis**: Structural elapsed-time check in genericHeartbeat() re-prompts agents when <90s → shallow rate drops from ~55% to ≤25%
+- **Problem**: many sessions were short and low-value.
+- **Historical hypothesis**: elapsed-time enforcement could reduce shallow sessions.
 - **Design**: `agents/coach/workspace/EXP-630-structural-duration-gate-design.md`
 - **Closure**: `agents/coach/workspace/EXP-630-closure.md`
 - **Measurement Protocol**: `agents/coach/workspace/EXP-630-production-measurement-protocol.md`
 - **Builds on**: EXP-625 (skipped — text, KE-480 predicts failure), EXP-620, EXP-520
 - **Implementation**: historical; removed from current heartbeat runtime.
-- **Logging added**: historical filesystem logging to `agents/shared/duration-gate-triggers.log`
+- **Logging added**: historical local runtime log, now untracked.
 - **Status**: RETIRED — no trigger monitoring needed.
 
 ## P1: EXP-625 — Duration-Based Session Quality Gate — SUPERSEDED by EXP-630
-- **Problem**: EXP-620 found 55% of sessions are ultra-short (<60s) and duration is best quality proxy. Gate-gaming bypasses EXP-520's artifact gate.
+- **Problem**: EXP-620 found many ultra-short sessions, and duration looked like a possible quality proxy.
 - **Hypothesis**: Duration-awareness nudge (warn if <90s) raises substantive artifact rate from ~45% to ≥65%
 - **Design**: `agents/coach/workspace/EXP-625-duration-quality-gate-design.md`
 - **Builds on**: EXP-620, EXP-615, EXP-520, KE-480
@@ -334,7 +334,7 @@ Current coaching work should focus on:
 
 ## P1: EXP-545 — QA Finish-Call Structural Gate — CLOSED (ALREADY ADDRESSED)
 - **Problem**: QA has 14.3% finish() compliance (worst in system). Text rule (EXP-440) NEGATIVE.
-- **Investigation (2026-06-02)**: QA DOES use genericHeartbeat (qa-heartbeat.ts → genericHeartbeat(ctx, "qa")). EXP-520 artifact gate + EXP-510 worker injection both cover QA. Baseline was pre-deployment.
+- **Investigation (2026-06-02)**: QA used the shared heartbeat path; the relevant baseline was pre-deployment.
 - **Closure**: `agents/coach/workspace/EXP-545-closure.md`
 - **Status**: CLOSED — ALREADY ADDRESSED by EXP-510 + EXP-520. Re-measure when data available.
 
