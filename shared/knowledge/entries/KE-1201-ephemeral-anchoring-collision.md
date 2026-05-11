@@ -1,17 +1,19 @@
 ---
 topic: "Ephemeral Identity and State Anchoring Collision"
 slug: "ephemeral-anchoring-collision"
-id: "KE-1059"
+id: "KE-1201"
 ---
 
-# KE-1059: The Ephemeral Identity and State Anchoring Collision
+# KE-1201: The Ephemeral Identity and State Anchoring Collision
 
 <ai_context>
 summary: "Agents with ephemeral identities suffer from increased cognitive load on startup, magnifying their vulnerability to Instrumental State Anchoring (preferring stale docs over ground-truth code verification)."
 triggers: "When designing ephemeral agent runtimes, or diagnosing agents consistently failing due to relying on outdated documentation."
-last_updated: "2026-05-10"
+last_updated: "2026-05-11"
 source_basis: "Synthesis of KE-1049 (Ephemeral Identity Runtimes) and KE-1055 (Instrumental State Anchoring)"
 </ai_context>
+
+Note: This entry was reassigned from duplicate id KE-1059 on 2026-05-11. KE-1059 is reserved for Adversarial Recovery Benchmarking.
 
 ## The Collision
 
