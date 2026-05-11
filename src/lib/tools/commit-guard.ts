@@ -21,10 +21,6 @@ import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guar
 /** Timeout for git commands (ms). git status should complete in <100ms. */
 const GIT_TIMEOUT_MS = 5_000;
 
-const GENERATED_RUNTIME_PATHS = new Set([
-  "shared/gate-outcomes.log",
-]);
-
 function normalizeStatusPath(line: string): string {
   const porcelain = line.match(/^.. (.+)$/);
   if (porcelain) return porcelain[1].trim();
@@ -32,7 +28,7 @@ function normalizeStatusPath(line: string): string {
 }
 
 function isGeneratedRuntimePath(path: string, agentName: string): boolean {
-  return path === `${agentName}/last-session.md` || GENERATED_RUNTIME_PATHS.has(path);
+  return path === `${agentName}/last-session.md`;
 }
 
 function normalizeAgentRepoPath(path: string): string | undefined {
