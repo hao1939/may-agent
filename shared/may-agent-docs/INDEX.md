@@ -62,7 +62,7 @@ Proposals under consideration and historical docs preserved for context.
 | Doc | Status | What |
 |-----|--------|------|
 | [proposals/stigmergic-coordination.md](proposals/stigmergic-coordination.md) | Draft | Formalize stigmergic coordination as a first-class pattern |
-| [proposals/unified-command-interface.md](proposals/unified-command-interface.md) | Draft | Unified command interface for adapters |
+| [proposals/unified-command-interface.md](proposals/unified-command-interface.md) | Superseded | Historical command-registry draft; current adapter boundary is `packages/control` event frames |
 | [proposals/v2-spec.md](proposals/v2-spec.md) | Historical | v2 conformance spec: C1-C10 capabilities, I1-I4 infra, S1-S8 structural |
 | [proposals/v2-migration-plan.md](proposals/v2-migration-plan.md) | Historical | Original v2 migration plan |
 | [proposals/v2-implementation-notes.md](proposals/v2-implementation-notes.md) | Historical | What shipped in v0.2 migration |
