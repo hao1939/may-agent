@@ -201,6 +201,8 @@ Stop criteria:
 
 ## Phase 4: Query Facade Migration
 
+Status: first schema-sensitive workflow read migrated.
+
 Goal: workflows and handlers stop guessing schema for judgment/context reads.
 
 Scope:
@@ -213,11 +215,15 @@ Scope:
   - closed-loop/project/evaluator context collection after their workflow
     boundaries are clear.
 - Add query helpers only when an actual workflow needs them.
+- [x] Add `query.metricAlertContext(...)` for the exact alert/metric/snapshot
+  bundle used by `metric-alert-triage`.
+- [x] Move `metric-alert-triage` alert context loading off raw `ctx.getDb()`;
+  owner session lookup now uses `ctx.query.sessions(...)`.
 
 Validation:
 
-- Read-only and limit enforcement tests cover any new query helper.
-- A migrated workflow can be run against a test DB without raw column guessing.
+- [x] Read-only and limit enforcement tests cover any new query helper.
+- [x] A migrated workflow can be run against a test DB without raw column guessing.
 - Runtime failure from a missing/renamed column becomes a query-service test gap,
   not a prompt-level agent mistake.
 

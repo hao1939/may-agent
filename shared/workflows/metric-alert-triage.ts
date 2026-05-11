@@ -181,65 +181,36 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const alertId = numberOrNull(data.alertId ?? data.alert_id);
 
   const loaded = await ctx.runFunction("load-alert-context", async () => {
-    const db = ctx.getDb() as any;
     const configuredAgents = listConfiguredAgents(String(ctx.agentsRoot));
-    const metric = db.prepare(
-      `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
-              m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
-              m.project, m.status, m.updated_at
-       FROM metrics m
-       LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-       WHERE m.id = ?`,
-    ).get(metricId) as Record<string, unknown> | null;
-
-    const alert = alertId != null
-      ? db.prepare(`SELECT * FROM metric_alerts WHERE id = ?`).get(alertId)
-      : db.prepare(`SELECT * FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL ORDER BY created_at DESC LIMIT 1`).get(metricId);
+    const context = ctx.query.metricAlertContext({
+      metricId,
+      alertId,
+      relatedEventTypes: relatedEventTypes(metricId),
+    }) as Record<string, unknown>;
+    const metric = context.metric as Record<string, unknown> | null;
+    const alert = context.alert as Record<string, unknown> | null;
 
     const explicitOwner = String(metric?.explicitOwner ?? data.owner ?? "");
     const projectOwner = String(metric?.projectOwner ?? "");
     const owner = resolveMetricOwner(metricId, configuredAgents, explicitOwner, projectOwner);
-    const createdAt = Number((alert as Record<string, unknown> | null)?.created_at ?? data.created_at ?? 0);
+    const createdAt = Number(alert?.created_at ?? data.created_at ?? 0);
     const priority = String(metric?.priority ?? data.priority ?? "P2");
 
-    const snapshots = db.prepare(
-      `SELECT value, measured_at, note
-       FROM metric_snapshots
-       WHERE metric_id = ?
-       ORDER BY measured_at DESC
-       LIMIT 10`,
-    ).all(metricId) as Array<Record<string, unknown>>;
-
-    const eventTypes = relatedEventTypes(metricId);
-    const relatedEvents = eventTypes.length > 0
-      ? db.prepare(
-        `SELECT id, event_type, source, owner, timestamp, data
-         FROM events
-         WHERE timestamp >= ?
-           AND event_type IN (${eventTypes.map(() => "?").join(", ")})
-         ORDER BY timestamp DESC
-         LIMIT 20`,
-      ).all(Math.max(0, createdAt || Date.now() - 24 * 60 * 60_000), ...eventTypes) as Array<Record<string, unknown>>
-      : [];
-
-    const ownerSessions = db.prepare(
-      `SELECT sessionId, status, source, startedAt, endedAt
-       FROM sessions
-       WHERE agent = ? AND startedAt >= ?
-       ORDER BY startedAt DESC
-       LIMIT 5`,
-    ).all(owner, createdAt || 0) as Array<Record<string, unknown>>;
+    const ownerSessions = ctx.query.sessions({
+      agent: owner,
+      since: createdAt || 0,
+      limit: 5,
+    }).rows;
 
     return JSON.stringify({
       alert,
       metric,
-      snapshots,
-      relatedEvents,
+      snapshots: context.snapshots,
+      relatedEvents: context.relatedEvents,
       ownerSessions,
       owner,
       metricId,
-      alertId: alertId ?? ((alert as Record<string, unknown> | null)?.id ?? null),
+      alertId: context.alertId ?? alertId ?? alert?.id ?? null,
       priority,
     });
   });
