@@ -51,4 +51,40 @@ describe("Cron event triggers", () => {
       cleanup();
     }
   });
+
+  it("fires an on-only handler when the matching domain event is emitted", async () => {
+    const { root, configPath, cleanup } = tempCronConfig([
+      {
+        name: "session-recovery",
+        enabled: true,
+        handler: "session-recovery",
+        on: ["session.failed"],
+      },
+    ]);
+    try {
+      const bus = new EventBus();
+      const handler = vi.fn(async (_event?: unknown) => {});
+      const cron = new Cron(configPath, {} as any, () => "", undefined, root, undefined, (event) => bus.emit(event as any));
+      cron.load();
+      cron.registerHandler("session-recovery", handler);
+      cron.subscribeToBus(bus);
+
+      bus.emit({ type: "session.failed", sessionId: "s_1", agent: "dev", error: "boom" } as any);
+      await nextTick();
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler.mock.calls[0]?.[0]).toMatchObject({
+        type: "session.failed",
+        source: "event",
+        entry: "session-recovery",
+        data: expect.objectContaining({
+          sessionId: "s_1",
+          agent: "dev",
+          error: "boom",
+        }),
+      });
+    } finally {
+      cleanup();
+    }
+  });
 });
