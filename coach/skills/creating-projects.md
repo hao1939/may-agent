@@ -21,19 +21,23 @@ agents/shared/projects/<name>/
 ## project.md Template
 
 ```markdown
-# Project: <Name>
+---
+id: <project-id>
+owner: <your-agent-name>
+status: active
+type: milestone
+priority: P0 | P1 | P2
+workflow: project
+iteration: 0
+---
 
-**Status**: active
-**Owner**: <your-agent-name>
-**Priority**: P0 | P1 | P2
-**Workflow**: master-worker
-**Iteration**: 0
+# Project: <Name>
 
 ## Goal
 What does success look like? One paragraph, specific.
 
-## Metrics
-Encode goals into metrics. These drive the project, not milestones.
+## Signals
+Encode goals into metrics/signals. They guide judgment; they do not judge by themselves.
 - metric.name: current → target (what it measures)
 - another.metric: current → target
 

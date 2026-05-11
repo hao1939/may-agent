@@ -742,6 +742,15 @@ Fifth slice, 2026-05-11:
   compatibility/tested legacy code until its runtime files are separately
   retired.
 
+Sixth slice, 2026-05-11:
+
+- Updated active agent `creating-projects` skills that still taught the legacy
+  bold-metadata template and `Workflow: master-worker`.
+- The skill template now uses YAML frontmatter with `workflow: project`, matching
+  `projects.md`, `project-template.ts`, and project format validation.
+- The template now describes metrics/signals as judgment inputs, not automatic
+  judges.
+
 ## Cross-Cutting Validation
 
 Each phase should leave one concrete runtime proof:
