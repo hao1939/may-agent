@@ -20,6 +20,7 @@ import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve, join } from "node:path";
 import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
+import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
 import {
   buildNotificationReplyText,
   buildTelegramQuoteReplyText,
@@ -129,12 +130,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // Store notification context for reply enrichment
     if (lastMsgId && context) {
       try {
-        const { getDb } = await import("../../lib/requests.js");
-        const db = getDb(opts.persistDir ?? ".state");
-        db.run(
-          "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          [lastMsgId, context.eventType || null, context.agent || null, context.sessionId || null, context.projectId || null, context.data || null, Date.now()]
-        );
+        storeNotificationMessage(opts.persistDir ?? ".state", {
+          telegram_msg_id: lastMsgId,
+          event_type: context.eventType || null,
+          agent: context.agent || null,
+          session_id: context.sessionId || null,
+          project_id: context.projectId || null,
+          data: context.data || null,
+        });
       } catch { /* best-effort */ }
     }
     return lastMsgId;
@@ -269,9 +272,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const replyToMsgId = replyToMsg?.message_id;
     if (replyToMsgId) {
       try {
-        const { getDb } = await import("../../lib/requests.js");
-        const db = getDb(opts.persistDir ?? ".state");
-        const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
+        const ctx = getNotificationMessage(opts.persistDir ?? ".state", replyToMsgId);
         if (ctx) {
           const projectPath = normalizeProjectPath(ctx.project_id, projectRoot);
           if (projectPath && await emitProjectComment(projectPath, text)) {
