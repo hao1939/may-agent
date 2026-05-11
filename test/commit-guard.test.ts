@@ -56,6 +56,33 @@ function makeFinishCtxWithWrites(
   return ctx;
 }
 
+function makeFinishCtxWithBash(
+  finishArgs: Record<string, unknown>,
+  command: string,
+): BeforeToolCallContext {
+  const ctx = makeFinishCtx(finishArgs);
+  ctx.context.messages = [
+    {
+      role: "assistant",
+      content: [
+        {
+          type: "toolCall" as const,
+          id: "bash_1",
+          name: "bash",
+          arguments: { command },
+        },
+      ],
+      api: "anthropic-messages",
+      provider: "anthropic",
+      model: "claude-sonnet-4-20250514",
+      usage: { input: 0, output: 0, cacheRead: 0 },
+      stopReason: "toolCall",
+      timestamp: Date.now(),
+    } as any,
+  ];
+  return ctx;
+}
+
 /** Build a non-finish tool call context. */
 function makeNonFinishCtx(): BeforeToolCallContext {
   return {
@@ -261,6 +288,34 @@ describe("commit-guard", () => {
 
       // Clean up
       rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
+    });
+
+    it("blocks shell-written files even when they are not listed as deliverables", async () => {
+      const scoutToolsDir = join(agentsDir, "scout", "tools");
+      mkdirSync(scoutToolsDir, { recursive: true });
+      writeFileSync(join(scoutToolsDir, "next-ke-id.sh"), "original\n");
+      git(agentsDir, ["add", "scout/tools/next-ke-id.sh"]);
+      git(agentsDir, ["commit", "-m", "add scout helper"]);
+
+      writeFileSync(join(scoutToolsDir, "next-ke-id.sh"), "rewritten\n");
+
+      const guard = createCommitGuard("scout", tmpDir);
+      const result = await guard(makeFinishCtxWithBash(
+        {
+          status: "success",
+          summary: "created KE",
+          deliverables: [{ path: "agents/shared/knowledge/entries/KE-1211.md", description: "KE" }],
+        },
+        "cat << 'EOF' > agents/scout/tools/next-ke-id.sh\nrewritten\nEOF\nbash agents/scout/tools/next-ke-id.sh",
+      ));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("scout/tools/next-ke-id.sh");
+      expect(result!.reason).toContain("restore it if it was accidental");
+      expect(result!.reason).not.toContain("Not blocking on unrelated dirty file(s):\n  M scout/tools/next-ke-id.sh");
+
+      git(agentsDir, ["checkout", "--", "scout/tools/next-ke-id.sh"]);
     });
 
     it("omits the agent runtime handoff file from broad commit instructions", async () => {
