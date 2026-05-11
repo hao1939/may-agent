@@ -130,6 +130,10 @@ Rechecked alert 284 after another P1 metric-alert triage trigger. The metric row
 
 Manual review found the repeated P1 alert was a metric calibration bug, not a live unresolved dirty exit. The only counted row had a latest auto-resume digest with `action=nothing` and `action_reason=No recoverable work worth resuming`, so the recovery process had already made a terminal judgment. Updated the strict metric source query to exclude that terminal no-recovery digest shape while keeping the raw friction metric unchanged. The next metrics snapshot set `session.finish-blocked-unresolved-count-24h=0`, emitted `metric.recovered`, and resolved alert 284.
 
+### 2026-05-11 — Raw metric alert 287 waiting_with_evidence judgment
+
+Triaged P2 alert `session.finish-blocked-uncommitted-count-24h` after the raw count moved from 50 to 51. The breach is real, but the paired strict unresolved metric is healthy (`current=0` with the latest ten snapshots at `0`), and recent raw rows are dominated by repaired/accepted exits: latest samples show `status=done`, `outcome=done`, and `digest_outcome=success`, while the one fresh interrupted scout-heartbeat row has `action=nothing` / `No recoverable work worth resuming`. Chosen operation: `waiting_with_evidence`; keep the project paused unless the strict unresolved metric breaches again or a newer raw slice shows a non-recovered source pattern rather than repaired finish-block friction.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
