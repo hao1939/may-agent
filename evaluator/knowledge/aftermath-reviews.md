@@ -214,6 +214,10 @@
 - Symptom: the agent edits a valid file, but its own `git commit` fails (for example on an index lock or concurrent git process) and the staged change later appears inside another agent's successful commit with an unrelated subject/author.
 - Fix: inspect the landed diff and current file content first. If the artifact really shipped, keep substance credit, but downgrade hygiene because the session did not secure an isolated commit or clean closeout. Treat this as stronger than minor inefficiency when the session then relies on that unrelated commit in `finish()`.
 
+## Pattern: success-candidate sessions can create real value yet still fail delivery
+- Symptom: a routed `success_candidate` session performs sound live investigation, lands or influences a real implementation/test path, and produces passing targeted verification, but the reviewed session itself never completes `finish()`, leaves part of the worktree dirty, or has its in-flight changes later swept up by another session/commit.
+- Fix: separate technical value from delivery integrity. Credit the session for the real diagnosis/implementation evidence, but downgrade the overall outcome from clean success unless the reviewed session itself shipped and closed the work. Check for missing `finish()` tool calls, remaining dirty files, and whether later commits only partially captured the session's edits.
+
 ## Pattern: `git log --author` is not reliable agent attribution in the shared agents repo
 - Symptom: a review or heuristic tries to verify that agent X shipped work by checking `git log --author=<agent>-agent`, but the landed commit subject/path clearly matches agent X while the author is `may-agent` or another shared identity.
 - Fix: do not use git author alone to decide ownership or whether a deliverable shipped. Verify by touched paths, commit subject prefix, landed diff content, and the session's own read-back/finish evidence. In `/app/agents`, author identity can be dominated by shared commit plumbing, so content beats author for attribution.
