@@ -53,5 +53,8 @@
 ## 2026-05-11 — s_1778508075199_215
 - In metric-alert success-candidate reviews, keep quality credit for a `document_exception` session when it refreshes live counts/classification, records concrete resume conditions, and commits the decision in the canonical project file. If the file already has nearby same-alert entries, note the duplication as an output-quality limitation rather than treating the session as empty.
 
+## 2026-05-11 — s_1778523977812_429
+- For repeated metric-alert triage on the same alert, check recent `metric.alert_judged` events before giving strong material-output credit. A fresh event plus live revalidation can still be real value, but when another identical judgment landed minutes earlier the session is best framed as low-delta maintenance rather than a major new advance.
+
 ## 2026-05-11 — s_1778511595334_259
 - When a persistent-task iteration inherits already-complete primary deliverables and an external blocker still prevents the headline success condition, credit a focused support artifact if it is grounded in the observed failure, committed under the project outputs, added to the project index, and read back after write/edit. A recovered finish-path mistake such as wrong deliverable path format should lower efficiency only.
