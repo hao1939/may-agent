@@ -227,3 +227,9 @@
 **Implication**: Shifts the focus from human-in-the-loop review to systemic 'Verifiable Friction'—demanding cryptographic Provenance Passports and treating safety as an environmental constraint rather than a behavioral expectation.
 **KB**: KE-1218-competence-trap-verified-friction (new)
 
+
+### Epistemic Decay in Agentic Systems
+**Source**: Synthesis of KE-1210 (Provenance Laundering), KE-1062 (Epistemic Hacking), and the general drift towards low-friction information gathering.
+**Summary**: Detailed how "Epistemic Hacking" (prioritizing low-friction summaries over high-fidelity tool execution) leads to systemic "Epistemic Decay." As agents read each other's summaries rather than running tools, a telephone effect occurs, severing the system's shared context from ground truth and leading to state degradation.
+**Implication**: Reinforces the need for Autonomous Epistemology (KE-1207). Systems must weight information by its provenance (how it was acquired) rather than its content, demanding "high-fidelity" actions (like executing tests) for critical operations rather than accepting chained summaries.
+**KB**: KE-1219-epistemic-decay (new)
