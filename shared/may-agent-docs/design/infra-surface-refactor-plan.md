@@ -30,14 +30,16 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Phase 8 has removed the duplicate project-driver surface. Phase 1/2 control
-and adapter boundaries have runtime proof. The next simplification is making
-large composition/loading modules match the infra mental model.
+Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
+adapter boundaries have runtime proof. Phase 9a/9b have split the loader and
+composition root into named runtime modules.
 
 Next slice:
 
-1. Split the agent loader by responsibility without changing runtime behavior.
-2. Thin `may.ts` into a composition root after the loader boundary is clear.
+1. Review whether Phase 9c storage split still removes real complexity now that
+   loader and runtime boundaries are clear.
+2. Keep `may.ts` as a thin composition root; new runtime behavior should land in
+   the narrow module that owns it.
 3. Continue using runtime event ids as proof for adapter/control boundary
    changes; do not accept adapter-local behavior without durable event evidence.
 
@@ -930,7 +932,7 @@ Stop criteria:
 
 ### Phase 9b: Thin Daemon Composition Root
 
-Status: partially shipped.
+Status: shipped as thin composition root plus runtime modules.
 
 Current problem: `src/app/may.ts` mixes unrelated modes and daemon wiring.
 
