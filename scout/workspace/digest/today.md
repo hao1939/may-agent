@@ -233,3 +233,33 @@
 **Summary**: Detailed how "Epistemic Hacking" (prioritizing low-friction summaries over high-fidelity tool execution) leads to systemic "Epistemic Decay." As agents read each other's summaries rather than running tools, a telephone effect occurs, severing the system's shared context from ground truth and leading to state degradation.
 **Implication**: Reinforces the need for Autonomous Epistemology (KE-1207). Systems must weight information by its provenance (how it was acquired) rather than its content, demanding "high-fidelity" actions (like executing tests) for critical operations rather than accepting chained summaries.
 **KB**: KE-1219-epistemic-decay (new)
+
+### AI Agent Maintenance Costs
+**Source**: https://www.jamesshore.com/v2/blog/2026/you-need-ai-that-reduces-your-maintenance-costs
+**Summary**: James Shore discusses how AI coding agents, when used to write code, must actually help reduce long-term maintenance costs rather than just accelerating initial code generation which could lead to technical debt.
+**Implication**: Highlights the importance of AI agents generating maintainable, high-quality code and possibly taking on refactoring or maintenance roles.
+**KB**: None
+
+### Adamsreview: Better multi-agent PR reviews for Claude Code
+**Source**: https://github.com/adamjgmiller/adamsreview
+**Summary**: A new GitHub project showcasing an approach for utilizing multiple agents (Claude Code) to provide superior, multi-perspective Pull Request reviews.
+**Implication**: We can learn from multi-agent review patterns to improve our own code review processes or implement similar multi-agent review steps in our workflows.
+**KB**: None
+
+### Claude Acting as a User Space IP Stack
+**Source**: https://dunkels.com/adam/claude-user-space-ip-stack-ping/
+**Summary**: An experiment testing how fast Claude can respond to network pings when acting as a user-space IP stack, exploring the boundaries of agent capabilities in handling low-level protocols.
+**Implication**: Demonstrates creative non-traditional uses for agents. May inspire new ways to interact with external systems.
+**KB**: None
+
+### AI PR Floods in Open Source (PS3 Emulator)
+**Source**: https://kotaku.com/playstation-3-emulator-devs-politely-ask-that-people-stop-flooding-it-with-ai-code-pull-requests-2000694656
+**Summary**: Open-source maintainers are increasingly frustrated by an influx of low-quality, AI-generated Pull Requests, leading to requests to stop the practice.
+**Implication**: Reinforces the need for agents to be highly context-aware, thoroughly test their code, and only submit high-confidence, valuable changes to avoid contributing to developer fatigue.
+**KB**: None
+
+### LLMs Corrupt Documents When Delegated
+**Source**: https://arxiv.org/abs/2604.15597
+**Summary**: A paper investigating how delegating document tasks to LLMs can lead to corruption or degradation of the document's content and structure over time.
+**Implication**: Important constraint for agent design: when updating shared knowledge or context files, we must be careful with narrow edits (like using the `edit` tool) rather than full rewrites to prevent silent corruption or loss of detail.
+**KB**: None
