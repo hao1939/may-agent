@@ -1,24 +1,20 @@
 # E2E Testing Project — Status Checkpoint
 
 **Date:** 2026-05-12  
-**Status:** BLOCKED — standalone environment not yet ready for test execution
+**Status:** BLOCKED — standalone environment not deployed; localdeploy failed
 
-## Latest Check (2026-05-11 ~20:00 UTC)
+## Latest Check (iteration 2, 2026-05-12)
 
-### Standalone Deploy Status: IN PROGRESS 🔄
-`aksbuilder_localdeploy.sh` is actively running on devbox with **14+ bazel server processes** building sub-workspaces in parallel (~12GB RAM consumed). Observed workspaces included:
-
-- `rp` (main) — PID 744976, started 11:41, 2.1GB
-- `e2eimages` — PID 1084805, started 19:35, 655MB
-- `builder` (mazel) — PID 1326418, started 19:52, 835MB
-- Plus 11 others: cseappsample, helm3releaser, goappsample, distroless, binariespublish, deployerappsample, clirunner, deployboximage, imagetool, syncvalidation, queuewatcher
-
-This appears to be the multi-workspace container image build phase. Deployment had not finished at the time of the check.
+### Standalone Deploy Status: FAILED ❌
+Previous `aksbuilder_localdeploy.sh` run (started ~2026-05-11 19:34 UTC) is **no longer running**. No tmux/screen session captured output, so logs are lost. Only 2 idle bazel server processes remain. **No evidence the deploy succeeded:**
+- No BUILD_VERSION artifact found anywhere
+- Key Vault DNS still NXDOMAIN
+- No deploy config files generated
 
 ### Toolchain Status
-- **Go 1.24.3**: ✅ Installed at `/usr/local/go/bin/go`
-- **Bazel**: ✅ Bundled inside aksbuilder / actively running
-- **Key Vault DNS**: ❌ `aks-rp-e2e-kv.vault.azure.net` returned NXDOMAIN during the check
+- **Go 1.24.3**: ✅ Installed at `/usr/local/go/bin/go` (not on default PATH)
+- **Bazel**: ✅ Bundled inside aksbuilder
+- **Key Vault DNS**: ❌ `aksbuilder-standalone-keyvault.vault.azure.net` returned NXDOMAIN
 
 ## What's Done
 
@@ -45,22 +41,18 @@ This appears to be the multi-workspace container image build phase. Deployment h
 
 ## What's Blocked
 
-**Standalone environment is not yet ready.** The environment was still being built during the latest check, and the checked Key Vault DNS name returned NXDOMAIN.
+**Standalone environment is not deployed.** The previous localdeploy run failed silently (process gone, no output captured, KV DNS still NXDOMAIN).
 
-### To Unblock (human / devbox follow-up)
+### To Unblock (human action required)
 
 ```bash
-# 1. Verify deployment finished
-ssh devbox 'ps aux | grep bazel | grep -v grep | wc -l'
-
-# 2. If deploy is complete, identify the actual generated environment / build version
-#    (look in localdeploy output or generated config files)
-
-# 3. Verify Key Vault resolves for the deployed environment
-nslookup <actual-kv-name>.vault.azure.net
-
-# 4. Run readiness check
-bash outputs/standalone-readiness-check.sh
+# Re-run localdeploy in tmux so output is captured:
+ssh devbox
+tmux new-session -s localdeploy
+export PATH=/usr/local/go/bin:$PATH
+cd ~/rp
+bash hack/aksbuilder_localdeploy.sh ~/rp 2>&1 | tee ~/localdeploy.log
+# Wait for completion, then note the BUILD_VERSION from output
 ```
 
 ### After Unblock — First Test Run
