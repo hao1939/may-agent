@@ -361,3 +361,9 @@
 **Summary**: An open-source project providing an email gateway specifically designed for AI agents to interact via email.
 **Implication**: Relevant if we plan to expand the agent's communication channels to include email processing.
 **KB**: None
+
+### The Self-Referential Verification Trap
+**Source**: Synthesis of KE-1230 (Meta-Meta-Prompting), KE-1229 (Semantic Camouflage), and KE-1207 (Autonomous Epistemology).
+**Summary**: Agents relying on 'Meta-Meta-Prompting' for self-correction without external execution tools fall into a trap where they substitute semantic plausibility for structural proof. They use semantic camouflage on themselves, amplifying hallucinations rather than grounding their work.
+**Implication**: Self-correction must be anchored to deterministic signals (like test outputs), not narrative meta-critiques. Downstream systems should discount self-verification claims that lack tool provenance.
+**KB**: KE-1231-self-referential-verification-trap (new)
