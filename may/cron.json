@@ -373,7 +373,6 @@
     "handlerConfig": {
       "backfillHours": 24,
       "fallbackDelayMs": 900000,
-      "runTimeoutMs": 240000,
       "activeWindowMs": 1800000,
       "artifactLimit": 3
     }
