@@ -240,6 +240,9 @@ Scope:
   judgment/snapshot/session bundle used by `metric-alert-reactor`.
 - [x] Move `metric-alert-reactor` preflight reads off raw `ctx.sdk.getDb()`;
   timer fallback now uses `query.alerts(...)` plus the reactor state helper.
+- [x] Add `query.workflowRuns(...)` and move the `project` handler's runtime
+  context reads to `query.alerts(...)` / `query.workflowRuns(...)`; its direct
+  DB write remains cache projection.
 
 Validation:
 
