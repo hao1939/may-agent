@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { create } from "../agents/may/handlers/metric-alert-reactor.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
+import { createQueryService } from "../src/lib/query-service.js";
 
 describe("metric-alert-reactor", () => {
   const tempDirs: string[] = [];
@@ -31,6 +32,15 @@ describe("metric-alert-reactor", () => {
         getDb: () => {
           throw new Error("db unavailable");
         },
+        query: {
+          alerts: () => {
+            throw new Error("db unavailable");
+          },
+          metricAlertReactorState: () => {
+            throw new Error("db unavailable");
+          },
+        },
+        emit: () => {},
         log: (_level: string, msg: string) => logs.push(msg),
         runAgent: async (owner: string, task: string, opts?: { source?: string }) => {
           runs.push({ owner, task, source: opts?.source });
@@ -62,6 +72,8 @@ describe("metric-alert-reactor", () => {
       sdk: {
         paths: { root, agents: agentsRoot },
         getDb: () => db,
+        query: createQueryService({ getDb: () => db }),
+        emit: () => {},
         log: (_level: string, msg: string) => logs.push(msg),
         runWorkflow: async (name: string, task: string, opts?: { source?: string }) => {
           workflows.push({ name, task, source: opts?.source });
@@ -190,6 +202,24 @@ describe("metric-alert-reactor", () => {
     expect(workflows).toHaveLength(1);
     expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
     expect(workflows[0].task).toContain('"metricId": "arc.quality"');
+  });
+
+  it("treats trigger event payloads as unresolved-alert scans", async () => {
+    const { db, handler, workflows, logs } = setupWithDb();
+    const now = Date.now();
+    insertOpenP1Alert(db, now);
+
+    await handler({
+      type: "trigger.metric-alert-reactor",
+      source: "event",
+      entry: "metric-alert-reactor",
+      timestamp: now,
+      data: { type: "trigger.metric-alert-reactor" },
+    });
+
+    expect(workflows).toHaveLength(1);
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(logs.some((msg) => msg.includes("Missing metricId"))).toBe(false);
   });
 
   it("triages an old P2 alert that has no judgment", async () => {
