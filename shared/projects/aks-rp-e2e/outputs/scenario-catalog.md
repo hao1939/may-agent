@@ -86,6 +86,6 @@ grep -rh "NewScenario(" test/e2ev3/sigs/ --include="*.go" | grep -i "dualstack"
 
 ## Corrections to Prior Docs
 
-- **SIG count:** 24 directories (not 27) — confirmed in iteration 3 verification
+- **SIG count:** 24 directories — re-confirmed May 2026 (`ls` shows 24 dirs + BUILD.bazel + owners.go)
 - **`suites/dev/` does not exist** — dev suite is inline in `cmd/dev/main.go`
 - **`--list-scenarios` flag does not exist** — must grep source to find scenario names
