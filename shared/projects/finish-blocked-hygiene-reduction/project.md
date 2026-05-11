@@ -6,8 +6,8 @@ type: milestone
 priority: P1
 workflow: project
 iteration: 6
-stop_reason: Split metrics are now registered and the remaining strict alert is one historical interrupted closed-loop-steward session already caused by resolved ambient dirty state; no new patch is indicated until the strict 24h window validates.
-resume_condition: Next metrics-snapshot after 2026-05-11T17:06:09Z confirms `session.finish-blocked-unresolved-count-24h=0`, or any newer strict unresolved row appears before then.
+stop_reason: Split metrics are registered and calibrated; the strict unresolved metric is healthy and the prior P1 alert recovered.
+resume_condition: Resume if `session.finish-blocked-unresolved-count-24h` breaches again, or if raw finish-block friction rises with a new unresolved source pattern.
 ---
 
 # Finish-Blocked Hygiene Reduction
@@ -24,7 +24,7 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 - `evaluator.low-quality-rate-24h=0.7472` remains high as a dashboard/friction metric, while `evaluator.substantive-low-quality-rate-24h=0.1447` is much lower; this project targets the hygiene/friction gap rather than hiding it.
 
 ## Current State
-Paused: May registered both split metrics, and the strict unresolved metric has a single historical 24h row (`s_1778432730435_1172`, an interrupted closed-loop-steward run blocked by then-ambient dirty handler files). No owner-local code/prompt fix is indicated unless a newer strict unresolved row appears; next validation is the metrics snapshot after 2026-05-11T17:06:09Z, when that row ages out of the 24h window.
+Paused/monitoring: May registered both split metrics, then calibrated the strict unresolved metric to exclude terminal auto-resume digests whose action is `nothing` with `No recoverable work worth resuming`. The prior P1 alert recovered after the next metrics snapshot (`session.finish-blocked-unresolved-count-24h=0`). Resume this project only if the strict unresolved metric breaches again, or raw finish-block friction reveals a new source pattern that needs workflow or prompt repair.
 
 ## Plan
 
@@ -125,6 +125,10 @@ Rechecked alert 284 again during metric-alert triage. The metric row remains `cu
 ### 2026-05-11 — Alert 284 repeated waiting_with_evidence hold
 
 Rechecked alert 284 after another P1 metric-alert triage trigger. The metric row still reads `current=1`, `threshold=0`, `target=0`, priority `P1`, and the latest ten snapshots all remain `1`; the strict source query still returns exactly one row, May `closed-loop-steward` session `s_1778432730435_1172`, evaluated at `2026-05-10T17:15:51.009Z` with `status=interrupted`, `outcome=interrupted`, no success/partial digest, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`. Chosen operation: `waiting_with_evidence`; this is an accepted wait on the strict 24h window rather than a new root-cause fix, calibration, downgrade, or escalation. Next validation remains the first metrics snapshot after `2026-05-11T17:15:51.009Z`, or immediate project resume if any newer strict unresolved row appears.
+
+### 2026-05-11 — Strict metric calibration and alert recovery
+
+Manual review found the repeated P1 alert was a metric calibration bug, not a live unresolved dirty exit. The only counted row had a latest auto-resume digest with `action=nothing` and `action_reason=No recoverable work worth resuming`, so the recovery process had already made a terminal judgment. Updated the strict metric source query to exclude that terminal no-recovery digest shape while keeping the raw friction metric unchanged. The next metrics snapshot set `session.finish-blocked-unresolved-count-24h=0`, emitted `metric.recovered`, and resolved alert 284.
 
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
