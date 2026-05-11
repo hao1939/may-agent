@@ -173,27 +173,27 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
           const judgmentData = parseJsonObject(judgedEvent.data);
           const nextValidationAt = parseValidationTime(judgmentData.nextValidationAt);
           if (nextValidationAt != null && Date.now() < nextValidationAt) {
-            emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); waiting for requested validation.`, { judgedEventId: judgedEvent.id, nextValidationAt });
+            emitSkip(ctx, metricId, `${priority} ${metricId} judged (event ${judgedEvent.id}); waiting for requested validation.`, { judgedEventId: judgedEvent.id, nextValidationAt });
             return;
           }
 
           const latestSnapshot = state.latestSnapshot as { value: number | null; measured_at: number } | null;
           if (!latestSnapshot || latestSnapshot.measured_at <= judgedEvent.timestamp) {
-            emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); awaiting next metrics snapshot.`, { judgedEventId: judgedEvent.id });
+            emitSkip(ctx, metricId, `${priority} ${metricId} judged (event ${judgedEvent.id}); awaiting next metrics snapshot.`, { judgedEventId: judgedEvent.id });
             return;
           }
           if (Date.now() - judgedEvent.timestamp < P1_RETRIAGE_COOLDOWN_MS) {
-            emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); validation cooldown active.`, { judgedEventId: judgedEvent.id });
+            emitSkip(ctx, metricId, `${priority} ${metricId} judged (event ${judgedEvent.id}); validation cooldown active.`, { judgedEventId: judgedEvent.id });
             return;
           }
 
           const currentValue = numberOrNull(latestSnapshot.value ?? metricRow?.current ?? current);
           const thresholdValue = numberOrNull(metricRow?.threshold ?? threshold);
           if (!isBreaching(currentValue, thresholdValue, metricRow?.alertOp)) {
-            emitSkip(ctx, metricId, `P1 ${metricId} judged and latest snapshot is recovered; waiting for alert lifecycle.`, { judgedEventId: judgedEvent.id });
+            emitSkip(ctx, metricId, `${priority} ${metricId} judged and latest snapshot is recovered; waiting for alert lifecycle.`, { judgedEventId: judgedEvent.id });
             return;
           }
-          ctx.sdk.log("info", `[metric-alert-reactor] P1 ${metricId} still breaching after judgment event ${judgedEvent.id}; rerunning triage.`);
+          ctx.sdk.log("info", `[metric-alert-reactor] ${priority} ${metricId} still breaching after judgment event ${judgedEvent.id}; rerunning triage.`);
           forceRetriageAfterJudgment = true;
         }
       }
