@@ -321,7 +321,8 @@
     "handler": "session-recovery",
     "agent": "may",
     "enabled": true,
-    "description": "React to failed sessions by dispatching the session-recovery workflow.",
+    "intervalMs": 300000,
+    "description": "React to failed sessions by dispatching the session-recovery workflow; timer fallback auto-closes stale immediate sessions with no assistant activity.",
     "on": [
       "session.failed"
     ]

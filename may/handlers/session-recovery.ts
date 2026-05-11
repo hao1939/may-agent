@@ -13,13 +13,25 @@
  * Replaces inline bus.subscribe() recovery logic that was in may.ts.
  */
 
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
 import type { CronEntry } from "../../shared/agent-sdk.js";
 
 const MAX_RECOVERY_ATTEMPTS = 2;
+const STALE_AUTOCLOSE_MS = 30 * 60_000;
+const MAX_STALE_AUTOCLOSE_REAPS = 5;
 
 /** Key: "agent:taskPrefix", Value: recovery attempt count. */
 const recoveryAttempts = new Map<string, number>();
+
+type RunningSessionRow = {
+  sessionId: string;
+  agent: string;
+  task?: string | null;
+  status: string;
+  startedAt: number;
+};
 
 function recoveryKey(agent: string, task: string): string {
   return `${agent}:${task.slice(0, 100)}`;
@@ -75,9 +87,102 @@ function workflowTask(input: {
   ].join("\n");
 }
 
+function parseMeta(persistDir: string, sessionId: string): Record<string, unknown> | null {
+  const metaPath = join(persistDir, "sessions", sessionId, "meta.json");
+  if (!existsSync(metaPath)) return null;
+  try {
+    const parsed = JSON.parse(readFileSync(metaPath, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+function hasAssistantLine(persistDir: string, sessionId: string): boolean {
+  const jsonlPath = join(persistDir, "sessions", sessionId, "session.jsonl");
+  if (!existsSync(jsonlPath)) return false;
+  try {
+    return readFileSync(jsonlPath, "utf8")
+      .split("\n")
+      .some((line) => line.includes('"role":"assistant"') || line.includes('"role": "assistant"'));
+  } catch {
+    return false;
+  }
+}
+
+function isSafeAutocloseSession(ctx: HandlerContext, row: RunningSessionRow, now: number): boolean {
+  if ((row.startedAt ?? now) > now - STALE_AUTOCLOSE_MS) return false;
+  if (!row.sessionId || !row.agent) return false;
+
+  const persistDir = ctx.sdk.paths.persist ?? join(ctx.sdk.paths.root, ".state");
+  const meta = parseMeta(persistDir, row.sessionId);
+  if (!meta) return false;
+
+  return meta.status === "running"
+    && meta.autoClose === "immediate"
+    && meta.agent === row.agent
+    && meta.task === (row.task ?? "")
+    && !hasAssistantLine(persistDir, row.sessionId);
+}
+
+function reapStaleAutocloseSessions(ctx: HandlerContext): void {
+  const now = Date.now();
+  const db = ctx.sdk.getDb();
+  const stale = db.prepare(
+    `SELECT sessionId, agent, task, status, startedAt
+     FROM sessions
+     WHERE status IN ('running', 'idle')
+       AND startedAt < ?
+     ORDER BY startedAt ASC
+     LIMIT ?`,
+  ).all(now - STALE_AUTOCLOSE_MS, MAX_STALE_AUTOCLOSE_REAPS) as RunningSessionRow[];
+
+  for (const row of stale) {
+    if (!isSafeAutocloseSession(ctx, row, now)) continue;
+
+    const error = "Auto-closed stale immediate session with no assistant activity";
+    const result = db.prepare(
+      `UPDATE sessions
+       SET status = 'error', endedAt = ?, error = ?, outcome = 'error'
+       WHERE sessionId = ?
+         AND status IN ('running', 'idle')
+         AND startedAt = ?`,
+    ).run(now, error, row.sessionId, row.startedAt) as { changes?: number };
+
+    if ((result.changes ?? 0) <= 0) continue;
+
+    const event = {
+      sessionId: row.sessionId,
+      agent: row.agent,
+      status: "error",
+      outcome: "error",
+      error,
+      autoClosed: true,
+      reason: "stale_immediate_no_assistant_activity",
+    };
+    ctx.sdk.emit("session.end", event);
+    ctx.sdk.emit("session.failed", {
+      ...event,
+      task: row.task ?? "",
+    });
+    ctx.sdk.emit("handler.skipped", {
+      handler: "session-recovery",
+      sessionId: row.sessionId,
+      agent: row.agent,
+      reason: "auto-closed stale immediate session",
+    });
+    ctx.sdk.log("info", `[session-recovery] Auto-closed stale immediate session ${row.sessionId}`);
+  }
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
-    if (!event?.data) {
+    if (!event) {
+      reapStaleAutocloseSessions(ctx);
+      return;
+    }
+
+    if (!event.data) {
       emitSkip(ctx, null, "missing session.failed event data", { eventType: event?.type ?? null });
       return;
     }
