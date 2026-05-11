@@ -36,6 +36,12 @@ describe("session metrics queries", () => {
     expect(failedTriageBlock).toContain("COUNT(DISTINCT s.sessionId) as c");
   });
 
+  it("counts skipped aftermath evaluations as acted-on failures for session.failed-triage-rate-3h", () => {
+    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+
+    expect(source).toContain("AND e.verdict IN ('needs_improvement', 'skipped')");
+  });
+
   it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {
     const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
 

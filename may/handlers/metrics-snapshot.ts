@@ -543,7 +543,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND COALESCE(s.endedAt, s.startedAt) <= ?
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
-           AND e.verdict = 'needs_improvement'`,
+           AND e.verdict IN ('needs_improvement', 'skipped')`,
         threeH, sevenMinutesAgo,
       );
       // Small failure counts cause this metric to flap around a single recently-ended
