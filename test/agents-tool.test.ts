@@ -106,6 +106,69 @@ describe("V2 agents tool", () => {
     expect(result.error).toContain("Use tech-lead instead");
   });
 
+  it("call appends context_files to the dispatched task", async () => {
+    manager.register({
+      name: "coder",
+      description: "Writes code",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    let dispatchedTask = "";
+    (manager as any).callAgent = async (_agent: string, task: string) => {
+      dispatchedTask = task;
+      return { status: "done", agent: "coder", summary: "ok", messages: [] };
+    };
+
+    const tool = manager.createAgentsTool();
+    const result = await callTool(tool, {
+      action: "call",
+      agent: "coder",
+      task: "Drive the project loop",
+      context_files: [
+        "agents/shared/skills/project-loop-driver/SKILL.md",
+        "agents/shared/skills/reading-metrics/skill.md",
+      ],
+    });
+
+    expect(result.status).toBe("done");
+    expect(dispatchedTask).toContain("Drive the project loop");
+    expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
+    expect(dispatchedTask).toContain("agents/shared/skills/project-loop-driver/SKILL.md");
+    expect(dispatchedTask).toContain("agents/shared/skills/reading-metrics/skill.md");
+  });
+
+  it("fork appends context_files to the session task", async () => {
+    manager.register({
+      name: "coder",
+      description: "Writes code",
+      domain: "coding",
+      model: mockModel(),
+      tools: [echoTool()],
+    });
+
+    let dispatchedTask = "";
+    (manager as any).runAgent = (_agent: string, task: string) => {
+      dispatchedTask = task;
+      return "s_context_files";
+    };
+
+    const tool = manager.createAgentsTool();
+    const result = await callTool(tool, {
+      action: "fork",
+      agent: "coder",
+      task: "Investigate the socket route",
+      context_files: ["agents/shared/skills/control-plane-operation/SKILL.md"],
+    });
+
+    expect(result.status).toBe("started");
+    expect(result.sessionId).toBe("s_context_files");
+    expect(dispatchedTask).toContain("Investigate the socket route");
+    expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
+    expect(dispatchedTask).toContain("agents/shared/skills/control-plane-operation/SKILL.md");
+  });
+
   it("cancel on non-existent session returns cancelled (no-op)", async () => {
     const tool = manager.createAgentsTool();
     const result = await callTool(tool, { action: "cancel", sessionId: "s_nonexistent" });

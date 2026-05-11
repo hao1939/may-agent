@@ -185,6 +185,16 @@ interface AgentsToolParamsType {
   scope?: "parent" | "origin" | "root" | "workflow";
 }
 
+function appendContextFiles(task: string, contextFiles?: string[]): string {
+  if (!contextFiles || contextFiles.length === 0) return task;
+  return [
+    task,
+    "",
+    "Context files the receiving agent must read before acting:",
+    ...contextFiles.map((file) => `- ${file}`),
+  ].join("\n");
+}
+
 /**
  * Create the 'agents' tool for inter-agent cooperation.
  *
@@ -262,7 +272,8 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             const lineage = getCallerLineage(parentSid);
 
             // Sync call: blocks until done
-            const result = await manager.callAgent(params.agent, params.task, {
+            const task = appendContextFiles(params.task, params.context_files);
+            const result = await manager.callAgent(params.agent, task, {
               parentSessionId: parentSid,
               workflowRunId: lineage.workflowRunId,
               projectId: lineage.projectId,
@@ -278,7 +289,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.agent || !(params.task || params.message)) {
               return textResult(JSON.stringify({ error: "'fork' requires 'agent' and 'task'" }));
             }
-            const forkTask = params.task || params.message!;
+            const forkTask = appendContextFiles(params.task || params.message!, params.context_files);
             // Guard: reject if target matches a tool in caller's toolset
             const callerAgentRun = getCallerAgentName?.();
             if (callerAgentRun) {
