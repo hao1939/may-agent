@@ -27,6 +27,7 @@ import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
 import { parseEmitMode, runEmitMode } from "./modes/emit.js";
+import { parseOneshotTimeoutMinutes, runOneshotMode } from "./modes/oneshot.js";
 import { parseRunWorkflowMode, runWorkflowMode } from "./modes/run-workflow.js";
 import { parseWebPort, runWebOnlyMode, startWebMode } from "./modes/web.js";
 
@@ -173,14 +174,7 @@ if (WEB_ONLY_MODE) {
 }
 
 // --oneshot CLI parameters
-const ONESHOT_TIMEOUT_MINUTES = (() => {
-  const arg = process.argv.find((a) => a.startsWith("--timeout="));
-  if (arg) {
-    const val = parseInt(arg.split("=")[1]!, 10);
-    return isNaN(val) ? 5 : val;
-  }
-  return 5;
-})();
+const ONESHOT_TIMEOUT_MINUTES = parseOneshotTimeoutMinutes(process.argv);
 
 // ── Detached sub-agent env vars ──────────────────────────────────────────
 const ENV_SESSION_ID = process.env.SESSION_ID || undefined;
@@ -680,49 +674,19 @@ if (!CHAT_MODE && !INITIAL_TASK && !CRON_ENABLED && !ONESHOT_MODE && !WEB_ENABLE
 
 if (ONESHOT_MODE) {
   // ── Oneshot mode: single session, JSON result to stdout, then exit ──
-  const oneshotTask = INITIAL_TASK;
-  if (!oneshotTask) {
-    console.error("Error: --oneshot requires --task <description>");
+  try {
+    const exitCode = await runOneshotMode({
+      task: INITIAL_TASK,
+      agentName: interfaceAgent,
+      manager,
+      timeoutMinutes: ONESHOT_TIMEOUT_MINUTES,
+      formatDurationMs,
+    });
+    process.exit(exitCode);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
-
-  const oneshotStart = Date.now();
-  const timeoutMs = ONESHOT_TIMEOUT_MINUTES * 60 * 1000;
-
-  taskSessionId = manager.run(interfaceAgent, oneshotTask, {
-    kind: "job",
-  });
-
-  // Set up timeout
-  const timeoutTimer = setTimeout(() => {
-    manager.cancel(taskSessionId!);
-    const result = {
-      sessionId: taskSessionId,
-      status: "timeout",
-      duration: `${ONESHOT_TIMEOUT_MINUTES}m`,
-      result: `Session timed out after ${ONESHOT_TIMEOUT_MINUTES} minutes`,
-    };
-    console.log(JSON.stringify(result));
-    process.exit(1);
-  }, timeoutMs);
-  timeoutTimer.unref();
-
-  await manager.waitForIdle(taskSessionId);
-  clearTimeout(timeoutTimer);
-
-  const durationMs = Date.now() - oneshotStart;
-  const sessions = manager.status();
-  const session = sessions.find((s) => s.sessionId === taskSessionId);
-  const status = session?.status === "error" || session?.status === "interrupted" ? "error" : "success";
-
-  const result = {
-    sessionId: taskSessionId,
-    status,
-    duration: formatDurationMs(durationMs),
-    result: session ? `Agent ${interfaceAgent} completed (${session.status})` : `Agent ${interfaceAgent} completed`,
-  };
-  console.log(JSON.stringify(result));
-  process.exit(status === "success" ? 0 : 1);
 } else if (INITIAL_TASK && !CHAT_MODE) {
   // ── Task mode: single session, run to completion ─────────────────
   // Only track as human request if not a detached sub-agent (those have ENV_PARENT_SESSION_ID)
