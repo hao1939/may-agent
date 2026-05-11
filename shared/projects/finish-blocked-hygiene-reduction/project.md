@@ -246,6 +246,10 @@ Documented a project-level exception for repeated P2 alert `session.finish-block
 
 Rechecked repeated P2 alert `session.finish-blocked-uncommitted-count-24h` after the stored metric row reached `current=59` over threshold `50`. The breach remains real raw finish-block friction, but paired strict metric `session.finish-blocked-unresolved-count-24h` remains healthy at `current=0` with the latest ten strict snapshots at `0`; fresh classification of the live raw 24h slice found no unresolved dirty exits (`56` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases). Chosen operation: `document_exception`; keep accepting the still-breaching raw alert as monitored/expected friction in this paused project unless the strict metric breaches or future raw sampling exposes a new non-recovered source pattern, at which point resume the project immediately.
 
+### 2026-05-11 — Alert 287 document_exception maintained at raw 59
+
+Rechecked repeated P2 alert `session.finish-blocked-uncommitted-count-24h` after the latest snapshots held at `current=59` over threshold `50`. The breach is real raw finish-block friction, not stale: the open alert `287` remains unresolved and the metric source query still counts finish-blocked evaluator rows. The paired strict unresolved metric remains healthy at `current=0` with the latest paired snapshots at strict `0`, and fresh classification of the live raw 24h slice found all `59` rows recovered or intentionally terminal (`56` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases). Chosen operation: `document_exception`; continue accepting this still-breaching raw alert as monitored/expected friction for the paused project, with immediate resume only if `session.finish-blocked-unresolved-count-24h` breaches or raw sampling exposes a fresh non-recovered dirty-exit source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
