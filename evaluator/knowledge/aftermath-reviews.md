@@ -16,6 +16,10 @@
 - Symptom: `finish()` guard blocks with `uncommitted changes` and lists modified files.
 - Fix: check `git status` in /app/agents early; commit small, descriptive changes before calling `finish()`.
 
+## Pattern: guard pressure can trigger wrong-scope commits in stewardship sessions
+- Symptom: a coordination/triage session correctly determines it should make no repo edits, hits a `finish()` block on an ambient dirty file, explicitly notes the file is unrelated, then commits it anyway because the guard suggests a commit command.
+- Fix: score the operational diagnosis separately from the hygiene recovery. If the file was not created/edited/owned by the current task, the correct outcome is `partial`/`blocked` with the exact path and owner, not an opportunistic commit just to satisfy closeout.
+
 ## Pattern: tool/agent confusion in messaging
 - Symptom: agents attempt to send messages to an invalid recipient like `functions.message` (confusing tool name with agent name).
 - Fix: clarify in prompts/docs that `message` is a tool and `to` must be an agent handle (e.g. `may`, `dev`, `arc`).
