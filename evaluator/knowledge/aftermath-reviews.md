@@ -85,6 +85,10 @@
 - Symptom: a route classifier marks a session as `success_candidate` with signals like `knowledge update` because the transcript text merely mentions a path under `agents/.../knowledge/`, even though the session only cited or read an existing KE.
 - Fix: inspect the routing heuristic itself and prefer anchors tied to `write`/`edit` tool-call payloads or committed diffs. Path-shape regexes over free-form transcript prose are too broad and create false-good aftermath reviews.
 
+## Pattern: classifier-bug aftermath sessions create value when they land durable follow-up artifacts
+- Symptom: a reviewed session spends much of its effort proving that a router/guard/classifier made the wrong call, so the work can look meta or circular if the reviewer checks only whether the original route was false.
+- Fix: inspect whether the session verified the real classifier source, connected the incident to prior evidence, and converted the diagnosis into durable follow-up artifacts such as a KE, proposal, queue entry, or implementation request. If those artifacts land and are actionable, credit the session as real system improvement even when part of the transcript is spent on guard/finish recovery.
+
 ## Pattern: apparent knowledge updates can be net-destructive if they overwrite existing KEs
 - Symptom: a research session lands a real commit and read-back evidence for new `KE-xxx.md` files, but the committed diff shows those paths already existed and the session replaced canonical knowledge entries with unrelated content.
 - Fix: for claimed knowledge updates, inspect the parent-vs-commit diff (or prior blob) for each KE path, not just the final file contents. If the path pre-existed, verify the change is an intentional revision rather than an ID collision/overwrite. Credit any safe side artifact like a digest append separately, but downgrade the session overall and escalate restoration to the owner.
