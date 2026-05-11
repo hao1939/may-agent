@@ -5,9 +5,8 @@
 
 **Current convention, 2026-05-11**: `project` is the default explicit-project
 driver. `master-worker*` files remain as legacy/tested workflow code and
-historical project metadata, but active or resumable shared projects should not
-select them unless a reviewer records a specific reason. Prefer migrating
-waiting projects to `workflow: project` before they resume.
+archived historical metadata, but non-archived shared projects should not select
+them. If a project can resume, use `workflow: project`.
 
 ## Shared Workflows (active or wired)
 
@@ -37,8 +36,8 @@ waiting projects to `workflow: project` before they resume.
 ### Legacy Shared Workflows Kept For Compatibility
 
 - `master-worker.ts` and `master-worker*` variants remain on disk with tests, but
-  are not the default project path. Non-terminal shared projects should use
-  `workflow: project` unless a reviewer records a specific reason.
+  are not the default project path. Non-archived shared projects should use
+  `workflow: project`.
 
 ## Archived Shared Workflows
 

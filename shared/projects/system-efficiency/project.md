@@ -4,7 +4,7 @@ owner: optimizer
 status: closed
 type: milestone
 priority: P1
-workflow: master-worker
+workflow: project
 iteration: 4
 stop_reason: DONE
 ---

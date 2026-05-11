@@ -4,7 +4,7 @@ owner: coach
 status: closed
 type: milestone
 priority: P2
-workflow: master-worker
+workflow: project
 iteration: 50
 stop_reason: "Safety cap: 50 iterations reached."
 ---

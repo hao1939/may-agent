@@ -188,13 +188,13 @@ describe("diagnoseProject - uncovered branches", () => {
     expect(result.reason).toContain("terminal status");
   });
 
-  it("treats 'complete' as waiting", () => {
+  it("treats 'complete' as terminal status", () => {
     const proj = makeProject({ status: "complete" });
     const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
     expect(result.type).toBe("skip");
   });
 
-  it("treats 'completed' as waiting", () => {
+  it("treats 'completed' as terminal status", () => {
     const proj = makeProject({ status: "completed" });
     const result = diagnoseProject(proj, emptyState, emptyBreached, emptyRunning, now, []);
     expect(result.type).toBe("skip");

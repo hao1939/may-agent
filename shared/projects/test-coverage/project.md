@@ -4,7 +4,7 @@ owner: optimizer
 status: closed
 type: milestone
 priority: P2
-workflow: master-worker
+workflow: project
 iteration: 13
 ---
 

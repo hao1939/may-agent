@@ -121,8 +121,8 @@ export function validateProjectFormat(content: string, expectedId?: string): str
     errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
   }
   const status = meta.status?.toLowerCase() || "active";
-  if (meta.workflow?.startsWith("master-worker") && !["closed", "complete", "done"].includes(status)) {
-    errors.push("non-terminal projects should use workflow: project unless master-worker is explicitly justified");
+  if (meta.workflow?.startsWith("master-worker")) {
+    errors.push("shared projects should use workflow: project; master-worker is legacy/archived only");
   }
   if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
     errors.push("metadata duplicated as bold body field");

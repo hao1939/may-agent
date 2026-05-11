@@ -4,7 +4,7 @@ owner: coach
 status: closed
 type: milestone
 priority: P0
-workflow: master-worker
+workflow: project
 iteration: 9
 ---
 

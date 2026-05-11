@@ -4,7 +4,7 @@ owner: coach
 status: closed
 type: milestone
 priority: P1
-workflow: master-worker
+workflow: project
 iteration: 50
 stop_reason: COMPLETE — target met (avg 0.70 vs ≥0.50 target). Hit iteration cap 50 but goal was achieved at iter ~19.
 ---

@@ -4,7 +4,7 @@ owner: bob
 status: closed
 type: milestone
 priority: P1
-workflow: master-worker
+workflow: project
 iteration: 50
 stop_reason: "Safety cap: 50 iterations reached without resolution. 5/6 milestones done."
 ---

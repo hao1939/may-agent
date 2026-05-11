@@ -2,8 +2,7 @@
 
 **Status:** legacy compatibility. The file still exists with tests, but
 `project` is the default explicit-project workflow. Do not select
-`workflow: master-worker` for new or resumable projects unless a reviewer
-records a specific reason.
+`workflow: master-worker` for non-archived shared projects.
 
 ## Overview
 

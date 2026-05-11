@@ -4,7 +4,7 @@ owner: coach
 status: closed
 type: milestone
 priority: P1
-workflow: master-worker
+workflow: project
 iteration: 1
 stop_reason: CLOSED — goal achieved (33%→100% when runs execute). Remaining issue (dispatch accuracy) escalated to tech-lead.
 ---

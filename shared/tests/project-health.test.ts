@@ -57,14 +57,16 @@ describe('project-health', () => {
       ]));
     });
 
-    it('flags master-worker on non-terminal projects but allows historical closed projects', () => {
+    it('flags master-worker in live shared projects', () => {
       const active = '---\nid: test-proj\nowner: bob\nstatus: active\nworkflow: master-worker\n---\n\n# Test\n';
       const closed = '---\nid: test-proj\nowner: bob\nstatus: closed\nworkflow: master-worker\n---\n\n# Test\n';
 
       expect(validateProjectFormat(active, 'test-proj')).toContain(
-        'non-terminal projects should use workflow: project unless master-worker is explicitly justified'
+        'shared projects should use workflow: project; master-worker is legacy/archived only'
       );
-      expect(validateProjectFormat(closed, 'test-proj')).toEqual([]);
+      expect(validateProjectFormat(closed, 'test-proj')).toContain(
+        'shared projects should use workflow: project; master-worker is legacy/archived only'
+      );
     });
   });
 
@@ -273,7 +275,7 @@ describe('project-health', () => {
       expect(result.type).toBe('skip');
     });
 
-    it('treats done/complete as waiting', () => {
+    it('treats done as terminal', () => {
       const proj = { ...baseProject, status: 'done' };
       const state: HealthState = {
         lastFullScan: 0,

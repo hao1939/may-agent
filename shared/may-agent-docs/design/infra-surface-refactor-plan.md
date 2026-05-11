@@ -680,7 +680,8 @@ First slice, 2026-05-11:
   metadata.
 - The two non-terminal shared projects that still selected `master-worker`
   (`closed-loop-reliability`, `proof-of-life-dashboard`) were migrated to
-  `workflow: project`. Closed historical projects retain their old metadata.
+  `workflow: project`. At this point, closed historical projects still retained
+  old metadata; a later slice removed that live-tree exception.
 - Validation:
   - grep found no non-terminal shared project still selecting `master-worker`.
   - `bun test agents/shared/tests/project-health-coverage.test.ts
@@ -728,6 +729,18 @@ Fourth slice, 2026-05-11:
   not as active/wired compatibility.
 - Historical project journals still mention prior `goal-driver` runs, but there
   is no live workflow file or active project selection for agents to copy.
+
+Fifth slice, 2026-05-11:
+
+- Migrated every non-archived shared project that still declared
+  `workflow: master-worker` to `workflow: project`, including closed/complete
+  projects that could otherwise resume after a new comment.
+- Tightened shared project format validation: `master-worker*` is now
+  legacy/archived only for scanned shared projects, not a live-tree exception.
+- `REGISTRY.md` and `design/master-worker.md` now state the simpler convention:
+  resumable projects use `project`; `master-worker*` remains on disk only as
+  compatibility/tested legacy code until its runtime files are separately
+  retired.
 
 ## Cross-Cutting Validation
 

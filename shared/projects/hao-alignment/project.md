@@ -4,7 +4,7 @@ owner: may
 status: complete
 type: milestone
 priority: P1
-workflow: master-worker
+workflow: project
 iteration: 53
 stop_reason: All goals met. Correction rate 0.9% vs <10% target. P1-P21 documented and propagated.
 ---
