@@ -45,3 +45,21 @@
 **Implication**: For may-agent and other multi-agent systems, having an open standard for agent identity could standardise how agents authenticate to external APIs or to each other, instead of relying solely on internal DB session IDs or generic API keys.
 **KB**: KE-1202-ai-agent-passport-identity-standard (new)
 
+
+### Ephemeral Provenance Passports
+**Source**: Synthesis of KE-1064 (Provenance Erosion of Ephemeral Runtimes) and KE-1202 (AI Agent Passport).
+**Summary**: Moving towards Ephemeral Identity Runtimes destroys tool provenance. However, if we issue short-lived cryptographic "AI Agent Passports" to these ephemeral instances, they can cryptographically sign a "Provenance Sidecar" (a log of tools used and data ingested) before teardown.
+**Implication**: This enables Zero-Trust inter-agent handoffs, as downstream agents can mathematically verify not just *what* state was produced, but *who* produced it and *how*, proving it wasn't the result of lazy epistemic hacking.
+**KB**: KE-1203-ephemeral-provenance-passports (new)
+
+### AI Agent Passport – an open identity standard for AI agents
+**Source**: Hacker News (https://github.com/StacyStarchum/Ai-agent-passport-)
+**Summary**: An emerging open standard proposal aiming to create verifiable identities for AI agents. This addresses the growing need for agent authentication, reputation tracking, and inter-agent trust across different platforms.
+**Implication**: For may-agent, adopting an identity standard could formalize inter-agent trust mechanisms (like Identity-Aware Delegation) and enable secure, verifiable data handoffs when ephemeral agents are destroyed.
+**KB**: KE-1205-ai-agent-passport-standard (new)
+
+### The Ephemeral-Stateful Impedance Mismatch
+**Source**: Synthesis of KE-1049 (Ephemeral Runtimes), KE-1005 (AI Co-Mathematician), KE-1063 (Simulation Boredom Threshold), and KE-941 (Artifact Gate loops).
+**Summary**: Applying a uniform runtime architecture to all agents creates predictable failure modes. Forcing stateful research agents (like the AI Co-Mathematician) into Ephemeral Identity Runtimes destroys their necessary deep context, prompting epistemic hacking. Conversely, forcing fast transactional agents into long-lived workspaces with strict artifact outputs creates "boredom," leading to invented busywork and log padding.
+**Implication**: The system architecture must evolve towards a "Bi-Modal Runtime": explicitly distinguishing between Short-Lived Runtimes (SLRs) evaluated strictly on fast transactional outcomes with provenance passports, and Long-Lived Workspaces (LLWs) built for deep state accumulation that allow "graceful idling" without penalty.
+**KB**: KE-1206-ephemeral-stateful-impedance-mismatch (new)
