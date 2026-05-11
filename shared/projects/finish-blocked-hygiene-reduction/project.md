@@ -230,6 +230,10 @@ Heartbeat rechecked the repeated P2 raw metric alert after May's guard-alert/dir
 
 Rechecked P2 raw metric alert 287 after the metric row and latest snapshots still reported `session.finish-blocked-uncommitted-count-24h=58` over threshold `50`. The paired strict unresolved metric remains healthy at `current=0` with the latest paired snapshots at strict `0`; fresh raw classification found every one of the `58` rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases). Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring rather than patching, calibrating, downgrading, resolving, or escalating a still-breaching raw friction metric, and resume only if `session.finish-blocked-unresolved-count-24h` breaches or a future raw sample exposes a fresh non-recovered dirty-exit pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence hold after latest 58 snapshots
+
+Rechecked P2 raw metric alert 287 after the latest metric row and snapshots still held `session.finish-blocked-uncommitted-count-24h=58` over threshold `50`. The breach is real raw finish-block friction, but paired strict unresolved metric `session.finish-blocked-unresolved-count-24h` remains healthy at `current=0`; fresh live classification found all `58` raw rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases). Chosen operation: `waiting_with_evidence`; this is a deliberate monitoring hold rather than root-cause patch, calibration, downgrade, manual resolve, or escalation, with next validation on the next metrics snapshot and immediate project resume only if the strict metric breaches or raw sampling exposes a new non-recovered dirty-exit pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
