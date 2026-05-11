@@ -1,8 +1,6 @@
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
-import { getModel } from "@mariozechner/pi-ai";
-import type { ModelWithApiKey } from "../lib/types.js";
 import {
   SubagentManager,
 } from "../lib/index.js";
@@ -31,6 +29,7 @@ import { parseEmitMode, runEmitMode } from "./modes/emit.js";
 import { parseOneshotTimeoutMinutes, runOneshotMode } from "./modes/oneshot.js";
 import { parseRunWorkflowMode, runWorkflowMode } from "./modes/run-workflow.js";
 import { parseWebPort, runWebOnlyMode, startWebMode } from "./modes/web.js";
+import { createModelRegistry } from "./model-registry.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -149,68 +148,7 @@ const ENV_PARENT_AGENT = process.env.PARENT_AGENT || undefined;
 
 // ── Models ──────────────────────────────────────────────────────────────
 
-const MODEL_BASE_URL = process.env.MODEL_BASE_URL || "http://localhost:4000";
-
-const LITELLM_API_KEY = process.env.LITELLM_API_KEY || process.env.ANTHROPIC_API_KEY || "not-needed";
-
-// Bypass LiteLLM for Anthropic when ANTHROPIC_API_KEY is set.
-// LiteLLM strips cache_control fields, breaking prompt caching (~40% cost savings).
-// When ANTHROPIC_API_KEY is available, route directly to Anthropic's API.
-const ANTHROPIC_DIRECT = process.env.ANTHROPIC_API_KEY
-  ? { baseUrl: "https://api.anthropic.com", apiKey: process.env.ANTHROPIC_API_KEY }
-  : { baseUrl: MODEL_BASE_URL, apiKey: LITELLM_API_KEY };
-
-const models: Record<string, ModelWithApiKey> = {
-  opus: process.env.ANTHROPIC_API_KEY
-    ? {
-        ...getModel("anthropic", "claude-sonnet-4-20250514"),
-        id: "claude-opus-4.6",
-        contextWindow: 200000,
-        baseUrl: ANTHROPIC_DIRECT.baseUrl,
-        apiKey: ANTHROPIC_DIRECT.apiKey,
-      }
-    : {
-        ...getModel("anthropic", "claude-sonnet-4-20250514"),
-        id: "claude-opus-4.6",
-        contextWindow: 72000,
-        baseUrl: MODEL_BASE_URL,
-        apiKey: LITELLM_API_KEY,
-      },
-  gpt52: {
-    ...getModel("openai", "gpt-5.2"),
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-  "gpt-5.4": {
-    ...getModel("github-copilot", "gpt-5.4"),
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-  kimi: {
-    ...getModel("openai", "gpt-4o"),
-    api: "openai-completions" as const,
-    id: "kimi-k2.5",
-    contextWindow: 262144,
-    baseUrl: process.env.KIMI_BASE_URL || "https://api.moonshot.cn/v1",
-    apiKey: process.env.KIMI_API_KEY || "",
-  },
-  // New powerful models (via LiteLLM -> GitHub Copilot)
-  "gpt-5.5": {
-    ...getModel("github-copilot", "gpt-5.5"),
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-  "opus-4.7": {
-    ...getModel("github-copilot", "claude-opus-4.7"),
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-  "gemini-3.1-pro": {
-    ...getModel("github-copilot", "gemini-3.1-pro-preview"),
-    baseUrl: MODEL_BASE_URL,
-    apiKey: LITELLM_API_KEY,
-  },
-};
+const { models, modelBaseUrl, apiKey: LITELLM_API_KEY, anthropicDirect } = createModelRegistry();
 
 // ── Infrastructure ─────────────────────────────────────────────────────
 
@@ -233,7 +171,7 @@ bus.emit({
   message: `[may.ts] Starting (pid=${process.pid}, instance=${INSTANCE_LABEL}, root=${PROJECT_ROOT})`,
 });
 
-if (process.env.ANTHROPIC_API_KEY) {
+if (anthropicDirect) {
   bus.emit({
     type: "info",
     message: `[may.ts] Anthropic direct mode: opus routing to api.anthropic.com (prompt caching enabled)`,
@@ -241,7 +179,7 @@ if (process.env.ANTHROPIC_API_KEY) {
 } else {
   bus.emit({
     type: "info",
-    message: `[may.ts] LiteLLM proxy mode: all models via ${MODEL_BASE_URL} (prompt caching may be limited)`,
+    message: `[may.ts] LiteLLM proxy mode: all models via ${modelBaseUrl} (prompt caching may be limited)`,
   });
 }
 
