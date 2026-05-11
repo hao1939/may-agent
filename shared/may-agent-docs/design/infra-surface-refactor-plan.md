@@ -198,6 +198,9 @@ Validation:
   project resume path as Web UI comments.
 - [x] Reply-to-session notification emits a targeted `steer` event; unknown
   cold sessions surface `session.resume_failed` from the manager.
+- [x] Automated Telegram e2e test covers stored session-context replies:
+  Telegram reply -> `telegram.reply` evidence + targeted `steer`, with no
+  generic `input` fallback.
 - [ ] Human Telegram e2e smoke confirms a real reply reaches the intended
   session or emits a clear routing failure event.
 - [ ] Telegram, Web UI, and CLI leave comparable event traces for comparable
