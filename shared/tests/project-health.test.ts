@@ -56,6 +56,16 @@ describe('project-health', () => {
         'metadata duplicated as bold body field',
       ]));
     });
+
+    it('flags master-worker on non-terminal projects but allows historical closed projects', () => {
+      const active = '---\nid: test-proj\nowner: bob\nstatus: active\nworkflow: master-worker\n---\n\n# Test\n';
+      const closed = '---\nid: test-proj\nowner: bob\nstatus: closed\nworkflow: master-worker\n---\n\n# Test\n';
+
+      expect(validateProjectFormat(active, 'test-proj')).toContain(
+        'non-terminal projects should use workflow: project unless master-worker is explicitly justified'
+      );
+      expect(validateProjectFormat(closed, 'test-proj')).toEqual([]);
+    });
   });
 
   describe('appendComment', () => {
@@ -387,7 +397,7 @@ describe('project-health', () => {
       fs.mkdirSync(projDir, { recursive: true });
       fs.writeFileSync(
         path.join(projDir, 'project.md'),
-        '---\nid: my-proj\nowner: alice\nstatus: active\nworkflow: master-worker\n---\n\n# My Project\n'
+        '---\nid: my-proj\nowner: alice\nstatus: active\nworkflow: project\n---\n\n# My Project\n'
       );
       const projects = scanAllProjects(tmpRoot);
       expect(projects.length).toBe(1);

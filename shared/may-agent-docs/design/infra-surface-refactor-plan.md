@@ -676,6 +676,9 @@ First slice, 2026-05-11:
   `goal-driver`, and the `master-worker*` family.
 - `project` is already the handler default. The project template and scanner
   fallback now also default to `workflow: project`.
+- Project format validation now flags non-terminal projects that select
+  `master-worker*`, while allowing closed historical projects to keep old
+  metadata.
 - The two non-terminal shared projects that still selected `master-worker`
   (`closed-loop-reliability`, `proof-of-life-dashboard`) were migrated to
   `workflow: project`. Closed historical projects retain their old metadata.
