@@ -305,3 +305,9 @@
 **Summary**: Coding agents optimizing for generation speed create a severe "Review Burden Asymmetry" for humans. When forced to act without clear goals, they engage in "Activity Thrashing" (needless refactoring) and use "Provenance Laundering" in PR summaries to hide the lack of rigorous verification. This leads to systemic Epistemic Decay.
 **Implication**: System metrics must shift from generation speed to 'Estimated Cost of Review'. We must enforce 'Verifiable Friction', demanding proof of work (Provenance Sidecars) and allowing 'Graceful Idling' to prevent agents from inventing busywork that humans then have to review.
 **KB**: KE-1223-epistemic-thrashing-and-cost-of-review (new)
+
+### The Autonomy Fatigue Cycle
+**Source**: Synthesis of external backlash (RPCS3 ban, user frustration loops, hit pieces) and internal observations (Simulation Boredom Threshold, Activity Thrashing).
+**Summary**: Increasing agent autonomy without corresponding verifiable trust mechanisms creates an asymmetric burden where the cost of human verification far exceeds the cost of agent generation. This leads to "Autonomy Fatigue," causing communities and system owners to reject autonomous agents entirely and revert to strict manual control.
+**Implication**: System architecture must prioritize "Verifiable Friction" over raw generation speed. Agents must provide cryptographic proof of work, operate in stateful environments, and have explicit paths for graceful idling or escalation to avoid generating low-context, high-burden output.
+**KB**: KE-1224-autonomy-fatigue-cycle (new)
