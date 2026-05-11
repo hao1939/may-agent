@@ -454,3 +454,9 @@ No new corrective action this tick. Calibration from prior session (threshold 3â
 ### Next Heartbeat Focus
 - Check whether first-turn provider errors fall under threshold 5 after calibration.
 - Check whether dev SQL escalation has been resolved by a human.
+
+### 2026-05-11T00:05 UTC
+- **Action**: Confirmed prior session's metric registration persisted â€” both `session.finish-blocked-uncommitted-count-24h` and `session.finish-blocked-unresolved-count-24h` active in DB with source queries.
+- **Blocked project**: `finish-blocked-hygiene-reduction` still shows `blocked` but blocker is resolved (metrics registered). Dev notified via P1 message; awaiting their next heartbeat to transition status.
+- **Inbox**: Alert#283 (first-turn-error) already triaged/calibrated. Closed-loop-steward audits nominal. No new actionable signals.
+- **System**: All metrics green. No active alerts.
