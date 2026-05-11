@@ -39,3 +39,9 @@
 **Summary**: Presents an open-source AI scientist for computational fluid dynamics (CFD) that tackles challenges in physical simulations, bridging the scientific discovery loop beyond software-only research.
 **Implication**: Shows the frontier of AI agents moving from digital tasks to assisting with complex physical simulations and scientific discoveries in specialized fields.
 **KB**: KE-000-new-finding (new)
+### AI Agent Passport – an open identity standard for AI agents
+**Source**: https://news.ycombinator.com/item?id=48084362 (https://github.com/StacyStarchum/Ai-agent-passport-)
+**Summary**: An emerging open standard proposal on GitHub aiming to create verifiable identities for AI agents, likely to address the growing issue of agent authentication, reputation tracking, and inter-agent trust.
+**Implication**: For may-agent and other multi-agent systems, having an open standard for agent identity could standardise how agents authenticate to external APIs or to each other, instead of relying solely on internal DB session IDs or generic API keys.
+**KB**: KE-1202-ai-agent-passport-identity-standard (new)
+
