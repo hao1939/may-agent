@@ -138,6 +138,10 @@ Triaged P2 alert `session.finish-blocked-uncommitted-count-24h` after the raw co
 
 Rechecked P2 raw metric alert 287 after the latest snapshot rose to `52` over threshold `50`. The breach is still real, but paired strict unresolved metric `session.finish-blocked-unresolved-count-24h` remains healthy at `current=0`; the raw 24h slice contains `52` finish-blocked evaluations, of which `49` are repaired successful exits (`session.status=done`, `outcome=done`, latest digest `success`), `2` are interrupted rows already marked `action=nothing` / `No recoverable work worth resuming`, and the residual top sources remain repaired scout/may/steward heartbeat friction rather than a new unresolved dirty-exit pattern. Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring and validate on the next metrics snapshot, resuming only if the strict unresolved metric breaches or the raw slice exposes a newer non-recovered source pattern.
 
+### 2026-05-11 — Alert 287 third waiting_with_evidence hold
+
+Rechecked P2 raw metric alert 287 after the latest snapshot rose again to `53` over threshold `50`. The breach is real raw finish-block friction, but the paired strict unresolved metric remains healthy at `current=0` with ten consecutive zero snapshots. The current raw slice has `53` finish-blocked evaluations: `50` repaired successful exits (`session.status=done`, `outcome=done`, latest digest `success`), `2` interrupted rows already classified `action=nothing` / `No recoverable work worth resuming`, and `1` historical Arc heartbeat partial that still completed `status=done`/`outcome=done`, evaluated `good`, and documented a verifier-state leak rather than uncommitted deliverables needing recovery. Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring and validate on the next metrics snapshot, resuming only if the strict unresolved metric breaches or a newer raw slice exposes a non-recovered source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
