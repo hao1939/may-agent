@@ -1,3 +1,15 @@
+# Heartbeat Log
+
+## 2026-05-11 03:05 UTC
+
+**System Health**: Mostly green. 43 metrics, 1 health failing (agent dark >2h).
+
+**Stats (1h)**: 39 sessions, 97% success. Handler: 72/hr, 99.3% success. DB: 1192MB. LLM evals: 35/24h.
+
+**Alerts**: Overturn rate 0.28 (target 0.05) elevated. Heartbeat coverage 4/8.
+
+---
+
 # Heartbeat Log — 2026-05-10
 
 ## Entry 17:50Z (artifact-gate retry — 5th consecutive)
