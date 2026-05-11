@@ -170,6 +170,10 @@ Rechecked P2 raw metric alert 287 after the latest snapshot reached `57` over th
 
 Rechecked P2 raw metric alert 287 in the next triage session. The metric row still reads `current=57`, `threshold=50`, `target=0`, priority `P2`, with alert 287 unresolved, while the paired strict unresolved metric remains healthy at `current=0` and the latest ten paired snapshots show strict `0` alongside raw `56–58`. The live raw 24h classification query again found no unresolved dirty exits: `54` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; the latest raw rows are successful scout/explore/steward/may completions plus one already terminal no-recovery scout interruption. Chosen operation: `waiting_with_evidence`; this keeps the project paused/monitoring rather than calibrating or resolving a still-breaching raw friction metric, with next validation on the next metrics snapshot or immediate project resume if the strict metric breaches/new raw sampling exposes a non-recovered pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence at 58
+
+Rechecked P2 raw metric alert 287 after the latest raw snapshot reached `58` over threshold `50`. The breach is real and the alert remains open, but the paired strict unresolved metric remains healthy at `current=0` with the latest ten paired snapshots showing strict `0` while raw fluctuates `57–58`; the live raw 24h classification query found all `58` rows recovered or intentionally terminal: `55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases. Chosen operation: `waiting_with_evidence`; keep the project paused/monitoring rather than calibrating or resolving a still-breaching raw friction metric, with next validation on the next metrics snapshot or immediate project resume if the strict metric breaches or raw sampling exposes a new non-recovered pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
