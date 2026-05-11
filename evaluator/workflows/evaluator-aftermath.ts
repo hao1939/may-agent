@@ -444,6 +444,56 @@ export function evaluationHeuristicVersion(evaluation: any): number {
   }
 }
 
+function isTerminalFailureSession(session: any): boolean {
+  const status = String(session?.status ?? "unknown");
+  return status === "error" || status === "interrupted" || !!session?.error;
+}
+
+function isProviderAuthFailureText(text: string): boolean {
+  if (!text) return false;
+  if (/litellm\.AuthenticationError|Github_copilotException|IDE token expired|unauthorized:\s*token expired/i.test(text)) {
+    return true;
+  }
+  return /Error code:\s*499/i.test(text) && /Github_copilotException|github[-_ ]?copilot|litellm/i.test(text);
+}
+
+function isProviderAuthFailureTranscript(transcript: string): boolean {
+  const records = parseJsonlTranscript(transcript);
+  if (!records) return isProviderAuthFailureText(transcript);
+
+  for (const record of records) {
+    if (record?.role !== "assistant") continue;
+    const text = [
+      String(record?.errorMessage ?? ""),
+      contentText(record?.content),
+      String(record?.provider ?? ""),
+      String(record?.model ?? ""),
+    ].join("\n");
+    if (isProviderAuthFailureText(text)) return true;
+  }
+  return false;
+}
+
+export function shouldSkipAftermathAmplification(session: any, transcript: string): { skip: boolean; reason: string } {
+  if (!isTerminalFailureSession(session)) return { skip: false, reason: "" };
+
+  const opCount = Number(session?.opCount ?? 0);
+  if (opCount === 0) {
+    return { skip: true, reason: "terminal_zero_op_session" };
+  }
+
+  if (opCount === 1) {
+    const hasProviderAuthFailure =
+      isProviderAuthFailureText(String(session?.error ?? "")) ||
+      isProviderAuthFailureTranscript(transcript);
+    if (hasProviderAuthFailure) {
+      return { skip: true, reason: "one_op_provider_auth_failure" };
+    }
+  }
+
+  return { skip: false, reason: "" };
+}
+
 export function shouldRefreshEvaluation(evaluation: any, heuristic: { verdict: string; issues: string[] }): boolean {
   if (!evaluation) return true;
   if (String(evaluation.verdict) !== "good") return false;
@@ -622,6 +672,57 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
   const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
   const transcript = readSessionTranscript(transcriptPath);
+  const skipAftermath = shouldSkipAftermathAmplification(session, transcript);
+  if (skipAftermath.skip) {
+    await (ctx as any).runFunction("record-skipped-evaluation", async () => {
+      const db = ctx.getDb() as any;
+      db.run(
+        `INSERT OR REPLACE INTO evaluations (
+          sessionId, agent, quality, efficiency, productiveCalls, wastedCalls,
+          verdict, issues, overall, usage, failureChains,
+          evaluatedByHeuristic, skippedByJs, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          sessionId,
+          session.agent,
+          0,
+          0,
+          0,
+          0,
+          "skipped",
+          JSON.stringify([skipAftermath.reason]),
+          JSON.stringify({
+            verdict: "skipped",
+            status: session.status,
+            aftermathWorkflow: true,
+            heuristicVersion: HEURISTIC_VERSION,
+            skipReason: skipAftermath.reason,
+            opCount: Number(session.opCount ?? 0),
+          }),
+          null,
+          JSON.stringify([]),
+          1,
+          1,
+          Date.now(),
+        ],
+      );
+      return `skipped aftermath for ${sessionId}: ${skipAftermath.reason}`;
+    });
+
+    ctx.emit({
+      type: "evaluation.skipped",
+      source: "evaluator-aftermath",
+      owner: "evaluator",
+      sessionId,
+      agent: session.agent,
+      reason: skipAftermath.reason,
+      opCount: Number(session.opCount ?? 0),
+      heuristicVersion: HEURISTIC_VERSION,
+    } as any);
+
+    return ctx.done(`Skipped aftermath for ${sessionId}: ${skipAftermath.reason}.`);
+  }
+
   const heuristic = classifyVerdict(session, transcript);
   const route = classifyEvaluationLane(session, transcript, heuristic);
   const workflowCollectedFacts = formatWorkflowCollectedFacts(session, transcript, heuristic);

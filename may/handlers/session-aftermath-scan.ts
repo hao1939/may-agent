@@ -22,6 +22,7 @@ type Candidate = {
   sessionId: string;
   agent: string;
   status: string;
+  opCount: number;
 };
 
 const DEFAULT_WORKFLOW = "evaluator-aftermath";
@@ -85,11 +86,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     }
 
     const candidates = ctx.sdk.query.sql(
-      `SELECT s.sessionId, s.agent, s.status
+      `SELECT s.sessionId, s.agent, s.status, COALESCE(s.opCount, 0) AS opCount
        FROM sessions s
        LEFT JOIN evaluations e ON e.sessionId = s.sessionId
        WHERE s.status IN ('done', 'error', 'interrupted')
          AND s.agent NOT IN ('evaluator', 'judge')
+         AND NOT (s.status IN ('error', 'interrupted') AND COALESCE(s.opCount, 0) = 0)
          AND COALESCE(s.endedAt, s.startedAt) >= ?
          AND COALESCE(s.endedAt, s.startedAt) <= ?
          AND (

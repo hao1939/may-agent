@@ -7,6 +7,7 @@ import {
   classifyVerdict,
   evaluationHeuristicVersion,
   falseGoodEventPayload,
+  shouldSkipAftermathAmplification,
   shouldRefreshEvaluation,
   transcriptOutputSignals,
   transcriptIssues,
@@ -37,6 +38,53 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.verdict).toBe("needs_improvement");
     expect(verdict.quality).toBe(0.55);
     expect(verdict.issues).toContain("schema/query error in transcript");
+  });
+
+  it("skips terminal zero-op aftermath instead of spawning evaluator review", () => {
+    expect(shouldSkipAftermathAmplification({ status: "error", opCount: 0 }, "")).toEqual({
+      skip: true,
+      reason: "terminal_zero_op_session",
+    });
+    expect(shouldSkipAftermathAmplification({ status: "done", opCount: 0 }, "")).toEqual({
+      skip: false,
+      reason: "",
+    });
+  });
+
+  it("skips one-op provider auth failures from assistant error transcript lines", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [],
+        provider: "github-copilot",
+        model: "gpt-5.4",
+        stopReason: "error",
+        errorMessage:
+          "401 litellm.AuthenticationError: AuthenticationError: Github_copilotException - IDE token expired: unauthorized: token expired\n. Received Model Group=gpt-5.4",
+      }),
+    ].join("\n");
+
+    expect(shouldSkipAftermathAmplification({ status: "error", opCount: 1 }, transcript)).toEqual({
+      skip: true,
+      reason: "one_op_provider_auth_failure",
+    });
+    expect(shouldSkipAftermathAmplification({ status: "error", opCount: 2 }, transcript)).toEqual({
+      skip: false,
+      reason: "",
+    });
+  });
+
+  it("does not skip one-op non-auth failures", () => {
+    const transcript = JSON.stringify({
+      role: "assistant",
+      content: [{ type: "text", text: "Task failed because a required file was missing." }],
+      stopReason: "error",
+    });
+
+    expect(shouldSkipAftermathAmplification({ status: "error", opCount: 1 }, transcript)).toEqual({
+      skip: false,
+      reason: "",
+    });
   });
 
   it("does not downgrade finish-only self-repaired dirty-worktree sessions", () => {
