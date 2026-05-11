@@ -40,9 +40,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
   let redMetricDiagnostics = "";
   if (hasRedMetrics) {
-    ctx.emit({ type: "red_metric_gate_start", step: "metrics" });
+    ctx.emit({ type: "red_metric_diagnostics_start", step: "metrics" });
     redMetricDiagnostics = runRedMetricCommands(ctx, agent);
-    ctx.emit({ type: "red_metric_gate_done", step: "metrics" });
+    ctx.emit({ type: "red_metric_diagnostics_done", step: "metrics" });
   }
 
   const redMetricContext = redMetricDiagnostics

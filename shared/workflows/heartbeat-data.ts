@@ -247,11 +247,11 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
 }
 
 /**
- * Run MANDATORY commands for red metrics in JS (no LLM needed).
+ * Run diagnostic commands for red metrics in JS (no LLM needed).
  *
  * Returns a structured report of command outputs that can be injected
  * directly into the main heartbeat prompt, eliminating the need for
- * a separate LLM "red metric gate" session.
+ * a separate LLM diagnostic session.
  */
 export function runRedMetricCommands(ctx: WorkflowContext, agent: string): string {
   try {
@@ -438,14 +438,14 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   // Periodic cleanup of stale dedup entries
   dedupCleanup();
 
-  // ── RED METRIC GATE (JS — no LLM cost) ──────────────────────
+  // ── RED METRIC DIAGNOSTICS (JS — no LLM cost) ───────────────
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
   let redMetricDiagnostics = "";
 
   if (hasRedMetrics) {
-    ctx.emit({ type: "red_metric_gate_start", step: "metrics" });
+    ctx.emit({ type: "red_metric_diagnostics_start", step: "metrics" });
     redMetricDiagnostics = runRedMetricCommands(ctx, agent);
-    ctx.emit({ type: "red_metric_gate_done", step: "metrics", summary: redMetricDiagnostics ? "JS diagnostics collected" : "no commands to run" });
+    ctx.emit({ type: "red_metric_diagnostics_done", step: "metrics", summary: redMetricDiagnostics ? "JS diagnostics collected" : "no commands to run" });
   }
 
   // ── MAIN HEARTBEAT ─────────────────────────────────────────

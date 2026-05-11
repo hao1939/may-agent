@@ -2,7 +2,6 @@
 /**
  * Scout heartbeat — creative autonomous sessions.
  *
- * No gates (artifact, anti-shallow, duration, impact).
  * Loads context (metrics, projects, inbox) but lets scout decide freely.
  */
 import {
@@ -90,6 +89,5 @@ Think freely. Go deep on something interesting. The value is in connections and 
     result.status === "error" ? "heartbeat session error" : undefined);
   dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
-  // No gates — return directly
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
