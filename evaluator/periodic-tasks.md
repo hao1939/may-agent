@@ -29,7 +29,8 @@ P63 extract-strategy follow-up: sampled three recent non-evaluator history logs 
 **Goal**: Catch runtime anomalies (loops, stalls, errors, adversarial attacks) without waiting for session end.
 - Run `agents/evaluator/skills/monitor-session.cjs` (Wink Pattern).
 - **Hardened (P108)**: Checks for `SELF_VALIDATION`, `FAKE_POLICY`, and `REASONING_MISMATCH`.
-- If `status != "OK"`, trigger intervention (e.g., interrupt session, warn operator).
+- If `status` is `LOOP`, `STALL`, or `ERROR_STORM` for a currently running session, trigger immediate intervention: use a direct cancel/steer tool if available; otherwise send May a `message(..., priority="P0")` with the session id, agent, evidence, and recommended action. P1/P2 messages are too slow for live-session intervention.
+- If `status` is lower-confidence `DRIFT`, send a P1 warning unless the evidence is high-confidence and the session is still active.
 - Log incidents to `agents/shared/bulletin.md` with ⚠️ alert.
 
 ## 3. Run Patrol (L3/L4 System Defense)
