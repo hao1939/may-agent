@@ -238,6 +238,10 @@ Rechecked P2 raw metric alert 287 after the latest metric row and snapshots stil
 
 Triaged P2 raw metric alert 287 again after the latest metric row remained `current=58`, `threshold=50`, `target=0`, with the open alert unresolved. The breach is real raw finish-block friction, but the paired strict unresolved metric still reports `current=0` and the latest ten paired snapshots show raw `58` while strict remains `0`. Fresh live classification found all `58` raw rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases), and recent samples are `status=done`/`outcome=done` success digests or already-terminal no-recovery interruptions. Chosen operation: `waiting_with_evidence`; this deliberately accepts a monitoring hold for the still-breaching raw metric, keeps the project paused, and requires immediate project resume only if `session.finish-blocked-unresolved-count-24h` breaches or future raw sampling exposes a fresh non-recovered dirty-exit pattern.
 
+### 2026-05-11 — Alert 287 documented raw-friction exception at 58+
+
+Documented a project-level exception for repeated P2 alert `session.finish-blocked-uncommitted-count-24h` while the paired strict metric remains healthy. The latest stored metric row still reports raw `current=58` over threshold `50`, and a fresh live source-query/classification pass now finds `59` raw rows but no unresolved dirty exits: `56` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; source attribution remains repaired scout/steward/may workflow friction. Chosen operation: `document_exception`; accept this raw-friction alert as monitored/expected noise until the next metrics snapshot or until `session.finish-blocked-unresolved-count-24h` breaches / raw sampling exposes a fresh non-recovered source pattern, at which point resume this project immediately.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
