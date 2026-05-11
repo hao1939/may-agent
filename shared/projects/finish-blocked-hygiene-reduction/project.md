@@ -24,7 +24,7 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 - `evaluator.low-quality-rate-24h=0.7472` remains high as a dashboard/friction metric, while `evaluator.substantive-low-quality-rate-24h=0.1447` is much lower; this project targets the hygiene/friction gap rather than hiding it.
 
 ## Current State
-Paused/monitoring: May registered both split metrics, then calibrated the strict unresolved metric to exclude terminal auto-resume digests whose action is `nothing` with `No recoverable work worth resuming`. The prior P1 alert recovered after the next metrics snapshot (`session.finish-blocked-unresolved-count-24h=0`). Resume this project only if the strict unresolved metric breaches again, or raw finish-block friction reveals a new source pattern that needs workflow or prompt repair.
+Paused/monitoring: May registered both split metrics, then calibrated the strict unresolved metric to exclude terminal auto-resume digests whose action is `nothing` with `No recoverable work worth resuming`. The prior P1 alert recovered after the next metrics snapshot (`session.finish-blocked-unresolved-count-24h=0`). The raw P2 alert `session.finish-blocked-uncommitted-count-24h` is a documented monitoring exception while the paired strict unresolved metric stays at `0` and raw-row classification shows only repaired or terminal-no-recovery exits. Resume this project only if the strict unresolved metric breaches again, or raw finish-block friction reveals a new non-recovered source pattern that needs workflow or prompt repair.
 
 ## Plan
 
