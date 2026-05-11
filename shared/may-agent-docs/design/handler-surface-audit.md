@@ -23,7 +23,7 @@ projection, but judgment and repair work should live in workflows.
 | `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | direct DB + `runWorkflow` + durable trace events | temporarily | Convert preflight reads to `sdk.query`; dispatch already records skip reason or triage workflow run id. Triage workflow alert context is now query-backed. |
 | `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow` + durable trace events | temporarily | Context collection still needs `sdk.query`/function cleanup; dispatch is workflow-backed. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
-| `session-eval` | Legacy direct evaluator dispatch | direct session helpers + `runAgent` | no | Prefer `session-aftermath-scan`/`evaluator-aftermath`; retire or convert to workflow if still wired. |
+| `session-eval` | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
 | `session-recovery` | Failed-session recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as event-first bridge for `session.failed`; recovery action now runs inside the `session-recovery` workflow. |
 | `escalation` | Session escalation routing | digest helpers + escalate + durable trace events | no | Keep direct while it only routes explicit escalations; it is event-first on `session.escalated`. |
 

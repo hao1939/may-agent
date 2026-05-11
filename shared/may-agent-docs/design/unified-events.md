@@ -79,7 +79,7 @@ SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() *
 |---|---|---|
 | `session-recovery` | `session.failed` | ✅ wired as an event-first workflow bridge; handler dispatches `session-recovery` workflow |
 | `evaluator-aftermath` | `session.completed` | ✅ wired through `run-workflow`; `session-aftermath-scan` remains the 7-minute fallback |
-| `session-eval` | `session.completed` | ⚠️ legacy handler file; not present in active cron config |
+| `session-eval` | `session.completed` | retired legacy path; use `evaluator-aftermath` |
 | `escalation` | `session.escalated` | ✅ wired as event-first routing for explicit blocked/failure finishes |
 | `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
 | (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781. Stall signal reaches may only via `loadInbox()`, gets dismissed as noise (KE-772). Companion proposal: `agents/arc/workspace/proposals/2026-05-07-subscribe-metric-stalled-events.md`. |

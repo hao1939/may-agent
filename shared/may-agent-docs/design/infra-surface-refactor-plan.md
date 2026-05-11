@@ -195,6 +195,8 @@ Scope:
 - [x] `escalation` subscribes to `session.escalated` again; because it only
   routes explicit escalations, it remains direct but now records routed/skipped
   evidence.
+- [x] Retire the stale `session-eval` handler file so agents do not copy the old
+  direct `runAgent("evaluator", ...)` path.
 
 Validation:
 
