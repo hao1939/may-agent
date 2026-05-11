@@ -174,6 +174,10 @@ Rechecked P2 raw metric alert 287 in the next triage session. The metric row sti
 
 Rechecked P2 raw metric alert 287 after the latest raw snapshot reached `58` over threshold `50`. The breach is real and the alert remains open, but the paired strict unresolved metric remains healthy at `current=0` with the latest ten paired snapshots showing strict `0` while raw fluctuates `57–58`; the live raw 24h classification query found all `58` rows recovered or intentionally terminal: `55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases. Chosen operation: `waiting_with_evidence`; keep the project paused/monitoring rather than calibrating or resolving a still-breaching raw friction metric, with next validation on the next metrics snapshot or immediate project resume if the strict metric breaches or raw sampling exposes a new non-recovered pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence recheck at 58
+
+Rechecked P2 raw metric alert 287 after another owner triage. The raw metric row still reports `current=58`, `threshold=50`, `target=0`, priority `P2`, and alert `287` remains unresolved; recent snapshots hold at `57–58`. The paired strict unresolved metric remains healthy at `current=0` with ten consecutive zero snapshots. The live raw 24h classification query again found no unresolved dirty exits: `55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; top sources remain repaired scout/steward/may workflow friction. Chosen operation: `waiting_with_evidence`; this is a deliberate monitoring hold, not a root-cause patch, calibration, downgrade, manual resolve, or escalation. Next validation is the next metrics snapshot, or immediate project resume if the strict metric breaches or raw sampling exposes a new non-recovered source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
