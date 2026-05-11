@@ -1,0 +1,83 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import type { ModelWithApiKey } from "../../lib/types.js";
+import { VALID_TOOL_PRESETS } from "../../lib/tool-preset-registry.js";
+import type { EventBus } from "../event-bus.js";
+
+export interface AgentConfig {
+  name: string;
+  description: string;
+  domain: string;
+  model: string; // key into models map
+  tools: string[]; // preset names: "coding", "agents", "workflow", etc.
+  memoryLimit?: number;
+  /** Enable automatic context compaction for long-running sessions. */
+  compaction?: boolean;
+  /** Block direct delegation to specific agents via agents tool. */
+  delegateDeny?: { agents: string[]; hint: string };
+  /** @deprecated Volatile context should be injected at session time, not in system prompt. */
+  context_files?: string[];
+}
+
+export interface ValidationError {
+  agent: string;
+  field: string;
+  message: string;
+}
+
+const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
+
+export function validateAgentConfig(
+  config: AgentConfig,
+  models: Record<string, ModelWithApiKey>,
+  _agentsRoot: string,
+): ValidationError[] {
+  const errors: ValidationError[] = [];
+  const name = config.name || "<unnamed>";
+
+  for (const field of REQUIRED_FIELDS) {
+    if (!config[field]) {
+      errors.push({ agent: name, field, message: `Missing required field "${field}"` });
+    }
+  }
+
+  if (config.model && !models[config.model]) {
+    errors.push({ agent: name, field: "model", message: `Unknown model "${config.model}"` });
+  }
+
+  if (config.tools) {
+    if (!Array.isArray(config.tools)) {
+      errors.push({ agent: name, field: "tools", message: `"tools" must be an array` });
+    } else {
+      for (const preset of config.tools) {
+        if (!VALID_TOOL_PRESETS.has(preset)) {
+          errors.push({ agent: name, field: "tools", message: `Unknown tool preset "${preset}"` });
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+export function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
+  const configPath = resolve(agentDir, "agent.json");
+  if (!existsSync(configPath)) return null;
+
+  try {
+    const raw = readFileSync(configPath, "utf-8");
+    return JSON.parse(raw) as AgentConfig;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
+    bus.emit({
+      type: "agent.config_invalid",
+      owner: "may",
+      agent: agentDir.split(/[\\/]/).pop() || "<unknown>",
+      count: 1,
+      message: `Failed to parse ${configPath}: ${msg}`,
+      priority: "P0",
+    });
+    return null;
+  }
+}
