@@ -154,6 +154,16 @@ export interface EvaluatorDeepEvalScanContext {
   candidate: Record<string, unknown> | null;
 }
 
+export interface EvaluatorAftermathContextQuery {
+  sessionId: string;
+}
+
+export interface EvaluatorAftermathContext {
+  sessionId: string;
+  session: Record<string, unknown> | null;
+  evaluation: Record<string, unknown> | null;
+}
+
 export interface QueryAPI {
   sessions(filter?: SessionQuery): QueryResult;
   events(filter?: EventQuery): QueryResult;
@@ -166,6 +176,7 @@ export interface QueryAPI {
   closedLoopStewardContext(filter?: ClosedLoopStewardContextQuery): ClosedLoopStewardContext;
   heartbeatContext(filter: HeartbeatContextQuery): HeartbeatContext;
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
+  evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
 
@@ -498,6 +509,21 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       };
     },
 
+    evaluatorAftermathContext(filter) {
+      if (!filter.sessionId) throw new Error("evaluatorAftermathContext requires sessionId");
+      const db = opts.getDb();
+      const session = db.prepare("SELECT * FROM sessions WHERE sessionId = ?").get(filter.sessionId) as Record<string, unknown> | null;
+      const evaluation = db.prepare(
+        "SELECT sessionId, verdict, overall, createdAt FROM evaluations WHERE sessionId = ?",
+      ).get(filter.sessionId) as Record<string, unknown> | null;
+
+      return {
+        sessionId: filter.sessionId,
+        session: session ? normalizeRows([session])[0] : null,
+        evaluation: evaluation ? normalizeRows([evaluation])[0] : null,
+      };
+    },
+
     metricAlertContext(filter) {
       if (!filter.metricId) throw new Error("metricAlertContext requires metricId");
       const db = opts.getDb();
@@ -796,6 +822,9 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const failEvaluatorDeepEvalScan = (): EvaluatorDeepEvalScanContext => {
     throw new Error(reason);
   };
+  const failEvaluatorAftermathContext = (): EvaluatorAftermathContext => {
+    throw new Error(reason);
+  };
   return {
     sessions: fail,
     events: fail,
@@ -808,6 +837,7 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     closedLoopStewardContext: failClosedLoopStewardContext,
     heartbeatContext: failHeartbeatContext,
     evaluatorDeepEvalScan: failEvaluatorDeepEvalScan,
+    evaluatorAftermathContext: failEvaluatorAftermathContext,
     sql: fail,
   };
 }
