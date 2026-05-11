@@ -75,7 +75,62 @@ export function transcriptIssues(transcript: string): string[] {
     }
   }
 
+  const shellWrittenToolPaths = shellWrittenPaths(transcript).filter(isAgentToolPath);
+  if (shellWrittenToolPaths.length > 0 && /creative heartbeat mode/i.test(taskText)) {
+    issues.push(`unexpected shell write to agent tool path(s): ${shellWrittenToolPaths.join(", ")}`);
+  }
+
   return issues;
+}
+
+function shellWrittenPaths(transcript: string): string[] {
+  const records = parseJsonlTranscript(transcript);
+  if (!records) return [];
+
+  const paths = new Set<string>();
+  for (const record of records) {
+    if (record?.role !== "assistant") continue;
+    for (const call of toolCalls(record.content)) {
+      if (call?.name !== "bash" || typeof call?.arguments?.command !== "string") continue;
+      for (const path of extractBashWritePaths(call.arguments.command)) {
+        paths.add(path);
+      }
+    }
+  }
+  return [...paths];
+}
+
+function extractBashWritePaths(command: string): string[] {
+  const paths: string[] = [];
+  const add = (raw: string | undefined) => {
+    if (!raw) return;
+    const normalized = normalizeAgentPath(raw.replace(/^['"]|['"]$/g, ""));
+    if (normalized) paths.push(normalized);
+  };
+
+  const redirectPattern = /(?:^|[\s;&|])(?:\d?>|>>)\s*(['"]?)([^'"\s;&|]+)\1/g;
+  for (const match of command.matchAll(redirectPattern)) add(match[2]);
+
+  const teePattern = /(?:^|[\s;&|])tee(?:\s+-a)?(?:\s+--)?\s+(['"]?)([^'"\s;&|]+)\1/g;
+  for (const match of command.matchAll(teePattern)) add(match[2]);
+
+  return [...new Set(paths)];
+}
+
+function normalizeAgentPath(path: string): string | null {
+  const normalized = path
+    .trim()
+    .replace(/^\/app\/agents\//, "")
+    .replace(/^\/app\//, "")
+    .replace(/^\.\//, "")
+    .replace(/\/+/g, "/");
+  if (normalized.startsWith("agents/")) return normalized.slice("agents/".length);
+  if (/^[^/]+\//.test(normalized)) return normalized;
+  return null;
+}
+
+function isAgentToolPath(path: string): boolean {
+  return /^[^/]+\/tools\/[^/]+/.test(path);
 }
 
 function forbiddenEditPathsFromTask(text: string): string[] {

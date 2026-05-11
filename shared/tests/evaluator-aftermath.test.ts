@@ -456,6 +456,38 @@ describe("evaluator aftermath transcript checks", () => {
     );
   });
 
+  it("flags creative heartbeat shell writes to agent tooling", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "You are **scout** in creative heartbeat mode. Produce a shared KE entry.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: {
+              command: [
+                "cat << 'EOF' > agents/scout/tools/next-ke-id.sh",
+                "#!/bin/bash",
+                "EOF",
+                "bash agents/scout/tools/next-ke-id.sh",
+              ].join("\n"),
+            },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    const verdict = classifyVerdict({ status: "done", opCount: 8 }, transcript);
+
+    expect(verdict.verdict).toBe("needs_improvement");
+    expect(verdict.issues).toContain("unexpected shell write to agent tool path(s): scout/tools/next-ke-id.sh");
+  });
+
   it("ignores path-like prose in assistant-created artifacts when extracting forbidden paths", () => {
     const transcript = [
       JSON.stringify({
