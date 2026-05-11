@@ -57,8 +57,8 @@ export function transcriptIssues(transcript: string): string[] {
   if (/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/.test(ownText)) {
     issues.push("broad may/shared commit during session");
   }
-  if (/last-session\.md/.test(ownText) && /gate-outcomes\.log/.test(ownText) && /git\s+add[^;\n]*(last-session\.md|gate-outcomes\.log|may\/\s+shared\/)[\s\S]{0,240}git\s+commit/.test(ownText)) {
-    issues.push("committed generated runtime files");
+  if (/last-session\.md/.test(ownText) && /git\s+add[^;\n]*(last-session\.md|may\/)[\s\S]{0,240}git\s+commit/.test(ownText)) {
+    issues.push("committed runtime handoff files");
   }
   if (liveRuntimeSignalsUnavailable) {
     issues.push("workflow live signal injection unavailable");

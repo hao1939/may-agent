@@ -13,20 +13,18 @@ import {
 } from "../../evaluator/workflows/evaluator-aftermath.ts";
 
 describe("evaluator aftermath transcript checks", () => {
-  it("flags schema guessing and runtime-file commit friction", () => {
+  it("flags schema guessing and runtime handoff commit friction", () => {
     const transcript = [
       "toolResult: no such column: current_value",
       "finish() blocked [uncommitted changes]",
       "M may/last-session.md",
-      "M shared/gate-outcomes.log",
-      "git add may/ shared/ && git commit -m",
+      "git add may/last-session.md && git commit -m",
     ].join("\n");
 
     expect(transcriptIssues(transcript)).toEqual([
       "finish blocked by uncommitted changes",
       "schema/query error in transcript",
-      "broad may/shared commit during session",
-      "committed generated runtime files",
+      "committed runtime handoff files",
     ]);
   });
 
