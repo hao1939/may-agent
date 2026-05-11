@@ -40,11 +40,11 @@ Active design docs and shipped decisions.
 
 | Doc | Status | What |
 |-----|--------|------|
-| [design/infra-surface.md](design/infra-surface.md) | Draft | North-star: infra primitives, agent patterns, SDK/control surfaces |
-| [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) | In progress | Canonical phased implementation tracker for infra surface boundaries |
+| [design/infra-surface.md](design/infra-surface.md) | Accepted / mostly implemented | North-star: infra primitives, agent patterns, SDK/control surfaces |
+| [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) | Active tracker | Canonical phased implementation tracker for infra surface boundaries |
 | [design/infra-surface-implementation-plan.md](design/infra-surface-implementation-plan.md) | Historical | Superseded early implementation tracker; use the refactor plan for new work |
-| [design/handler-surface-audit.md](design/handler-surface-audit.md) | In progress | Audit of handler infra surface boundaries |
-| [design/guards-as-signals.md](design/guards-as-signals.md) | In progress | Guards as detection signals with default observability |
+| [design/handler-surface-audit.md](design/handler-surface-audit.md) | First audit slice | Audit of handler infra surface boundaries |
+| [design/guards-as-signals.md](design/guards-as-signals.md) | First metrics slice shipped | Guards as detection signals with default observability |
 | [design/agent-metrics.md](design/agent-metrics.md) | Approved | Metrics as system vitals; project metrics with balanced pairs |
 | [design/heartbeat-as-agency.md](design/heartbeat-as-agency.md) | Shipped | Heartbeats as the moments agents are autonomous |
 | [design/unified-events.md](design/unified-events.md) | Shipped | Unified event taxonomy |
