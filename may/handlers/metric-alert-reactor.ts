@@ -64,12 +64,16 @@ function emitSkip(ctx: HandlerContext, metricId: string | null, reason: string, 
   });
 }
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
   return async (event?: TriggerEvent) => {
-    // If no event (timer tick), poll for unresolved alerts and process each
-    if (!event?.data) {
+    const entryName = typeof entry?.name === "string" && entry.name ? entry.name : "metric-alert-reactor";
+    const isTriggerScan = event?.type === `trigger.${entryName}`;
+    // If no event, timer tick, or a direct trigger event, poll unresolved
+    // alerts and process each. Operators should not need to hand-build a
+    // metric.breach payload to kick the default reactor scan.
+    if (!event?.data || isTriggerScan) {
       try {
         const unresolved = ctx.sdk.query.alerts({ resolved: false, limit: 50 }).rows;
 

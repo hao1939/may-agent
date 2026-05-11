@@ -89,4 +89,34 @@ describe("metric-alert-reactor handler", () => {
       workflowRunId: "wr_triage",
     }));
   });
+
+  it("treats an empty direct trigger as an unresolved-alert scan", async () => {
+    const ctx = makeCtx();
+    ctx.sdk.query.alerts = vi.fn(() => ({
+      rows: [{ id: 42, metric_id: "handler.failed-count", message: "above threshold" }],
+      rowCount: 1,
+      limit: 50,
+      truncated: false,
+    }));
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "trigger.metric-alert-reactor",
+      source: "event",
+      entry: "metric-alert-reactor",
+      timestamp: Date.now(),
+      data: { type: "trigger.metric-alert-reactor" },
+    });
+
+    expect(ctx.sdk.query.alerts).toHaveBeenCalledWith({ resolved: false, limit: 50 });
+    expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
+      "metric-alert-triage",
+      expect.stringContaining("handler.failed-count"),
+      { source: "arc" },
+    );
+    expect(ctx.sdk.log).not.toHaveBeenCalledWith(
+      "info",
+      expect.stringContaining("Missing metricId"),
+    );
+  });
 });
