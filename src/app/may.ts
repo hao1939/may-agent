@@ -27,6 +27,7 @@ import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
 import { parseEmitMode, runEmitMode } from "./modes/emit.js";
+import { parseWebPort, runWebOnlyMode, startWebMode } from "./modes/web.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -168,22 +169,12 @@ const WEB_ONLY_MODE = WEB_ENABLED
   && !INITIAL_TASK;
 
 if (WEB_ONLY_MODE) {
-  const webPort = parseInt(process.env.WEB_PORT || "8080", 10);
-  const { startWebUI } = await import("../../packages/webui/src/server.js");
-  const { port } = startWebUI({ stateDir: PERSIST_DIR, port: webPort });
-  writeIdentity({
-    pid: process.pid,
-    agent: "web",
-    instance: INSTANCE_LABEL,
-    socket: "",
-    startedAt: new Date().toISOString(),
-    startedBy: "web",
-    task: null,
-    status: "running",
+  await runWebOnlyMode({
+    stateDir: PERSIST_DIR,
+    port: parseWebPort(process.env.WEB_PORT),
+    instanceLabel: INSTANCE_LABEL,
+    writeIdentity,
   });
-  console.log(`[web] Dashboard running on http://localhost:${port}`);
-  setInterval(() => {}, 30_000);
-  await new Promise(() => {});
 }
 
 // --oneshot CLI parameters
@@ -334,9 +325,7 @@ if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.ge
 
 // Web UI — runs in-process when --web is passed
 if (WEB_ENABLED) {
-  const webPort = parseInt(process.env.WEB_PORT || "8080", 10);
-  const { startWebUI } = await import("../../packages/webui/src/server.js");
-  const { port } = startWebUI({ stateDir: PERSIST_DIR, port: webPort });
+  const { port } = await startWebMode({ stateDir: PERSIST_DIR, port: parseWebPort(process.env.WEB_PORT) });
   bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
 }
 
