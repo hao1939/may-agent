@@ -53,6 +53,48 @@ function shellQuote(path: string): string {
   return `'${path.replace(/'/g, "'\\''")}'`;
 }
 
+function stripShellTokenQuotes(token: string): string {
+  const trimmed = token.trim();
+  if (
+    (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function extractBashWritePaths(command: string): string[] {
+  const paths: string[] = [];
+  const add = (raw: string | undefined) => {
+    if (!raw) return;
+    const normalized = normalizeAgentRepoPath(stripShellTokenQuotes(raw));
+    if (normalized) paths.push(normalized);
+  };
+
+  // Common shell write forms:
+  //   cat <<EOF > path
+  //   echo x >> path
+  //   command 1> path
+  const redirectPattern = /(?:^|[\s;&|])(?:\d?>|>>)\s*(['"]?)([^'"\s;&|]+)\1/g;
+  for (const match of command.matchAll(redirectPattern)) add(match[2]);
+
+  // tee writes to its final path arguments. Keep this conservative and only
+  // capture simple non-option path tokens.
+  const teePattern = /(?:^|[\s;&|])tee(?:\s+-a)?(?:\s+--)?\s+(['"]?)([^'"\s;&|]+)\1/g;
+  for (const match of command.matchAll(teePattern)) add(match[2]);
+
+  // cp/mv write to the destination path.
+  const copyMovePattern = /(?:^|[\s;&|])(?:cp|mv)(?:\s+-[A-Za-z0-9]+)*\s+(['"]?)[^'"\s;&|]+\1\s+(['"]?)([^'"\s;&|]+)\2/g;
+  for (const match of command.matchAll(copyMovePattern)) add(match[3]);
+
+  // touch writes the named file.
+  const touchPattern = /(?:^|[\s;&|])touch(?:\s+-[A-Za-z0-9]+)*\s+(['"]?)([^'"\s;&|]+)\1/g;
+  for (const match of command.matchAll(touchPattern)) add(match[2]);
+
+  return [...new Set(paths)];
+}
+
 function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messages"]): string[] {
   const paths: string[] = [];
   for (const msg of messages) {
@@ -62,8 +104,6 @@ function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messa
         continue;
       }
       const name = (block as { name: string }).name;
-      if (name !== "write" && name !== "edit") continue;
-
       const rawArgs = "arguments" in block ? (block as { arguments: unknown }).arguments : undefined;
       let args: Record<string, unknown> = {};
       if (typeof rawArgs === "string") {
@@ -72,9 +112,12 @@ function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messa
         args = rawArgs as Record<string, unknown>;
       }
 
-      if (typeof args.path === "string") {
+      if ((name === "write" || name === "edit") && typeof args.path === "string") {
         const normalized = normalizeAgentRepoPath(args.path);
         if (normalized) paths.push(normalized);
+      }
+      if (name === "bash" && typeof args.command === "string") {
+        paths.push(...extractBashWritePaths(args.command));
       }
     }
   }
@@ -205,6 +248,7 @@ export function createCommitGuard(
         reason:
           `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in agents/:\n` +
           `${fileList}\n\n` +
+          `For each listed file: commit it if it is intentional, or restore it if it was accidental. Do not commit accidental changes just to satisfy finish().\n\n` +
           (ignoredFileLines.length > 0
             ? `Ignored generated runtime file(s):\n${ignoredFileLines.map((line) => `  ${line}`).join("\n")}\n\n`
             : "") +
