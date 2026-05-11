@@ -30,20 +30,21 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Continue Phase 5: make resume/recovery diagnostics use the same execution
-inspection path.
+Continue Phase 6/7: validate guard signals against metrics, then clean up
+metrics/alert hygiene.
 
 Next slice:
 
-1. Review resume/recovery call sites that still return raw text or one-off
-   shapes.
-2. Emit/query resume failure events with owner, recoverability, and trace id.
-3. Make the Web UI show whether the next action is resume, requeue, mechanical
-   recovery, or escalation.
+1. Validate that a real guard block opens the short-window guard metric signal
+   and clears when the window is clean.
+2. Confirm alert handling ignores retired guard metrics and only reacts to the
+   active short-window signal.
+3. Tighten Web UI labels so health, gauge, and watch-only metrics are obvious at
+   a glance.
 
-This is now the highest-value slice because normal session inspection can open
-loop trace by session or workflow id, and loop trace already shows workflow,
-session, and failover executions through the shared shape.
+This is now the highest-value slice because sessions, workflows, resume
+failures, and guard warnings are all traceable; the next risk is noisy or stale
+metric interpretation.
 
 ## Remaining Gap Summary
 
@@ -521,20 +522,30 @@ Goal: guard triggers are learning signals first, interventions second.
 Scope:
 
 - Keep workflow guard `guard.triggered` emission as the reference shape.
-- Make tool-level guards emit comparable guard events where practical.
+- [x] Make tool-level guards emit comparable guard events where practical.
 - Preserve hard blocking only for high-confidence, high-impact risks.
 - Track warning/block/recovery patterns through metrics and evaluator review.
 
 Validation:
 
-- Tool-level guard trigger can be traced to a session and owner.
-- Guard warning does not surprise-block normal work.
+- [x] Tool-level guard trigger can be traced to a session and owner.
+- [x] Guard warning does not surprise-block normal work.
 - A real guard trigger opens/closes the expected guard metric window.
 
 Stop criteria:
 
 - Agents and operators can inspect guard triggers as system weakness signals,
   not just session interruptions.
+
+Runtime proof, 2026-05-11:
+
+- Added a manager-level bridge from before-tool guard results to durable
+  `guard.triggered` events with source `tool`, owner, session id, workflow id,
+  project id, demand type, action, reason, and tool event type.
+- Emitted tool guard smoke event `558720` for session `s_1778479946904_0`.
+  Loop trace returned owner `evaluator`, one linked workflow, one linked
+  session, and exactly one deduplicated guard signal with source `tool`,
+  demand type `warn`, action `warned`, and event type `tool.finish`.
 
 ## Phase 7: Metrics And Alert Hygiene
 
