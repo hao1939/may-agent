@@ -1,6 +1,24 @@
 # May Heartbeat Log — Latest
 
-**Timestamp:** 2026-07-10 21:34 UTC
+**Timestamp:** 2026-05-11 02:05 UTC
+
+## Heartbeat Status Check
+
+**System Health**: Green. 92% success rate (1h), 37 sessions completed.
+
+**Key Metrics**:
+- Handler success rate: 99.25%, LLM eval lag: 0.13h
+- DB size: 1189 MB, session error rate: 9.46%
+- 5 sessions running, 169 total (most stale/interrupted)
+
+**Concerns**:
+- `reviewed good sessions overturned`: 0.277 (target 0.05) — persistent
+- `finish blocked by uncommitted changes`: 40/24h — git hygiene issue
+- `broad needs-improvement sessions`: 0.24 (target 0.1)
+
+---
+
+## Previous: 2026-07-10 21:34 UTC
 
 ## Heartbeat Status Check
 - System: 94% success rate (33/35 last hour)
