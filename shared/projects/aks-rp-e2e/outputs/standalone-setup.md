@@ -4,8 +4,8 @@
 
 1. **Azure VPN** — Must be connected to the Azure VPN to reach standalone environments
 2. **Devbox access** — SSH access to `devbox` (or local clone of the repo)
-3. **Bazel / aksbuilder** — The build system; `hack/aksbuilder.sh` wraps Bazel
-4. **Go toolchain** — For `go mod tidy` (called by aksbuilder)
+3. **Go toolchain** — Required by `aksbuilder.sh` for `go mod tidy`
+4. **aksbuilder** — Pre-built 34MB static binary at `hack/aksbuilder-linux-amd64`; bundles Bazel internally (no separate Bazel install needed)
 5. **Standalone environment** — A deployed standalone AKS RP instance
 
 ## What is a Standalone?
@@ -136,14 +136,26 @@ From the mastervalidation suite, good starter scenarios:
 
 ## Devbox Current State (as of 2026-05-11)
 
-- **Go**: NOT installed — `which go` returns nothing
-- **Bazel**: NOT installed — `which bazel` returns nothing
-- **aksbuilder binary**: Present at `hack/aksbuilder-linux-amd64`
+- **Go**: Installed (go1.24.3 linux/amd64)
+- **Bazel**: Bundled inside aksbuilder (auto-downloaded to `~/.aksbuilder/bin/bazelisk-linux-amd64-v1.19.0`)
+- **aksbuilder binary**: Present at `hack/aksbuilder-linux-amd64` (also at `devinfraservices/aksbuilder/bzlmod_rules/rules_aksbuilder/aksbuilder`)
 - **aksbuilder.sh wrapper**: Present at `hack/aksbuilder.sh`
 - **aksbuilder_localdeploy.sh**: Present — used to deploy standalone
-- **Standalone**: NOT deployed (Key Vault DNS unresolvable)
+- **Standalone**: Deployment IN PROGRESS (localdeploy running Bazel build of EV2 artifacts as of 2026-05-11 19:34 UTC)
 
-**To unblock**: Install Go + Bazel, then run `hack/aksbuilder_localdeploy.sh` to deploy standalone.
+**To unblock**: Install Go (Bazel is bundled inside `aksbuilder`), then run `hack/aksbuilder_localdeploy.sh /home/hayua/rp` to deploy standalone.
+
+### Installing Go on Devbox
+
+```bash
+wget https://go.dev/dl/go1.24.3.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.24.3.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+source ~/.bashrc
+go version  # verify
+```
+
+**Note**: Bazel does NOT need to be installed separately — `aksbuilder` (the 34MB statically-linked binary at `hack/aksbuilder-linux-amd64`) bundles its own Bazel toolchain. The `aksbuilder.sh` wrapper only checks for Go.
 
 ## Troubleshooting
 
