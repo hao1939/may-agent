@@ -218,7 +218,8 @@ Stop criteria:
 
 ## Phase 4: Query Facade Migration
 
-Status: metric alert workflow and reactor preflight reads migrated.
+Status: metric alert workflow, alert reactor preflight, project runtime context,
+and closed-loop steward context reads migrated.
 
 Goal: workflows and handlers stop guessing schema for judgment/context reads.
 
@@ -243,6 +244,15 @@ Scope:
 - [x] Add `query.workflowRuns(...)` and move the `project` handler's runtime
   context reads to `query.alerts(...)` / `query.workflowRuns(...)`; its direct
   DB write remains cache projection.
+- [x] Add `query.closedLoopStewardContext(...)` for the exact schema brief,
+  open alert, delivery failure, judgment, snapshot, triage-run, and recent
+  steward-run bundle used by `closed-loop-steward`.
+- [x] Move `closed-loop-steward` live context reads off raw
+  `ctx.sdk.getDb()`; owner activity now uses `query.sessions(...)`.
+- [ ] Move heartbeat live-context loaders away from raw schema-sensitive SQL.
+- [ ] Move evaluator aftermath/session review context reads away from raw
+  schema-sensitive SQL where the reads are judgment context rather than
+  deterministic artifact bookkeeping.
 
 Validation:
 

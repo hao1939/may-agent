@@ -64,12 +64,12 @@ type SnapshotRow = {
   measured_at: number | null;
 };
 
-type TableInfoRow = {
-  name: string;
-  type: string;
+type AlertContextRow = {
+  alert: AlertRow;
+  latestJudgment: JudgmentRow | null;
+  latestSnapshot: SnapshotRow | null;
+  activeTriageRun: { runId: string; status?: string; startedAt?: number } | null;
 };
-
-const SCHEMA_TABLES = ["sessions", "events", "metrics", "metric_alerts"] as const;
 
 const DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
 const DEFAULT_ALERT_LIMIT = 12;
@@ -96,8 +96,12 @@ function age(now: number, timestamp?: number | null): string {
 }
 
 function parseEventData(row: EventRow): Record<string, unknown> {
+  return parseJsonData(row.data);
+}
+
+function parseJsonData(data: string | null | undefined): Record<string, unknown> {
   try {
-    return row.data ? JSON.parse(row.data) as Record<string, unknown> : {};
+    return data ? JSON.parse(data) as Record<string, unknown> : {};
   } catch {
     return {};
   }
@@ -120,18 +124,6 @@ function summarizeWorkflowRuns(runs: WorkflowRunRow[], now: number): string {
 function isBreaching(current: number | null, threshold: number | null, alertOp: string | null): boolean {
   if (current == null || threshold == null) return false;
   return alertOp === ">" || alertOp === "above" ? current > threshold : current < threshold;
-}
-
-function formatSchema(rows: TableInfoRow[]): string {
-  if (rows.length === 0) return "(schema unavailable)";
-  return rows.map((row) => `${row.name}${row.type ? ` ${row.type}` : ""}`).join(", ");
-}
-
-function loadSchemaBrief(db: ReturnType<HandlerContext["sdk"]["getDb"]>): string[] {
-  return SCHEMA_TABLES.map((table) => {
-    const rows = db.prepare(`PRAGMA table_info(${table})`).all() as TableInfoRow[];
-    return `- ${table}: ${formatSchema(rows)}`;
-  });
 }
 
 function buildTriageTask(alert: AlertRow, owner: string, reason: string): string {
@@ -172,83 +164,37 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
   return async () => {
-    const db = ctx.sdk.getDb();
-    const now = Date.now();
-    const schemaBrief = loadSchemaBrief(db);
-
-    const running = db.prepare(
-      `SELECT runId FROM workflow_runs
-       WHERE workflow = 'closed-loop-steward' AND status = 'running'
-       LIMIT 1`,
-    ).get() as { runId: string } | null;
+    const context = ctx.sdk.query.closedLoopStewardContext({
+      lookbackMs,
+      alertLimit,
+      deliveryFailureLimit,
+    });
+    const now = context.now;
+    const schemaBrief = context.schemaBrief;
+    const running = context.runningStewardRun as { runId: string } | null;
     if (running) {
       emitSkip(ctx, `Skip: prior steward workflow still running (${running.runId}).`, { workflowRunId: running.runId });
       return;
     }
 
-    const alerts = db.prepare(
-      `SELECT ma.id, ma.metric_id, ma.message, ma.created_at,
-              m.name as metricName, m.owner as explicitOwner, p.owner as projectOwner,
-              m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
-              m.alert_op as alertOp
-       FROM metric_alerts ma
-       LEFT JOIN metrics m ON m.id = ma.metric_id
-       LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-       WHERE ma.resolved_at IS NULL
-       ORDER BY COALESCE(m.priority, 'P2') ASC, ma.created_at ASC
-       LIMIT ?`,
-    ).all(alertLimit) as AlertRow[];
+    const alertContexts = context.alerts as unknown as AlertContextRow[];
+    const failures = context.deliveryFailures as unknown as EventRow[];
 
-    const failures = db.prepare(
-      `SELECT id, source, owner, data, timestamp
-       FROM events
-       WHERE event_type = 'message.delivery_failed' AND timestamp >= ?
-       ORDER BY timestamp DESC
-       LIMIT ?`,
-    ).all(now - lookbackMs, deliveryFailureLimit) as EventRow[];
-
-    if (alerts.length === 0 && failures.length === 0) {
+    if (alertContexts.length === 0 && failures.length === 0) {
       emitSkip(ctx, "Skip: no open metric alerts or recent delivery failures.");
       return;
     }
 
     const triageCandidates: Array<{ alert: AlertRow; owner: string; reason: string }> = [];
 
-    const alertLines = alerts.map((alert) => {
+    const alertLines = alertContexts.map(({ alert, latestJudgment: judgment, latestSnapshot, activeTriageRun }) => {
       const owner = resolveMetricOwner(alert.metric_id, configuredAgents, alert.explicitOwner, alert.projectOwner);
-      const ownerSessions = db.prepare(
-        `SELECT sessionId, status, source, startedAt, endedAt
-         FROM sessions
-         WHERE agent = ? AND startedAt >= ?
-         ORDER BY startedAt DESC
-         LIMIT 3`,
-      ).all(owner, alert.created_at ?? 0) as SessionRow[];
-      const judgment = db.prepare(
-        `SELECT data, timestamp
-         FROM events
-         WHERE event_type = 'metric.alert_judged'
-           AND (
-             json_extract(data, '$.alertId') = ?
-             OR json_extract(data, '$.metricId') = ?
-           )
-         ORDER BY timestamp DESC
-         LIMIT 1`,
-      ).get(alert.id, alert.metric_id) as JudgmentRow | null;
-      const judgmentData = judgment ? parseEventData({
-        id: 0,
-        source: null,
-        owner: null,
-        data: judgment.data,
-        timestamp: judgment.timestamp,
-      }) : null;
-      const latestSnapshot = db.prepare(
-        `SELECT value, measured_at
-         FROM metric_snapshots
-         WHERE metric_id = ?
-         ORDER BY measured_at DESC
-         LIMIT 1`,
-      ).get(alert.metric_id) as SnapshotRow | null;
+      const ownerSessions = ctx.sdk.query.sessions({
+        agent: owner,
+        since: alert.created_at ?? 0,
+        limit: 3,
+      }).rows as unknown as SessionRow[];
+      const judgmentData = judgment ? parseJsonData(judgment.data) : null;
       const validatedAfterJudgment = !!judgment && !!latestSnapshot?.measured_at && latestSnapshot.measured_at > judgment.timestamp;
       const stillBreaching = isBreaching(
         latestSnapshot?.value ?? alert.current,
@@ -261,15 +207,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           : `  validation: awaiting a newer metrics snapshot after judgment`
         : `  validation: no judgment to validate`;
       const priority = alert.priority ?? "P2";
-      const activeTriage = db.prepare(
-        `SELECT runId
-         FROM workflow_runs
-         WHERE workflow = 'metric-alert-triage'
-           AND status = 'running'
-           AND task LIKE ?
-         LIMIT 1`,
-      ).get(`%${alert.metric_id}%`) as { runId: string } | null;
-      if ((priority === "P0" || priority === "P1" || priority === "P2") && !activeTriage) {
+      if ((priority === "P0" || priority === "P1" || priority === "P2") && !activeTriageRun) {
         if (!judgmentData) {
           triageCandidates.push({ alert, owner, reason: "missing metric.alert_judged event" });
         } else if (
@@ -303,13 +241,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       ].join("\n");
     });
 
-    const recentStewardRuns = db.prepare(
-      `SELECT runId, status, startedAt, endedAt
-       FROM workflow_runs
-       WHERE workflow = 'closed-loop-steward'
-       ORDER BY startedAt DESC
-       LIMIT 3`,
-    ).all() as WorkflowRunRow[];
+    const recentStewardRuns = context.recentStewardRuns as unknown as WorkflowRunRow[];
 
     const routedTriageCandidates = triageCandidates.slice(0, triageLimit);
     for (const candidate of routedTriageCandidates) {
@@ -399,14 +331,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     try {
       ctx.sdk.runWorkflow("closed-loop-steward", task, { source: "may" })
         .then((result) => {
-          ctx.sdk.log("info", `[closed-loop-steward] Workflow completed for ${alerts.length} alert(s), ${failures.length} delivery failure(s): ${result.status}${result.runId ? ` (${result.runId})` : ""}`);
+          ctx.sdk.log("info", `[closed-loop-steward] Workflow completed for ${alertContexts.length} alert(s), ${failures.length} delivery failure(s): ${result.status}${result.runId ? ` (${result.runId})` : ""}`);
           ctx.sdk.emit("handler.workflow_dispatched", {
             handler: "closed-loop-steward",
             workflow: "closed-loop-steward",
             source: "may",
             workflowRunId: result.runId ?? null,
             status: result.status,
-            alertCount: alerts.length,
+            alertCount: alertContexts.length,
             deliveryFailureCount: failures.length,
           });
         })
@@ -421,7 +353,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
             durationMs: 0,
           });
         });
-      ctx.sdk.log("info", `[closed-loop-steward] Dispatched workflow with ${alerts.length} alert(s), ${failures.length} delivery failure(s).`);
+      ctx.sdk.log("info", `[closed-loop-steward] Dispatched workflow with ${alertContexts.length} alert(s), ${failures.length} delivery failure(s).`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       ctx.sdk.log("info", `[closed-loop-steward] Failed to dispatch workflow: ${msg.slice(0, 200)}`);

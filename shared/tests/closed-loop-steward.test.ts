@@ -1,48 +1,40 @@
 import { describe, expect, it, vi } from "vitest";
 import { create } from "../../may/handlers/closed-loop-steward.js";
 
-function makeDb(openAlerts: unknown[] = []) {
+function makeStewardContext(alerts: unknown[] = []) {
   return {
-    prepare: vi.fn((sql: string) => {
-      if (sql.startsWith("PRAGMA table_info(")) {
-        const table = sql.match(/PRAGMA table_info\(([^)]+)\)/)?.[1] ?? "unknown";
-        return { all: vi.fn(() => [{ name: `${table}_id`, type: "TEXT" }]) };
-      }
-      if (sql.includes("FROM metric_alerts")) {
-        return { all: vi.fn(() => openAlerts) };
-      }
-      if (sql.includes("message.delivery_failed")) {
-        return { all: vi.fn(() => []) };
-      }
-      if (sql.includes("FROM sessions") && sql.includes("agent = ?")) {
-        return { all: vi.fn(() => []) };
-      }
-      if (sql.includes("metric.alert_judged")) {
-        return { get: vi.fn(() => null) };
-      }
-      if (sql.includes("FROM metric_snapshots")) {
-        return { get: vi.fn(() => null) };
-      }
-      if (sql.includes("FROM workflow_runs") && sql.includes("status = 'running'")) {
-        return { get: vi.fn(() => null) };
-      }
-      if (sql.includes("FROM workflow_runs")) {
-        return { all: vi.fn(() => []) };
-      }
-      return { all: vi.fn(() => []), get: vi.fn(() => null) };
-    }),
+    now: Date.now(),
+    schemaBrief: [
+      "- sessions: sessionId TEXT, agent TEXT, status TEXT, startedAt INTEGER",
+      "- events: id INTEGER, event_type TEXT, data TEXT, timestamp INTEGER",
+      "- metrics: id TEXT, owner TEXT, current REAL, threshold REAL",
+      "- metric_alerts: id INTEGER, metric_id TEXT, message TEXT, created_at INTEGER",
+    ],
+    runningStewardRun: null,
+    alerts: alerts.map((alert) => ({
+      alert,
+      latestJudgment: null,
+      latestSnapshot: null,
+      activeTriageRun: null,
+    })),
+    deliveryFailures: [],
+    recentStewardRuns: [],
   };
 }
 
 function makeCtx(
-  db: ReturnType<typeof makeDb>,
+  stewardContext = makeStewardContext(),
   runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" })),
 ) {
+  const query = {
+    closedLoopStewardContext: vi.fn(() => stewardContext),
+    sessions: vi.fn(() => ({ rows: [], rowCount: 0, limit: 3, truncated: false })),
+  };
   return {
     agentName: "may",
     sdk: {
       paths: { agents: "/app/agents" },
-      getDb: () => db,
+      query,
       runWorkflow,
       emit: vi.fn(),
       log: vi.fn(),
@@ -52,7 +44,7 @@ function makeCtx(
 
 describe("closed-loop-steward handler", () => {
   it("injects runtime schema and returns immediately after dispatching workflows instead of awaiting the may audit", async () => {
-    const db = makeDb([
+    const stewardContext = makeStewardContext([
       {
         id: 123,
         metric_id: "handler.failed-count",
@@ -72,7 +64,7 @@ describe("closed-loop-steward handler", () => {
       if (name === "closed-loop-steward") return new Promise(() => {});
       return Promise.resolve({ status: "done", runId: "wr_triage" });
     });
-    const ctx = makeCtx(db, runWorkflow);
+    const ctx = makeCtx(stewardContext, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     const result = await Promise.race([
@@ -89,7 +81,7 @@ describe("closed-loop-steward handler", () => {
   });
 
   it("warns may not to attempt direct DB writes during the audit", async () => {
-    const db = makeDb([
+    const stewardContext = makeStewardContext([
       {
         id: 123,
         metric_id: "handler.failed-count",
@@ -106,7 +98,7 @@ describe("closed-loop-steward handler", () => {
       },
     ]);
     const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
-    const ctx = makeCtx(db, runWorkflow);
+    const ctx = makeCtx(stewardContext, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     await handler();
@@ -117,7 +109,7 @@ describe("closed-loop-steward handler", () => {
   });
 
   it("warns may that owner activity alone is not closure evidence", async () => {
-    const db = makeDb([
+    const stewardContext = makeStewardContext([
       {
         id: 225,
         metric_id: "scout.good-session-rate-24h",
@@ -134,7 +126,7 @@ describe("closed-loop-steward handler", () => {
       },
     ]);
     const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
-    const ctx = makeCtx(db, runWorkflow);
+    const ctx = makeCtx(stewardContext, runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     await handler();
@@ -146,9 +138,8 @@ describe("closed-loop-steward handler", () => {
   });
 
   it("skips without dispatch when no alerts or delivery failures exist", async () => {
-    const db = makeDb([]);
     const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
-    const ctx = makeCtx(db, runWorkflow);
+    const ctx = makeCtx(makeStewardContext([]), runWorkflow);
     const handler = create(ctx, { handlerConfig: {} } as any);
 
     await handler();

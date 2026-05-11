@@ -21,7 +21,7 @@ projection, but judgment and repair work should live in workflows.
 | `coaching-consumer` | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
 | `project` | Project scanner, state mutator, workflow launcher | direct FS/cache projection + `sdk.query` + `runWorkflow` + durable trace events | temporarily | Keep DB write only for project cache projection; runtime context reads now use `sdk.query`. Split scanner/projection later if needed. |
 | `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; preflight reads and triage workflow context are query-backed. |
-| `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow` + durable trace events | temporarily | Context collection still needs `sdk.query`/function cleanup; dispatch is workflow-backed. |
+| `closed-loop-steward` | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; live context collection is query-backed and dispatch is workflow-backed. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
 | `session-recovery` | Failed-session recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as event-first bridge for `session.failed`; recovery action now runs inside the `session-recovery` workflow. |
@@ -72,6 +72,9 @@ projection, but judgment and repair work should live in workflows.
 - Query facade project slice: `project` uses `query.alerts(...)` and
   `query.workflowRuns(...)` for runtime context reads; direct DB remains only
   for project cache projection.
+- Query facade steward slice: `closed-loop-steward` uses
+  `query.closedLoopStewardContext(...)` plus `query.sessions(...)` for bounded
+  live evidence instead of opening SQLite directly in handler code.
 - Eval LLM scan traceability slice: `eval-llm-scan` records
   `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
   LLM work through `evaluator-deep-eval`.
