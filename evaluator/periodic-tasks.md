@@ -6,6 +6,16 @@ See `agents/evaluator/periodic-tasks.md` for the definitions.
 Note: `sessions` table does **not** have a `createdAt` column; use `startedAt` (and `endedAt`) for recency queries.
 Also: `evaluations.createdAt` is stored as an epoch-ms integer (not an ISO datetime string), so recency queries should compare numeric thresholds (e.g., `createdAt > (Date.now()-24*3600*1000)`) rather than `datetime('now', ...)`.
 
+**Last run**: 2026-05-11 00:39Z — DB canonical check still shows both owned evaluation processes live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778459421757`; `MAX(CASE WHEN COALESCE(evaluatedByHeuristic,1)=0 THEN createdAt END)=1778459309013`; `MAX(sessions.startedAt)=1778459672180`; `MAX(sessions.endedAt)=1778459156303`; lag ≈250.4s vs latest `startedAt`, and latest evaluation is ≈266.5s newer than latest `endedAt`; `evals_last24h=531`; `llm_evals_last24h=31`; `sessions_last24h=1070`). This keeps Process #5 live and Process #15 active in the shared `evaluations` table; legacy `.state/evaluations/` top-level files still end at Apr 20/29, so continue treating that directory as a legacy output-path signal rather than the canonical liveness source.
+
+Inbox triage on the surfaced pending aftermath targets found completed workspace artifacts already present for `s_1778457655541_166`, `s_1778457956556_176`, `s_1778457930521_175`, `s_1778458766245_180`, and `s_1778457804185_168`, so the grouped `session.start`, `session.end`, `evaluation.routed`, `evaluation.reviewed`, `evaluation.success_candidate`, `evaluation.false_good`, and `evaluation.triage_closed` rows are best treated as already-handled or in-flight backlog noise rather than dropped evaluator work.
+
+Ran `monitor-session.cjs --running`: 6 checked, 4 healthy, 2 alerts — May session `s_1778459667592_185` (`PRODUCTIVITY_STALL`: `10 tool calls with 0 file writes`) and one active evaluator aftermath review session flagged `PROTOCOL_VIOLATION` for missing P114 Experience Replay. I notified May about the external stall and treated the evaluator-session alert as the known monitor false-positive pattern for evaluator aftermath reviews.
+
+Ran `patrol.cjs`: **CRITICAL** due only to missing `agents/shared/compliance-snapshot.json` baseline (integrity patrol degraded — not a hash mismatch event). State unchanged from prior runs; no repeat escalation sent to Bob this cycle.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
+
 ## 1. Score Recent Sessions
 **Goal**: Ensure quality feedback loop.
 - Filter sessions from last 24h.
