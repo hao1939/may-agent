@@ -1320,6 +1320,8 @@ async function loadSessionDetail(sessionId) {
     const ev = sessData.evaluation;
     const durSec = s.endedAt ? Math.round((s.endedAt - s.startedAt) / 1000) : null;
     const durStr = durSec !== null ? (durSec >= 60 ? Math.floor(durSec/60) + 'm ' + (durSec%60) + 's' : durSec + 's') : 'running...';
+    const sessionIdArg = jsStringAttr(s.sessionId);
+    const workflowRunIdArg = s.workflowRunId ? jsStringAttr(s.workflowRunId) : null;
 
     let html = `<div class="panel session-inspector">`;
 
@@ -1338,7 +1340,8 @@ async function loadSessionDetail(sessionId) {
       <div class="header-row" style="margin-top:8px">
         <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
-        <button class="ask-btn" style="margin-left:auto" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc((s.task || '').slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
+        <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
+        <button class="ask-btn" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc((s.task || '').slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -1361,7 +1364,7 @@ async function loadSessionDetail(sessionId) {
     if (s.source) html += `<dt>Source</dt><dd>${esc(s.source)}</dd>`;
     if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
     if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="#" style="color:var(--accent)" onclick="event.preventDefault();loadSessionDetail('${esc(s.parentSessionId)}')">${esc(s.parentSessionId)}</a></dd>`;
-    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd>${esc(s.workflowRunId)}</dd>`;
+    if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd><a href="#" style="color:var(--accent)" onclick='event.preventDefault();openLoopTrace({workflowRunId:${workflowRunIdArg}})'>${esc(s.workflowRunId)}</a></dd>`;
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 
@@ -2412,6 +2415,10 @@ function esc(s) {
 function attrEsc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function jsStringAttr(s) {
+  return attrEsc(JSON.stringify(String(s ?? '')));
 }
 
 // ── Steering verbs ──────────────────────────────────────────────────────────────
@@ -3786,12 +3793,28 @@ async function loadEvents() {
   }
 }
 
-async function loadLoopTrace(eventId) {
+function loopTraceQuery(target) {
+  if (target && typeof target === 'object') {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(target)) {
+      if (value != null && value !== '') params.set(key, String(value));
+    }
+    return params.toString();
+  }
+  return `eventId=${encodeURIComponent(target)}`;
+}
+
+function openLoopTrace(target) {
+  routeTo('/system');
+  setTimeout(() => loadLoopTrace(target), 80);
+}
+
+async function loadLoopTrace(target) {
   const el = document.getElementById('loop-trace-content');
   if (!el) return;
   el.innerHTML = '<div style="padding:10px;color:var(--fg2);border:1px solid var(--border);border-radius:6px">Loading loop trace…</div>';
   try {
-    const res = await fetch(`/api/loop-trace?eventId=${encodeURIComponent(eventId)}`);
+    const res = await fetch(`/api/loop-trace?${loopTraceQuery(target)}`);
     const trace = await res.json();
     if (!res.ok) throw new Error(trace.error || 'failed');
     el.innerHTML = renderLoopTrace(trace);
@@ -3832,8 +3855,12 @@ function renderLoopTrace(trace) {
     html += `<div style="display:grid;gap:4px;margin-top:4px">`;
     for (const ex of trace.executions.slice(0, 10)) {
       html += `<div style="font-size:12px;color:var(--fg2);display:flex;gap:8px;align-items:center">`;
-      const href = ex.kind === 'session' ? `#/sessions/${esc(ex.id)}` : '';
-      const id = href ? `<a href="${href}" style="color:var(--accent)">${esc(ex.id)}</a>` : `<span style="color:var(--accent)">${esc(ex.id)}</span>`;
+      let id = `<span style="color:var(--accent)">${esc(ex.id)}</span>`;
+      if (ex.kind === 'session') {
+        id = `<a href="#/sessions/${esc(ex.id)}" style="color:var(--accent)">${esc(ex.id)}</a>`;
+      } else if (ex.kind === 'workflow') {
+        id = `<a href="#" style="color:var(--accent)" onclick='event.preventDefault();loadLoopTrace({workflowRunId:${jsStringAttr(ex.id)}})'>${esc(ex.id)}</a>`;
+      }
       html += id;
       html += `<span>${esc(ex.kind || '—')}</span><span>${esc(ex.owner || '—')}</span><span>${esc(ex.status || '—')}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ex.summary || '')}</span>`;
       html += `</div>`;
