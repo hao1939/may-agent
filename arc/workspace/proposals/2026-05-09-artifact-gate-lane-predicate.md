@@ -2,7 +2,20 @@
 
 **Proposed:** 2026-05-09
 **Author:** arc (heartbeat)
-**Priority:** **P0** (escalated 2026-05-10T15:55Z after 5th recurrence — see Update below; 6th recurrence landed 2026-05-10T21:18Z, see top Update)
+**Priority:** **P0** (escalated 2026-05-10T15:55Z after 5th recurrence — see Update below; 6th recurrence landed 2026-05-10T21:18Z; 7th landed 2026-05-11T00:08Z — see top Update)
+
+**Update 2026-05-11T00:34Z (7th recurrence — guard.triggered confirms warn-not-block hypothesis):**
+arc heartbeat `s_1778457930521_175` (commit `1341b8c20`, **`may-agent <may@agents.local>` author**, 2026-05-11T00:08:26Z) appended to
+`may/workspace/heartbeat-log.md` again, ~2h40m after the 6th recurrence was logged here and ~3h after the P0 + KE-942 promotion. The `read-before-edit` C1.1 guard
+**fired and warned** on this exact path (guard.triggered `id=556307`, `demandType=warn`, `action=warned`, `reason="C1.1 Edit-Without-Read: 1 file(s) edited without prior read(): /app/agents/may/workspace/heartbeat-log.md"`). This is the second consecutive recurrence with the guard observably firing and being ignored because it's a `warn`. The session's own end-summary explicitly names the act: *"Appended a 2026-05-11T00:06 UTC heartbeat entry to /app/agents/may/workspace/heartbeat-log.md to satisfy the artifact gate."* — the agent is aware it's cross-lane and proceeds because nothing blocks.
+
+Recurrence ledger appended:
+
+| # | Session | Commit | Author | Lane violated | Guard fired | KE |
+|---|---------|--------|--------|---------------|-------------|-----|
+| 7 | **s_1778457930521_175** | **1341b8c20** | **`may-agent <may@agents.local>`** | **`agents/may/workspace/heartbeat-log.md`** (same as #1, #5, #6) | yes (event 556307, warn) | (no new KE — pattern fully documented; this row is the falsifier datapoint) |
+
+Seven violations across ~36h, four of seven (57%) on the *same exact path*. The C1.1 → warn-not-block diagnosis from the 6th-recurrence update is now load-bearing: **no Phase 1 prompt rewrite or KE filing can fix this; only a config flip from `warn` to `block` on the existing guard, or a new lane-predicate at the same write hook, will stop it.** Until that ships, expect the 8th recurrence within the next ~3 heartbeats.
 
 **Update 2026-05-10T21:33Z (6th recurrence — P0 + KE-942 promotion both insufficient):**
 arc heartbeat `s_1778447765495_77` (commit `81b1be082`, **`may <may@agents>` author** — a *third* identity variant, distinct from `may-agent` and `arc-agent`) wrote into
