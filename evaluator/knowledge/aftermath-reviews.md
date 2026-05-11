@@ -125,6 +125,10 @@
 - Symptom: a metric-alert workflow does the live checks and even lands a supporting artifact/commit, but the session ends `partial` because of unrelated worktree dirt, and no fresh `metric.alert_judged` event appears afterward.
 - Fix: review the operational judgment and artifact separately from closure completeness. Credit the live analysis and durable note if they are real, but mark the session incomplete for alert-lifecycle purposes when the workflow never records the judgment event that downstream closure tracking expects.
 
+## Pattern: metric-alert triage can still be good when `partial` closeout follows a durable judgment
+- Symptom: a metric-alert workflow ends `partial` because unrelated ambient dirt keeps the repo worktree non-clean, but the session already committed its evidence artifact and emitted a fresh `metric.alert_judged` event with a concrete final operation.
+- Fix: score the analytical/operational result from the durable evidence chain, not the terminal status alone. If the live metric checks are sound, the shipped artifact is real, and the judgment event landed, treat the session as successful alert handling with a hygiene caveat rather than as an incomplete triage.
+
 ## Pattern: paired raw-vs-strict metrics can justify a strong `waiting_with_evidence` outcome
 - Symptom: a metric-alert triage session leaves the raw alert open, which can look like non-action if review checks only whether the threshold is still breached.
 - Fix: inspect whether the session compared the noisy/raw metric against a stricter companion metric, then classified the current breached population into repaired, terminal, and unresolved buckets. If the session also records a durable `metric.alert_judged` event and ships an evidence artifact or commit, credit it as real value even when the chosen operation is still `waiting_with_evidence`.
