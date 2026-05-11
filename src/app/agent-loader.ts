@@ -21,23 +21,7 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ModelWithApiKey } from "../lib/types.js";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import {
-  SubagentManager,
-  createCodingTools,
-  createReadTool,
-  createWorkflowTool,
-  createBackgroundExecTool,
-  createCronTool,
-  createScrapeTool,
-  createSystemStatusTool,
-  createQueryDbTool,
-  createFinishTool,
-  createCheckpointTool,
-} from "../lib/index.js";
-
-import { createMessageTool } from "../lib/tools/message-tool.js";
-import { VALID_TOOL_PRESETS } from "../lib/tool-preset-registry.js";
+import { SubagentManager } from "../lib/index.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
 import {
@@ -46,10 +30,12 @@ import {
   type AgentConfig,
   type ValidationError,
 } from "./loader/agent-config.js";
-import { listAgentDirectories, listConfiguredAgentNames } from "./loader/agent-discovery.js";
+import { listAgentDirectories } from "./loader/agent-discovery.js";
+import { buildTools } from "./loader/toolset-loader.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export { listAgentDirectories, listConfiguredAgentNames } from "./loader/agent-discovery.js";
+export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
 
 // ── Loader options ──────────────────────────────────────────────────────
 
@@ -113,279 +99,6 @@ export function runAgentCleanup(agentName: string): void {
   agentCleanups.delete(agentName);
 }
 
-// ── Protected path guard (P53 enforcement) ─────────────────────────────
-
-/**
- * Files that agents may NOT write/edit in other agents' directories.
- * These are identity-critical files — only the owning agent (or human) may modify them.
- *
- * LESSONS.md is intentionally NOT protected: it's learned behavior, not identity.
- * Coach needs to edit any agent's LESSONS.md (Growth Cycle + direct edits).
- * Bob's consolidation cron needs cross-agent LESSONS.md access for cleanup.
- * Protecting LESSONS.md blocked Coach 31+ times and forced heavyweight
- * fork-verify-promote cycles for single-line lesson additions.
- */
-
-// ── Bash command guard removed ──────────────────────────────────────────
-// P53 bash command scanning was removed per Hao's directive (2026-03-14):
-// "bash guard is against our idea of freedom and creativity. Instead, give
-//  agents free bash access. For safety, create specialist agents without bash."
-// Cross-edit protection remains via write/edit tool path guards (checkCrossEditGuard in cross-edit-guard.ts).
-
-async function buildTools(config: AgentConfig, opts: AgentLoaderOptions): Promise<AgentTool[]> {
-  const { projectRoot, persistDir, manager, bus } = opts;
-  const agentDir = resolve(opts.agentsRoot, config.name);
-  const tools: AgentTool[] = [createQueryDbTool(persistDir)];
-
-  for (const preset of config.tools) {
-    switch (preset) {
-      case "query_db":
-      case "query-db":
-        // query_db is a core read-only runtime tool, loaded for every agent.
-        break;
-
-      case "coding":
-        // Full coding toolset: read + bash + edit + write
-        tools.push(...createCodingTools(projectRoot, { agentName: config.name }));
-        break;
-
-      case "read-only": {
-        tools.push(createReadTool(projectRoot) as any);
-        break;
-      }
-
-      case "agents": {
-        // Agents cooperation tool — actions: call, fork, message, list, peek, cancel, context, requests
-        const denyConfig = config.delegateDeny;
-        tools.push(
-          manager.createAgentsTool({
-            getCallerSessionId: () => agentSessionIds.get(config.name),
-            getCallerAgentName: () => config.name,
-            callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
-            agentsRoot: opts.agentsRoot,
-            triggerHeartbeat: (agentName: string) => {
-              // All heartbeat entries live in May's cron.json
-              // Entry names: "heartbeat" (for may), "heartbeat-{agent}" (for others)
-              for (const cron of agentCrons.values()) {
-                if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
-                if (cron.triggerNow("heartbeat") && agentName === "may") return true;
-              }
-              return false;
-            },
-            bus: opts.bus,
-          }),
-        );
-        break;
-      }
-
-      case "message": {
-        // v2: `message` is the canonical async inter-agent communication tool.
-        // (Replaced legacy `notify` and `message-only` presets in v0.3.)
-        tools.push(
-          createMessageTool({
-            agentName: config.name,
-            agentsRoot: opts.agentsRoot,
-            persistDir,
-            allowedTargets: listConfiguredAgentNames(opts.agentsRoot),
-            emit: (event) => bus.emit(event as any),
-            getCallerSessionId: () => agentSessionIds.get(config.name),
-            triggerHeartbeat: (agentName: string) => {
-              for (const cron of agentCrons.values()) {
-                if (cron.triggerNow(`heartbeat-${agentName}`)) return true;
-                if (cron.triggerNow("heartbeat") && agentName === "may") return true;
-              }
-              return false;
-            },
-          }),
-        );
-        break;
-      }
-
-      case "workflow": {
-        const workflowDir = resolve(agentDir, "workflows");
-        const sharedWorkflowDir = resolve(opts.agentsRoot, "shared", "workflows");
-        tools.push(
-          createWorkflowTool({
-            manager,
-            workflowDir,
-            sharedWorkflowDir,
-            persistDir,
-            agentName: config.name,
-            runtimeCtx: buildRuntimeCtx({ bus, persistDir, projectRoot, agentsRoot: opts.agentsRoot, agentName: config.name }),
-            callerSessionId: () => {
-              const sid = agentSessionIds.get(config.name);
-              if (!sid) throw new Error(`No active ${config.name} session`);
-              return sid;
-            },
-            onEvent: (event) => {
-              const label = `workflow:${config.name}`;
-              if (event.type === "workflow_start") {
-                bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
-              } else if (event.type === "workflow_done") {
-                bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
-              } else if (event.type === "workflow_escalate") {
-                bus.emit({ type: "info", message: `[${label}] Escalated: ${event.reason}` });
-              } else if (event.type === "step_start") {
-                bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
-              }
-            },
-          }),
-        );
-        break;
-      }
-
-      case "background-exec": {
-        const bgExec = createBackgroundExecTool({
-          cwd: projectRoot,
-          denyMessage: "Do not explore outside the project root. Use relative paths.",
-          allowAgentSpawn: true, // Coach agents need to spawn coachee processes
-        });
-        tools.push(bgExec.tool);
-        addCleanup(config.name, bgExec.cleanup);
-        break;
-      }
-
-      case "cron": {
-        const cronPath = resolve(agentDir, "cron.json");
-        let cron = agentCrons.get(config.name);
-        if (!cron) {
-          cron = new Cron(
-            cronPath,
-            manager,
-            () => {
-              const sid = agentSessionIds.get(config.name);
-              if (!sid) throw new Error(`No active ${config.name} session`);
-              return sid;
-            },
-            (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
-            opts.projectRoot,
-            (msg) => {
-              bus.emit({ type: "message.created", from: config.name, to: "human", content: msg } as any);
-            },
-            (event) => bus.emit(event),
-          );
-          cron.load();
-          agentCrons.set(config.name, cron);
-        }
-        tools.push(
-          createCronTool({
-            configPath: cronPath,
-            agentName: config.name,
-            onConfigChange: () => cron!.reload(),
-            cronEnabled: opts.cronEnabled,
-          }),
-        );
-        break;
-      }
-
-      case "scrape":
-        tools.push(createScrapeTool());
-        break;
-
-      case "system-status":
-      case "system_status": {
-        tools.push(createSystemStatusTool(opts.persistDir, opts.agentsRoot));
-        break;
-      }
-
-      case "finish": {
-        tools.push(
-          createFinishTool({
-            agentName: config.name,
-            projectRoot,
-            persistDir,
-          }),
-        );
-        break;
-      }
-
-      case "checkpoint": {
-        // Session ID and agent name are not known at registration time —
-        // use placeholders that get resolved at runtime. The manager
-        // injects both via mutable refs before each session starts.
-        let currentSessionId = "unknown";
-        let currentAgentName = "unknown";
-        tools.push(
-          createCheckpointTool({
-            sessionId: () => currentSessionId,
-            agentName: () => currentAgentName,
-            persistDir,
-          }),
-        );
-        // Store setters on the tool for the manager to call at session start
-        const cpTool = tools[tools.length - 1] as any;
-        cpTool._setSessionId = (id: string) => {
-          currentSessionId = id;
-        };
-        cpTool._setAgentName = (name: string) => {
-          currentAgentName = name;
-        };
-        break;
-      }
-
-      default:
-        bus.emit({
-          type: "info",
-          message: `[loader] Unknown tool preset "${preset}" for agent "${config.name}" — skipping`,
-        });
-    }
-  }
-
-  // Load local tools from agents/<name>/tools/
-  const localTools = await loadLocalTools(config.name, agentDir, opts);
-  tools.push(...localTools);
-
-  return tools;
-}
-
-/**
- * Scan agents/<name>/tools/ for .ts files and dynamically import them.
- * Each file must default-export a ToolFactory function.
- * Errors are logged and skipped — one bad tool doesn't kill the agent.
- */
-async function loadLocalTools(agentName: string, agentDir: string, opts: AgentLoaderOptions): Promise<AgentTool[]> {
-  const toolsDir = resolve(agentDir, "tools");
-  if (!existsSync(toolsDir)) return [];
-
-  const tools: AgentTool[] = [];
-  const entries = readdirSync(toolsDir).filter((f) => f.endsWith(".ts") || f.endsWith(".js"));
-
-  for (const file of entries) {
-    const filePath = resolve(toolsDir, file);
-    try {
-      const mod = await import(`${filePath}?t=${Date.now()}`);
-      const factory = mod.default;
-      if (typeof factory !== "function") {
-        opts.bus.emit({
-          type: "info",
-          message: `[loader] Skipping ${agentName}/tools/${file} — no default export function`,
-        });
-        continue;
-      }
-      const tool = await factory({
-        projectRoot: opts.projectRoot,
-        agentRoot: agentDir,
-        persistDir: opts.persistDir,
-      });
-      if (tool && typeof tool.name === "string") {
-        tools.push(tool);
-        opts.bus.emit({
-          type: "info",
-          message: `[loader] Loaded local tool "${tool.name}" for ${agentName}`,
-        });
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      opts.bus.emit({
-        type: "info",
-        message: `[loader] ⚠️ Failed to load ${agentName}/tools/${file}: ${msg}`,
-      });
-    }
-  }
-
-  return tools;
-}
-
 // ── Load and register agents ────────────────────────────────────────────
 
 export interface LoadResult {
@@ -428,7 +141,13 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
       description: config.description,
       domain: config.domain,
       model,
-      tools: await buildTools(config, opts),
+      tools: await buildTools(config, {
+        ...opts,
+        getAgentSessionId,
+        getAgentCrons,
+        setAgentCron: (agentName, cron) => agentCrons.set(agentName, cron),
+        addCleanup,
+      }),
       agentDir,
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
