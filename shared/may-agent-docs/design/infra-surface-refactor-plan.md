@@ -674,6 +674,8 @@ First slice, 2026-05-11:
 
 - Runtime inventory found the main project-driver overlap is `project`,
   `goal-driver`, and the `master-worker*` family.
+- `REGISTRY.md` now lists the wired runtime workflows instead of implying only
+  three shared workflows are active.
 - `project` is already the handler default. The project template and scanner
   fallback now also default to `workflow: project`.
 - Project format validation now flags non-terminal projects that select

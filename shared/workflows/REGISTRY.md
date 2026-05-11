@@ -9,13 +9,18 @@ historical project metadata, but active or resumable shared projects should not
 select them unless a reviewer records a specific reason. Prefer migrating
 waiting projects to `workflow: project` before they resume.
 
-## Shared Workflows (active — available to all agents)
+## Shared Workflows (active or wired)
 
 | Name | File | Lines | Purpose |
 |------|------|-------|---------|
-| `project` | `shared/workflows/project.ts` | 929 | Persistent iterative task loop: owner reviews → worker iterates → milestones tracked. Supports directory format (project.md + journal.md) and legacy single-file. Core project execution engine. |
+| `project` | `shared/workflows/project.ts` | 1210 | Default explicit-project driver. Persistent iterative loop with owner review, worker iteration, comments, project.md + journal.md, and legacy single-file support. |
+| `metric-alert-triage` | `shared/workflows/metric-alert-triage.ts` | 297 | Owner judgment workflow for metric alerts. Requires a concrete operation and emits durable `metric.alert_judged` evidence. |
+| `closed-loop-steward` | `shared/workflows/closed-loop-steward.ts` | 20 | Workflow wrapper for May's recurring closed-loop audit; keeps the handler as an event-to-workflow bridge. |
+| `evaluator-deep-eval` | `shared/workflows/evaluator-deep-eval.ts` | 20 | Workflow wrapper for non-heuristic evaluator sessions selected by `eval-llm-scan`. |
+| `session-recovery` | `shared/workflows/session-recovery.ts` | 131 | Recover or escalate failed sessions from `session.failed` events. |
 | `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 203 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** |
-| `verify-wrap` | `shared/workflows/verify-wrap.ts` | 233 | Minimal 2-phase verification wrapper (EXP-138). Phase 1: execute task. Phase 2: separate session reads back all written files. |
+| `verify-wrap` | `shared/workflows/verify-wrap.ts` | 26 | Minimal wrapper for explicitly verified work. Still referenced by May cron entries and agent references. |
+| `goal-driver` | `shared/workflows/goal-driver.ts` | 423 | Experimental project judgment loop. Keep only while it proves clearer project movement than `project`; currently referenced by `scout-second-brain-learning`. |
 
 **Not workflows** (helper modules with no `execute()` function):
 - `fewshot-inject-helpers.ts` — keyword-based utility for prepending few-shot examples
@@ -26,7 +31,12 @@ waiting projects to `workflow: project` before they resume.
 - `persistent-task.ts` — was an alias for `project.ts`, removed
 - `heartbeat.ts` — replaced by per-agent heartbeat workflows + `heartbeat-data.ts`
 - `error-scan.ts` — dead code, zero consumers (446 lines)
-- `master-worker.ts` — dead code, zero consumers (355 lines)
+
+### Legacy Shared Workflows Kept For Compatibility
+
+- `master-worker.ts` and `master-worker*` variants remain on disk with tests, but
+  are not the default project path. Non-terminal shared projects should use
+  `workflow: project` unless a reviewer records a specific reason.
 
 ## Archived Shared Workflows
 
