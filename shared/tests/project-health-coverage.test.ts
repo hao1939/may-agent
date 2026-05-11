@@ -60,13 +60,13 @@ describe("scanAllProjects - filesystem traversal", () => {
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(
       path.join(projDir, "project.md"),
-      "---\nid: my-proj\nowner: agent1\nstatus: active\nworkflow: master-worker\n---\n\n# Project\n"
+      "---\nid: my-proj\nowner: agent1\nstatus: active\nworkflow: project\n---\n\n# Project\n"
     );
     const result = scanAllProjects(tmpDir);
     expect(result.length).toBe(1);
     expect(result[0].status).toBe("active");
     expect(result[0].owner).toBe("agent1");
-    expect(result[0].workflow).toBe("master-worker");
+    expect(result[0].workflow).toBe("project");
   });
 
   it("defaults projects without workflow metadata to the project workflow", () => {

@@ -49,7 +49,7 @@ Active design docs and shipped decisions.
 | [design/heartbeat-as-agency.md](design/heartbeat-as-agency.md) | Shipped | Heartbeats as the moments agents are autonomous |
 | [design/unified-events.md](design/unified-events.md) | Shipped | Unified event taxonomy |
 | [design/escalation.md](design/escalation.md) | Shipped (partial) | Escalation and recovery system |
-| [design/master-worker.md](design/master-worker.md) | Shipped | Persistent worker/reviewer sessions with followUp() |
+| [design/master-worker.md](design/master-worker.md) | Legacy | Historical persistent worker/reviewer design; `project` is the default project driver |
 | [design/telegram-notifications.md](design/telegram-notifications.md) | Shipped | Context-enriched Telegram reply routing |
 | [design/webui.md](design/webui.md) | Shipped (partial) | Web UI as a window into the life of the system |
 | [design/webui-agents-metrics-tabs.md](design/webui-agents-metrics-tabs.md) | Shipped | Agents/projects/metrics as first-class nav resources (refines webui.md) |

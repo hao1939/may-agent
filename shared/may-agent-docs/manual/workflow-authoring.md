@@ -139,7 +139,7 @@ const result = await ctx.runWorkflow("implement-and-verify", task);
 
 | Location | Visibility | Use case |
 |----------|-----------|----------|
-| `agents/shared/workflows/` | All agents | Reusable patterns (implement-and-verify, master-worker) |
+| `agents/shared/workflows/` | All agents | Reusable patterns (`project`, `metric-alert-triage`, `implement-and-verify`) |
 | `agents/<name>/workflows/` | That agent only | Agent-specific (heartbeat, domain workflows) |
 
 ## Guards (Advanced)

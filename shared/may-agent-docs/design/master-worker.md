@@ -1,10 +1,16 @@
 # Design: Master-Worker Workflow (Persistent Sessions)
 
-**Status:** shipped (see `agents/shared/workflows/master-worker.ts` and variants)
+**Status:** legacy compatibility. The file still exists with tests, but
+`project` is the default explicit-project workflow. Do not select
+`workflow: master-worker` for new or resumable projects unless a reviewer
+records a specific reason.
 
 ## Overview
 
-Redesign the project workflow to use **two persistent sessions** — one worker, one reviewer — that stay alive across iterations. Today each iteration creates fresh sessions, losing all accumulated context. The new design uses pi-agent's `followUp()` to chain iterations within the same session, with compaction managing memory.
+Historical design for a project workflow that uses **two persistent sessions** —
+one worker, one reviewer — that stay alive across iterations. The current
+runtime convention favors the simpler `project` workflow and file-backed
+project context.
 
 ## Current Architecture (what we're replacing)
 

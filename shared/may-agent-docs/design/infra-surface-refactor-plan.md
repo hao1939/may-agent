@@ -692,6 +692,25 @@ First slice, 2026-05-11:
     agents/shared/tests/config-validator.test.ts
     agents/shared/lib/__tests__/config-validator.test.ts`
 
+Second slice, 2026-05-11:
+
+- Docs now mark `master-worker` as legacy compatibility rather than a shipped
+  recommended project workflow:
+  - `INDEX.md` labels `design/master-worker.md` as `Legacy`.
+  - `design/master-worker.md` opens with the current convention: use `project`
+    for new/resumable explicit projects unless a reviewer records a specific
+    `master-worker` reason.
+  - `manual/workflow-authoring.md` lists current reusable shared patterns
+    (`project`, `metric-alert-triage`, `implement-and-verify`) instead of
+    advertising `master-worker`.
+  - `design/unified-events.md` describes `project.iteration` as default
+    `project` output plus legacy compatibility shape.
+- Test fixture for normal project scanning now uses `workflow: project` so tests
+  do not keep teaching the legacy workflow as the normal active case.
+- Validation:
+  - `bun test agents/shared/tests/project-health-coverage.test.ts
+    agents/shared/tests/project-health.test.ts`
+
 ## Cross-Cutting Validation
 
 Each phase should leave one concrete runtime proof:

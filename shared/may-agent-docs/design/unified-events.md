@@ -55,7 +55,7 @@ when it disagrees with this table.
 | `handler.started` | cron runner on every handler invocation | ✅ live |
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
-| `project.iteration` | both `project.ts` and `master-worker.ts`; payload shapes differ | ⚠️ live but two incompatible shapes |
+| `project.iteration` | `project.ts` on the default project path; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live default plus legacy compatibility shape |
 | `session.failed` | session/runtime layer on session-end with error | ✅ live |
 | `session.completed` | session lifecycle translator after `session.end` for non-evaluator sessions | ✅ live |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
