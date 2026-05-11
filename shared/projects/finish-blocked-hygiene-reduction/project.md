@@ -122,6 +122,10 @@ Rechecked repeated alert 284 after the process restart. The live metric row stil
 
 Rechecked alert 284 again during metric-alert triage. The metric row remains `current=1`, `threshold=0`, `target=0`, priority `P1`, with eight consecutive snapshots at `1`. The strict source query still returns exactly one unresolved row: May `closed-loop-steward` session `s_1778432730435_1172`, evaluated at `2026-05-10T17:15:51.009Z` with `status=interrupted`, `outcome=interrupted`, no success/partial digest, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`. Chosen operation: `waiting_with_evidence`; no new root-cause patch or escalation is indicated because the row is historical and should leave the 24h strict window on the next metrics snapshot after `2026-05-11T17:15:51.009Z`, while any newer strict unresolved row should resume this paused project immediately.
 
+### 2026-05-11 — Alert 284 repeated waiting_with_evidence hold
+
+Rechecked alert 284 after another P1 metric-alert triage trigger. The metric row still reads `current=1`, `threshold=0`, `target=0`, priority `P1`, and the latest ten snapshots all remain `1`; the strict source query still returns exactly one row, May `closed-loop-steward` session `s_1778432730435_1172`, evaluated at `2026-05-10T17:15:51.009Z` with `status=interrupted`, `outcome=interrupted`, no success/partial digest, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`. Chosen operation: `waiting_with_evidence`; this is an accepted wait on the strict 24h window rather than a new root-cause fix, calibration, downgrade, or escalation. Next validation remains the first metrics snapshot after `2026-05-11T17:15:51.009Z`, or immediate project resume if any newer strict unresolved row appears.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
