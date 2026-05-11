@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
 export interface TelegramNotificationContext {
   event_type?: string | null;
   agent?: string | null;
@@ -62,6 +65,49 @@ export function buildTelegramQuoteReplyText(text: string, quoted: string): strin
     "",
     `User says: ${text}`,
   ].join("\n");
+}
+
+export function readSessionReplyContext(persistDir: string, sessionId: string): string[] {
+  const paths = [
+    join(persistDir, "sessions", sessionId, "session-compact.jsonl"),
+    join(persistDir, "sessions", "history", sessionId, "session-compact.jsonl"),
+  ];
+
+  for (const p of paths) {
+    try {
+      if (!existsSync(p)) continue;
+
+      const lines = readFileSync(p, "utf-8").split("\n").filter(Boolean);
+      if (lines.length === 0) return [];
+
+      const first = JSON.parse(lines[0]);
+      const summary = first.content?.[0]?.text?.slice(0, 500) || "";
+      const lastAssistant = findLastAssistantText(lines);
+      const context = [`\nSession context (${lines.length} messages):`];
+      if (summary) context.push(`  Summary: ${summary.slice(0, 300)}`);
+      if (lastAssistant) context.push(`  Last action: ${lastAssistant}`);
+      return context;
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function findLastAssistantText(lines: string[]): string {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const msg = JSON.parse(lines[i]);
+      if (msg.role !== "assistant" || !msg.content) continue;
+      for (const c of msg.content) {
+        if (c.type === "text" && c.text?.trim()) return c.text.slice(0, 200);
+      }
+    } catch {
+      /* ignore malformed transcript lines */
+    }
+  }
+  return "";
 }
 
 function escapeRegExp(text: string): string {

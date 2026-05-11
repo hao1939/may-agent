@@ -25,6 +25,7 @@ import {
   buildTelegramQuoteReplyText,
   extractProjectPath,
   normalizeProjectPath,
+  readSessionReplyContext,
 } from "./telegram-reply-router.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
@@ -269,8 +270,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (replyToMsgId) {
       try {
         const { getDb } = await import("../../lib/requests.js");
-        const { existsSync, readFileSync } = await import("node:fs");
-        const { join } = await import("node:path");
         const db = getDb(opts.persistDir ?? ".state");
         const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
         if (ctx) {
@@ -286,47 +285,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             return;
           }
 
-          const sessionContext: string[] = [];
-
-          // Session context: if we have a sessionId, read the transcript summary
-          if (ctx.session_id) {
-            try {
-              const persistDir = opts.persistDir ?? ".state";
-              const paths = [
-                join(persistDir, "sessions", ctx.session_id, "session-compact.jsonl"),
-                join(persistDir, "sessions", "history", ctx.session_id, "session-compact.jsonl"),
-              ];
-              for (const p of paths) {
-                if (existsSync(p)) {
-                  const lines = readFileSync(p, "utf-8").split("\n").filter(Boolean);
-                  if (lines.length > 0) {
-                    // Extract first message (has compaction summary) and last assistant text
-                    const first = JSON.parse(lines[0]);
-                    const summary = first.content?.[0]?.text?.slice(0, 500) || "";
-                    let lastAssistant = "";
-                    for (let i = lines.length - 1; i >= 0; i--) {
-                      try {
-                        const msg = JSON.parse(lines[i]);
-                        if (msg.role === "assistant" && msg.content) {
-                          for (const c of msg.content) {
-                            if (c.type === "text" && c.text?.trim()) {
-                              lastAssistant = c.text.slice(0, 200);
-                              break;
-                            }
-                          }
-                          if (lastAssistant) break;
-                        }
-                      } catch {}
-                    }
-                    sessionContext.push(`\nSession context (${lines.length} messages):`);
-                    if (summary) sessionContext.push(`  Summary: ${summary.slice(0, 300)}`);
-                    if (lastAssistant) sessionContext.push(`  Last action: ${lastAssistant}`);
-                  }
-                  break;
-                }
-              }
-            } catch {}
-          }
+          const sessionContext = ctx.session_id
+            ? readSessionReplyContext(opts.persistDir ?? ".state", String(ctx.session_id))
+            : [];
 
           enrichedText = buildNotificationReplyText({ ctx, text, sessionContext });
           bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent}${ctx.session_id ? "/session" : ""})` });
