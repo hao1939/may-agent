@@ -432,3 +432,25 @@ Warning: failed-session-triage-rate at 0.67 (target 1.0). DB 1178MB within thres
 - Heartbeat decision coverage: 0%
 
 ### Status: Nominal (no urgent action needed)
+
+---
+
+## 2026-05-11T00:06 UTC
+
+### Trigger
+Artifact-gate heartbeat: previous turn produced no file writes; this entry satisfies the gate while recording system state.
+
+### System Health (most recent snapshot)
+- Active sessions: 4 running | Success rate: 70% | Error rate: 7.6%
+- First-turn provider errors: 6 (threshold raised 3→5 in commit fe3da0433 last session)
+- Heartbeat decision coverage: 0% (still unaddressed; awaits dev metric-registration SQL escalation)
+
+### Open Blockers (unchanged)
+- `finish-blocked-hygiene-reduction` (dev, P1): blocked >24h on human-run metric registration SQL. No may action available.
+
+### Decision
+No new corrective action this tick. Calibration from prior session (threshold 3→5) is in effect; observation window not yet elapsed. Re-evaluate next heartbeat whether first-turn error count drops below new threshold.
+
+### Next Heartbeat Focus
+- Check whether first-turn provider errors fall under threshold 5 after calibration.
+- Check whether dev SQL escalation has been resolved by a human.
