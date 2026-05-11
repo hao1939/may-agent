@@ -337,3 +337,9 @@
 **Implication**: Highlights vulnerabilities when distributed agents contribute to a shared model/knowledge base. Defenses relying purely on statistical similarity are insufficient; rigorous provenance and process authentication (Autonomous Epistemology) are needed to counter stealthy manipulation.
 **KB**: KE-1227-federated-fine-tuning-manipulation-augmp (new)
 
+
+### Latent Context Weapons: The Passive Aggressive Payload
+**Source**: Synthesis of KE-1226 (Cognitive Overflow), KE-1227 (Federated Manipulation), and KE-1222 (Memory Curse).
+**Summary**: Current security models focus on active threats (injected commands). However, shared memory systems are vulnerable to "Latent Context Weapons"—subtly poisoned premises inserted into knowledge bases that do not command action, but instead cause downstream agents' reasoning and cooperative intent to collapse over time when processed via Chain-of-Thought.
+**Implication**: We heavily gate writes and tool executions, but implicitly trust reads from our shared knowledge. We must recognize that passive context can be weaponized to degrade multi-agent cooperation, necessitating at-rest semantic auditing of shared memory, not just executable payload filtering.
+**KB**: KE-1228-latent-context-weapons (new)
