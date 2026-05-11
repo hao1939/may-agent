@@ -30,29 +30,36 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Continue Phase 6/7: validate guard signals against metrics, then clean up
-metrics/alert hygiene.
+Begin Phase 8 only after a short workflow-library inventory. Phase 6/7 now have
+runtime proof for guard signal tracing, durable alert state, and open-alert
+ownership.
 
 Next slice:
 
-1. Validate that a sustained guard block spike opens the short-window guard metric signal
-   and clears when the window is clean.
+1. Inventory active workflow variants and current cron/project references.
+2. Pick one duplicated project-driving pattern to retire or document as a real
+   exception.
+3. Validate with a real project/session trace before deleting any workflow file.
+
+Recently completed:
+
+1. [x] Validate the short-window guard metric semantics and UI alert state.
 2. [x] Confirm alert handling ignores retired guard metrics and only reacts to the
    active short-window signal.
 3. [x] Tighten Web UI labels so health, gauge, and watch-only metrics are obvious at
    a glance.
 
-This is now the highest-value slice because sessions, workflows, resume
-failures, and guard warnings are all traceable; the next risk is noisy or stale
-metric interpretation.
+This is now the highest-value slice because the event/metric/control boundaries
+are traceable enough; the next risk is duplicated workflow patterns confusing
+agents about how to drive projects.
 
 ## Remaining Gap Summary
 
 | Gap | Risk | Phase |
 |---|---|---|
 | Shared `ExecutionResult` exists but is not the normal inspection surface | Sessions and workflows still feel different to debug | Phase 5 |
-| Workflow guard signals are durable, but tool guard signals are not fully converged | Guard triggers are harder to learn from across the system | Phase 6 |
 | Telegram still has some adapter-specific behavior | Replies can diverge from Web UI/CLI event behavior | Phase 2 |
+| Workflow library has overlapping project-driver variants | Agents may copy the wrong driver pattern | Phase 8 |
 
 ## Phase 0: Design State Refresh
 
@@ -530,7 +537,9 @@ Validation:
 
 - [x] Tool-level guard trigger can be traced to a session and owner.
 - [x] Guard warning does not surprise-block normal work.
-- A real guard trigger opens/closes the expected guard metric window.
+- [x] Short-window guard metric semantics are verified: isolated blocks do not
+  alert, while two consecutive snapshots above the calibrated threshold open the
+  alert and a clean snapshot resolves it.
 
 Stop criteria:
 
@@ -546,6 +555,11 @@ Runtime proof, 2026-05-11:
   Loop trace returned owner `evaluator`, one linked workflow, one linked
   session, and exactly one deduplicated guard signal with source `tool`,
   demand type `warn`, action `warned`, and event type `tool.finish`.
+- Unit test `MetricService > opens health alerts only after the configured
+  consecutive failures` verifies the active guard health calibration:
+  `threshold=2`, `alert_op=">"`, `count=2`. A count of `2` is not an alert;
+  two consecutive snapshots at `3` open a `metric.breach`, and a later `0`
+  recovers it.
 
 ## Phase 7: Metrics And Alert Hygiene
 
@@ -577,10 +591,11 @@ Already shipped first slice:
 
 Validation:
 
-- A future real guard block opens a fresh `guard.blocked-count-15m` alert and
-  closes after the window clears.
+- [x] The metrics API reports durable open alerts from `metric_alerts` rather
+  than recomputing raw threshold crossings, so health/consecutive metrics match
+  the handler lifecycle.
 - [x] Retired metric breach events do not dispatch alert triage work.
-- Open metric alerts correspond to current actionable owner work or a documented
+- [x] Open metric alerts correspond to current actionable owner work or a documented
   accepted wait.
 - [x] Operators can tell from the UI which metrics are health, gauge, or
   watch-only.
@@ -606,6 +621,21 @@ Runtime proof, 2026-05-11:
   `session.finish-blocked-uncommitted-count-24h` and
   `session.failed-triage-rate-3h`; guard trigger/warn crossings moved to
   `watchAlerts`.
+- Reloaded `may-agent-web` with `/api/metrics` using durable open alerts. Runtime
+  check returned the same four open alerts as `/api/liveness`: P3 guard
+  trigger/warn watch signals, evaluator-owned
+  `session.failed-triage-rate-3h`, and dev-owned
+  `session.finish-blocked-uncommitted-count-24h`.
+- The same runtime check showed `guard.blocked-count-15m` at `current=2`,
+  `threshold=2`, `alertOpen=false`, matching the calibrated health semantics
+  instead of creating a phantom UI alert.
+- Recent event evidence:
+  - `handler.skipped` events `558929` and `558930` defer P3 guard watch alerts
+    to metric context.
+  - `metric.alert_judged` event `558917` records dev's
+    `waiting_with_evidence` judgment for alert `287`.
+  - `metric.alert_judged` event `558822` records evaluator's
+    `upgrade_or_escalate` judgment for alert `289`.
 
 ## Phase 8: Workflow Library Consolidation
 
