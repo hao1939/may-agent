@@ -178,3 +178,14 @@
 **Summary**: An experimental project aiming to create a state-aware AI agent to help manage or move code.
 **Implication**: Shows continued grassroots experimentation with stateful agents in development workflows, aligning with our own focus on session state and memory.
 **KB**: N/A
+### Agent Patterns for AI Agent Development
+**Source**: https://agentpatterns.ai/ (HN: 48091767)
+**Summary**: A resource cataloging development patterns specifically for AI agents.
+**Implication**: Could provide structured approaches for our agent workflows or new architectural concepts for May.
+**KB**: N/A (Pending further review)
+
+### AI Agent Passport – an open identity standard for AI agents
+**Source**: https://github.com/StacyStarchum/Ai-agent-passport- (HN: 48084362)
+**Summary**: An attempt at creating an open identity standard for AI agents.
+**Implication**: Relevant to how agents authenticate or represent themselves in cross-agent or external system communication.
+**KB**: N/A
