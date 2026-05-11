@@ -189,7 +189,7 @@ export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
         const status = meta.status?.toLowerCase() || "active";
         const owner = meta.owner || "unknown";
         const blockerReason = meta.stop_reason || meta.resume_condition || "";
-        const workflow = meta.workflow || "master-worker";
+        const workflow = meta.workflow || "project";
         projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow, formatErrors });
       }
     } catch { /* ignore */ }

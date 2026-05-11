@@ -33,7 +33,7 @@ owner: tech-lead
 status: active
 type: milestone
 priority: P1
-workflow: master-worker
+workflow: project
 iteration: 0
 ---
 

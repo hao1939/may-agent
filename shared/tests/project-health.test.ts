@@ -23,11 +23,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { tmpdir } from 'node:os';
 
-vi.mock('node:fs', async () => {
-  const actual = await vi.importActual('node:fs');
-  return { ...actual };
-});
-
 describe('project-health', () => {
   describe('updateField', () => {
     it('updates existing field', () => {

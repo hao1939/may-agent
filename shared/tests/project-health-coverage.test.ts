@@ -69,6 +69,19 @@ describe("scanAllProjects - filesystem traversal", () => {
     expect(result[0].workflow).toBe("master-worker");
   });
 
+  it("defaults projects without workflow metadata to the project workflow", () => {
+    const projDir = path.join(tmpDir, "shared", "projects", "default-workflow");
+    fs.mkdirSync(projDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(projDir, "project.md"),
+      "---\nid: default-workflow\nowner: agent1\nstatus: active\n---\n\n# Project\n"
+    );
+
+    const result = scanAllProjects(tmpDir);
+    expect(result.length).toBe(1);
+    expect(result[0].workflow).toBe("project");
+  });
+
   it("defaults status to active when missing", () => {
     const projDir = path.join(tmpDir, "shared", "projects", "proj2");
     fs.mkdirSync(projDir, { recursive: true });

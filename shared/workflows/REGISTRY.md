@@ -3,6 +3,12 @@
 **Owner**: Optimizer (accountable for quality, deduplication, effectiveness tracking)
 **Last audit**: 2026-04-21T12:00 (Tech Lead — full reconciliation against disk: 7 ghost entries removed, 8 missing workflows added, line counts corrected)
 
+**Current convention, 2026-05-11**: `project` is the default explicit-project
+driver. `master-worker*` files remain as legacy/tested workflow code and
+historical project metadata, but active or resumable shared projects should not
+select them unless a reviewer records a specific reason. Prefer migrating
+waiting projects to `workflow: project` before they resume.
+
 ## Shared Workflows (active — available to all agents)
 
 | Name | File | Lines | Purpose |

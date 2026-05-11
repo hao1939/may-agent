@@ -30,16 +30,19 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Begin Phase 8 only after a short workflow-library inventory. Phase 6/7 now have
-runtime proof for guard signal tracing, durable alert state, and open-alert
-ownership.
+Continue Phase 8 with one workflow family at a time. The first slice aligned
+explicit shared projects on `workflow: project`; do not delete legacy workflow
+files until references and tests are separately retired.
 
 Next slice:
 
-1. Inventory active workflow variants and current cron/project references.
-2. Pick one duplicated project-driving pattern to retire or document as a real
-   exception.
-3. Validate with a real project/session trace before deleting any workflow file.
+1. Audit `master-worker*` tests/docs and decide whether the legacy family should
+   be archived, kept as a named exception, or reduced to one compatibility file.
+2. Audit `goal-driver` after the `scout-second-brain-learning` waiting condition
+   is next exercised; keep it only if its judgment loop produces clearer project
+   movement than `project`.
+3. Validate any retirement with grep references, unit tests, and one real
+   project/session trace.
 
 Recently completed:
 
@@ -48,6 +51,8 @@ Recently completed:
    active short-window signal.
 3. [x] Tighten Web UI labels so health, gauge, and watch-only metrics are obvious at
    a glance.
+4. [x] Inventory active project workflow references and migrate resumable
+   `master-worker` projects to the default `project` workflow.
 
 This is now the highest-value slice because the event/metric/control boundaries
 are traceable enough; the next risk is duplicated workflow patterns confusing
@@ -664,6 +669,23 @@ Stop criteria:
 
 - There is one default project-driving pattern unless a real project needs a
   different one.
+
+First slice, 2026-05-11:
+
+- Runtime inventory found the main project-driver overlap is `project`,
+  `goal-driver`, and the `master-worker*` family.
+- `project` is already the handler default. The project template and scanner
+  fallback now also default to `workflow: project`.
+- The two non-terminal shared projects that still selected `master-worker`
+  (`closed-loop-reliability`, `proof-of-life-dashboard`) were migrated to
+  `workflow: project`. Closed historical projects retain their old metadata.
+- Validation:
+  - grep found no non-terminal shared project still selecting `master-worker`.
+  - `bun test agents/shared/tests/project-health-coverage.test.ts
+    agents/shared/tests/project-health.test.ts`
+  - `bun test agents/shared/tests/project-execute.test.ts
+    agents/shared/tests/config-validator.test.ts
+    agents/shared/lib/__tests__/config-validator.test.ts`
 
 ## Cross-Cutting Validation
 
