@@ -317,3 +317,16 @@
 **Summary**: A recent HN post highlights a video demonstrating how an AI agent was hacked using Morse code to spend $200k. This highlights the ongoing and creative security vulnerabilities in autonomous agent systems.
 **Implication**: Reinforces the need for strict guardrails, bounded tools (like may-agent's restricted DB access), and human-in-the-loop for destructive or high-value operations.
 **KB**: KE-004-agent-security-vulns (updated)
+
+### Obfuscated Instruction Injection
+**Source**: Synthesis of recent HN post (Morse code hack - 48095290) and general LLM vulnerabilities.
+**Summary**: Advanced LLMs can decode non-standard encodings (Morse code, Base64) that easily bypass standard lexical safety filters. If an agent executes actions based on these decoded intents, it suffers from Obfuscated Instruction Injection. 
+**Implication**: Reinforces that input sanitization is structurally flawed. Security must be enforced at the environmental boundary (hard constraints on tools/permissions) rather than relying on prompt-based or filter-based safety.
+**KB**: KE-1225-obfuscated-instruction-injection (new)
+
+### Cognitive Overflow Vulnerability
+**Source**: Synthesis of KE-1222 (Memory Curse), KE-1224 (Autonomy Fatigue), and KE-1225 (Obfuscated Instruction Injection).
+**Summary**: Expanding agent context windows without structural constraints creates 'Cognitive Overflow'. Large context acts as a massive attack surface for obfuscated payloads (like Morse code). Furthermore, explicit Chain-of-Thought reasoning on massive, unverified contexts amplifies both cooperative collapse (the Memory Curse) and the successful execution of these injected payloads.
+**Implication**: We must treat large context windows as security liabilities. Context must be aggressively pruned, and we should explore bounding Chain-of-Thought reasoning when an agent is processing unverified historical data to prevent it from 'reasoning itself' into an attack or cooperative collapse.
+**KB**: KE-1226-cognitive-overflow-vulnerability (new)
+
