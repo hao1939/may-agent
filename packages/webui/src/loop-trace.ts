@@ -1,4 +1,10 @@
 import type { SqliteDb } from "./state-db.js";
+import {
+  resumeDiagnosticToExecutionResult,
+  sessionRowToExecutionResult,
+  workflowRowToExecutionResult,
+  type ExecutionResult,
+} from "../../../src/lib/execution-result.js";
 
 export type LoopTraceTarget =
   | { eventId: number }
@@ -47,6 +53,9 @@ export interface LoopTraceExecution {
   traceId: string;
   owner: string | null;
   projectId: string | null;
+  parentId?: string;
+  startedAt?: number;
+  endedAt?: number;
   evidence: Record<string, unknown>;
 }
 
@@ -117,50 +126,25 @@ function compact(text: unknown, fallback: string): string {
   return value.length > 180 ? `${value.slice(0, 177)}...` : value;
 }
 
+function toLoopTraceExecution(result: ExecutionResult): LoopTraceExecution {
+  return {
+    ...result,
+    owner: stringValue(result.owner ?? result.evidence?.agent ?? result.evidence?.owner) ?? null,
+    projectId: stringValue(result.projectId) ?? null,
+    evidence: result.evidence ?? {},
+  };
+}
+
 function sessionExecution(row: Row): LoopTraceExecution | null {
   const id = stringValue(row.sessionId);
   if (!id) return null;
-  const status = stringValue(row.status) ?? "running";
-  const agent = stringValue(row.agent);
-  return {
-    id,
-    kind: "session",
-    status,
-    summary: compact(row.error ?? row.outcome ?? row.task, `${agent ?? "session"} ${status}`),
-    traceId: stringValue(row.workflowRunId) ?? id,
-    owner: agent,
-    projectId: stringValue(row.projectId),
-    evidence: {
-      agent,
-      source: row.source,
-      kind: row.kind,
-      workflowRunId: row.workflowRunId,
-      opCount: row.opCount,
-    },
-  };
+  return toLoopTraceExecution(sessionRowToExecutionResult(row as any));
 }
 
 function workflowExecution(row: Row): LoopTraceExecution | null {
   const id = stringValue(row.runId);
   if (!id) return null;
-  const status = stringValue(row.status) ?? "running";
-  const workflow = stringValue(row.workflow);
-  return {
-    id,
-    kind: "workflow",
-    status,
-    summary: compact(row.result_summary ?? row.result_reason ?? row.task, `${workflow ?? "workflow"} ${status}`),
-    traceId: id,
-    owner: null,
-    projectId: stringValue(row.projectId),
-    evidence: {
-      workflow,
-      depth: row.depth,
-      parentSessionId: row.parentSessionId,
-      parentWorkflowRunId: row.parentWorkflowRunId,
-      resumedFromRunId: row.resumedFromRunId,
-    },
-  };
+  return toLoopTraceExecution(workflowRowToExecutionResult(row as any));
 }
 
 function failoverExecution(row: Row): LoopTraceExecution | null {
@@ -174,22 +158,20 @@ function failoverExecution(row: Row): LoopTraceExecution | null {
   if (!kind || !id) return null;
   const owner = stringValue(row.owner ?? data.owner ?? data.agent);
   const status = data.recoverable === false ? "error" : "interrupted";
-  return {
+  const execution = toLoopTraceExecution(resumeDiagnosticToExecutionResult({
     id,
     kind,
     status,
-    summary: compact(data.reason ?? data.message ?? data.category ?? eventType, `${kind} resume failed`),
-    traceId: id,
-    owner,
-    projectId: stringValue(data.projectId),
-    evidence: {
-      eventType,
-      category: data.category,
-      recoverable: data.recoverable,
-      agent: data.agent,
-      workflow: data.workflow,
-    },
-  };
+    reason: compact(data.reason ?? data.message ?? data.category ?? eventType, `${kind} resume failed`),
+    owner: owner ?? undefined,
+    projectId: stringValue(data.projectId) ?? undefined,
+    agent: stringValue(data.agent) ?? undefined,
+    workflow: stringValue(data.workflow) ?? undefined,
+    category: stringValue(data.category) ?? undefined,
+    recoverable: typeof data.recoverable === "boolean" ? data.recoverable : undefined,
+  }));
+  execution.evidence.eventType = eventType;
+  return execution;
 }
 
 function buildExecutions(workflows: Row[], sessions: Row[], failovers: Row[]): LoopTraceExecution[] {

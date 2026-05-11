@@ -45,6 +45,7 @@ describe("ExecutionResult", () => {
       status: "done",
       summary: "implemented the change",
       traceId: "s1",
+      owner: "dev",
       projectId: "p1",
       evidence: { agent: "dev", task: "fix bug", duration: "1.2s", turnsUsed: 2 },
     });
@@ -85,6 +86,7 @@ describe("ExecutionResult", () => {
       status: "error",
       summary: "Agent missing-agent is not registered",
       traceId: "s_missing",
+      owner: "missing-agent",
       projectId: "p1",
       evidence: {
         owner: "missing-agent",
@@ -135,6 +137,7 @@ describe("ExecutionResult", () => {
       status: "error",
       summary: "boom",
       traceId: "wr_parent",
+      owner: "arc",
       parentId: "s_parent",
       projectId: "p1",
       startedAt: 100,
