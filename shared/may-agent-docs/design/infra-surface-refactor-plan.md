@@ -34,8 +34,9 @@ Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
 adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
 composition root, and DB facade into named runtime modules. Phase 9d/9e/9f
 have split Telegram reply routing, outbound session-response routing, and API
-send/persistence mechanics. Phase 9g/9h/9i split daemon lifecycle, event
-subscriber wiring, and agent startup behind stable re-exports.
+send/persistence mechanics. Phase 9g/9h/9i/9j/9k split daemon lifecycle, event
+subscriber wiring, agent startup, session startup, and runtime loops behind
+stable re-exports.
 
 Next slice:
 
@@ -1195,6 +1196,47 @@ Current state:
 Validation:
 
 - `bun test test/agent-loader.test.ts test/daemon.test.ts test/daemon-events.test.ts`
+  passes.
+- `bun run check` passes.
+
+### Phase 9j: Daemon Session Startup Extraction
+
+Status: shipped.
+
+Move requested task/chat/cron-only startup into a named module. This keeps
+ChatSession construction and one-shot task waiting out of the runtime loop and
+daemon barrel.
+
+Current state:
+
+- [x] `src/app/daemon-sessions.ts` owns requested session startup.
+- [x] `src/app/daemon.ts` re-exports `startRequestedSession`.
+- Root commit: `0f0fe0f0` extract daemon session startup.
+
+Validation:
+
+- `bun test test/daemon-sessions.test.ts test/daemon-events.test.ts test/daemon.test.ts`
+  passes.
+- `bun run check` passes.
+
+### Phase 9k: Daemon Runtime Loop Extraction
+
+Status: shipped.
+
+Move TTY interactive loop and daemon keepalive into a named module. `daemon.ts`
+is now only a stable export surface for daemon submodules, not an implementation
+bucket.
+
+Current state:
+
+- [x] `src/app/daemon-loops.ts` owns interactive TTY input handling and daemon
+  keepalive.
+- [x] `src/app/daemon.ts` is a 16-line barrel re-exporting daemon modules.
+- Root commit: `1d285b54` extract daemon runtime loops.
+
+Validation:
+
+- `bun test test/daemon.test.ts test/daemon-events.test.ts test/daemon-sessions.test.ts test/agent-loader.test.ts`
   passes.
 - `bun run check` passes.
 
