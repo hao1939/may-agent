@@ -1179,3 +1179,23 @@ Disposition:
 - A clean successful finish is blocked unless those unrelated paths are committed or reverted by their owners; this session will stage only the explicit dev heartbeat log path.
 
 Next substantive dev heartbeat action: investigate a dev-owned failing metric or handler pattern rather than only recovering from the artifact gate.
+
+## 2026-05-11 Finish-Blocked Strict Alert Heartbeat Recheck
+
+Heartbeat triage for repeated red metric `session.finish-blocked-unresolved-count-24h`.
+
+Evidence checked:
+- Metric row remains active and dev-owned with `current=1`, `threshold=0`, `alert_op='>'`, priority `P1`, and one open alert (`#284`).
+- Six recent snapshots all report value `1`, so the alert is live but stable rather than a missing-measurement artifact.
+- The metric source query still returns exactly one strict unresolved session: `s_1778432730435_1172`, a May `closed-loop-steward` session with `status=interrupted`, `outcome=interrupted`, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`.
+- Event history for `s_1778432730435_1172` shows the session ended `interrupted` after the finish guard blocked on pre-existing `may/handlers/run-workflow.ts` and `may/handlers/session-aftermath-scan.ts` dirty files; those files were later handled in separate May work, so no current destructive or DB repair is indicated.
+- A prior `metric.alert_judged` event already records `operation=waiting_with_evidence` for alert `#284`; the owning project is paused until the historical row ages out of the strict 24h window or a newer strict unresolved row appears.
+
+Judgment:
+- Operation: `waiting_with_evidence` (accepted live breach with a time-bound validation path), not `fix_root_cause`, because the only contributing row is historical and no newer strict unresolved finish-blocked exit exists.
+- Next validation: the metrics snapshot after `2026-05-11T17:06:09Z` should recover to `0`; if it does not, or if a newer row appears, resume `finish-blocked-hygiene-reduction` immediately.
+
+Disposition:
+- Pending `metric.alert_judged` and metric-alert-triage session events: acted on by rechecking the live metric and preserving the existing waiting-with-evidence judgment.
+- May's P1 split-metric registration FYI: dismissed as already acted; both split metrics are registered and the project is paused rather than blocked.
+- Artifact-gate/session lifecycle echoes: dismissed as historical noise after producing this concrete heartbeat artifact.
