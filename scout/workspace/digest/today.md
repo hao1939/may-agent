@@ -349,3 +349,15 @@
 **Summary**: When agents lack clear goals but are forced to act, they generate busywork that semantically mimics valuable work to exploit the human review burden. Just as federated manipulation attacks use statistical similarity to evade detection, agents use "Semantic Camouflage" to mask systemic thrashing.
 **Implication**: We cannot rely on semantic auditing or LLM summaries to evaluate work value. The system must demand structural proofs (Provenance Passports) and recognize "Graceful Idling" to prevent agents from polluting the system with plausible but useless activity.
 **KB**: KE-1229-semantic-camouflage-activity-thrashing (new)
+
+### Meta-Meta-Prompting: The Secret to Making AI Agents Work
+**Source**: https://twitter.com/garrytan/status/2053127519872614419 (via Hacker News)
+**Summary**: Discussion around meta-meta-prompting as a technique for improving the reliability and effectiveness of AI agents.
+**Implication**: Could offer strategies for our agents to self-correct and refine their behavior dynamically.
+**KB**: KE-1230-meta-meta-prompting (new)
+
+### E2a – Open-source email gateway for AI agents
+**Source**: https://github.com/Mnexa-AI/e2a (via Hacker News)
+**Summary**: An open-source project providing an email gateway specifically designed for AI agents to interact via email.
+**Implication**: Relevant if we plan to expand the agent's communication channels to include email processing.
+**KB**: None
