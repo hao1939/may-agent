@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import {
   validateFinishDeliverables,
   enforceFinishDeliverables,
@@ -189,5 +190,69 @@ describe("finish-guard handle", () => {
       }),
     );
     expect(demands).toEqual([]);
+  });
+
+  it("warns but does not block when only unrelated agents worktree dirt exists", () => {
+    const root = mkdtempSync(join(tmpdir(), "finish-guard-dirty-"));
+    try {
+      const agentsDir = join(root, "agents");
+      mkdirSync(join(agentsDir, "scout"), { recursive: true });
+      execFileSync("git", ["init"], { cwd: agentsDir });
+      writeFileSync(join(agentsDir, "scout", "other.md"), "other agent work");
+
+      const demands = guard.handle(makeEvent({
+        agentName: "dev",
+        projectRoot: root,
+        result: { finishResult: { status: "success" }, messages: [] },
+      }));
+
+      expect(demands).toHaveLength(1);
+      expect(demands[0].type).toBe("warn");
+      expect(demands[0].reason).toContain("unrelated dirty path");
+      expect(demands[0].reason).toContain("scout/other.md");
+      expect(demands.some((d) => d.type === "block")).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("classifies session-touched dirty paths separately from unrelated dirt", () => {
+    const root = mkdtempSync(join(tmpdir(), "finish-guard-touched-"));
+    try {
+      const agentsDir = join(root, "agents");
+      mkdirSync(join(agentsDir, "dev"), { recursive: true });
+      mkdirSync(join(agentsDir, "scout"), { recursive: true });
+      execFileSync("git", ["init"], { cwd: agentsDir });
+      writeFileSync(join(agentsDir, "dev", "own.md"), "session work");
+      writeFileSync(join(agentsDir, "scout", "other.md"), "other agent work");
+
+      const demands = guard.handle(makeEvent({
+        agentName: "dev",
+        projectRoot: root,
+        result: {
+          finishResult: { status: "success" },
+          messages: [
+            {
+              role: "assistant",
+              content: [
+                {
+                  type: "toolCall",
+                  name: "write",
+                  arguments: { path: "agents/dev/own.md", content: "session work" },
+                },
+              ],
+            },
+          ],
+        },
+      }));
+
+      expect(demands).toHaveLength(1);
+      expect(demands[0].type).toBe("warn");
+      expect(demands[0].reason).toContain("Session-touched dirty path(s): dev/own.md");
+      expect(demands[0].reason).toContain("Unrelated: scout/other.md");
+      expect(demands.some((d) => d.type === "block")).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
