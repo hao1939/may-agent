@@ -318,6 +318,32 @@ describe("commit-guard", () => {
       git(agentsDir, ["checkout", "--", "scout/tools/next-ke-id.sh"]);
     });
 
+    it("blocks tracked files appended by shell redirection", async () => {
+      const digestDir = join(agentsDir, "scout", "workspace", "digest");
+      mkdirSync(digestDir, { recursive: true });
+      writeFileSync(join(digestDir, "today.md"), "original\n");
+      git(agentsDir, ["add", "-f", "scout/workspace/digest/today.md"]);
+      git(agentsDir, ["commit", "-m", "add scout digest"]);
+
+      writeFileSync(join(digestDir, "today.md"), "original\nnew note\n");
+
+      const guard = createCommitGuard("scout", tmpDir);
+      const result = await guard(makeFinishCtxWithBash(
+        {
+          status: "success",
+          summary: "updated digest",
+        },
+        "cat << 'EOF' >> agents/scout/workspace/digest/today.md\nnew note\nEOF",
+      ));
+
+      expect(result).toBeDefined();
+      expect(result!.block).toBe(true);
+      expect(result!.reason).toContain("scout/workspace/digest/today.md");
+      expect(result!.reason).not.toContain("Not blocking on unrelated dirty file(s):\n  M scout/workspace/digest/today.md");
+
+      git(agentsDir, ["checkout", "--", "scout/workspace/digest/today.md"]);
+    });
+
     it("omits the agent runtime handoff file from broad commit instructions", async () => {
       const mayDir = join(agentsDir, "may");
       const sharedDir = join(agentsDir, "shared");
