@@ -930,14 +930,14 @@ Stop criteria:
 
 ### Phase 9b: Thin Daemon Composition Root
 
-Status: planned.
+Status: partially shipped.
 
 Current problem: `src/app/may.ts` mixes unrelated modes and daemon wiring.
 
 Target modules:
 
-- `src/app/modes/emit.ts`
-- `src/app/modes/web.ts`
+- [x] `src/app/modes/emit.ts`
+- [x] `src/app/modes/web.ts`
 - `src/app/modes/run-workflow.ts`
 - `src/app/modes/oneshot.ts`
 - `src/app/daemon.ts`
@@ -949,9 +949,18 @@ shutdown cleanup beyond calling the selected mode.
 Validation:
 
 - `bun run check`.
+- `bun test test/emit-mode.test.ts test/web-mode.test.ts`.
 - Focused tests for command-router/socket/cron still pass.
 - Runtime proof: daemon starts, host `trigger.metrics-snapshot` emit still
   persists trigger and handler completion events.
+
+Current proof:
+
+- Root commits:
+  - `df4241c6` split operator emit mode.
+  - `094f5723` split Web UI startup mode.
+- `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
+- `bun run check` passes.
 
 Stop criteria:
 
