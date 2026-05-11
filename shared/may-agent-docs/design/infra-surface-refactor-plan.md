@@ -218,7 +218,7 @@ Stop criteria:
 
 ## Phase 4: Query Facade Migration
 
-Status: first schema-sensitive workflow read migrated.
+Status: metric alert workflow and reactor preflight reads migrated.
 
 Goal: workflows and handlers stop guessing schema for judgment/context reads.
 
@@ -236,6 +236,10 @@ Scope:
   bundle used by `metric-alert-triage`.
 - [x] Move `metric-alert-triage` alert context loading off raw `ctx.getDb()`;
   owner session lookup now uses `ctx.query.sessions(...)`.
+- [x] Add `query.metricAlertReactorState(...)` for the exact alert/metric/
+  judgment/snapshot/session bundle used by `metric-alert-reactor`.
+- [x] Move `metric-alert-reactor` preflight reads off raw `ctx.sdk.getDb()`;
+  timer fallback now uses `query.alerts(...)` plus the reactor state helper.
 
 Validation:
 

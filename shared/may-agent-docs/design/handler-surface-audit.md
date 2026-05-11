@@ -20,7 +20,7 @@ projection, but judgment and repair work should live in workflows.
 | `metrics-snapshot` | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
 | `coaching-consumer` | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
 | `project` | Project scanner, state mutator, workflow launcher | direct FS/DB + `runWorkflow` + durable trace events | temporarily | Split later: scanner/projection stays direct; project launch path now records skip/failure/workflow dispatch evidence. |
-| `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | direct DB + `runWorkflow` + durable trace events | temporarily | Convert preflight reads to `sdk.query`; dispatch already records skip reason or triage workflow run id. Triage workflow alert context is now query-backed. |
+| `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; preflight reads and triage workflow context are query-backed. |
 | `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow` + durable trace events | temporarily | Context collection still needs `sdk.query`/function cleanup; dispatch is workflow-backed. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
@@ -66,6 +66,9 @@ projection, but judgment and repair work should live in workflows.
 - Query facade first slice: `metric-alert-triage` uses
   `query.metricAlertContext(...)` and `query.sessions(...)` for alert context
   instead of opening SQLite directly in workflow code.
+- Query facade reactor slice: `metric-alert-reactor` uses
+  `query.metricAlertReactorState(...)` for schema-sensitive preflight reads
+  instead of opening SQLite directly in handler code.
 - Eval LLM scan traceability slice: `eval-llm-scan` records
   `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
   LLM work through `evaluator-deep-eval`.

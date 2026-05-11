@@ -37,6 +37,10 @@ function numberOrNull(value: unknown): number | null {
   return null;
 }
 
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
 function parseValidationTime(value: unknown): number | null {
   const asNumber = numberOrNull(value);
   if (asNumber != null) return asNumber;
@@ -67,18 +71,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // If no event (timer tick), poll for unresolved alerts and process each
     if (!event?.data) {
       try {
-        const db = ctx.sdk.getDb();
-        const unresolved = db.prepare(
-          `SELECT ma.metric_id, ma.message, m.name as metricName,
-                  m.owner as explicitOwner, p.owner as projectOwner,
-                  m.threshold, m.target,
-                  m.current as current, COALESCE(m.priority, 'P2') as priority
-           FROM metric_alerts ma
-           JOIN metrics m ON m.id = ma.metric_id
-           LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-             AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-           WHERE ma.resolved_at IS NULL`
-        ).all() as Array<{ metric_id: string; message: string; metricName: string; explicitOwner?: string | null; projectOwner?: string | null; threshold: number; target: number; current: number; priority: string }>;
+        const unresolved = ctx.sdk.query.alerts({ resolved: false, limit: 50 }).rows;
 
         if (unresolved.length === 0) {
           emitSkip(ctx, null, "Timer tick: no unresolved alerts.");
@@ -86,17 +79,20 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         }
         ctx.sdk.log("info", `[metric-alert-reactor] Timer tick: found ${unresolved.length} unresolved alert(s), processing...`);
         const promises = unresolved.map((row) => {
+          const metricId = String(row.metric_id ?? "");
+          const state = metricId ? ctx.sdk.query.metricAlertReactorState({ metricId, alertId: numberOrNull(row.id) }) : null;
+          const metric = state?.metric ?? {};
           const syntheticEvent: TriggerEvent = {
             type: "metric.breach",
             data: {
-              owner: resolveMetricOwner(row.metric_id, configuredAgents, row.explicitOwner, row.projectOwner),
-              metricId: row.metric_id,
-              metricName: row.metricName,
-              current: row.current,
-              threshold: row.threshold,
-              target: row.target,
-              message: row.message,
-              priority: row.priority,
+              owner: resolveMetricOwner(metricId, configuredAgents, stringOrNull(metric.explicitOwner), stringOrNull(metric.projectOwner)),
+              metricId,
+              metricName: String(metric.name ?? metricId),
+              current: numberOrNull(metric.current),
+              threshold: numberOrNull(metric.threshold),
+              target: numberOrNull(metric.target),
+              message: String(row.message ?? ""),
+              priority: String(metric.priority ?? "P2"),
             },
           };
           return processBreachEvent(ctx, syntheticEvent, configuredAgents);
@@ -139,18 +135,20 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     // P1/P2 alerts get explicit triage after a short grace period. P3 remains
     // visible in metric context only.
     try {
-      const db = ctx.sdk.getDb();
-      const metricRow = db.prepare(
-        `SELECT COALESCE(m.priority, 'P2') as priority,
-                m.owner as explicitOwner, p.owner as projectOwner,
-                m.current as current, m.threshold as threshold, m.alert_op as alertOp
-         FROM metrics m
-         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-         WHERE m.id = ?`
-      ).get(metricId) as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null; current?: number | null; threshold?: number | null; alertOp?: string | null } | null;
+      const since = Date.now() - DEDUP_WINDOW_MS;
+      let state = ctx.sdk.query.metricAlertReactorState({ metricId, owner, since });
+      let metricRow = state.metric as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null; current?: number | null; threshold?: number | null; alertOp?: string | null } | null;
       priority = metricRow?.priority ?? priority;
-      if (metricRow) owner = resolveMetricOwner(metricId, configuredAgents, metricRow.explicitOwner, metricRow.projectOwner);
+      if (metricRow) {
+        const resolvedOwner = resolveMetricOwner(metricId, configuredAgents, stringOrNull(metricRow.explicitOwner), stringOrNull(metricRow.projectOwner));
+        if (resolvedOwner !== owner) {
+          owner = resolvedOwner;
+          state = ctx.sdk.query.metricAlertReactorState({ metricId, owner, since });
+          metricRow = state.metric as typeof metricRow;
+        } else {
+          owner = resolvedOwner;
+        }
+      }
       if (priority !== "P0" && priority !== "P1" && priority !== "P2") {
         emitSkip(ctx, metricId, `Deferring ${metricId} (${priority}) to metric context.`, { priority });
         return;
@@ -159,25 +157,14 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       // P1/P2 alerts: allow a short grace period for heartbeat context, then
       // require an explicit durable judgment so the loop does not stall.
       if (priority === "P1" || priority === "P2") {
-        const alertRow = db.prepare(
-          `SELECT ma.id, ma.created_at FROM metric_alerts ma WHERE ma.metric_id = ? AND ma.resolved_at IS NULL`
-        ).get(metricId) as { id: number; created_at: number } | null;
-        const alertAge = alertRow ? Date.now() - alertRow.created_at : 0;
+        const alertRow = state.alert as { id?: number; created_at?: number } | null;
+        const alertCreatedAt = numberOrNull(alertRow?.created_at);
+        const alertAge = alertCreatedAt != null ? Date.now() - alertCreatedAt : 0;
         if (alertAge < DIRECT_TRIAGE_AFTER_MS) {
           emitSkip(ctx, metricId, `${priority} ${metricId} alert age ${Math.round(alertAge/60000)}m < ${Math.round(DIRECT_TRIAGE_AFTER_MS / 60000)}m, deferring.`, { priority, alertAgeMs: alertAge });
           return;
         }
-        const judgedEvent = db.prepare(
-          `SELECT id, data, timestamp
-           FROM events
-           WHERE event_type = 'metric.alert_judged'
-             AND (
-               json_extract(data, '$.alertId') = ?
-               OR json_extract(data, '$.metricId') = ?
-             )
-           ORDER BY timestamp DESC
-           LIMIT 1`
-        ).get(alertRow?.id ?? null, metricId) as { id: number; data: string | null; timestamp: number } | null;
+        const judgedEvent = state.latestJudgment as { id: number; data: string | null; timestamp: number } | null;
         if (judgedEvent) {
           const judgmentData = parseJsonObject(judgedEvent.data);
           const nextValidationAt = parseValidationTime(judgmentData.nextValidationAt);
@@ -186,13 +173,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
             return;
           }
 
-          const latestSnapshot = db.prepare(
-            `SELECT value, measured_at
-             FROM metric_snapshots
-             WHERE metric_id = ?
-             ORDER BY measured_at DESC
-             LIMIT 1`
-          ).get(metricId) as { value: number | null; measured_at: number } | null;
+          const latestSnapshot = state.latestSnapshot as { value: number | null; measured_at: number } | null;
           if (!latestSnapshot || latestSnapshot.measured_at <= judgedEvent.timestamp) {
             emitSkip(ctx, metricId, `P1 ${metricId} judged (event ${judgedEvent.id}); awaiting next metrics snapshot.`, { judgedEventId: judgedEvent.id });
             return;
@@ -213,29 +194,14 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         }
       }
 
-      const recentTriageRun = db.prepare(
-        `SELECT runId, status, startedAt
-         FROM workflow_runs
-         WHERE workflow = 'metric-alert-triage'
-           AND startedAt > ?
-           AND task LIKE ?
-         ORDER BY startedAt DESC
-         LIMIT 1`
-      ).get(Date.now() - DEDUP_WINDOW_MS, `%${metricId}%`) as { runId: string; status: string; startedAt: number } | null;
+      const recentTriageRun = state.recentTriageRun as { runId: string; status: string; startedAt: number } | null;
 
       if (recentTriageRun) {
         if (recentTriageRun.status === "running") {
           emitSkip(ctx, metricId, `Skipping ${metricId} — metric-alert-triage already running (${recentTriageRun.runId})`, { workflowRunId: recentTriageRun.runId });
           return;
         }
-        const judgment = db.prepare(
-          `SELECT id FROM events
-           WHERE event_type = 'metric.alert_judged'
-             AND json_extract(data, '$.metricId') = ?
-             AND timestamp >= ?
-           ORDER BY timestamp DESC
-           LIMIT 1`
-        ).get(metricId, recentTriageRun.startedAt) as { id: number } | null;
+        const judgment = state.recentTriageJudgment as { id: number } | null;
         if (judgment && !forceRetriageAfterJudgment) {
           emitSkip(ctx, metricId, `Skipping ${metricId} — recent triage workflow ${recentTriageRun.runId} emitted judgment ${judgment.id}`, { workflowRunId: recentTriageRun.runId, judgmentEventId: judgment.id });
           return;
@@ -245,24 +211,14 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       // Dedup: suppress only active metric handling or completed handling that
       // emitted a judgment. A finished session without metric.alert_judged did
       // not close the loop and must not block a still-breaching alert.
-      const recentSession = db.prepare(
-        `SELECT sessionId, status, startedAt FROM sessions
-         WHERE agent = ? AND source = ? AND startedAt > ?`
-      ).get(owner, `metric-alert-reactor:${metricId}`, Date.now() - DEDUP_WINDOW_MS) as { sessionId: string; status: string; startedAt: number } | null;
+      const recentSession = state.recentOwnerSession as { sessionId: string; status: string; startedAt: number } | null;
 
       if (recentSession) {
         if (recentSession.status === "running") {
           emitSkip(ctx, metricId, `Skipping ${metricId} — ${owner} already has running session ${recentSession.sessionId}`, { owner, sessionId: recentSession.sessionId });
           return;
         }
-        const judgment = db.prepare(
-          `SELECT id FROM events
-           WHERE event_type = 'metric.alert_judged'
-             AND json_extract(data, '$.metricId') = ?
-             AND timestamp >= ?
-           ORDER BY timestamp DESC
-           LIMIT 1`
-        ).get(metricId, recentSession.startedAt) as { id: number } | null;
+        const judgment = state.recentOwnerSessionJudgment as { id: number } | null;
         if (judgment && !forceRetriageAfterJudgment) {
           emitSkip(ctx, metricId, `Skipping ${metricId} — ${owner} already judged it in recent session ${recentSession.sessionId}`, { owner, sessionId: recentSession.sessionId, judgmentEventId: judgment.id });
           return;
