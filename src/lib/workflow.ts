@@ -11,8 +11,8 @@ export type WorkflowEvent =
   | { type: "step_done"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow_done"; summary: string }
   | { type: "workflow_escalate"; reason: string }
-  | { type: "workflow.resume_failed"; source: string; workflowRunId?: string; workflow?: string; reason: string; category: string; recoverable: boolean; timestamp: number }
-  | { type: "workflow.resume_skipped"; source: string; workflowRunId: string; workflow: string; status: string; reason: string; timestamp: number };
+  | { type: "workflow.resume_failed"; source: string; workflowRunId?: string; workflow?: string; reason: string; category: string; recoverable: boolean; nextAction?: string; owner?: string; projectId?: string; timestamp: number }
+  | { type: "workflow.resume_skipped"; source: string; workflowRunId: string; workflow: string; status: string; reason: string; nextAction?: string; owner?: string; projectId?: string; timestamp: number };
 
 // ── Guard Events (workflow-level) ──────────────────────────────────────
 

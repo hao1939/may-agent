@@ -559,21 +559,31 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     };
   };
 
+  const workflowResumeNextAction = (category: string, recoverable = false): string => {
+    if (category === "workflow_definition_missing" || category === "corrupt_state") return "recover";
+    if (recoverable) return "resume";
+    return "escalate";
+  };
+
   const emitWorkflowResumeFailed = (data: {
     workflowRunId?: string;
     workflow?: string;
     reason: string;
     category: string;
     recoverable?: boolean;
+    projectId?: string;
   }): void => {
     const event = {
       type: "workflow.resume_failed",
       source: "workflow-tool",
+      owner: opts.agentName ?? "may",
       workflowRunId: data.workflowRunId,
       workflow: data.workflow,
+      projectId: data.projectId ?? opts.projectId,
       reason: data.reason,
       category: data.category,
       recoverable: data.recoverable ?? false,
+      nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
       timestamp: Date.now(),
     } as const;
     opts.runtimeCtx?.emit(event);
@@ -585,14 +595,18 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     workflow: string;
     status: string;
     reason: string;
+    projectId?: string;
   }): void => {
     const event = {
       type: "workflow.resume_skipped",
       source: "workflow-tool",
+      owner: opts.agentName ?? "may",
       workflowRunId: data.workflowRunId,
       workflow: data.workflow,
+      projectId: data.projectId ?? opts.projectId,
       status: data.status,
       reason: data.reason,
+      nextAction: "none",
       timestamp: Date.now(),
     } as const;
     opts.runtimeCtx?.emit(event);
@@ -605,6 +619,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     reason: string;
     category: string;
     recoverable?: boolean;
+    projectId?: string;
   }): AgentToolResult<string> => {
     emitWorkflowResumeFailed(data);
     return textResult(JSON.stringify({
@@ -614,6 +629,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       error: data.reason,
       reason: data.reason,
       category: data.category,
+      recoverable: data.recoverable ?? false,
+      nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
     }, null, 2));
   };
 
@@ -1275,6 +1292,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return workflowResumeError({
               workflowRunId: params.workflowRunId,
               workflow: prevRunRecord.workflow,
+              projectId: prevRunRecord.projectId ?? opts.projectId,
               reason: `Workflow run "${params.workflowRunId}" has incomplete persisted state`,
               category: "corrupt_state",
             });
@@ -1310,6 +1328,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               workflowRunId: prevRun.runId,
               workflow: prevRun.workflow,
               status: prevRun.status,
+              projectId: prevRun.projectId,
               reason: "workflow already reached terminal status",
             });
             const result: WorkflowToolResult = {
@@ -1327,6 +1346,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               workflowRunId: prevRun.runId,
               workflow: prevRun.workflow,
               status: prevRun.status,
+              projectId: prevRun.projectId,
               reason: "workflow already reached terminal status",
             });
             const result: WorkflowToolResult = {
@@ -1348,6 +1368,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return workflowResumeError({
               workflowRunId: prevRun.runId,
               workflow: prevRun.workflow,
+              projectId: prevRun.projectId,
               reason: resumeFindError ?? `Workflow "${prevRun.workflow}" not found`,
               category: "workflow_definition_missing",
               recoverable: true,

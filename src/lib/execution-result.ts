@@ -27,6 +27,7 @@ export interface ResumeDiagnostic {
   reason: string;
   category?: string;
   recoverable?: boolean;
+  nextAction?: string;
   owner?: string;
   agent?: string;
   workflow?: string;
@@ -189,6 +190,7 @@ export function resumeDiagnosticToExecutionResult(diagnostic: ResumeDiagnostic):
       workflow: diagnostic.workflow,
       category: diagnostic.category,
       recoverable: diagnostic.recoverable,
+      nextAction: diagnostic.nextAction,
     },
   };
 }
