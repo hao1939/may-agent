@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
 import { resolve, join } from "node:path";
-import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, appendFileSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
 import {
@@ -16,13 +16,13 @@ import { attachConsoleUI } from "./ui/console.js";
 import { attachTelegramBot } from "./ui/telegram.js";
 import {
   loadAgents,
-  reloadAgents,
   setAgentSessionId,
   runAgentCleanup,
   getAgentCrons,
   generateAutoHeartbeats,
   type AgentLoaderOptions,
 } from "./agent-loader.js";
+import { createDaemonLifecycle, createIdentityWriter, formatDurationMs } from "./daemon.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
@@ -53,44 +53,9 @@ const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".sta
 const INSTANCE = process.env.INSTANCE || "";
 const INSTANCE_LABEL = INSTANCE || "default";
 
-interface InstanceIdentity {
-  pid: number;
-  agent: string;
-  instance: string;
-  socket: string;
-  startedAt: string;
-  startedBy: string;
-  task: string | null;
-  status: "running" | "done" | "error";
-  exitCode?: number | null;
-  endedAt?: string;
-  duration?: string;
-  sessionId?: string;
-}
-
-const INSTANCES_DIR = resolve(PERSIST_DIR, "instances");
-const IDENTITY_PATH = resolve(INSTANCES_DIR, INSTANCE_LABEL, "identity.json");
 const PROCESS_START_TIME = Date.now();
 
-function writeIdentity(data: Partial<InstanceIdentity>): void {
-  const dir = resolve(INSTANCES_DIR, INSTANCE_LABEL);
-  mkdirSync(dir, { recursive: true });
-  // Overwrite completely — don't merge with previous process's state.
-  // Merging causes stale status (e.g., previous process wrote "error",
-  // new process startup writes "running" but other fields leak through).
-  writeFileSync(IDENTITY_PATH, JSON.stringify(data, null, 2));
-}
-
-function formatDurationMs(ms: number): string {
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 60) return seconds + "s";
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  if (minutes < 60) return minutes + "m" + secs + "s";
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return hours + "h" + mins + "m";
-}
+const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
 
 // CLI args
 const CRON_ENABLED = process.argv.includes("--cron");
@@ -471,106 +436,24 @@ for (const cron of getAgentCrons().values()) {
 // Moved to agents/may/handlers/context-learn.ts (event-driven handler).
 // Subscribes to "context-learn" events via cron.json `on` field.
 
-// ── Graceful shutdown / restart ─────────────────────────────────────────
-
-let shuttingDown = false;
 let activeRL: ReturnType<typeof createInterface> | null = null;
+let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
 /** Track whether Ctrl+C cancel has been issued (second Ctrl+C force-quits). */
 let cancelledOnce = false;
 
-function gracefulShutdown(opts: { preserveSessions?: boolean } = {}) {
-  if (shuttingDown) {
-    process.kill(process.pid, "SIGKILL");
-    return;
-  }
-  shuttingDown = true;
-  bus.emit({ type: "info", message: `Shutting down...` });
-
-  for (const cron of getAgentCrons().values()) {
-    cron.stop();
-  }
-
-  telegramBot.close();
-
-  if (activeRL) {
-    activeRL.close();
-    activeRL = null;
-  }
-
-  if (opts.preserveSessions) {
-    bus.emit({ type: "info", message: "[shutdown] Preserving running sessions for restart/resume" });
-  } else {
-    // Explicit close/cancel semantics: mark sessions interrupted.
-    chatSession?.cancelAll();
-    for (const s of manager.status()) {
-      if (s.status === "running") {
-        manager.cancel(s.sessionId);
-      }
-    }
-  }
-
-  // Give 2s for sessions to cancel, then checkpoint DB and exit.
-  // SIGKILL at 5s guarantees exit if process.exit hangs (Bun + open HTTP streams).
-  setTimeout(() => {
-    try { closeAllDbs(); } catch { /* best-effort */ }
-    process.exit(0);
-  }, 2000);
-  setTimeout(() => process.kill(process.pid, "SIGKILL"), 5000).unref();
-}
-
-
-function gracefulRestart() {
-  // Let supervisord handle it: stop this process (SIGTERM → SIGKILL), start fresh.
-  // Fire-and-forget — supervisord kills us, we don't need to wait.
-  const { exec } = require("node:child_process") as typeof import("node:child_process");
-  exec("supervisorctl restart may-agent", { timeout: 10000 });
-  // Don't call gracefulShutdown — supervisord sends SIGTERM which triggers it.
-}
-
-async function handleReload(): Promise<void> {
-  const result = await reloadAgents(loaderOpts);
-  if (result.errors.length > 0) {
-    bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
-  } else if (result.added.length > 0 || result.updated.length > 0) {
-    const parts: string[] = [];
-    if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
-    if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
-    bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
-  } else {
-    bus.emit({ type: "info", message: "[reload] No changes" });
-  }
-}
-
-process.on("SIGINT", () => {
-  gracefulShutdown();
+const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
+  bus,
+  manager,
+  loaderOpts,
+  closeAllDbs,
+  writeIdentity,
+  processStartTime: PROCESS_START_TIME,
+  getChatSession: () => chatSession,
+  getTelegramBot: () => telegramBot,
+  getActiveReadline: () => activeRL,
+  clearActiveReadline: () => { activeRL = null; },
 });
-process.on("SIGTERM", () => {
-  bus.emit({ type: "info", message: "[signal] SIGTERM received" });
-  // Supervisor/docker restarts should leave running sessions resumable.
-  gracefulShutdown({ preserveSessions: true });
-});
-process.on("SIGHUP", () => {
-  bus.emit({ type: "info", message: "[signal] SIGHUP received (ignoring)" });
-});
-process.on("uncaughtException", (err) => {
-  try { console.error(`[fatal] Uncaught exception: ${err.message}\n${err.stack}`); } catch {}
-  try { closeAllDbs(); } catch {}
-  process.exit(1);
-});
-process.on("unhandledRejection", (reason) => {
-  try { console.error(`[fatal] Unhandled rejection: ${reason}`); } catch {}
-});
-process.on("exit", (code) => {
-  try { closeAllDbs(); } catch {}
-  try {
-    writeIdentity({
-      status: code === 0 ? "done" : "error",
-      exitCode: code,
-      endedAt: new Date().toISOString(),
-      duration: formatDurationMs(Date.now() - PROCESS_START_TIME),
-    });
-  } catch {}
-});
+installProcessHandlers();
 
 // ── Command routing (socket/telegram -> chat loop or built-in) ──────────
 
@@ -753,7 +636,7 @@ if (CRON_ENABLED) {
 
 // ── Telegram bot (--telegram flag to enable) ─────────────────────────
 
-const telegramBot = TELEGRAM_ENABLED
+telegramBot = TELEGRAM_ENABLED
   ? attachTelegramBot({
       bus,
       manager,
