@@ -1,9 +1,13 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   buildNotificationReplyText,
   buildTelegramQuoteReplyText,
   extractProjectPath,
   normalizeProjectPath,
+  readSessionReplyContext,
 } from "../src/app/ui/telegram-reply-router.js";
 
 describe("telegram reply router helpers", () => {
@@ -51,5 +55,25 @@ describe("telegram reply router helpers", () => {
       "",
       "User says: continue",
     ].join("\n"));
+  });
+
+  it("reads compact session context for reply enrichment", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-reply-router-"));
+    try {
+      const sessionDir = join(persistDir, "sessions", "s_1");
+      mkdirSync(sessionDir, { recursive: true });
+      writeFileSync(join(sessionDir, "session-compact.jsonl"), [
+        JSON.stringify({ role: "system", content: [{ type: "text", text: "Compact summary of session" }] }),
+        JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Last assistant action" }] }),
+      ].join("\n"));
+
+      expect(readSessionReplyContext(persistDir, "s_1")).toEqual([
+        "\nSession context (2 messages):",
+        "  Summary: Compact summary of session",
+        "  Last action: Last assistant action",
+      ]);
+    } finally {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
   });
 });
