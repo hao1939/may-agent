@@ -370,6 +370,11 @@ export class SubagentManager {
     };
 
     const existingMeta = this._registry.getSession(sessionId);
+    if (!existingMeta && opts?.resumeMessages?.length) {
+      for (const message of opts.resumeMessages) {
+        try { appendSessionMessage(this._persistDir, sessionId, message); } catch { /* best-effort */ }
+      }
+    }
     this._registry.saveSession(sessionId, {
       ...(existingMeta ?? {}),
       agent: name,

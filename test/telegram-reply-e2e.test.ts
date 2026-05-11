@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../src/app/event-bus.js";
 import { attachTelegramBot } from "../src/app/ui/telegram.js";
+import { attachCommandRouter } from "../src/app/command-router.js";
 import { getDb } from "../src/lib/requests.js";
 
 function jsonResponse(result: unknown) {
@@ -303,6 +304,22 @@ describe("telegram reply e2e", () => {
       getSessionId: () => "",
       interfaceAgent: "may",
     });
+    const router = attachCommandRouter({
+      bus,
+      manager: {
+        status: () => [],
+        cancel: () => {},
+        input: async () => ({} as any),
+        steer: () => {},
+        resumeSession: () => "",
+      } as any,
+      getChatSession: () => undefined,
+      clearCancelLatch: () => {},
+      projectRoot,
+      reload: () => {},
+      restart: () => {},
+      shutdown: () => {},
+    });
 
     await waitFor(() => {
       expect(nudges).toHaveLength(1);
@@ -314,6 +331,7 @@ describe("telegram reply e2e", () => {
     });
 
     bot.close();
+    router.close();
     rmSync(projectRoot, { recursive: true, force: true });
   });
 });

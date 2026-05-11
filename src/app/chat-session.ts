@@ -2,8 +2,8 @@
  * ChatSession — persistent chat session for the human-facing agent.
  *
  * Each human message starts or wakes a chat turn. If the previous chat turn
- * has already completed, the next turn resumes the same session id with the
- * prior transcript loaded as context.
+ * has already completed, the next turn starts a fresh execution session with
+ * the prior transcript loaded as context and the prior turn recorded as parent.
  *
  * Session state is persisted to JSONL automatically by the manager's
  * subscribeForPersistence(). On restart, the user can resume an old
@@ -178,25 +178,25 @@ export class ChatSession {
 
   /**
    * Send a message to the chat session.
-   * Creates a session on first call, wakes it while active, or resumes the same
-   * session id with prior transcript context once the previous turn completed.
+   * Creates a session on first call, wakes it while active, or starts a new
+   * traceable turn with prior transcript context once the previous turn completed.
    */
   private sendMessage(message: string, source?: string): void {
-    let resumeFromSessionId: string | null = null;
+    let previousSessionId: string | null = null;
     if (this.sessionId && !this.manager.hasActiveSession(this.sessionId)) {
-      resumeFromSessionId = this.sessionId;
+      previousSessionId = this.sessionId;
       this.bus.emit({
         type: "info",
-        message: `[chat] Resuming completed session ${this.sessionId} with transcript context.`,
+        message: `[chat] Starting a new turn with transcript context from ${this.sessionId}.`,
       });
       this.sessionId = null;
     }
 
     if (!this.sessionId) {
-      // First message, or a resumed turn after the previous chat session completed.
-      const resumeMessages = resumeFromSessionId ? this.loadResumeMessages(resumeFromSessionId) : undefined;
+      // First message, or a new traceable turn after the previous chat session completed.
+      const resumeMessages = previousSessionId ? this.loadResumeMessages(previousSessionId) : undefined;
       this.sessionId = this.manager.run(this.agentName, message, {
-        sessionId: resumeFromSessionId ?? undefined,
+        parentSessionId: previousSessionId ?? undefined,
         kind: "chat",
         autoClose: "never",
         compaction: true,
