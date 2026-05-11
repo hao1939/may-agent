@@ -448,7 +448,7 @@
     "name": "scout-explore-arxiv",
     "agent": "scout",
     "type": "job",
-    "intervalMs": 3600000,
+    "intervalMs": 7200000,
     "enabled": true,
     "description": "Scout routine: explore arXiv for AI agent papers.",
     "handler": "run-workflow",

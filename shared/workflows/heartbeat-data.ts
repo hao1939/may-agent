@@ -194,7 +194,7 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
         AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
       ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
         timestamp DESC
-      LIMIT 20
+      LIMIT 12
     `).all(agent, twoHoursAgo, Date.now()) as any[];
     if (!rows.length) return "";
     // Dedup: collapse notifications with similar content
@@ -231,7 +231,9 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
         dedupMap.set(key, { count: 1, newest: r, oldest: r });
       }
     }
-    return Array.from(dedupMap.values()).map((entry) => {
+    // Cap deduped groups to prevent context bloat (EXP-scout-inbox-trim)
+    const groups = Array.from(dedupMap.values()).slice(0, 8);
+    return groups.map((entry) => {
       const r = entry.newest;
       const age = Math.round((Date.now() - r.timestamp) / 60000);
       const ageStr = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
