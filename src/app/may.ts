@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import {
   SubagentManager,
 } from "../lib/index.js";
@@ -25,11 +25,12 @@ import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
 import { runMessageMode, runStatusMode } from "./modes/command.js";
-import { parseEmitMode, runEmitMode } from "./modes/emit.js";
-import { parseOneshotTimeoutMinutes, runOneshotMode } from "./modes/oneshot.js";
-import { parseRunWorkflowMode, runWorkflowMode } from "./modes/run-workflow.js";
+import { runEmitMode } from "./modes/emit.js";
+import { runOneshotMode } from "./modes/oneshot.js";
+import { runWorkflowMode } from "./modes/run-workflow.js";
 import { parseWebPort, runWebOnlyMode, startWebMode } from "./modes/web.js";
 import { createModelRegistry } from "./model-registry.js";
+import { parseAppArgs } from "./app-args.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -57,46 +58,36 @@ const PROCESS_START_TIME = Date.now();
 
 const writeIdentity = createIdentityWriter({ persistDir: PERSIST_DIR, instanceLabel: INSTANCE_LABEL });
 
-// CLI args
-const CRON_ENABLED = process.argv.includes("--cron");
-const TELEGRAM_ENABLED = process.argv.includes("--telegram");
-const CONSOLE_ENABLED = process.argv.includes("--console") || process.argv.includes("--chat");
-const SOCKET_ENABLED = process.argv.includes("--socket");
-const WEB_ENABLED = process.argv.includes("--web");
-const CHAT_MODE = process.argv.includes("--chat");
-const ONESHOT_MODE = process.argv.includes("--oneshot");
-const STATUS_MODE = process.argv.includes("--status");
-const MESSAGE_MODE = process.argv.includes("--message");
-let EMIT_MODE: ReturnType<typeof parseEmitMode>;
+let appArgs: ReturnType<typeof parseAppArgs>;
 try {
-  EMIT_MODE = parseEmitMode(process.argv);
+  appArgs = parseAppArgs();
 } catch (err) {
   console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
 }
-const RUN_WORKFLOW = parseRunWorkflowMode(process.argv);
-const DRY_RUN = process.argv.includes("--dry-run");
-const INITIAL_TASK = (() => {
-  const idx = process.argv.indexOf("--task");
-  if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
-  const fileIdx = process.argv.indexOf("--task-file");
-  if (fileIdx !== -1 && process.argv[fileIdx + 1]) {
-    const taskFile = process.argv[fileIdx + 1];
-    if (existsSync(taskFile)) return readFileSync(taskFile, "utf-8").trim();
-    console.error(`Task file not found: ${taskFile}`);
-    process.exit(1);
-  }
-  return null;
-})();
 
-const interfaceAgent = (() => {
-  // Support both --agent <name> and --agent=<name>
-  const eqArg = process.argv.find((a) => a.startsWith("--agent="));
-  if (eqArg) return eqArg.split("=")[1]!;
-  const idx = process.argv.indexOf("--agent");
-  if (idx !== -1 && process.argv[idx + 1]) return process.argv[idx + 1];
-  return process.env.AGENT || "may";
-})();
+const {
+  cronEnabled: CRON_ENABLED,
+  telegramEnabled: TELEGRAM_ENABLED,
+  consoleEnabled: CONSOLE_ENABLED,
+  socketEnabled: SOCKET_ENABLED,
+  webEnabled: WEB_ENABLED,
+  chatMode: CHAT_MODE,
+  oneshotMode: ONESHOT_MODE,
+  statusMode: STATUS_MODE,
+  messageMode: MESSAGE_MODE,
+  emitMode: EMIT_MODE,
+  runWorkflow: RUN_WORKFLOW,
+  dryRun: DRY_RUN,
+  initialTask: INITIAL_TASK,
+  interfaceAgent,
+  webOnlyMode: WEB_ONLY_MODE,
+  oneshotTimeoutMinutes: ONESHOT_TIMEOUT_MINUTES,
+  notify: NOTIFY,
+  envSessionId: ENV_SESSION_ID,
+  envParentSessionId: ENV_PARENT_SESSION_ID,
+  envParentAgent: ENV_PARENT_AGENT,
+} = appArgs;
 
 if (EMIT_MODE) {
   // ── Operator emit mode: send one event to the running daemon and exit ─
@@ -118,17 +109,6 @@ if (EMIT_MODE) {
   }
 }
 
-const WEB_ONLY_MODE = WEB_ENABLED
-  && !CHAT_MODE
-  && !CRON_ENABLED
-  && !SOCKET_ENABLED
-  && !TELEGRAM_ENABLED
-  && !ONESHOT_MODE
-  && !STATUS_MODE
-  && !MESSAGE_MODE
-  && !RUN_WORKFLOW
-  && !INITIAL_TASK;
-
 if (WEB_ONLY_MODE) {
   await runWebOnlyMode({
     stateDir: PERSIST_DIR,
@@ -137,14 +117,6 @@ if (WEB_ONLY_MODE) {
     writeIdentity,
   });
 }
-
-// --oneshot CLI parameters
-const ONESHOT_TIMEOUT_MINUTES = parseOneshotTimeoutMinutes(process.argv);
-
-// ── Detached sub-agent env vars ──────────────────────────────────────────
-const ENV_SESSION_ID = process.env.SESSION_ID || undefined;
-const ENV_PARENT_SESSION_ID = process.env.PARENT_SESSION_ID || undefined;
-const ENV_PARENT_AGENT = process.env.PARENT_AGENT || undefined;
 
 // ── Models ──────────────────────────────────────────────────────────────
 
@@ -298,7 +270,7 @@ function emitPrompt(): void {
 
 if (STATUS_MODE) {
   // ── Status mode: print dashboard and exit ──────────────────────────
-  await runStatusMode({ persistDir: PERSIST_DIR, notify: process.argv.includes("--notify") });
+  await runStatusMode({ persistDir: PERSIST_DIR, notify: NOTIFY });
   process.exit(0);
 }
 
