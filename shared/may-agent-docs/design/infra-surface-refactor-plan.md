@@ -1050,7 +1050,7 @@ package until DB modules have stable boundaries and no app-specific imports.
 
 ### Phase 9d: Telegram Reply Router Extraction
 
-Status: first pure-helper slice shipped.
+Status: reply decision helper shipped.
 
 Keep Telegram in the daemon process, but extract reply classification into a
 pure router module:
@@ -1064,11 +1064,14 @@ Current state:
 - [x] `src/app/ui/telegram-reply-router.ts` owns pure project-path
   normalization/extraction, enriched reply text builders, and compact session
   context extraction for reply enrichment.
-- [x] `src/app/ui/telegram.ts` still owns side effects: DB lookup, transcript
-  reads, event emission, and acknowledgements.
+- [x] `src/app/ui/telegram-reply-router.ts` also owns reply-route decisions:
+  notification reply, quote fallback, and missing-context evidence.
+- [x] `src/app/ui/telegram.ts` still owns side effects: DB lookup, event
+  emission, project comment writes, steering, and Telegram acknowledgements.
 - Root commit: `bb98d54b` extract Telegram reply router helpers.
 - Root commit: `77d69992` extract Telegram session reply context.
 - Root commit: `65debc74` move notification context SQL behind DB helpers.
+- Root commit: `a039497b` extract Telegram reply route decisions.
 
 Validation:
 
@@ -1076,6 +1079,7 @@ Validation:
 - `scripts/telegram-reply-smoke.ts --hours 24` remains the live proof path.
 - `bun test test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
   passes.
+- `bun run check` passes.
 
 ## Cross-Cutting Validation
 
