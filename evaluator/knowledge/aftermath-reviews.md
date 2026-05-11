@@ -109,6 +109,10 @@
 - Symptom: a metric-alert session makes no repository changes, so it can look insubstantial if review only checks for file diffs.
 - Fix: verify whether the workflow emitted a durable `metric.alert_judged` event with a concrete final operation plus evidence, and confirm the cited live metric/project state. Credit the session when that event records the owner judgment and advances the closure chain, even if the supporting project artifact was pre-existing.
 
+## Pattern: repeated `waiting_with_evidence` appends can be real maintenance but weak material output
+- Symptom: a metric-alert triage session re-runs the live checks correctly, but the only shipped change is another project-journal entry restating the same historical row and same wait condition that were already documented minutes earlier.
+- Fix: separate operational soundness from output materiality. Credit the fresh DB validation and correct hold judgment, but downgrade from strong `good`/material-output language when the artifact adds little delta, especially if the canonical project status/resume fields remain unchanged or inconsistent with the newest evidence.
+
 ## Pattern: metric-alert calibration can still be a good outcome even after transient wrong-tool attempts
 - Symptom: a triage session first tries to mutate runtime state with the wrong mechanism (for example `query_db` UPDATE or `sqlite3` from bash), then pivots to the documented `bun:sqlite` update and lands the calibration safely.
 - Fix: judge the session from the recovered end state, not only the false starts. Keep an efficiency penalty for the avoidable wrong-tool calls, but if live DB reads show the metric definition changed as intended and the alert row was resolved with corroborating evidence, credit the session as real value rather than marking it as a failure.
