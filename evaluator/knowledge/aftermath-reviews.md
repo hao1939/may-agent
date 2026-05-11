@@ -109,6 +109,10 @@
 - Symptom: a research heartbeat creates a fresh KE and digest entry, but the new artifact mostly recombines points already captured in a nearby KE (for example an existing SLM-architecture note) plus the rolling digest, with only one added angle such as sandboxing/locality.
 - Fix: before crediting the session as a strong knowledge update, compare the new KE against existing same-day entries and the cited digest context. If the novelty is only an incremental framing change, score it as lightweight synthesis/acceptable output rather than a high-value new knowledge artifact, and note the missed duplicate check.
 
+## Pattern: adjacent-KE synthesis can still be real value when it names a distinct failure mode
+- Symptom: a research heartbeat mainly synthesizes several just-created local KEs, so it can look like repackaging rather than fresh work.
+- Fix: check whether the new KE contributes a clearly distinct concept name, a non-trivial causal link across the prior entries, and concrete system implications that were not already stated in the source KEs. If those are present, credit it as substantive synthesis even without same-session external fetching; penalize only hygiene friction such as late commit/read-back recovery.
+
 ## Pattern: same paper can be re-added under a new KE id without an actual id collision
 - Symptom: a research session ships a clean new file path like `KE-010-...md`, but the paper/source already exists under another KE id (for example `KE-002-...md`). The transcript claims a new KB addition even though the net result is duplicate knowledge rather than fresh exploration.
 - Fix: when a session claims a new paper finding, search existing `shared/knowledge/entries/` by title or source URL, not just by target KE id. Credit any digest summary that really landed, but downgrade the KB value when the "new" entry duplicates an existing paper under a different id.
