@@ -125,9 +125,12 @@ Validation:
 - [x] Container smoke: emit `trigger.metrics-snapshot`.
 
 Host caveat: in the current containerized runtime, the host-visible Unix socket
-connects outside the sandbox but does not return a daemon response. The
-container-local convention path works. Treat host-to-container socket access as
-an environment/ops follow-up, not a reason to add socket scanning.
+is not mounted at the convention path. Rechecked on 2026-05-11:
+`bun src/app/may.ts --emit trigger.metrics-snapshot ...` failed with `ENOENT`
+for both `.state/instances/default/may.sock` and
+`.state/instances/background/may.sock`. The container-local convention path
+works. Treat host-to-container socket access as an environment/ops follow-up,
+not a reason to add socket discovery.
 
 Stop criteria:
 
