@@ -28,6 +28,10 @@
 - Symptom: a transcript snippet suggests a missing file or path mismatch, but the produced artifact, tracked source file, test, and runtime DB evidence all confirm the deliverable exists.
 - Fix: for success-candidate aftermath reviews, inspect the actual artifact and current tracked files before downgrading the session based on one anomalous tool result. Use transcript anomalies as cautions to note, not as sole grounds to reject a verified outcome.
 
+## Pattern: blocked finishes can be mislabeled as interrupted while still shipping real output
+- Symptom: a worker session calls `finish(status="blocked")`, the `sessions` row later shows `status/outcome=interrupted`, or the finish tool prints a deliverable as `MISSING`, but the transcript plus landed commit prove the artifact was written, read back, and committed.
+- Fix: before classifying these sessions as failed/no-output aftermaths, check the actual committed artifact and the session transcript's write/read/commit sequence. Credit the shipped investigation/report/output, then note the runtime bookkeeping/display mismatch as the true follow-up item.
+
 ## Pattern: rolling workspace artifacts can be overwritten after the reviewed session
 - Symptom: a session updates a workspace file such as `workspace/digest/today.md`, but by review time the current file contents no longer match the session because a later run replaced the rolling digest.
 - Fix: verify the session's contribution from the landed commit/diff for that session, not only from the current workspace file state. Treat current file drift as expected for rolling artifacts and judge output quality from the committed change plus any read-back captured during the session.
