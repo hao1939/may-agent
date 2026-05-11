@@ -46,6 +46,7 @@ BAD (will be flagged):
   1. Run `bash agents/scout/tools/next-ke-id.sh` from the project root (`/app`).
   2. Use the printed `KE-NNNN` id exactly once with a descriptive slug.
   3. Before writing, verify no collision with `ls agents/shared/knowledge/entries/KE-NNNN-* agents/shared/knowledge/entries/KE-NNNN.md 2>/dev/null`.
+- The KE allocation helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only directory scan fallback and report the helper issue instead of creating or overwriting the tool from a heartbeat.
 - Never reuse a KE number. If a nearby topic already exists, update that existing KE instead of creating a duplicate.
 - To correct an existing KE, **read() first**, then use **edit()** with a narrow diff. Never write() the whole file.
 

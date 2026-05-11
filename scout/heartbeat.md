@@ -26,6 +26,8 @@ Before creating a new shared KE, run this from the project root (`/app`):
 ```bash
 bash agents/scout/tools/next-ke-id.sh
 ```
+The helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only `find agents/shared/knowledge/entries ...` fallback and report the helper issue instead of creating or overwriting the tool.
+
 Use the returned `KE-NNNN` id with a descriptive slug, then verify the target id is still unused:
 ```bash
 ls agents/shared/knowledge/entries/KE-NNNN-* agents/shared/knowledge/entries/KE-NNNN.md 2>/dev/null
