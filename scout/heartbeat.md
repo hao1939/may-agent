@@ -21,5 +21,16 @@ This is your **creative** session. Cron tasks handle routine fetching. Here you 
 - Today's digest: `agents/scout/workspace/digest/today.md`
 - Working notes: `agents/scout/knowledge/`
 
+## KE Allocation
+Before creating a new shared KE, run this from `/app/agents`:
+```bash
+bash scout/tools/next-ke-id.sh
+```
+Use the returned `KE-NNNN` id with a descriptive slug, then verify the target id is still unused:
+```bash
+ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null
+```
+If the `ls` finds any file, stop and pick the next max+1 id. If the topic already exists, update the existing KE instead.
+
 ## Quality
 A good creative session produces one genuine insight or connection. A bad session echoes what's already known. Go deep on something specific rather than broad on everything.

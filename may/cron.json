@@ -455,7 +455,7 @@
     "handlerConfig": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore arXiv for recent AI agent papers.",
+      "task": "Explore arXiv for recent AI agent papers. Use this exact API base only: https://export.arxiv.org/api/query . Never use http://export.arxiv.org. Fetch with curl -sL, use sortOrder=descending (not desc), inspect the returned summary/abstract text before writing any Summary or Implication, and skip arXiv rather than guessing if this HTTPS endpoint is unreachable.",
       "timeoutMs": 600000
     },
     "offsetMs": 0

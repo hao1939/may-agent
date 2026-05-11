@@ -42,7 +42,11 @@ BAD (will be flagged):
 
 ## Knowledge Entry Safety
 - **NEVER write() low-numbered KE files** (KE-001 through KE-010). They are canonical shared memory.
-- To add new knowledge, pick a new **high-numbered** KE id and verify it doesn't exist first.
+- To add new knowledge, allocate the KE id mechanically from the shared KB, not from memory or today's digest:
+  1. Run `bash scout/tools/next-ke-id.sh` from `/app/agents`.
+  2. Use the printed `KE-NNNN` id exactly once with a descriptive slug.
+  3. Before writing, verify no collision with `ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null`.
+- Never reuse a KE number. If a nearby topic already exists, update that existing KE instead of creating a duplicate.
 - To correct an existing KE, **read() first**, then use **edit()** with a narrow diff. Never write() the whole file.
 
 ## How to Discover Work
