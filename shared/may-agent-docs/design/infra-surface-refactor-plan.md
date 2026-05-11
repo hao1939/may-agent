@@ -68,16 +68,16 @@ Recently completed:
    current event -> handler/workflow -> session/function -> evidence model.
 8. [x] Confirm real-human Telegram reply routing against live DB evidence.
 
-This is now the highest-value slice because the event/metric/control boundaries
-are traceable enough; the next risk is large mixed-responsibility runtime files
-making the simple model hard to see and safely evolve.
+This is now a review/proof slice. The large mixed runtime files that motivated
+Phase 9 have been split; do not keep extracting modules unless the review finds
+a concrete boundary that still obscures behavior or changes independently.
 
 ## Remaining Gap Summary
 
 | Gap | Risk | Phase |
 |---|---|---|
-| `agent-loader.ts` mixes discovery, validation, tool construction, cron ownership, heartbeat generation, handler hot-reload, and cleanup state | Hot-reload/reload semantics are hard to reason about and easy to regress | Phase 9 |
-| `may.ts` mixes CLI modes, daemon assembly, reload handling, Web UI mode, workflow direct-run, and shutdown | The daemon composition root is hard to inspect and encourages cross-boundary edits | Phase 9 |
+| Phase 9 needs a runtime proof pass after the module split | Code shape is cleaner, but adapter/control boundary changes should still be proven with durable events, not only tests | Phase 9 review |
+| `toolset-loader.ts` is large but cohesive | Splitting it prematurely would add files without reducing mental load; split only if preset factories or local-tool loading start changing independently | Watch |
 
 ## Phase 0: Design State Refresh
 
@@ -950,8 +950,12 @@ Target modules:
 - [x] `src/app/modes/web.ts`
 - [x] `src/app/modes/run-workflow.ts`
 - [x] `src/app/modes/oneshot.ts`
-- [x] `src/app/daemon.ts` lifecycle support, daemon event subscribers, and
-  agent startup assembly/runtime loops
+- [x] `src/app/daemon.ts` stable daemon barrel.
+- [x] `src/app/daemon-lifecycle.ts`
+- [x] `src/app/daemon-events.ts`
+- [x] `src/app/daemon-agents.ts`
+- [x] `src/app/daemon-sessions.ts`
+- [x] `src/app/daemon-loops.ts`
 
 `may.ts` should parse arguments, select one mode, and delegate. It should not
 own loader internals, Web UI startup details, workflow direct-run mechanics, or
@@ -1007,15 +1011,20 @@ Current shape:
   for LiteLLM proxy and direct Anthropic opus routing.
 - `src/app/api-gate-runtime.ts`: API concurrency gate construction from env
   with runtime logging.
-- `src/app/daemon.ts`: lifecycle, event persistence, session side-effect
-  subscribers, session-domain event translation, agent loading, heartbeat
-  convention injection, cron bus subscription, heartbeat workflow preflight, and
-  task/chat session startup, and runtime loops.
+- `src/app/daemon.ts`: stable 16-line daemon barrel.
+- `src/app/daemon-lifecycle.ts`: identity, shutdown/restart, reload, process
+  signal handlers.
+- `src/app/daemon-events.ts`: event persistence, session side-effect
+  subscribers, session-domain event translation, stuck/resume handling.
+- `src/app/daemon-agents.ts`: agent loading, auto-heartbeat injection, cron bus
+  subscription, heartbeat workflow startup checks.
+- `src/app/daemon-sessions.ts`: task/chat/cron-only requested session startup.
+- `src/app/daemon-loops.ts`: interactive TTY loop and daemon keepalive.
 
 Stop criteria:
 
-- The normal daemon path can be read from one file without scanning CLI-only
-  branches.
+- The normal daemon path can be read from `app-runtime.ts` plus named daemon
+  modules without scanning CLI-only branches.
 - CLI/web/workflow modes can be changed without touching daemon assembly.
 
 ### Phase 9c: Storage Module Split
@@ -1242,6 +1251,46 @@ Validation:
 - `bun test test/daemon.test.ts test/daemon-events.test.ts test/daemon-sessions.test.ts test/agent-loader.test.ts`
   passes.
 - `bun run check` passes.
+
+### Phase 9l: Runtime Shape Review And Proof
+
+Status: review proof complete.
+
+Review result:
+
+- `may.ts` remains a thin binary composition entry: version/path setup, early
+  emit/web-only modes, model registry creation, and one call into
+  `runAppRuntime`.
+- `app-runtime.ts` is the readable long-running path: event bus, manager,
+  loader startup, lifecycle, command router, socket/Web/Telegram adapters,
+  requested session startup, cron, and final loop selection.
+- `daemon.ts` is now only a stable barrel. Daemon implementation lives in
+  lifecycle, events, agents, sessions, and loops modules.
+- Telegram is split by concern: API transport, reply classification, outbound
+  session-response policy, and the remaining live polling adapter.
+- `toolset-loader.ts` is intentionally not split yet. It is large but cohesive:
+  declared tool preset names map to tool factories, with local tool loading at
+  the edge.
+
+Validation:
+
+- `bun run check` passes.
+- `bun test test/daemon.test.ts test/daemon-events.test.ts test/daemon-sessions.test.ts test/agent-loader.test.ts`
+  passes.
+- `bun test test/telegram-client.test.ts test/telegram-outbound.test.ts test/telegram-reply-router.test.ts`
+  passes.
+- `bun test test/telegram-reply-e2e.test.ts` passes.
+
+Runtime proof:
+
+- Host-side emit to `.state/instances/background/may.sock` can fail with
+  `ENOENT` because the live Unix socket is owned inside the Docker namespace
+  even though the socket path is visible on the bind mount.
+- Container-side emit works:
+  `docker exec may-agent may-agent --emit trigger.metrics-snapshot '{}'`.
+- Durable DB evidence in `.state/may.db`: `trigger.metrics-snapshot` event
+  `561117`, followed by `handler.started` `561118` and `handler.completed`
+  `561120` for `metrics-snapshot`.
 
 ## Cross-Cutting Validation
 
