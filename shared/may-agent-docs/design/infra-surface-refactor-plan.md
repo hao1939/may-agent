@@ -32,12 +32,13 @@ to this tracker under the smallest matching phase.
 
 Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
 adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
-composition root, and DB facade into named runtime modules.
+composition root, and DB facade into named runtime modules. Phase 9d/9e have
+split Telegram reply routing and outbound session-response routing.
 
 Next slice:
 
-1. Review whether Phase 9d Telegram reply router extraction still removes real
-   complexity now that adapter normalization already exists.
+1. Review the remaining Telegram adapter surface for any small extraction that
+   removes real complexity without changing the live polling path.
 2. Keep `may.ts` as a thin composition root; new runtime behavior should land in
    the narrow module that owns it.
 3. Continue using runtime event ids as proof for adapter/control boundary
@@ -1078,6 +1079,31 @@ Validation:
 - Existing Telegram reply e2e tests stay green.
 - `scripts/telegram-reply-smoke.ts --hours 24` remains the live proof path.
 - `bun test test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
+  passes.
+- `bun run check` passes.
+
+### Phase 9e: Telegram Outbound Routing Extraction
+
+Status: shipped.
+
+Keep Telegram in-process, but separate outbound session-response policy from
+the polling adapter. `telegram.ts` should own token setup, polling, incoming
+message handling, reply route side effects, and Telegram API calls. The outbound
+module should own the active Telegram chat tree, root text streaming, child
+session summaries, human-directed proactive messages, and alert forwarding.
+
+Current state:
+
+- [x] `src/app/ui/telegram-outbound.ts` owns outbound session tracking and
+  Telegram-facing response decisions.
+- [x] `src/app/ui/telegram.ts` delegates outbound close/alert behavior and uses
+  the outbound module for active root chat session lookup when handling
+  `/cancel`.
+- Root commit: `713ed468` extract Telegram outbound routing.
+
+Validation:
+
+- `bun test test/telegram-outbound.test.ts test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
   passes.
 - `bun run check` passes.
 
