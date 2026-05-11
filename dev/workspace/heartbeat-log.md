@@ -1234,3 +1234,23 @@ Observed from `/app/agents` before this write:
 Disposition:
 - Do not stage or clean unrelated dirty paths; they may belong to other agents or runtime state.
 - Stage only this heartbeat log if committing is possible, then report any remaining unrelated dirty paths as a worktree hygiene blocker rather than committing them.
+
+## 2026-05-11 Resumed Heartbeat Closeout
+
+Resumed after process restart and completed low-signal dev heartbeat checks without changing runtime code.
+
+Evidence checked:
+- Approved queue remained empty, so there was no May/human-approved implementation item to pick up.
+- Current key metrics were healthy: `handler.success-rate=0.9929`, `session.error-rate-6h=0.09`, `session.finish-blocked-unresolved-count-24h=0`, `eval.llm-coverage-lag-h=0.13`, and `eval.llm-evals-24h=37`.
+- Unresolved metric alerts query returned zero rows.
+- Owned project resume conditions are not met: finish-blocked hygiene remains paused on strict unresolved count `0`; eval LLM restoration remains pending-review because non-heuristic evaluation liveness is green.
+- Recent handler failures include eval-llm-scan timeouts and an older closed-loop JSON parse failure, but current handler success rate and LLM-lane liveness make them watch-only for this heartbeat.
+
+Signal dispositions:
+- Recent dev `session.end`/`session.start` restart echoes: dismissed as already handled by this resumed heartbeat.
+- Prior artifact-gate recovery session ends: dismissed as historical; no further artifact-only recovery is needed beyond this closeout note.
+- `escalation.created`: acknowledged, but no unresolved dev-owned alert or project resume trigger is present in current checks.
+
+Repository hygiene:
+- `dev/context.md` contained a context-update-generated finish-hygiene lesson; it was read, diffed, and committed as `506482d39`.
+- This note is the only new intentional heartbeat artifact after the guard rejected claiming `dev/context.md` as a deliverable without a session write tool call.
