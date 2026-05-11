@@ -334,4 +334,81 @@ describe("telegram reply e2e", () => {
     router.close();
     rmSync(projectRoot, { recursive: true, force: true });
   });
+
+  it("turns a Telegram reply with stored session context into a steer event", async () => {
+    const db = getDb(persistDir);
+    db.run(
+      "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [900, "message.created", "may", "s_reply_target", null, JSON.stringify({ text: "Session needs input" }), Date.now()],
+    );
+
+    const sentMessages: Array<{ chat_id: string; text: string }> = [];
+    let getUpdatesCount = 0;
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount++;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            {
+              update_id: 21,
+              message: {
+                message_id: 901,
+                chat: { id: 12345 },
+                text: "continue with the smaller plan",
+                reply_to_message: {
+                  message_id: 900,
+                  text: "Session needs input",
+                },
+              },
+            },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") {
+        sentMessages.push(body);
+        return jsonResponse({ message_id: 950 + sentMessages.length });
+      }
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const steers: any[] = [];
+    const inputs: any[] = [];
+    const replies: any[] = [];
+    bus.subscribe((event: any) => {
+      if (event.type === "steer") steers.push(event);
+      if (event.type === "input") inputs.push(event);
+      if (event.type === "telegram.reply") replies.push(event);
+    });
+
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      manager: {} as any,
+      getSessionId: () => "",
+      interfaceAgent: "may",
+    });
+
+    await waitFor(() => {
+      expect(steers).toHaveLength(1);
+      expect(steers[0]).toMatchObject({
+        type: "steer",
+        sessionId: "s_reply_target",
+        source: "telegram",
+      });
+      expect(String(steers[0].message)).toContain("continue with the smaller plan");
+      expect(inputs).toHaveLength(0);
+      expect(replies.some((event) => event.enriched === true && event.hasSessionCtx === true)).toBe(true);
+      expect(sentMessages.some((m) => m.text.includes("Reply sent to session s_reply_target"))).toBe(true);
+    });
+
+    bot.close();
+  });
 });
