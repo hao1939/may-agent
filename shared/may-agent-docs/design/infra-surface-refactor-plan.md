@@ -149,7 +149,8 @@ Stop criteria:
 ## Phase 3: Handler-To-Workflow Boundary
 
 Status: traceability slice shipped for `metric-alert-reactor`, `project`,
-`closed-loop-steward`, `eval-llm-scan`, and the generic workflow handler.
+`closed-loop-steward`, `eval-llm-scan`, `session-recovery`, `escalation`, and
+the generic workflow handler.
 
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
@@ -188,6 +189,12 @@ Scope:
 - [x] `eval-llm-scan` dispatches evaluator LLM work through
   `evaluator-deep-eval`; artifact ingestion remains deterministic handler
   bookkeeping.
+- [x] `session-recovery` subscribes to `session.failed` again and dispatches
+  recover/escalate actions through the `session-recovery` workflow; the handler
+  keeps only digest/classifier preflight and attempt dedup.
+- [x] `escalation` subscribes to `session.escalated` again; because it only
+  routes explicit escalations, it remains direct but now records routed/skipped
+  evidence.
 
 Validation:
 
@@ -203,6 +210,9 @@ Stop criteria:
   handler.
 - [x] Eval LLM scan no longer opens evaluator sessions directly from the
   handler.
+- [x] Session recovery no longer opens recovery agent sessions directly from
+  the handler.
+- [x] Escalation routing no longer relies on a stale timer-only cron entry.
 
 ## Phase 4: Query Facade Migration
 

@@ -57,14 +57,16 @@ when it disagrees with this table.
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
 | `project.iteration` | both `project.ts` and `master-worker.ts`; payload shapes differ | ⚠️ live but two incompatible shapes |
 | `session.failed` | session/runtime layer on session-end with error | ✅ live |
-| `session.completed` | not currently emitted by any runtime path | ❌ aspirational |
+| `session.completed` | session lifecycle translator after `session.end` for non-evaluator sessions | ✅ live |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ⚠️ live; see consumer status below |
 | `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
 | `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
 | `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
 
-Note: `session.completed` has no real emitter — session lifecycle produces `session.end` events, not `session.completed`. `project.status_changed` likewise has no emitter.
+Note: `session.failed` and `session.completed` are translated from
+`session.end` in `src/app/may.ts`. `project.status_changed` still has no
+emitter.
 
 ### Consumer reality (event-only handlers in `agents/may/cron.json`)
 
@@ -75,18 +77,16 @@ SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() *
 
 | Handler | Subscribes to | Status notes |
 |---|---|---|
-| `session-recovery` | `session.failed` | ❌ never wired — see KE-455 |
-| `session-eval` | `session.completed` | ❌ never wired |
-| `escalation` | `session.escalated` | ❌ source not emitted, handler not wired |
-| `metric-alert-reactor` | `metric.breach` | ❌ source emits regularly, handler dormant — KE-731, KE-732, KE-776 (dedup eats every breach) |
+| `session-recovery` | `session.failed` | ✅ wired as an event-first workflow bridge; handler dispatches `session-recovery` workflow |
+| `evaluator-aftermath` | `session.completed` | ✅ wired through `run-workflow`; `session-aftermath-scan` remains the 7-minute fallback |
+| `session-eval` | `session.completed` | ⚠️ legacy handler file; not present in active cron config |
+| `escalation` | `session.escalated` | ✅ wired as event-first routing for explicit blocked/failure finishes |
+| `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
 | (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781. Stall signal reaches may only via `loadInbox()`, gets dismissed as noise (KE-772). Companion proposal: `agents/arc/workspace/proposals/2026-05-07-subscribe-metric-stalled-events.md`. |
 | `context-learn` | `context-learn` | ❌ replaced de facto by timer-driven `context-learn-poller` |
 
-Two timer-driven handlers (`eval-poller`, `context-learn-poller`)
-explicitly call themselves bandaids for the broken event-only chain in
-their file headers. Until the cron-runner-to-bus binding is fixed,
-**`on:`-only handlers in `cron.json` are decorative — they will not
-fire even when their source event is emitted.**
+The cron-runner-to-bus binding now supports `on:` subscriptions. Keep the
+runtime proof current when event-only handlers are added or changed.
 
 ### When extending this design
 
@@ -94,15 +94,14 @@ Before adding a new `on:`-only handler:
 
 1. Confirm the source event is emitted (query `events` table for ≥1
    row in the last 7 days).
-2. Add a timer-driven fallback OR confirm the cron-runner-to-bus
-   binding has been fixed (check that an existing event-only handler
-   has non-zero `handler.started` rows since the fix landed).
+2. Add a timer-driven fallback only when the workflow needs delayed/backfill
+   behavior; otherwise use an `on:` subscription and record runtime proof.
 
 Before adding a new event type to the `SystemEvent` union:
 
 1. Identify the emitter site in code, not just in this spec. A type
    added here without an emitter is the failure mode that produced
-   `session.completed` and `project.status_changed` above.
+   `project.status_changed` above.
 
 ### See also
 

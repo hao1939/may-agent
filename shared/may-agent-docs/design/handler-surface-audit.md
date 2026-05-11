@@ -24,8 +24,8 @@ projection, but judgment and repair work should live in workflows.
 | `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow` + durable trace events | temporarily | Context collection still needs `sdk.query`/function cleanup; dispatch is workflow-backed. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Legacy direct evaluator dispatch | direct session helpers + `runAgent` | no | Prefer `session-aftermath-scan`/`evaluator-aftermath`; retire or convert to workflow if still wired. |
-| `session-recovery` | Failed-session recovery action | digest helpers + `runAgent` | no | Convert recovery decisions to workflow when recovery needs context beyond digest/classifier. |
-| `escalation` | Session escalation routing | digest helpers + escalate | no | Keep direct while it only routes explicit escalations. |
+| `session-recovery` | Failed-session recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as event-first bridge for `session.failed`; recovery action now runs inside the `session-recovery` workflow. |
+| `escalation` | Session escalation routing | digest helpers + escalate + durable trace events | no | Keep direct while it only routes explicit escalations; it is event-first on `session.escalated`. |
 
 ## Rules
 
@@ -69,4 +69,9 @@ projection, but judgment and repair work should live in workflows.
 - Eval LLM scan traceability slice: `eval-llm-scan` records
   `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
   LLM work through `evaluator-deep-eval`.
+- Session recovery bridge slice: `session-recovery` is event-first again on
+  `session.failed`, records skipped/workflow-dispatched evidence, and no longer
+  opens recovery agent sessions directly from the handler.
+- Escalation routing slice: `escalation` is event-first again on
+  `session.escalated` and records skipped/routed evidence.
 - Full test suite must stay green after each handler migration.
