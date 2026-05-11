@@ -2,7 +2,9 @@
 
 **Status**: Historical. The implemented state is captured in
 `v2-implementation-notes.md`; the active architecture reference is
-`../architecture.md`.
+`../architecture.md`. Current infra-surface work supersedes this plan's older
+direct-session and persistence wording; use `../design/infra-surface.md` for
+new implementation decisions.
 
 ## Reality check: what already exists
 
@@ -59,7 +61,9 @@ That's the whole migration. No big rewrite.
 **What**:
 - Add `message.created` to `SystemEvent` type with `priority?: "P0"|"P1"|"P2"|"P3"`.
 - Add `message` tool that emits `message.created` and persists to `messages` table.
-- Default behavior: queue for next heartbeat. If `priority: "P0"` AND receiver opted in, trigger immediately via `manager.runAgent`.
+- Historical default: queue for next heartbeat. The current convention is
+  event -> handler/workflow -> session/function; direct `manager.runAgent`
+  wording here is not current guidance.
 - `notify` and `agents.fork` keep working but log a deprecation notice when used.
 
 **Acceptance**:

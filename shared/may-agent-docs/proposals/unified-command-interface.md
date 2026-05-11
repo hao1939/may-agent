@@ -1,6 +1,9 @@
 # Unified Command Interface
 
-**Status**: draft  
+**Status**: Superseded by the control-client/control-socket event surface.
+Do not implement this draft directly. Current direction: socket-local
+`subscribe`/`status`, all other adapter actions normalized into daemon events
+through `packages/control`. See `../design/infra-surface.md`.
 **Date**: 2026-05-09
 
 ## Problem
@@ -148,12 +151,14 @@ Existing CLI flags (`--task`, `--oneshot`, `--emit`, `--status`, `--message`, `-
 
 Existing socket frame format unchanged — `{"type":"fork","agent":"scout","task":"..."}` still works because the registry handles the same shape.
 
-## Files to modify
+## Historical Files To Modify
+
+These notes are kept as history, not as a current task list.
 
 1. **New: `src/app/commands.ts`** — Command registry
-2. **`src/app/ui/socket.ts`** — Use registry instead of manual normalization
+2. **Old socket module** — Use registry instead of manual normalization
 3. **`src/app/may.ts`** — Add `cmd` subcommand, wire existing flags as aliases
-4. **`src/app/ui/web.ts`** — Add `POST /api/cmd`
+4. **Old web adapter** — Add `POST /api/cmd`
 5. **`src/app/ui/telegram.ts`** — Route `/command` through registry
 
 ## Implementation Order

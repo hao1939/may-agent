@@ -1,6 +1,9 @@
 # v2 Spec
 
-**Status**: draft
+**Status**: Historical — v2 conformance framing. Do not use this document as
+the current execution model. For current infra direction, see
+[infra-surface.md](../design/infra-surface.md), [architecture.md](../architecture.md),
+and [infra-surface-refactor-plan.md](../design/infra-surface-refactor-plan.md).
 **Date**: 2026-05-06 (revised 2026-05-08)
 **Companion to**: `../architecture.md` (intent), `v2-implementation-notes.md` (history)
 
@@ -454,7 +457,10 @@ When a structural property is violated, capabilities don't necessarily fail toda
 
 **Claim.** Every agent session starts via `manager.run()` (or a thin equivalent), and every call site is in: a bus subscriber, a workflow runner, a CLI/socket entrypoint, or a test. No agent forks another agent from inside its own session via direct call.
 
-**Why.** v2's defining shape is `event → runAgent() → session.end`. Hidden start paths break the event-driven property.
+**Why.** This historical claim guarded against hidden start paths. The current
+defining shape is `event → handler/workflow → session/function → evidence →
+events/metrics`, with `runAgent()` used inside the manager/SDK/workflow
+execution boundary rather than as the whole system model.
 
 **Measurement.** `v2.runagent-callsite-conformance` — boolean: do all `manager.run` / `runAgent` call sites match the allowlist in `test/v2-conformance/p1-allowlist.json`?
 
