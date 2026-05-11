@@ -97,6 +97,7 @@ When reviewing or calibrating `success_candidate` routes, distinguish **fresh su
 - For research/knowledge sessions, check whether the cited source material was actually gathered or validated during the session versus copied from an older local mock/stub.
 - For heartbeat/no-op maintenance sessions, credit real operational verification, but do **not** describe them as `knowledge update` / `material output` unless they created a new durable artifact with novel content.
 - If the route says `good` because of `git commit` + `file write/edit`, but the artifact's substance is weak, unsupported, or merely restates existing knowledge, prefer `acceptable` or `needs_improvement` and explicitly call out the false-good pattern.
+- If the only durable output is an **incidental hygiene commit** (for example, cleaning or committing unrelated pre-existing work just to satisfy finish/commit guards), treat that commit as **non-substantive evidence** unless it directly advances the stated task. Count the runtime investigation or actual task artifact as the value source, and downgrade any route that markets the hygiene commit itself as the meaningful output.
 
 ### Meta: Cron/Job Liveness Checks (Heartbeat)
 When a heartbeat is asked to "check eval recency", treat **SQLite DB liveness** as the primary signal.
