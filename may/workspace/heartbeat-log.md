@@ -1,5 +1,9 @@
 # Heartbeat Log
 
+## 2026-05-11 03:08 UTC
+
+**Note**: Process restarted. Previous heartbeat committed as c480b4aa4. No new issues detected — dirty worktree contains only other agents' files.
+
 ## 2026-05-11 03:05 UTC
 
 **System Health**: Mostly green. 43 metrics, 1 health failing (agent dark >2h).
