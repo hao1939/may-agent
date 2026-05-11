@@ -23,24 +23,25 @@ cat /home/hayua/rp/.build-version 2>/dev/null || echo "Need to set BUILD_VERSION
 ```bash
 cd /home/hayua/rp
 
-# Pick a lightweight scenario to validate the pipeline
-# Good first choices from scenario-catalog.md:
-#   - sig-node/node-ready (basic node health)
-#   - sig-auth/aad-auth (auth flow)
+# Pick a lightweight scenario to validate the pipeline.
+# Two scenario names already documented in this project are:
+#   - Scenario_Preflight
+#   - Scenario_Vmagent_Pod_Status
 
 # Run with debug output:
 test/e2ev3/hack/e2ev3 dev \
   --build-version <VER> \
-  --scenario <SIG>/<SCENARIO_NAME> \
+  --scenario Scenario_Preflight \
   --debug
 ```
 
-## Running a Full SIG
+## Running Another Scenario
 
 ```bash
 test/e2ev3/hack/e2ev3 dev \
   --build-version <VER> \
-  --sig <SIG_NAME> \
+  --scenario Scenario_Vmagent_Pod_Status \
+  --timeout 30m \
   --debug
 ```
 
