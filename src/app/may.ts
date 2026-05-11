@@ -1,4 +1,3 @@
-import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
@@ -14,7 +13,16 @@ import { startInterfaceRuntime } from "./interface-startup.js";
 import { startCronRuntime } from "./cron-startup.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachTelegramBot } from "./ui/telegram.js";
-import { attachDaemonEventSubscribers, attachEventPersistence, createDaemonLifecycle, createIdentityWriter, formatDurationMs, prepareDaemonAgents } from "./daemon.js";
+import {
+  attachDaemonEventSubscribers,
+  attachEventPersistence,
+  createDaemonLifecycle,
+  createIdentityWriter,
+  formatDurationMs,
+  prepareDaemonAgents,
+  runDaemonKeepalive,
+  runInteractiveLoop,
+} from "./daemon.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
@@ -280,7 +288,7 @@ const { loaderOpts } = await prepareDaemonAgents({
 // Moved to agents/may/handlers/context-learn.ts (event-driven handler).
 // Subscribes to "context-learn" events via cron.json `on` field.
 
-let activeRL: ReturnType<typeof createInterface> | null = null;
+let activeRL: { close: () => void } | null = null;
 let telegramBot: { close: () => void; sendAlert: (...args: any[]) => any } = { close: () => {}, sendAlert: () => {} };
 /** Track whether Ctrl+C cancel has been issued (second Ctrl+C force-quits). */
 let cancelledOnce = false;
@@ -498,78 +506,19 @@ if (!CHAT_MODE && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_
   bus.emit({ type: "info", message: `[task] Task completed. Exiting.` });
   process.exit(0);
 } else if (process.stdin.isTTY) {
-  // Interactive mode: readline for human input
-  if (chatSession) emitPrompt();
-
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  activeRL = rl;
-
-  // Moved to module scope for handleInput() reset access
-
-  rl.on("SIGINT", () => {
-    if (chatSession && chatSession.isRunning() && !cancelledOnce) {
-      // First Ctrl+C while sessions are running: cancel all
-      cancelledOnce = true;
-      bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling active sessions... (press again to force quit)" });
-      chatSession.cancelAll();
-      for (const s of manager.status()) {
-        if (s.status === "running") manager.cancel(s.sessionId);
-      }
-      emitPrompt();
-    } else {
-      // Second Ctrl+C or idle: shutdown
-      gracefulShutdown();
-    }
-  });
-
-  // Paste detection: accumulate rapid lines, flush as single input
-  let pasteBuffer: string[] = [];
-  let pasteTimer: ReturnType<typeof setTimeout> | null = null;
-  const PASTE_WINDOW_MS = 50;
-
-  const flushPaste = () => {
-    pasteTimer = null;
-    const joined = pasteBuffer.join("\n").trim();
-    pasteBuffer = [];
-    if (!joined) {
-      emitPrompt();
-      return;
-    }
-    if (joined === "exit" || joined === "quit") {
-      rl.close();
-      return;
-    }
-    handleInput(joined, "console");
-  };
-
-  rl.on("line", (line: string) => {
-    pasteBuffer.push(line);
-    if (pasteTimer) clearTimeout(pasteTimer);
-    pasteTimer = setTimeout(flushPaste, PASTE_WINDOW_MS);
-  });
-
-  await new Promise<void>((resolve) => {
-    rl.on("close", () => {
-      if (pasteTimer) {
-        clearTimeout(pasteTimer);
-        flushPaste();
-      }
-      socketUI.close();
-      telegramBot.close();
-      resolve();
-    });
+  await runInteractiveLoop({
+    bus,
+    manager,
+    chatSession,
+    handleInput,
+    gracefulShutdown,
+    socketUI,
+    telegramBot,
+    setActiveReadline: (rl) => { activeRL = rl; },
+    isCancelLatched: () => cancelledOnce,
+    latchCancel: () => { cancelledOnce = true; },
+    emitPrompt,
   });
 } else {
-  // Daemon mode: no TTY, keep alive via socket + keepalive timer.
-  bus.emit({
-    type: "info",
-    message: `[daemon] Running in daemon mode (no TTY). Interface agent: ${interfaceAgent}.${SOCKET_ENABLED ? " Use socket for control." : " Socket disabled — no external control available."}`,
-  });
-
-  setInterval(() => {}, 30_000);
-
-  process.stdin.on("end", () => {});
-  process.stdin.resume();
-
-  await new Promise(() => {});
+  await runDaemonKeepalive({ bus, interfaceAgent, socketEnabled: SOCKET_ENABLED });
 }
