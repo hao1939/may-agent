@@ -33,6 +33,13 @@ export interface FindDaemonSocketOptions {
   preferRunning?: boolean;
 }
 
+function allowFileBackedTestSocket(stat: NonNullable<ReturnType<typeof statSync>>): boolean {
+  if (!stat.isFile?.()) return false;
+  if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") return true;
+  const isBunRuntime = typeof (globalThis as { Bun?: unknown }).Bun !== "undefined";
+  return isBunRuntime && process.argv.some((arg) => arg.endsWith(".test.ts") || arg.endsWith(".test.js"));
+}
+
 export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptions = {}): string | null {
   const agent = opts.agent ?? "may";
   const preferRunning = opts.preferRunning ?? true;
@@ -53,7 +60,7 @@ export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptio
           let mtimeMs = 0;
           try {
             const stat = statSync(socketPath);
-            if (!stat.isSocket?.() && !stat.isFIFO?.() && !(process.env.NODE_ENV === "test" && stat.isFile?.())) continue;
+            if (!stat.isSocket?.() && !stat.isFIFO?.() && !allowFileBackedTestSocket(stat)) continue;
             mtimeMs = stat.mtimeMs;
           } catch {
             continue;
