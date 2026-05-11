@@ -7,7 +7,7 @@
  * Design: agents/shared/may-agent-docs/sdk.md
  */
 
-import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, SessionOpts, SessionHandle, DoneOpts, WorkflowResult } from "./sdk.js";
+import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, DoneOpts, WorkflowResult } from "./sdk.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
@@ -45,11 +45,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         projectId: opts?.projectId,
         timeout: opts?.timeout,
       });
-    },
-
-    createLLMSession(_opts: SessionOpts): Promise<SessionHandle> {
-      // TODO: Wire to pi-agent's createSession when needed
-      throw new Error("createLLMSession not yet implemented");
     },
 
     async runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult> {
