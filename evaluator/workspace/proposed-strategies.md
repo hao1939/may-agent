@@ -1,3 +1,31 @@
+# Proposed Strategies — 2026-05-11 19:35Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778528058349_473/session.jsonl` (may)
+- `.state/sessions/history/s_1778528076719_476/session.jsonl` (arc)
+- `.state/sessions/history/s_1778527875575_472/session.jsonl` (may)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- The extractor again produced an all-zero sample on short, completed non-evaluator sessions, so it is still effectively recovery-biased rather than surfacing reusable positive patterns from clean work.
+- This means the periodic P63 pass is currently better at mining failures than at capturing what “good” looks like, which limits its usefulness for coaching and strategy promotion.
+- The earlier environment-assumption lesson remains relevant: this runtime has `python3` available but not `python`, so optional helper commands should prefer `python3` or feature-detect interpreters before use.
+
+## Recommended Follow-up
+1. Add a positive-pattern rule to `extract-strategy.cjs` so it can emit at least lightweight lessons for clean verified sessions (for example: compact evidence gathering, guarded escalation, or clean no-op triage).
+2. Keep sampling recent successful sessions until the extractor produces at least one non-recovery lesson on clean work.
+3. Preserve the `python3` preference in future runtime scripts; do not assume `python` exists.
+
+---
+
 # Proposed Strategies — 2026-05-09
 
 ## Scope
