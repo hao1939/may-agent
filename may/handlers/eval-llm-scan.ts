@@ -14,7 +14,6 @@ import type { CronEntry, HandlerContext, HandlerModule } from "../../shared/agen
 type ScanConfig = {
   backfillHours?: number;
   fallbackDelayMs?: number;
-  runTimeoutMs?: number;
   activeWindowMs?: number;
   artifactLimit?: number;
 };
@@ -48,7 +47,6 @@ type DeepEvaluation = {
 
 const DEFAULT_BACKFILL_HOURS = 24;
 const DEFAULT_FALLBACK_DELAY_MS = 15 * 60_000;
-const DEFAULT_RUN_TIMEOUT_MS = 240_000;
 const DEFAULT_ACTIVE_WINDOW_MS = 30 * 60_000;
 const DEFAULT_ARTIFACT_LIMIT = 3;
 const DEEP_EVAL_VERSION = 1;
@@ -191,20 +189,6 @@ export function buildDeepEvalTask(candidate: Candidate, persistDir: string, root
   ].join("\n");
 }
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`deep eval timed out after ${timeoutMs}ms`)), timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
-
 function readValidArtifact(root: string, row: { sessionId: string; agent: string }): DeepEvaluation | null {
   const path = artifactPath(root, row.sessionId);
   if (!existsSync(path)) return null;
@@ -315,7 +299,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   const config = (entry.handlerConfig ?? {}) as ScanConfig;
   const backfillHours = config.backfillHours ?? DEFAULT_BACKFILL_HOURS;
   const fallbackDelayMs = config.fallbackDelayMs ?? DEFAULT_FALLBACK_DELAY_MS;
-  const runTimeoutMs = config.runTimeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
   const activeWindowMs = config.activeWindowMs ?? DEFAULT_ACTIVE_WINDOW_MS;
   const artifactLimit = config.artifactLimit ?? DEFAULT_ARTIFACT_LIMIT;
 
@@ -348,53 +331,35 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const task = buildDeepEvalTask(candidate, persistDir, root);
     ctx.sdk.log("info", `[eval-llm-scan] Dispatching evaluator for ${candidate.sessionId}.`);
 
-    try {
-      const result = await withTimeout(
-        ctx.sdk.runWorkflow(DEEP_EVAL_WORKFLOW, task, { source: "evaluator" }),
-        runTimeoutMs,
-      );
-      ctx.sdk.emit("handler.workflow_dispatched", {
-        handler: "eval-llm-scan",
-        workflow: DEEP_EVAL_WORKFLOW,
-        source: "evaluator",
-        workflowRunId: result.runId ?? null,
-        status: result.status,
-        sessionId: candidate.sessionId,
-        agent: candidate.agent,
+    ctx.sdk.runWorkflow(DEEP_EVAL_WORKFLOW, task, { source: "evaluator" })
+      .then((result) => {
+        ctx.sdk.emit("handler.workflow_dispatched", {
+          handler: "eval-llm-scan",
+          workflow: DEEP_EVAL_WORKFLOW,
+          source: "evaluator",
+          workflowRunId: result.runId ?? null,
+          status: result.status,
+          sessionId: candidate.sessionId,
+          agent: candidate.agent,
+        });
+      })
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        ctx.sdk.log("warn", `[eval-llm-scan] Evaluator dispatch failed: ${msg}`);
+        ctx.sdk.emit("handler.failed", {
+          handler: "eval-llm-scan",
+          agent: ctx.agentName,
+          workflow: DEEP_EVAL_WORKFLOW,
+          sessionId: candidate.sessionId,
+          error: msg.slice(0, 200),
+        });
       });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      ctx.sdk.log("warn", `[eval-llm-scan] Evaluator dispatch did not finish in handler window: ${msg}`);
-      ctx.sdk.emit("handler.failed", {
-        handler: "eval-llm-scan",
-        agent: ctx.agentName,
-        workflow: DEEP_EVAL_WORKFLOW,
-        sessionId: candidate.sessionId,
-        error: msg.slice(0, 200),
-        durationMs: runTimeoutMs,
-      });
-      return;
-    }
 
-    const evaluation = readValidArtifact(root, candidate);
-    if (!evaluation) {
-      ctx.sdk.emit("evaluation.deep_failed", {
-        source: "eval-llm-scan",
-        sessionId: candidate.sessionId,
-        agent: candidate.agent,
-        reason: "missing_or_invalid_artifact",
-      });
-      ctx.sdk.log("warn", `[eval-llm-scan] Missing or invalid artifact for ${candidate.sessionId}.`);
-      return;
-    }
-
-    recordDeepEvaluation(db, evaluation);
-    ctx.sdk.emit("evaluation.deep_recorded", {
+    ctx.sdk.emit("evaluation.deep_dispatched", {
       source: "eval-llm-scan",
       sessionId: candidate.sessionId,
       agent: candidate.agent,
-      verdict: evaluation.verdict,
     });
-    ctx.sdk.log("info", `[eval-llm-scan] Recorded non-heuristic evaluation for ${candidate.sessionId}.`);
+    return;
   };
 };
