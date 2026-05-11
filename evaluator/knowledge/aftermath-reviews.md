@@ -77,6 +77,10 @@
 - Symptom: a success-candidate closed-loop or triage session has no file diff, but it relays a dropped escalation or routes a blocked issue to the real owner.
 - Fix: judge the operational effect directly from transcript tool results (for example a `message()` result showing delivery queued), then separately verify any referenced artifacts actually exist before crediting the session's relay as substantive.
 
+## Pattern: stale continuation prompts can turn prior deliverables into false current-session credit
+- Symptom: a project iteration prompt asks for concrete artifacts that were already produced in earlier commits, and the session simply observes those existing files/commits then finishes `success` as if it delivered them.
+- Fix: separate project state from session contribution. Credit the underlying artifacts only to the sessions that created or verified them. For the reviewed session, require either fresh verification/action (for example read the actual artifacts, update plan state, send a routing message) or classify it as a no-op/partial rather than a material success.
+
 ## Pattern: cited knowledge is not a knowledge update
 - Symptom: routing labels a session as a `knowledge update`, but the transcript only reads an existing KE/article and then calls `finish()` with no written deliverables.
 - Fix: verify authorship and actual file changes before crediting material output. Reading a pre-existing knowledge file can justify a diagnosis, but it is not itself a new artifact or knowledge update.
