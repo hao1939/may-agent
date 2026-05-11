@@ -1,83 +1,70 @@
-# E2E Testing Project — Status Checkpoint
+# E2E Testing Project — Iteration 3 Status
 
-**Date:** 2026-05-12  
-**Status:** BLOCKED — standalone environment not deployed; localdeploy failed
-
-## Latest Check (iteration 2, 2026-05-12)
-
-### Standalone Deploy Status: FAILED ❌
-Previous `aksbuilder_localdeploy.sh` run (started ~2026-05-11 19:34 UTC) is **no longer running**. No tmux/screen session captured output, so logs are lost. Only 2 idle bazel server processes remain. **No evidence the deploy succeeded:**
-- No BUILD_VERSION artifact found anywhere
-- Key Vault DNS still NXDOMAIN
-- No deploy config files generated
-
-### Toolchain Status
-- **Go 1.24.3**: ✅ Installed at `/usr/local/go/bin/go` (not on default PATH)
-- **Bazel**: ✅ Bundled inside aksbuilder
-- **Key Vault DNS**: ❌ `aksbuilder-standalone-keyvault.vault.azure.net` returned NXDOMAIN
+**Date**: 2025-05-12  
+**Status**: BLOCKED — standalone environment not deployed
 
 ## What's Done
+- ✅ 13 documentation files (1389+ lines) covering e2ev3 architecture, standalone setup, scenario catalog, quickref, troubleshooting, test-writing guide
+- ✅ Docs verified against live repo (SIG count corrected 27→24)
+- ✅ Test binary confirmed working (authenticates, builds DAG — fails only at standalone infra access)
+- ✅ Go 1.24.3 installed on devbox
+- ✅ Bazel bundled in aksbuilder (no separate install needed)
 
-### Documentation (13 files in `outputs/`)
-| File | Lines | Content |
-|------|-------|---------|
-| `e2ev3-architecture.md` | 208 | Core types, lifecycle, directory structure, SIG list |
-| `standalone-setup.md` | 154 | Prerequisites, running tests, execution flow, devbox state |
-| `scenario-catalog.md` | — | 632 scenarios across 22 active SIGs |
-| `e2e-quickref.md` | — | One-page cheat sheet: run, write, debug |
-| `writing-e2e-tests.md` | — | Step-by-step guide with real examples (VmagentPodStatus) |
-| `troubleshooting.md` | — | 8 common failures with fixes |
-| `e2e-run-attempt.md` | — | Documented test binary launch (auth works, infra access fails) |
-| `doc-verification.md` | — | Verified all docs against live repo |
-| `standalone-readiness-check.sh` | — | 11-check diagnostic script |
-| + 4 more support files | — | README, project-status, test-execution-playbook, unblock-runbook |
+## What's Blocking
+1. **Standalone environment not deployed** — Key Vault `e2e-standalone-kv.vault.azure.net` returns NXDOMAIN
+2. **localdeploy process no longer running** — `aksbuilder_localdeploy.sh` was started ~2026-05-11 19:34 UTC but the process is gone; two Bazel server processes remain alive (PIDs 744976, 1326418) but no active deploy job
+3. **Go not on PATH** — `go` command not found (may need `export PATH=$PATH:/usr/local/go/bin` or similar)
 
-### Validated Understanding
-- e2ev3 framework architecture: Plan → Scenario → Suite → DAG execution via go-workflow
-- Build system: Bazel via aksbuilder (bundled, no separate install)
-- Entry point: `test/e2ev3/hack/e2ev3 <suite> --build-version <VER> -s <NAME> --debug`
-- Test binary confirmed working: authenticates via Azure CLI, resolves build config, constructs DAG
-- Fails only at standalone infrastructure access (Key Vault DNS / env readiness)
+## Human Actions Needed
 
-## What's Blocked
-
-**Standalone environment is not deployed.** The previous localdeploy run failed silently (process gone, no output captured, KV DNS still NXDOMAIN).
-
-### To Unblock (human action required)
-
+### 1. Check deploy outcome
 ```bash
-# Re-run localdeploy in tmux so output is captured:
-ssh devbox
-tmux new-session -s localdeploy
-export PATH=/usr/local/go/bin:$PATH
-cd ~/rp
-bash hack/aksbuilder_localdeploy.sh ~/rp 2>&1 | tee ~/localdeploy.log
-# Wait for completion, then note the BUILD_VERSION from output
+# On devbox:
+# Check if aksbuilder left any logs
+find ~/.aksbuilder -name "*.log" -newer /tmp/ 2>/dev/null | xargs tail -20
+# Or re-run deploy
+cd /home/hayua/rp && hack/aksbuilder_localdeploy.sh
 ```
 
-### After Unblock — First Test Run
+### 2. Verify standalone is up
+```bash
+nslookup e2e-standalone-kv.vault.azure.net
+# Should resolve to an IP, not NXDOMAIN
+```
 
+### 3. Fix Go PATH
+```bash
+export PATH=$PATH:/usr/local/go/bin
+go version  # should show 1.24.3
+```
+
+### 4. Run first e2e test
 ```bash
 cd /home/hayua/rp
-test/e2ev3/hack/e2ev3 dev \
-    --build-version <BUILD_VERSION> \
-    --scenario Scenario_Preflight \
-    --debug
+# Get build version from aksbuilder output or:
+export BUILD_VERSION=$(cat .build-version 2>/dev/null || echo "unknown")
+test/e2ev3/hack/e2ev3 dev --scenario CreateCluster --debug
 ```
 
-## Remaining Goals
+## Once Unblocked — Automation Ready
+The `outputs/first-e2e-run.sh` script automates steps 2-4. Run it after standalone is deployed:
+```bash
+bash outputs/first-e2e-run.sh
+```
 
-| Goal | Status |
-|------|--------|
-| Understand e2ev3 framework | ✅ Done |
-| Document the workflow | ✅ Done (13 files) |
-| Run e2e test against standalone | ❌ Blocked on infra |
-| Write a sample test | ❌ Blocked on infra (need to verify it runs) |
-
-## Signals
-
-| Signal | Status |
-|--------|--------|
-| `e2e.framework-documented` | ✅ Satisfied |
-| `e2e.local-run-success` | ❌ Blocked |
-| `e2e.sample-test-written` | ❌ Blocked |
+## Documentation Index
+| File | Lines | Content |
+|------|-------|---------|
+| e2ev3-architecture.md | ~210 | Framework types, DAG lifecycle, SIG structure |
+| standalone-setup.md | ~155 | Prerequisites, build versions, entry points |
+| scenario-catalog.md | ~120 | 632 scenarios across 22 SIGs |
+| writing-e2e-tests.md | ~200 | How to write new e2e tests |
+| e2e-quickref.md | ~90 | Quick reference card |
+| troubleshooting.md | ~50 | Common issues and fixes |
+| unblock-runbook.md | ~70 | Steps to unblock standalone |
+| test-execution-playbook.md | ~50 | Run playbook |
+| first-e2e-run.sh | ~80 | Automated first-run script |
+| standalone-readiness-check.sh | ~70 | Environment readiness checker |
+| doc-verification.md | ~40 | Verification report |
+| e2e-run-attempt.md | ~40 | Prior run attempt log |
+| project-status.md | ~60 | Project status (superseded by this file) |
