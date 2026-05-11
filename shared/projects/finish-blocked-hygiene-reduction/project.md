@@ -114,6 +114,10 @@ Dispositioned May's P2 blocker question again with fresh evidence rather than ch
 
 Rechecked alert `session.finish-blocked-unresolved-count-24h` after the first triage session. The live metric still reads `current=1` with three consecutive snapshots at `1`, and the only strict unresolved row remains historical interrupted May closed-loop-steward session `s_1778432730435_1172` (`issues=["terminal status: interrupted","finish blocked by uncommitted changes"]`, no successful/partial digest). The project remains paused with no new patch indicated; validate on the next metrics snapshot after the historical row ages out of the 24h window, or resume immediately if a newer strict unresolved row appears.
 
+### 2026-05-11 — Repeated alert waiting_with_evidence judgment
+
+Rechecked repeated alert 284 after the process restart. The live metric row still reports `current=1`, the latest six snapshots all remain `1`, and the strict source query still returns exactly one row: historical May `closed-loop-steward` session `s_1778432730435_1172` with `status=interrupted`, `outcome=interrupted`, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`. Chosen operation: `waiting_with_evidence`, because the breach is real but already explained by the pre-existing 24h row; no safe owner-local fix exists except waiting for the strict 24h window to age it out, while any newer strict unresolved row should immediately resume the project.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
