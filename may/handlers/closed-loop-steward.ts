@@ -279,6 +279,26 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       `- ${candidate.alert.metric_id} owner=${candidate.owner} reason=${candidate.reason}`
     ));
 
+    const routedAlertIds = new Set(routedTriageCandidates.map((candidate) => candidate.alert.id));
+    const remainingActionableAlerts = alertContexts.filter(({ alert }) => {
+      const priority = alert.priority ?? "P2";
+      if (priority === "P3") return false;
+      return !routedAlertIds.has(alert.id);
+    });
+
+    if (remainingActionableAlerts.length === 0 && failures.length === 0) {
+      emitSkip(
+        ctx,
+        `Skip: no remaining steward action after routing ${routedTriageCandidates.length} alert(s); ${alertContexts.length - routedTriageCandidates.length} remaining alert(s) are monitor-only P3/no-op cases and there are no delivery failures.`,
+        {
+          routedTriageCount: routedTriageCandidates.length,
+          routedAlertIds: [...routedAlertIds],
+          remainingAlertCount: alertContexts.length - routedTriageCandidates.length,
+        },
+      );
+      return;
+    }
+
     const task = [
       "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
       "",
