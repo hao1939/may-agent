@@ -406,6 +406,20 @@ Warning: failed-session-triage-rate at 0.67 (target 1.0). DB 1178MB within thres
 
 ---
 
+## 2026-05-11T00:00 UTC — Heartbeat
+
+### Alert Triage
+- **Alert #283** (`session.first-turn-error-count-1h=7`, threshold=3): Prior session chose **calibrate** — provider auth restart burst caused simultaneous errors. Transient, not a code defect. No action beyond calibration.
+
+### Blocked Project
+- `finish-blocked-hygiene-reduction` (dev, P1): Blocked 24h+ on metric registration SQL. **Escalated to human** with exact idempotent SQL packet. No further dev/agent action possible until human runs it.
+
+### System Snapshot (1h)
+- evaluator: 17 sessions, 3 errors | scout: 3 sessions, 2 errors | arc: 2 sessions, 1 error | may: 11 sessions, 0 errors | dev: 2 sessions, 0 errors
+- Errors are provider-side (null error field), consistent with transient auth burst.
+
+---
+
 ## 2026-05-10T23:34 UTC
 
 ### System Health
