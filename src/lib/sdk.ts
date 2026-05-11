@@ -20,9 +20,6 @@ export interface AgentSDK {
   /** Run a named workflow synchronously. Returns when workflow completes. */
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 
-  /** Reserved for future raw LLM sessions. Currently not implemented by sdk-impl.ts. */
-  createLLMSession(opts: SessionOpts): Promise<SessionHandle>;
-
   /** Emit a typed event (persisted to events table). */
   emit(type: string, data?: Record<string, unknown>): void;
 
@@ -72,18 +69,6 @@ export interface RunOpts {
   source?: string;
   projectId?: string;
   timeout?: number;
-}
-
-export interface SessionOpts {
-  systemPrompt: string;
-  tools: "full" | "readonly";
-  label?: string;
-}
-
-export interface SessionHandle {
-  prompt(message: string): Promise<string>;
-  lastText(): string;
-  close(): void;
 }
 
 export interface TaskResult {
