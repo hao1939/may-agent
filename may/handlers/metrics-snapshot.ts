@@ -101,6 +101,8 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // v2 infra metrics (I1-I4)
   { id: "infra.bus.event-count-1h", name: "Event bus events (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 10, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
+  { id: "infra.bus.subscriber-failed-count-1h", name: "Event bus subscriber failures (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "infra.persist.db-size-mb", name: "DB size (MB)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 500, threshold: 2000, unit: "MB", alert_op: ">", priority: "P2" },
   { id: "infra.messages.delivery-rate", name: "Message delivery success rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.9, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "infra.sessions.active-count", name: "Active sessions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 5, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
@@ -502,6 +504,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         count("SELECT COUNT(*) as c FROM events WHERE event_type = 'message.delivery_failed' AND timestamp > ?", oneH),
       );
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring message.delivery-failed-count-1h: ${e}`); }
+
+    try {
+      record(
+        "infra.bus.subscriber-failed-count-1h",
+        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'subscriber.failed' AND timestamp > ?", oneH),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.bus.subscriber-failed-count-1h: ${e}`); }
 
     try {
       const guardTriggered = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ?", twentyFourH);

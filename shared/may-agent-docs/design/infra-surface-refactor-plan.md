@@ -50,6 +50,9 @@ Recently completed:
    a glance.
 4. [x] Inventory active project workflow references and migrate resumable
    `master-worker` projects to the default `project` workflow.
+5. [x] Close the event-bus subscriber failure observability gap with durable
+   `subscriber.failed` events and the `infra.bus.subscriber-failed-count-1h`
+   health metric.
 
 This is now the highest-value slice because the event/metric/control boundaries
 are traceable enough; the next risk is duplicated workflow patterns confusing
@@ -236,6 +239,45 @@ Runtime proof, 2026-05-11:
 - Automated Telegram e2e proves the Telegram adapter emits the same event
   shapes for stored session replies and slash commands before those events hit
   the daemon router.
+
+## Failure Signal Slice
+
+Status: implemented for event-bus subscriber exceptions.
+
+Goal: core infra failure modes should become queryable signals, not only log
+lines.
+
+Scope:
+
+- [x] When a first-priority or normal event-bus subscriber throws, continue
+  delivering the original event to other subscribers.
+- [x] Emit a durable `subscriber.failed` event after the original dispatch
+  finishes, with original event type, subscriber priority, owner `may`, and
+  error message.
+- [x] Avoid recursive failure storms when a subscriber also fails while handling
+  `subscriber.failed`.
+- [x] Add a P1 health metric:
+  `infra.bus.subscriber-failed-count-1h`.
+
+Validation:
+
+- [x] Event bus tests prove subscriber exceptions do not stop later
+  subscribers and do produce `subscriber.failed`.
+- [x] Metrics snapshot tests prove `subscriber.failed` events feed the health
+  metric.
+
+Runtime proof:
+
+- Deployed to the running `may-agent` container and triggered
+  `trigger.metrics-snapshot` event `559395`, source
+  `codex-failure-signal-proof`.
+- Metrics snapshot completed as handler event `559397`.
+- `/api/metrics` returned active metric
+  `infra.bus.subscriber-failed-count-1h`, owner `may`, type `health`,
+  priority `P1`, `current=0`, `threshold=0`, `alertOpen=false`.
+- The exception path is covered by the event-bus unit test rather than a live
+  synthetic failure, to avoid creating a fake P1 health alert in the running
+  system.
 
 ## Phase 3: Handler-To-Workflow Boundary
 

@@ -1,8 +1,9 @@
 # Infra Surface Design
 
-**Status**: Accepted direction, partially implemented. Keep this as the
-north-star while folding stable pieces into `architecture.md`, `sdk.md`,
-`events.md`, `metrics.md`, `cron.md`, and `work-model.md`.
+**Status**: Accepted direction, mostly implemented across the core infra
+surface. Keep this as the north-star while folding stable pieces into
+`architecture.md`, `sdk.md`, `events.md`, `metrics.md`, `cron.md`, and
+`work-model.md`.
 
 This doc reframes may-agent around a simpler split:
 
@@ -145,10 +146,10 @@ guard fires -> guard.triggered -> default guard handler records metrics/projecti
 Blocking remains a guard/runtime intervention for high-confidence,
 high-impact risk. The default handler should not decide whether to block.
 
-Current state: workflow guard triggers emit durable `guard.triggered` events and
-feed the starter guard metrics. Remaining gap: tool-level guards should converge
-on the same event shape where practical. See
-[guards-as-signals.md](guards-as-signals.md).
+Current state: workflow and tool-level guard triggers emit durable
+`guard.triggered` events with owner/session/workflow context where available.
+Guard metrics separate actionable short-window block health from 24h watch
+signals. See [guards-as-signals.md](guards-as-signals.md).
 
 ## Agent Bridge
 
@@ -291,6 +292,9 @@ Current state:
   `<persistDir>/instances/<instance>/<interfaceAgent>.sock`.
 - If that socket cannot be connected, fail clearly and trigger/log recovery. Do
   not scan/rank other candidates as a normal path.
+- Selected adapter/control events (`input`, `steer`, `cancel*`, `resume`,
+  `reload`, `restart`, `shutdown`) are persisted so comparable actions leave
+  durable traces across CLI, Web UI, Telegram, and operator emits.
 - Telegram is still attached inside the daemon process. Treat that as acceptable
   until the control client is reliable; do not split the process first.
 
@@ -538,7 +542,7 @@ provably wrong.
 
 | Failure | Intended response | Signal |
 |---|---|---|
-| Event bus subscriber throws | Catch subscriber error, continue other subscribers, emit/log failure signal. Persistence subscriber should run first. | `subscriber.failed` or handler/log metric. |
+| Event bus subscriber throws | Catch subscriber error, continue other subscribers, then emit a durable failure signal. Persistence subscriber should run first. | `subscriber.failed`, `infra.bus.subscriber-failed-count-1h`. |
 | Event persistence fails | Do not pretend the event is durable. Emit/log persistence failure sentinel; surface as P0/P1 infra metric. | `infra.persist-failed`, persistence failure metric. |
 | Event backlog or slow subscriber | Keep emit path bounded; measure handler/subscriber duration; alert on sustained backlog/latency. | handler duration/backlog metric. |
 | Handler throws | Mark handler failed, keep scheduler alive, expose failure in handler metrics. | `handler.failed`, `handler.success-rate`. |
@@ -591,14 +595,15 @@ Existing pieces already align with this direction:
 | Web UI projection reader | `packages/webui/src/server.ts` |
 | Agent patterns | `agents/shared/workflows/*`, project docs, heartbeat docs |
 
-The main gap is not a missing grand architecture. The remaining gaps are the
-specific places where code still crosses the boundaries unevenly:
+The main gap is not a missing grand architecture. The remaining work is keeping
+the already-shipped boundaries boring:
 
-- keep adapter-specific Telegram behavior converging on daemon events,
-- make execution inspection use the shared result/trace shape consistently,
-- converge tool-level guard signals with workflow guard signals,
+- complete live-human Telegram smoke when a real reply is available,
+- keep execution inspection using the shared result/trace shape consistently,
 - keep `getDb()` limited to mechanical infra code and explicit compatibility
-  paths.
+  paths,
+- fold stable behavior into the shorter architecture/manual docs so agents do
+  not learn stale patterns.
 
 ## Migration Direction
 
