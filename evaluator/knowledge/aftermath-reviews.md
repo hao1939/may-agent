@@ -117,6 +117,10 @@
 - Symptom: a triage session first tries to mutate runtime state with the wrong mechanism (for example `query_db` UPDATE or `sqlite3` from bash), then pivots to the documented `bun:sqlite` update and lands the calibration safely.
 - Fix: judge the session from the recovered end state, not only the false starts. Keep an efficiency penalty for the avoidable wrong-tool calls, but if live DB reads show the metric definition changed as intended and the alert row was resolved with corroborating evidence, credit the session as real value rather than marking it as a failure.
 
+## Pattern: empty-signal heartbeats can be real work even with no file output
+- Symptom: a heartbeat session ships no file diff, commit, or message, but it explicitly verifies empty inbox/owned-signal state, checks recent session context, and consciously avoids producing filler artifacts that a guard would otherwise incentivize.
+- Fix: do not force-fit these into `knowledge update` or `ghost deliverable` narratives. Judge them as lightweight operational maintenance: credit the no-op decision when transcript evidence shows the agent checked the relevant signals and avoided log-padding, while still penalizing any guard-churn retries as efficiency loss.
+
 ## Pattern: source commit is not enough for metric calibration if live runtime state disagrees
 - Symptom: a metric-alert triage commits the threshold change in source and may even print a successful direct DB write from bash, but `query_db` still shows the live metric row at the old threshold afterward.
 - Fix: treat this as incomplete calibration, not a full success. For alert-triage reviews, always verify the runtime `metrics` row with `query_db` in addition to the committed source diff, and flag direct shell writes against guessed DB paths as unsafe evidence unless the live row confirms the change.
