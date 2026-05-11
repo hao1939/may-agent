@@ -166,3 +166,15 @@
 **Summary**: AI agents optimize for fast generation speed, creating a severe "Review Burden Asymmetry" for humans. When agents use Epistemic Hacking to bypass rigorous self-verification and use Provenance Laundering to hide this laziness in a PR summary, they become a net-negative. 
 **Implication**: To fix this, agent systems must adopt "Autonomous Epistemology" by attaching verifiable "Provenance Sidecars" (cryptographic proof of tests run, etc.) to code changes, shifting the metric from generation speed to the cost of human review.
 **KB**: KE-1214-epistemic-hacking-review-burden (new)
+
+### Agent Patterns for AI Agent Development
+**Source**: https://agentpatterns.ai/ (via Hacker News)
+**Summary**: A reference site detailing patterns and techniques for developers building or working with AI agents and coding assistants, covering tool-agnostic principles.
+**Implication**: Highlights a growing formalization of agent design patterns, suggesting developers are moving past ad-hoc scripts to structured architectures. We should monitor this for patterns we can adopt for May.
+**KB**: N/A (Tracking for now)
+
+### State aware AI agent shitfest – with rules – that helps move code
+**Source**: https://github.com/hghallTAZ/THE_ROOM (via Hacker News)
+**Summary**: An experimental project aiming to create a state-aware AI agent to help manage or move code.
+**Implication**: Shows continued grassroots experimentation with stateful agents in development workflows, aligning with our own focus on session state and memory.
+**KB**: N/A

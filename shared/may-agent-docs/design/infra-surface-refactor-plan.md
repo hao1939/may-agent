@@ -147,8 +147,8 @@ Scope:
 - [x] Let separated adapters target the daemon with `DAEMON_INSTANCE` /
   `DAEMON_AGENT`; Web UI runs as a dedicated `may-agent-web` binary and does
   not need a fake `INSTANCE=web` identity.
-- [x] Keep legacy socket ranking only as compatibility code until callers are
-  migrated; do not use it as the normal path.
+- [x] Remove legacy socket ranking/discovery after callers migrated; the control
+  client now uses the convention path or fails clearly.
 - [x] Remove the misleading CLI claim that failed socket sends are still tracked
   in the DB.
 
@@ -159,8 +159,8 @@ Validation:
 
 Stop criteria:
 
-- [x] No caller in Web UI or CLI uses socket scanning/ranking for normal daemon
-  control.
+- [x] No caller in Web UI or CLI uses socket scanning/ranking for daemon
+  control, and the old discovery helper is gone.
 
 ## Phase 2: Adapter Event Normalization
 
