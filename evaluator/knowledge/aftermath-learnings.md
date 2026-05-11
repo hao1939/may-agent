@@ -46,3 +46,6 @@
 
 ## 2026-05-10 — s_1778422912399_1043
 - In scout success-candidate reviews, credit a creative heartbeat as real value when the agent converts scattered source findings into a new shared abstraction with a concrete local implication, even if finish hygiene needed one retry. Recovered ignored-path `git add` friction and a first blocked `finish(success)` should reduce efficiency, not erase quality, when the committed KE and digest diff show substantive synthesis.
+
+## 2026-05-11 — s_1778507996409_211
+- When a persistent-task iteration inherits already-landed deliverables and an external blocker prevents core completion, a small consolidation artifact can still be real value if it accurately inventories the committed outputs, states the live blocker, and gives explicit next steps. Score any finish-path retry separately as an efficiency loss, not as an output-quality failure.
