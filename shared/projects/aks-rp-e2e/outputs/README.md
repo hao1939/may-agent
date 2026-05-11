@@ -14,6 +14,7 @@ To unblock: run `hack/aksbuilder_localdeploy.sh` on the devbox at `/home/hayua/r
 | [writing-e2e-tests.md](writing-e2e-tests.md) | Step-by-step guide to authoring new e2ev3 tests: plans, scenarios, mutators, suite registration | 200 |
 | [e2e-quickref.md](e2e-quickref.md) | Cheat sheet: common commands, flags, debugging tips | 138 |
 | [e2e-run-attempt.md](e2e-run-attempt.md) | Log of actual test run attempt — binary builds and authenticates, fails at env access | 44 |
+| [troubleshooting.md](troubleshooting.md) | Common failures, fixes, debug techniques, pre-flight checklist | 110 |
 | [doc-verification.md](doc-verification.md) | Verification of all docs against live repo code | 27 |
 
 ## Key Facts
