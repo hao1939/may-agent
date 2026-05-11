@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  generateAutoHeartbeats,
   listConfiguredAgentNames,
   loadAgentConfig,
   loadAgents,
@@ -176,6 +177,29 @@ describe("agent loader boundaries", () => {
       writeFileSync(join(betaDir, "agent.json"), JSON.stringify({ name: "beta", disabled: true }));
 
       expect(listConfiguredAgentNames(agentsRoot)).toEqual(["z-alpha"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("generates conventional heartbeat entries only when no explicit heartbeat exists", () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-heartbeat-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const alphaDir = join(agentsRoot, "alpha");
+      const betaDir = join(agentsRoot, "beta");
+      mkdirSync(join(alphaDir, "workflows"), { recursive: true });
+      mkdirSync(join(betaDir, "workflows"), { recursive: true });
+      writeFileSync(join(alphaDir, "agent.json"), JSON.stringify({ name: "alpha" }));
+      writeFileSync(join(alphaDir, "workflows", "alpha-heartbeat.ts"), "export default {};");
+      writeFileSync(join(betaDir, "agent.json"), JSON.stringify({ name: "beta" }));
+      writeFileSync(join(betaDir, "workflows", "beta-heartbeat.ts"), "export default {};");
+      writeFileSync(join(betaDir, "cron.json"), JSON.stringify([{ name: "heartbeat-beta" }]));
+
+      const entries = generateAutoHeartbeats(agentsRoot);
+
+      expect(entries.map((entry) => entry.name)).toEqual(["heartbeat-alpha"]);
+      expect(entries[0].handlerConfig).toMatchObject({ workflow: "alpha-heartbeat", agent: "alpha" });
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
