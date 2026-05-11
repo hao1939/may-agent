@@ -30,21 +30,20 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Continue Phase 5: make execution inspection the normal operator view, not only
-an internal loop-trace detail.
+Continue Phase 5: make resume/recovery diagnostics use the same execution
+inspection path.
 
 Next slice:
 
-1. Review Web UI/API places that still list workflow runs and sessions as
-   unrelated rows.
-2. Reuse the shared `ExecutionResult` shape where an operator is inspecting work
-   status, owner/project, evidence, or failure path.
-3. Add the smallest UI/API affordance needed to open loop trace from a workflow
-   or session id.
+1. Review resume/recovery call sites that still return raw text or one-off
+   shapes.
+2. Emit/query resume failure events with owner, recoverability, and trace id.
+3. Make the Web UI show whether the next action is resume, requeue, mechanical
+   recovery, or escalation.
 
-This is now the highest-value slice because the loop trace API can already show
-workflow/session/failover executions with the shared shape, but most operator
-surfaces still expose raw row lists.
+This is now the highest-value slice because normal session inspection can open
+loop trace by session or workflow id, and loop trace already shows workflow,
+session, and failover executions through the shared shape.
 
 ## Remaining Gap Summary
 
@@ -448,6 +447,10 @@ Scope:
   session rows, workflow rows, and resume/failover events.
 - [x] Add owner to the shared `ExecutionResult` shape so sessions and failover
   diagnostics expose the same ownership field as loop trace.
+- [x] Expose loop trace from the normal session inspector:
+  - session detail has a trace action by session id,
+  - workflow run metadata opens trace by workflow run id,
+  - workflow executions inside loop trace can be inspected recursively.
 - Make resume APIs diagnostic first:
   - already terminal,
   - resumed,
@@ -466,6 +469,7 @@ Validation:
   the same result shape.
 - [x] Pick a failed/interrupted session resume event and show the failure path through the same
   result shape.
+- [x] Open loop trace from both a workflow id and one of its child session ids.
 - Resume failure emits queryable events with reason and owner/fallback.
 - UI/API can show where to inspect the resumed or failed trace.
 
@@ -487,6 +491,17 @@ Runtime proof, 2026-05-11:
   session `phase2-smoke-no-such`, status `error`, owner `may`, summary `Session
   "phase2-smoke-no-such" not found`, evidence category `session_not_found` and
   `recoverable: false`.
+
+Runtime proof, 2026-05-11:
+
+- Web UI was reloaded with the session inspector trace affordance deployed in
+  the running container.
+- Loop-trace API for session `s_1778479946904_0` returned target kind
+  `session`, owner `evaluator`, one workflow, one session, and two shared
+  executions.
+- Loop-trace API for workflow `wr_1778479946845_mnr0` returned target kind
+  `workflow` with the same workflow execution and child evaluator session
+  execution.
 
 ## Phase 6: Guard Signal Convergence
 
