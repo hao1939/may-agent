@@ -349,6 +349,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   if (sessionIds.length > 0) {
     guardSignals.push(...safeAll(db, `SELECT * FROM events WHERE event_type = 'guard.triggered' AND json_extract(data, '$.sessionId') IN (${placeholders(sessionIds)}) ORDER BY timestamp DESC LIMIT 50`, ...sessionIds));
   }
+  const uniqueGuardSignals = uniqBy(guardSignals, "id");
 
   const metricEvents = metricId
     ? safeAll(
@@ -407,7 +408,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     handler: { name: seed.handlerName, status: seed.handlerStatus, reason: seed.handlerReason },
     workflows: uniqueWorkflows,
     sessions: uniqueSessions,
-    guardSignals,
+    guardSignals: uniqueGuardSignals,
     metricEvents,
     failoverEvents: uniqueFailoverEvents,
     metricSnapshots,
@@ -415,7 +416,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     evidence: {
       workflowCount: uniqueWorkflows.length,
       sessionCount: uniqueSessions.length,
-      guardSignalCount: guardSignals.length,
+      guardSignalCount: uniqueGuardSignals.length,
       metricEventCount: metricEvents.length,
       failoverCount: uniqueFailoverEvents.length,
     },

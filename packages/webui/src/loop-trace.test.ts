@@ -105,7 +105,7 @@ describe("buildLoopTrace", () => {
     db.prepare("INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, projectId, startedAt, endedAt, outcome, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("s_triage", "may", "triage session.first-turn-error-count-1h", "done", "workflow:metric-alert-triage", "wr_triage", "v2-spec-coverage-buildout", now - 7_000, now - 6_000, "judged", 4);
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("guard.triggered", "workflow", "may", JSON.stringify({ workflowRunId: "wr_triage", guard: "verify-after-write", demandType: "warn" }), now - 5_000, "normal");
+      .run("guard.triggered", "workflow", "may", JSON.stringify({ workflowRunId: "wr_triage", sessionId: "s_triage", guard: "verify-after-write", demandType: "warn" }), now - 5_000, "normal");
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
       .run("metric.alert_judged", "workflow", "may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h", verdict: "needs_fix" }), now - 4_000, "normal");
     db.prepare("INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)")
@@ -128,6 +128,7 @@ describe("buildLoopTrace", () => {
     });
     expect(trace.workflows[0]).toMatchObject({ runId: "wr_triage", workflow: "metric-alert-triage" });
     expect(trace.sessions[0]).toMatchObject({ sessionId: "s_triage", agent: "may" });
+    expect(trace.guardSignals).toHaveLength(1);
     expect(trace.executions).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: "wr_triage", kind: "workflow", status: "done", traceId: "wr_triage" }),
       expect.objectContaining({ id: "s_triage", kind: "session", status: "done", traceId: "wr_triage", owner: "may" }),

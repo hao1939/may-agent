@@ -129,9 +129,9 @@ export type SystemEvent =
   | {
       type: "guard.triggered";
       owner: string;
-      source: "workflow";
-      workflow: string;
-      workflowRunId: string;
+      source: "workflow" | "tool";
+      workflow?: string;
+      workflowRunId?: string;
       projectId?: string;
       parentSessionId?: string;
       sessionId?: string;
