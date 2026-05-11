@@ -29,3 +29,18 @@ Choosing `waiting_with_evidence`: the metric is a deliberately visible raw-frict
 ## Next validation
 
 Validate on the next metrics snapshot. Resume `finish-blocked-hygiene-reduction` immediately if `session.finish-blocked-unresolved-count-24h` breaches or if raw sampling exposes a fresh non-recovered source pattern.
+
+## 2026-05-11T08:29Z heartbeat recheck
+
+Repeated alert still warrants `waiting_with_evidence`, not a new fix or escalation. Fresh metric rows show raw `session.finish-blocked-uncommitted-count-24h current=58` over threshold `50`, while paired strict `session.finish-blocked-unresolved-count-24h current=0`; alert `287` remains the only open finish-blocked alert, and resolved strict alert `284` stayed recovered. The latest ten paired snapshots remain raw `58` / strict `0`.
+
+Fresh raw 24h classification over `evaluations`, `sessions`, and latest `session_digests` found all `58` rows recovered or intentionally terminal:
+
+- `55` repaired successful exits (`status=done`, `outcome=done`, latest digest `success`)
+- `1` repaired partial digest
+- `2` terminal no-recovery interrupted rows (`action=nothing`, `action_reason` includes `No recoverable work worth resuming`)
+- `0` other unresolved rows
+
+Source attribution is still repaired workflow friction, led by scout heartbeat/explore and may steward/heartbeat paths, with no new unrecovered bucket. Latest samples include successful scout rows evaluated `good`, successful may/steward rows with the separate `committed runtime handoff files` issue, and no strict dirty-exit cases.
+
+Decision: keep `finish-blocked-hygiene-reduction` paused/monitoring. Do not calibrate or manually resolve the still-breaching raw metric; resume only if the strict unresolved metric breaches or future raw sampling exposes a new non-recovered source pattern.
