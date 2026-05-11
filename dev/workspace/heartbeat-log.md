@@ -1168,3 +1168,14 @@ Evidence checked:
 Disposition:
 - Do not clean or commit unrelated dirty paths without owner review.
 - If a clean worktree is required, escalate the listed unrelated dirty paths to their owners; dev can only safely commit this workspace artifact.
+
+## 2026-05-10 Artifact Gate Recovery and Dirty-State Classification
+
+Administrative artifact written after the artifact gate reported that this heartbeat produced no file writes. I inspected the agents worktree before writing and found broad pre-existing dirty state outside dev-owned deliverables, including runtime `.state/iteration-log.json`, multiple generated `*/last-session.md` files, shared gate/circuit-breaker logs, documentation edits under `shared/may-agent-docs/`, shared project files, `shared/workflows/metric-alert-triage.ts`, and an untracked scout signal note.
+
+Disposition:
+- Intentional deliverable for this recovery is only `dev/workspace/heartbeat-log.md`.
+- The other dirty paths are not staged because they are unrelated to this artifact-gate recovery and likely belong to other agents/runtime activity.
+- A clean successful finish is blocked unless those unrelated paths are committed or reverted by their owners; this session will stage only the explicit dev heartbeat log path.
+
+Next substantive dev heartbeat action: investigate a dev-owned failing metric or handler pattern rather than only recovering from the artifact gate.
