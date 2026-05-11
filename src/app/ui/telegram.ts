@@ -23,9 +23,9 @@ import type { SubagentManager } from "../../lib/index.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
 import {
   buildTelegramReplyRoute,
-  extractProjectPath,
   normalizeProjectPath,
 } from "./telegram-reply-router.js";
+import { attachTelegramOutbound } from "./telegram-outbound.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
@@ -62,6 +62,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+  const pendingChatId: string | null = allowedChatIds[0] || null;
 
   if (!token) {
     bus.emit({ type: "info", message: "[telegram] TELEGRAM_BOT_TOKEN not set — bot disabled" });
@@ -381,7 +382,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
 
-      const sessionId = targetSessionId || rootChatSessionId || getSessionId();
+      const sessionId = targetSessionId || outbound.getRootChatSessionId() || getSessionId();
       if (sessionId) {
         bus.emit({ type: "session.cancel.requested", sessionId, source: "telegram" } as any);
       } else {
@@ -405,146 +406,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   // ── Outbound: session-scoped assistant responses ─────────────────
 
-  const pendingChatId: string | null = allowedChatIds[0] || null;
-
-  // Track the chat session tree — only forward events from the active
-  // chat session and its children (delegated sub-sessions).
-  let rootChatSessionId: string | null = null;
-  const watchedSessions = new Set<string>();
-  const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
-
-  const unsubBus = bus.subscribe((event: any) => {
-    // Root chat session starts define the Telegram response turn. Do not
-    // depend on getSessionId() later: restarts/cancellations can clear it
-    // before session.end arrives.
-    if (event.type === "session.start" && event.sessionId && isRootChatSession(event)) {
-      rootChatSessionId = event.sessionId;
-      watchedSessions.clear();
-      watchedSessions.add(event.sessionId);
-      outboundBySession.set(event.sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
-    }
-
-    // Auto-expand: child sessions inherit from parent (same as socket.ts)
-    if (event.type === "session.start" && event.parentSessionId && watchedSessions.has(event.parentSessionId)) {
-      watchedSessions.add(event.sessionId);
-    }
-
-    // Session-scoped events: only forward if in our watched set
-    if ("sessionId" in event && typeof event.sessionId === "string") {
-      if (!watchedSessions.has(event.sessionId)) return;
-    }
-
-    const rootSid = rootChatSessionId;
-
-    // ── Root chat session: send assistant text as it becomes available ──
-    // Only stream text from the root chat session (May's direct conversation).
-    // Child sessions (delegated coder, tech-lead, etc.) get ONE summary instead.
-    if (event.type === "text" && "sessionId" in event && event.sessionId === rootSid) {
-      const state = sessionState(event.sessionId);
-      state.pendingText += event.text;
-      flushPendingText(event.sessionId);
-    }
-
-    if (event.type === "turn_end" && "sessionId" in event && event.sessionId === rootSid) {
-      const state = sessionState(event.sessionId);
-      const hadText = state.pendingText.trim().length > 0 || state.sentAnyText;
-      flushPendingText(event.sessionId);
-
-      // If no text was accumulated but errors occurred, notify user
-      // (e.g., context overflow — LLM returned empty content, user gets silence)
-      if (!hadText && event.errorCount && event.errorCount > 0) {
-        // Log for metrics, don't bother the user — transient errors are normal
-        bus.emit({ type: "info", message: `[telegram] Turn error: ${event.errorCount} error(s), no text produced (session: ${event.sessionId})` });
-      }
-    }
-
-    // ── Child session completion: send ONE summary ──
-    // When a child session in the watched tree ends, send a single
-    // summary message instead of streaming all its individual turns.
-    if (event.type === "session.end" && "sessionId" in event && event.sessionId !== rootSid) {
-      if (pendingChatId) {
-        const fp = event.finishParams as Record<string, unknown> | undefined;
-        const summary = (fp?.summary as string) ?? (typeof event.outcome === "string" ? event.outcome.slice(0, 200) : "completed");
-        const fpStatus = (fp?.status as string) ?? event.status;
-        if (fpStatus === "failure" || fpStatus === "blocked") {
-          sendToUser(`❌ ${String(event.agent)} BLOCKED: ${summary}`, { eventType: "blocked", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
-        } else {
-          sendToUser(`✅ ${String(event.agent)}: ${summary}`, { eventType: "session.end", agent: String(event.agent), sessionId: (event as any).sessionId, summary });
-        }
-      }
-    }
-
-    // When the root chat session ends, check if we ever responded
-    if (event.type === "session.end" && "sessionId" in event && event.sessionId === rootSid && pendingChatId) {
-      const state = sessionState(event.sessionId);
-      flushPendingText(event.sessionId);
-      if (event.error) {
-        const errMsg = String(event.error).length > 200 ? String(event.error).slice(0, 200) + "…" : String(event.error);
-        sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });
-      } else {
-        const summary = String(event.summary ?? "").trim();
-        if (summary && shouldSendSummary(event.sessionId, summary)) {
-          sendToUser(summary, { eventType: "session.end", agent: event.agent, sessionId: event.sessionId, summary });
-          state.sentAnyText = true;
-          state.sentText += "\n" + summary;
-        } else if (!state.sentAnyText) {
-          sendToUser(`❌ Couldn't generate a response. Try again or rephrase.`, { eventType: "error", agent: event.agent, sessionId: event.sessionId });
-        }
-      }
-      rootChatSessionId = null;
-      watchedSessions.clear();
-      outboundBySession.delete(event.sessionId);
-    }
-
-    // Human-directed messages — forward to Telegram when from the interface agent.
-    if (event.type === "message.created" && (event as any).to === "human" && (event as any).from === opts.interfaceAgent) {
-      if (pendingChatId) {
-        const content = String((event as any).content ?? "").slice(0, 4000);
-        const projectId = normalizeProjectPath((event as any).projectPath ?? (event as any).projectId, projectRoot) ?? extractProjectPath(content, projectRoot) ?? undefined;
-        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String((event as any).from ?? ""), sessionId: "sessionId" in event ? String((event as any).sessionId) : undefined, projectId, summary: content.slice(0, 200) });
-      }
-    }
+  const outbound = attachTelegramOutbound({
+    bus,
+    interfaceAgent: opts.interfaceAgent,
+    projectRoot,
+    pendingChatId,
+    getSessionId,
+    sendToUser,
   });
-
-  function sessionState(sessionId: string): { pendingText: string; sentAnyText: boolean; sentText: string } {
-    let state = outboundBySession.get(sessionId);
-    if (!state) {
-      state = { pendingText: "", sentAnyText: false, sentText: "" };
-      outboundBySession.set(sessionId, state);
-    }
-    return state;
-  }
-
-  function flushPendingText(sessionId: string): void {
-    const state = sessionState(sessionId);
-    const text = state.pendingText.trim();
-    state.pendingText = "";
-
-    if (!text || !pendingChatId) return;
-
-    state.sentAnyText = true;
-    state.sentText += "\n" + text;
-    sendToUser(text, { eventType: "response", agent: opts.interfaceAgent, sessionId });
-  }
-
-  function shouldSendSummary(sessionId: string, summary: string): boolean {
-    const sent = normalizeForCompare(sessionState(sessionId).sentText);
-    const candidate = normalizeForCompare(summary);
-    if (!candidate) return false;
-    if (!sent) return true;
-    return !sent.includes(candidate) && !candidate.includes(sent);
-  }
-
-  function normalizeForCompare(text: string): string {
-    return text.replace(/\s+/g, " ").trim();
-  }
-
-  function isRootChatSession(event: any): boolean {
-    if (event.parentSessionId) return false;
-    if (event.agent !== opts.interfaceAgent) return false;
-    if (event.kind && event.kind !== "chat") return false;
-    return event.source === "telegram" || event.sessionId === getSessionId();
-  }
 
   function telegramMessageText(message: any): string {
     const text = message?.text ?? message?.caption ?? "";
@@ -610,10 +479,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
   return {
     close: () => {
       running = false;
-      unsubBus();
+      outbound.close();
     },
-    sendAlert: (text: string) => {
-      sendToUser(text, { eventType: "alert" });
-    },
+    sendAlert: outbound.sendAlert,
   };
 }
