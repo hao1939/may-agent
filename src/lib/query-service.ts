@@ -141,6 +141,19 @@ export interface HeartbeatContext {
   inbox: Record<string, unknown>[];
 }
 
+export interface EvaluatorDeepEvalScanQuery {
+  now?: number;
+  backfillHours?: number;
+  fallbackDelayMs?: number;
+  activeWindowMs?: number;
+}
+
+export interface EvaluatorDeepEvalScanContext {
+  now: number;
+  activeDeepEval: boolean;
+  candidate: Record<string, unknown> | null;
+}
+
 export interface QueryAPI {
   sessions(filter?: SessionQuery): QueryResult;
   events(filter?: EventQuery): QueryResult;
@@ -152,6 +165,7 @@ export interface QueryAPI {
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
   closedLoopStewardContext(filter?: ClosedLoopStewardContextQuery): ClosedLoopStewardContext;
   heartbeatContext(filter: HeartbeatContextQuery): HeartbeatContext;
+  evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
 
@@ -270,6 +284,10 @@ const HEARTBEAT_DEFAULT_METRIC_LIMIT = 200;
 const HEARTBEAT_DEFAULT_METRIC_SNAPSHOT_LIMIT = 10;
 const HEARTBEAT_DEFAULT_ALERT_LIMIT = 100;
 const HEARTBEAT_DEFAULT_INBOX_LIMIT = 12;
+const EVALUATOR_DEEP_EVAL_WORKFLOW = "evaluator-deep-eval";
+const EVALUATOR_DEEP_EVAL_DEFAULT_BACKFILL_HOURS = 24;
+const EVALUATOR_DEEP_EVAL_DEFAULT_FALLBACK_DELAY_MS = 15 * 60_000;
+const EVALUATOR_DEEP_EVAL_DEFAULT_ACTIVE_WINDOW_MS = 30 * 60_000;
 
 function formatSchemaRows(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return "(schema unavailable)";
@@ -415,6 +433,69 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       ).all(filter.agent, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[]).slice(0, inboxLimit);
 
       return { now, metrics, alerts, inbox };
+    },
+
+    evaluatorDeepEvalScan(filter = {}) {
+      const db = opts.getDb();
+      const now = typeof filter.now === "number" ? filter.now : Date.now();
+      const backfillHours = typeof filter.backfillHours === "number"
+        ? Math.max(0, filter.backfillHours)
+        : EVALUATOR_DEEP_EVAL_DEFAULT_BACKFILL_HOURS;
+      const fallbackDelayMs = typeof filter.fallbackDelayMs === "number"
+        ? Math.max(0, filter.fallbackDelayMs)
+        : EVALUATOR_DEEP_EVAL_DEFAULT_FALLBACK_DELAY_MS;
+      const activeWindowMs = typeof filter.activeWindowMs === "number"
+        ? Math.max(0, filter.activeWindowMs)
+        : EVALUATOR_DEEP_EVAL_DEFAULT_ACTIVE_WINDOW_MS;
+
+      const activeWorkflow = db.prepare(
+        `SELECT 1
+         FROM workflow_runs
+         WHERE workflow = ?
+           AND status = 'running'
+           AND startedAt > ?
+         LIMIT 1`,
+      ).get(EVALUATOR_DEEP_EVAL_WORKFLOW, now - activeWindowMs);
+
+      const activeSession = activeWorkflow ? null : db.prepare(
+        `SELECT 1
+         FROM sessions
+         WHERE agent = 'evaluator'
+           AND source IN ('eval-llm-scan', 'workflow:evaluator-deep-eval')
+           AND status IN ('running', 'idle')
+           AND startedAt > ?
+         LIMIT 1`,
+      ).get(now - activeWindowMs);
+
+      const cutoff = now - backfillHours * 60 * 60_000;
+      const fallbackCutoff = now - fallbackDelayMs;
+      const candidate = db.prepare(
+        `SELECT s.sessionId, s.agent, s.status, s.task, s.source, s.startedAt, s.endedAt, s.opCount,
+                e.verdict as heuristicVerdict, e.issues as heuristicIssues
+         FROM sessions s
+         LEFT JOIN evaluations e ON e.sessionId = s.sessionId
+         WHERE s.status IN ('done', 'error', 'interrupted')
+           AND s.agent NOT IN ('evaluator', 'judge')
+           AND COALESCE(s.source, '') NOT IN ('standalone-eval', 'eval-llm-scan', 'workflow:evaluator-deep-eval')
+           AND COALESCE(s.endedAt, s.startedAt) >= ?
+           AND COALESCE(s.endedAt, s.startedAt) <= ?
+           AND NOT EXISTS (
+             SELECT 1 FROM evaluations deep
+             WHERE deep.sessionId = s.sessionId
+               AND deep.evaluatedByHeuristic = 0
+           )
+         ORDER BY
+           CASE WHEN e.verdict = 'good' THEN 0 WHEN e.verdict = 'needs_improvement' THEN 1 ELSE 2 END,
+           COALESCE(s.opCount, 0) DESC,
+           COALESCE(s.endedAt, s.startedAt) DESC
+         LIMIT 1`,
+      ).get(cutoff, fallbackCutoff) as Record<string, unknown> | null;
+
+      return {
+        now,
+        activeDeepEval: !!(activeWorkflow || activeSession),
+        candidate: candidate ? normalizeRows([candidate])[0] : null,
+      };
     },
 
     metricAlertContext(filter) {
@@ -712,6 +793,9 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const failHeartbeatContext = (): HeartbeatContext => {
     throw new Error(reason);
   };
+  const failEvaluatorDeepEvalScan = (): EvaluatorDeepEvalScanContext => {
+    throw new Error(reason);
+  };
   return {
     sessions: fail,
     events: fail,
@@ -723,6 +807,7 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     metricAlertReactorState: failReactorState,
     closedLoopStewardContext: failClosedLoopStewardContext,
     heartbeatContext: failHeartbeatContext,
+    evaluatorDeepEvalScan: failEvaluatorDeepEvalScan,
     sql: fail,
   };
 }

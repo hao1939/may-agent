@@ -76,6 +76,7 @@ interface QueryAPI {
   metricAlertReactorState(filter: Record<string, unknown>): Record<string, unknown>;
   closedLoopStewardContext(filter?: Record<string, unknown>): Record<string, unknown>;
   heartbeatContext(filter: Record<string, unknown>): Record<string, unknown>;
+  evaluatorDeepEvalScan(filter?: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
 }
 
