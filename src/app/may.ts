@@ -26,6 +26,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
+import { runMessageMode, runStatusMode } from "./modes/command.js";
 import { parseEmitMode, runEmitMode } from "./modes/emit.js";
 import { parseOneshotTimeoutMinutes, runOneshotMode } from "./modes/oneshot.js";
 import { parseRunWorkflowMode, runWorkflowMode } from "./modes/run-workflow.js";
@@ -359,26 +360,13 @@ function emitPrompt(): void {
 
 if (STATUS_MODE) {
   // ── Status mode: print dashboard and exit ──────────────────────────
-  const { printRequestStatus, notifyStatus } = await import("../lib/tools/request-status.js");
-  const statusOutput = printRequestStatus(PERSIST_DIR);
-  console.log(statusOutput);
-  if (process.argv.includes("--notify")) {
-    await notifyStatus(PERSIST_DIR);
-  }
+  await runStatusMode({ persistDir: PERSIST_DIR, notify: process.argv.includes("--notify") });
   process.exit(0);
 }
 
 if (MESSAGE_MODE) {
   // ── Send mode: deliver message to agent and exit ───────────────────
-  const { parseSendArgs, cliSend } = await import("./cli-send.js");
-  const sendOpts = parseSendArgs(process.argv);
-  if (sendOpts) {
-    sendOpts.persistDir = PERSIST_DIR;
-    sendOpts.agentsRoot = AGENTS_ROOT;
-    const delivered = await cliSend(sendOpts);
-    process.exit(delivered ? 0 : 1);
-  }
-  process.exit(0);
+  process.exit(await runMessageMode({ argv: process.argv, persistDir: PERSIST_DIR, agentsRoot: AGENTS_ROOT }));
 }
 
 if (RUN_WORKFLOW) {
