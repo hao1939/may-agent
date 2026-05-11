@@ -677,3 +677,14 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - `Heartbeat decision coverage rate`: 0 (target 1)
 - `Journal reference rate`: 0 (target 0.3)
 - `Reviewed good sessions overturned`: 0.28 (target 0.05)
+
+## 2025-06-01T03:35Z — Heartbeat
+
+**System state**: All metrics green. Error rate 8.8% (under 10% target).
+**Inbox triage**:
+- dual_review completed: 14 provider auth failures all GitHub Copilot token expiry. No action needed (external dependency).
+- P2 scout aftermath: informational, dismissed.
+- P1 evaluator monitor: 2 issues already covered by dual_review analysis. Dismissed.
+- Error analysis: 4 failure patterns identified across 25 sessions, no code changes needed.
+**Projects**: daily-alert-review and closed-loop-reliability both waiting (appropriate — no triggers).
+**Action**: None required. System operating normally.
