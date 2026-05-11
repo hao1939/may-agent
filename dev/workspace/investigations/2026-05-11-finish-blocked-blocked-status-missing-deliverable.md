@@ -40,6 +40,18 @@ The durable fix is in runtime finish/session bookkeeping, not in the already-pat
 3. Decide how `finish(status="blocked")` should persist: either map to a first-class done/blocked outcome or explicitly teach aftermath routing that blocked finishes with committed deliverables are not interrupted failures.
 4. Add a regression covering a blocked finish with deliverable path `shared/projects/<id>/outputs/file.md` under root `/app` where the real file is at `/app/agents/shared/projects/...`.
 
+## 2026-05-11 Follow-up: repeated P1 mismatch for `s_1778524211393_432`
+
+Evaluator sent a newer P1 FYI for May project-review session `s_1778524211393_432` with the same status-finalization mismatch. Fresh evidence confirms this is systemic rather than a one-off artifact issue:
+
+- The `sessions` row for `s_1778524211393_432` is `agent=may`, `source=workflow:project`, `status=interrupted`, `outcome=interrupted`, `error=NULL`.
+- Targeted transcript grep shows the agent called `finish(status="blocked")`; the finish tool result returned success text beginning `🚫 **BLOCKED**: Documentation is complete...`, so the tool call completed.
+- Related events then emitted `session.end` and `session.completed` with `status=interrupted`/`outcome=interrupted`, followed by `session.escalated` preserving `finishParams.status="blocked"`.
+- `session_digests` for the same session recorded `trigger=end`, `outcome=failure`, and an auto-resume digest with `action=nothing` / `No recoverable work worth resuming`, even though the finish params describe a legitimate external blocker.
+- DB scope check: in the last 24h, all `34` `session.end` events whose `finishParams.status='blocked'` were persisted as `sessions.status='interrupted'` / `sessions.outcome='interrupted'`. Recent examples include May project sessions `s_1778524242537_434`, `s_1778524211393_432`, `s_1778524196545_431`, evaluator metric-alert-triage escalations, and a scout arXiv rate-limit block.
+
+This broad count changes the impact assessment: the first-class runtime/session schema appears not to represent `finish(blocked)` as a successful terminal blocked outcome anywhere in the last-day sample. Downstream aftermath and recovery logic can inspect `session.escalated.finishParams.status`, but the canonical `sessions` row and `session.completed` event currently look like an interruption/failure.
+
 ## Current Disposition
 
-No autonomous code patch was applied because the likely implementation is outside dev's editable `agents/` lane and direct runtime `src/` edits are unavailable/forbidden here. This heartbeat treats the P1 FYI as **acted: investigated and documented**, with follow-up needed from the runtime owner when `src` is available.
+No autonomous code patch was applied because the likely implementation is outside dev's editable `agents/` lane and direct runtime `src/` edits are unavailable/forbidden here. The newer P1 FYI is **acted: investigated and documented**. Recommended runtime-owner fix: make `finish(status="blocked")` persist an explicit blocked terminal outcome (or at minimum teach `session.completed`/aftermath classifiers to prefer `finishParams.status='blocked'` over the generic `interrupted` row), then back it with a regression using `s_1778524211393_432`'s event shape.
