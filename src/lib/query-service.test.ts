@@ -120,4 +120,61 @@ describe("QueryService", () => {
     expect(context.snapshots).toMatchObject([{ value: 0.4, sample_size: 9, measured_by: "may" }]);
     expect(context.relatedEvents).toMatchObject([{ event_type: "evaluation.reviewed", owner: "may" }]);
   });
+
+  it("loads metric alert reactor preflight state behind one schema-aware helper", () => {
+    const { db, query } = harness();
+    const now = 50_000;
+
+    db.run(
+      "INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)",
+      ["p1", "shared/projects/p1", "Project One", "arc", now],
+    );
+    db.run(
+      `INSERT INTO metrics
+        (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["handler.failed-count", "Handler failures", "may", 5, 3, 0, "P1", "p1", "active", now, ">"],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["handler.failed-count", "threshold", "above threshold", now - 1_000],
+    );
+    const alert = db.prepare("SELECT id FROM metric_alerts WHERE metric_id = ?").get("handler.failed-count") as { id: number };
+    db.run(
+      "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
+      ["handler.failed-count", 5, 12, now, "may", "latest"],
+    );
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["wr_triage", "metric-alert-triage", "Run metric alert triage for handler.failed-count", "done", now - 500],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["s_owner", "arc", "handle alert", "done", "metric-alert-reactor:handler.failed-count", now - 400],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["metric.alert_judged", "arc", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), now - 300],
+    );
+
+    const state = query.metricAlertReactorState({
+      metricId: "handler.failed-count",
+      owner: "arc",
+      since: now - 2_000,
+    });
+
+    expect(state.metric).toMatchObject({
+      id: "handler.failed-count",
+      explicitOwner: "may",
+      projectOwner: "arc",
+      alertOp: ">",
+    });
+    expect(state.alert).toMatchObject({ id: alert.id, metric_id: "handler.failed-count" });
+    expect(state.latestSnapshot).toMatchObject({ value: 5, sample_size: 12 });
+    expect(state.latestJudgment).toMatchObject({ id: expect.any(Number) });
+    expect(state.recentTriageRun).toMatchObject({ runId: "wr_triage", status: "done" });
+    expect(state.recentTriageJudgment).toMatchObject({ id: expect.any(Number) });
+    expect(state.recentOwnerSession).toMatchObject({ sessionId: "s_owner", status: "done" });
+    expect(state.recentOwnerSessionJudgment).toMatchObject({ id: expect.any(Number) });
+  });
 });
