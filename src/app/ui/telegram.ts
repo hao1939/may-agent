@@ -22,11 +22,9 @@ import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
 import {
-  buildNotificationReplyText,
-  buildTelegramQuoteReplyText,
+  buildTelegramReplyRoute,
   extractProjectPath,
   normalizeProjectPath,
-  readSessionReplyContext,
 } from "./telegram-reply-router.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
@@ -273,56 +271,58 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (replyToMsgId) {
       try {
         const ctx = getNotificationMessage(opts.persistDir ?? ".state", replyToMsgId);
-        if (ctx) {
-          const projectPath = normalizeProjectPath(ctx.project_id, projectRoot);
-          if (projectPath && await emitProjectComment(projectPath, text)) {
-            bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, projectPath, delivery: "project-comment", originalMsgId: replyToMsgId } as any);
-            await sendMessage(chatIdStr, `Comment sent to ${projectPath}. Resuming the project now.`, undefined, {
+        const route = buildTelegramReplyRoute({
+          text,
+          replyToMsgId,
+          ctx,
+          quotedText: telegramMessageText(replyToMsg),
+          projectRoot,
+          persistDir: opts.persistDir ?? ".state",
+          interfaceAgent: opts.interfaceAgent,
+        });
+
+        if (route.kind === "notification") {
+          if (route.projectPath && await emitProjectComment(route.projectPath, text)) {
+            bus.emit({ type: "telegram.reply", source: "telegram", owner: route.owner, enriched: true, projectPath: route.projectPath, delivery: "project-comment", originalMsgId: replyToMsgId } as any);
+            await sendMessage(chatIdStr, `Comment sent to ${route.projectPath}. Resuming the project now.`, undefined, {
               eventType: "project.comment",
-              agent: ctx.agent || opts.interfaceAgent,
-              projectId: projectPath,
+              agent: route.owner || opts.interfaceAgent,
+              projectId: route.projectPath,
               data: JSON.stringify({ replyToMsgId }),
             });
             return;
           }
 
-          const sessionContext = ctx.session_id
-            ? readSessionReplyContext(opts.persistDir ?? ".state", String(ctx.session_id))
-            : [];
-
-          enrichedText = buildNotificationReplyText({ ctx, text, sessionContext });
-          bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent}${ctx.session_id ? "/session" : ""})` });
+          enrichedText = route.enrichedText;
+          bus.emit({ type: "info", message: route.infoMessage });
 
           // Track reply for metric
-          bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId } as any);
-          if (ctx.session_id) {
-            if (await handleTelegramCommand(text, chatIdStr, String(ctx.session_id))) {
+          bus.emit({ type: "telegram.reply", source: "telegram", owner: route.owner, enriched: true, hasSessionCtx: route.hasSessionCtx, originalMsgId: replyToMsgId } as any);
+          if (route.sessionId) {
+            if (await handleTelegramCommand(text, chatIdStr, route.sessionId)) {
               return;
             }
             bus.emit({
               type: "steer",
-              sessionId: String(ctx.session_id),
+              sessionId: route.sessionId,
               message: enrichedText,
               source: "telegram",
             } as any);
-            await sendMessage(chatIdStr, `Reply sent to session ${ctx.session_id}.`, undefined, {
+            await sendMessage(chatIdStr, `Reply sent to session ${route.sessionId}.`, undefined, {
               eventType: "telegram.reply",
-              agent: ctx.agent || opts.interfaceAgent,
-              sessionId: String(ctx.session_id),
+              agent: route.owner || opts.interfaceAgent,
+              sessionId: route.sessionId,
               data: JSON.stringify({ replyToMsgId }),
             });
             return;
           }
+        } else if (route.kind === "quote") {
+          enrichedText = route.enrichedText;
+          bus.emit({ type: "info", message: route.infoMessage });
+          bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId } as any);
         } else {
-          const quoted = telegramMessageText(replyToMsg);
-          if (quoted) {
-            enrichedText = buildTelegramQuoteReplyText(text, quoted);
-            bus.emit({ type: "info", message: `[telegram] Enriched reply from Telegram quote (msg ${replyToMsgId})` });
-            bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId } as any);
-          } else {
-            bus.emit({ type: "info", message: `[telegram] Reply context missing for msg ${replyToMsgId}` });
-            bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: false, reason: "context-not-found", originalMsgId: replyToMsgId } as any);
-          }
+          bus.emit({ type: "info", message: route.infoMessage });
+          bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: false, reason: "context-not-found", originalMsgId: replyToMsgId } as any);
         }
       } catch {}
     }

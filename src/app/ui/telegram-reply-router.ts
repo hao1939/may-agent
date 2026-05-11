@@ -9,6 +9,64 @@ export interface TelegramNotificationContext {
   data?: string | null;
 }
 
+export type TelegramReplyRoute =
+  | {
+      kind: "notification";
+      owner: string;
+      projectPath: string | null;
+      sessionId: string | null;
+      enrichedText: string;
+      hasSessionCtx: boolean;
+      infoMessage: string;
+    }
+  | {
+      kind: "quote";
+      enrichedText: string;
+      infoMessage: string;
+    }
+  | {
+      kind: "missing-context";
+      infoMessage: string;
+    };
+
+export function buildTelegramReplyRoute(opts: {
+  text: string;
+  replyToMsgId: number;
+  ctx: TelegramNotificationContext | null;
+  quotedText: string;
+  projectRoot: string;
+  persistDir: string;
+  interfaceAgent: string;
+}): TelegramReplyRoute {
+  if (opts.ctx) {
+    const sessionId = opts.ctx.session_id ? String(opts.ctx.session_id) : null;
+    const sessionContext = sessionId ? readSessionReplyContext(opts.persistDir, sessionId) : [];
+    const owner = opts.ctx.agent || opts.interfaceAgent || "unknown";
+    return {
+      kind: "notification",
+      owner,
+      projectPath: normalizeProjectPath(opts.ctx.project_id, opts.projectRoot),
+      sessionId,
+      enrichedText: buildNotificationReplyText({ ctx: opts.ctx, text: opts.text, sessionContext }),
+      hasSessionCtx: Boolean(sessionId),
+      infoMessage: `[telegram] Enriched reply (ctx: ${opts.ctx.event_type}/${owner}${sessionId ? "/session" : ""})`,
+    };
+  }
+
+  if (opts.quotedText) {
+    return {
+      kind: "quote",
+      enrichedText: buildTelegramQuoteReplyText(opts.text, opts.quotedText),
+      infoMessage: `[telegram] Enriched reply from Telegram quote (msg ${opts.replyToMsgId})`,
+    };
+  }
+
+  return {
+    kind: "missing-context",
+    infoMessage: `[telegram] Reply context missing for msg ${opts.replyToMsgId}`,
+  };
+}
+
 export function normalizeProjectPath(value: unknown, projectRoot: string): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
   let path = value.trim()
