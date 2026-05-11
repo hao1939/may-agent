@@ -3,6 +3,7 @@ import {
   generateAutoHeartbeats,
   listConfiguredAgentNames,
   loadAgentConfig,
+  loadHandlersForAgentCrons,
   loadAgents,
   validateAgentConfig,
   type AgentConfig,
@@ -200,6 +201,44 @@ describe("agent loader boundaries", () => {
 
       expect(entries.map((entry) => entry.name)).toEqual(["heartbeat-alpha"]);
       expect(entries[0].handlerConfig).toMatchObject({ workflow: "alpha-heartbeat", agent: "alpha" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("hot-reloads handler modules on each invocation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-handlers-"));
+    try {
+      const agentDir = join(root, "agents", "alpha");
+      const handlersDir = join(agentDir, "handlers");
+      mkdirSync(handlersDir, { recursive: true });
+      const handlerPath = join(handlersDir, "sample.ts");
+      writeFileSync(handlerPath, `export function create() { return async () => "v1"; }`);
+
+      const handlers = new Map<string, () => Promise<string>>();
+      const cron = {
+        getEntries: () => [{ name: "sample-entry", handler: "sample" }],
+        registerHandler: (name: string, handler: () => Promise<string>) => handlers.set(name, handler),
+        setHandlerResolver: () => undefined,
+        triggerNow: () => false,
+      };
+
+      const result = await loadHandlersForAgentCrons({
+        agentsRoot: join(root, "agents"),
+        persistDir: join(root, ".state"),
+        projectRoot: root,
+        manager: { callAgent: async () => ({}) } as any,
+        bus: { emit: () => undefined } as any,
+        agentCrons: new Map([["alpha", cron as any]]),
+      });
+
+      expect(result.errors).toEqual([]);
+      expect(result.registered).toEqual(["alpha:sample-entry"]);
+      expect(await handlers.get("sample-entry")!()).toBe("v1");
+
+      writeFileSync(handlerPath, `export function create() { return async () => "v2"; }`);
+
+      expect(await handlers.get("sample-entry")!()).toBe("v2");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
