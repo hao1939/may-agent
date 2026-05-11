@@ -291,6 +291,27 @@ function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
   return false;
 }
 
+function metricIdFromEventData(data: unknown): string | null {
+  if (typeof data !== "string" || !data) return null;
+  try {
+    const parsed = JSON.parse(data) as { metricId?: unknown };
+    return typeof parsed.metricId === "string" && parsed.metricId.trim() ? parsed.metricId : null;
+  } catch {
+    return null;
+  }
+}
+
+function firstGreaterThan(values: number[], threshold: number): number | null {
+  let lo = 0;
+  let hi = values.length;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (values[mid] <= threshold) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo < values.length ? values[lo] : null;
+}
+
 
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -1028,53 +1049,57 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // C2: capability.breach-time-to-recovery-p50-h — median breach→recovery latency
     try {
-      // For each breach, find the next recovery of the same metricId
-      const recoveryDeltas = db.prepare(`
-        WITH breaches AS (
-          SELECT timestamp, json_extract(data, '$.metricId') as metricId
-          FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
-        ),
-        recoveries AS (
-          SELECT timestamp, json_extract(data, '$.metricId') as metricId
-          FROM events WHERE event_type = 'metric.recovered' AND timestamp > ?
-        ),
-        matched AS (
-          SELECT b.metricId, b.timestamp as breach_ts,
-            (SELECT MIN(r.timestamp) FROM recoveries r WHERE r.metricId = b.metricId AND r.timestamp > b.timestamp) as recovery_ts
-          FROM breaches b
-        )
-        SELECT (recovery_ts - breach_ts) / 3600000.0 as delta_h
-        FROM matched
-        WHERE recovery_ts IS NOT NULL
-        ORDER BY delta_h
-      `).all(now - 7 * 86400000, now - 7 * 86400000) as any[];
+      const cutoff = now - 7 * 86400000;
+      const retired = new Set(RETIRED_METRIC_IDS);
+      const rows = db.prepare(
+        `SELECT event_type, timestamp, data
+         FROM events
+         WHERE event_type IN ('metric.breach', 'metric.recovered')
+           AND timestamp > ?
+         ORDER BY timestamp ASC`,
+      ).all(cutoff) as Array<{ event_type: string; timestamp: number; data: string | null }>;
+
+      const breaches: Array<{ metricId: string; timestamp: number }> = [];
+      const recoveriesByMetric = new Map<string, number[]>();
+      const latestBreachByMetric = new Map<string, number>();
+      const latestRecoveryByMetric = new Map<string, number>();
+
+      for (const row of rows) {
+        const metricId = metricIdFromEventData(row.data);
+        if (!metricId || retired.has(metricId)) continue;
+        if (row.event_type === "metric.breach") {
+          breaches.push({ metricId, timestamp: row.timestamp });
+          latestBreachByMetric.set(metricId, Math.max(latestBreachByMetric.get(metricId) ?? 0, row.timestamp));
+        } else if (row.event_type === "metric.recovered") {
+          const recoveries = recoveriesByMetric.get(metricId) ?? [];
+          recoveries.push(row.timestamp);
+          recoveriesByMetric.set(metricId, recoveries);
+          latestRecoveryByMetric.set(metricId, Math.max(latestRecoveryByMetric.get(metricId) ?? 0, row.timestamp));
+        }
+      }
+
+      const recoveryDeltas: number[] = [];
+      for (const breach of breaches) {
+        const recoveryTs = firstGreaterThan(recoveriesByMetric.get(breach.metricId) ?? [], breach.timestamp);
+        if (recoveryTs != null) recoveryDeltas.push((recoveryTs - breach.timestamp) / 3600000);
+      }
+      recoveryDeltas.sort((a, b) => a - b);
+
       if (recoveryDeltas.length > 0) {
         const mid = Math.floor(recoveryDeltas.length / 2);
         const p50 = recoveryDeltas.length % 2 === 1
-          ? recoveryDeltas[mid].delta_h
-          : (recoveryDeltas[mid - 1].delta_h + recoveryDeltas[mid].delta_h) / 2;
+          ? recoveryDeltas[mid]
+          : (recoveryDeltas[mid - 1] + recoveryDeltas[mid]) / 2;
         record("capability.breach-time-to-recovery-p50-h", parseFloat(p50.toFixed(2)), recoveryDeltas.length);
       } else {
         record("capability.breach-time-to-recovery-p50-h", 0, 0);
       }
-      // Unrecovered breaches in 7d — count distinct metrics whose latest breach has no subsequent recovery
-      const unrecovered = count(`
-        SELECT COUNT(*) as c FROM (
-          SELECT metricId, MAX(timestamp) as latest_breach
-          FROM (
-            SELECT json_extract(data, '$.metricId') as metricId, timestamp
-            FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
-          )
-          WHERE metricId NOT IN (${RETIRED_METRIC_IDS.map(() => '?').join(',')})
-          GROUP BY metricId
-        ) b
-        WHERE NOT EXISTS (
-          SELECT 1 FROM events r
-          WHERE r.event_type = 'metric.recovered'
-            AND json_extract(r.data, '$.metricId') = b.metricId
-            AND r.timestamp > b.latest_breach
-        )
-      `, now - 7 * 86400000, ...RETIRED_METRIC_IDS);
+
+      let unrecovered = 0;
+      for (const [metricId, latestBreach] of latestBreachByMetric.entries()) {
+        const latestRecovery = latestRecoveryByMetric.get(metricId) ?? 0;
+        if (latestRecovery <= latestBreach) unrecovered++;
+      }
       record("capability.unrecovered-breach-count-7d", unrecovered);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.breach-time-to-recovery-p50-h: ${e}`); }
 
