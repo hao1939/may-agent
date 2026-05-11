@@ -20,7 +20,6 @@ waiting projects to `workflow: project` before they resume.
 | `session-recovery` | `shared/workflows/session-recovery.ts` | 131 | Recover or escalate failed sessions from `session.failed` events. |
 | `implement-and-verify` | `shared/workflows/implement-and-verify.ts` | 203 | Lightweight code workflow (H-070 P3): coder Plan → Write → Verify. No QA agent. **Workhorse — 85% of all workflow usage.** |
 | `verify-wrap` | `shared/workflows/verify-wrap.ts` | 26 | Minimal wrapper for explicitly verified work. Still referenced by May cron entries and agent references. |
-| `goal-driver` | `shared/workflows/goal-driver.ts` | 423 | Experimental project judgment loop. No active project reference after `scout-second-brain-learning` returned to `project`; keep only as temporary compatibility until archival review. |
 
 **Not workflows** (helper modules with no `execute()` function):
 - `fewshot-inject-helpers.ts` — keyword-based utility for prepending few-shot examples
@@ -31,6 +30,9 @@ waiting projects to `workflow: project` before they resume.
 - `persistent-task.ts` — was an alias for `project.ts`, removed
 - `heartbeat.ts` — replaced by per-agent heartbeat workflows + `heartbeat-data.ts`
 - `error-scan.ts` — dead code, zero consumers (446 lines)
+- `goal-driver.ts` — experimental project judgment loop removed after the only
+  active project returned to the default `project` driver. It produced ambiguous
+  project status behavior and had no remaining live references.
 
 ### Legacy Shared Workflows Kept For Compatibility
 

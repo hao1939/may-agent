@@ -38,8 +38,7 @@ Next slice:
 
 1. Audit `master-worker*` tests/docs and decide whether the legacy family should
    be archived, kept as a named exception, or reduced to one compatibility file.
-2. Audit `goal-driver` for archival now that it has no active project reference.
-3. Validate any retirement with grep references, unit tests, and one real
+2. Validate any retirement with grep references, unit tests, and one real
    project/session trace.
 
 Recently completed:
@@ -715,10 +714,20 @@ Third slice, 2026-05-11:
   `goal-driver`; it is already waiting after the behavior-change push completed.
 - Migrated that project to `workflow: project` and recorded the reason in the
   project journal section.
-- `REGISTRY.md` now marks `goal-driver` as an experimental compatibility
-  workflow with no active project reference, pending archival review.
+- `REGISTRY.md` temporarily marked `goal-driver` as an experimental
+  compatibility workflow with no active project reference, pending archival
+  review.
 - Validation:
   - grep found no `workflow: goal-driver` under active shared projects.
+
+Fourth slice, 2026-05-11:
+
+- Removed `shared/workflows/goal-driver.ts` and its dedicated parser test from
+  the live workflow surface.
+- `REGISTRY.md` now records `goal-driver.ts` as deleted since the last audit,
+  not as active/wired compatibility.
+- Historical project journals still mention prior `goal-driver` runs, but there
+  is no live workflow file or active project selection for agents to copy.
 
 ## Cross-Cutting Validation
 

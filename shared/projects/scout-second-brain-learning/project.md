@@ -152,5 +152,4 @@ Initial hypothesis:
 2026-05-11:
 - Migrated the waiting project from experimental `goal-driver` back to the
   default `project` workflow. The behavior-change push is complete; future
-  resumes should use the normal project driver unless a reviewer records a new
-  reason to exercise `goal-driver`.
+  resumes should use the normal project driver.
