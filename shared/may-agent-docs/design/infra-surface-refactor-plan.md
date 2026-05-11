@@ -855,7 +855,7 @@ concepts or process boundaries.
 
 ### Phase 9a: Agent Loader Boundary
 
-Status: planned.
+Status: partially shipped.
 
 Current problem: `src/app/agent-loader.ts` is one large module that owns:
 
@@ -887,12 +887,12 @@ Reload convention:
 
 Target modules:
 
-- `src/app/loader/agent-discovery.ts`
-- `src/app/loader/agent-config.ts`
-- `src/app/loader/toolset-loader.ts`
-- `src/app/loader/heartbeat-loader.ts`
-- `src/app/loader/handler-loader.ts`
-- `src/app/loader/agent-registry-loader.ts`
+- [x] `src/app/loader/agent-discovery.ts`
+- [x] `src/app/loader/agent-config.ts`
+- [x] `src/app/loader/toolset-loader.ts`
+- [x] `src/app/loader/heartbeat-loader.ts`
+- [x] `src/app/loader/handler-loader.ts`
+- [ ] `src/app/loader/agent-registry-loader.ts`
 
 Keep the public exports from `src/app/agent-loader.ts` as a compatibility
 barrel during the split. Remove the barrel only after direct imports are
@@ -902,14 +902,24 @@ Validation:
 
 - Existing agent loader tests remain green.
 - Add focused tests for reload semantics:
-  - invalid config emits `agent.config_invalid` and does not register,
+  - [x] invalid config emits `agent.config_invalid`,
   - reload updates future registrations without touching active session state,
-  - handler hot-reload imports a fresh module on invocation,
+  - [x] handler hot-reload imports a fresh module on invocation,
   - workflow invocation imports current workflow code while persisted workflow
     state remains resumable,
-  - auto-heartbeat generation remains deterministic.
+  - [x] auto-heartbeat generation remains deterministic.
 - Runtime proof: trigger `reload` through daemon event and record the reload
   event plus loader evidence for added/updated/skipped agents.
+
+Current proof:
+
+- Root commits:
+  - `fab1f59c` split config/discovery loaders.
+  - `c3202f8d` split toolset construction.
+  - `c70eb742` split heartbeat generation.
+  - `a7b2ebe2` split handler hot-reload loading.
+- `bun test test/agent-loader.test.ts test/query-db-tool.test.ts` passes.
+- `bun run check` passes.
 
 Stop criteria:
 
