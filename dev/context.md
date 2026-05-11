@@ -51,3 +51,6 @@ Read `agents/shared/work-queue.md` — section "## Approved" has items ready for
 - After implementing, check the item off: `- [x]` and add done date
 - Read the linked proposal file for full details, evidence, and verification steps
 - Production runtime source (src/lib/manager.ts) is not in /app/agents; fixes to session lifecycle require the core runtime source/build that produces agents/may-agent-bin.
+
+## Durable Lessons
+- Finish hygiene: if you commit the intended artifact but `/app/agents` still has unrelated dirty paths, report `finish(partial)` with the exact blocker instead of claiming clean success.
