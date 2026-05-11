@@ -94,6 +94,24 @@ function formatRows(rows: Array<Record<string, unknown>>): string {
   return rows.map((row) => `- ${JSON.stringify(row)}`).join("\n");
 }
 
+function compactText(value: unknown, limit = 300): string | null {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  return value.length > limit ? `${value.slice(0, limit - 3)}...` : value;
+}
+
+function compactOwnerSessions(rows: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return rows.map((row) => ({
+    sessionId: row.sessionId,
+    agent: row.agent,
+    status: row.status,
+    source: row.source,
+    startedAt: row.startedAt,
+    endedAt: row.endedAt,
+    error: compactText(row.error, 200),
+    taskPreview: compactText(row.task, 240),
+  }));
+}
+
 function relatedEventTypes(metricId: string): string[] {
   switch (metricId) {
     case "evaluator.false-good-rate-sample":
@@ -200,14 +218,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       agent: owner,
       since: createdAt || 0,
       limit: 5,
-    }).rows;
+    }).rows as Array<Record<string, unknown>>;
 
     return JSON.stringify({
       alert,
       metric,
       snapshots: context.snapshots,
       relatedEvents: context.relatedEvents,
-      ownerSessions,
+      ownerSessions: compactOwnerSessions(ownerSessions),
       owner,
       metricId,
       alertId: context.alertId ?? alertId ?? alert?.id ?? null,
@@ -220,7 +238,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate(`Failed to load metric alert context for ${metricId}`, { error: loaded.error });
   }
 
-  const alertContext = JSON.parse(String(loaded.lastAssistantText ?? "{}")) as AlertContext;
+  let alertContext: AlertContext;
+  try {
+    alertContext = JSON.parse(String(loaded.lastAssistantText ?? "{}")) as AlertContext;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    notifyTriageEscalation(ctx, metricId, "failed to parse compact metric alert context", { error: msg });
+    return ctx.escalate(`Failed to parse metric alert context for ${metricId}`, {
+      error: msg,
+      outputPreview: String(loaded.lastAssistantText ?? "").slice(0, 1000),
+    });
+  }
   const ownerTask = buildOwnerTask(alertContext);
   const ownerResult = await ctx.runAgent(alertContext.owner, ownerTask);
 
