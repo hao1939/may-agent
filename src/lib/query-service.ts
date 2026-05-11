@@ -73,6 +73,26 @@ export interface MetricAlertContext {
   alertId: number | null;
 }
 
+export interface MetricAlertReactorStateQuery {
+  metricId: string;
+  owner?: string;
+  since?: number;
+  alertId?: number | null;
+}
+
+export interface MetricAlertReactorState {
+  metric: Record<string, unknown> | null;
+  alert: Record<string, unknown> | null;
+  latestJudgment: Record<string, unknown> | null;
+  latestSnapshot: Record<string, unknown> | null;
+  recentTriageRun: Record<string, unknown> | null;
+  recentTriageJudgment: Record<string, unknown> | null;
+  recentOwnerSession: Record<string, unknown> | null;
+  recentOwnerSessionJudgment: Record<string, unknown> | null;
+  metricId: string;
+  alertId: number | null;
+}
+
 export interface QueryAPI {
   sessions(filter?: SessionQuery): QueryResult;
   events(filter?: EventQuery): QueryResult;
@@ -80,6 +100,7 @@ export interface QueryAPI {
   alerts(filter?: AlertQuery): QueryResult;
   projects(filter?: ProjectQuery): QueryResult;
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
+  metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
 
@@ -307,6 +328,113 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       };
     },
 
+    metricAlertReactorState(filter) {
+      if (!filter.metricId) throw new Error("metricAlertReactorState requires metricId");
+      const db = opts.getDb();
+      const metricId = filter.metricId;
+
+      const metric = db.prepare(
+        `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner,
+                m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
+                m.project, m.status, m.updated_at, m.alert_op as alertOp
+         FROM metrics m
+         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+         WHERE m.id = ?`,
+      ).get(metricId) as Record<string, unknown> | null;
+
+      const alert = filter.alertId != null
+        ? db.prepare("SELECT * FROM metric_alerts WHERE id = ?").get(filter.alertId)
+        : db.prepare(
+          `SELECT * FROM metric_alerts
+           WHERE metric_id = ? AND resolved_at IS NULL
+           ORDER BY created_at DESC, id DESC
+           LIMIT 1`,
+        ).get(metricId);
+      const normalizedAlert = alert ? normalizeRows([alert as Record<string, unknown>])[0] : null;
+      const alertId = filter.alertId ?? (typeof normalizedAlert?.id === "number" ? normalizedAlert.id : null);
+      const since = typeof filter.since === "number" ? filter.since : 0;
+
+      const latestJudgment = db.prepare(
+        `SELECT id, data, timestamp
+         FROM events
+         WHERE event_type = 'metric.alert_judged'
+           AND (
+             json_extract(data, '$.alertId') = ?
+             OR json_extract(data, '$.metricId') = ?
+           )
+         ORDER BY timestamp DESC, id DESC
+         LIMIT 1`,
+      ).get(alertId, metricId) as Record<string, unknown> | null;
+
+      const latestSnapshot = db.prepare(
+        `SELECT value, sample_size, measured_at, measured_by, note
+         FROM metric_snapshots
+         WHERE metric_id = ?
+         ORDER BY measured_at DESC
+         LIMIT 1`,
+      ).get(metricId) as Record<string, unknown> | null;
+
+      const recentTriageRun = db.prepare(
+        `SELECT runId, status, startedAt
+         FROM workflow_runs
+         WHERE workflow = 'metric-alert-triage'
+           AND startedAt > ?
+           AND task LIKE ?
+         ORDER BY startedAt DESC
+         LIMIT 1`,
+      ).get(since, `%${metricId}%`) as Record<string, unknown> | null;
+
+      const recentTriageJudgment = recentTriageRun
+        ? db.prepare(
+          `SELECT id
+           FROM events
+           WHERE event_type = 'metric.alert_judged'
+             AND json_extract(data, '$.metricId') = ?
+             AND timestamp >= ?
+           ORDER BY timestamp DESC, id DESC
+           LIMIT 1`,
+        ).get(metricId, recentTriageRun.startedAt) as Record<string, unknown> | null
+        : null;
+
+      const recentOwnerSession = filter.owner
+        ? db.prepare(
+          `SELECT sessionId, status, startedAt
+           FROM sessions
+           WHERE agent = ?
+             AND source = ?
+             AND startedAt > ?
+           ORDER BY startedAt DESC
+           LIMIT 1`,
+        ).get(filter.owner, `metric-alert-reactor:${metricId}`, since) as Record<string, unknown> | null
+        : null;
+
+      const recentOwnerSessionJudgment = recentOwnerSession
+        ? db.prepare(
+          `SELECT id
+           FROM events
+           WHERE event_type = 'metric.alert_judged'
+             AND json_extract(data, '$.metricId') = ?
+             AND timestamp >= ?
+           ORDER BY timestamp DESC, id DESC
+           LIMIT 1`,
+        ).get(metricId, recentOwnerSession.startedAt) as Record<string, unknown> | null
+        : null;
+
+      return {
+        metric: metric ? normalizeRows([metric])[0] : null,
+        alert: normalizedAlert,
+        latestJudgment: latestJudgment ? normalizeRows([latestJudgment])[0] : null,
+        latestSnapshot: latestSnapshot ? normalizeRows([latestSnapshot])[0] : null,
+        recentTriageRun: recentTriageRun ? normalizeRows([recentTriageRun])[0] : null,
+        recentTriageJudgment: recentTriageJudgment ? normalizeRows([recentTriageJudgment])[0] : null,
+        recentOwnerSession: recentOwnerSession ? normalizeRows([recentOwnerSession])[0] : null,
+        recentOwnerSessionJudgment: recentOwnerSessionJudgment ? normalizeRows([recentOwnerSessionJudgment])[0] : null,
+        metricId,
+        alertId,
+      };
+    },
+
     sql(input, params = [], queryOpts = {}) {
       const sql = normalizeSql(input);
       assertReadOnlySql(sql);
@@ -327,6 +455,9 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const failContext = (): MetricAlertContext => {
     throw new Error(reason);
   };
+  const failReactorState = (): MetricAlertReactorState => {
+    throw new Error(reason);
+  };
   return {
     sessions: fail,
     events: fail,
@@ -334,6 +465,7 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     alerts: fail,
     projects: fail,
     metricAlertContext: failContext,
+    metricAlertReactorState: failReactorState,
     sql: fail,
   };
 }
