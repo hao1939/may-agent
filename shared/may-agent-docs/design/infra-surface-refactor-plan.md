@@ -40,10 +40,13 @@ stable re-exports.
 
 Next slice:
 
-1. Review the remaining Telegram adapter surface for any small extraction that
-   removes real complexity without changing the live polling path.
-2. Keep `may.ts` as a thin composition root; new runtime behavior should land in
-   the narrow module that owns it.
+1. Run a review/proof pass against the Phase 9 shape: `may.ts`,
+   `app-runtime.ts`, daemon submodules, loader submodules, and Telegram
+   submodules should now read as named runtime concerns rather than mixed
+   buckets.
+2. Do not split `toolset-loader.ts` unless a concrete sub-concern starts
+   changing independently. It is currently large but cohesive: declared preset
+   names map to tool factories, with local tool loading at the edge.
 3. Continue using runtime event ids as proof for adapter/control boundary
    changes; do not accept adapter-local behavior without durable event evidence.
 
