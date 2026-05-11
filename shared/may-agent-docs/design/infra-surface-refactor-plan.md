@@ -974,6 +974,7 @@ Current proof:
   - `a4d4a6a0` split app argument parsing and mode derivation.
   - `5147b0b5` split API gate runtime setup from the composition root.
   - `0cf138b6` split app runtime assembly from the composition root.
+  - `598e362a` split runtime exit-mode handling from the long-running app path.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
@@ -989,6 +990,8 @@ Current shape:
 - `src/app/app-runtime.ts`: process runtime assembly for the normal app path:
   event bus, manager, loaders, lifecycle, socket, task/chat startup, cron,
   Telegram, and main loop.
+- `src/app/runtime-exit-modes.ts`: status/message/direct workflow/oneshot
+  exit-mode handling after runtime infrastructure is available.
 - `src/app/app-args.ts`: pure CLI/env parser for app mode flags, task loading,
   agent selection, and detached-session env defaults.
 - `src/app/model-registry.ts`: pure model routing/registry setup with coverage
