@@ -91,7 +91,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
        LEFT JOIN evaluations e ON e.sessionId = s.sessionId
        WHERE s.status IN ('done', 'error', 'interrupted')
          AND s.agent NOT IN ('evaluator', 'judge')
-         AND NOT (s.status IN ('error', 'interrupted') AND COALESCE(s.opCount, 0) = 0)
          AND COALESCE(s.endedAt, s.startedAt) >= ?
          AND COALESCE(s.endedAt, s.startedAt) <= ?
          AND (

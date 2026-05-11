@@ -44,3 +44,16 @@ Fresh raw 24h classification over `evaluations`, `sessions`, and latest `session
 Source attribution is still repaired workflow friction, led by scout heartbeat/explore and may steward/heartbeat paths, with no new unrecovered bucket. Latest samples include successful scout rows evaluated `good`, successful may/steward rows with the separate `committed runtime handoff files` issue, and no strict dirty-exit cases.
 
 Decision: keep `finish-blocked-hygiene-reduction` paused/monitoring. Do not calibrate or manually resolve the still-breaching raw metric; resume only if the strict unresolved metric breaches or future raw sampling exposes a new non-recovered source pattern.
+
+## 2026-05-11T08:42Z heartbeat recheck
+
+Repeated alert still warrants `waiting_with_evidence`. Fresh metric rows show raw `session.finish-blocked-uncommitted-count-24h current=57` over threshold `50`, while paired strict `session.finish-blocked-unresolved-count-24h current=0`; alert `287` remains the only open finish-blocked alert. The latest raw snapshots are `57, 57, 58, 58...` while the latest ten strict snapshots are all `0`.
+
+Fresh raw 24h classification found all `58` rows recovered or intentionally terminal:
+
+- `55` repaired successful exits
+- `1` repaired partial exit
+- `2` terminal no-recovery interrupted rows
+- `0` other unresolved rows
+
+Source attribution remains repaired scout/steward/may workflow friction rather than a fresh unrecovered dirty-exit pattern. Final operation: `waiting_with_evidence`; next validation is the next metrics snapshot, or immediate project resume if the strict metric breaches.
