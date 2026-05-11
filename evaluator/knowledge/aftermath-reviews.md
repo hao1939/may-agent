@@ -31,6 +31,7 @@
 ## Pattern: proposal-ledger updates can be real material output
 - Symptom: a success-candidate session edits an existing proposal instead of creating a new KE/file, so the output can look lightweight or purely administrative at first glance.
 - Fix: inspect whether the proposal diff adds new recurrence evidence, narrows the implementation surface, or honors a prior falsifier/noise-reduction rule. If the edit materially sharpens the active proposal with fresh evidence, credit it as real value rather than dismissing it as "only a proposal update."
+- Review cue: give extra credit when the session avoids spawning another doc-only KE because an earlier falsifier explicitly said to fold later recurrences into the open proposal. That is disciplined noise reduction, not missing output.
 
 ## Pattern: shell-appended digest updates can accidentally commit truncation
 - Symptom: a session intends to append one digest entry, but the landed commit shows large deletions in the rolling digest because the agent used shell append/redirection, skipped an immediate read-back of the digest, then force-added the ignored workspace path.
