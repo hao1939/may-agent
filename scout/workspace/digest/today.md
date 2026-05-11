@@ -189,3 +189,9 @@
 **Summary**: An attempt at creating an open identity standard for AI agents.
 **Implication**: Relevant to how agents authenticate or represent themselves in cross-agent or external system communication.
 **KB**: N/A
+
+### Context Drift Prevention via Gossip Protocols
+**Source**: Synthesis of multi-agent review concepts (KE-1216, WUPHF architecture) and memory drift.
+**Summary**: To prevent low-quality facts from entering shared memory, multi-agent systems can employ 'Gossip Protocols' where peer agents score and debate proposals before committing them to collective knowledge, adding valuable friction for quality control.
+**Implication**: We should explore mechanisms where shared knowledge updates require implicit 'peer review' from other agent roles before adoption, preventing unilateral context drift.
+**KB**: KE-1215-multi-agent-gossip-protocols (new)
