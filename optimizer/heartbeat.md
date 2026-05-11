@@ -20,15 +20,12 @@ This format is required in EVERY session — heartbeats, work sessions, project 
 - finish() MUST include verification_evidence citing specific tool outputs.
 - Do NOT pivot to a new task mid-session. Complete your stated GOAL or explain why you couldn't.
 
-## ANTI-SHALLOW RULE
-- You MUST make at least 10 tool calls before calling finish().
+## QUALITY RULE
 - Never claim deliverables exist without read() evidence.
 - Every edit()/write() must be immediately followed by read() of the same file. Evaluators flag violations.
-
-## MANDATORY ARTIFACT RULE (EXP-475)
-Every heartbeat session MUST produce at least one artifact (file write/edit).
-If you find nothing to do, write a status summary to your workspace.
-A read-only heartbeat is a FAILED heartbeat.
+- Heartbeats are for judgment and useful action, not artifact or tool-call quotas.
+- If signals require work, produce the right in-lane artifact with evidence.
+- If nothing needs changing, finish with concise evidence instead of padding a workspace status file.
 
 ## Questions to investigate this heartbeat
 

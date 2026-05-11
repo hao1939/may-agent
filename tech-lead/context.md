@@ -8,9 +8,11 @@
 - No src/ or package.json at root. Runtime is pre-compiled. **Codebase = agents/**
 - Write within 5 tool calls. First 3-5 calls = read/ls/grep (C12.1).
 
-## 🎯 [MANDATORY ARTIFACT RULE]
-Every heartbeat MUST produce ≥1 file write/edit. A read-only heartbeat is a FAILED heartbeat.
-If nothing needs fixing, write a status summary to your workspace/. ≥10 tool calls required before finish().
+## 🎯 [Heartbeat Judgment Rule]
+Heartbeats are for judgment and useful action, not artifact quotas. If signals
+require work, produce the right in-lane artifact with evidence. If nothing needs
+changing, finish with concise evidence instead of padding a workspace status
+file. There is no mandatory write/edit count or tool-call quota.
 
 ## 🔧 [WHEN RUNNING TOOLS]
 
@@ -81,4 +83,3 @@ Examples:
 - "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
 - "Step 8: bash(bun test) exit code 0, 14 tests passed"
 - "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
-

@@ -102,11 +102,16 @@ describe("loadMetrics", () => {
     expect(loadMetrics(ctx, "arc")).toBe("");
   });
 
-  it("includes v2 spec coverage as active metric in ALL_METRICS", () => {
+  it("keeps retired v2 spec coverage out of active metrics", () => {
     const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const activeRegistry = source.slice(
+      source.indexOf("const ALL_METRICS"),
+      source.indexOf("const RETIRED_METRIC_IDS"),
+    );
+    const retiredRegistry = source.slice(source.indexOf("const RETIRED_METRIC_IDS"));
 
-    expect(source).not.toContain('"v2.spec-coverage-rate",\n');  // not in RETIRED list
-    expect(source).toContain('id: "v2.spec-coverage-rate"');      // in ALL_METRICS
+    expect(activeRegistry).not.toContain('id: "v2.spec-coverage-rate"');
+    expect(retiredRegistry).toContain('"v2.spec-coverage-rate"');
   });
 
   it("shows consecutive breach escalation", () => {
@@ -456,7 +461,7 @@ describe("genericHeartbeat", () => {
     ctx.runAgent.mockResolvedValueOnce({ status: "success", lastAssistantText: "Did heartbeat stuff", deliverables: [{ path: "test.md" }] });
 
     const result = await genericHeartbeat(ctx, "bob");
-    expect(ctx.runAgent).toHaveBeenCalledTimes(2);
+    expect(ctx.runAgent).toHaveBeenCalledTimes(1);
     expect(ctx.done).toHaveBeenCalled();
   });
 

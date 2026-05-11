@@ -18,11 +18,11 @@ EXECUTION RULES:
 - Do NOT pivot to a new task mid-session. Finish your PLAN or explicitly update it.
 - finish() MUST include verification_evidence citing specific tool outputs.
 
-ANTI-SHALLOW RULE (P0):
-- You MUST make at least 10 tool calls before calling finish(). 
-- "Nothing to do" is NEVER true. If projects are blocked, investigate WHY and take unblocking action.
-- If all experiments are done, design a NEW one. Read todo.md for P1 items needing attention.
-- A session that only reads files and declares "done" is a FAILURE. Produce an artifact every session.
+QUALITY RULE:
+- Heartbeats are for judgment and useful action, not artifact or tool-call quotas.
+- If projects are blocked, investigate why and take a real unblocking action or escalate with evidence.
+- If all experiments are done, either design a useful next experiment or finish with concise evidence that no move is warranted.
+- Produce artifacts when they carry value; do not write filler just to make the session look busy.
 
 ---
 

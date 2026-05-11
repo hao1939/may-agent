@@ -9,7 +9,7 @@
  *   import { loadMetrics, loadProjects, loadAlerts, loadHeartbeatMd, loadInbox, formatMetricsBlock } from "../../shared/workflows/heartbeat-data.js";
  */
 
-import { readFileSync, readdirSync, existsSync, appendFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "./dispatch-dedup-guard.js";
@@ -513,9 +513,6 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
   ctx.emit({ type: "step_start", step: "heartbeat" });
   ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });
 
-  // ── EXP-740: Wall-clock timer for duration gate ──────────────────
-  const heartbeatStartTime = Date.now();
-
   let result: any;
   try {
     result = await ctx.runAgent(agent, prompt);
@@ -529,168 +526,6 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
   recordOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
   dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
-
-  // ── EXP-870: Use shared runGates() for all gate checks ──────────
-  return runGates(ctx, agent, agentsRoot, result, heartbeatStartTime);
-}
-
-/**
- * EXP-870: Extracted gate logic — reusable by custom-workflow agents.
- *
- * Call after your agent session completes. Runs artifact, anti-shallow,
- * impact, and duration gates in sequence. Returns ctx.done() with either
- * the gate re-prompt result or the original result summary.
- *
- * Usage in custom workflows:
- *   import { runGates } from "../../shared/workflows/heartbeat-data.js";
- *   const result = await ctx.runAgent(agent, prompt);
- *   return runGates(ctx, agent, agentsRoot, result, startTime);
- */
-export async function runGates(ctx: any, agent: string, agentsRoot: string, result: any, heartbeatStartTime: number) {
-  // ── EXP-520: HEARTBEAT ARTIFACT GATE ──────────────────────────────
-  // If agent produced no file writes, re-prompt once for an artifact.
-  // Text rules plateau at 55% compliance (EXP-475); structural enforcement needed.
-  // EXP-520: Check deliverables array first (reliable), then fall back to summary keyword check.
-  // Note: mentionsWrite uses past-tense verbs only to reduce false matches from
-  // instructional/contextual text that happens to contain "write" or "edit".
-  const hasDeliverables = ((result as any).deliverables?.length ?? 0) > 0;
-  const mentionsWrite = /\b(wrote|created|updated|edited|committed|saved|modified|generated|produced|fixed)\b/i.test(result.summary || "");
-  // EXP-850: Check if agent used write/edit tools OR delegated via agents/workflow
-  // to prevent false positives on sessions that produced real artifacts.
-  const usedWriteTools = ((result as any)?.messages ?? []).some((msg: any) =>
-    Array.isArray(msg.content) && msg.content.some((part: any) =>
-      (part.type === "toolCall" || part.type === "tool_use") &&
-      (part.name === "write" || part.name === "edit" || part.name === "agents" || part.name === "workflow")
-    )
-  );
-  if (!hasDeliverables && !mentionsWrite && !usedWriteTools && result.status !== "error") {
-    ctx.emit({ type: "artifact_gate_triggered", agent });
-
-    const gatePrompt = `⚠️ ARTIFACT GATE: Your session produced no file writes.
-
-Every heartbeat MUST produce at least one artifact. This is non-negotiable.
-
-Choose one:
-1. Write a status update to your workspace (e.g. workspace/heartbeat-log.md)
-2. Document a finding from your investigation
-3. Update a tracking file (todo.md, now.md, etc.)
-
-Produce at least ONE meaningful write, then call finish() with updated deliverables.
-${FINISH_HYGIENE_INSTRUCTIONS}`;
-
-    const gateResult = await ctx.runAgent(agent, gatePrompt);
-    recordOutcome(agentsRoot, agent, gateResult.status === "error",
-      gateResult.status === "error" ? "artifact gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(gateResult, { maxLength: 500 }));
-  }
-
-  // ── EXP-725: STRUCTURAL ANTI-SHALLOW GATE ───────────────────────────
-  // Text-based anti-shallow rules fail under task pressure (KE-480).
-  // Count actual tool calls; re-prompt if < 10.
-  const MIN_TOOL_CALLS = 10;
-  const toolCallCount = ((result as any)?.messages ?? []).reduce((count: number, msg: any) => {
-    if (!Array.isArray(msg.content)) return count;
-    return count + msg.content.filter((part: any) =>
-      part.type === "toolCall" || part.type === "tool_use"
-    ).length;
-  }, 0);
-
-  if (toolCallCount < MIN_TOOL_CALLS && result.status !== "error") {
-    ctx.emit({ type: "anti_shallow_gate_triggered", agent, tool_calls: toolCallCount });
-    try {
-      const logLine = `${new Date().toISOString()} agent=${agent} gate=anti-shallow tool_calls=${toolCallCount} min_required=${MIN_TOOL_CALLS} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} status=${result.status || "unknown"} action=re-prompt\n`;
-      appendFileSync(join(agentsRoot, "shared", "anti-shallow-gate-triggers.log"), logLine);
-      appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
-    } catch (_) { /* non-critical */ }
-
-    const shallowPrompt = `⚠️ ANTI-SHALLOW GATE: Your session made only ${toolCallCount} tool calls (minimum: ${MIN_TOOL_CALLS}).
-
-Sessions with fewer than ${MIN_TOOL_CALLS} tool calls are almost always shallow. Continue investigating:
-1. Dig deeper into one project or metric
-2. Read actual code or data files (don't just summarize from memory)
-3. Produce a substantive artifact with real analysis
-
-Continue working, then call finish() with updated deliverables.
-${FINISH_HYGIENE_INSTRUCTIONS}`;
-
-    const shallowResult = await ctx.runAgent(agent, shallowPrompt);
-    recordOutcome(agentsRoot, agent, shallowResult.status === "error",
-      shallowResult.status === "error" ? "anti-shallow gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(shallowResult, { maxLength: 500 }));
-  }
-
-  // ── EXP-735: IMPACT GATE (multi-edit impact check) ────────────────
-  // If agent edited multiple files but didn't check downstream consumers, re-prompt.
-  // Option C: semantic detection — did agent search for impact/callers/consumers?
-  const deliverableEdits = Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0;
-  const summaryText = result.summary || "";
-  const allText = ((result as any)?.messages ?? []).map((m: any) =>
-    typeof m.content === "string" ? m.content :
-    Array.isArray(m.content) ? m.content.map((p: any) => p.text || "").join(" ") : ""
-  ).join(" ");
-  const didImpactCheck = /\b(grep|rg)\b.*\b(caller|consumer|import|require|usage)\b/i.test(allText)
-    || /impact|downstream|consumer|caller/i.test(summaryText);
-
-  if (deliverableEdits >= 2 && !didImpactCheck && result.status !== "error") {
-    ctx.emit({ type: "impact_gate_triggered", agent, deliverable_edits: deliverableEdits });
-    try {
-      const logLine = `${new Date().toISOString()} agent=${agent} gate=impact deliverable_edits=${deliverableEdits} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} did_impact_check=false status=${result.status || "unknown"} action=re-prompt\n`;
-      appendFileSync(join(agentsRoot, "shared", "impact-gate-triggers.log"), logLine);
-      appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
-    } catch (_) { /* non-critical */ }
-
-    const impactPrompt = `⚠️ IMPACT GATE: You edited ${deliverableEdits} files but didn't check for downstream consumers.
-
-Before finishing, verify your changes don't break callers:
-1. Search for imports/requires of the files you modified
-2. Check if any function signatures or exports changed
-3. Verify downstream consumers still work
-
-Run at least one grep/rg for callers of your modified files, then call finish().
-${FINISH_HYGIENE_INSTRUCTIONS}`;
-
-    const impactResult = await ctx.runAgent(agent, impactPrompt);
-    recordOutcome(agentsRoot, agent, impactResult.status === "error",
-      impactResult.status === "error" ? "impact gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(impactResult, { maxLength: 500 }));
-  }
-
-  // ── EXP-740: WALL-CLOCK DURATION GATE ──────────────────────────────
-  // EXP-705/710: Sessions <60s are always shallow. >90s always substantive.
-  // Uses wall-clock time instead of proxy scoring (confirmed dead code).
-  const elapsedMs = Date.now() - heartbeatStartTime;
-  const elapsedSec = Math.round(elapsedMs / 1000);
-  const TOO_FAST_THRESHOLD_SEC = 90;
-
-  if (elapsedSec < TOO_FAST_THRESHOLD_SEC && result.status !== "error") {
-    ctx.emit({ type: "duration_gate_triggered", agent, elapsed_sec: elapsedSec });
-    try {
-      const logLine = `${new Date().toISOString()} agent=${agent} gate=duration elapsed_sec=${elapsedSec} threshold_sec=${TOO_FAST_THRESHOLD_SEC} tool_calls=${toolCallCount} status=${result.status || "unknown"} action=re-prompt\n`;
-      appendFileSync(join(agentsRoot, "shared", "duration-gate-triggers.log"), logLine);
-      appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
-    } catch (_) { /* non-critical */ }
-
-    const durationPrompt = `⚠️ DURATION GATE: Your session completed in ${elapsedSec}s — under the ${TOO_FAST_THRESHOLD_SEC}s minimum.
-
-Fast sessions almost never produce meaningful work. Before finishing:
-1. Did you investigate at least one non-obvious issue?
-2. Did you produce an artifact with real analysis (not just a status echo)?
-3. Did you check for improvement opportunities beyond surface metrics?
-
-Dig deeper into one project or metric and produce a substantive artifact.
-${FINISH_HYGIENE_INSTRUCTIONS}`;
-
-    const durationResult = await ctx.runAgent(agent, durationPrompt);
-    recordOutcome(agentsRoot, agent, durationResult.status === "error",
-      durationResult.status === "error" ? "duration gate re-prompt error" : undefined);
-    return ctx.done(ctx.summarize(durationResult, { maxLength: 500 }));
-  }
-
-  // ── EXP-860: Log gate pass-through for false-positive rate measurement ──
-  try {
-    const logLine = `${new Date().toISOString()} agent=${agent} gate=all-passed tool_calls=${toolCallCount} elapsed_sec=${Math.round((Date.now() - heartbeatStartTime) / 1000)} deliverable_edits=${Array.isArray((result as any).deliverables) ? (result as any).deliverables.length : 0} status=${result.status || "unknown"} action=none\n`;
-    appendFileSync(join(agentsRoot, "shared", "gate-outcomes.log"), logLine);
-  } catch (_) { /* non-critical */ }
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }

@@ -3,14 +3,10 @@
 ## Status Summary (updated 2029-08-10)
 
 All 6 projects are **CLOSED** (skill-workflow-audit: blocked but 18/18 milestones — effectively complete).
-**EXP-740 DEPLOYED** ✅ — wall-clock duration gate confirmed in heartbeat-data.ts (90s threshold). 0 triggers so far.
-EXP-735 and EXP-725 IMPLEMENTED by tech-lead (2029-08-07) in heartbeat-data.ts. Monitoring gate triggers.
+**Heartbeat gate reprompts retired (2026-05-11)** — artifact, anti-shallow, impact, and duration gate reprompts were removed from `heartbeat-data.ts`; heartbeat quality is now observed through metrics/evaluator signals instead of forced second-pass work.
+EXP-735/740/725/520/870/860 are historical gate experiments, not current runtime policy.
 EXP-850: Tool-call budget experiment SCENARIO READY — all 4 arms in multi-file-refactor/scenario.json.
 EXP-745 Phase 3: DESIGNED but gym runner needs GYM_AGENT_BIN (no agent binary in environment).
-**EXP-870 IMPLEMENTED** ✅ — `runGates()` extracted as exported function (Option B). Custom agents can now import it. Phase 2 (wiring) remains.
-**EXP-860 LOGGING READY** ✅ — all 3 gates log to individual logs + unified `gate-outcomes.log`. Awaiting ≥10 triggers for measurement.
-**EXP-520 CONFIRMED** — artifact gate active within `runGates()`, 100% recovery rate unchanged.
-Gate logs still empty (0 triggers — check after 50+ sessions).
 Pipeline status: `agents/coach/workspace/experiment-pipeline-status-2029-08-09.md`
 Results: `agents/coach/workspace/EXP-870-860-results.md`
 
@@ -426,12 +422,12 @@ Results: `agents/coach/workspace/EXP-870-860-results.md`
 - **Finding**: Agents follow explicit single-prompt constraints at 100%. Real violations are cross-context (multi-file constraints), not single-prompt attention failures.
 - **Status**: CLOSED — CEILING. Skill not testable in gym format.
 
-## P1: EXP-475 — Read-Only Heartbeat Prevention — SUPERSEDED by EXP-520
+## P1: EXP-475 — Read-Only Heartbeat Prevention — CLOSED (RETIRED)
 - **Problem**: tech-lead and optimizer produce read-only heartbeats (0 writes, ≥10 reads). Anti-shallow rule checks tool count but not write count.
 - **Evidence**: tech-lead s_1777697463001_3724, optimizer s_1777696220814_3717 — both explicit "no files modified"
-- **Hypothesis**: MANDATORY ARTIFACT RULE (≥1 write/edit per heartbeat) → read-only rate ≤10%
+- **Historical hypothesis**: mandatory artifact rule (≥1 write/edit per heartbeat) → read-only rate ≤10%
 - **Design**: `agents/coach/workspace/EXP-475-read-only-heartbeat-design.md`
-- **Status**: SUPERSEDED — text rule achieved 55% compliance (plateaued). EXP-520 structural gate now handles this at 100% recovery rate.
+- **Status**: RETIRED 2026-05-11 — artifact/write quotas and heartbeat gate reprompts caused log padding and cross-lane writes. Current policy: observe heartbeat quality through metrics/evaluator signals; do not enforce write/tool quotas.
 - **Phase 2 record**: `agents/coach/workspace/EXP-475-phase2-deployment.md`
 
 ## P1: EXP-465 — Anti-Shallow Rule Deployment to amy/scout/qa — CLOSED ✅ POSITIVE (directional)
@@ -594,7 +590,7 @@ Results: `agents/coach/workspace/EXP-870-860-results.md`
 - **Variants**: 9 scenario variants created in `agents/gym/scenarios/*-exp390-arm-{a,b,c}`
 
 ## P1: EXP-385 — Anti-Shallow Rule Effectiveness Measurement — CLOSED (SUPERSEDED by EXP-390)
-- **Problem**: ANTI-SHALLOW RULE deployed months ago but never measured. Does ≥10 tool calls actually correlate with meaningful output?
+- **Problem**: Historical anti-shallow rule deployed months ago but never measured. Does a tool-call quota actually correlate with meaningful output?
 - **Finding**: Tool-call counts not logged in last-session.md. Cannot measure retrospectively.
 - **Superseded**: EXP-390 confirmed the rule's value is binary (prevents empty sessions), not gradient. Threshold doesn't affect task quality. No further measurement needed.
 - **Design**: `agents/coach/workspace/EXP-385-anti-shallow-effectiveness-design.md`
@@ -677,7 +673,7 @@ Results: `agents/coach/workspace/EXP-870-860-results.md`
 - **Problem**: Evaluator dead 105+ days. No quality signal for any experiment.
 - **Treatment**: 5-point binary self-score checklist in coach/context.md
 - **Design**: `agents/coach/workspace/EXP-325-self-scoring-design.md`
-- **Status**: CLOSED — SUPERSEDED. Checklist criteria already enforced by ANTI-SHALLOW RULE and PRE-FINISH GATE in heartbeat/context. Self-scoring adds no incremental value.
+- **Status**: CLOSED — SUPERSEDED. Checklist criteria are now covered by evaluator/metrics signals and normal finish evidence; heartbeat artifact/tool-call quotas are retired.
 
 ## P1: EXP-320 — Output Format Rollout to Tech-Lead and Amy (NEW Jul 16) — CLOSED ✅ DEPLOYED
 - **Problem**: Only 3/10 active agents have OUTPUT FORMAT. Pattern proven +32pp.
@@ -787,8 +783,8 @@ Results: `agents/coach/workspace/EXP-870-860-results.md`
   - bob: 0.731 (n=8) ← BEST
 
 ## P1: EXP-270 — Anti-Shallow Sessions ✅ DONE (Jul 11) — POSITIVE (directional)
-- Coach treatment active (ANTI-SHALLOW RULE in heartbeat.md) — WORKING
-- Bob treatment: ✅ DEPLOYED in `agents/bob/heartbeat.md` (≥5 tool calls minimum)
+- Historical coach treatment was active at the time of the experiment. Heartbeat tool-call quotas were retired on 2026-05-11.
+- Historical Bob treatment was deployed in `agents/bob/heartbeat.md`; this quota is no longer current policy.
 - **Results**: `agents/coach/workspace/EXP-270-results.md`
 - **Finding**: Bob LLM q=0.67 (n=36), Coach q=0.49 (n=278). Heuristic evals all 0.20 (bug).
 - **Design**: `agents/coach/workspace/EXP-270-anti-shallow-design.md`

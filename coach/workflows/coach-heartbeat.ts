@@ -7,7 +7,6 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-  runGates,
 } from "../../shared/workflows/heartbeat-data.js";
 import { checkCircuitBreaker, recordOutcome } from "../../shared/workflows/circuit-breaker.js";
 import { join } from "node:path";
@@ -22,7 +21,6 @@ function getAgentsRoot(ctx: WorkflowContext): string {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "coach";
   const agentsRoot = getAgentsRoot(ctx);
-  const heartbeatStartTime = Date.now();
 
   // ── CIRCUIT BREAKER ──
   const circuitBlock = checkCircuitBreaker(agentsRoot, agent);
@@ -136,6 +134,5 @@ ${contextBlock}
   recordOutcome(agentsRoot, agent, execResult.status === "error",
     execResult.status === "error" ? "heartbeat session error" : undefined);
 
-  // EXP-870: Run structural gates (artifact, anti-shallow, impact, duration)
-  return runGates(ctx, agent, agentsRoot, execResult, heartbeatStartTime);
+  return ctx.done(ctx.summarize(execResult, { maxLength: 500 }));
 }

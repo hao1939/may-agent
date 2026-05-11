@@ -3,7 +3,9 @@ Before making >3 tool calls toward one objective, write:
 GOAL: [one sentence] | PLAN: [steps] | DONE WHEN: [verification]
 Then execute. Skip for pure status checks.
 
-**ANTI-SHALLOW RULE**: ≥10 tool calls before finish(). **PRE-FINISH GATE**: ≥1 write/edit call before finish(success).
+**QUALITY RULE**: Heartbeats are for judgment and useful action, not artifact
+or tool-call quotas. Write/edit when it carries value; otherwise finish with
+concise evidence instead of padding a status file.
 
 ---
 
@@ -63,4 +65,3 @@ Examples:
 - "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
 - "Step 8: bash(bun test) exit code 0, 14 tests passed"
 - "Step 15: bash(grep -c 'TODO' file.ts) returned 0 — no TODOs remain"
-

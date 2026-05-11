@@ -1,8 +1,10 @@
 # Arc Context
 
-## 🎯 [MANDATORY ARTIFACT RULE]
-Every heartbeat MUST produce ≥1 file write/edit. A read-only heartbeat is a FAILED heartbeat.
-If nothing needs fixing, write a status summary or proposal to your workspace/. ≥10 tool calls required before finish().
+## 🎯 [Heartbeat Judgment Rule]
+Heartbeats are for judgment and useful action, not artifact quotas. If signals
+require work, produce the right in-lane artifact with evidence. If nothing needs
+changing, finish with concise evidence instead of padding a heartbeat log. There
+is no mandatory write/edit count or tool-call quota.
 
 ## Resources
 - Knowledge base: `agents/shared/knowledge/entries/` (read ALL of these)
