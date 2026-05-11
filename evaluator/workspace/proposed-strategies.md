@@ -178,3 +178,40 @@ Ran `extract-strategy.cjs` on 3 newer non-evaluator session logs:
 - `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778448795721_87/session.jsonl` returned `"lessons": []`.
 - `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778448869609_93/session.jsonl` returned `"lessons": []`.
 - `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778448795823_89/session.jsonl` returned one recovery lesson keyed to the missing `KE-1051-provenance-paradox.md` path.
+
+---
+
+# Proposed Strategies — 2026-05-11 04:35Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator session logs:
+- `.state/sessions/history/s_1778474074921_4/session.jsonl` (scout)
+- `.state/sessions/history/s_1778474073542_0/session.jsonl` (may)
+- `.state/sessions/history/s_1778474074636_3/session.jsonl` (arc)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 1
+- Sessions with no extracted lessons: 2
+
+## Lessons
+
+### 1. Guessed helper-script paths are still creating avoidable bash failures
+**Evidence:** Scout session `s_1778474074921_4` yielded one recovery lesson with trigger `bash: scout/tools/next-ke-id.sh: No such file or directory`.
+
+**Strategy:**
+- Verify helper-script existence with `find`, `ls`, or a targeted search before invoking a guessed repo-relative script path.
+- When a missing helper blocks knowledge-entry creation, fall back to the authoritative location or ask the owning agent after confirming the path is absent rather than retrying the same guess.
+- Treat these as efficiency/reliability lessons first: the failure is lightweight unless it materially derails the broader task.
+
+## Calibration Notes
+- The extractor again found nothing on two otherwise clean sessions (may and arc), which reinforces that the periodic run is still recovery-biased rather than positive-pattern mining.
+- This scout failure lines up with the live `DRIFT` monitor alert from the same session, so extractor output and runtime monitoring are currently converging on the same root cause: path-guessing instead of task-relevant progress.
+
+## Recommended Follow-up
+1. If evaluator wants broader strategy coverage, add a separate positive-pattern extraction mode so clean successful sessions contribute reusable tactics instead of producing empty outputs.
+2. Keep treating missing-script path guesses as efficiency signals unless they cascade into repeated retries or task abandonment.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778474074921_4/session.jsonl` returned one recovery lesson keyed to the missing `scout/tools/next-ke-id.sh` path.
+- The same command on `.state/sessions/history/s_1778474073542_0/session.jsonl` and `.state/sessions/history/s_1778474074636_3/session.jsonl` returned `"lessons": []`.
