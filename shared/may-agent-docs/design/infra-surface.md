@@ -598,12 +598,14 @@ Existing pieces already align with this direction:
 The main gap is not a missing grand architecture. The remaining work is keeping
 the already-shipped boundaries boring:
 
-- complete live-human Telegram smoke when a real reply is available,
 - keep execution inspection using the shared result/trace shape consistently,
 - keep `getDb()` limited to mechanical infra code and explicit compatibility
   paths,
 - fold stable behavior into the shorter architecture/manual docs so agents do
   not learn stale patterns.
+
+The live-human Telegram smoke is now covered by runtime evidence and the
+`scripts/telegram-reply-smoke.ts` inspector.
 
 ## Migration Direction
 

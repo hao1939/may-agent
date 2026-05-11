@@ -37,10 +37,9 @@ daemon events instead of adapter-local actions.
 
 Next slice:
 
-1. Complete the real-human Telegram smoke when a live reply is available.
-2. Continue using runtime event ids as proof for adapter/control boundary
+1. Continue using runtime event ids as proof for adapter/control boundary
    changes; do not accept adapter-local behavior without durable event evidence.
-3. Keep folding stable infra-surface behavior into the short reference docs
+2. Keep folding stable infra-surface behavior into the short reference docs
    when stale guidance is found.
 
 Recently completed:
@@ -59,6 +58,7 @@ Recently completed:
    handler authors only see executable SDK surface.
 7. [x] Align `architecture.md`, `runtime.md`, and `heartbeat.md` with the
    current event -> handler/workflow -> session/function -> evidence model.
+8. [x] Confirm real-human Telegram reply routing against live DB evidence.
 
 This is now the highest-value slice because the event/metric/control boundaries
 are traceable enough; the next risk is duplicated workflow patterns confusing
@@ -68,7 +68,7 @@ agents about how to drive projects.
 
 | Gap | Risk | Phase |
 |---|---|---|
-| Real-human Telegram smoke still needs an observed live reply | Automated proof can miss Bot API/runtime environment issues | Phase 2 |
+| None currently tracked | — | — |
 
 ## Phase 0: Design State Refresh
 
@@ -222,7 +222,7 @@ Validation:
 - [x] Automated Telegram e2e test covers slash commands:
   `/cancel` -> `session.cancel.requested`, `/reload` -> `reload`,
   `/close` -> `shutdown`, with no generic `input` fallback.
-- [ ] Human Telegram e2e smoke confirms a real reply reaches the intended
+- [x] Human Telegram e2e smoke confirms a real reply reaches the intended
   session or emits a clear routing failure event.
 - [x] Telegram, Web UI, and CLI leave comparable event traces for comparable
   actions.
@@ -246,6 +246,13 @@ Runtime proof, 2026-05-11:
 - Automated Telegram e2e proves the Telegram adapter emits the same event
   shapes for stored session replies and slash commands before those events hit
   the daemon router.
+- Real Telegram reply smoke, 2026-05-11: `bun scripts/telegram-reply-smoke.ts
+  --hours 24` found three live replies that routed to the intended session:
+  `telegram.reply` events `554729`, `554715`, and `554618` all targeted
+  `s_1778440180314_1` and were followed by matching `session.start` actions
+  `554730`, `554716`, and `554619`. The same scan also surfaced one older
+  reply, `554582`, with no matching follow-up in the 10s correlation window;
+  keep the smoke script available for future regression checks.
 
 ## Failure Signal Slice
 
