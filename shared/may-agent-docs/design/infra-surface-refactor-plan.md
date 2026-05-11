@@ -452,15 +452,15 @@ Scope:
   - workflow run metadata opens trace by workflow run id,
   - workflow executions inside loop trace can be inspected recursively.
 - Make resume APIs diagnostic first:
-  - already terminal,
+  - [x] already terminal,
   - resumed,
   - requeued,
-  - missing state,
+  - [x] missing/recoverable workflow state,
   - unsafe replay,
   - blocked by guard.
 - Preserve original session/workflow lineage.
-- Emit recovery/resume failure events with owner/fallback context.
-- Surface whether the next action is resume, requeue, recover mechanically, or
+- [x] Emit recovery/resume failure events with owner/fallback context.
+- [x] Surface whether the next action is resume, requeue, recover mechanically, or
   escalate.
 
 Validation:
@@ -470,8 +470,8 @@ Validation:
 - [x] Pick a failed/interrupted session resume event and show the failure path through the same
   result shape.
 - [x] Open loop trace from both a workflow id and one of its child session ids.
-- Resume failure emits queryable events with reason and owner/fallback.
-- UI/API can show where to inspect the resumed or failed trace.
+- [x] Resume failure emits queryable events with reason and owner/fallback.
+- [x] UI/API can show where to inspect the resumed or failed trace.
 
 Stop criteria:
 
@@ -502,6 +502,17 @@ Runtime proof, 2026-05-11:
 - Loop-trace API for workflow `wr_1778479946845_mnr0` returned target kind
   `workflow` with the same workflow execution and child evaluator session
   execution.
+
+Runtime proof, 2026-05-11:
+
+- Deployed code was smoke-tested through the daemon socket and Web UI API.
+- Emitted `workflow.resume_skipped` event `558669`; loop trace returned owner
+  `may`, project `infra-surface-refactor`, execution
+  `wr_phase5_resume_skip_smoke`, status `done`, next action `none`.
+- Emitted `workflow.resume_failed` event `558670`; loop trace returned owner
+  `may`, project `infra-surface-refactor`, execution
+  `wr_phase5_resume_failed_smoke`, status `interrupted`, recoverable `true`,
+  next action `recover`.
 
 ## Phase 6: Guard Signal Convergence
 
