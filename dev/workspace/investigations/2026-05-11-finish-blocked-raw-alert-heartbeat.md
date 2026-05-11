@@ -1,39 +1,43 @@
-# 2026-05-11 Finish-Blocked Raw Alert Heartbeat
+# 2026-05-11 Finish-Blocked Raw Alert Heartbeat Recheck
 
-## Goal
-Triage the repeated `session.finish-blocked-uncommitted-count-24h` alert during dev heartbeat and decide whether it requires a root-cause fix, calibration, escalation, or continued waiting with evidence.
+## Signal
 
-## Metric Alert Judgment
+- Metric: `session.finish-blocked-uncommitted-count-24h`
+- Alert: `287`, unresolved
+- Stored value at recheck: `current=60`, `threshold=50`, `target=0`, `priority=P2`
+- Paired strict metric: `session.finish-blocked-unresolved-count-24h current=0`
 
-Chosen operation: `waiting_with_evidence`.
+## Operation
 
-Evidence checked:
+Chosen operation: **document_exception**.
 
-- Metric row: `session.finish-blocked-uncommitted-count-24h` is active, owner `dev`, priority `P2`, `current=57`, `threshold=50`, `target=0`, `alert_op='>'`.
-- Paired strict metric: `session.finish-blocked-unresolved-count-24h` is active, owner `dev`, priority `P1`, `current=0`, `threshold=0`, `target=0`.
-- Open alert: alert `287` remains unresolved for the raw metric with message `current=57, threshold=50, target=0`.
-- Latest returned snapshots show raw values at `57/56` while paired strict snapshots remain `0`.
-- Live 24h raw classification query found `57` finish/uncommitted rows: `54` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved rows.
-- Source attribution remains repaired scout/steward/may workflow friction: scout-heartbeat `17` (`16` repaired success, `1` terminal no-recovery), scout-explore `13` repaired success, workflow closed-loop-steward `9` repaired success, arc-heartbeat `5` (`4` repaired success, `1` repaired partial), may-heartbeat `5` repaired success.
+The raw breach is real and should remain visible, but it is an accepted monitoring exception while the strict unresolved dirty-exit metric stays at zero. No destructive action is involved or indicated. No root-cause patch is indicated in this heartbeat because fresh classification found no unresolved dirty exits.
 
-Judgment: the raw breach is real and should stay visible, but it is not currently a strict unresolved dirty-exit problem. Do not resolve or calibrate the still-breaching raw alert. Keep `finish-blocked-hygiene-reduction` paused/monitoring unless the strict metric breaches or a future raw sample contains `other_unresolved_or_unknown > 0`.
+## Evidence
 
-Next validation: next `metrics-snapshot` for both split metrics.
+Read-only DB checks showed:
 
-## Pending Signal Disposition
+- Metric rows exist for both split metrics; raw is `60`, strict is `0`.
+- Latest paired snapshots show raw fluctuating `60–64` while strict remains `0`.
+- Open alerts: raw alert `287` is unresolved; prior strict alert `284` is resolved.
+- Fresh live raw classification of the 24h finish/uncommitted slice found all `60` rows recovered or terminal:
+  - `58` repaired successful exits
+  - `1` repaired partial exit
+  - `1` terminal no-recovery interrupted exit
+  - `0` other unresolved rows
+- Source attribution remains repaired workflow friction, not a new unresolved source pattern:
+  - `workflow:scout-heartbeat`: 21 total, 20 repaired success, 1 terminal no-recovery
+  - `workflow:scout-explore`: 18 repaired success
+  - `workflow:closed-loop-steward`: 10 repaired success
+  - other sources have no unresolved rows
 
-- `metric.alert_judged` events for the raw finish-blocked metric: acted by rechecking the live metric row, snapshots, alert row, and raw classification. Dismissed as already consistent with the same `waiting_with_evidence` operation.
-- Recent `session.end` events referencing raw alert triage: acted by sampling current session/end and raw attribution evidence; no new source pattern found.
-- Recent `guard.triggered` events: dismissed for this heartbeat as mostly finish hygiene/readback enforcement and unrelated ambient dirty warnings. The notable scout block was missing read-back on a new KE file, which is a local scout closeout issue rather than a dev-owned infrastructure defect.
-- Recent `session.start` metric-alert-triage events: acted through this heartbeat's red metric investigation.
+## Pending Event Triage
 
-## Normal Heartbeat Checks
+- `handler.workflow_dispatched` / `metric.alert_judged` / recent metric-alert-triage `session.end`: acted; they are the existing alert-287 judgment chain and consistent with this recheck.
+- `guard.triggered`: dismissed as watch/ambient dirty-worktree guard noise unless tied to this session's own deliverables.
+- `session.start`: dismissed as lifecycle noise.
+- Recent handler errors: noted for normal heartbeat awareness; the current red metric does not require a handler patch.
 
-- Approved work queue is empty.
-- `session.error-rate-6h=0.0943` remains under threshold `0.3`.
-- `handler.success-rate=0.9956` remains above threshold `0.8`; `handler.failed-count=2` remains below threshold `10`.
-- Recent handler failures include one `evaluator-aftermath` `ctx.query.evaluatorAftermathContext is not a function` event in the last 24h. Later evaluator-aftermath sessions succeeded, so this looks transient/runtime-context related rather than a currently repeating failure; no dev-owned code patch was made this heartbeat.
+## Next Validation
 
-## Decision
-
-No destructive action, DB write, alert resolution, or project status change is appropriate. The concrete heartbeat action is to leave this evidence trail and continue watching the strict split metric plus raw unknown/unresolved classification.
+Keep `finish-blocked-hygiene-reduction` paused. Resume immediately if `session.finish-blocked-unresolved-count-24h` breaches or a future raw sample has `other_unresolved > 0`; otherwise continue treating raw alert `287` as a documented project-level exception while strict stays zero.
