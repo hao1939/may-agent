@@ -53,6 +53,8 @@ Recently completed:
 5. [x] Close the event-bus subscriber failure observability gap with durable
    `subscriber.failed` events and the `infra.bus.subscriber-failed-count-1h`
    health metric.
+6. [x] Remove the reserved-but-unimplemented `createLLMSession()` SDK method so
+   handler authors only see executable SDK surface.
 
 This is now the highest-value slice because the event/metric/control boundaries
 are traceable enough; the next risk is duplicated workflow patterns confusing

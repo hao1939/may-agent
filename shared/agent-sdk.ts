@@ -11,8 +11,6 @@ export type {
   AgentSDK,
   WorkflowSDK,
   RunOpts,
-  SessionOpts,
-  SessionHandle as SDKSessionHandle,
   TaskResult as SDKTaskResult,
   DoneOpts,
   Deliverable,

@@ -1,6 +1,7 @@
 # SDK Quick Reference
 
-The AgentSDK is available to all handlers via `ctx.sdk`. 7 methods + 1 property — see [sdk.md](../sdk.md) for full interface.
+The AgentSDK is available to all handlers via `ctx.sdk`. See
+[sdk.md](../sdk.md) for the full interface.
 
 ## Run an Agent
 
@@ -57,12 +58,6 @@ sdk.paths.persist  // .state/ directory (DB, logs)
 sdk.paths.root     // project root
 sdk.paths.agents   // agents/ directory
 ```
-
-## Raw LLM Sessions
-
-`sdk.createLLMSession()` is reserved in the type surface, but the current
-implementation throws `createLLMSession not yet implemented`. Use
-`sdk.runAgent()` or a workflow step until this is wired.
 
 ## Common Patterns
 

@@ -2,14 +2,26 @@
 
 The canonical interface between agent code (handlers, workflows, gym) and the system.
 
-## The Interface
+The two execution calls should be understood together:
+
+```
+runAgent(agent, task, opts)       -> one agent session
+runWorkflow(workflow, task, opts) -> pre-orchestrated sessions/functions
+```
+
+A workflow is not a separate kind of intelligence. It is a reusable
+orchestration pattern around sessions.
+
+## Target Interface
 
 ```typescript
 interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
   emit(type: string, data?: Record<string, unknown>): void;
-  getDb(): Database;
+  metrics: MetricAPI;
+  query: QueryAPI;
+  getDb(): Database;  // compatibility escape hatch
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
   escalate(target: string, reason: string): void;
@@ -17,9 +29,14 @@ interface AgentSDK {
 }
 ```
 
-7 methods + 1 property. That's the entire capability surface.
+The intended surface is small: execution, events, metrics, query, messaging,
+escalation, logging, and paths. `getDb()` remains for compatibility and
+mechanical infra handlers, but new handler/workflow code should prefer `query`
+and `metrics`.
 
-> **Reserved:** `createLLMSession(opts)` is defined in the interface but not yet implemented. It will provide direct LLM access for handlers that need non-agent LLM calls.
+Current state: `metrics` and `query` are implemented SDK surfaces. Use `getDb()`
+only where a handler/workflow needs an escape hatch for mechanical projection or
+bookkeeping, and keep those reads bounded.
 
 ## How Handlers Get It
 
@@ -27,8 +44,9 @@ interface AgentSDK {
 export const create = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
     const sdk = ctx.sdk;           // ← the SDK
-    const db = sdk.getDb();
-    sdk.emit("handler.completed", { handler: entry.name });
+    await sdk.runWorkflow("metric-alert-triage", "task/context from event", {
+      source: entry.name,
+    });
     sdk.log("info", "done");
   };
 };
@@ -38,10 +56,12 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 
 | Method | Does what |
 |--------|-----------|
-| `runAgent(agent, task)` | Run a named agent and wait for its result. |
-| `runWorkflow(name, task)` | Run a multi-step workflow and wait for completion. Workflows are synchronous by design. |
+| `runAgent(agent, task)` | Run one named agent session and wait for its result. |
+| `runWorkflow(name, task)` | Run a pre-orchestrated set of sessions/functions and wait for its result. Same execution shape as `runAgent`, broader internal plan. |
 | `emit(type, data)` | Emit a typed event (persisted to events table). |
-| `getDb()` | Access the shared SQLite database. |
+| `metrics` | Define, record, alert, resolve, evaluate, and list metrics. |
+| `query` | Preferred bounded read surface for sessions, events, metrics, alerts, and projects. |
+| `getDb()` | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`. |
 | `log(level, msg)` | Log a diagnostic message. |
 | `message(target, content)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
 | `escalate(target, reason)` | SOS. Enters escalation chain, may trigger immediate wake. |
@@ -61,6 +81,43 @@ interface WorkflowSDK extends AgentSDK {
   escalate(target: string, reason: string): void;
 }
 ```
+
+`runAgent` and `runWorkflow` should share option semantics where possible:
+source, project/session parentage, timeout, request id, and trace metadata. The
+return shapes can differ, but both should answer:
+
+- what ran,
+- what status it ended with,
+- what evidence/output it produced,
+- where the trace can be inspected.
+
+Shared execution view:
+
+```typescript
+interface ExecutionResult {
+  id: string;
+  kind: "session" | "workflow";
+  status: "done" | "error" | "interrupted" | "blocked" | "escalated";
+  summary: string;
+  traceId: string;
+  evidence?: Record<string, unknown>;
+}
+```
+
+`TaskResult` and `WorkflowResult` can include more detail, but both should map
+to this shape for UI, diagnostics, tests, and resume handling.
+
+Resume should follow the same symmetry:
+
+```
+resumeSession(sessionId, opts) -> continue/recover one session
+resumeWorkflow(runId, opts)   -> continue/recover a pre-orchestrated session tree
+```
+
+Both resume calls should preserve lineage, emit recovery/resume events, return
+diagnostic status, and point to the trace. Resume is not just retry; it should
+explain whether the work was resumed, already terminal, blocked, missing state,
+or unsafe to continue.
 
 ## Alignment: SDK ↔ Agent Tools
 
@@ -89,10 +146,15 @@ the same manager/bus internals. Most agent tool actions have corresponding SDK m
 some tool-only actions (fork, peek, cancel, context, list, requests) exist only on the
 agents tool.
 
+Handler convention: handlers bridge events to workflows. Use
+`sdk.runWorkflow(...)` by default when judgment/action is needed. Direct
+`sdk.runAgent(...)` from a handler is an exception for cases where the workflow
+layer would add no trace, guard, context, or test value.
+
 ```
 SDK (canonical for handlers/workflows)
   ├── Agent tools use same internals (agents.call → callAgent)
-  ├── Handlers call it       (ctx.sdk.runAgent)
+  ├── Handlers dispatch workflows (ctx.sdk.runWorkflow)
   ├── Workflows call it      (ctx.sdk.runAgent)
   └── Tests call it          (adapter.runAgent)
 ```
