@@ -188,4 +188,67 @@ describe("QueryService", () => {
     expect(state.recentOwnerSession).toMatchObject({ sessionId: "s_owner", status: "done" });
     expect(state.recentOwnerSessionJudgment).toMatchObject({ id: expect.any(Number) });
   });
+
+  it("loads closed-loop steward context as bounded live evidence", () => {
+    const { db, query } = harness();
+    const now = 80_000;
+
+    db.run(
+      "INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)",
+      ["p1", "shared/projects/p1", "Project One", "arc", now],
+    );
+    db.run(
+      `INSERT INTO metrics
+        (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["handler.failed-count", "Handler failures", "may", 5, 3, 0, "P1", "p1", "active", now, ">"],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["handler.failed-count", "threshold", "above threshold", now - 2_000],
+    );
+    const alert = db.prepare("SELECT id FROM metric_alerts WHERE metric_id = ?").get("handler.failed-count") as { id: number };
+    db.run(
+      "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
+      ["handler.failed-count", 5, 4, now - 100, "may", "latest"],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["metric.alert_judged", "may", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), now - 500],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["message.delivery_failed", "telegram", "may", JSON.stringify({ reason: "send failed" }), now - 300],
+    );
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["wr_triage", "metric-alert-triage", "Run metric alert triage for handler.failed-count", "running", now - 250],
+    );
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["wr_steward", "closed-loop-steward", "audit", "done", now - 200],
+    );
+
+    const context = query.closedLoopStewardContext({
+      now,
+      lookbackMs: 1_000,
+      alertLimit: 1,
+      deliveryFailureLimit: 1,
+    });
+
+    expect(context.schemaBrief.some((line) => line.startsWith("- sessions:"))).toBe(true);
+    expect(context.runningStewardRun).toBeNull();
+    expect(context.alerts).toHaveLength(1);
+    expect(context.alerts[0].alert).toMatchObject({
+      metric_id: "handler.failed-count",
+      explicitOwner: "may",
+      projectOwner: "arc",
+      alertOp: ">",
+    });
+    expect(context.alerts[0].latestJudgment).toMatchObject({ id: expect.any(Number) });
+    expect(context.alerts[0].latestSnapshot).toMatchObject({ value: 5 });
+    expect(context.alerts[0].activeTriageRun).toMatchObject({ runId: "wr_triage", status: "running" });
+    expect(context.deliveryFailures).toMatchObject([{ source: "telegram", owner: "may" }]);
+    expect(context.recentStewardRuns).toMatchObject([{ runId: "wr_steward", status: "done" }]);
+  });
 });

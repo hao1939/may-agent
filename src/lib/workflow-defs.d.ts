@@ -74,6 +74,7 @@ interface QueryAPI {
   workflowRuns(filter?: Record<string, unknown>): QueryResult;
   metricAlertContext(filter: Record<string, unknown>): Record<string, unknown>;
   metricAlertReactorState(filter: Record<string, unknown>): Record<string, unknown>;
+  closedLoopStewardContext(filter?: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
 }
 

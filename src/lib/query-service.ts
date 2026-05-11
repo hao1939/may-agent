@@ -101,6 +101,29 @@ export interface MetricAlertReactorState {
   alertId: number | null;
 }
 
+export interface ClosedLoopStewardContextQuery {
+  lookbackMs?: number;
+  alertLimit?: number;
+  deliveryFailureLimit?: number;
+  now?: number;
+}
+
+export interface ClosedLoopStewardAlertContext {
+  alert: Record<string, unknown>;
+  latestJudgment: Record<string, unknown> | null;
+  latestSnapshot: Record<string, unknown> | null;
+  activeTriageRun: Record<string, unknown> | null;
+}
+
+export interface ClosedLoopStewardContext {
+  now: number;
+  schemaBrief: string[];
+  runningStewardRun: Record<string, unknown> | null;
+  alerts: ClosedLoopStewardAlertContext[];
+  deliveryFailures: Record<string, unknown>[];
+  recentStewardRuns: Record<string, unknown>[];
+}
+
 export interface QueryAPI {
   sessions(filter?: SessionQuery): QueryResult;
   events(filter?: EventQuery): QueryResult;
@@ -110,6 +133,7 @@ export interface QueryAPI {
   workflowRuns(filter?: WorkflowRunQuery): QueryResult;
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
+  closedLoopStewardContext(filter?: ClosedLoopStewardContextQuery): ClosedLoopStewardContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
 
@@ -217,6 +241,19 @@ function select(
   const whereSql = where.length > 0 ? ` WHERE ${where.join(" AND ")}` : "";
   const rows = db.prepare(`SELECT * FROM ${table}${whereSql} ORDER BY ${orderBy} LIMIT ?`).all(...params, limit + 1);
   return result(rows, limit);
+}
+
+const CLOSED_LOOP_SCHEMA_TABLES = ["sessions", "events", "metrics", "metric_alerts"] as const;
+const CLOSED_LOOP_DEFAULT_LOOKBACK_MS = 6 * 60 * 60_000;
+const CLOSED_LOOP_DEFAULT_ALERT_LIMIT = 12;
+const CLOSED_LOOP_DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
+
+function formatSchemaRows(rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return "(schema unavailable)";
+  return rows
+    .map((row) => `${String(row.name ?? "")}${row.type ? ` ${String(row.type)}` : ""}`)
+    .filter((part) => part.trim() !== "")
+    .join(", ");
 }
 
 export function createQueryService(opts: QueryServiceOptions): QueryAPI {
@@ -456,6 +493,107 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       };
     },
 
+    closedLoopStewardContext(filter = {}) {
+      const db = opts.getDb();
+      const now = typeof filter.now === "number" ? filter.now : Date.now();
+      const lookbackMs = typeof filter.lookbackMs === "number" ? filter.lookbackMs : CLOSED_LOOP_DEFAULT_LOOKBACK_MS;
+      const alertLimit = clampLimit(filter.alertLimit, CLOSED_LOOP_DEFAULT_ALERT_LIMIT, maxLimit);
+      const deliveryFailureLimit = clampLimit(
+        filter.deliveryFailureLimit,
+        CLOSED_LOOP_DEFAULT_DELIVERY_FAILURE_LIMIT,
+        maxLimit,
+      );
+
+      const schemaBrief = CLOSED_LOOP_SCHEMA_TABLES.map((table) => {
+        const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Record<string, unknown>[];
+        return `- ${table}: ${formatSchemaRows(rows)}`;
+      });
+
+      const runningStewardRun = db.prepare(
+        `SELECT runId, status, startedAt, endedAt
+         FROM workflow_runs
+         WHERE workflow = 'closed-loop-steward' AND status = 'running'
+         LIMIT 1`,
+      ).get() as Record<string, unknown> | null;
+
+      const alertRows = db.prepare(
+        `SELECT ma.id, ma.metric_id, ma.message, ma.created_at,
+                m.name as metricName, m.owner as explicitOwner, p.owner as projectOwner,
+                m.current, m.threshold, m.target, COALESCE(m.priority, 'P2') as priority,
+                m.alert_op as alertOp
+         FROM metric_alerts ma
+         LEFT JOIN metrics m ON m.id = ma.metric_id
+         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+         WHERE ma.resolved_at IS NULL
+         ORDER BY COALESCE(m.priority, 'P2') ASC, ma.created_at ASC
+         LIMIT ?`,
+      ).all(alertLimit) as Record<string, unknown>[];
+
+      const alerts = alertRows.map((alert) => {
+        const alertId = typeof alert.id === "number" ? alert.id : null;
+        const metricId = String(alert.metric_id ?? "");
+        const latestJudgment = db.prepare(
+          `SELECT id, data, timestamp
+           FROM events
+           WHERE event_type = 'metric.alert_judged'
+             AND (
+               json_extract(data, '$.alertId') = ?
+               OR json_extract(data, '$.metricId') = ?
+             )
+           ORDER BY timestamp DESC, id DESC
+           LIMIT 1`,
+        ).get(alertId, metricId) as Record<string, unknown> | null;
+        const latestSnapshot = db.prepare(
+          `SELECT value, measured_at
+           FROM metric_snapshots
+           WHERE metric_id = ?
+           ORDER BY measured_at DESC
+           LIMIT 1`,
+        ).get(metricId) as Record<string, unknown> | null;
+        const activeTriageRun = db.prepare(
+          `SELECT runId, status, startedAt
+           FROM workflow_runs
+           WHERE workflow = 'metric-alert-triage'
+             AND status = 'running'
+             AND task LIKE ?
+           LIMIT 1`,
+        ).get(`%${metricId}%`) as Record<string, unknown> | null;
+
+        return {
+          alert: normalizeRows([alert])[0],
+          latestJudgment: latestJudgment ? normalizeRows([latestJudgment])[0] : null,
+          latestSnapshot: latestSnapshot ? normalizeRows([latestSnapshot])[0] : null,
+          activeTriageRun: activeTriageRun ? normalizeRows([activeTriageRun])[0] : null,
+        };
+      });
+
+      const deliveryFailures = db.prepare(
+        `SELECT id, source, owner, data, timestamp
+         FROM events
+         WHERE event_type = 'message.delivery_failed' AND timestamp >= ?
+         ORDER BY timestamp DESC, id DESC
+         LIMIT ?`,
+      ).all(now - lookbackMs, deliveryFailureLimit) as Record<string, unknown>[];
+
+      const recentStewardRuns = db.prepare(
+        `SELECT runId, status, startedAt, endedAt
+         FROM workflow_runs
+         WHERE workflow = 'closed-loop-steward'
+         ORDER BY startedAt DESC
+         LIMIT 3`,
+      ).all() as Record<string, unknown>[];
+
+      return {
+        now,
+        schemaBrief,
+        runningStewardRun: runningStewardRun ? normalizeRows([runningStewardRun])[0] : null,
+        alerts,
+        deliveryFailures: normalizeRows(deliveryFailures),
+        recentStewardRuns: normalizeRows(recentStewardRuns),
+      };
+    },
+
     sql(input, params = [], queryOpts = {}) {
       const sql = normalizeSql(input);
       assertReadOnlySql(sql);
@@ -479,6 +617,9 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
   const failReactorState = (): MetricAlertReactorState => {
     throw new Error(reason);
   };
+  const failClosedLoopStewardContext = (): ClosedLoopStewardContext => {
+    throw new Error(reason);
+  };
   return {
     sessions: fail,
     events: fail,
@@ -488,6 +629,7 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     workflowRuns: fail,
     metricAlertContext: failContext,
     metricAlertReactorState: failReactorState,
+    closedLoopStewardContext: failClosedLoopStewardContext,
     sql: fail,
   };
 }
