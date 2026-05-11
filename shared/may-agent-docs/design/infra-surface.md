@@ -482,10 +482,10 @@ validation, fewer guessed columns, and a cleaner mental model.
 
 Current state: the SDK exposes `query` and `metrics` as first-class surfaces,
 with targeted helpers for alert triage, closed-loop stewardship, project
-runtime context, workflow runs, and heartbeat live context. Remaining migration
-work should focus on evaluator candidate/context reads and any new judgment path
-that still guesses raw SQLite schema. Mechanical projection/snapshot handlers
-may keep direct DB access when it is simpler and well-tested.
+runtime context, workflow runs, heartbeat live context, and evaluator
+session-review context. New judgment/context code should add targeted query
+helpers rather than guessing SQLite schema. Mechanical projection/snapshot
+handlers may keep direct DB access when it is simpler and well-tested.
 
 ## Ownership
 
@@ -594,7 +594,6 @@ Existing pieces already align with this direction:
 The main gap is not a missing grand architecture. The remaining gaps are the
 specific places where code still crosses the boundaries unevenly:
 
-- finish query-facade migration for evaluator judgment/candidate context,
 - keep adapter-specific Telegram behavior converging on daemon events,
 - make execution inspection use the shared result/trace shape consistently,
 - converge tool-level guard signals with workflow guard signals,

@@ -30,23 +30,26 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Finish the query facade migration for evaluator paths that still depend on raw
-schema-sensitive reads:
+Start Phase 5: make execution inspection use one shared mental model for
+sessions and workflow-composed work.
 
-1. Review `agents/evaluator/workflows/evaluator-aftermath.ts` and related
-   session-review context collection.
-2. Move only judgment-feeding reads to targeted `ctx.query` helpers.
-3. Leave deterministic artifact ingestion/bookkeeping direct when a helper would
-   not reduce schema risk or complexity.
+First slice:
 
-This is the best next slice because it directly mitigates schema-footgun
-failures without adding a new concept.
+1. Pick a recent workflow-backed run with a child session.
+2. Compare the current API/UI inspection shape against the shared
+   `ExecutionResult` fields.
+3. Add the smallest query/API/UI mapping needed so an operator can inspect
+   status, owner/project, evidence, and failure path without knowing whether the
+   work unit was a raw session or a workflow.
+
+This is now the highest-value slice because Phase 4's main schema-footgun paths
+have moved behind query helpers, while operators still need different inspection
+habits for sessions versus workflows.
 
 ## Remaining Gap Summary
 
 | Gap | Risk | Phase |
 |---|---|---|
-| Evaluator aftermath/session review may still use raw DB for judgment context | Evaluator can inherit brittle schema guessing | Phase 4 |
 | Shared `ExecutionResult` exists but is not the normal inspection surface | Sessions and workflows still feel different to debug | Phase 5 |
 | Workflow guard signals are durable, but tool guard signals are not fully converged | Guard triggers are harder to learn from across the system | Phase 6 |
 | Telegram still has some adapter-specific behavior | Replies can diverge from Web UI/CLI event behavior | Phase 2 |
@@ -271,9 +274,8 @@ Stop criteria:
 
 ## Phase 4: Query Facade Migration
 
-Status: metric alert workflow, alert reactor preflight, project runtime context,
-closed-loop steward context, heartbeat context, and evaluator deep-eval scan
-dispatch reads migrated.
+Status: main schema-sensitive judgment/context paths migrated. Keep direct SQL
+for mechanical measurement, projection, artifact ingestion, and bookkeeping.
 
 Goal: workflows and handlers stop guessing schema for judgment/context reads.
 
@@ -311,8 +313,11 @@ Scope:
 - [x] Move `eval-llm-scan` active-work and candidate-selection reads away from
   raw `ctx.sdk.getDb()`; artifact ingestion/recording remains direct
   deterministic bookkeeping.
-- [ ] Review evaluator-aftermath/session review context reads for any remaining
-  schema-sensitive judgment context.
+- [x] Add `query.evaluatorAftermathContext(...)` for the exact session/prior
+  evaluation bundle used by `evaluator-aftermath`.
+- [x] Move `evaluator-aftermath` session/evaluation judgment-context load away
+  from raw `ctx.getDb()`; evaluation writes and review-override bookkeeping
+  remain direct deterministic DB work.
 
 Validation:
 
@@ -368,7 +373,8 @@ Runtime proof, 2026-05-11:
 
 ### Phase 4b: Evaluator Query Slice
 
-Status: first slice implemented and verified for `eval-llm-scan`.
+Status: implemented and verified for `eval-llm-scan` and
+`evaluator-aftermath`.
 
 Scope:
 
@@ -377,6 +383,8 @@ Scope:
   validates files and writes `evaluations`.
 - [x] Move candidate/context reads that feed evaluator judgment to `sdk.query`.
 - [x] Add a query helper only for the exact candidate/context bundle needed.
+- [x] Move `evaluator-aftermath` session/evaluation context loading to
+  `ctx.query`.
 
 Validation:
 
@@ -384,12 +392,17 @@ Validation:
 - [x] Manual evaluator scan trigger leaves handler evidence, evaluator workflow run
   id, child evaluator session id, and either artifact ingestion or an explicit
   skip/failure event.
+- [x] Manual evaluator-aftermath trigger leaves a context trace that identifies
+  the query helper used.
 
 Stop criteria:
 
 - [x] `eval-llm-scan` judgment/action dispatch code does not call `getDb()`
   directly.
-- `getDb()` remains in mechanical infra code and explicit compatibility paths.
+- [x] `evaluator-aftermath` session/evaluation context load does not call
+  `getDb()` directly.
+- [x] `getDb()` remains in mechanical infra code and explicit compatibility
+  paths.
 
 Runtime proof, 2026-05-11:
 
@@ -407,6 +420,15 @@ Runtime proof, 2026-05-11:
   "query.evaluatorDeepEvalScan"` on future `evaluation.deep_dispatched` events;
   this was added after the runtime proof without reloading over the active
   evaluator session.
+- Aftermath trigger event: `session.completed` event id `558480`, source
+  `codex-runtime-proof`, for session `s_1778479478854_4`.
+- Aftermath workflow run: `wr_1778480313996_wjvs` (`evaluator-aftermath`),
+  status `done`, summary `Skipped aftermath for s_1778479478854_4:
+  terminal_zero_op_session.`
+- Context trace: `context.read` event id `558482` includes `contextSource:
+  "query.evaluatorAftermathContext"` with session/evaluation sections loaded.
+- Outcome event: `evaluation.skipped` id `558483`, reason
+  `terminal_zero_op_session`.
 
 ## Phase 5: Execution Inspection And Recovery Symmetry
 

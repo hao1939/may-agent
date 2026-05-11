@@ -513,10 +513,6 @@ function getModeFromTrigger(trigger: any): string {
   return typeof data.mode === "string" ? data.mode : "completed";
 }
 
-function firstText(result: any): string {
-  return String(result?.lastAssistantText ?? result?.output ?? "{}");
-}
-
 function sessionTranscriptPath(persistDir: string, sessionId: string): string {
   const activePath = join(persistDir, "sessions", sessionId, "session.jsonl");
   if (existsSync(activePath)) return activePath;
@@ -635,16 +631,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.escalate("evaluator-aftermath requires a sessionId", { trigger });
   }
 
-  const loaded = await (ctx as any).runFunction("load-session", async () => {
-    const db = ctx.getDb() as any;
-    const session = db.prepare("SELECT * FROM sessions WHERE sessionId = ?").get(sessionId);
-    const evaluation = db.prepare("SELECT sessionId, verdict, overall, createdAt FROM evaluations WHERE sessionId = ?").get(sessionId);
-    return JSON.stringify({ session, evaluation });
-  });
-
-  const loadedData = JSON.parse(firstText(loaded));
+  const loadedData = ctx.query.evaluatorAftermathContext({ sessionId }) as any;
   const session = loadedData.session;
   const evaluation = loadedData.evaluation;
+  ctx.emit({
+    type: "context.read",
+    source: "evaluator-aftermath",
+    owner: "evaluator",
+    contextSource: "query.evaluatorAftermathContext",
+    sessionId,
+    sections: { session: !!session, evaluation: !!evaluation },
+  });
   if (!session) return ctx.escalate(`Session ${sessionId} not found`);
 
   if (session.agent === "evaluator" || session.agent === "judge") {
