@@ -149,7 +149,7 @@ Stop criteria:
 ## Phase 3: Handler-To-Workflow Boundary
 
 Status: traceability slice shipped for `metric-alert-reactor`, `project`,
-`closed-loop-steward`, and the generic workflow handler.
+`closed-loop-steward`, `eval-llm-scan`, and the generic workflow handler.
 
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
@@ -185,6 +185,9 @@ Scope:
   `handler.workflow_dispatched` evidence for project nudge/launch paths.
 - [x] `closed-loop-steward` dispatches a steward workflow instead of opening a
   May session directly, and records skip/failure/workflow dispatch evidence.
+- [x] `eval-llm-scan` dispatches evaluator LLM work through
+  `evaluator-deep-eval`; artifact ingestion remains deterministic handler
+  bookkeeping.
 
 Validation:
 
@@ -197,6 +200,8 @@ Stop criteria:
 
 - [x] Alert triage and project nudge paths are workflow-backed and traceable.
 - [x] Closed-loop steward no longer acts like a second agent runtime inside a
+  handler.
+- [x] Eval LLM scan no longer opens evaluator sessions directly from the
   handler.
 
 ## Phase 4: Query Facade Migration

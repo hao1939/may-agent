@@ -52,6 +52,7 @@ const DEFAULT_RUN_TIMEOUT_MS = 240_000;
 const DEFAULT_ACTIVE_WINDOW_MS = 30 * 60_000;
 const DEFAULT_ARTIFACT_LIMIT = 3;
 const DEEP_EVAL_VERSION = 1;
+const DEEP_EVAL_WORKFLOW = "evaluator-deep-eval";
 
 function clamp01(value: unknown, fallback: number): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -262,11 +263,21 @@ function processArtifacts(db: any, root: string, limit: number): number {
 }
 
 function hasActiveDeepEval(db: any, now: number, activeWindowMs: number): boolean {
+  const workflow = db.prepare(
+    `SELECT 1
+     FROM workflow_runs
+     WHERE workflow = ?
+       AND status = 'running'
+       AND startedAt > ?
+     LIMIT 1`,
+  ).get(DEEP_EVAL_WORKFLOW, now - activeWindowMs);
+  if (workflow) return true;
+
   const row = db.prepare(
     `SELECT 1
      FROM sessions
      WHERE agent = 'evaluator'
-       AND source = 'eval-llm-scan'
+       AND source IN ('eval-llm-scan', 'workflow:evaluator-deep-eval')
        AND status IN ('running', 'idle')
        AND startedAt > ?
      LIMIT 1`,
@@ -284,7 +295,7 @@ function selectCandidate(db: any, now: number, backfillHours: number, fallbackDe
      LEFT JOIN evaluations e ON e.sessionId = s.sessionId
      WHERE s.status IN ('done', 'error', 'interrupted')
        AND s.agent NOT IN ('evaluator', 'judge')
-       AND COALESCE(s.source, '') NOT IN ('standalone-eval', 'eval-llm-scan')
+       AND COALESCE(s.source, '') NOT IN ('standalone-eval', 'eval-llm-scan', 'workflow:evaluator-deep-eval')
        AND COALESCE(s.endedAt, s.startedAt) >= ?
        AND COALESCE(s.endedAt, s.startedAt) <= ?
        AND NOT EXISTS (
@@ -338,10 +349,30 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     ctx.sdk.log("info", `[eval-llm-scan] Dispatching evaluator for ${candidate.sessionId}.`);
 
     try {
-      await withTimeout(ctx.sdk.runAgent("evaluator", task, { source: "eval-llm-scan" }), runTimeoutMs);
+      const result = await withTimeout(
+        ctx.sdk.runWorkflow(DEEP_EVAL_WORKFLOW, task, { source: "evaluator" }),
+        runTimeoutMs,
+      );
+      ctx.sdk.emit("handler.workflow_dispatched", {
+        handler: "eval-llm-scan",
+        workflow: DEEP_EVAL_WORKFLOW,
+        source: "evaluator",
+        workflowRunId: result.runId ?? null,
+        status: result.status,
+        sessionId: candidate.sessionId,
+        agent: candidate.agent,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       ctx.sdk.log("warn", `[eval-llm-scan] Evaluator dispatch did not finish in handler window: ${msg}`);
+      ctx.sdk.emit("handler.failed", {
+        handler: "eval-llm-scan",
+        agent: ctx.agentName,
+        workflow: DEEP_EVAL_WORKFLOW,
+        sessionId: candidate.sessionId,
+        error: msg.slice(0, 200),
+        durationMs: runTimeoutMs,
+      });
       return;
     }
 

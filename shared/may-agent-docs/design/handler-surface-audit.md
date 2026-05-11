@@ -22,7 +22,7 @@ projection, but judgment and repair work should live in workflows.
 | `project` | Project scanner, state mutator, workflow launcher | direct FS/DB + `runWorkflow` + durable trace events | temporarily | Split later: scanner/projection stays direct; project launch path now records skip/failure/workflow dispatch evidence. |
 | `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | direct DB + `runWorkflow` + durable trace events | temporarily | Convert preflight reads to `sdk.query`; dispatch already records skip reason or triage workflow run id. Triage workflow alert context is now query-backed. |
 | `closed-loop-steward` | Loop audit and retriage | direct DB + `runWorkflow` + durable trace events | temporarily | Context collection still needs `sdk.query`/function cleanup; dispatch is workflow-backed. |
-| `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runAgent` | temporarily | Convert candidate reads to `sdk.query`; consider a workflow wrapper for context collection and artifact validation. |
+| `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Legacy direct evaluator dispatch | direct session helpers + `runAgent` | no | Prefer `session-aftermath-scan`/`evaluator-aftermath`; retire or convert to workflow if still wired. |
 | `session-recovery` | Failed-session recovery action | digest helpers + `runAgent` | no | Convert recovery decisions to workflow when recovery needs context beyond digest/classifier. |
 | `escalation` | Session escalation routing | digest helpers + escalate | no | Keep direct while it only routes explicit escalations. |
@@ -66,4 +66,7 @@ projection, but judgment and repair work should live in workflows.
 - Query facade first slice: `metric-alert-triage` uses
   `query.metricAlertContext(...)` and `query.sessions(...)` for alert context
   instead of opening SQLite directly in workflow code.
+- Eval LLM scan traceability slice: `eval-llm-scan` records
+  `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
+  LLM work through `evaluator-deep-eval`.
 - Full test suite must stay green after each handler migration.
