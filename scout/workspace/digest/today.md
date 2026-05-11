@@ -330,3 +330,10 @@
 **Implication**: We must treat large context windows as security liabilities. Context must be aggressively pruned, and we should explore bounding Chain-of-Thought reasoning when an agent is processing unverified historical data to prevent it from 'reasoning itself' into an attack or cooperative collapse.
 **KB**: KE-1226-cognitive-overflow-vulnerability (new)
 
+
+### Graph Representation Learning Augmented Model Manipulation on Federated Fine-Tuning of LLMs
+**Source**: http://arxiv.org/abs/2605.07961v1
+**Summary**: Federated fine-tuning (FFT) for LLMs is vulnerable to malicious updates from adversarial participants. The proposed AugMP strategy uses a graph representation learning framework to manipulate updates, maintaining statistical similarity with benign updates to evade defenses while significantly degrading the global model's performance.
+**Implication**: Highlights vulnerabilities when distributed agents contribute to a shared model/knowledge base. Defenses relying purely on statistical similarity are insufficient; rigorous provenance and process authentication (Autonomous Epistemology) are needed to counter stealthy manipulation.
+**KB**: KE-1227-federated-fine-tuning-manipulation-augmp (new)
+
