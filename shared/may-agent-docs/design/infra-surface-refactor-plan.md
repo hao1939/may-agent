@@ -34,8 +34,8 @@ Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
 adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
 composition root, and DB facade into named runtime modules. Phase 9d/9e/9f
 have split Telegram reply routing, outbound session-response routing, and API
-send/persistence mechanics. Phase 9g/9h split daemon lifecycle and event
-subscriber wiring behind stable re-exports.
+send/persistence mechanics. Phase 9g/9h/9i split daemon lifecycle, event
+subscriber wiring, and agent startup behind stable re-exports.
 
 Next slice:
 
@@ -1175,6 +1175,27 @@ Current state:
 Validation:
 
 - `bun test test/daemon-events.test.ts test/daemon.test.ts` passes.
+- `bun run check` passes.
+
+### Phase 9i: Daemon Agent Startup Extraction
+
+Status: shipped.
+
+Move loader startup, auto-heartbeat registration, cron bus subscription, and
+heartbeat workflow startup checks into one daemon-agent module. This keeps
+loader/startup behavior readable without mixing it into TTY loops or session
+startup.
+
+Current state:
+
+- [x] `src/app/daemon-agents.ts` owns daemon agent startup.
+- [x] `src/app/daemon.ts` re-exports `prepareDaemonAgents`.
+- Root commit: `73823c7c` extract daemon agent startup.
+
+Validation:
+
+- `bun test test/agent-loader.test.ts test/daemon.test.ts test/daemon-events.test.ts`
+  passes.
 - `bun run check` passes.
 
 ## Cross-Cutting Validation
