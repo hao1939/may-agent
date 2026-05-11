@@ -198,6 +198,10 @@ Rechecked P2 raw metric alert 287 after the latest metric row still reported `cu
 
 Rechecked P2 raw metric alert 287 after the latest snapshots still held at `58` over threshold `50`. The raw breach is real, but the paired strict unresolved metric remains healthy at `current=0` with the latest ten paired snapshots at strict `0`; the live raw 24h classification found all `58` rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, `0` other unresolved rows). Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring, validate on the next metrics snapshot, and resume only if the strict unresolved metric breaches or raw sampling exposes a fresh non-recovered dirty-exit pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence recheck at 58 with strict zero
+
+Rechecked P2 raw metric alert 287 after the live metric row and snapshots still reported `current=58` over threshold `50`. The raw breach is real, but the paired strict unresolved metric remains healthy (`session.finish-blocked-unresolved-count-24h current=0`) with the latest ten strict snapshots at `0`. Fresh raw classification again found every row recovered or intentionally terminal: `55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; newest samples are done/success scout-explore and scout-heartbeat sessions plus May closed-loop rows that committed runtime handoff files. Chosen operation: `waiting_with_evidence`; continue monitoring rather than calibrating or resolving a still-breaching raw friction metric, with next validation at the next metrics snapshot or immediate project resume if the strict metric breaches or a new non-recovered raw source appears.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
