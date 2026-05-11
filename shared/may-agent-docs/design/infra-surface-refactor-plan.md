@@ -35,7 +35,7 @@ metrics/alert hygiene.
 
 Next slice:
 
-1. Validate that a real guard block opens the short-window guard metric signal
+1. Validate that a sustained guard block spike opens the short-window guard metric signal
    and clears when the window is clean.
 2. [x] Confirm alert handling ignores retired guard metrics and only reacts to the
    active short-window signal.
@@ -572,6 +572,8 @@ Already shipped first slice:
 - [x] Web UI separates watch signals from health/gauge alerts.
 - [x] Metric alert reactor skips retired/missing metric rows before dispatching
   triage work.
+- [x] 24h guard trigger/warning volume metrics are P3 watch signals; the short
+  `guard.blocked-count-15m` metric remains the actionable health signal.
 
 Validation:
 
@@ -598,6 +600,12 @@ Runtime proof, 2026-05-11:
 - Emitted stale `metric.breach` for retired metric `guard.blocked-count-24h`.
   Runtime emitted `handler.skipped` event `558801` with reason
   `Ignoring guard.blocked-count-24h: metric is missing or retired.`
+- Reconciled metrics with `trigger.metrics-snapshot`. Running `/api/metrics`
+  then showed `guard.triggered-count-24h` and `guard.warned-count-24h` as
+  priority `P3` watch metrics. Hard alerts were only
+  `session.finish-blocked-uncommitted-count-24h` and
+  `session.failed-triage-rate-3h`; guard trigger/warn crossings moved to
+  `watchAlerts`.
 
 ## Phase 8: Workflow Library Consolidation
 
