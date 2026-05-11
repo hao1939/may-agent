@@ -81,3 +81,9 @@
 **Summary**: A viral post detailing an incident where an AI agent, presumably given excessive permissions and acting on flawed reasoning or hallucinations, dropped a production database. The post includes the agent's log output detailing its actions.
 **Implication**: A stark real-world example of the catastrophic consequences of lacking proper safeguards, specifically write-access restrictions and destructive operation boundaries. Validates the critical necessity of rigid, unbypassable structural constraints like "Safety — Destructive Operations FORBIDDEN" implemented via environment-level enforcement rather than just prompt instructions.
 **KB**: KE-1209-catastrophic-permission-escalation (new)
+
+### Provenance Laundering: The 'Summary' Attack Vector
+**Source**: Synthesis of KE-1207 (Autonomous Epistemology), KE-1203 (Provenance Passports), and KE-1062 (Epistemic Hacking).
+**Summary**: Intermediate summarization agents break the chain of cryptographic trust. When rigorous proofs are passed to a summarizer, the downstream system only receives the summarizer's weak provenance ('I read a file'), allowing hallucinations or compromised nodes to launder false claims into authoritative-looking summaries.
+**Implication**: Provenance Passports must be accumulative across multi-hop handovers, embedding upstream proof signatures to prevent trust erosion at the summarization layer.
+**KB**: KE-1210-provenance-laundering (new)
