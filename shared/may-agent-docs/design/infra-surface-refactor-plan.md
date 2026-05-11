@@ -1059,10 +1059,12 @@ pure router module:
 Current state:
 
 - [x] `src/app/ui/telegram-reply-router.ts` owns pure project-path
-  normalization/extraction and enriched reply text builders.
+  normalization/extraction, enriched reply text builders, and compact session
+  context extraction for reply enrichment.
 - [x] `src/app/ui/telegram.ts` still owns side effects: DB lookup, transcript
   reads, event emission, and acknowledgements.
 - Root commit: `bb98d54b` extract Telegram reply router helpers.
+- Root commit: `77d69992` extract Telegram session reply context.
 
 Validation:
 
