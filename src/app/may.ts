@@ -23,7 +23,6 @@ import {
 } from "./daemon.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
-import { log } from "../lib/log.js";
 import { runMessageMode, runStatusMode } from "./modes/command.js";
 import { runEmitMode } from "./modes/emit.js";
 import { runOneshotMode } from "./modes/oneshot.js";
@@ -31,6 +30,7 @@ import { runWorkflowMode } from "./modes/run-workflow.js";
 import { parseWebPort, runWebOnlyMode, startWebMode } from "./modes/web.js";
 import { createModelRegistry } from "./model-registry.js";
 import { parseAppArgs } from "./app-args.js";
+import { createRuntimeApiGate } from "./api-gate-runtime.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -156,22 +156,8 @@ if (anthropicDirect) {
 }
 
 // ── API concurrency gate ───────────────────────────────────────────────
-import { ApiGate } from "../lib/api-gate.js";
 
-const apiGate = new ApiGate(
-  {
-    defaultConcurrency: parseInt(process.env.API_GATE_CONCURRENCY ?? "8", 10),
-    overrides: process.env.API_GATE_OVERRIDES ? JSON.parse(process.env.API_GATE_OVERRIDES) : undefined,
-  },
-  (event) => {
-    // Emit gate events on the bus for observability
-    if (event.action === "queued") {
-      log("info", `[api-gate] ${event.agent} (${event.sessionId.slice(0, 12)}) queued for ${event.endpoint.slice(0, 30)}... (${event.active}/${event.active} active, ${event.queued} waiting)`);
-    } else if (event.action === "acquired" && event.waitMs) {
-      log("info", `[api-gate] ${event.agent} acquired slot after ${event.waitMs}ms wait (${event.active} active, ${event.queued} waiting)`);
-    }
-  },
-);
+const apiGate = createRuntimeApiGate();
 
 const manager = new SubagentManager({
   persistDir: PERSIST_DIR,
