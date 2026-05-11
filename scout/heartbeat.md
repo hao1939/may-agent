@@ -22,13 +22,13 @@ This is your **creative** session. Cron tasks handle routine fetching. Here you 
 - Working notes: `agents/scout/knowledge/`
 
 ## KE Allocation
-Before creating a new shared KE, run this from `/app/agents`:
+Before creating a new shared KE, run this from the project root (`/app`):
 ```bash
-bash scout/tools/next-ke-id.sh
+bash agents/scout/tools/next-ke-id.sh
 ```
 Use the returned `KE-NNNN` id with a descriptive slug, then verify the target id is still unused:
 ```bash
-ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null
+ls agents/shared/knowledge/entries/KE-NNNN-* agents/shared/knowledge/entries/KE-NNNN.md 2>/dev/null
 ```
 If the `ls` finds any file, stop and pick the next max+1 id. If the topic already exists, update the existing KE instead.
 
