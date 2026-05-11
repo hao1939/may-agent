@@ -3,10 +3,14 @@
  *
  * Always resumes the same session. First call creates it, subsequent calls
  * resume via stored session ID. Master doesn't need to track session IDs.
+ *
+ * Uses cc-stream-parser to produce structured envelopes with tool outputs,
+ * files touched, and status information.
  */
 import { spawn } from "child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { parseCCStream, formatEnvelope } from "./cc-stream-parser";
 
 const TIMEOUT_DEFAULT = 300;
 const SESSION_FILE = "cc-session-id";
@@ -76,46 +80,26 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
         const spawnOpts: any = { cwd: workDir, env, timeout: timeoutSec * 1000 };
         if (process.getuid?.() === 0) spawnOpts.uid = 1000;
         const child = spawn("claude", args, spawnOpts);
-        const chunks: string[] = [];
-        let lastResult = "";
-        let sessionId = "";
+        const stdoutChunks: string[] = [];
+        const stderrChunks: string[] = [];
 
         child.stdout?.on("data", (data: Buffer) => {
-          const text = data.toString();
-          chunks.push(text);
-          for (const line of text.split("\n")) {
-            if (!line.trim()) continue;
-            try {
-              const obj = JSON.parse(line);
-              if (obj.type === "system" && obj.session_id) {
-                sessionId = obj.session_id;
-              }
-              if (obj.type === "result") {
-                lastResult = obj.result || JSON.stringify(obj);
-                if (obj.session_id) sessionId = obj.session_id;
-              } else if (obj.type === "assistant" && obj.message?.content) {
-                for (const block of obj.message.content) {
-                  if (block.type === "text") lastResult = block.text;
-                }
-              }
-            } catch {}
-          }
+          stdoutChunks.push(data.toString());
         });
 
         child.stderr?.on("data", (data: Buffer) => {
-          chunks.push(`[stderr] ${data.toString()}`);
+          stderrChunks.push(data.toString());
         });
 
         child.on("close", (code) => {
-          // Persist session ID for next call
-          if (sessionId) saveSessionId(stateDir, sessionId);
+          const stdoutStr = stdoutChunks.join("");
+          const stderrStr = stderrChunks.join("");
+          const envelope = parseCCStream(stdoutStr, stderrStr, code ?? 1);
 
-          if (lastResult) {
-            resolve(textResult(lastResult));
-          } else {
-            const output = chunks.join("").slice(-8000);
-            resolve(textResult(code === 0 ? output || "(no output)" : `[exit ${code}] ${output}`));
-          }
+          // Persist session ID for next call
+          if (envelope.session_id) saveSessionId(stateDir, envelope.session_id);
+
+          resolve(textResult(formatEnvelope(envelope)));
         });
 
         child.on("error", (err) => {

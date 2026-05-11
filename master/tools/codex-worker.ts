@@ -3,10 +3,14 @@
  *
  * Always resumes the same session. First call creates it, subsequent calls
  * resume via stored session ID. Master doesn't need to track session IDs.
+ *
+ * Uses codex-stream-parser to produce structured envelopes with tool outputs,
+ * agent messages, usage stats, and status information.
  */
 import { spawn } from "child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { parseCodexStream, formatCodexEnvelope } from "./codex-stream-parser";
 
 const TIMEOUT_DEFAULT = 300;
 const SESSION_FILE = "codex-session-id";
@@ -68,41 +72,26 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
         if (process.getuid?.() === 0) spawnOpts.uid = 1000;
         const child = spawn("codex", args, spawnOpts);
         child.stdin?.end();
-        const chunks: string[] = [];
-        let lastMessage = "";
-        let threadId = "";
+        const stdoutChunks: string[] = [];
+        const stderrChunks: string[] = [];
 
         child.stdout?.on("data", (data: Buffer) => {
-          const text = data.toString();
-          chunks.push(text);
-          for (const line of text.split("\n")) {
-            if (!line.trim()) continue;
-            try {
-              const obj = JSON.parse(line);
-              if (obj.type === "thread.started" && obj.thread_id) {
-                threadId = obj.thread_id;
-              }
-              if (obj.type === "item.completed" && obj.item?.text) {
-                lastMessage = obj.item.text;
-              }
-            } catch {}
-          }
+          stdoutChunks.push(data.toString());
         });
 
         child.stderr?.on("data", (data: Buffer) => {
-          chunks.push(`[stderr] ${data.toString()}`);
+          stderrChunks.push(data.toString());
         });
 
         child.on("close", (code) => {
-          // Persist session ID for next call
-          if (threadId) saveSessionId(stateDir, threadId);
+          const stdoutStr = stdoutChunks.join("");
+          const stderrStr = stderrChunks.join("");
+          const envelope = parseCodexStream(stdoutStr, stderrStr, code ?? 1);
 
-          if (lastMessage) {
-            resolve(textResult(lastMessage));
-          } else {
-            const output = chunks.join("").slice(-8000);
-            resolve(textResult(code === 0 ? output || "(no output)" : `[exit ${code}] ${output}`));
-          }
+          // Persist session ID for next call
+          if (envelope.thread_id) saveSessionId(stateDir, envelope.thread_id);
+
+          resolve(textResult(formatCodexEnvelope(envelope)));
         });
 
         child.on("error", (err) => {
