@@ -190,6 +190,96 @@ test/e2ev3/sigs/<your-sig>/
 └── (other test packages)
 ```
 
+## Real Example: VmagentPodStatus (sig-airlock)
+
+This is a real plan from `sigs/airlock/plans/vmagent_pod_status.go`, annotated:
+
+```go
+package plans
+
+import (
+    "context"
+    flow "github.com/Azure/go-workflow"
+    "go.goms.io/aks/rp/swagger/awesome"
+    "go.goms.io/aks/rp/test/e2ev3/handlers/hcp"       // underlay access
+    "go.goms.io/aks/rp/test/e2ev3/handlers/kubever"    // k8s version selection
+    "go.goms.io/aks/rp/test/e2ev3/handlers/sku"        // VM SKU claims
+    "go.goms.io/aks/rp/test/e2ev3/handlers/to"         // pointer helpers
+    "go.goms.io/aks/rp/test/e2ev3/runtime/test"
+    "go.goms.io/aks/rp/test/e2ev3/runtime/test/plans"
+    "go.goms.io/aks/rp/test/e2ev3/sigs"
+    "go.goms.io/aks/rp/test/e2ev3/sigs/airlock/handlers"
+)
+
+// Package-level scenario registration — this is how the framework discovers tests
+var Scenario_Vmagent_Pod_Status = test.NewScenario("Scenario_Vmagent_Pod_Status", new(VmagentPodStatus))
+
+// Plan struct: embed SingleCluster for standard lifecycle + extra capabilities
+type VmagentPodStatus struct {
+    plans.SingleCluster        // Provision/Teardown lifecycle
+    hcp.UnderlayCredentials    // Mixin: access to HCP underlay k8s
+    systemPool *string         // VM size pointer (filled by UseVMSize)
+}
+
+// Compile-time interface check
+var _ plans.SingleClusterTestPlan = new(VmagentPodStatus)
+
+func (vps *VmagentPodStatus) Metadata() test.Metadata {
+    return test.Metadata{
+        Owner: sigs.Airlock,
+        Tags:  map[string]string{"vmagent": "true", "validate-pod-status": "true"},
+    }
+}
+
+// Customize the cluster spec before creation
+func (vps *VmagentPodStatus) ManagedClusterToCreate(ctx context.Context, mc *awesome.ManagedCluster) error {
+    mc.Properties.AgentPoolProfiles[0].VMSize = vps.systemPool
+    mc.Properties.AgentPoolProfiles[0].OSType = to.Ptr(awesome.OSTypeLinux)
+    mc.Properties.AgentPoolProfiles[0].Count = to.Ptr(int32(2))
+    // GetKubeVersion: deferred — resolved at runtime from available versions
+    mc.Properties.KubernetesVersion = vps.GetKubeVersion(ctx, func(kv kubever.KubeVersions) (string, error) {
+        return randomSupportedVersion(kv)
+    })
+    return nil
+}
+
+// The DAG: provision → get underlay creds → validate pod status → teardown
+func (vps *VmagentPodStatus) Plan() *flow.Workflow {
+    provision, teardown := vps.Provision(vps), vps.Teardown()
+    validateVMAgentPodStatus := new(handlers.ValidateVMAgentPodStatus)
+    underlayCred := vps.UseUnderlayCredentials()  // claim underlay creds
+    vps.systemPool = vps.UseVMSize(sku.DefaultClaim) // claim a VM SKU
+
+    validate := new(flow.Workflow)
+    validate.Add(
+        flow.Step(validateVMAgentPodStatus).
+            Input(func(ctx context.Context, v *handlers.ValidateVMAgentPodStatus) error {
+                v.Namespace = *vps.CreateManagedCluster.GetResponse().Properties.ResourceUID
+                v.Credential.UseK8sCredential(underlayCred)
+                return nil
+            }),
+    )
+
+    // BatchPipe: sequential phases, each phase can have parallel steps
+    return vps.SingleCluster.Add(
+        vps.UseManagedCluster().UseIn(vps.GetUnderlayCredential),
+        underlayCred.UseIn(validateVMAgentPodStatus),
+        flow.BatchPipe(
+            flow.Steps(provision),
+            flow.Steps(vps.GetUnderlayCredential),
+            flow.Steps(validate),
+            flow.Steps(teardown),
+        ),
+    )
+}
+```
+
+**Key patterns visible here:**
+- `UseVMSize(sku.DefaultClaim)` / `UseUnderlayCredentials()` — resource claims resolved at runtime
+- `flow.Step().Input(...)` — late-binding: wire outputs from previous steps as inputs
+- `vps.CreateManagedCluster.GetResponse()` — access results from embedded SingleCluster's provision step
+- `SingleCluster.Add(...)` — compose the final workflow with dependency declarations + BatchPipe ordering
+
 ## Tips
 
 1. **Start with `Nodeless_CRUD` as a template** — it's a clean, complete example in `sigs/rp/nativerp/plans/nodeless_crud.go`
