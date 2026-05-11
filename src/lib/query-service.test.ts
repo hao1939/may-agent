@@ -372,4 +372,29 @@ describe("QueryService", () => {
 
     expect(query.evaluatorDeepEvalScan({ now, activeWindowMs: 60_000 }).activeDeepEval).toBe(true);
   });
+
+  it("loads evaluator aftermath session context behind one schema-aware helper", () => {
+    const { db, query } = harness();
+    const now = 140_000;
+
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_after", "dev", "fix bug", "done", "workflow:dev-heartbeat", now - 2_000, now - 1_000, 5],
+    );
+    db.run(
+      `INSERT INTO evaluations
+        (sessionId, agent, quality, efficiency, productiveCalls, wastedCalls, verdict, issues, overall,
+         evaluatedByHeuristic, skippedByJs, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["s_after", "dev", 0.85, 0.8, 5, 0, "good", "[]", JSON.stringify({ heuristicVersion: 4 }), 1, 0, now],
+    );
+
+    const context = query.evaluatorAftermathContext({ sessionId: "s_after" });
+
+    expect(context).toMatchObject({
+      sessionId: "s_after",
+      session: { sessionId: "s_after", agent: "dev", status: "done", opCount: 5 },
+      evaluation: { sessionId: "s_after", verdict: "good", createdAt: now },
+    });
+  });
 });
