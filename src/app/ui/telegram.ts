@@ -20,11 +20,12 @@ import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve, join } from "node:path";
 import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
-import { getNotificationMessage, storeNotificationMessage } from "../../lib/db/notifications.js";
+import { getNotificationMessage } from "../../lib/db/notifications.js";
 import {
   buildTelegramReplyRoute,
   normalizeProjectPath,
 } from "./telegram-reply-router.js";
+import { createTelegramClient } from "./telegram-client.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
@@ -50,7 +51,6 @@ export interface TelegramBot {
   sendAlert: (text: string) => void;
 }
 
-const TELEGRAM_MAX_LENGTH = 4096;
 const PROACTIVE_DEDUPE_WINDOW_MS = 60 * 60 * 1000;
 
 export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
@@ -77,101 +77,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return { close: () => {}, sendAlert: () => {} };
   }
 
-  const baseUrl = `https://api.telegram.org/bot${token}`;
   bus.emit({ type: "info", message: `[telegram] Bot enabled (${allowedChatIds.length} allowed chat(s))` });
   let running = true;
   let offset = 0;
   const proactiveDedupe = new Map<string, { lastSentAt: number; suppressed: number }>();
-
-  // ── Telegram API helpers ─────────────────────────────────────────
-
-  async function apiCall(method: string, body?: Record<string, unknown>): Promise<any> {
-    const resp = await fetch(`${baseUrl}/${method}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = (await resp.json()) as any;
-    if (!data.ok) {
-      throw new Error(`Telegram API ${method}: ${data.description || "unknown error"}`);
-    }
-    return data.result;
-  }
-
-  async function sendMessage(chatId: string, text: string, parseMode?: string, context?: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; data?: string }): Promise<number | undefined> {
-    // Split long messages
-    const chunks = splitMessage(text, TELEGRAM_MAX_LENGTH);
-    let lastMsgId: number | undefined;
-    for (const chunk of chunks) {
-      try {
-        const result = await apiCall("sendMessage", {
-          chat_id: chatId,
-          text: chunk,
-          ...(parseMode ? { parse_mode: parseMode } : {}),
-        });
-        lastMsgId = result?.message_id;
-      } catch (err) {
-        // If markdown parsing fails, retry without parse_mode
-        if (parseMode) {
-          try {
-            const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk });
-            lastMsgId = result?.message_id;
-          } catch (retryErr) {
-            const msg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            bus.emit({ type: "info", message: `[telegram] Send failed: ${msg}` });
-          }
-        } else {
-          const msg = err instanceof Error ? err.message : String(err);
-          bus.emit({ type: "info", message: `[telegram] Send failed: ${msg}` });
-        }
-      }
-    }
-    // Store notification context for reply enrichment
-    if (lastMsgId && context) {
-      try {
-        storeNotificationMessage(opts.persistDir ?? ".state", {
-          telegram_msg_id: lastMsgId,
-          event_type: context.eventType || null,
-          agent: context.agent || null,
-          session_id: context.sessionId || null,
-          project_id: context.projectId || null,
-          data: context.data || null,
-        });
-      } catch { /* best-effort */ }
-    }
-    return lastMsgId;
-  }
-
-  function splitMessage(text: string, maxLen: number): string[] {
-    if (text.length <= maxLen) return [text];
-
-    const chunks: string[] = [];
-    let remaining = text;
-
-    while (remaining.length > 0) {
-      if (remaining.length <= maxLen) {
-        chunks.push(remaining);
-        break;
-      }
-
-      // Try to split at a newline near the limit
-      let splitAt = remaining.lastIndexOf("\n", maxLen);
-      if (splitAt < maxLen * 0.5) {
-        // No good newline break, try space
-        splitAt = remaining.lastIndexOf(" ", maxLen);
-      }
-      if (splitAt < maxLen * 0.5) {
-        // Force split at limit
-        splitAt = maxLen;
-      }
-
-      chunks.push(remaining.slice(0, splitAt));
-      remaining = remaining.slice(splitAt).trimStart();
-    }
-
-    return chunks;
-  }
-
+  const telegramClient = createTelegramClient({
+    token,
+    persistDir: opts.persistDir ?? ".state",
+    emitInfo: (message) => bus.emit({ type: "info", message }),
+  });
+  const { apiCall, sendMessage } = telegramClient;
 
   /** Unified outbound: all messages to user go through here.
    * Always stores context for reply enrichment. */
