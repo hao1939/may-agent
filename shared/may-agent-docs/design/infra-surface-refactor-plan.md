@@ -30,21 +30,21 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Start Phase 5: make execution inspection use one shared mental model for
-sessions and workflow-composed work.
+Continue Phase 5: make execution inspection the normal operator view, not only
+an internal loop-trace detail.
 
-First slice:
+Next slice:
 
-1. Pick a recent workflow-backed run with a child session.
-2. Compare the current API/UI inspection shape against the shared
-   `ExecutionResult` fields.
-3. Add the smallest query/API/UI mapping needed so an operator can inspect
-   status, owner/project, evidence, and failure path without knowing whether the
-   work unit was a raw session or a workflow.
+1. Review Web UI/API places that still list workflow runs and sessions as
+   unrelated rows.
+2. Reuse the shared `ExecutionResult` shape where an operator is inspecting work
+   status, owner/project, evidence, or failure path.
+3. Add the smallest UI/API affordance needed to open loop trace from a workflow
+   or session id.
 
-This is now the highest-value slice because Phase 4's main schema-footgun paths
-have moved behind query helpers, while operators still need different inspection
-habits for sessions versus workflows.
+This is now the highest-value slice because the loop trace API can already show
+workflow/session/failover executions with the shared shape, but most operator
+surfaces still expose raw row lists.
 
 ## Remaining Gap Summary
 
@@ -432,6 +432,8 @@ Runtime proof, 2026-05-11:
 
 ## Phase 5: Execution Inspection And Recovery Symmetry
 
+Status: first API slice shipped for loop-trace executions.
+
 Goal: sessions and workflows share one diagnostic mental model. Operators should
 not need separate inspection rules for raw sessions versus workflow-composed
 work.
@@ -442,6 +444,10 @@ Scope:
   operators inspect work.
 - Show workflow runs and child sessions with the same status, summary, evidence,
   trace id, owner/project, and failure path fields.
+- [x] Make loop-trace `executions` use the shared `ExecutionResult` mappers for
+  session rows, workflow rows, and resume/failover events.
+- [x] Add owner to the shared `ExecutionResult` shape so sessions and failover
+  diagnostics expose the same ownership field as loop trace.
 - Make resume APIs diagnostic first:
   - already terminal,
   - resumed,
@@ -456,9 +462,9 @@ Scope:
 
 Validation:
 
-- Pick a metric-alert triage workflow and show workflow + child session through
+- [x] Pick a workflow and show workflow + child session through
   the same result shape.
-- Pick a failed/interrupted workflow and show the failure path through the same
+- [x] Pick a failed/interrupted session resume event and show the failure path through the same
   result shape.
 - Resume failure emits queryable events with reason and owner/fallback.
 - UI/API can show where to inspect the resumed or failed trace.
@@ -467,6 +473,20 @@ Stop criteria:
 
 - Operators do not need to know whether a work unit was a raw session or a
   workflow to inspect status, owner, result, and failure path.
+
+Runtime proof, 2026-05-11:
+
+- Loop-trace API for workflow `wr_1778479946845_mnr0` returned `executions`
+  with one workflow result and one child session result:
+  - workflow execution `wr_1778479946845_mnr0`, kind `workflow`, status `done`,
+    trace id `wr_1778479946845_mnr0`, summary `Deep evaluator session completed
+    in s_1778479946904_0.`
+  - session execution `s_1778479946904_0`, kind `session`, status `done`, owner
+    `evaluator`, same trace id `wr_1778479946845_mnr0`.
+- Loop-trace API for failover event `554581` returned one failure execution:
+  session `phase2-smoke-no-such`, status `error`, owner `may`, summary `Session
+  "phase2-smoke-no-such" not found`, evidence category `session_not_found` and
+  `recoverable: false`.
 
 ## Phase 6: Guard Signal Convergence
 
