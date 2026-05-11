@@ -32,11 +32,13 @@ import {
 } from "./loader/agent-config.js";
 import { listAgentDirectories } from "./loader/agent-discovery.js";
 import { buildTools } from "./loader/toolset-loader.js";
+import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
 export { listAgentDirectories, listConfiguredAgentNames } from "./loader/agent-discovery.js";
 export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
 export { generateAutoHeartbeats } from "./loader/heartbeat-loader.js";
+export { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
 
 // ── Loader options ──────────────────────────────────────────────────────
 
@@ -200,13 +202,6 @@ export async function reloadAgents(
   }
 }
 
-// ── Agent handler auto-discovery ──────────────────────────────────────────
-
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../lib/handler-context.js";
-import type { CronEntry } from "../lib/cron-tool.js";
-import { buildRuntimeCtx, buildSessionHelpers } from "../lib/runtime-ctx.js";
-import { buildAgentSDK } from "../lib/sdk-impl.js";
-
 /**
  * Auto-discover and register JS handlers for cron entries.
  *
@@ -222,167 +217,5 @@ export async function loadAgentHandlers(
     getSessionId: (agentName: string) => string | null;
   },
 ): Promise<{ registered: string[]; errors: string[] }> {
-  const { agentsRoot, persistDir, projectRoot, manager, bus } = opts;
-  const registered: string[] = [];
-  const errors: string[] = [];
-
-  for (const [agentName, cron] of agentCrons) {
-    const entries = cron.getEntries();
-    const handlersNeeded = entries.filter((e) => e.handler);
-
-    if (handlersNeeded.length === 0) continue;
-
-    // Build a HandlerContext for this agent
-    const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, agentName });
-    const sdk = buildAgentSDK({
-      bus,
-      persistDir,
-      projectRoot,
-      agentsRoot,
-      agentName,
-      manager,
-      callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
-      triggerNow: (name) => cron.triggerNow(name),
-    });
-    const ctx: HandlerContext = {
-      sdk,
-      agentName,
-      triggerNow: (entryName: string) => cron.triggerNow(entryName),
-      ...sessionHelpers,
-    };
-
-    // Group entries by handler file (multiple entries can share one handler file)
-    const byFile = new Map<string, CronEntry[]>();
-    for (const entry of handlersNeeded) {
-      const file = entry.handler!;
-      if (!byFile.has(file)) byFile.set(file, []);
-      byFile.get(file)!.push(entry);
-    }
-
-    for (const [handlerFile, fileEntries] of byFile) {
-      // Resolve handler: look for .js (compiled) first, then .ts
-      const handlerDir = resolve(agentsRoot, agentName, "handlers");
-      const jsPath = resolve(handlerDir, `${handlerFile}.js`);
-      const tsPath = resolve(handlerDir, `${handlerFile}.ts`);
-
-      // We need the compiled .js version. If only .ts exists, that's an error.
-      let modulePath: string;
-      if (existsSync(jsPath)) {
-        modulePath = jsPath;
-      } else if (existsSync(tsPath)) {
-        // Bun handles .ts imports natively
-        modulePath = tsPath;
-      } else {
-        const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;
-        errors.push(msg);
-        bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
-        continue;
-      }
-
-      try {
-        // Validate module at startup (fail-fast)
-        const mod: HandlerModule = await import(`${modulePath}?t=${Date.now()}`);
-        if (typeof mod.create !== "function") {
-          const msg = `Handler ${modulePath} does not export create()`;
-          errors.push(msg);
-          bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
-          continue;
-        }
-
-        for (const entry of fileEntries) {
-          // Hot-reload wrapper: re-import the handler module on each
-          // invocation so that code changes take effect without a
-          // process restart.  The ?t= cache-buster forces Bun to
-          // re-evaluate the file.
-          const _modulePath = modulePath; // capture for closure
-          const _ctx = ctx; // capture for closure
-          const _entry = { ...entry }; // snapshot
-          const hotHandler = async (event?: TriggerEvent) => {
-            const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
-            if (typeof freshMod.create !== "function") {
-              throw new Error(`Handler ${_modulePath} no longer exports create()`);
-            }
-            const fn = freshMod.create(_ctx, _entry);
-            return fn(event);
-          };
-          cron.registerHandler(entry.name, hotHandler);
-          registered.push(`${agentName}:${entry.name}`);
-          bus.emit({
-            type: "info",
-            message: `[handler] Registered ${agentName}:${entry.name} → ${handlerFile}.ts (hot-reload)`,
-          });
-        }
-      } catch (err) {
-        const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
-        errors.push(msg);
-        bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
-      }
-    }
-
-    // Set up dynamic handler resolver for this agent's cron.
-    // This handles new handler entries added to cron.json after startup.
-    const _agentName = agentName;
-    const _agentsRoot = agentsRoot;
-    const _ctx = ctx;
-    const _cron = cron;
-    const _bus = bus;
-    cron.setHandlerResolver(async (entryName: string, entry: CronEntry): Promise<boolean> => {
-      if (!entry.handler) return false;
-
-      const handlerDir = resolve(_agentsRoot, _agentName, "handlers");
-      const jsPath = resolve(handlerDir, `${entry.handler}.js`);
-      const tsPath = resolve(handlerDir, `${entry.handler}.ts`);
-
-      let modulePath: string;
-      if (existsSync(jsPath)) {
-        modulePath = jsPath;
-      } else if (existsSync(tsPath)) {
-        modulePath = tsPath;
-      } else {
-        _bus.emit({
-          type: "info",
-          message: `[handler] ⚠️ Handler file not found for "${entryName}": ${handlerDir}/${entry.handler}.(js|ts)`,
-        });
-        return false;
-      }
-
-      try {
-        const mod: HandlerModule = await import(`${modulePath}?t=${Date.now()}`);
-        if (typeof mod.create !== "function") {
-          _bus.emit({
-            type: "info",
-            message: `[handler] ⚠️ Handler ${modulePath} does not export create() — cannot resolve "${entryName}"`,
-          });
-          return false;
-        }
-
-        const _modulePath = modulePath;
-        const _entry = { ...entry };
-        const hotHandler = async (event?: TriggerEvent) => {
-          const freshMod: HandlerModule = await import(`${_modulePath}?t=${Date.now()}`);
-          if (typeof freshMod.create !== "function") {
-            throw new Error(`Handler ${_modulePath} no longer exports create()`);
-          }
-          const fn = freshMod.create(_ctx, _entry);
-          return fn(event);
-        };
-
-        _cron.registerHandler(entryName, hotHandler);
-        _bus.emit({
-          type: "info",
-          message: `[handler] Dynamically registered ${_agentName}:${entryName} → ${entry.handler}.ts (post-startup)`,
-        });
-        return true;
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        _bus.emit({
-          type: "info",
-          message: `[handler] ⚠️ Failed to dynamically import handler for "${entryName}": ${errMsg}`,
-        });
-        return false;
-      }
-    });
-  }
-
-  return { registered, errors };
+  return loadHandlersForAgentCrons({ ...opts, agentCrons });
 }
