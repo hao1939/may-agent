@@ -1,7 +1,6 @@
 export {
   connectSocketEndpoint,
   emitDaemonEvent,
-  findDaemonSocket,
   sendAgentMessage,
   sendDaemonEvent,
   sendDaemonInput,
@@ -9,7 +8,6 @@ export {
   waitForSocketEvent,
 } from "../../packages/control/src/client.js";
 export type {
-  FindDaemonSocketOptions,
   SocketEndpoint,
   SocketEvent,
   SocketResponse,

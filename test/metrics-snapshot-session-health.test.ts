@@ -517,9 +517,9 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
-    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 20, priority: "P2" });
-    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 20, priority: "P2" });
-    expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 20, priority: "P3" });
+    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 20, priority: "P3" });
+    expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P1" });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
   });
 
@@ -562,5 +562,37 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
 
     expect(retired.c).toBe(3);
     expect(openRetiredAlerts.c).toBe(0);
+  });
+
+  it("measures event bus subscriber failures as a health signal", async () => {
+    const root = join(tmpdir(), `metrics-subscriber-failure-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+
+    const db = getDb(root);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["subscriber.failed", "event-bus", "may", JSON.stringify({ originalEventType: "metric.breach", subscriberPriority: "normal" }), now - 60_000],
+    );
+
+    const handler = create({
+      sdk: sdk(root, db),
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    expect(
+      db.prepare("SELECT current, target, threshold, priority, type FROM metrics WHERE id = ?")
+        .get("infra.bus.subscriber-failed-count-1h"),
+    ).toMatchObject({
+      current: 1,
+      target: 0,
+      threshold: 0,
+      priority: "P1",
+      type: "health",
+    });
   });
 });
