@@ -134,6 +134,10 @@ Manual review found the repeated P1 alert was a metric calibration bug, not a li
 
 Triaged P2 alert `session.finish-blocked-uncommitted-count-24h` after the raw count moved from 50 to 51. The breach is real, but the paired strict unresolved metric is healthy (`current=0` with the latest ten snapshots at `0`), and recent raw rows are dominated by repaired/accepted exits: latest samples show `status=done`, `outcome=done`, and `digest_outcome=success`, while the one fresh interrupted scout-heartbeat row has `action=nothing` / `No recoverable work worth resuming`. Chosen operation: `waiting_with_evidence`; keep the project paused unless the strict unresolved metric breaches again or a newer raw slice shows a non-recovered source pattern rather than repaired finish-block friction.
 
+### 2026-05-11 — Alert 287 repeated waiting_with_evidence hold
+
+Rechecked P2 raw metric alert 287 after the latest snapshot rose to `52` over threshold `50`. The breach is still real, but paired strict unresolved metric `session.finish-blocked-unresolved-count-24h` remains healthy at `current=0`; the raw 24h slice contains `52` finish-blocked evaluations, of which `49` are repaired successful exits (`session.status=done`, `outcome=done`, latest digest `success`), `2` are interrupted rows already marked `action=nothing` / `No recoverable work worth resuming`, and the residual top sources remain repaired scout/may/steward heartbeat friction rather than a new unresolved dirty-exit pattern. Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring and validate on the next metrics snapshot, resuming only if the strict unresolved metric breaches or the raw slice exposes a newer non-recovered source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
