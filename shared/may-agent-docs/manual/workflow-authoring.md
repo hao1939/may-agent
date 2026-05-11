@@ -159,7 +159,16 @@ export const guard: WorkflowGuard = {
 };
 ```
 
-Guards are pure functions: event in → demands out. They can `block`, `warn`, or inject additional steps via `run_step`.
+Guards are pure functions: event in → demands out. Treat them as detectors
+first: record risk signals, warn the next step, inject repair steps, or block
+only when the risk is high-confidence and high-impact. Current demand types are
+`warn`, `run_step`, and `block`. The design target also includes an `observe`
+mode for recording a guard signal without interrupting work.
+
+By convention, every guard trigger should be observable through a
+`guard.triggered` event. The default guard handler owns common metrics such as
+guard trigger/warn/block counts, so individual workflow authors should not add
+custom metric plumbing unless the guard needs behavior beyond the default.
 
 ## Testing
 

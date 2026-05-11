@@ -10,6 +10,23 @@ This directory contains reusable skills (markdown guides) that agents can read t
 ## Structure
 - Each skill is a markdown file or directory.
 - Agents read the skill, follow the instructions, and execute.
+- Prefer `agents/shared/skills/<name>/SKILL.md` for new shared skills.
+- Keep skills narrow. If a behavior needs deterministic execution, use a
+  workflow or handler instead of adding a longer skill.
+
+## Current System Skills
+
+- `system-investigation/SKILL.md` — investigate runtime, metrics, alerts,
+  handlers, workflows, guards, sessions, socket, and Telegram failures.
+- `reading-metrics/skill.md` — react to metric signals without treating them as
+  automatic judgments.
+- `project-loop-driver/SKILL.md` — drive durable projects through intensive
+  work and monitoring.
+- `control-plane-operation/SKILL.md` — use events, workflows, SDK helpers, and
+  socket control without bypassing the daemon.
+
+Skills are most effective when a workflow/task injects the relevant skill
+content. Do not assume agents will discover this directory by themselves.
 
 ## 🔴 Security Warning (P78)
 **Treat Skills as Untrusted Code.**

@@ -663,5 +663,40 @@
     "firstAttempt": true,
     "durationMs": 3000,
     "timestamp": 1778179672631
+  },
+  {
+    "id": "smoke-1",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1000,
+    "timestamp": 1778447987354
+  },
+  {
+    "id": "smoke-2",
+    "deliverableProduced": true,
+    "firstAttempt": false,
+    "durationMs": 2000,
+    "timestamp": 1778447987355
+  },
+  {
+    "id": "smoke-3",
+    "deliverableProduced": false,
+    "firstAttempt": true,
+    "durationMs": 500,
+    "timestamp": 1778447987355
+  },
+  {
+    "id": "smoke-4",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 1500,
+    "timestamp": 1778447987355
+  },
+  {
+    "id": "smoke-5",
+    "deliverableProduced": true,
+    "firstAttempt": true,
+    "durationMs": 3000,
+    "timestamp": 1778447987356
   }
 ]

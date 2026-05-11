@@ -1,22 +1,21 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778319973238_1
+- **Session:** s_1778502070920_132
 - **Status:** success
-- **When:** 2026-05-09T09:48:14.692Z
+- **When:** 2026-05-11T12:23:04.261Z
 
 ## What Happened
-Heartbeat triaged approved queue, system metrics, recent failures, owned projects, and pending evaluator FYIs; I committed `18136fedd dev: document evaluator forbidden-path false positive` with a bounded investigation/fix contract for session `s_1778318889307_18`. No in-tree runtime patch was attempted because the main clean-start/opCount issues remain runtime-owned and the forbidden-path implementation lives under evaluator workflow ownership.
+Choosing waiting_with_evidence because alert 287 is a real raw finish-block friction breach (58 > 50), but the paired strict unresolved metric remains healthy at 0 and fresh classification found 0 unresolved dirty exits; I recorded this judgment in the project journal and committed it as 61fe392c1.
 
 ## Files Modified
-- agents/dev/workspace/investigations/2026-05-09-evaluator-forbidden-path-false-positive.md
+- agents/shared/projects/finish-blocked-hygiene-reduction/project.md
 
 ## Completed
-- Checked Approved work queue and confirmed no approved dev implementation item was available
-- Triaged current system metrics, handler failures, recent session failures, owned projects, and unresolved metric alerts
-- Acted on evaluator P2 FYI for s_1778318889307_18 by documenting the forbidden-path false-positive mechanism and bounded fix contract
-- Dismissed evaluator P2 FYI for s_1778317686099_15 as already covered by the prior clean-start/opCount investigation artifact
-- Classified remaining pending session.start/session.end/review signals as informational already acted by recent dev/evaluator sessions
+- Triaged metric alert session.finish-blocked-uncommitted-count-24h and chose waiting_with_evidence with project journal evidence.
 
-## New Tasks Created
-- Evaluator workflow owner should add a regression test for prose owner labels (`metric config owner`, `evaluator/scout owner`) not being treated as forbidden edit paths, then narrow `forbiddenEditPathsFromTask()` while preserving true forbidden-write tests.
+## Still Open / Next Steps
+Validate on the next metrics-snapshot; resume finish-blocked-hygiene-reduction only if session.finish-blocked-unresolved-count-24h breaches or raw sampling exposes a fresh non-recovered dirty-exit pattern.
+
+## Blockers
+- Agents repo has pre-existing unrelated dirty paths after my commit, so the worktree is not globally clean. — Post-commit git status still shows unrelated runtime/other-agent/doc paths: .state/iteration-log.json, arc/last-session.md, dev/context.md, dev/last-session.md, evaluator/last-session.md, master/AGENTS.md, master/last-session.md, may/last-session.md, scout/last-session.md, multiple shared/may-agent-docs files, daily-alert-review/ruflo/v2 project files, master/tools files, and shared/projects/master-worker-context-sharing/project.md. I did not stage or clean them because they are unrelated/unsafe for this triage.

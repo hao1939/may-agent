@@ -1,7 +1,17 @@
 # Skill: Reading and Reacting to Metrics
 
 ## When to Use
-Every heartbeat when metrics are present in your prompt. Also when investigating performance regressions or validating experiment outcomes.
+Use this when metrics are present in your task, heartbeat, workflow context, or
+alert. Also use it when validating whether a change improved system health.
+
+## Core Rule
+
+A metric is a signal, not a judge.
+
+Judge the signal using the project goal, owner context, recent facts, session
+evidence, and causal theory. If the metric is stale, malformed, or measuring the
+wrong thing, fix the measurement or escalate that fact instead of optimizing the
+number.
 
 ## The Three States
 
@@ -14,76 +24,65 @@ Every heartbeat when metrics are present in your prompt. Also when investigating
 ## Investigation Protocol
 
 ### Step 1: Understand what the metric measures
-Read the metric name. If unclear, check the metric definition in the project or config that owns it.
+Read the metric name, owner, priority, target, threshold, and latest timestamp.
+If unclear, check the metric definition in the project, handler, or config that
+owns it.
 
-### Step 2: Discover what metrics exist
+### Step 2: Prefer injected/live context
 
-Before querying, find available metrics:
+If a workflow supplied metric facts, use those first. If not, query through the
+safe tool or SDK surface when available:
 
-```bash
-# List all metric IDs in the database
-bun -e "
-import {Database} from 'bun:sqlite';
-const db = new Database('.state/may.db', {readonly:true});
-const rows = db.query(\"SELECT DISTINCT metric_id FROM metric_snapshots ORDER BY metric_id\").all();
-rows.forEach(r => console.log(r.metric_id));
-"
+```sql
+SELECT id, owner, priority, current, target, threshold, alert_op, updated_at
+FROM metrics
+WHERE id = ?;
 ```
 
-```bash
-# Check markdown-based metrics (fallback if DB is empty)
-ls .state/metrics/
-find .state/metrics -name "*.md" -exec head -3 {} \;
+```sql
+SELECT id, metric_id, created_at, resolved_at, message
+FROM metric_alerts
+WHERE metric_id = ?
+ORDER BY created_at DESC
+LIMIT 5;
 ```
 
-```bash
-# Check project-specific metrics
-grep -r "metric" .state/projects/*/project.md 2>/dev/null | grep -i "target\|baseline"
-```
+If you must query manually, inspect the schema or source first. Do not guess DB
+columns.
 
 ### Step 3: Check recent history
-Query the metrics DB to see if this is a blip or a trend:
+Check whether this is:
 
-```bash
-bun -e "
-import {Database} from 'bun:sqlite';
-const db = new Database('.state/may.db', {readonly:true});
-const rows = db.query(\"SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10\").all('<metric-name-here>');
-console.table(rows);
-"
-```
-
-```bash
-# Get a quick summary: latest value, min, max, and count per metric
-bun -e "
-import {Database} from 'bun:sqlite';
-const db = new Database('.state/may.db', {readonly:true});
-const rows = db.query(\"SELECT metric_id, COUNT(*) as readings, MIN(value) as min_val, MAX(value) as max_val, (SELECT value FROM metric_snapshots m2 WHERE m2.metric_id = m.metric_id ORDER BY measured_at DESC LIMIT 1) as latest FROM metric_snapshots m GROUP BY metric_id\").all();
-console.table(rows);
-"
-```
-
-If `may.db` doesn't exist or the table is empty, check `.state/metrics/` for markdown-based metric logs.
+- one noisy reading,
+- a sustained trend,
+- stale measurement,
+- measurement failure,
+- known accepted exception,
+- downstream symptom of another broken path.
 
 ### Step 4: Identify the cause
 - Single bad session or sustained trend?
 - Did something change recently? (new skill deployed, context updated, workflow modified)
 - Is it your metric or are you downstream of another agent's output?
+- Does transcript/event evidence support the metric's implied story?
 
 ### Step 5: Act or escalate
-- **You can fix it**: Create a task, fix it now or next heartbeat
-- **Another agent's problem**: Notify them with metric value + context
-- **Don't understand it**: `finish(status='blocked')` with what you know
+- **You can fix it**: fix the root cause, then re-measure.
+- **Another agent owns it**: route to the owner with metric value, evidence, and suspected cause.
+- **The metric is wrong/stale**: fix measurement or escalate measurement failure.
+- **You don't understand it**: escalate with what you checked and what remains unknown.
 
 ### Step 6: Prevent recurrence (close the loop)
 Fixing once is not enough. Ask: **will this happen again?**
 
-The evolution ladder for prevention:
-1. **Skill** (advisory text) → teaches agents what to watch for
-2. **Guard** (enforced check) → blocks bad outputs during workflows
-3. **Handler** (automated code) → runs without LLM, zero cost
+The prevention ladder:
 
-Move problems UP this ladder when they recur.
+1. **Skill** teaches agents a recurring process.
+2. **Workflow** injects live facts or enforces a repeatable sequence.
+3. **Guard** records or intervenes on a mechanical risk.
+4. **Handler** automates deterministic reaction.
+
+Move up the ladder only when the lower level has proven insufficient.
 
 ## Common Mistakes
 
@@ -94,12 +93,13 @@ Move problems UP this ladder when they recur.
 | Optimizing green metrics | Opportunity cost | Focus on red/yellow first |
 | Not checking staleness | Old data hides real problems | Verify `measured_at` is recent |
 | Reporting without acting | "Metric X is red" is not action | Investigate → fix → prevent |
+| Treating the value as truth | Bad measurements create bad work | Validate source, owner, and components |
 
 ## Example: Full Reaction Sequence
 
 1. See `session-quality: 📉 0.62 (target: 0.75)`
-2. Query DB → was 0.78 last week, dropped to 0.65, 0.62 over 3 readings → real trend
+2. Check recent readings: 0.78 last week, then 0.65, then 0.62 -> real trend
 3. Check recent changes → new dispatch pattern started 3 days ago
 4. Hypothesis: dispatch change caused quality drop
 5. Action: revert or fix dispatch, measure next heartbeat
-6. Prevention: add a guard that flags quality drops >10% within a week
+6. Prevention: add workflow/metric context that flags drops >10% within a week

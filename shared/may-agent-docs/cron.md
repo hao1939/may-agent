@@ -2,7 +2,18 @@
 
 ## Overview
 
-The cron system schedules handler execution. Handlers are TypeScript functions that run on a timer or in response to events.
+The cron system schedules handler execution. Handlers are TypeScript functions
+that run on a timer or in response to events.
+
+Default convention:
+
+```
+timer/event -> handler -> workflow -> sessions/functions/metrics
+```
+
+Handlers are bridges. They normalize the trigger, do deterministic preflight or
+skip checks, then dispatch a workflow when judgment/action is needed. Workflows
+own process and agent orchestration.
 
 ## How It Works
 
@@ -27,21 +38,44 @@ Each cron entry:
 - `agent` + `message` without a handler — detached agent job in a separate OS process
 - `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
 
-## Handler Structure
+## Handler Structure: Event-To-Workflow Bridge
 
 ```typescript
-// agents/may/handlers/metrics-snapshot.ts
+// agents/may/handlers/metric-alert-router.ts
 import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
     const sdk = ctx.sdk;
-    const db = sdk.getDb();
-    // ... do work ...
+    await sdk.runWorkflow("some-workflow", "task/context from event", { source: entry.name });
     sdk.log("info", "done");
   };
 };
 ```
+
+Direct handler logic is acceptable for mechanical infra work such as metric
+snapshots, projections, cleanup/recovery state repair, reload/restart/shutdown,
+and dispatch dedup. Direct `sdk.runAgent(...)` from a handler should be
+exceptional; prefer `sdk.runWorkflow(...)`.
+
+## Mechanical Handler Exception
+
+Metric snapshot handlers may record metrics directly because they are
+deterministic measurement, not agent judgment. Target form after the query
+facade lands:
+
+```typescript
+// agents/may/handlers/metrics-snapshot.ts
+export const create: HandlerModule["create"] = (ctx, entry) => {
+  return async () => {
+    const count = ctx.sdk.query.sessions({ status: "error", windowMs: 3600000 }).length;
+    ctx.sdk.metrics.record("session.error-count", count, { measuredBy: entry.name });
+  };
+};
+```
+
+Current mechanical handlers may still use `sdk.getDb()` directly. That should
+remain an escape hatch, not the default for new judgment/action handlers.
 
 Handlers are **hot-reloaded** — edit the file, next tick picks up changes. No restart needed.
 
@@ -64,5 +98,5 @@ Agents with heartbeat workflows get auto-generated cron entries:
 ## Implementation
 
 - **Cron class:** `src/app/cron.ts`
-- **Handler loading:** `src/app/agent-loader.ts`
-- **Auto-heartbeat:** `generateAutoHeartbeats()` in agent-loader.ts
+- **Handler loading:** `src/app/loader/handler-loader.ts` via the `src/app/agent-loader.ts` compatibility surface
+- **Auto-heartbeat:** `generateAutoHeartbeats()` in `src/app/loader/heartbeat-loader.ts`

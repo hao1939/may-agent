@@ -137,7 +137,7 @@ The SDK and agent tools are two sides of the same coin:
 
 - **Types:** `src/lib/sdk.ts`
 - **Wrapper:** `src/lib/sdk-impl.ts` (delegates to manager, bus, DB)
-- **Wiring:** `src/app/agent-loader.ts` builds `ctx.sdk` via `buildAgentSDK()`
+- **Wiring:** `src/app/agent-loader.ts` remains the compatibility surface over `src/app/loader/*`; handler/workflow contexts build `ctx.sdk` via `buildAgentSDK()`
 
 ## Design Rationale
 

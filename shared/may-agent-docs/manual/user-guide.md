@@ -230,6 +230,10 @@ may-agent --emit trigger.metrics-snapshot '{}'
 # Emit to the background container/runtime instance
 DAEMON_INSTANCE=background may-agent --emit trigger.metrics-snapshot '{}'
 
+# If the daemon runs inside Docker and the host cannot connect to the Unix
+# socket namespace, execute the same control command inside the container.
+docker exec may-agent may-agent --emit trigger.metrics-snapshot '{}'
+
 # Send a chat-style delegation through the running daemon
 DAEMON_INSTANCE=background may-agent --send scout --message "review your active project"
 

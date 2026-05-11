@@ -97,11 +97,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
 ---
 
-## Level 4: Guard (workflow-level enforcement)
+## Level 4: Guard (workflow-level detection/intervention)
 
-> **Note:** Guards are a workflow-level pattern, not an infra primitive. The infra doesn't enforce guards — workflows opt into them.
+> **Note:** Guards are a workflow-level pattern, not an infra primitive. The infra runs guard hooks, but workflows choose which guards apply and what intervention mode is appropriate.
 
-A guard runs on workflow step events. It enforces invariants within a workflow.
+A guard runs on workflow step events. It detects mechanical risks, emits
+observable signals, and may intervene when justified.
 
 **Where it lives:** Inline in workflow definitions, or `agents/shared/guards/<name>.ts`
 
@@ -119,10 +120,21 @@ export const guard: WorkflowGuard = {
 };
 ```
 
-**Demand types:**
-- `block` — stop the workflow immediately
+**Current demand types:**
 - `warn` — inject a warning into the next step's task
 - `run_step` — inject an additional step
+- `block` — stop the workflow immediately; reserve for high-confidence, high-impact risks
+
+**Target guard mode:** `observe` should mean "record a guard signal without
+interrupting work." Until the runtime exposes that as a first-class demand,
+use no hard block for uncertain detectors and rely on guard-trigger events or
+metrics to review the pattern later.
+
+**Default observability:** every guard trigger should emit `guard.triggered`.
+A default guard handler should record a small set of guard metrics and attach
+trace fields (`sessionId`, `workflowRunId`, `step`) so later review can find
+the exact failure chain. Guard-specific logging should be unnecessary unless
+the guard needs an exception to the default convention.
 
 ---
 
@@ -293,7 +305,7 @@ See [projects.md](projects.md) for the canonical lifecycle.
 
 ### "I want a daily research scan"
 
-**Level 5 (Handler):** `agents/scout/handlers/daily-scan.ts` — cron fires every 24h, calls `sdk.runAgent("scout", "scan for new papers")`.
+**Level 5 (Handler):** `agents/scout/handlers/daily-scan.ts` — cron fires every 24h, does preflight, then calls `sdk.runWorkflow("daily-research-scan", task)`. The workflow collects context and runs scout.
 
 ### "Implement then verify is our default flow"
 

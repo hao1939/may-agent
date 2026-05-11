@@ -3,7 +3,7 @@
 May-agent uses one work model for autonomous operation:
 
 ```
-project + metrics + trigger -> agent judgment -> session -> evidence -> project update
+project + metrics + trigger -> work execution -> agent judgment -> evidence -> project update
 ```
 
 ## Roles
@@ -13,6 +13,7 @@ project + metrics + trigger -> agent judgment -> session -> evidence -> project 
 | Project | Goal, owner, current state, history, plan, and durable context. |
 | Metric | Signal that something may need attention or validation. |
 | Event/Cron | Trigger that wakes the system to reassess. |
+| Work execution | Bounded work unit. Usually a workflow that may run sessions/functions; sometimes one direct session. |
 | Agent | Judge and actor. Interprets signals against project context, facts, and a causal theory. |
 | Session | One execution attempt. Produces evidence, changes, escalation, or a no-action judgment. |
 
@@ -24,13 +25,15 @@ context, or an accepted exception. The owner agent must decide.
 
 1. A project states the goal, owner, current plan, and relevant metrics.
 2. Metrics produce signals through snapshots and alerts.
-3. Cron, event subscriptions, heartbeat, or a human trigger starts a session.
-4. The agent reads the project context and signal evidence.
+3. Cron, event subscriptions, heartbeat, or a human trigger starts bounded work,
+   usually through a workflow.
+4. The workflow/context builder gathers live evidence and may run agent sessions.
 5. The agent judges the situation and chooses one operation: act, calibrate,
    document exception, wait with evidence, route to owner, or escalate.
-6. The agent records evidence in the session summary and updates the project
+6. The work unit records evidence in session/workflow output and updates the project
    when the work changes project state.
-7. Later metrics and sessions provide validation signals, not automatic truth.
+7. Later metrics, sessions, and workflow traces provide validation signals, not
+   automatic truth.
 
 ## Project Lifecycle
 
@@ -114,6 +117,7 @@ Use a project when there is a goal that needs continuity across sessions:
 
 Use a cron handler when the procedure is known and recurring:
 
+- bridge an event/timer to the right workflow,
 - wake a project on a cadence,
 - scan for missed events,
 - build live context from the DB,
@@ -123,6 +127,12 @@ Use a cron handler when the procedure is known and recurring:
 If a cron discovers a sustained implementation gap, it should create or update a
 project. Do not make the cron prompt itself the long-term memory.
 
+Default convention: handlers dispatch workflows, and workflows run agents. A
+handler may do deterministic preflight, skip checks, metric snapshots,
+projection updates, or recovery bookkeeping. It should not directly run raw
+agent sessions for judgment/action unless there is a clear reason the workflow
+layer adds no value.
+
 ## Enforcement
 
 Prefer structural enforcement over brittle text rules:
@@ -131,11 +141,13 @@ Prefer structural enforcement over brittle text rules:
 - Metrics should link to `metrics.project` when they measure a project.
 - Runtime ownership resolves by convention: `metrics.owner`, then
   `projects.owner`, then metric id prefix, then `may`.
-- Cron handlers should build live context and dispatch sessions; they should not
-  contain long static plans.
+- Cron handlers should bridge events to workflows; they should not contain long
+  static plans or direct agent orchestration.
 - Tests should cover routing, skip conditions, and generated context for
   recurring handlers.
-- Guards should only enforce facts that are mechanically checkable.
+- Guards should detect mechanically checkable risks and emit observable signals.
+  Blocking is reserved for high-confidence, high-impact cases. A default guard
+  handler should record guard-trigger metrics by convention.
 
 Agent judgment remains intentional. The system can enforce that a signal reaches
 an owner and that evidence is recorded; it should not pretend a metric made the

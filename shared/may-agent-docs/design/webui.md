@@ -1,6 +1,8 @@
 # Design: Web UI
 
-**Status**: partially shipped (2026-05-08)
+**Status**: Partially shipped (2026-05-08). Nav structure refined by
+[webui-agents-metrics-tabs.md](webui-agents-metrics-tabs.md) (shipped) and
+[webui-operator-goals.md](webui-operator-goals.md) (draft).
 **Date**: 2026-05-06 (revised 2026-05-08)
 **Aligned with**: `../architecture.md`, `../work-model.md`, `agent-metrics.md`, `heartbeat-as-agency.md`
 

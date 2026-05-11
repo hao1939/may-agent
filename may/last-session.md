@@ -1,12 +1,9 @@
 # Last Session
 <!-- Auto-generated at session end. Do not edit manually. -->
 
-- **Session:** s_1778319947420_0
+- **Session:** s_1778502668368_138
 - **Status:** success
-- **When:** 2026-05-09T09:46:34.613Z
+- **When:** 2026-05-11T12:31:53.590Z
 
 ## What Happened
-Audited 3 open metric alerts and 2 delivery failures. Alert#254 (heartbeat-decision-rate) is stuck in a calibrate/revert loop — messaged may to close the metric as it measures a non-existent feature. Alerts #197/#225 (scout) are P3, scout is active, no action needed. Delivery failures are stale evaluator bugs, no recurrence.
-
-## Completed
-- Closed-loop audit of red metrics and failed deliveries
+Audited 3 open metric alerts. All share dirty-worktree root cause. Prior judgments valid but breaches persist. Nudged dev (owner of alert#287) to commit/clean the worktree. No delivery failures. No files edited.

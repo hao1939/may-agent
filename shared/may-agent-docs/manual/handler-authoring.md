@@ -15,6 +15,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 };
 ```
 
+Default convention:
+
+```
+event/timer -> handler -> workflow -> sessions/functions/metrics
+```
+
+Handlers are bridges. They should normalize the trigger, do deterministic
+preflight or skip checks, and dispatch a workflow when judgment/action is
+needed. Put process, prompts, agent orchestration, and multi-step context
+collection in the workflow.
+
 ## Registering (cron.json)
 
 Add an entry to your agent's `cron.json`:
@@ -37,9 +48,12 @@ Add an entry to your agent's `cron.json`:
 ## What You Have Access To
 
 Via `ctx.sdk` (preferred):
-- `sdk.getDb()` — SQLite database
 - `sdk.emit(type, data)` — emit events
-- `sdk.runAgent(agent, task)` — run another agent
+- `sdk.runWorkflow(name, task)` — dispatch pre-orchestrated sessions/functions
+- `sdk.runAgent(agent, task)` — exceptional from handlers; prefer workflow bridge
+- `sdk.metrics` — define, record, alert, resolve, evaluate, and list metrics
+- `sdk.query` — target preferred bounded read surface for sessions/events/metrics/projects
+- `sdk.getDb()` — compatibility escape hatch; prefer `query`/`metrics`
 - `sdk.log(level, msg)` — logging
 - `sdk.message(target, content)` — human or agent messages
 - `sdk.escalate(target, reason)` — escalation
@@ -64,6 +78,10 @@ You don't need to emit these yourself.
 
 ## Example: Simple Metric Recorder
 
+Metric snapshot handlers are a mechanical exception: they may read projections
+and record metrics directly because no agent judgment is needed. Current code
+may still use `sdk.getDb()`; the target surface is `sdk.query` + `sdk.metrics`.
+
 ```typescript
 import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
 
@@ -82,6 +100,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   };
 };
 ```
+
+## Example: Event-To-Workflow Bridge
+
+```typescript
+import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
+
+export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+  return async (event?: TriggerEvent) => {
+    const task = [
+      `Trigger: ${event?.type ?? "timer"}`,
+      `Entry: ${entry.name}`,
+      event?.data ? `Data: ${JSON.stringify(event.data)}` : "",
+    ].filter(Boolean).join("\n");
+
+    await ctx.sdk.runWorkflow("metric-alert-triage", task, {
+      source: entry.name,
+    });
+  };
+};
+```
+
+Use this shape for any handler that needs judgment, project context,
+investigation, or agent action.
 
 ## Testing
 

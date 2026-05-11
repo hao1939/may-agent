@@ -77,7 +77,11 @@ When agents make judgment errors, the fix is **workflow structure** — not text
 | Mechanical check | Guard or code (tsc, test runner) | Text rules |
 | Process enforcement | Workflow step ordering | Instructions ("remember to verify") |
 
-Guards are for things a regex can check reliably. context.md is for facts that change with the environment. Workflows are for everything that requires judgment.
+Guards are mechanical detectors first. A guard trigger should emit an event or
+risk signal; warning, repair, escalation, and blocking are intervention modes.
+Use hard blocking only for high-confidence, high-impact risks. context.md is for
+facts that change with the environment. Workflows are for everything that
+requires judgment.
 
 **Elaborated in:** [code-vs-data.md](code-vs-data.md), [evolution.md](evolution.md)
 

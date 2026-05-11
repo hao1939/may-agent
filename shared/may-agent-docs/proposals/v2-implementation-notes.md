@@ -1,5 +1,8 @@
 # v2 Implementation Notes (Historical — as of v0.2)
 
+**Status**: Historical — written during v0.2 migration. For current direction, see
+[infra-surface.md](../design/infra-surface.md).
+
 > **⚠️ Historical document.** Written during v0.2 migration. The system has since evolved:
 > - `SubagentManager` was rewritten (not just wrapped)
 > - `notify` and `agents.fork` were removed (not just deprecated)

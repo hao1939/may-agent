@@ -6,6 +6,8 @@ type: milestone
 priority: P1
 workflow: project
 iteration: 1
+stop_reason: 
+resume_condition: 
 ---
 
 # Project: AKS RP E2E — Learn & Setup
@@ -53,3 +55,6 @@ Learn and set up e2e testing for the AKS Resource Provider Go monorepo (hosted o
 
 **Artifacts:**
 - (none yet — outputs/e2ev3-architecture.md pending)
+
+
+## Comments

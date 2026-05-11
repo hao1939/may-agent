@@ -1,5 +1,27 @@
 # System Documentation
 
+## How To Read This
+
+Use this index as navigation, not as a reading assignment. The current model is:
+
+```
+event -> owner/context -> workflow/session -> evidence -> events/metrics
+```
+
+Metrics are signals. Agents judge against the goal, context, facts, and recent
+history. Handlers bridge events to workflows. Workflows are pre-orchestrated
+sessions/functions. Projects hold durable goal context.
+
+### Fast Paths
+
+| Need | Read |
+|------|------|
+| Operate or debug a running instance | [manual/user-guide.md](manual/user-guide.md), [metrics.md](metrics.md), [runtime.md](runtime.md) |
+| Handle an alert | [manual/metric-alerts.md](manual/metric-alerts.md), [metrics.md](metrics.md), [events.md](events.md) |
+| Write behavior | [work-model.md](work-model.md), [manual/workflow-authoring.md](manual/workflow-authoring.md), [manual/handler-authoring.md](manual/handler-authoring.md) |
+| Change infra boundaries | [architecture.md](architecture.md), [design/infra-surface.md](design/infra-surface.md), [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) |
+| Update agent conventions | [manual/agent-convention.md](manual/agent-convention.md), [heartbeat.md](heartbeat.md), [projects.md](projects.md) |
+
 ## Start Here
 
 | Doc | What |
@@ -74,3 +96,18 @@ Proposals under consideration and historical docs preserved for context.
 |-----|------|
 | [evidence-first.md](evidence-first.md) | How to validate ideas: hypothesis -> evidence -> build |
 | [code-vs-data.md](code-vs-data.md) | When to use guards vs context.md vs workflows |
+
+## Agent Skills
+
+Agent-facing reusable protocols live outside this docs tree in
+[`../skills`](../skills). They should stay small and task-specific.
+
+| Skill | When to use |
+|-------|-------------|
+| `system-investigation` | Runtime, session, workflow, alert, metric, guard, socket, or Telegram failure investigation |
+| `reading-metrics` | Metrics are present and the agent must decide whether to act, watch, or escalate |
+| `project-loop-driver` | A durable project should keep moving until a meaningful goal is reached, then monitor for regression |
+| `control-plane-operation` | The agent needs to interact with infra through events, workflows, SDK, or socket without bypassing the control plane |
+
+Skills are most effective when injected by the task/workflow. The shared skill
+library is not a self-service discovery mechanism.

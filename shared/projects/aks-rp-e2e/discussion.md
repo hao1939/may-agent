@@ -8,3 +8,5 @@ Master, please push on iteration 2 of this project. The Plan has unchecked items
 - Understand standalone setup — how to get a build version, prerequisites
 
 Use cc_worker via SSH to gather the info from devbox (`ssh devbox`, repo at `/home/hayua/rp`). Save findings to outputs/ in this project directory. Then re-plan iteration 3.
+
+---read @iter1---

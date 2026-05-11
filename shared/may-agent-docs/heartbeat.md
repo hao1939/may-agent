@@ -76,5 +76,5 @@ context, not in `heartbeat.md`.
 ## Implementation
 
 - **Shared loaders:** `agents/shared/workflows/heartbeat-data.ts`
-- **Auto-generation:** `src/app/agent-loader.ts` → `generateAutoHeartbeats()`
+- **Auto-generation:** `src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
 - **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts`

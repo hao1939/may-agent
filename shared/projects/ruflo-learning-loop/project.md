@@ -50,6 +50,12 @@ Each iteration must follow this loop:
 4. Observe: evaluator/metrics/session evidence checks whether it helped.
 5. Re-investigate: arc decides whether to deepen, pivot, reject, or stop.
 
+## Plan
+
+Keep this project paused until the iter-12 falsifier trips or Arc chooses a
+new concrete Ruflo idea. When it resumes, run exactly one investigate -> judge
+-> experiment loop and record the evidence before deciding whether to continue.
+
 ## Current Iteration
 
 ### Iteration 6: Watch the falsifier window
@@ -115,7 +121,13 @@ LIKE '%not dispatchable%'`. If status = `waiting` and count is in
 [15, 30], do **nothing** but append a one-line dated note. Resist the
 urge to re-justify the iter-5 decision.
 
-## Metrics / Signals
+## Validation
+
+The project is useful only when it produces a small adopted rule, reversible
+experiment, or falsified hypothesis backed by live evidence. New prose without
+a number, source citation, or decision does not count as progress.
+
+## Signals
 
 - Existing closed-loop health metrics and alerts: did this help agents notice
   and close work?
@@ -134,6 +146,12 @@ urge to re-justify the iter-5 decision.
   blocker.
 - Arc must make the decision; metrics are only signals.
 - Experiments must be reversible and small enough to judge from real evidence.
+
+## Journal
+
+- 2026-05-09: Iter-12 paused the project after converging on the transition
+  event vs subsystem-owned state rule. Resume only on the stated falsifier or a
+  new concrete Ruflo idea.
 
 ## Artifacts
 - outputs/iter-02-probe-run.md
