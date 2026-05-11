@@ -283,7 +283,6 @@
     "description": "Detect projects needing attention, run project workflow. Event triggers provide immediate reaction; timer is backup scan.",
     "on": [
       "project.nudge",
-      "trigger.project",
       "project.completed",
       "project.blocked"
     ]
@@ -348,9 +347,6 @@
     "agent": "evaluator",
     "enabled": true,
     "intervalMs": 420000,
-    "on": [
-      "trigger.session-aftermath-scan"
-    ],
     "description": "Every 7 minutes, evaluate terminal sessions missed by the completion event; skip sessions ended less than 7 minutes ago.",
     "handlerConfig": {
       "workflow": "evaluator-aftermath",
@@ -369,9 +365,6 @@
     "agent": "evaluator",
     "enabled": true,
     "intervalMs": 1800000,
-    "on": [
-      "trigger.eval-llm-scan"
-    ],
     "description": "Bounded non-heuristic evaluator lane. Processes at most one terminal session per run and records only validated artifacts.",
     "handlerConfig": {
       "backfillHours": 24,
@@ -395,9 +388,6 @@
     "intervalMs": 300000,
     "handler": "metrics-snapshot",
     "agent": "may",
-    "on": [
-      "trigger.metrics-snapshot"
-    ],
     "enabled": true,
     "description": "Measure handler health metrics every 5 minutes."
   },
