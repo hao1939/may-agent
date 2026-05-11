@@ -123,7 +123,7 @@ test/e2ev3/
 │   ├── env/              # Environment decoration
 │   └── to/               # Pointer/utility helpers
 ├── mutate/               # Shared mutators (traffic routing, feature flags, naming, etc.)
-├── sigs/                 # SIG-owned test content (27 SIGs)
+├── sigs/                 # SIG-owned test content (24 SIGs)
 │   ├── rp/               # SIG RP (nativerp, hcp, virtualmachine, etc.)
 │   ├── network/          # SIG Network (swiftv1, swiftv2, acns, datapath, etc.)
 │   ├── ccp/              # SIG CCP (coredns, localdns, metricsserver, etc.)
@@ -146,7 +146,7 @@ test/e2ev3/
 └── spec/                 # Spec files (non-Go)
 ```
 
-## SIGs (27 directories under `sigs/`)
+## SIGs (24 directories under `sigs/`)
 
 acccvm, airlock, arm64, autoscale, ccp, consts, dataplane, devinfra, dplat, fqdnpolicy, gpu, industry, managementplane, network, node, rp, runtime, secops, security, serverless, speculor, traffic, windows, workload
 
