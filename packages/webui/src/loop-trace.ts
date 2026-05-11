@@ -135,6 +135,26 @@ function toLoopTraceExecution(result: ExecutionResult): LoopTraceExecution {
   };
 }
 
+function resumeDiagnosticStatus(eventType: string, data: Row): ExecutionResult["status"] {
+  if (eventType === "workflow.resume_skipped") {
+    const status = stringValue(data.status);
+    if (status === "done" || status === "escalated") return status;
+    return "interrupted";
+  }
+  return data.recoverable === false ? "error" : "interrupted";
+}
+
+function resumeNextAction(eventType: string, data: Row): string | undefined {
+  const explicit = stringValue(data.nextAction ?? data.action);
+  if (explicit) return explicit;
+  if (eventType === "workflow.resume_skipped") return "none";
+  const category = stringValue(data.category);
+  if (category === "workflow_definition_missing" || category === "corrupt_state") return "recover";
+  if (data.recoverable === false) return "escalate";
+  if (data.recoverable === true) return "resume";
+  return undefined;
+}
+
 function sessionExecution(row: Row): LoopTraceExecution | null {
   const id = stringValue(row.sessionId);
   if (!id) return null;
@@ -157,7 +177,7 @@ function failoverExecution(row: Row): LoopTraceExecution | null {
   const id = sessionId ?? workflowRunId;
   if (!kind || !id) return null;
   const owner = stringValue(row.owner ?? data.owner ?? data.agent);
-  const status = data.recoverable === false ? "error" : "interrupted";
+  const status = resumeDiagnosticStatus(eventType, data);
   const execution = toLoopTraceExecution(resumeDiagnosticToExecutionResult({
     id,
     kind,
@@ -169,6 +189,7 @@ function failoverExecution(row: Row): LoopTraceExecution | null {
     workflow: stringValue(data.workflow) ?? undefined,
     category: stringValue(data.category) ?? undefined,
     recoverable: typeof data.recoverable === "boolean" ? data.recoverable : undefined,
+    nextAction: resumeNextAction(eventType, data),
   }));
   execution.evidence.eventType = eventType;
   return execution;
@@ -365,6 +386,11 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
     metricId,
   ));
   const uniqueFailoverEvents = uniqBy(failoverEvents, "id");
+  const failoverOwner = uniqueFailoverEvents.map((row) => {
+    const data = parseData(row);
+    return stringValue(row.owner ?? data.owner ?? data.agent);
+  }).find(Boolean) ?? null;
+  const failoverProjectId = uniqueFailoverEvents.map((row) => stringValue(parseData(row).projectId)).find(Boolean) ?? null;
 
   const metricSnapshots = metricId
     ? safeAll(db, "SELECT * FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 20", metricId)
@@ -374,8 +400,8 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   return {
     target: targetKind(target),
     origin: seed.origin,
-    owner: seed.owner,
-    projectId: seed.projectId,
+    owner: seed.owner ?? failoverOwner,
+    projectId: seed.projectId ?? failoverProjectId,
     metricId,
     alertId,
     handler: { name: seed.handlerName, status: seed.handlerStatus, reason: seed.handlerReason },

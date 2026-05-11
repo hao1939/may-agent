@@ -284,6 +284,7 @@ export class SubagentManager {
       reason,
       category,
       recoverable,
+      nextAction: category === "already_active" ? "resume" : recoverable ? "resume" : "escalate",
       timestamp: Date.now(),
     });
   }

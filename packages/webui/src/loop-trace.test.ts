@@ -139,14 +139,16 @@ describe("buildLoopTrace", () => {
   it("shows resume failover events for a workflow", () => {
     const db = makeDb();
     const now = Date.now();
-    db.prepare("INSERT INTO workflow_runs (runId, workflow, task, depth, status, startedAt) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("wr_missing", "deleted-workflow", "resume me", 1, "running", now - 10_000);
+    db.prepare("INSERT INTO workflow_runs (runId, workflow, task, projectId, depth, status, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run("wr_missing", "deleted-workflow", "resume me", "closed-loop-reliability", 1, "running", now - 10_000);
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("workflow.resume_failed", "workflow-tool", "may", JSON.stringify({ workflowRunId: "wr_missing", workflow: "deleted-workflow", category: "workflow_definition_missing" }), now - 5_000, "normal");
+      .run("workflow.resume_failed", "workflow-tool", "may", JSON.stringify({ workflowRunId: "wr_missing", workflow: "deleted-workflow", projectId: "closed-loop-reliability", category: "workflow_definition_missing", recoverable: true, nextAction: "recover" }), now - 5_000, "normal");
 
     const trace = buildLoopTrace(db, { workflowRunId: "wr_missing" });
 
     expect(trace.target).toEqual({ kind: "workflow", id: "wr_missing" });
+    expect(trace.owner).toBe("may");
+    expect(trace.projectId).toBe("closed-loop-reliability");
     expect(trace.failoverEvents).toHaveLength(1);
     expect(trace.failoverEvents[0]).toMatchObject({ event_type: "workflow.resume_failed" });
     expect(trace.executions).toEqual(expect.arrayContaining([
@@ -154,10 +156,35 @@ describe("buildLoopTrace", () => {
         id: "wr_missing",
         kind: "workflow",
         status: "interrupted",
+        owner: "may",
         summary: "workflow_definition_missing",
+        evidence: expect.objectContaining({ nextAction: "recover" }),
       }),
     ]));
     expect(trace.evidence.failoverCount).toBe(1);
+  });
+
+  it("keeps terminal workflow resume skips terminal in execution view", () => {
+    const db = makeDb();
+    const now = Date.now();
+    db.prepare("INSERT INTO workflow_runs (runId, workflow, task, projectId, depth, status, startedAt, endedAt, result_summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run("wr_done", "goal-driver", "already finished", "p1", 1, "done", now - 20_000, now - 10_000, "finished");
+    db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
+      .run("workflow.resume_skipped", "workflow-tool", "may", JSON.stringify({ workflowRunId: "wr_done", workflow: "goal-driver", projectId: "p1", status: "done", reason: "workflow already reached terminal status", nextAction: "none" }), now - 5_000, "normal");
+
+    const trace = buildLoopTrace(db, { workflowRunId: "wr_done" });
+
+    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "workflow.resume_skipped", owner: "may" });
+    expect(trace.executions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "wr_done",
+        kind: "workflow",
+        status: "done",
+        owner: "may",
+        summary: "workflow already reached terminal status",
+        evidence: expect.objectContaining({ nextAction: "none" }),
+      }),
+    ]));
   });
 
   it("shows resume failover events for a session", () => {

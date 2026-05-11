@@ -104,6 +104,7 @@ describe("ExecutionResult", () => {
       reason: "Workflow definition missing",
       category: "workflow_definition_missing",
       recoverable: true,
+      nextAction: "recover",
       owner: "may",
       workflow: "goal-driver",
       status: "interrupted",
@@ -118,6 +119,7 @@ describe("ExecutionResult", () => {
         workflow: "goal-driver",
         category: "workflow_definition_missing",
         recoverable: true,
+        nextAction: "recover",
       },
     });
   });

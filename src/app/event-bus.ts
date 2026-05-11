@@ -155,6 +155,32 @@ export type SystemEvent =
       reason: string;
       category: string;
       recoverable: boolean;
+      nextAction?: string;
+      timestamp: number;
+    }
+  | {
+      type: "workflow.resume_failed";
+      source: "workflow-tool";
+      owner?: string;
+      workflowRunId?: string;
+      workflow?: string;
+      projectId?: string;
+      reason: string;
+      category: string;
+      recoverable: boolean;
+      nextAction?: string;
+      timestamp: number;
+    }
+  | {
+      type: "workflow.resume_skipped";
+      source: "workflow-tool";
+      owner?: string;
+      workflowRunId: string;
+      workflow: string;
+      projectId?: string;
+      status: string;
+      reason: string;
+      nextAction?: string;
       timestamp: number;
     }
   | {
