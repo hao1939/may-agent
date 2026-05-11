@@ -190,6 +190,10 @@ Rechecked P2 raw metric alert 287 after the latest snapshots again held at `58` 
 
 Rechecked P2 raw metric alert 287 after the latest metric row and snapshots continued to hold at `58` over threshold `50`. The raw breach is real and the alert remains unresolved, but the paired strict unresolved metric remains healthy at `current=0` with ten consecutive zero snapshots. Fresh classification of the live raw 24h slice again found every row recovered or intentionally terminal: `55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; recent rows and source attribution remain repaired scout/steward/may workflow friction rather than a new unrecovered dirty-exit pattern. Chosen operation: `waiting_with_evidence`; this deliberately accepts continued monitoring without calibrating or resolving the still-breaching raw metric, with validation at the next metrics snapshot or immediate project resume if the strict metric breaches or raw sampling exposes a fresh non-recovered source pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence at 58 with no unresolved exits
+
+Rechecked P2 raw metric alert 287 after the latest metric row still reported `current=58`, `threshold=50`, `target=0`, priority `P2`, and alert `287` unresolved. The breach is real raw finish-block friction, but the paired strict unresolved metric remains healthy at `current=0` with ten consecutive zero snapshots through `1778492118910`. Current raw rows are still completed or terminal-recovered workflow friction rather than unresolved dirty exits, with recent samples showing `status=done` and the already-known interrupted cases classified as no-recovery. Chosen operation: `waiting_with_evidence`; continue monitoring until the next metrics snapshot and resume this project only if `session.finish-blocked-unresolved-count-24h` breaches or raw sampling exposes a fresh non-recovered source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
