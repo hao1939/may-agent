@@ -32,8 +32,9 @@ to this tracker under the smallest matching phase.
 
 Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
 adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
-composition root, and DB facade into named runtime modules. Phase 9d/9e have
-split Telegram reply routing and outbound session-response routing.
+composition root, and DB facade into named runtime modules. Phase 9d/9e/9f
+have split Telegram reply routing, outbound session-response routing, and API
+send/persistence mechanics.
 
 Next slice:
 
@@ -1104,6 +1105,30 @@ Current state:
 Validation:
 
 - `bun test test/telegram-outbound.test.ts test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
+  passes.
+- `bun run check` passes.
+
+### Phase 9f: Telegram API Client Extraction
+
+Status: shipped.
+
+Keep the adapter responsible for event behavior, but move raw Telegram API
+transport behavior into a tiny client. This keeps fetch, Telegram chunking,
+Markdown fallback, and notification-message persistence out of the incoming
+message and outbound session policy code.
+
+Current state:
+
+- [x] `src/app/ui/telegram-client.ts` owns `apiCall`, `sendMessage`,
+  Telegram message splitting, Markdown fallback retry, and persistence of
+  notification context for reply enrichment.
+- [x] `src/app/ui/telegram.ts` constructs the client and uses `apiCall` /
+  `sendMessage` as its transport boundary.
+- Root commit: `120da75d` extract Telegram API client.
+
+Validation:
+
+- `bun test test/telegram-client.test.ts test/telegram-outbound.test.ts test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
   passes.
 - `bun run check` passes.
 
