@@ -145,6 +145,12 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isTransientSocketError(message: string): boolean {
+  return message.includes("ENOENT")
+    || message.includes("ECONNREFUSED")
+    || message.includes("Socket closed before command sent");
+}
+
 if (EMIT_MODE) {
   // ── Operator emit mode: send one event to the running daemon and exit ─
   // Keep this before agent/model startup so operators have a small, reliable
@@ -154,7 +160,8 @@ if (EMIT_MODE) {
     interfaceAgent: process.env.DAEMON_AGENT || interfaceAgent,
   });
   let lastError: unknown;
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  const maxAttempts = 8;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       await emitDaemonEvent(socketPath, EMIT_MODE.event, EMIT_MODE.data || {}, { timeoutMs: 5000 });
       console.log(`Event emitted: ${EMIT_MODE.event}`);
@@ -162,11 +169,15 @@ if (EMIT_MODE) {
     } catch (err) {
       lastError = err;
       const message = err instanceof Error ? err.message : String(err);
-      if (attempt === 1) {
+      if (attempt === 1 && isTransientSocketError(message)) {
         console.error(`Failed to connect to daemon socket ${socketPath}: ${message}`);
-        console.error("Retrying once after a short recovery delay...");
-        await sleep(500);
+        console.error("Retrying briefly on the same convention path...");
       }
+      if (attempt < maxAttempts && isTransientSocketError(message)) {
+        await sleep(500);
+        continue;
+      }
+      break;
     }
   }
   const message = lastError instanceof Error ? lastError.message : String(lastError);
