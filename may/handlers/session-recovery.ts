@@ -30,8 +30,8 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
   ctx.sdk.emit("handler.skipped", {
     handler: "session-recovery",
     sessionId,
-    reason,
     ...data,
+    reason,
   });
 }
 

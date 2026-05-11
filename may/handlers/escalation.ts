@@ -15,8 +15,8 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
   ctx.sdk.emit("handler.skipped", {
     handler: "escalation",
     sessionId,
-    reason,
     ...data,
+    reason,
   });
 }
 
