@@ -222,6 +222,10 @@ Heartbeat rechecked the repeated P2 raw metric alert after the latest metric row
 
 Rechecked P2 raw metric alert 287 after the metric row still reported `current=58`, `threshold=50`, `target=0`, priority `P2`, with alert `287` unresolved. The paired strict unresolved metric remains healthy at `current=0` with the latest ten paired snapshots at strict `0`; fresh raw classification found all `58` rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, `0` other unresolved cases). Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring instead of calibrating or resolving a still-breaching raw friction metric, with next validation on the next metrics snapshot or immediate project resume if the strict metric breaches or raw sampling exposes a fresh non-recovered dirty-exit pattern.
 
+### 2026-05-11 — Heartbeat hold after guard-alert nudge
+
+Heartbeat rechecked the repeated P2 raw metric alert after May's guard-alert/dirty-worktree nudge. The raw metric still reads `current=58` with an open alert, but the paired strict unresolved metric remains healthy at `current=0` and fresh classification again found no unresolved dirty exits (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows). Pending `handler.workflow_dispatched`, `metric.alert_judged`, `session.end`, `guard.triggered`, and nudge message events were treated as already acted: the latest metric-alert triage recorded a durable `metric.alert_judged` event and May's guard alerts are P3 document-exception/watch items caused by ambient dirty worktree files, not a new source pattern for this project. Chosen operation: `waiting_with_evidence`; no root-cause patch, calibration, or escalation is indicated unless the strict metric breaches or raw sampling exposes a fresh non-recovered dirty-exit pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
