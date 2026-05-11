@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
-import { resolve, join } from "node:path";
+import { resolve } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
@@ -14,13 +14,7 @@ import { startInterfaceRuntime } from "./interface-startup.js";
 import { startCronRuntime } from "./cron-startup.js";
 import { attachConsoleUI } from "./ui/console.js";
 import { attachTelegramBot } from "./ui/telegram.js";
-import {
-  loadAgents,
-  getAgentCrons,
-  generateAutoHeartbeats,
-  type AgentLoaderOptions,
-} from "./agent-loader.js";
-import { attachDaemonEventSubscribers, attachEventPersistence, createDaemonLifecycle, createIdentityWriter, formatDurationMs } from "./daemon.js";
+import { attachDaemonEventSubscribers, attachEventPersistence, createDaemonLifecycle, createIdentityWriter, formatDurationMs, prepareDaemonAgents } from "./daemon.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
@@ -270,9 +264,7 @@ const manager = new SubagentManager({
 
 attachDaemonEventSubscribers({ bus, manager, persistDir: PERSIST_DIR, projectRoot: PROJECT_ROOT });
 
-// ── Load agents from agents/*/agent.json ────────────────────────────────
-
-const loaderOpts: AgentLoaderOptions = {
+const { loaderOpts } = await prepareDaemonAgents({
   agentsRoot: AGENTS_ROOT,
   projectRoot: PROJECT_ROOT,
   persistDir: PERSIST_DIR,
@@ -280,57 +272,7 @@ const loaderOpts: AgentLoaderOptions = {
   manager,
   bus,
   cronEnabled: CRON_ENABLED,
-};
-
-const loadResult = await loadAgents(loaderOpts);
-console.log(`[agents] Loaded ${loadResult.added.length}: ${loadResult.added.join(", ")}`);
-
-
-bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
-
-// Auto-generate heartbeat entries for agents with heartbeat workflows (convention-defaults Phase 3)
-const autoHeartbeats = generateAutoHeartbeats(AGENTS_ROOT);
-if (autoHeartbeats.length > 0) {
-  // Inject into May's cron (where all heartbeats live)
-  const mayCron = getAgentCrons().get("may");
-  if (mayCron) {
-    for (const entry of autoHeartbeats) {
-      mayCron.addSyntheticEntry(entry);
-    }
-    bus.emit({ type: "info", message: `[auto-heartbeat] Generated ${autoHeartbeats.length} heartbeat(s): ${autoHeartbeats.map(e => e.agent).join(", ")}` });
-  }
-}
-
-// Subscribe all crons to bus for event-driven handler dispatch
-for (const cron of getAgentCrons().values()) {
-  cron.subscribeToBus(bus);
-}
-
-// ── Startup workflow validation ───────────────────────────────────────
-// Pre-flight: try importing all heartbeat workflows to catch syntax errors early.
-// A broken shared workflow (like heartbeat-data.ts) silently kills ALL heartbeats.
-{
-  const sharedWfDir = join(AGENTS_ROOT, "shared", "workflows");
-  const heartbeatFiles = autoHeartbeats.map(e => {
-    const agentWfDir = join(AGENTS_ROOT, e.agent!, "workflows");
-    return join(agentWfDir, `${e.agent}-heartbeat.ts`);
-  }).filter(f => existsSync(f));
-
-  let failures = 0;
-  for (const f of heartbeatFiles) {
-    try {
-      await import(f);
-    } catch (err) {
-      failures++;
-      const msg = err instanceof Error ? err.message : String(err);
-      bus.emit({ type: "info", message: `[startup-check] ⚠️ WORKFLOW BROKEN: ${f.split("/").slice(-3).join("/")} — ${msg}` });
-      console.error(`[startup-check] BROKEN WORKFLOW: ${f}\n  ${msg}`);
-    }
-  }
-  if (failures > 0) {
-    bus.emit({ type: "info", message: `[startup-check] ⚠️ ${failures} heartbeat workflow(s) failed to load! Heartbeats will NOT fire for those agents.` });
-  }
-}
+});
 
 // ── Event routing ──────────────────────────────────────────────────────
 
