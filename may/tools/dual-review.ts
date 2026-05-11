@@ -41,9 +41,9 @@ export default function factory(opts: { projectRoot: string; agentRoot: string; 
     name: "dual_review",
     label: "Dual Review",
     description:
-      "Ping-pong review between Codex and Claude Code until agreement. " +
-      "Codex implements (by default), Claude Code reviews. Loop until APPROVED or max rounds. " +
-      "Both maintain persistent sessions. Use for critical changes needing cross-verification.",
+      "Collaborative ping-pong between Codex and Claude Code. " +
+      "One implements, the other builds on it with ideas and improvements. Loop until both converge. " +
+      "Both maintain persistent sessions. Use for tasks that benefit from two perspectives.",
     parameters: {
       type: "object",
       properties: {
@@ -68,7 +68,7 @@ export default function factory(opts: { projectRoot: string; agentRoot: string; 
       const revName = implementerFirst ? "Claude Code" : "Codex";
 
       const log: string[] = [];
-      log.push(`## Dual Review: ${implName} implements, ${revName} reviews\n`);
+      log.push(`## Collaborative Session: ${implName} implements, ${revName} builds on it\n`);
 
       // Round 1: implementer gets the task
       log.push(`### ${implName} — Implementation\n`);
@@ -77,38 +77,41 @@ export default function factory(opts: { projectRoot: string; agentRoot: string; 
       log.push(implOutput.slice(0, 2000) + "\n");
 
       for (let round = 1; round <= maxRounds; round++) {
-        // Reviewer reviews
+        // Collaborator builds on the work
         const reviewPrompt =
-          `You are reviewing work by ${implName}. This is round ${round}/${maxRounds}.\n\n` +
-          `## Their output:\n\n${implOutput}\n\n` +
-          `## Instructions:\n` +
-          `Review thoroughly. Begin your response with exactly one of:\n` +
-          `- **APPROVED** — if the work is correct, complete, and ready to ship\n` +
-          `- **CHANGES_REQUESTED** — if there are issues to fix\n\n` +
-          `Then explain your reasoning. If requesting changes, be specific about what to fix.`;
+          `You're collaborating with ${implName} on this task. Round ${round}/${maxRounds}.\n\n` +
+          `## Their work so far:\n\n${implOutput}\n\n` +
+          `## Your role — be a creative collaborator:\n` +
+          `1. Build on their work: what would you add, what approach would be even better?\n` +
+          `2. Contribute your own ideas, code, or analysis\n` +
+          `3. Identify edge cases worth addressing\n` +
+          `4. End with a forward-looking suggestion: "Given this, the natural next step would be…"\n\n` +
+          `Begin your response with one of:\n` +
+          `- **CONVERGED** — the work is solid and you've added everything you can\n` +
+          `- **BUILDING** — here's how to push this further (then describe)`;
 
-        log.push(`### ${revName} — Review (round ${round})\n`);
+        log.push(`### ${revName} — Collaboration (round ${round})\n`);
         const reviewResult = await reviewer.execute("", { prompt: reviewPrompt, timeout: timeoutSec });
         const reviewOutput = extractText(reviewResult);
         log.push(reviewOutput.slice(0, 2000) + "\n");
 
-        // Check for approval
+        // Check for convergence
         const firstLine = reviewOutput.trim().split("\n")[0] || "";
-        if (firstLine.includes("APPROVED") && !firstLine.includes("CHANGES_REQUESTED")) {
-          log.push(`\n✅ **Agreement reached in round ${round}.** ${revName} approved.\n`);
+        if (firstLine.includes("CONVERGED") && !firstLine.includes("BUILDING")) {
+          log.push(`\n✅ **Converged in round ${round}.** Both agents aligned.\n`);
           return textResult(log.join("\n"));
         }
 
         if (round === maxRounds) {
-          log.push(`\n⚠️ **Max rounds (${maxRounds}) reached without agreement.** Last review had outstanding concerns.\n`);
+          log.push(`\n⚠️ **Max rounds (${maxRounds}) reached.** Last round still had ideas to explore.\n`);
           return textResult(log.join("\n"));
         }
 
-        // Implementer revises
+        // Implementer incorporates ideas
         const revisePrompt =
-          `${revName} reviewed your work and requested changes (round ${round}/${maxRounds}):\n\n` +
+          `Your collaborator has ideas to push this further (round ${round}/${maxRounds}):\n\n` +
           `${reviewOutput}\n\n` +
-          `Address their concerns. Make the changes they requested.`;
+          `Incorporate what improves the work. Answer their forward-looking suggestion — take that next step.`;
 
         log.push(`### ${implName} — Revision (round ${round})\n`);
         const reviseResult = await implementer.execute("", { prompt: revisePrompt, timeout: timeoutSec });
