@@ -37,9 +37,9 @@ Next slice:
 
 1. Validate that a real guard block opens the short-window guard metric signal
    and clears when the window is clean.
-2. Confirm alert handling ignores retired guard metrics and only reacts to the
+2. [x] Confirm alert handling ignores retired guard metrics and only reacts to the
    active short-window signal.
-3. Tighten Web UI labels so health, gauge, and watch-only metrics are obvious at
+3. [x] Tighten Web UI labels so health, gauge, and watch-only metrics are obvious at
    a glance.
 
 This is now the highest-value slice because sessions, workflows, resume
@@ -569,19 +569,35 @@ Already shipped first slice:
   target.
 - [x] Metrics snapshot tests cover the short guard-block signal and watch-only
   project iteration metric.
+- [x] Web UI separates watch signals from health/gauge alerts.
+- [x] Metric alert reactor skips retired/missing metric rows before dispatching
+  triage work.
 
 Validation:
 
 - A future real guard block opens a fresh `guard.blocked-count-15m` alert and
   closes after the window clears.
+- [x] Retired metric breach events do not dispatch alert triage work.
 - Open metric alerts correspond to current actionable owner work or a documented
   accepted wait.
-- Operators can tell from the UI which metrics are health, gauge, or watch-only.
+- [x] Operators can tell from the UI which metrics are health, gauge, or
+  watch-only.
 
 Stop criteria:
 
 - Agents do not spend attention on retired, stale, or non-actionable metric
   breaches.
+
+Runtime proof, 2026-05-11:
+
+- Web UI was reloaded with metric surface labels. Deployed static file contains
+  `metricSurfaceBadge`, a `Watch` overview card, and `No health/gauge alerts`
+  wording so watch-only signals do not appear as health failures.
+- `/api/metrics` on the running instance returned 43 active metrics, 6 watch
+  metrics, and separated hard alert count from watch alert count.
+- Emitted stale `metric.breach` for retired metric `guard.blocked-count-24h`.
+  Runtime emitted `handler.skipped` event `558801` with reason
+  `Ignoring guard.blocked-count-24h: metric is missing or retired.`
 
 ## Phase 8: Workflow Library Consolidation
 

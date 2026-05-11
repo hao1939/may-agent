@@ -13,6 +13,7 @@ function makeCtx() {
       target: 0,
       priority: "P1",
       alertOp: ">",
+      status: "active",
     },
     alert: {
       id: 42,
@@ -118,5 +119,43 @@ describe("metric-alert-reactor handler", () => {
       "info",
       expect.stringContaining("Missing metricId"),
     );
+  });
+
+  it("ignores retired metrics even if a stale breach event arrives", async () => {
+    const ctx = makeCtx();
+    const baseState = ctx.sdk.query.metricAlertReactorState();
+    ctx.sdk.query.metricAlertReactorState = vi.fn(() => ({
+      ...baseState,
+      metric: {
+        ...baseState.metric,
+        status: "retired",
+      },
+    }));
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "metric.breach",
+      source: "event",
+      entry: "metric-alert-reactor",
+      timestamp: Date.now(),
+      data: {
+        owner: "arc",
+        metricId: "guard.blocked-count-24h",
+        metricName: "Old guard blocks",
+        current: 1,
+        threshold: 0,
+        target: 0,
+        message: "stale retired breach",
+        priority: "P1",
+      },
+    });
+
+    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
+      handler: "metric-alert-reactor",
+      metricId: "guard.blocked-count-24h",
+      reason: expect.stringContaining("missing or retired"),
+      status: "retired",
+    }));
   });
 });

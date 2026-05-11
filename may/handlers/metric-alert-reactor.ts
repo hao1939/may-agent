@@ -141,7 +141,11 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
     try {
       const since = Date.now() - DEDUP_WINDOW_MS;
       let state = ctx.sdk.query.metricAlertReactorState({ metricId, owner, since });
-      let metricRow = state.metric as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null; current?: number | null; threshold?: number | null; alertOp?: string | null } | null;
+      let metricRow = state.metric as { priority?: string; explicitOwner?: string | null; projectOwner?: string | null; current?: number | null; threshold?: number | null; alertOp?: string | null; status?: string | null } | null;
+      if (!metricRow || stringOrNull(metricRow.status) === "retired") {
+        emitSkip(ctx, metricId, `Ignoring ${metricId}: metric is missing or retired.`, { status: metricRow?.status ?? null });
+        return;
+      }
       priority = metricRow?.priority ?? priority;
       if (metricRow) {
         const resolvedOwner = resolveMetricOwner(metricId, configuredAgents, stringOrNull(metricRow.explicitOwner), stringOrNull(metricRow.projectOwner));
