@@ -34,10 +34,51 @@ function makeDb(overrides: Record<string, any> = {}) {
   };
 }
 
+function queryResult(rows: any[] = []) {
+  return { rows, rowCount: rows.length, limit: rows.length, truncated: false };
+}
+
+function safeAll(db: any, label: string): any[] {
+  try {
+    return db.prepare(label).all();
+  } catch {
+    return [];
+  }
+}
+
+function makeQuery(overrides: Record<string, any> = {}) {
+  if (overrides.query) return overrides.query;
+  return {
+    heartbeatContext: (_filter: any) => {
+      if (overrides.heartbeatContext) return overrides.heartbeatContext;
+      const db = overrides.db || makeDb(overrides);
+      const snapshots = safeAll(db, "metric_snapshots");
+      const metrics = safeAll(db, "metrics").map((row) => ({
+        ...row,
+        alertOp: row.alertOp ?? row.alert_op,
+        sourceQuery: row.sourceQuery ?? row.source_query,
+        sourceCommand: row.sourceCommand ?? row.source_command,
+        snapshots,
+      }));
+      const alerts = safeAll(db, "metric_alerts").map((row) => ({
+        ...row,
+        metricId: row.metricId ?? row.metric_id,
+      }));
+      const inbox = safeAll(db, "events").map((row) => ({
+        ...row,
+        eventType: row.eventType ?? row.event_type,
+      }));
+      return { now: Date.now(), metrics, alerts, inbox };
+    },
+    events: (_filter: any) => queryResult(overrides.events ?? []),
+  };
+}
+
 function makeCtx(overrides: Record<string, any> = {}): any {
   return {
     agentsRoot: overrides.agentsRoot || TEST_DIR,
     getDb: () => overrides.db || makeDb(overrides),
+    query: makeQuery(overrides),
     emit: vi.fn(),
     log: vi.fn(),
     done: vi.fn((msg: string) => ({ type: "done", message: msg })),
@@ -418,13 +459,13 @@ describe("shouldSkipHeartbeat", () => {
 
   it("skips when everything quiet and recent heartbeat exists", () => {
     const now = Date.now();
-    const db = makeDb({
-      prepare: () => ({
-        all: () => [],
-        get: () => ({ t: now - 10 * 60 * 1000 }), // 10 min ago
-      }),
+    const ctx = makeCtx({
+      events: [{
+        event_type: "handler.completed",
+        data: JSON.stringify({ handler: "heartbeat-bob" }),
+        timestamp: now - 10 * 60 * 1000,
+      }],
     });
-    const ctx = makeCtx({ db });
     const result = shouldSkipHeartbeat(ctx, "bob", "", "", "", "");
     expect(result).toContain("idle-skip");
   });
@@ -441,7 +482,7 @@ describe("shouldSkipHeartbeat", () => {
   });
 
   it("handles db errors (does not skip)", () => {
-    const ctx = makeCtx({ db: { prepare: () => { throw new Error("fail"); } } });
+    const ctx = makeCtx({ query: { events: () => { throw new Error("fail"); } } });
     expect(shouldSkipHeartbeat(ctx, "bob", "", "", "", "")).toBeNull();
   });
 });

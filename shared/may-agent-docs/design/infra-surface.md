@@ -471,16 +471,21 @@ interface QueryAPI {
   metrics(filter?: MetricFilter): MetricView[];
   alerts(filter?: AlertFilter): AlertView[];
   events(filter?: EventFilter): EventView[];
+  heartbeatContext(filter: HeartbeatContextFilter): HeartbeatContext;
+  closedLoopStewardContext(filter?: ClosedLoopFilter): ClosedLoopContext;
 }
 ```
 
-`getDb()` should become an escape hatch, not the normal interface. A safe query
-facade gives us bounded reads, schema validation, fewer guessed columns, and a
-cleaner mental model.
+`getDb()` is a compatibility escape hatch, not the normal read interface for
+judgment/context code. A safe query facade gives us bounded reads, schema
+validation, fewer guessed columns, and a cleaner mental model.
 
-Current gap: `AgentSDK` still exposes `getDb()` as the normal read surface.
-Target state is `query` first, `metrics` first, and `getDb()` only for
-compatibility or mechanical infra handlers.
+Current state: the SDK exposes `query` and `metrics` as first-class surfaces,
+with targeted helpers for alert triage, closed-loop stewardship, project
+runtime context, workflow runs, and heartbeat live context. Remaining migration
+work should focus on evaluator candidate/context reads and any new judgment path
+that still guesses raw SQLite schema. Mechanical projection/snapshot handlers
+may keep direct DB access when it is simpler and well-tested.
 
 ## Ownership
 
@@ -586,48 +591,35 @@ Existing pieces already align with this direction:
 | Web UI projection reader | `packages/webui/src/server.ts` |
 | Agent patterns | `agents/shared/workflows/*`, project docs, heartbeat docs |
 
-The main gap is not a missing grand architecture. The gap is boundary clarity
-and a few reliability seams:
+The main gap is not a missing grand architecture. The remaining gaps are the
+specific places where code still crosses the boundaries unevenly:
 
-- make Agent Bridge explicit,
-- add a safe SDK query facade,
-- keep adapters thin through socket events,
-- make control clients use the convention daemon socket path and fail clearly,
-- move special behavior into workflows/patterns,
-- treat `getDb()` as an escape hatch over time.
+- finish query-facade migration for evaluator judgment/candidate context,
+- keep adapter-specific Telegram behavior converging on daemon events,
+- make execution inspection use the shared result/trace shape consistently,
+- converge tool-level guard signals with workflow guard signals,
+- keep `getDb()` limited to mechanical infra code and explicit compatibility
+  paths.
 
 ## Migration Direction
 
 Keep this incremental.
 
-1. Document the split: infra primitives vs agent patterns.
-2. Add `query` to the SDK as the preferred read surface.
-3. Keep `getDb()` for compatibility, but mark it as escape hatch.
-4. Make Agent Bridge explicit in code, even if it initially wraps current logic.
-5. Ensure new adapter actions become socket events.
-6. Move any heartbeat/project-specific daemon branches into workflow patterns.
-7. Make new judgment/action handlers event-to-workflow bridges by default.
-8. Add tests for surface behavior: socket event normalization, SDK query bounds, metric owner resolution, and event-to-workflow dispatch.
-9. Finish convention-path socket control before adding more adapter features.
+1. Keep design docs current with implementation so agents do not chase stale
+   gaps.
+2. Add targeted `query` helpers only when a workflow/handler needs a bounded
+   context bundle.
+3. Keep `getDb()` for compatibility and mechanical infra work.
+4. Make new adapter actions daemon events.
+5. Make new judgment/action handlers event-to-workflow bridges by default.
+6. Validate every boundary refactor with one real runtime event and trace.
+7. Fold stable behavior into `architecture.md`, `sdk.md`, `events.md`,
+   `metrics.md`, `cron.md`, and `work-model.md`.
 
 ## Implementation Checklist
 
-1. Add `query` SDK facade with bounded, read-only helpers for sessions, events,
-   metrics, alerts, and projects.
-2. Update `sdk.md` and `src/lib/sdk.ts` so `metrics` and `query` are the normal
-   surfaces and `getDb()` is documented as compatibility escape hatch.
-3. Add `guard.triggered` event emission at the guard runtime boundary. Done for
-   workflow guards; tool-level convergence remains.
-4. Add the default guard handler and starter guard metrics. First slice done.
-5. Add a small event-to-workflow handler helper so new handlers do not hand-roll
-   prompt/context boilerplate.
-6. Add event-to-workflow dispatch tests, including skip/dedup behavior.
-7. Add a shared execution-result view for session/workflow run/resume results.
-8. Audit existing handlers: keep mechanical handlers direct; move
-   judgment/action handlers toward workflow dispatch.
-9. Add a convention-path control client helper and migrate Web UI/CLI callers.
-10. Add a small operator event-emission command and smoke-test
-    `trigger.metrics-snapshot` through it.
+See [infra-surface-refactor-plan.md](infra-surface-refactor-plan.md) for the
+canonical implementation tracker. Do not create another parallel tracker.
 
 The target principle:
 

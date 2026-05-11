@@ -56,6 +56,51 @@ function getAgentsRoot(ctx: WorkflowContext): string {
   return ctx.agentsRoot || join(process.cwd(), "agents");
 }
 
+const heartbeatContextCache = new WeakMap<object, Map<string, any>>();
+
+function loadHeartbeatContext(ctx: WorkflowContext, agent: string): any {
+  let byAgent = heartbeatContextCache.get(ctx as object);
+  if (!byAgent) {
+    byAgent = new Map();
+    heartbeatContextCache.set(ctx as object, byAgent);
+  }
+  const cached = byAgent.get(agent);
+  if (cached) return cached;
+  const context = ctx.query.heartbeatContext({
+    agent,
+    metricSnapshotLimit: 10,
+    alertLimit: 100,
+    inboxLimit: 12,
+    inboxLookbackMs: 2 * 60 * 60 * 1000,
+  });
+  byAgent.set(agent, context);
+  return context;
+}
+
+function normalizeHeartbeatMetric(row: any): any {
+  return {
+    ...row,
+    alert_op: row.alert_op ?? row.alertOp,
+    source_query: row.source_query ?? row.sourceQuery,
+    source_command: row.source_command ?? row.sourceCommand,
+    snapshots: Array.isArray(row.snapshots) ? row.snapshots : [],
+  };
+}
+
+function normalizeHeartbeatAlert(row: any): any {
+  return {
+    ...row,
+    metric_id: row.metric_id ?? row.metricId,
+  };
+}
+
+function normalizeHeartbeatEvent(row: any): any {
+  return {
+    ...row,
+    event_type: row.event_type ?? row.eventType,
+  };
+}
+
 const FINISH_HYGIENE_INSTRUCTIONS = [
   "",
   "Finish hygiene (do this before every successful finish):",
@@ -68,22 +113,13 @@ const FINISH_HYGIENE_INSTRUCTIONS = [
 ].join("\n");
 
 function loadMetricRowsForAgent(ctx: WorkflowContext, agent: string): any[] {
-  const db = ctx.getDb() as any;
   const configuredAgents = listConfiguredAgents(getAgentsRoot(ctx));
-  const rows = db.prepare(
-    `SELECT m.id, m.current, m.target, m.threshold, m.alert_op, m.source_query, m.source_command,
-            m.owner as explicitOwner, p.owner as projectOwner
-     FROM metrics m
-     LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-       AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-     WHERE m.status = 'active'`
-  ).all() as any[];
+  const rows = (loadHeartbeatContext(ctx, agent).metrics ?? []).map(normalizeHeartbeatMetric);
   return rows.filter((row) => resolveMetricOwner(row.id, configuredAgents, row.explicitOwner, row.projectOwner) === agent);
 }
 
 export function loadMetrics(ctx: WorkflowContext, agent: string): string {
   try {
-    const db = ctx.getDb() as any;
     const rows = loadMetricRowsForAgent(ctx, agent);
     if (!rows.length) return "";
     const agentsRoot = getAgentsRoot(ctx);
@@ -95,10 +131,7 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
         // Count consecutive breached snapshots for escalation
         let consecutiveBreaches = 0;
         try {
-          const snapshots = db.prepare(
-            "SELECT value FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 10"
-          ).all(r.id) as any[];
-          for (const s of snapshots) {
+          for (const s of r.snapshots ?? []) {
             const sBreach = r.alert_op === ">" || r.alert_op === "above" ? s.value > r.threshold : s.value < r.threshold;
             if (sBreach) consecutiveBreaches++;
             else break;
@@ -160,16 +193,8 @@ export function loadProjects(ctx: WorkflowContext, agent: string): string {
 
 export function loadAlerts(ctx: WorkflowContext, agent: string): string {
   try {
-    const db = ctx.getDb() as any;
     const configuredAgents = listConfiguredAgents(getAgentsRoot(ctx));
-    const rows = (db.prepare(
-      `SELECT a.metric_id, a.message, m.owner as explicitOwner, p.owner as projectOwner
-       FROM metric_alerts a
-       JOIN metrics m ON m.id = a.metric_id
-       LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-         AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-       WHERE a.resolved_at IS NULL`
-    ).all() as any[])
+    const rows = ((loadHeartbeatContext(ctx, agent).alerts ?? []).map(normalizeHeartbeatAlert) as any[])
       .filter((row) => resolveMetricOwner(row.metric_id, configuredAgents, row.explicitOwner, row.projectOwner) === agent);
     if (!rows.length) return "";
     return rows.map((r: any) => `⚠️ ${r.metric_id}: ${r.message}`).join("\n");
@@ -184,18 +209,7 @@ export function loadHeartbeatMd(ctx: WorkflowContext, agent: string): string {
 
 export function loadInbox(ctx: WorkflowContext, agent: string): string {
   try {
-    const db = ctx.getDb() as any;
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-    const rows = db.prepare(`
-      SELECT id, event_type, data, urgency, timestamp
-      FROM events
-      WHERE owner = ?
-        AND timestamp > ?
-        AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
-      ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
-        timestamp DESC
-      LIMIT 12
-    `).all(agent, twoHoursAgo, Date.now()) as any[];
+    const rows = ((loadHeartbeatContext(ctx, agent).inbox ?? []).map(normalizeHeartbeatEvent) as any[]);
     if (!rows.length) return "";
     // Dedup: collapse notifications with similar content
     const dedupMap = new Map<string, { count: number; newest: any; oldest: any }>();
@@ -256,7 +270,6 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
 export function runRedMetricCommands(ctx: WorkflowContext, agent: string): string {
   try {
     const { execSync } = require("node:child_process");
-    const db = ctx.getDb() as any;
     const rows = loadMetricRowsForAgent(ctx, agent);
 
     const redMetrics = rows.filter((r: any) => {
@@ -378,23 +391,22 @@ export function shouldSkipHeartbeat(
   // when there's nothing actionable
   const COOLDOWN_MS = 55 * 60 * 1000; // 55 minutes
   try {
-    const db = ctx.getDb() as any;
-    const lastRun = db.prepare(
-      `SELECT MAX(timestamp) as t FROM events
-       WHERE event_type = 'handler.completed'
-         AND json_extract(data, '$.handler') = ?
-         AND timestamp > ?`
-    ).get(`heartbeat-${agent === 'may' ? '' : ''}${agent}`, Date.now() - COOLDOWN_MS) as any;
+    const recent = ctx.query.events({
+      type: "handler.completed",
+      since: Date.now() - COOLDOWN_MS,
+      limit: 50,
+    }).rows;
+    const hasRecentHeartbeat = recent.some((event: any) => {
+      const raw = typeof event.data === "string" ? event.data : JSON.stringify(event.data ?? {});
+      let handler = "";
+      try {
+        const data = JSON.parse(raw);
+        handler = String(data.handler ?? "");
+      } catch {}
+      return handler === `heartbeat-${agent}` || raw.includes("heartbeat") && raw.includes(agent);
+    });
 
-    // Also check using the heartbeat naming convention
-    const lastRun2 = db.prepare(
-      `SELECT MAX(timestamp) as t FROM events
-       WHERE event_type = 'handler.completed'
-         AND data LIKE ?
-         AND timestamp > ?`
-    ).get(`%heartbeat%${agent}%`, Date.now() - COOLDOWN_MS) as any;
-
-    if (lastRun?.t || lastRun2?.t) {
+    if (hasRecentHeartbeat) {
       return `idle-skip: no actionable items and last heartbeat was recent`;
     }
   } catch {
@@ -511,7 +523,12 @@ iteration: 0
 ${FINISH_HYGIENE_INSTRUCTIONS}`;
 
   ctx.emit({ type: "step_start", step: "heartbeat" });
-  ctx.emit({ type: "context.read", agent, sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts } });
+  ctx.emit({
+    type: "context.read",
+    agent,
+    contextSource: "query.heartbeatContext",
+    sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts },
+  });
 
   let result: any;
   try {

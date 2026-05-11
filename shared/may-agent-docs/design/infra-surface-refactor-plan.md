@@ -1,7 +1,8 @@
 # Infra Surface Refactor Plan
 
-**Status**: In progress. Phase 1a and Phase 1b are shipped for the container
-runtime; host-to-container socket behavior remains an ops follow-up.
+**Status**: Canonical implementation tracker. This is the single go-forward
+plan for the infra surface work. The older implementation tracker has been
+folded into this file; the gap mitigation notes are incorporated here.
 
 This plan pushes [infra-surface.md](infra-surface.md) from accepted direction to
 boring runtime behavior. It is not a rewrite plan. Each slice should remove one
@@ -16,6 +17,55 @@ adapter/timer -> daemon event -> handler -> workflow -> sessions/functions -> ev
 
 Infra provides primitives. Agents build patterns. Metrics are signals, not
 judges.
+
+## Plan Boundaries
+
+- [infra-surface.md](infra-surface.md) is the north-star design.
+- This file is the implementation tracker and review plan.
+- [infra-surface-implementation-plan.md](infra-surface-implementation-plan.md)
+  is historical and should not be updated with new work.
+
+Do not create another parallel infra-surface plan. If a new gap appears, add it
+to this tracker under the smallest matching phase.
+
+## Current Next Move
+
+Finish the query facade migration for the autonomy paths that still depend on
+raw schema-sensitive reads:
+
+1. Move evaluator context/candidate reads in `eval-llm-scan.ts` to targeted
+   `sdk.query` helpers where those reads feed judgment.
+
+This is the best next slice because it directly mitigates schema-footgun
+failures without adding a new concept.
+
+## Remaining Gap Summary
+
+| Gap | Risk | Phase |
+|---|---|---|
+| Evaluator scan uses raw DB for judgment/candidate context | Evaluator can inherit brittle schema guessing | Phase 4 |
+| Shared `ExecutionResult` exists but is not the normal inspection surface | Sessions and workflows still feel different to debug | Phase 5 |
+| Workflow guard signals are durable, but tool guard signals are not fully converged | Guard triggers are harder to learn from across the system | Phase 6 |
+| Telegram still has some adapter-specific behavior | Replies can diverge from Web UI/CLI event behavior | Phase 2 |
+
+## Phase 0: Design State Refresh
+
+Goal: make the design docs reflect the running system so agents do not chase
+old gaps.
+
+Scope:
+
+- Update [infra-surface.md](infra-surface.md) so shipped work is described as
+  current state, not future work.
+- Keep detailed status in this tracker.
+- Mark `sdk.query`, `packages/control`, convention-path operator emit,
+  `createWorkflowHandler`, first handler bridge migrations, and shared
+  `ExecutionResult` helpers with their true implementation state.
+
+Validation:
+
+- A reviewer can read `infra-surface.md` for the model and this file for work
+  state without finding contradictory "next gaps."
 
 ## Working Rules
 
@@ -249,7 +299,9 @@ Scope:
   steward-run bundle used by `closed-loop-steward`.
 - [x] Move `closed-loop-steward` live context reads off raw
   `ctx.sdk.getDb()`; owner activity now uses `query.sessions(...)`.
-- [ ] Move heartbeat live-context loaders away from raw schema-sensitive SQL.
+- [x] Add `query.heartbeatContext(...)` for the exact metric/snapshot/alert/
+  inbox bundle used by shared heartbeats.
+- [x] Move heartbeat live-context loaders away from raw schema-sensitive SQL.
 - [ ] Move evaluator aftermath/session review context reads away from raw
   schema-sensitive SQL where the reads are judgment context rather than
   deterministic artifact bookkeeping.
@@ -261,19 +313,84 @@ Validation:
 - Runtime failure from a missing/renamed column becomes a query-service test gap,
   not a prompt-level agent mistake.
 
+### Phase 4a: Heartbeat Query Slice
+
+Status: implemented and verified in the running daemon.
+
+Scope:
+
+- Review `agents/shared/workflows/heartbeat-data.ts`.
+- Classify each direct `ctx.getDb()` read:
+  - mechanical/history measurement,
+  - live context for agent judgment,
+  - compatibility escape hatch.
+- Add only the query helpers needed for live heartbeat context.
+- Move schema-sensitive judgment/context reads to `ctx.query`.
+- Keep direct DB only where the workflow is doing mechanical local projection
+  or where a helper would not reduce complexity.
+
+Validation:
+
+- [x] Unit tests cover each new query helper.
+- [x] Missing/renamed DB columns fail in query-service tests, not in live heartbeat
+  prompts.
+- [x] Manual heartbeat trigger records:
+  - trigger event id,
+  - workflow run id,
+  - child session id,
+  - whether heartbeat context came from query helpers.
+
+Stop criteria:
+
+- [x] New heartbeat context reads do not require agents to guess SQLite schema.
+- [x] A heartbeat can be inspected through the normal loop trace.
+
+Runtime proof, 2026-05-11:
+
+- Trigger event: `trigger.heartbeat` event id `558344`, source
+  `codex-runtime-proof`.
+- Workflow run: `wr_1778479461744_iwqi` (`may-heartbeat`).
+- Child session: `s_1778479461886_0` (`may`).
+- Context trace: `context.read` event id `558346` includes
+  `contextSource: "query.heartbeatContext"` with metrics/projects/inbox/alerts
+  sections loaded.
+- Additional scheduled heartbeats after reload emitted the same
+  `contextSource` trace for evaluator/dev/arc, showing the shared heartbeat path
+  is active beyond the manual trigger.
+
+### Phase 4b: Evaluator Query Slice
+
+Scope:
+
+- Review `agents/may/handlers/eval-llm-scan.ts`.
+- Keep deterministic artifact ingestion and bookkeeping direct if it is simpler.
+- Move candidate/context reads that feed evaluator judgment to `sdk.query`.
+- Add a query helper only for the exact candidate/context bundle needed.
+
+Validation:
+
+- Unit tests cover candidate selection and bounded reads.
+- Manual evaluator scan trigger leaves handler evidence, evaluator workflow run
+  id, child evaluator session id, and either artifact ingestion or an explicit
+  skip/failure event.
+
 Stop criteria:
 
 - New judgment/action code does not call `getDb()` directly.
 - `getDb()` remains in mechanical infra code and explicit compatibility paths.
 
-## Phase 5: Resume Diagnostics And Recovery Symmetry
+## Phase 5: Execution Inspection And Recovery Symmetry
 
-Goal: `resumeSession` and `resumeWorkflow` share one diagnostic mental model.
-Execution-result shape and basic trace vocabulary should already be improved as
-handlers are migrated in Phase 3.
+Goal: sessions and workflows share one diagnostic mental model. Operators should
+not need separate inspection rules for raw sessions versus workflow-composed
+work.
 
 Scope:
 
+- Use the existing `ExecutionResult` helpers in the query/API/UI path where
+  operators inspect work.
+- Show workflow runs and child sessions with the same status, summary, evidence,
+  trace id, owner/project, and failure path fields.
 - Make resume APIs diagnostic first:
   - already terminal,
   - resumed,
@@ -288,6 +405,10 @@ Scope:
 
 Validation:
 
+- Pick a metric-alert triage workflow and show workflow + child session through
+  the same result shape.
+- Pick a failed/interrupted workflow and show the failure path through the same
+  result shape.
 - Resume failure emits queryable events with reason and owner/fallback.
 - UI/API can show where to inspect the resumed or failed trace.
 
@@ -318,7 +439,43 @@ Stop criteria:
 - Agents and operators can inspect guard triggers as system weakness signals,
   not just session interruptions.
 
-## Phase 7: Workflow Library Consolidation
+## Phase 7: Metrics And Alert Hygiene
+
+Goal: metrics stay useful as signals and do not become stale work generators.
+
+Scope:
+
+- Keep active health alerts tied to recent actionable owner work.
+- Keep watch-only metrics visible without causing false health failures.
+- Retire or recalibrate historical metric ids whose thresholds no longer match
+  current operating reality.
+- Make Web UI labels distinguish health, gauge, and watch-only metrics clearly.
+- Ensure alert reactor ignores retired metrics even if old breach events remain
+  in the event log.
+
+Already shipped first slice:
+
+- [x] `guard.blocked-count-15m` is the active short-window guard-block signal.
+- [x] Long-window guard block metrics were retired.
+- [x] `project.iterations-24h` is watch-only rather than an autonomous health
+  target.
+- [x] Metrics snapshot tests cover the short guard-block signal and watch-only
+  project iteration metric.
+
+Validation:
+
+- A future real guard block opens a fresh `guard.blocked-count-15m` alert and
+  closes after the window clears.
+- Open metric alerts correspond to current actionable owner work or a documented
+  accepted wait.
+- Operators can tell from the UI which metrics are health, gauge, or watch-only.
+
+Stop criteria:
+
+- Agents do not spend attention on retired, stale, or non-actionable metric
+  breaches.
+
+## Phase 8: Workflow Library Consolidation
 
 Goal: reduce duplicated orchestration patterns after the boundaries are stable.
 
@@ -369,9 +526,12 @@ make the loop observable and operable.
 - Do not add more health metrics until existing metrics are actionable and owned.
 - Do not consolidate workflow variants before real boundaries are stable.
 
-## Remaining Review Questions
+## Review Checklist
 
-- Does any phase introduce a new concept where an existing event/workflow/query
-  surface would do?
-- Is Phase 1a small enough to finish and verify in one pass?
-- What runtime proof should be required before marking each phase complete?
+- Does the next slice use an existing event, workflow, query, metric, or control
+  surface instead of inventing a new concept?
+- Is the slice small enough to verify with one real runtime event?
+- Does it reduce schema guessing, adapter-specific behavior, or untraceable
+  judgment?
+- Does the runtime proof include event id, handler evidence, workflow/session
+  id if work ran, and the resulting metric/judgment/failure signal?
