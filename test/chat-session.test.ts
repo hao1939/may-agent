@@ -107,7 +107,7 @@ describe("ChatSession", () => {
     expect(status[0].autoClose).toBe("never");
   });
 
-  it("resumes the same session id with prior transcript context after completion", async () => {
+  it("starts a new traceable turn with prior transcript context after completion", async () => {
     const runOpts: any[] = [];
     const originalRun = manager.run.bind(manager);
     (manager as any).run = (agentName: string, task: string, opts?: any) => {
@@ -125,9 +125,20 @@ describe("ChatSession", () => {
     await new Promise((r) => setTimeout(r, 500));
 
     session.handleInput("second message");
-    expect(session.getSessionId()).toBe(firstId);
+    expect(session.getSessionId()).toBeTruthy();
+    expect(session.getSessionId()).not.toBe(firstId);
     expect(runOpts[1]?.resumeMessages?.length).toBeGreaterThan(0);
-    expect(runOpts[1]?.sessionId).toBe(firstId);
+    expect(runOpts[1]?.sessionId).toBeUndefined();
+    expect(runOpts[1]?.parentSessionId).toBe(firstId);
+
+    const secondId = session.getSessionId();
+    await new Promise((r) => setTimeout(r, 500));
+
+    session.handleInput("third message");
+    expect(session.getSessionId()).toBeTruthy();
+    expect(session.getSessionId()).not.toBe(secondId);
+    expect(runOpts[2]?.parentSessionId).toBe(secondId);
+    expect(JSON.stringify(runOpts[2]?.resumeMessages ?? [])).toContain("first message");
   });
 
   it("ignores empty input", () => {
