@@ -57,3 +57,18 @@ Fresh raw 24h classification found all `58` rows recovered or intentionally term
 - `0` other unresolved rows
 
 Source attribution remains repaired scout/steward/may workflow friction rather than a fresh unrecovered dirty-exit pattern. Final operation: `waiting_with_evidence`; next validation is the next metrics snapshot, or immediate project resume if the strict metric breaches.
+
+## 2026-05-11T08:29Z metric-alert triage recheck
+
+Repeated alert `287` still warrants `waiting_with_evidence`, not calibration, manual resolve, or escalation. Fresh metric rows show raw `session.finish-blocked-uncommitted-count-24h current=58` over threshold `50`, while paired strict `session.finish-blocked-unresolved-count-24h current=0` with the latest ten strict snapshots all at `0`; alert `287` remains the only open alert for this raw metric.
+
+Fresh raw 24h classification over `evaluations`, `sessions`, and latest `session_digests` found all `58` rows recovered or intentionally terminal:
+
+- `55` repaired successful exits (`status=done`, `outcome=done`, latest digest `success`)
+- `1` repaired partial exit
+- `2` terminal no-recovery interrupted rows (`action=nothing`, `action_reason` includes `No recoverable work worth resuming`)
+- `0` other unresolved rows
+
+Source attribution remains repaired workflow friction, led by `workflow:scout-heartbeat` (`16` repaired success plus `1` terminal no-recovery), `workflow:scout-explore` (`15` repaired success), and `workflow:closed-loop-steward` (`9` repaired success); the latest samples are successful scout rows or successful may/steward rows with the separate `committed runtime handoff files` issue, not unrecovered source deliverables.
+
+Decision: choose `waiting_with_evidence` and keep `finish-blocked-hygiene-reduction` paused/monitoring. Validate on the next metrics snapshot; resume immediately if the strict unresolved metric breaches or future raw sampling exposes a fresh non-recovered dirty-exit pattern.
