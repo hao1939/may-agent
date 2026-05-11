@@ -46,11 +46,15 @@ Scope:
 - [x] Add a tiny operator command for `emit event`.
 - [x] On connection failure, return a clear error and emit/log recovery evidence.
 - [x] Allow one bounded retry after recovery for operator commands.
+- [x] Treat `trigger.<entry-name>` as a cron runtime convention so any timer or
+  event job can be manually fired through the daemon event path without
+  per-entry trigger boilerplate.
 
 Validation:
 
 - [x] Unit test convention path construction.
 - [x] Unit test send success and connection failure.
+- [x] Unit test `trigger.<entry-name>` cron convention.
 - [ ] Host smoke: emit `trigger.metrics-snapshot`.
 - [x] Container smoke: emit `trigger.metrics-snapshot`.
 
@@ -144,8 +148,8 @@ Stop criteria:
 
 ## Phase 3: Handler-To-Workflow Boundary
 
-Status: first traceability slice shipped for `metric-alert-reactor` and the
-generic workflow handler.
+Status: traceability slice shipped for `metric-alert-reactor`, `project`,
+`closed-loop-steward`, and the generic workflow handler.
 
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
@@ -179,6 +183,8 @@ Scope:
   `handler.workflow_dispatched` with the triage workflow run id/status.
 - [x] `project` emits durable `handler.skipped`, `handler.failed`, and
   `handler.workflow_dispatched` evidence for project nudge/launch paths.
+- [x] `closed-loop-steward` dispatches a steward workflow instead of opening a
+  May session directly, and records skip/failure/workflow dispatch evidence.
 
 Validation:
 
@@ -190,7 +196,7 @@ Validation:
 Stop criteria:
 
 - [x] Alert triage and project nudge paths are workflow-backed and traceable.
-- Closed-loop steward no longer acts like a second agent runtime inside a
+- [x] Closed-loop steward no longer acts like a second agent runtime inside a
   handler.
 
 ## Phase 4: Query Facade Migration
