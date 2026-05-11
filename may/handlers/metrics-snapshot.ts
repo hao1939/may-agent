@@ -13,7 +13,7 @@
  */
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
-import { exec, execFile } from "node:child_process";
+import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../shared/agent-sdk.ts";
@@ -21,7 +21,6 @@ import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metri
 import { validateProjectFormat } from "../../shared/lib/project-health.ts";
 
 const execAsync = promisify(exec);
-const execFileAsync = promisify(execFile);
 
 // v2 metric types:
 //   gauge   — point-in-time value, can go up/down (rates, ratios, sizes)
@@ -78,9 +77,6 @@ const ALL_METRICS: MetricDef[] = [
   { id: "evaluator.success-learnings-24h", name: "Learnings extracted from good sessions (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  // System output
-  { id: "system.real-output-24h", name: "Real output (24h)", owner: "may", type: "gauge", target: 100, threshold: 30, unit: "count", alert_op: "<",
-    priority: "P1" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   { id: "guard.triggered-count-24h", name: "Guard triggers (24h)", owner: "may", type: "gauge", target: 0, threshold: 20, unit: "count", alert_op: ">", priority: "P2" },
@@ -103,34 +99,11 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "message.delivery-failed-count-1h", name: "Message delivery failures (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  // v2 spec coverage
-  { id: "v2.agent-config-bytes-p50", name: "Agent config median size (bytes)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 300, threshold: 500, unit: "bytes", alert_op: ">", priority: "P2" },
-  { id: "v2.manager-loc", name: "manager.ts LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1000, threshold: 1500, unit: "lines", alert_op: ">", priority: "P2" },
-  { id: "v2.runtime-glue-loc", name: "Runtime glue LOC", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1500, threshold: 2000, unit: "lines", alert_op: ">", priority: "P2" },
-  { id: "v2.spec-coverage-rate", name: "v2 spec measurement coverage", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.77, unit: "ratio", alert_op: "<", priority: "P2" },
   // v2 infra metrics (I1-I4)
   { id: "infra.bus.event-count-1h", name: "Event bus events (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 10, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
   { id: "infra.persist.db-size-mb", name: "DB size (MB)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 500, threshold: 2000, unit: "MB", alert_op: ">", priority: "P2" },
   { id: "infra.messages.delivery-rate", name: "Message delivery success rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.9, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "infra.sessions.active-count", name: "Active sessions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 5, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
-  // v2 structural metrics (S1, S7)
-  { id: "v2.runagent-callsite-conformance", name: "runAgent callsite conformance rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.8, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "v2.heartbeat-decision-rate", name: "Heartbeat decision coverage rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0, unit: "ratio", alert_op: "<", priority: "P2" },  // threshold=0: metric implementation doesn't match spec (measures handler config, not decision events). Suppressed until reimplemented.
-  { id: "v2.self-directed-iteration-rate-24h", name: "Self-directed iteration rate (24h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.8, threshold: 0.3, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "v2.session-trace-completeness", name: "Session trace completeness (24h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.5, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "v2.process-uptime-h", name: "Process uptime (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 24, threshold: 1, unit: "hours", alert_op: "<", priority: "P2" },
-  { id: "v2.fork-on-breach-rate", name: "Fork-on-breach rate for P0 metrics", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.5, unit: "ratio", alert_op: "<", priority: "P2" },
-  // C2: breach recovery metrics
-  { id: "capability.breach-time-to-recovery-p50-h", name: "Breach-to-recovery median latency (hours)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 6, threshold: 24, unit: "hours", alert_op: ">", priority: "P2" },
-  { id: "capability.unrecovered-breach-count-7d", name: "Unrecovered breaches (7d)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 10, unit: "count", alert_op: ">", priority: "P3" },
-  // C5: ownership
-  { id: "capability.cross-domain-handling-rate", name: "Cross-domain breach handling rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 0.1, unit: "ratio", alert_op: ">", priority: "P2" },
-  // C3: memory and continuity
-  { id: "capability.journal-reference-rate", name: "Journal reference rate in decisions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.3, threshold: 0, unit: "ratio", alert_op: "<", priority: "P3" },
-  // C4: coordination
-  { id: "capability.message-conversation-close-rate", name: "Message conversation close rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0.05, threshold: 0.02, unit: "ratio", alert_op: "<", priority: "P3" },
-  // C6: adaptation
-  { id: "capability.trend-7d", name: "Capability metrics with declining 7d trend", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
 ];
 
 const RETIRED_METRIC_IDS = [
@@ -144,6 +117,22 @@ const RETIRED_METRIC_IDS = [
   "session.zero-op-error-count-1h",
   "guard.blocked-count-1h",
   "guard.blocked-count-24h",
+  "system.real-output-24h",
+  "v2.agent-config-bytes-p50",
+  "v2.manager-loc",
+  "v2.runtime-glue-loc",
+  "v2.runagent-callsite-conformance",
+  "v2.heartbeat-decision-rate",
+  "v2.self-directed-iteration-rate-24h",
+  "v2.session-trace-completeness",
+  "v2.process-uptime-h",
+  "v2.fork-on-breach-rate",
+  "capability.breach-time-to-recovery-p50-h",
+  "capability.unrecovered-breach-count-7d",
+  "capability.cross-domain-handling-rate",
+  "capability.journal-reference-rate",
+  "capability.message-conversation-close-rate",
+  "capability.trend-7d",
 ];
 
 /** Snapshot retention: keep 30 days of history */
@@ -290,29 +279,6 @@ function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
   }
   return false;
 }
-
-function metricIdFromEventData(data: unknown): string | null {
-  if (typeof data !== "string" || !data) return null;
-  try {
-    const parsed = JSON.parse(data) as { metricId?: unknown };
-    return typeof parsed.metricId === "string" && parsed.metricId.trim() ? parsed.metricId : null;
-  } catch {
-    return null;
-  }
-}
-
-function firstGreaterThan(values: number[], threshold: number): number | null {
-  let lo = 0;
-  let hi = values.length;
-  while (lo < hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    if (values[mid] <= threshold) lo = mid + 1;
-    else hi = mid;
-  }
-  return lo < values.length ? values[lo] : null;
-}
-
-
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: TriggerEvent) => {
@@ -745,53 +711,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       );
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`); }
 
-    try {
-      // Counts changed/created files in last 24h without blocking the runtime
-      // event loop. Socket/Telegram must stay responsive while metrics run.
-      let files: string[] = [];
-      try {
-        await execFileAsync("git", ["-C", ctx.sdk.paths.root, "rev-parse", "--git-dir"], { timeout: 3000, maxBuffer: 1024 * 1024 });
-        const { stdout } = await execFileAsync(
-          "git",
-          ["-C", ctx.sdk.paths.root, "log", "--since=24.hours", "--name-only", "--pretty=format:"],
-          { timeout: 5000, maxBuffer: 8 * 1024 * 1024 },
-        );
-        files = stdout.split("\n");
-      } catch {
-        const { stdout } = await execFileAsync(
-          "find",
-          [
-            ctx.sdk.paths.root,
-            "-path", join(ctx.sdk.paths.root, ".state"),
-            "-prune",
-            "-o",
-            "-path", join(ctx.sdk.paths.root, "node_modules"),
-            "-prune",
-            "-o",
-            "-path", join(ctx.sdk.paths.root, ".git"),
-            "-prune",
-            "-o",
-            "-type", "f",
-            "-mmin", "-1440",
-            "(",
-            "-name", "*.ts",
-            "-o", "-name", "*.md",
-            "-o", "-name", "*.json",
-            ")",
-            "-print",
-          ],
-          { timeout: 5000, maxBuffer: 8 * 1024 * 1024 },
-        );
-        files = stdout.split("\n");
-      }
-      const n = new Set(files
-        .map((file) => file.trim())
-        .filter(Boolean)
-        .filter((file) => !/^(\.state\/sessions\/|node_modules\/|dist\/|build\/|coverage\/|\.git\/)/.test(file))).size;
-      record("system.real-output-24h", n);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring system.real-output-24h: ${e}`); }
-
-
     // ── Measure: Project (with error isolation) ──────────────────────
 
     const fortyEightH = now - 48 * 3600000;
@@ -915,45 +834,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         heartbeatAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
 
-    // ── Measure: v2 spec metrics (S5, S6, coverage rate) ─────────────
-
-    // S5: agent-config-bytes-p50 — median agent.json size
-    try {
-      const agentJsonFiles = readdirSync(ctx.sdk.paths.agents)
-        .map(d => join(ctx.sdk.paths.agents, d, "agent.json"))
-        .filter(f => existsSync(f));
-      const sizes = agentJsonFiles.map(f => statSync(f).size).sort((a, b) => a - b);
-      if (sizes.length > 0) {
-        const mid = Math.floor(sizes.length / 2);
-        const median = sizes.length % 2 === 0 ? Math.round((sizes[mid - 1] + sizes[mid]) / 2) : sizes[mid];
-        record("v2.agent-config-bytes-p50", median, sizes.length);
-      }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.agent-config-bytes-p50: ${e}`); }
-
-    // S6: manager-loc and runtime-glue-loc
-    try {
-      const managerFiles = ["manager.ts"];
-      const glueFiles = ["manager.ts", "manager-utils.ts", "manager-receipts.ts", "manager-agents-tool.ts"];
-      const findLoc = async (files: string[]): Promise<number> => {
-        let total = 0;
-        for (const f of files) {
-          try {
-            const { stdout } = await execAsync(`find ${ctx.sdk.paths.root} -name "${f}" -not -path "*/node_modules/*" -not -path "*/.state/*" -not -path "*/gym/*" -print -quit`, { timeout: 3000 });
-            const path = stdout.trim();
-            if (path) {
-              const { stdout: loc } = await execAsync(`wc -l < "${path}"`, { timeout: 2000 });
-              total += parseInt(loc.trim()) || 0;
-            }
-          } catch { /* file not found */ }
-        }
-        return total;
-      };
-      const managerLoc = await findLoc(managerFiles);
-      const glueLoc = await findLoc(glueFiles);
-      record("v2.manager-loc", managerLoc);
-      record("v2.runtime-glue-loc", glueLoc);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.manager-loc / v2.runtime-glue-loc: ${e}`); }
-
     // I1: infra.bus.event-count-1h — events in the last hour
     try {
       const eventCount1h = count("SELECT COUNT(*) as c FROM events WHERE timestamp > ?", now - 3600000);
@@ -984,290 +864,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const activeSessions = count("SELECT COUNT(*) as c FROM sessions WHERE status = 'running'");
       record("infra.sessions.active-count", activeSessions);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.sessions.active-count: ${e}`); }
-
-    // S1: v2.runagent-callsite-conformance — check that agent sessions use runAgent (not direct DB)
-    try {
-      const { stdout: totalCallsites } = await execAsync(`grep -r "runAgent\\|runSession\\|createSession" ${ctx.sdk.paths.root}/src --include="*.ts" -l 2>/dev/null | wc -l`, { timeout: 5000 });
-      const { stdout: directDbImports } = await execAsync(`grep -r "import.*from.*bun:sqlite\\|import.*Database.*from" ${ctx.sdk.paths.root}/src --include="*.ts" -l 2>/dev/null | grep -v node_modules | grep -v ".state" | wc -l`, { timeout: 5000 });
-      const total = parseInt(totalCallsites.trim()) || 0;
-      const direct = parseInt(directDbImports.trim()) || 0;
-      // Conformance = files using runAgent / total session-related files (higher is better)
-      // If no callsites found, assume conformant
-      record("v2.runagent-callsite-conformance", total > 0 ? parseFloat((Math.max(0, total - direct) / total).toFixed(4)) : 1.0, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.runagent-callsite-conformance: ${e}`); }
-
-    // S7: v2.heartbeat-decision-rate — ratio of agents with heartbeat handlers
-    try {
-      const agentDirs = readdirSync(ctx.sdk.paths.agents).filter(d => {
-        const agentJsonPath = join(ctx.sdk.paths.agents, d, "agent.json");
-        return existsSync(agentJsonPath);
-      });
-      const withHeartbeat = agentDirs.filter(d => {
-        try {
-          const config = JSON.parse(readFileSync(join(ctx.sdk.paths.agents, d, "agent.json"), "utf-8"));
-          return config.handlers?.some((h: any) => h.event === "heartbeat" || h.type === "heartbeat");
-        } catch { return false; }
-      });
-      record("v2.heartbeat-decision-rate", agentDirs.length > 0 ? parseFloat((withHeartbeat.length / agentDirs.length).toFixed(4)) : 0, agentDirs.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.heartbeat-decision-rate: ${e}`); }
-
-    // C1: v2.self-directed-iteration-rate-24h — sessions without human trigger in 24h
-    try {
-      const totalSessions24h = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ?", now - 86400000);
-      // Sessions from heartbeat/cron are self-directed; sessions with source='human' or kind='call' with no parentSessionId from heartbeat are human-triggered
-      const humanTriggered = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND source = 'human'", now - 86400000);
-      const selfDirectedRate = totalSessions24h > 0 ? parseFloat(((totalSessions24h - humanTriggered) / totalSessions24h).toFixed(4)) : 0;
-      record("v2.self-directed-iteration-rate-24h", selfDirectedRate, totalSessions24h);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.self-directed-iteration-rate-24h: ${e}`); }
-
-    // C8: v2.session-trace-completeness — sessions with outcome set / total completed sessions (24h)
-    try {
-      const completedSessions = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done', 'error', 'cancelled')", now - 86400000);
-      const withOutcome = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done', 'error', 'cancelled') AND outcome IS NOT NULL AND outcome != ''", now - 86400000);
-      const traceRate = completedSessions > 0 ? parseFloat((withOutcome / completedSessions).toFixed(4)) : 1.0;
-      record("v2.session-trace-completeness", traceRate, completedSessions);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.session-trace-completeness: ${e}`); }
-
-    // C9: v2.process-uptime-h — hours since process start (proxy: oldest running session or DB activity)
-    try {
-      const oldestRunning = db.prepare("SELECT MIN(startedAt) as oldest FROM sessions WHERE status = 'running'").get() as any;
-      const uptimeH = oldestRunning?.oldest ? parseFloat(((now - oldestRunning.oldest) / 3600000).toFixed(2)) : 0;
-      // Also check: if we have recent snapshots, the process is alive
-      const recentSnap = count("SELECT COUNT(*) as c FROM metric_snapshots WHERE measured_at > ?", now - 3600000);
-      const effectiveUptime = recentSnap > 0 ? Math.max(uptimeH, 1) : uptimeH;
-      record("v2.process-uptime-h", effectiveUptime);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.process-uptime-h: ${e}`); }
-
-    // S8: v2.fork-on-breach-rate — check that metrics table has priority column and P0 breaches fork
-    try {
-      // S8 claims priority column exists and P0 metrics get fork-on-breach
-      const p0Metrics = db.prepare("SELECT COUNT(*) as c FROM metrics WHERE priority = 'P0' AND status = 'active'").get() as any;
-      const p0Count = p0Metrics?.c || 0;
-      // If priority column exists and P0 metrics exist, the structural claim is met
-      record("v2.fork-on-breach-rate", p0Count > 0 ? 1.0 : 0, p0Count);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.fork-on-breach-rate: ${e}`); }
-
-    // C2: capability.breach-time-to-recovery-p50-h — median breach→recovery latency
-    try {
-      const cutoff = now - 7 * 86400000;
-      const retired = new Set(RETIRED_METRIC_IDS);
-      const rows = db.prepare(
-        `SELECT event_type, timestamp, data
-         FROM events
-         WHERE event_type IN ('metric.breach', 'metric.recovered')
-           AND timestamp > ?
-         ORDER BY timestamp ASC`,
-      ).all(cutoff) as Array<{ event_type: string; timestamp: number; data: string | null }>;
-
-      const breaches: Array<{ metricId: string; timestamp: number }> = [];
-      const recoveriesByMetric = new Map<string, number[]>();
-      const latestBreachByMetric = new Map<string, number>();
-      const latestRecoveryByMetric = new Map<string, number>();
-
-      for (const row of rows) {
-        const metricId = metricIdFromEventData(row.data);
-        if (!metricId || retired.has(metricId)) continue;
-        if (row.event_type === "metric.breach") {
-          breaches.push({ metricId, timestamp: row.timestamp });
-          latestBreachByMetric.set(metricId, Math.max(latestBreachByMetric.get(metricId) ?? 0, row.timestamp));
-        } else if (row.event_type === "metric.recovered") {
-          const recoveries = recoveriesByMetric.get(metricId) ?? [];
-          recoveries.push(row.timestamp);
-          recoveriesByMetric.set(metricId, recoveries);
-          latestRecoveryByMetric.set(metricId, Math.max(latestRecoveryByMetric.get(metricId) ?? 0, row.timestamp));
-        }
-      }
-
-      const recoveryDeltas: number[] = [];
-      for (const breach of breaches) {
-        const recoveryTs = firstGreaterThan(recoveriesByMetric.get(breach.metricId) ?? [], breach.timestamp);
-        if (recoveryTs != null) recoveryDeltas.push((recoveryTs - breach.timestamp) / 3600000);
-      }
-      recoveryDeltas.sort((a, b) => a - b);
-
-      if (recoveryDeltas.length > 0) {
-        const mid = Math.floor(recoveryDeltas.length / 2);
-        const p50 = recoveryDeltas.length % 2 === 1
-          ? recoveryDeltas[mid]
-          : (recoveryDeltas[mid - 1] + recoveryDeltas[mid]) / 2;
-        record("capability.breach-time-to-recovery-p50-h", parseFloat(p50.toFixed(2)), recoveryDeltas.length);
-      } else {
-        record("capability.breach-time-to-recovery-p50-h", 0, 0);
-      }
-
-      let unrecovered = 0;
-      for (const [metricId, latestBreach] of latestBreachByMetric.entries()) {
-        const latestRecovery = latestRecoveryByMetric.get(metricId) ?? 0;
-        if (latestRecovery <= latestBreach) unrecovered++;
-      }
-      record("capability.unrecovered-breach-count-7d", unrecovered);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.breach-time-to-recovery-p50-h: ${e}`); }
-
-    // C5: capability.cross-domain-handling-rate — breaches handled by non-owner agent
-    try {
-      // Find breach events with owner, then check if the remediation session was run by a different agent
-      const breachesWithOwner = db.prepare(`
-        SELECT json_extract(data, '$.owner') as owner, json_extract(data, '$.metricId') as metricId, timestamp
-        FROM events WHERE event_type = 'metric.breach' AND timestamp > ?
-      `).all(now - 7 * 86400000) as any[];
-      let totalBreaches = 0;
-      let crossDomain = 0;
-      for (const b of breachesWithOwner) {
-        if (!b.owner || !b.metricId) continue;
-        totalBreaches++;
-        // Check if a session was forked for this breach by a different agent
-        const handlerSession = db.prepare(`
-          SELECT agent FROM sessions
-          WHERE startedAt > ? AND startedAt < ? AND agent != ?
-            AND (task LIKE ? OR task LIKE ?)
-          LIMIT 1
-        `).get(b.timestamp - 5000, b.timestamp + 300000, b.owner, `%${b.metricId}%`, `%breach%`) as any;
-        if (handlerSession) crossDomain++;
-      }
-      const crossRate = totalBreaches > 0 ? parseFloat((crossDomain / totalBreaches).toFixed(4)) : 0;
-      record("capability.cross-domain-handling-rate", crossRate, totalBreaches);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.cross-domain-handling-rate: ${e}`); }
-
-    // C3: capability.journal-reference-rate — fraction of agent.decision events referencing journal/context
-    try {
-      const decisions = db.prepare(`
-        SELECT data FROM events
-        WHERE event_type = 'agent.decision' AND timestamp > ?
-      `).all(now - 7 * 86400000) as any[];
-      if (decisions.length > 0) {
-        let withRef = 0;
-        const journalPatterns = [/\d{4}-\d{2}-\d{2}/, /journal/, /context\.md/, /iteration/, /previous/, /last session/, /prior/i];
-        for (const d of decisions) {
-          try {
-            const dataStr = typeof d.data === 'string' ? d.data : JSON.stringify(d.data);
-            if (journalPatterns.some(p => p.test(dataStr))) withRef++;
-          } catch { /* skip malformed */ }
-        }
-        record("capability.journal-reference-rate", parseFloat((withRef / decisions.length).toFixed(4)), decisions.length);
-      } else {
-        record("capability.journal-reference-rate", 0, 0);
-      }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.journal-reference-rate: ${e}`); }
-
-    // C4: capability.message-conversation-close-rate — fraction of messages with replies
-    try {
-      // Sample up to 200 recent messages to avoid O(n²) on 85k+ rows
-      const msgs = db.prepare(`
-        SELECT data, timestamp FROM events
-        WHERE event_type = 'message.created' AND timestamp > ?
-        ORDER BY timestamp DESC LIMIT 200
-      `).all(now - 7 * 86400000) as any[];
-      if (msgs.length > 0) {
-        let eligible = 0;
-        let withReply = 0;
-        for (const m of msgs) {
-          try {
-            const parsed = typeof m.data === 'string' ? JSON.parse(m.data) : m.data;
-            const sender = parsed.from;
-            const receiver = parsed.to;
-            if (!sender || !receiver || receiver === 'human') continue;
-            eligible++;
-            // Check if receiver replied to sender within 24h
-            const reply = db.prepare(`
-              SELECT 1 FROM events
-              WHERE event_type = 'message.created'
-                AND timestamp > ? AND timestamp < ?
-                AND data LIKE ? AND data LIKE ?
-              LIMIT 1
-            `).get(
-              m.timestamp,
-              m.timestamp + 86400000,
-              `%"from":"${receiver}"%`,
-              `%"to":"${sender}"%`
-            ) as any;
-            if (reply) withReply++;
-          } catch { /* skip malformed */ }
-        }
-        const rate = eligible > 0 ? parseFloat((withReply / eligible).toFixed(4)) : 0;
-        record("capability.message-conversation-close-rate", rate, eligible);
-      } else {
-        record("capability.message-conversation-close-rate", 0, 0);
-      }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.message-conversation-close-rate: ${e}`); }
-
-    // C6: capability.trend-7d — count of capability metrics with declining 7-day trend
-    try {
-      const capMetrics = db.prepare(`
-        SELECT DISTINCT ms.metric_id FROM metric_snapshots ms
-        LEFT JOIN metrics m ON ms.metric_id = m.id
-        WHERE ms.metric_id LIKE 'capability.%' AND ms.measured_at > ?
-          AND ms.metric_id != 'capability.trend-7d'
-          AND (m.status IS NULL OR m.status != 'retired')
-      `).all(now - 7 * 86400000) as any[];
-      let declining = 0;
-      for (const m of capMetrics) {
-        const snapshots = db.prepare(`
-          SELECT value, measured_at FROM metric_snapshots
-          WHERE metric_id = ? AND measured_at > ?
-          ORDER BY measured_at ASC
-        `).all(m.metric_id, now - 7 * 86400000) as any[];
-        if (snapshots.length < 2) continue;
-        // Simple linear regression slope
-        const n = snapshots.length;
-        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-        const t0 = snapshots[0].measured_at;
-        for (const s of snapshots) {
-          const x = (s.measured_at - t0) / 3600000; // hours
-          sumX += x; sumY += s.value; sumXY += x * s.value; sumX2 += x * x;
-        }
-        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-        if (slope < -0.001) declining++; // small negative threshold to avoid noise
-      }
-      record("capability.trend-7d", declining, capMetrics.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring capability.trend-7d: ${e}`); }
-
-    // v2.spec-coverage-rate — count claims with active, measured metrics
-    try {
-      // Claims and their metric IDs (from v2-spec.md)
-      const claimMetrics: Record<string, string[]> = {
-        C1: ["v2.self-directed-iteration-rate-24h"],
-        C2: ["capability.breach-time-to-recovery-p50-h"],
-        C3: ["capability.journal-reference-rate"],
-        C4: ["capability.message-conversation-close-rate"],
-        C5: ["capability.cross-domain-handling-rate"],
-        C6: ["capability.trend-7d"],
-        C7: ["capability.zombie-session-count", "capability.concurrent-session-max-1h", "capability.cost-per-day-usd", "capability.fork-loop-incidents-24h"],
-        C8: ["v2.session-trace-completeness"],
-        C9: ["v2.process-uptime-h"],
-        C10: ["capability.status-reality-mismatch-count"],
-        I1: ["infra.bus.event-count-1h"],
-        I2: ["infra.persist.db-size-mb"],
-        I3: ["infra.messages.delivery-rate"],
-        I4: ["infra.sessions.active-count"],
-        S1: ["v2.runagent-callsite-conformance"],
-        S2: [],  // structural hold
-        S3: [],  // structural hold
-        S4: [],  // structural hold
-        S5: ["v2.agent-config-bytes-p50"],
-        S6: ["v2.manager-loc", "v2.runtime-glue-loc"],
-        S7: ["v2.heartbeat-decision-rate"],
-        S8: ["v2.fork-on-breach-rate"],
-      };
-      const totalClaims = Object.keys(claimMetrics).length;  // 22
-      let measured = 0;
-      for (const [claim, metricIds] of Object.entries(claimMetrics)) {
-        if (metricIds.length === 0) {
-          // Structural holds count as measured
-          measured++;
-          continue;
-        }
-        // A claim is measured if at least one of its metrics is active and has a recent snapshot
-        const hasActive = metricIds.some(mid => {
-          const row = db.prepare("SELECT status FROM metrics WHERE id = ? AND status = 'active'").get(mid) as any;
-          if (!row) return false;
-          const snap = db.prepare("SELECT 1 FROM metric_snapshots WHERE metric_id = ? AND measured_at > ? LIMIT 1").get(mid, now - 24 * 3600000) as any;
-          return !!snap;
-        });
-        if (hasActive) measured++;
-      }
-      const rate = parseFloat((measured / totalClaims).toFixed(4));
-      record("v2.spec-coverage-rate", rate, totalClaims);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring v2.spec-coverage-rate: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
 
@@ -1315,17 +911,5 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
 
     ctx.sdk.log("info", `[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
-
-    // ── Fire-and-forget: regenerate conformance report ──
-    try {
-      Bun.spawn(["bun", "run", "agents/shared/scripts/conformance-report.ts"], {
-        cwd: import.meta.dir + "/../../..",
-        stdout: "ignore",
-        stderr: "ignore",
-      });
-      ctx.sdk.log("info", `[metrics-snapshot] Conformance report regeneration triggered`);
-    } catch (e) {
-      ctx.sdk.log("info", `[metrics-snapshot] Failed to trigger conformance report: ${e}`);
-    }
   };
 };
