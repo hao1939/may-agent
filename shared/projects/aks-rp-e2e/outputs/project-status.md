@@ -1,6 +1,6 @@
 # AKS RP E2Ev3 Project — Status Summary
 
-**Last updated:** 2026-05-11
+**Last updated:** 2026-05-11 (iteration 3 re-check)
 
 ## Goal
 Learn and set up e2e testing for the AKS Resource Provider Go monorepo. Success = able to run e2e tests against a standalone environment, understand the e2ev3 framework architecture, and document the workflow.
@@ -21,16 +21,15 @@ Learn and set up e2e testing for the AKS Resource Provider Go monorepo. Success 
 
 ## Blocked ❌
 
-**Cannot run e2e tests.** The standalone environment is DOWN (confirmed 2026-05-11):
-- Key Vault DNS (`hayua-aks-kv.vault.azure.net`) returns NXDOMAIN
-- Go and Bazel not installed on devbox (Docker is running)
-- Root cause: standalone not deployed on devbox
-- **Action needed (human):** Run `hack/aksbuilder_localdeploy.sh` on devbox to provision the environment, install Go + Bazel
-- Once deployed, re-run `outputs/standalone-readiness-check.sh` to validate, then execute a test:
-  ```bash
-  cd /home/hayua/rp
-  test/e2ev3/hack/e2ev3 dev --scenario <name> --debug
-  ```
+**Cannot run e2e tests.** The standalone environment is DOWN (re-confirmed 2026-05-11 iteration 3):
+- Key Vault DNS (`aks-rp-standalone.vault.azure.net`) → NXDOMAIN (still)
+- Go, Bazel, Bazelisk — none installed on devbox
+- Docker is running ✓, entry script exists ✓, 26 SIG dirs present ✓
+- **Action needed (human):**
+  1. Install Go + Bazel on devbox
+  2. Run `hack/aksbuilder_localdeploy.sh` to provision standalone environment
+  3. Re-run `outputs/standalone-readiness-check.sh` to validate
+  4. Then execute: `cd /home/hayua/rp && test/e2ev3/hack/e2ev3 dev --scenario <name> --debug`
 
 ## Knowledge Gained
 
@@ -39,5 +38,5 @@ Learn and set up e2e testing for the AKS Resource Provider Go monorepo. Success 
 3. **Entry point:** `test/e2ev3/hack/e2ev3` script → `localdev.Main` for standalone
 4. **Suites:** mv (master validation), dev (local), prod, longhaul
 5. **Build system:** Bazel via `hack/aksbuilder.sh`
-6. **27→24 SIGs** own test content under `test/e2ev3/sigs/`
+6. **SIG count:** 26 directories under `test/e2ev3/sigs/` (confirmed via SSH)
 7. **Standalone mutators** handle traffic routing, subscription registration, MSI simulation
