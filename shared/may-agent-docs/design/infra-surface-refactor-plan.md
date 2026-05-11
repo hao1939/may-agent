@@ -937,6 +937,7 @@ Current problem: `src/app/may.ts` mixes unrelated modes and daemon wiring.
 Target modules:
 
 - [x] `src/app/modes/emit.ts`
+- [x] `src/app/modes/command.ts`
 - [x] `src/app/modes/web.ts`
 - [x] `src/app/modes/run-workflow.ts`
 - [x] `src/app/modes/oneshot.ts`
@@ -959,6 +960,7 @@ Current proof:
 
 - Root commits:
   - `df4241c6` split operator emit mode.
+  - `8ca598c3` split status/message command modes.
   - `094f5723` split Web UI startup mode.
   - `c938c783` split run-workflow CLI mode.
   - `a0d61847` split oneshot CLI mode.
@@ -974,7 +976,7 @@ Current proof:
 
 Current shape:
 
-- `src/app/may.ts`: 524 lines, still owns mode selection and remaining daemon
+- `src/app/may.ts`: 512 lines, still owns mode selection and remaining daemon
   assembly.
 - `src/app/daemon.ts`: lifecycle, event persistence, session side-effect
   subscribers, session-domain event translation, agent loading, heartbeat
