@@ -34,8 +34,8 @@ Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
 adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
 composition root, and DB facade into named runtime modules. Phase 9d/9e/9f
 have split Telegram reply routing, outbound session-response routing, and API
-send/persistence mechanics. Phase 9g started the daemon module split by moving
-lifecycle and identity handling behind a stable re-export.
+send/persistence mechanics. Phase 9g/9h split daemon lifecycle and event
+subscriber wiring behind stable re-exports.
 
 Next slice:
 
@@ -1153,6 +1153,28 @@ Validation:
 
 - `bun test test/daemon.test.ts` passes.
 - `bun test test/telegram-reply-e2e.test.ts` passes.
+- `bun run check` passes.
+
+### Phase 9h: Daemon Event Subscriber Extraction
+
+Status: shipped.
+
+Move daemon event persistence and side-effect subscribers into one named module.
+This keeps DB persistence, digest/last-session writers, stuck detection,
+auto-resume escalation, agent cleanup, and session-domain event translation out
+of the daemon startup/session loop code.
+
+Current state:
+
+- [x] `src/app/daemon-events.ts` owns event persistence and daemon subscriber
+  registration.
+- [x] `src/app/daemon.ts` re-exports `attachEventPersistence` and
+  `attachDaemonEventSubscribers` for import stability.
+- Root commit: `13a34477` extract daemon event subscribers.
+
+Validation:
+
+- `bun test test/daemon-events.test.ts test/daemon.test.ts` passes.
 - `bun run check` passes.
 
 ## Cross-Cutting Validation
