@@ -162,6 +162,10 @@ Rechecked P2 raw metric alert 287 after the latest snapshot eased from `56` to `
 
 Rechecked P2 raw metric alert 287 in the later owner triage session. The metric row still reports `current=55`, `threshold=50`, `target=0`, and open alert `287`, while paired strict unresolved metric `session.finish-blocked-unresolved-count-24h` remains `current=0` with ten consecutive zero snapshots. Source attribution still shows no unresolved raw rows: the live raw 24h classification query found `52` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; top sources are repaired scout/steward/may/arc workflow exits. Chosen operation: `waiting_with_evidence`; no calibration, manual resolve, root-cause patch, or escalation is indicated unless the strict metric breaches or a future raw sample exposes a new non-recovered source pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence at 57
+
+Rechecked P2 raw metric alert 287 after the latest snapshot reached `57` over threshold `50`. The raw breach is real and still open, but the paired strict unresolved metric remains healthy at `current=0` with ten consecutive zero snapshots. The live raw 24h classification query found all `57` rows recovered or intentionally terminal: `54` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; source attribution remains repaired scout/steward/may workflow friction rather than a fresh non-recovered dirty-exit pattern. Chosen operation: `waiting_with_evidence`; keep the project paused/monitoring and validate on the next metrics snapshot, resuming only if the strict unresolved metric breaches or raw sampling exposes a new non-recovered source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
