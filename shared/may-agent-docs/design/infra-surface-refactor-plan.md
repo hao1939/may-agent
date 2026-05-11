@@ -34,7 +34,8 @@ Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
 adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
 composition root, and DB facade into named runtime modules. Phase 9d/9e/9f
 have split Telegram reply routing, outbound session-response routing, and API
-send/persistence mechanics.
+send/persistence mechanics. Phase 9g started the daemon module split by moving
+lifecycle and identity handling behind a stable re-export.
 
 Next slice:
 
@@ -1130,6 +1131,28 @@ Validation:
 
 - `bun test test/telegram-client.test.ts test/telegram-outbound.test.ts test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
   passes.
+- `bun run check` passes.
+
+### Phase 9g: Daemon Lifecycle Extraction
+
+Status: shipped.
+
+Keep `daemon.ts` as the stable public daemon surface for now, but move lifecycle
+and identity mechanics into a named module. This isolates process signal
+handling, graceful shutdown/restart, reload reporting, identity writes, and
+duration formatting from event subscribers and session startup code.
+
+Current state:
+
+- [x] `src/app/daemon-lifecycle.ts` owns lifecycle and identity helpers.
+- [x] `src/app/daemon.ts` re-exports the lifecycle public surface so existing
+  imports do not churn.
+- Root commit: `3e966e65` extract daemon lifecycle module.
+
+Validation:
+
+- `bun test test/daemon.test.ts` passes.
+- `bun test test/telegram-reply-e2e.test.ts` passes.
 - `bun run check` passes.
 
 ## Cross-Cutting Validation
