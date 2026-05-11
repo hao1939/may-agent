@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createBudget, getBudgetConfig } from '../workflows/iteration-budget.ts';
 import { estimateComplexity } from '../workflows/complexity-estimator.ts';
 
-describe('master-worker budget integration', () => {
+describe('iteration-budget integration', () => {
   describe('budget creation from complexity score', () => {
     it('creates budget after complexity estimation', () => {
       const task = 'Write a simple markdown file';
@@ -20,7 +20,7 @@ describe('master-worker budget integration', () => {
     });
 
     it('complex tasks get generous budgets', () => {
-      const complexity = estimateComplexity('Implement a full module with 5 files, integrate into master-worker.ts, write 20 tests covering edge cases');
+      const complexity = estimateComplexity('Implement a full module with 5 files, integrate into project.ts, write 20 tests covering edge cases');
       const config = getBudgetConfig(complexity.score);
       expect(config.maxTimeMs).toBeGreaterThanOrEqual(180_000);
       expect(config.maxTokens).toBeGreaterThanOrEqual(5000);

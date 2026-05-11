@@ -1,16 +1,16 @@
 /**
- * Integration tests: iteration-timer.ts integrated into master-worker.ts
+ * Integration tests: iteration-timer.ts in an iterative workflow loop.
  * Verifies that timer starts/ends with each iteration and stats accumulate.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { IterationTimer } from '../workflows/iteration-timer.ts';
 
-describe('master-worker timer integration', () => {
+describe('iteration-timer integration', () => {
   let timer: IterationTimer;
   let logs: string[];
 
-  // Simulates the master-worker iteration loop with timer calls
+  // Simulates an iterative workflow loop with timer calls.
   function simulateIteration(iteration: number, durationMs: number) {
     const iterationId = `iter-${iteration}`;
     timer.startIteration(iterationId);

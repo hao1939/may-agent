@@ -4,9 +4,9 @@
 **Last audit**: 2026-04-21T12:00 (Tech Lead — full reconciliation against disk: 7 ghost entries removed, 8 missing workflows added, line counts corrected)
 
 **Current convention, 2026-05-11**: `project` is the default explicit-project
-driver. `master-worker*` files remain as legacy/tested workflow code and
-archived historical metadata, but non-archived shared projects should not select
-them. If a project can resume, use `workflow: project`.
+driver. The `master-worker*` workflow family has been retired from disk; archived
+historical records may mention it, but resumable projects use
+`workflow: project`.
 
 ## Shared Workflows (active or wired)
 
@@ -32,12 +32,9 @@ them. If a project can resume, use `workflow: project`.
 - `goal-driver.ts` — experimental project judgment loop removed after the only
   active project returned to the default `project` driver. It produced ambiguous
   project status behavior and had no remaining live references.
-
-### Legacy Shared Workflows Kept For Compatibility
-
-- `master-worker.ts` and `master-worker*` variants remain on disk with tests, but
-  are not the default project path. Non-archived shared projects should use
-  `workflow: project`.
+- `master-worker.ts` and `master-worker*` variants — retired after all
+  non-archived shared projects, active project-creation skills, and validation
+  moved to the default `project` workflow.
 
 ## Archived Shared Workflows
 

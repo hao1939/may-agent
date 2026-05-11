@@ -50,7 +50,7 @@ describe("Performance: extractField", () => {
 **Status**: active
 **Owner**: orchestrator
 **Worker**: code-writer
-**Workflow**: master-worker
+**Workflow**: project
 **Max Iterations**: 10
 **Goal**: Build a system that does X, Y, Z with high performance and reliability.
 

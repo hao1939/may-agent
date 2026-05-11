@@ -1,9 +1,10 @@
 /**
- * Dispatch Validator — Pre-flight checks before scheduling master-worker workflows.
+ * Dispatch Validator — Pre-flight checks before scheduling project workflows.
  * 
- * Addresses the workflow-reliability finding: 97% of master-worker runs error
- * before starting because they target non-existent projects. This module provides
- * validation functions to check before dispatching.
+ * Addresses the workflow-reliability finding that many workflow runs errored
+ * before starting because they targeted non-existent or non-dispatchable
+ * projects. This module provides validation functions to check before
+ * dispatching.
  */
 
 import { existsSync, readFileSync } from "fs";

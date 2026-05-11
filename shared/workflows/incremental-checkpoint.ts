@@ -1,7 +1,7 @@
 /**
  * incremental-checkpoint — Saves and restores mid-iteration state so that
- * crashes don't lose partial work. Used by master-worker to persist progress
- * after each significant step within a worker iteration.
+ * crashes don't lose partial work. Used by iterative workflows to persist
+ * progress after significant steps.
  */
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, unlinkSync } from "node:fs";

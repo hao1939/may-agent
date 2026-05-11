@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { estimateComplexity } from "../workflows/complexity-estimator.ts";
 
-describe("master-worker complexity integration", () => {
+describe("complexity-estimator integration", () => {
   describe("complexity scoring affects iteration behavior", () => {
     it("simple documentation tasks get score 1-2 and short timeout", () => {
       const task = "Write outputs/summary.md with a brief description of what was done.";
@@ -11,14 +11,14 @@ describe("master-worker complexity integration", () => {
     });
 
     it("multi-file implementation tasks get score 4-5 and long timeout", () => {
-      const task = "Implement agents/shared/workflows/new-module.ts with 5 functions. Read master-worker.ts, provider-retry.ts, and output-validator.ts. Write tests at agents/shared/tests/new-module.test.ts covering 20+ cases.";
+      const task = "Implement agents/shared/workflows/new-module.ts with 5 functions. Read project.ts, provider-retry.ts, and output-validator.ts. Write tests at agents/shared/tests/new-module.test.ts covering 20+ cases.";
       const result = estimateComplexity(task);
       expect(result.score).toBeGreaterThanOrEqual(4);
       expect(result.timeoutMs).toBeGreaterThanOrEqual(240000);
     });
 
     it("edit tasks get moderate score", () => {
-      const task = "Edit agents/shared/workflows/master-worker.ts to add a new import and one function call.";
+      const task = "Edit agents/shared/workflows/project.ts to add a new import and one function call.";
       const result = estimateComplexity(task);
       expect(result.score).toBeGreaterThanOrEqual(2);
       expect(result.score).toBeLessThanOrEqual(4);
@@ -56,7 +56,7 @@ describe("master-worker complexity integration", () => {
       expect(typeof result.description).toBe("string");
     });
 
-    it("log message format matches master-worker integration", () => {
+    it("log message format matches workflow integration", () => {
       const task = "Create a new module with tests.";
       const complexity = estimateComplexity(task);
       const logMsg = `[work] 📊 Complexity: ${complexity.score}/5 (${complexity.description}), timeout: ${complexity.timeoutMs}ms`;

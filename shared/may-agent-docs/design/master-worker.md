@@ -1,8 +1,8 @@
 # Design: Master-Worker Workflow (Persistent Sessions)
 
-**Status:** legacy compatibility. The file still exists with tests, but
-`project` is the default explicit-project workflow. Do not select
-`workflow: master-worker` for non-archived shared projects.
+**Status:** retired historical design. The runtime workflow files and dedicated
+tests were removed; `project` is the default explicit-project workflow. Do not
+select `workflow: master-worker` for non-archived shared projects.
 
 ## Overview
 

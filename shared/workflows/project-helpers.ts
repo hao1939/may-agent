@@ -70,7 +70,7 @@ export function extractField(content: string, field: string): string {
 
   // Some legacy project files used heading labels, e.g. "## Status: Complete".
   // Treat these as fields too so closed/completed projects are skipped instead
-  // of being re-dispatched into zombie master-worker loops.
+  // of being re-dispatched into stale project loops.
   const headingMatch = content.match(new RegExp(`^#{1,6}\\s+${escapedField}\\s*:\\s*(.+)`, "mi"));
   return headingMatch ? headingMatch[1].trim() : "";
 }

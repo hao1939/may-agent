@@ -30,16 +30,14 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Continue Phase 8 with one workflow family at a time. The first slice aligned
-explicit shared projects on `workflow: project`; do not delete legacy workflow
-files until references and tests are separately retired.
+Continue Phase 8 with the remaining workflow-library cleanup. The project-driver
+surface now has one live default: `project`.
 
 Next slice:
 
-1. Audit `master-worker*` tests/docs and decide whether the legacy family should
-   be archived, kept as a named exception, or reduced to one compatibility file.
-2. Validate any retirement with grep references, unit tests, and one real
-   project/session trace.
+1. Audit remaining stale docs/test names for references to retired project-driver
+   workflows.
+2. Validate cleanup with grep references, unit tests, and one real project trace.
 
 Recently completed:
 
@@ -750,6 +748,17 @@ Sixth slice, 2026-05-11:
   `projects.md`, `project-template.ts`, and project format validation.
 - The template now describes metrics/signals as judgment inputs, not automatic
   judges.
+
+Seventh slice, 2026-05-11:
+
+- Removed the retired `master-worker*` workflow family from disk and deleted the
+  dedicated tests that only preserved that old project driver.
+- Kept generic helper modules still used by the current `project` workflow and
+  workflow-runner path, such as `project-cache`, `dispatch-validator`,
+  `iteration-budget`, `iteration-timer`, and `complexity-estimator`.
+- Renamed the surviving helper integration tests away from `master-worker`
+  terminology.
+- `REGISTRY.md` now records `master-worker*` as retired, not compatibility code.
 
 ## Cross-Cutting Validation
 

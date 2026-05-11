@@ -36,7 +36,7 @@ describe('complexity-estimator', () => {
 
   describe('score 3 — moderate tasks', () => {
     it('rates multi-file reads as moderate', () => {
-      expect(estimateComplexity('Read master-worker.ts and circuit-breaker.ts and provider-retry.ts then write a summary').score).toBe(3);
+      expect(estimateComplexity('Read project.ts and circuit-breaker.ts and provider-retry.ts then write a summary').score).toBe(3);
     });
   });
 
@@ -54,25 +54,25 @@ describe('complexity-estimator', () => {
     });
 
     it('rates integration with tests as complex', () => {
-      expect(estimateComplexity('Integrate module into master-worker.ts with tests').score).toBe(4);
+      expect(estimateComplexity('Integrate module into project.ts with tests').score).toBe(4);
     });
   });
 
   describe('score 5 — very complex tasks', () => {
     it('rates integration with multiple files as very complex', () => {
-      expect(estimateComplexity('Integrate retry.ts into master-worker.ts and write integration tests').score).toBe(5);
+      expect(estimateComplexity('Integrate retry.ts into project.ts and write integration tests').score).toBe(5);
     });
 
     it('rates multi-file implement+wire as very complex', () => {
-      expect(estimateComplexity('Implement a module at validator.ts, wire into master-worker.ts, update config.ts and types.ts').score).toBe(5);
+      expect(estimateComplexity('Implement a module at validator.ts, wire into project.ts, update config.ts and types.ts').score).toBe(5);
     });
 
     it('rates cross-system integration as very complex', () => {
-      expect(estimateComplexity('Implement cross-system integration connecting validator.ts, retry.ts, checkpoint.ts, master-worker.ts, and config.ts with 20+ test cases').score).toBe(5);
+      expect(estimateComplexity('Implement cross-system integration connecting validator.ts, retry.ts, checkpoint.ts, project.ts, and config.ts with 20+ test cases').score).toBe(5);
     });
 
     it('rates end-to-end with many files as very complex', () => {
-      expect(estimateComplexity('Build end-to-end resilience integrating provider-retry.ts, output-validator.ts, checkpoint.ts, master-worker.ts, and tests.ts').score).toBe(5);
+      expect(estimateComplexity('Build end-to-end resilience integrating provider-retry.ts, output-validator.ts, checkpoint.ts, project.ts, and tests.ts').score).toBe(5);
     });
   });
 
@@ -90,7 +90,7 @@ describe('complexity-estimator', () => {
     });
 
     it('assigns 900s for score 5', () => {
-      expect(estimateComplexity('Build end-to-end cross-system integration connecting validator.ts, retry.ts, checkpoint.ts, master-worker.ts, and config.ts with 20+ test cases').timeoutMs).toBe(900_000);
+      expect(estimateComplexity('Build end-to-end cross-system integration connecting validator.ts, retry.ts, checkpoint.ts, project.ts, and config.ts with 20+ test cases').timeoutMs).toBe(900_000);
     });
   });
 
@@ -104,7 +104,7 @@ describe('complexity-estimator', () => {
     });
 
     it('provides Complex for score 4', () => {
-      expect(estimateComplexity('Integrate module into master-worker.ts with tests').description).toContain('Complex');
+      expect(estimateComplexity('Integrate module into project.ts with tests').description).toContain('Complex');
     });
 
     it('provides Very complex for score 5', () => {
@@ -123,7 +123,7 @@ describe('complexity-estimator', () => {
     });
 
     it('never returns above 5', () => {
-      expect(estimateComplexity('Implement cross-system end-to-end integration connecting multiple files validator.ts retry.ts checkpoint.ts master-worker.ts config.ts types.ts utils.ts with 30+ test cases across several modules').score).toBe(5);
+      expect(estimateComplexity('Implement cross-system end-to-end integration connecting multiple files validator.ts retry.ts checkpoint.ts project.ts config.ts types.ts utils.ts with 30+ test cases across several modules').score).toBe(5);
     });
 
     it('returns valid ComplexityEstimate shape', () => {

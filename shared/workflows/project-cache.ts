@@ -1,8 +1,8 @@
 /**
  * ProjectCache — In-memory caching layer for project.ts filesystem operations.
  * 
- * Reduces redundant readFileSync calls during a single master-worker iteration
- * by caching parsed project.md and journal.md content. Invalidates on write.
+ * Reduces redundant readFileSync calls during a project workflow iteration by
+ * caching parsed project.md and journal.md content. Invalidates on write.
  * 
  * Usage:
  *   const cache = new ProjectCache();
