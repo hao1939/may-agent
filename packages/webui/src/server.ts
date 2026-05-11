@@ -1729,7 +1729,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         SELECT sessionId, status, startedAt, kind, substr(task, 1, 200) as task
         FROM sessions
         WHERE agent = ?
-          AND (kind = 'chat' OR source IN ('telegram', 'web-ui', 'web', 'cli', 'human'))
+          AND (kind = 'chat' OR source IN ('telegram', 'web-ui', 'web', 'cli'))
         ORDER BY startedAt DESC
         LIMIT 1
       `).get(agentName) as { sessionId: string; status: string; startedAt: number; kind: string | null; task: string } | undefined;
