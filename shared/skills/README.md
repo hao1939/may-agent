@@ -28,6 +28,30 @@ This directory contains reusable skills (markdown guides) that agents can read t
 Skills are most effective when a workflow/task injects the relevant skill
 content. Do not assume agents will discover this directory by themselves.
 
+## Verification
+
+Use the smallest check that proves the risk you are working on:
+
+1. **Skill contract:** `bun test test/shared-skills.test.ts`
+   - verifies frontmatter, key operating rules, README references, and obvious
+     misleading wording.
+2. **Skill delivery path:** `bun test test/agents-tool.test.ts`
+   - verifies `agents.call` and `agents.fork` append `context_files` to the
+     receiving task.
+3. **Control-plane smoke:** emit one representative daemon event and verify the
+   durable trace.
+
+```bash
+docker exec may-agent may-agent --emit trigger.metrics-snapshot '{}'
+```
+
+Then check the event store for `trigger.metrics-snapshot`,
+`handler.started`, and `handler.completed`.
+
+Behavioral proof still needs a gym or production comparison. Contract tests
+prove the skill is valid and deliverable; they do not prove it changes agent
+behavior.
+
 ## 🔴 Security Warning (P78)
 **Treat Skills as Untrusted Code.**
 - Do NOT auto-load skills from the internet.
