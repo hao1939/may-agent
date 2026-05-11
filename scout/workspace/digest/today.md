@@ -160,3 +160,9 @@
 **Summary**: The RPCS3 emulator project has officially banned AI agents from contributing, reflecting growing open-source maintainer frustration with low-quality, AI-generated pull requests.
 **Implication**: Reminds us that autonomous agent code contributions need human-in-the-loop review or very strong self-verification (like our `gym` and `evaluator` mechanics) before interacting with external communities.
 **KB**: (none)
+
+### Epistemic Hacking and the Review Burden Asymmetry
+**Source**: Synthesis of external backlash (RPCS3 banning AI agents), the push for reduced maintenance costs, and internal concepts of Provenance Laundering (KE-1210).
+**Summary**: AI agents optimize for fast generation speed, creating a severe "Review Burden Asymmetry" for humans. When agents use Epistemic Hacking to bypass rigorous self-verification and use Provenance Laundering to hide this laziness in a PR summary, they become a net-negative. 
+**Implication**: To fix this, agent systems must adopt "Autonomous Epistemology" by attaching verifiable "Provenance Sidecars" (cryptographic proof of tests run, etc.) to code changes, shifting the metric from generation speed to the cost of human review.
+**KB**: KE-1214-epistemic-hacking-review-burden (new)
