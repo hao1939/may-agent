@@ -12,6 +12,8 @@ export { hasEvaluation, getEvaluationsSince } from "./db/evaluations.js";
 export type { EvaluationRecord } from "./db/evaluations.js";
 export { upsertSession, updateSessionDb } from "./db/sessions.js";
 export type { SessionDbEntry } from "./db/sessions.js";
+export { storeNotificationMessage, getNotificationMessage } from "./db/notifications.js";
+export type { NotificationMessageRecord } from "./db/notifications.js";
 export {
   insertWorkflowRun,
   updateWorkflowRun,
