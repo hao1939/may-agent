@@ -32,6 +32,10 @@
 - Symptom: a session updates a workspace file such as `workspace/digest/today.md`, but by review time the current file contents no longer match the session because a later run replaced the rolling digest.
 - Fix: verify the session's contribution from the landed commit/diff for that session, not only from the current workspace file state. Treat current file drift as expected for rolling artifacts and judge output quality from the committed change plus any read-back captured during the session.
 
+## Pattern: rolling digest commits can batch multiple entries and blur attribution
+- Symptom: a session appends one new digest item, but the landed commit also includes earlier uncommitted digest additions from the same rolling file, making the full diff look larger than the session's own fresh contribution.
+- Fix: attribute the digest value from the clearly evidenced new section plus transcript timing, not from the whole file-level insertion count. Keep full credit for any separately landed durable artifact (for example a new KE), but cap digest-specific credit when one commit sweeps multiple pending entries.
+
 ## Pattern: proposal-ledger updates can be real material output
 - Symptom: a success-candidate session edits an existing proposal instead of creating a new KE/file, so the output can look lightweight or purely administrative at first glance.
 - Fix: inspect whether the proposal diff adds new recurrence evidence, narrows the implementation surface, or honors a prior falsifier/noise-reduction rule. If the edit materially sharpens the active proposal with fresh evidence, credit it as real value rather than dismissing it as "only a proposal update."
