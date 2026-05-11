@@ -411,4 +411,53 @@ describe("telegram reply e2e", () => {
 
     bot.close();
   });
+
+  it("normalizes Telegram slash commands into daemon events", async () => {
+    let getUpdatesCount = 0;
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
+      const method = String(url).split("/").pop();
+
+      if (method === "getMe") return jsonResponse({ username: "may_test_bot", first_name: "May Test" });
+      if (method === "getUpdates") {
+        getUpdatesCount++;
+        if (getUpdatesCount === 1) {
+          return jsonResponse([
+            { update_id: 31, message: { message_id: 1001, chat: { id: 12345 }, text: "/cancel" } },
+            { update_id: 32, message: { message_id: 1002, chat: { id: 12345 }, text: "/reload" } },
+            { update_id: 33, message: { message_id: 1003, chat: { id: 12345 }, text: "/close" } },
+          ]);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        return jsonResponse([]);
+      }
+      if (method === "sendMessage") return jsonResponse({ message_id: 1100 });
+      throw new Error(`unexpected Telegram method: ${method}`);
+    });
+
+    const bus = new EventBus();
+    const events: any[] = [];
+    bus.subscribe((event: any) => events.push(event));
+
+    const bot = attachTelegramBot({
+      persistDir,
+      bus,
+      manager: {} as any,
+      getSessionId: () => "s_active_telegram",
+      interfaceAgent: "may",
+    });
+
+    await waitFor(() => {
+      expect(events).toContainEqual({
+        type: "session.cancel.requested",
+        sessionId: "s_active_telegram",
+        source: "telegram",
+      });
+      expect(events).toContainEqual({ type: "reload", source: "telegram" });
+      expect(events).toContainEqual({ type: "shutdown", source: "telegram" });
+      expect(events.some((event) => event.type === "input")).toBe(false);
+    });
+
+    bot.close();
+  });
 });

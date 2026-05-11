@@ -366,6 +366,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           // Track reply for metric
           bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, hasSessionCtx: !!ctx.session_id, originalMsgId: replyToMsgId } as any);
           if (ctx.session_id) {
+            if (await handleTelegramCommand(text, chatIdStr, String(ctx.session_id))) {
+              return;
+            }
             bus.emit({
               type: "steer",
               sessionId: String(ctx.session_id),
@@ -399,32 +402,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       } catch {}
     }
 
-    // Map /commands to unified input commands, pass everything else as regular input
+    if (await handleTelegramCommand(text, chatIdStr)) {
+      return;
+    }
+
+    // Map remaining /commands to unified input commands, pass everything else as regular input
     let inputMessage = text;
     if (text.startsWith("/")) {
       const cmdMap: Record<string, string> = {
-        "/cancel": "cancel",
         "/status": "status",
-        "/reload": "reload",
-        "/close": "close",
         "/agents": "status", // status shows agents
       };
       const [cmd, ...rest] = text.split(/\s+/);
-      if (cmd === "/start" || cmd === "/help") {
-        await sendMessage(
-          chatIdStr,
-          "🤖 *May Agent Bot*\n\n" +
-            "Send any message to interact with May.\n\n" +
-            "*Commands:*\n" +
-            "/status — Show active sessions\n" +
-            "/cancel — Cancel current task\n" +
-            "/reload — Reload agent configs\n" +
-            "/help — Show this message\n\n" +
-            "Prefix with @agent to run directly: @coder fix the bug",
-          "Markdown",
-        );
-        return;
-      }
       const mapped = cmdMap[cmd!];
       if (mapped) {
         inputMessage = rest.length > 0 ? `${mapped} ${rest.join(" ")}` : mapped;
@@ -437,6 +426,56 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     // All input goes through the unified handler (enriched if reply)
     const finalMessage = replyToMsgId ? enrichedText : inputMessage;
     bus.emit({ type: "input", message: finalMessage, source: "telegram" } as any);
+  }
+
+  async function handleTelegramCommand(text: string, chatIdStr: string, targetSessionId?: string): Promise<boolean> {
+    if (!text.startsWith("/")) return false;
+
+    const [cmd = "", ...rest] = text.split(/\s+/);
+    const command = cmd.split("@")[0];
+
+    if (command === "/start" || command === "/help") {
+      await sendMessage(
+        chatIdStr,
+        "🤖 *May Agent Bot*\n\n" +
+          "Send any message to interact with May.\n\n" +
+          "*Commands:*\n" +
+          "/status — Show active sessions\n" +
+          "/cancel — Cancel current task\n" +
+          "/reload — Reload agent configs\n" +
+          "/help — Show this message\n\n" +
+          "Prefix with @agent to run directly: @coder fix the bug",
+        "Markdown",
+      );
+      return true;
+    }
+
+    if (command === "/cancel") {
+      if (rest[0]?.toLowerCase() === "all") {
+        bus.emit({ type: "cancel_all", source: "telegram" } as any);
+        return true;
+      }
+
+      const sessionId = targetSessionId || rootChatSessionId || getSessionId();
+      if (sessionId) {
+        bus.emit({ type: "session.cancel.requested", sessionId, source: "telegram" } as any);
+      } else {
+        bus.emit({ type: "cancel_all", source: "telegram" } as any);
+      }
+      return true;
+    }
+
+    if (command === "/reload") {
+      bus.emit({ type: "reload", source: "telegram" } as any);
+      return true;
+    }
+
+    if (command === "/close") {
+      bus.emit({ type: "shutdown", source: "telegram" } as any);
+      return true;
+    }
+
+    return false;
   }
 
   // ── Outbound: session-scoped assistant responses ─────────────────
