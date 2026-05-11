@@ -31,12 +31,14 @@ to this tracker under the smallest matching phase.
 ## Current Next Move
 
 Phase 8 has removed the duplicate project-driver surface. The project-driver
-surface now has one live default: `project`.
+surface now has one live default: `project`. Phase 2 now has automated proof
+that Telegram project replies, session replies, and common slash commands emit
+daemon events instead of adapter-local actions.
 
 Next slice:
 
-1. Continue Phase 2 by checking the remaining Telegram reply paths against the
-   normalized event path.
+1. Complete Phase 2 runtime proof with a human Telegram smoke or daemon event
+   trace from the running instance.
 2. Validate with event traces that Telegram, Web UI, and CLI produce comparable
    daemon events for comparable actions.
 
@@ -160,7 +162,8 @@ Stop criteria:
 
 ## Phase 2: Adapter Event Normalization
 
-Status: first slice shipped for project comments and session cancel.
+Status: automated normalization slices shipped for project comments, session
+cancel, session replies, and Telegram slash commands.
 
 Goal: CLI, Web UI, Telegram, and timers all submit the same kind of daemon
 events instead of embedding behavior locally.
@@ -183,8 +186,11 @@ Scope:
 - [x] Refactor Telegram session replies with stored `session_id` so they emit
   `steer` for that session instead of falling through to generic chat input.
 - [x] Refactor Web UI session cancel to emit `session.cancel.requested`.
-- Refactor remaining Telegram reply handling so reply enrichment produces a daemon event,
-  then shared command/project handlers perform the action.
+- [x] Refactor Telegram `/cancel`, `/reload`, and `/close` so they emit daemon
+  command events instead of generic text input. `/status` still uses the shared
+  input command because there is no typed daemon status event yet.
+- [x] Refactor remaining Telegram reply handling so reply enrichment produces a
+  daemon event, then shared command/project handlers perform the action.
 - Keep Telegram in the daemon process for now. The goal is a thin adapter, not a
   new process boundary.
 - Keep the existing Telegram reply path available behind a feature flag or
@@ -201,6 +207,9 @@ Validation:
 - [x] Automated Telegram e2e test covers stored session-context replies:
   Telegram reply -> `telegram.reply` evidence + targeted `steer`, with no
   generic `input` fallback.
+- [x] Automated Telegram e2e test covers slash commands:
+  `/cancel` -> `session.cancel.requested`, `/reload` -> `reload`,
+  `/close` -> `shutdown`, with no generic `input` fallback.
 - [ ] Human Telegram e2e smoke confirms a real reply reaches the intended
   session or emits a clear routing failure event.
 - [ ] Telegram, Web UI, and CLI leave comparable event traces for comparable
