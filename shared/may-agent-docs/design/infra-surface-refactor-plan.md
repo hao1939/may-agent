@@ -31,13 +31,13 @@ to this tracker under the smallest matching phase.
 ## Current Next Move
 
 Phase 8 removed the duplicate project-driver surface. Phase 1/2 control and
-adapter boundaries have runtime proof. Phase 9a/9b have split the loader and
-composition root into named runtime modules.
+adapter boundaries have runtime proof. Phase 9a/9b/9c have split the loader,
+composition root, and DB facade into named runtime modules.
 
 Next slice:
 
-1. Review whether Phase 9c storage split still removes real complexity now that
-   loader and runtime boundaries are clear.
+1. Review whether Phase 9d Telegram reply router extraction still removes real
+   complexity now that adapter normalization already exists.
 2. Keep `may.ts` as a thin composition root; new runtime behavior should land in
    the narrow module that owns it.
 3. Continue using runtime event ids as proof for adapter/control boundary
@@ -1013,15 +1013,34 @@ Stop criteria:
 
 ### Phase 9c: Storage Module Split
 
-Status: planned after Phase 9a/9b.
+Status: shipped for the `requests.ts` split.
 
 Split `src/lib/requests.ts` into tight DB modules while preserving public
-imports:
+imports. `requests.ts` is now a compatibility facade; new DB code should import
+the focused module that owns the concern when practical.
 
-- `src/lib/db/connection.ts`
-- `src/lib/db/schema.ts`
-- `src/lib/db/events.ts`
-- `src/lib/db/sessions.ts`
+- [x] `src/lib/db/connection.ts`: open/cache/close DB connections.
+- [x] `src/lib/db/schema.ts`: schema and idempotent migrations.
+- [x] `src/lib/db/evaluations.ts`: evaluation query helpers.
+- [x] `src/lib/db/sessions.ts`: session mirror upsert/update helpers.
+- [x] `src/lib/db/workflows.ts`: workflow run persistence/query helpers.
+- [x] `src/lib/requests.ts`: 26-line compatibility facade preserving existing
+  public imports.
+
+Root commits:
+
+- `83a7ce12` extract database schema module.
+- `d606bb1a` extract database connection module.
+- `aa4212ea` split database helper modules.
+
+Validation:
+
+- `bun run check` passes.
+- `bun test src/lib/__tests__/event-native.test.ts test/query-db-tool.test.ts test/file-read-tracker.test.ts test/stale-workflow-runs.test.ts test/session-digest-switchover.test.ts test/workflow-resume.test.ts test/session-graph.test.ts`
+  passes.
+- The legacy `test/requests.bun-test.ts` is not a current validation target:
+  it imports removed request-table APIs and asserts the removed `requests`
+  table exists.
 
 Keep `query-service.ts` as the safe read facade. Do not create a `packages/db`
 package until DB modules have stable boundaries and no app-specific imports.
