@@ -64,9 +64,10 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
       };
 
       return new Promise((resolve) => {
-        const spawnOpts: any = { cwd: workDir, env, timeout: timeoutSec * 1000 };
+        const spawnOpts: any = { cwd: workDir, env, timeout: timeoutSec * 1000, stdio: ["pipe", "pipe", "pipe"] };
         if (process.getuid?.() === 0) spawnOpts.uid = 1000;
         const child = spawn("codex", args, spawnOpts);
+        child.stdin?.end();
         const chunks: string[] = [];
         let lastMessage = "";
         let threadId = "";
