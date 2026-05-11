@@ -23,6 +23,39 @@ function extractText(result: any): string {
   return String(result);
 }
 
+const ERROR_PATTERNS = [
+  "no rollout found",
+  "[error]",
+  "[exit 1]",
+  "ENOENT",
+  "spawn .* EACCES",
+  "session not found",
+  "Could not resume",
+];
+
+function isErrorOutput(text: string): boolean {
+  const lower = text.toLowerCase();
+  return ERROR_PATTERNS.some(p => lower.includes(p.toLowerCase())) ||
+    (text.startsWith("[exit ") && !text.startsWith("[exit 0]"));
+}
+
+/** Call a worker tool, retry with new_session if the stored session is stale. */
+async function callWithRetry(
+  tool: any,
+  params: any,
+  toolName: string,
+  log: string[],
+): Promise<string> {
+  const result = await tool.execute("", params);
+  const text = extractText(result);
+  if (!isErrorOutput(text)) return text;
+
+  // Stale session — retry fresh
+  log.push(`⚠️ ${toolName} errored (${text.slice(0, 100)}…), retrying with fresh session.\n`);
+  const retryResult = await tool.execute("", { ...params, new_session: true });
+  return extractText(retryResult);
+}
+
 export default function factory(opts: { projectRoot: string; agentRoot: string; persistDir: string }) {
   // Defer loading sibling tools until first execute to avoid import issues
   let codex: any;
@@ -72,8 +105,7 @@ export default function factory(opts: { projectRoot: string; agentRoot: string; 
 
       // Round 1: implementer gets the task
       log.push(`### ${implName} — Implementation\n`);
-      const implResult = await implementer.execute("", { prompt, timeout: timeoutSec });
-      let implOutput = extractText(implResult);
+      let implOutput = await callWithRetry(implementer, { prompt, timeout: timeoutSec }, implName, log);
       log.push(implOutput.slice(0, 2000) + "\n");
 
       for (let round = 1; round <= maxRounds; round++) {
@@ -91,8 +123,7 @@ export default function factory(opts: { projectRoot: string; agentRoot: string; 
           `- **BUILDING** — here's how to push this further (then describe)`;
 
         log.push(`### ${revName} — Collaboration (round ${round})\n`);
-        const reviewResult = await reviewer.execute("", { prompt: reviewPrompt, timeout: timeoutSec });
-        const reviewOutput = extractText(reviewResult);
+        const reviewOutput = await callWithRetry(reviewer, { prompt: reviewPrompt, timeout: timeoutSec }, revName, log);
         log.push(reviewOutput.slice(0, 2000) + "\n");
 
         // Check for convergence
@@ -114,8 +145,7 @@ export default function factory(opts: { projectRoot: string; agentRoot: string; 
           `Incorporate what improves the work. Answer their forward-looking suggestion — take that next step.`;
 
         log.push(`### ${implName} — Revision (round ${round})\n`);
-        const reviseResult = await implementer.execute("", { prompt: revisePrompt, timeout: timeoutSec });
-        implOutput = extractText(reviseResult);
+        implOutput = await callWithRetry(implementer, { prompt: revisePrompt, timeout: timeoutSec }, implName, log);
         log.push(implOutput.slice(0, 2000) + "\n");
       }
 
