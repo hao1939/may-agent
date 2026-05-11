@@ -1704,6 +1704,7 @@ function initChat(deepLinkSessionId) {
   if (!currentSessionId && Array.isArray(activeSessions) && activeSessions.length) {
     const candidates = activeSessions.filter(s => {
       if (s.status !== 'running' && s.status !== 'idle') return false;
+      if (currentAgentChat && s.agent !== currentAgentChat) return false;
       const task = String(s.task || '').toLowerCase();
       const kind = String(s.kind || '').toLowerCase();
       // Skip heartbeat and worker-pattern sessions — those are not for chat.
