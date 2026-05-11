@@ -226,6 +226,10 @@ Rechecked P2 raw metric alert 287 after the metric row still reported `current=5
 
 Heartbeat rechecked the repeated P2 raw metric alert after May's guard-alert/dirty-worktree nudge. The raw metric still reads `current=58` with an open alert, but the paired strict unresolved metric remains healthy at `current=0` and fresh classification again found no unresolved dirty exits (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows). Pending `handler.workflow_dispatched`, `metric.alert_judged`, `session.end`, `guard.triggered`, and nudge message events were treated as already acted: the latest metric-alert triage recorded a durable `metric.alert_judged` event and May's guard alerts are P3 document-exception/watch items caused by ambient dirty worktree files, not a new source pattern for this project. Chosen operation: `waiting_with_evidence`; no root-cause patch, calibration, or escalation is indicated unless the strict metric breaches or raw sampling exposes a fresh non-recovered dirty-exit pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence hold at raw 58 after latest triage
+
+Rechecked P2 raw metric alert 287 after the metric row and latest snapshots still reported `session.finish-blocked-uncommitted-count-24h=58` over threshold `50`. The paired strict unresolved metric remains healthy at `current=0` with the latest paired snapshots at strict `0`; fresh raw classification found every one of the `58` rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases). Chosen operation: `waiting_with_evidence`; keep this project paused/monitoring rather than patching, calibrating, downgrading, resolving, or escalating a still-breaching raw friction metric, and resume only if `session.finish-blocked-unresolved-count-24h` breaches or a future raw sample exposes a fresh non-recovered dirty-exit pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
