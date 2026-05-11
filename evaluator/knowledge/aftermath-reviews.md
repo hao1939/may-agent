@@ -218,6 +218,10 @@
 - Symptom: the agent edits a valid file, but its own `git commit` fails (for example on an index lock or concurrent git process) and the staged change later appears inside another agent's successful commit with an unrelated subject/author.
 - Fix: inspect the landed diff and current file content first. If the artifact really shipped, keep substance credit, but downgrade hygiene because the session did not secure an isolated commit or clean closeout. Treat this as stronger than minor inefficiency when the session then relies on that unrelated commit in `finish()`.
 
+## Pattern: raw `ls | wc -l` can fake repo-structure regressions
+- Symptom: a session re-verifies a directory tree with `ls <dir> | wc -l`, sees a higher count than prior documentation, and starts editing docs as if the repo structure changed, but the extra lines are non-directory files such as `BUILD.bazel` or `owners.go`.
+- Fix: when the claim is specifically about subdirectories/SIGs/packages, use a directory-only command (`find <dir> -maxdepth 1 -type d` or equivalent) before crediting a structural change. If the agent later corrects the mistake, keep the outcome credit but note the avoidable churn.
+
 ## Pattern: success-candidate sessions can create real value yet still fail delivery
 - Symptom: a routed `success_candidate` session performs sound live investigation, lands or influences a real implementation/test path, and produces passing targeted verification, but the reviewed session itself never completes `finish()`, leaves part of the worktree dirty, or has its in-flight changes later swept up by another session/commit.
 - Fix: separate technical value from delivery integrity. Credit the session for the real diagnosis/implementation evidence, but downgrade the overall outcome from clean success unless the reviewed session itself shipped and closed the work. Check for missing `finish()` tool calls, remaining dirty files, and whether later commits only partially captured the session's edits.
