@@ -37,10 +37,9 @@ daemon events instead of adapter-local actions.
 
 Next slice:
 
-1. Complete Phase 2 runtime proof with a human Telegram smoke or daemon event
-   trace from the running instance.
-2. Validate with event traces that Telegram, Web UI, and CLI produce comparable
-   daemon events for comparable actions.
+1. Complete the real-human Telegram smoke when a live reply is available.
+2. Continue using runtime event ids as proof for adapter/control boundary
+   changes; do not accept adapter-local behavior without durable event evidence.
 
 Recently completed:
 
@@ -60,7 +59,7 @@ agents about how to drive projects.
 
 | Gap | Risk | Phase |
 |---|---|---|
-| Telegram still has some adapter-specific behavior | Replies can diverge from Web UI/CLI event behavior | Phase 2 |
+| Real-human Telegram smoke still needs an observed live reply | Automated proof can miss Bot API/runtime environment issues | Phase 2 |
 
 ## Phase 0: Design State Refresh
 
@@ -191,6 +190,9 @@ Scope:
   input command because there is no typed daemon status event yet.
 - [x] Refactor remaining Telegram reply handling so reply enrichment produces a
   daemon event, then shared command/project handlers perform the action.
+- [x] Persist selected adapter command/control events (`input`, `steer`,
+  `cancel*`, `resume`, `reload`, `restart`, `shutdown`) so comparable adapter
+  actions leave durable event traces, not only in-memory bus activity.
 - Keep Telegram in the daemon process for now. The goal is a thin adapter, not a
   new process boundary.
 - Keep the existing Telegram reply path available behind a feature flag or
@@ -212,13 +214,28 @@ Validation:
   `/close` -> `shutdown`, with no generic `input` fallback.
 - [ ] Human Telegram e2e smoke confirms a real reply reaches the intended
   session or emits a clear routing failure event.
-- [ ] Telegram, Web UI, and CLI leave comparable event traces for comparable
+- [x] Telegram, Web UI, and CLI leave comparable event traces for comparable
   actions.
 
 Stop criteria:
 
 - No adapter directly decides how to run a project, resume a session, or mutate
   internal tables when a daemon event can express the action.
+
+Runtime proof, 2026-05-11:
+
+- Reloaded the running `may-agent` container with durable command-event tracing.
+- Operator/CLI emit through the convention daemon socket persisted:
+  - `reload` event `559251`, source `codex-phase2-runtime-proof`,
+  - `steer` event `559252`, source `codex-phase2-runtime-proof`, session
+    `phase2-smoke-no-such`,
+  - `cancel_all` event `559254`, source `codex-phase2-runtime-proof`.
+- The invalid `steer` produced the shared recovery evidence:
+  `session.resume_failed` event `559253`, owner `may`, category
+  `session_not_found`, `recoverable: false`, `nextAction: escalate`.
+- Automated Telegram e2e proves the Telegram adapter emits the same event
+  shapes for stored session replies and slash commands before those events hit
+  the daemon router.
 
 ## Phase 3: Handler-To-Workflow Boundary
 
