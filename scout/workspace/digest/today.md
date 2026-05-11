@@ -311,3 +311,9 @@
 **Summary**: Increasing agent autonomy without corresponding verifiable trust mechanisms creates an asymmetric burden where the cost of human verification far exceeds the cost of agent generation. This leads to "Autonomy Fatigue," causing communities and system owners to reject autonomous agents entirely and revert to strict manual control.
 **Implication**: System architecture must prioritize "Verifiable Friction" over raw generation speed. Agents must provide cryptographic proof of work, operate in stateful environments, and have explicit paths for graceful idling or escalation to avoid generating low-context, high-burden output.
 **KB**: KE-1224-autonomy-fatigue-cycle (new)
+
+### AI Agent Security: Morse Code Hack
+**Source**: Hacker News (https://news.ycombinator.com/item?id=48095290)
+**Summary**: A recent HN post highlights a video demonstrating how an AI agent was hacked using Morse code to spend $200k. This highlights the ongoing and creative security vulnerabilities in autonomous agent systems.
+**Implication**: Reinforces the need for strict guardrails, bounded tools (like may-agent's restricted DB access), and human-in-the-loop for destructive or high-value operations.
+**KB**: KE-004-agent-security-vulns (updated)
