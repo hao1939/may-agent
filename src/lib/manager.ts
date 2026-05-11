@@ -337,13 +337,16 @@ export class SubagentManager {
 
     // Create Agent
     const guards = this.buildGuards(def);
+    const beforeToolCall = guards.length
+      ? this.createGuardSignalHook(composeGuards(...guards), sessionId, def.name, opts)
+      : undefined;
     const agent = new Agent({
       initialState: {
         systemPrompt: this.resolveSystemPrompt(def),
         model: def.model,
         tools: def.tools,
       },
-      beforeToolCall: guards.length ? composeGuards(...guards) : undefined,
+      beforeToolCall,
       getApiKey: def.apiKey === "dynamic"
         ? () => this.getCopilotToken()
         : def.apiKey ? () => def.apiKey! : undefined,
@@ -1219,6 +1222,34 @@ export class SubagentManager {
       createSessionReadGuard(),
       createScrapeDedupGuard(),
     ];
+  }
+
+  private createGuardSignalHook(
+    hook: BeforeToolCallHook,
+    sessionId: string,
+    agentName: string,
+    opts?: RunOptions,
+  ): BeforeToolCallHook {
+    return async (context, signal) => {
+      const result = await hook(context, signal);
+      if (result) {
+        this.bus?.emit({
+          type: "guard.triggered",
+          owner: agentName,
+          source: "tool",
+          workflowRunId: opts?.workflowRunId,
+          projectId: opts?.projectId,
+          parentSessionId: opts?.parentSessionId,
+          sessionId,
+          guard: "beforeToolCall",
+          demandType: result.block ? "block" : "warn",
+          action: result.block ? "blocked" : "warned",
+          reason: result.reason,
+          sourceEventType: `tool.${context.toolCall.name}`,
+        });
+      }
+      return result;
+    };
   }
 
   private getCopilotToken(): string {
