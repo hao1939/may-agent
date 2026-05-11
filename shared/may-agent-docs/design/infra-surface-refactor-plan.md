@@ -1047,7 +1047,7 @@ package until DB modules have stable boundaries and no app-specific imports.
 
 ### Phase 9d: Telegram Reply Router Extraction
 
-Status: planned after the composition root is thinner.
+Status: first pure-helper slice shipped.
 
 Keep Telegram in the daemon process, but extract reply classification into a
 pure router module:
@@ -1056,10 +1056,20 @@ pure router module:
 - output: event frame (`steer`, `project.comment.created`, `input`,
   command event, or routing failure evidence).
 
+Current state:
+
+- [x] `src/app/ui/telegram-reply-router.ts` owns pure project-path
+  normalization/extraction and enriched reply text builders.
+- [x] `src/app/ui/telegram.ts` still owns side effects: DB lookup, transcript
+  reads, event emission, and acknowledgements.
+- Root commit: `bb98d54b` extract Telegram reply router helpers.
+
 Validation:
 
 - Existing Telegram reply e2e tests stay green.
 - `scripts/telegram-reply-smoke.ts --hours 24` remains the live proof path.
+- `bun test test/telegram-reply-router.test.ts test/telegram-reply-e2e.test.ts`
+  passes.
 
 ## Cross-Cutting Validation
 
