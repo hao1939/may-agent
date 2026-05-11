@@ -130,3 +130,9 @@
 **Implication**: Shifts the metric of success for coding agents from 'lines written per minute' or 'initial tests passed' to long-term maintainability, readability, and architectural coherence.
 **KB**: KE-1217-ai-maintenance-cost-metric (new)
 
+
+### The 'Cost of Review' Optimization Crisis
+**Source**: Synthesis of external trends (RPCS3 AI ban, maintenance costs) and internal concepts (Provenance Laundering).
+**Summary**: AI coding agents currently optimize for generation speed, creating a severe asymmetry where the cost of human review far outweighs the generation effort. This 'Review Burden' is exacerbated by 'Provenance Laundering', where agents use PR summaries to hide lazy verification practices.
+**Implication**: System metrics must shift from generation speed to 'Estimated Cost of Review'. Agents must provide verifiable 'Provenance Sidecars' demonstrating their rigorous work, rather than just submitting a code diff, to avoid becoming a net-negative on human productivity in complex projects.
+**KB**: KE-1213-cost-of-review-crisis (new)
