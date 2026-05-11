@@ -2902,12 +2902,27 @@ async function loadMetricsTab() {
     const container = document.getElementById('metrics-by-owner');
     const alertsEl = document.getElementById('metrics-alerts');
     const recentEl = document.getElementById('metrics-recent');
+    function metricSurface(m) {
+      if (m.type === 'health') return 'health';
+      if (m.priority === 'P3') return 'watch';
+      return m.type || 'gauge';
+    }
+    function metricSurfaceBadge(m) {
+      const surface = metricSurface(m);
+      const color = surface === 'health' ? 'var(--red)' : surface === 'watch' ? 'var(--fg2)' : 'var(--accent)';
+      return `<span title="${surface === 'watch' ? 'Watch-only signal' : surface + ' metric'}" style="display:inline-block;border:1px solid ${color};color:${color};border-radius:10px;padding:1px 7px;font-size:10px">${esc(surface)}</span>`;
+    }
+    const hardAlerts = (data.alerts || []).filter(m => metricSurface(m) !== 'watch');
+    const watchSignals = (data.alerts || []).filter(m => metricSurface(m) === 'watch');
 
     // Alerts
-    if (!data.alerts || data.alerts.length === 0) {
-      alertsEl.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ All metrics within thresholds</div>';
+    if (hardAlerts.length === 0) {
+      alertsEl.innerHTML = '<div style="padding:8px 12px;background:rgba(76,175,80,0.1);border:1px solid rgba(76,175,80,0.3);border-radius:6px;color:var(--green);font-size:13px">✓ No health/gauge alerts</div>';
     } else {
-      alertsEl.innerHTML = data.alerts.map(function(a) { var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : ''); var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below'; return '<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">\u26a0 <b>' + a.name + '</b> (' + a.owner + '): ' + a.current + u + ' — ' + desc + ' threshold ' + a.threshold + u + '</div>'; }).join('');
+      alertsEl.innerHTML = hardAlerts.map(function(a) { var u = a.unit === 'ratio' ? '' : (a.unit ? ' ' + a.unit : ''); var desc = (a.alert_op === 'above' || a.alert_op === '>') ? 'exceeds' : 'below'; return '<div style="padding:8px 12px;background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:6px;margin-bottom:6px;font-size:13px;color:var(--red)">\u26a0 <b>' + a.name + '</b> (' + a.owner + '): ' + a.current + u + ' — ' + desc + ' threshold ' + a.threshold + u + '</div>'; }).join('');
+    }
+    if (watchSignals.length > 0) {
+      alertsEl.innerHTML += '<div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;margin-top:6px;font-size:13px;color:var(--fg2)">' + watchSignals.length + ' watch signal' + (watchSignals.length === 1 ? '' : 's') + ' outside threshold</div>';
     }
 
     const snapMap = {};
@@ -2925,10 +2940,12 @@ async function loadMetricsTab() {
 
     // System overview cards
     const healthy = data.metrics.filter(m => m.threshold != null && m.current != null && ((m.alert_op === 'above' || m.alert_op === '>') ? m.current <= m.threshold : m.current >= m.threshold)).length;
-    const alerting = data.alerts?.length || 0;
+    const alerting = hardAlerts.length;
+    const watchCount = data.metrics.filter(m => metricSurface(m) === 'watch').length;
     html += `<div style="display:flex;gap:12px;margin-bottom:16px">`;
     html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--green)">${healthy}</div><div style="font-size:11px;color:var(--fg2)">Healthy</div></div>`;
     html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--red)">${alerting}</div><div style="font-size:11px;color:var(--fg2)">Alerting</div></div>`;
+    html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold;color:var(--fg2)">${watchCount}</div><div style="font-size:11px;color:var(--fg2)">Watch</div></div>`;
     html += `<div style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center"><div style="font-size:24px;font-weight:bold">${data.metrics.length}</div><div style="font-size:11px;color:var(--fg2)">Total Active</div></div>`;
     html += `</div>`;
 
@@ -2976,7 +2993,7 @@ async function loadMetricsTab() {
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${m.owner||''}</td>`;
         html += `<td style="padding:4px 8px;text-align:center;${isAlert?'color:var(--red);font-weight:bold':''}">${val}${m.unit||''}</td>`;
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.target}${m.unit||''} <button title="Edit threshold (current: ${m.threshold ?? '—'})" onclick="verbEditThreshold('${m.id}', ${m.threshold ?? 'null'}, event)" style="background:none;border:none;color:var(--fg2);cursor:pointer;padding:0 2px">✎</button></td>`;
-        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${m.type}</td>`;
+        html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2)">${metricSurfaceBadge(m)}</td>`;
         html += `<td style="padding:4px 8px;text-align:center;color:var(--fg2);font-size:11px">${snap ? timeAgo(snap.measured_at) : '—'}</td></tr>`;
       }
       html += `</table></div>`;
