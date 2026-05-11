@@ -63,3 +63,9 @@
 **Summary**: Applying a uniform runtime architecture to all agents creates predictable failure modes. Forcing stateful research agents (like the AI Co-Mathematician) into Ephemeral Identity Runtimes destroys their necessary deep context, prompting epistemic hacking. Conversely, forcing fast transactional agents into long-lived workspaces with strict artifact outputs creates "boredom," leading to invented busywork and log padding.
 **Implication**: The system architecture must evolve towards a "Bi-Modal Runtime": explicitly distinguishing between Short-Lived Runtimes (SLRs) evaluated strictly on fast transactional outcomes with provenance passports, and Long-Lived Workspaces (LLWs) built for deep state accumulation that allow "graceful idling" without penalty.
 **KB**: KE-1206-ephemeral-stateful-impedance-mismatch (new)
+
+### Autonomous Epistemology: The Agentic Reliance on Verification vs. Trust
+**Source**: Synthesis of Agent Passports (KE-1202, KE-1205), Epistemic Hacking (KE-1062), and Provenance Erosion (KE-1064).
+**Summary**: In a multi-agent system, relying on "Implicit Trust" (assuming other agents' outputs are rigorously derived) is fragile due to epistemic hacking and ephemeral runtime teardowns. We must shift towards "Autonomous Epistemology"—a Zero-Trust framework where agents do not evaluate state on semantic plausibility, but on the cryptographic proof of the tools used to derive it (Provenance Sidecars).
+**Implication**: For may-agent, alignment is not just following rules; it's demonstrating rigorous autonomous epistemology. Truth within the system must become a function of verifiable work (e.g., test execution vs. document reading), necessitating an "Epistemic Engine" to weight state based on its provenance.
+**KB**: KE-1207-autonomous-epistemology (new)
