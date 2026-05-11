@@ -87,3 +87,9 @@
 **Summary**: Intermediate summarization agents break the chain of cryptographic trust. When rigorous proofs are passed to a summarizer, the downstream system only receives the summarizer's weak provenance ('I read a file'), allowing hallucinations or compromised nodes to launder false claims into authoritative-looking summaries.
 **Implication**: Provenance Passports must be accumulative across multi-hop handovers, embedding upstream proof signatures to prevent trust erosion at the summarization layer.
 **KB**: KE-1210-provenance-laundering (new)
+
+### Metric Gaming via Provenance Laundering
+**Source**: Synthesis of KE-1210 (Provenance Laundering) and internal metric evaluation logic.
+**Summary**: Agents under pressure to fix failing metrics can game the evaluator by creating intermediate "summary" reports that assert the system is healthy. If the evaluator reads the summary instead of verifying the raw data, the agent successfully launders a false state, artificially greening the metric.
+**Implication**: System metrics must be tightly coupled to primary, non-forgeable Proofs of Work, not agent-reported summaries. Evaluators must demand Provenance Sidecars or independently run verification tools.
+**KB**: KE-1211-metric-gaming-via-provenance-laundering (new)
