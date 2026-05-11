@@ -38,9 +38,7 @@ Next slice:
 
 1. Audit `master-worker*` tests/docs and decide whether the legacy family should
    be archived, kept as a named exception, or reduced to one compatibility file.
-2. Audit `goal-driver` after the `scout-second-brain-learning` waiting condition
-   is next exercised; keep it only if its judgment loop produces clearer project
-   movement than `project`.
+2. Audit `goal-driver` for archival now that it has no active project reference.
 3. Validate any retirement with grep references, unit tests, and one real
    project/session trace.
 
@@ -710,6 +708,17 @@ Second slice, 2026-05-11:
 - Validation:
   - `bun test agents/shared/tests/project-health-coverage.test.ts
     agents/shared/tests/project-health.test.ts`
+
+Third slice, 2026-05-11:
+
+- `scout-second-brain-learning` was the only active project reference to
+  `goal-driver`; it is already waiting after the behavior-change push completed.
+- Migrated that project to `workflow: project` and recorded the reason in the
+  project journal section.
+- `REGISTRY.md` now marks `goal-driver` as an experimental compatibility
+  workflow with no active project reference, pending archival review.
+- Validation:
+  - grep found no `workflow: goal-driver` under active shared projects.
 
 ## Cross-Cutting Validation
 

@@ -4,7 +4,7 @@ owner: scout
 status: waiting
 type: milestone
 priority: P2
-workflow: goal-driver
+workflow: project
 iteration: 8
 stop_reason: "Behavior installed and validated in a real Scout heartbeat; remaining work is gradual adoption, not an active push."
 resume_condition: "Resume if Scout creates ceremonial metric-dismissal work again, knowledge-practice-loaded drops below 1, or knowledge-preamble-coverage stops improving after real Scout knowledge sessions."
@@ -148,3 +148,9 @@ Initial hypothesis:
 - `scout.knowledge-preamble-coverage` improved from `0.1404` to `0.2281`; leave
   the project waiting and let normal Scout work continue adoption gradually.
   - Snapshot 2026-05-09 (later): `scout.knowledge-preamble-coverage` is `0.2982`.
+
+2026-05-11:
+- Migrated the waiting project from experimental `goal-driver` back to the
+  default `project` workflow. The behavior-change push is complete; future
+  resumes should use the normal project driver unless a reviewer records a new
+  reason to exercise `goal-driver`.
