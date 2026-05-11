@@ -58,3 +58,6 @@
 
 ## 2026-05-11 — s_1778511595334_259
 - When a persistent-task iteration inherits already-complete primary deliverables and an external blocker still prevents the headline success condition, credit a focused support artifact if it is grounded in the observed failure, committed under the project outputs, added to the project index, and read back after write/edit. A recovered finish-path mistake such as wrong deliverable path format should lower efficiency only.
+
+## 2026-05-11 — s_1778523668727_426
+- A scout arXiv sweep can fully satisfy the source-side research constraints (HTTPS `export.arxiv.org` query, `sortOrder=descending`, abstract inspection, readable KEs) and still require aftermath repair if it updates the rolling `scout/workspace/digest/today.md` with a whole-file `write()`. For scout digest sessions, compare the parent-vs-commit diff for net deletions; if the only defect is destructive replacement, a low-risk repair is to restore the parent digest body and append the new session entries.
