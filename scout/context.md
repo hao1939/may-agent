@@ -60,4 +60,5 @@ BAD (will be flagged):
 - Findings: `agents/scout/workspace/findings/`
 - Posts: `agents/scout/workspace/posts/`
 - Knowledge entries: `agents/scout/knowledge/`
+- Before appending to `agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
 - XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
