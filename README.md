@@ -155,12 +155,16 @@ All activity flows through a push-based event bus. Event types:
 
 - **text** — streaming text from an agent
 - **tool_call / tool_result** — tool invocations and their outcomes
-- **session_start / session_end** — session lifecycle
+- **session.start / session.end** — session lifecycle
 - **workflow** — workflow progress (start, step_start, step_done, done, escalated)
 - **eval** — evaluation results
 - **info / prompt** — system messages
 
-Two built-in UI backends: a console renderer (stdout with formatting) and a Unix socket server (JSON-line protocol for external tooling and dashboards). The bus accepts commands back from UIs: steer, cancel, status queries, input.
+The control surface is a Unix socket with a small local protocol. Socket-local
+commands stay limited to `subscribe` and `status`; adapter actions such as
+`input`, `steer`, `cancel`, `reload`, and `trigger.<handler>` are normalized
+into daemon events. CLI, Web UI, and Telegram are thin adapters over that same
+event path.
 
 ## Usage
 
@@ -175,23 +179,25 @@ Two built-in UI backends: a console renderer (stdout with formatting) and a Unix
 ## Project Structure
 
 ```
-src/
+src/lib/
   manager.ts        Core orchestrator — registration, sessions, lifecycle
-  tools.ts          Tool factories with safety guardrails
+  tools/            Tool factories with safety guardrails
   persistence.ts    JSONL storage, registry, memory, archival
   compaction.ts     Context window management
-  evaluator.ts      Session quality scoring and failure chain extraction
+  evaluation/       Session quality scoring and failure chain extraction
   workflow-tool.ts  Workflow execution engine with replay-based resume
   workflow.ts       Workflow types and context
   handoff.ts        Structured context transfer between workflow steps
-  overflow.ts       Context overflow detection and recovery
-  skills.ts         Skill discovery and prompt formatting
 
-run/
+src/app/
   may.ts            Application runner (agent registration, startup, UI)
   event-bus.ts      Event types and bus
-  console-ui.ts     Console renderer
-  socket-ui.ts      Unix socket server for external control
+  ui/console.ts     Console renderer
+  interface-startup.ts  Console/socket interface startup
+
+packages/
+  control/          Socket protocol, client, and server core
+  webui/            Standalone Web UI package
 ```
 
 ### Persistence Layout
