@@ -318,4 +318,58 @@ describe("QueryService", () => {
       { eventType: "project.nudge", urgency: "immediate" },
     ]);
   });
+
+  it("loads evaluator deep-eval scan context behind one schema-aware helper", () => {
+    const { db, query } = harness();
+    const now = 120_000;
+
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_low", "dev", "fix a bug", "done", "workflow:dev-heartbeat", now - 20_000, now - 10_000, 4],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_good", "scout", "research", "done", "workflow:project", now - 30_000, now - 20_000, 8],
+    );
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_deep_done", "arc", "already deep evaluated", "done", "workflow:project", now - 40_000, now - 30_000, 99],
+    );
+    db.run(
+      `INSERT INTO evaluations
+        (sessionId, agent, quality, efficiency, productiveCalls, wastedCalls, verdict, issues, overall,
+         evaluatedByHeuristic, skippedByJs, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["s_good", "scout", 0.9, 0.8, 8, 0, "good", "[]", "{}", 1, 0, now - 19_000],
+    );
+    db.run(
+      `INSERT INTO evaluations
+        (sessionId, agent, quality, efficiency, productiveCalls, wastedCalls, verdict, issues, overall,
+         evaluatedByHeuristic, skippedByJs, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["s_deep_done", "arc", 0.9, 0.8, 8, 0, "good", "[]", "{}", 0, 0, now - 29_000],
+    );
+
+    const context = query.evaluatorDeepEvalScan({
+      now,
+      backfillHours: 1,
+      fallbackDelayMs: 0,
+      activeWindowMs: 1,
+    });
+
+    expect(context.activeDeepEval).toBe(false);
+    expect(context.candidate).toMatchObject({
+      sessionId: "s_good",
+      agent: "scout",
+      heuristicVerdict: "good",
+      opCount: 8,
+    });
+
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["wr_deep", "evaluator-deep-eval", "deep eval", "running", now - 1],
+    );
+
+    expect(query.evaluatorDeepEvalScan({ now, activeWindowMs: 60_000 }).activeDeepEval).toBe(true);
+  });
 });

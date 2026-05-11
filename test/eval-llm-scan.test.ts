@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { create, parseDeepEvaluationArtifact } from "../agents/may/handlers/eval-llm-scan.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
+import { createQueryService } from "../src/lib/query-service.js";
 
 describe("eval-llm-scan", () => {
   const tempDirs: string[] = [];
@@ -32,6 +33,7 @@ describe("eval-llm-scan", () => {
       sdk: {
         paths: { root, persist, agents: agentsRoot },
         getDb: () => db,
+        query: createQueryService({ getDb: () => db }),
         log: (_level: string, msg: string) => logs.push(msg),
         emit: (type: string, data?: Record<string, unknown>) => emitted.push({ type, data }),
         runWorkflow: async (workflow: string, task: string, opts?: { source?: string }) => {
