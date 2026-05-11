@@ -210,6 +210,10 @@ Heartbeat rechecked the repeated P2 raw metric alert after ten consecutive owner
 
 Rechecked P2 raw metric alert 287 after the latest snapshots still held at `58` over threshold `50`. The raw breach remains real, but the paired strict unresolved metric remains healthy (`current=0`) with ten consecutive zero snapshots; fresh classification of the live raw 24h slice found all `58` rows recovered or intentionally terminal (`55` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, `0` other unresolved cases). Chosen operation: `waiting_with_evidence`; this deliberately accepts continued monitoring of raw finish-block friction without a root-cause patch, calibration, downgrade, manual resolve, or escalation, and this project should resume only if the strict metric breaches or raw sampling exposes a fresh non-recovered dirty-exit pattern.
 
+### 2026-05-11 — Alert 287 waiting_with_evidence after raw count eased to 56
+
+Rechecked P2 raw metric alert 287 after the latest snapshot eased to `56` while still breaching threshold `50`. The breach remains real raw finish-block friction, but paired strict unresolved metric `session.finish-blocked-unresolved-count-24h` remains healthy at `current=0` with recent paired snapshots at strict `0`. Fresh raw classification found all `56` rows recovered or intentionally terminal: `53` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; latest samples are `status=done`/`outcome=done` with success digests. Chosen operation: `waiting_with_evidence`; this project remains paused/monitoring, with next validation on the next metrics snapshot or immediate project resume if the strict metric breaches or raw sampling exposes a fresh non-recovered source pattern.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
