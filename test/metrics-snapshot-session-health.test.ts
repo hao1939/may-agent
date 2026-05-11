@@ -321,7 +321,6 @@ LEFT JOIN latest_digest ld ON ld.sessionId = e.sessionId
 WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
   AND e.issues LIKE '%finish blocked by uncommitted changes%'
   AND e.issues NOT LIKE '%review override:%'
-  AND e.issues NOT LIKE '%anti-shallow gate not satisfied%'
   AND NOT (
     COALESCE(ld.action, '') = 'nothing'
     AND COALESCE(ld.action_reason, '') LIKE '%No recoverable work worth resuming%'
