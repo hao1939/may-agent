@@ -1,6 +1,5 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { connect, type NetConnectOpts, type Socket } from "node:net";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
 
 export interface SocketResponse {
@@ -26,71 +25,6 @@ export function daemonSocketPath(persistDir: string, opts: DaemonSocketPathOptio
   const instance = opts.instance?.trim() || "default";
   const interfaceAgent = opts.interfaceAgent?.trim() || "may";
   return resolve(persistDir, "instances", instance, `${interfaceAgent}.sock`);
-}
-
-export interface FindDaemonSocketOptions {
-  agent?: string;
-  preferRunning?: boolean;
-}
-
-function allowFileBackedTestSocket(stat: NonNullable<ReturnType<typeof statSync>>): boolean {
-  if (!stat.isFile?.()) return false;
-  if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") return true;
-  const isBunRuntime = typeof (globalThis as { Bun?: unknown }).Bun !== "undefined";
-  return isBunRuntime && process.argv.some((arg) => arg.endsWith(".test.ts") || arg.endsWith(".test.js"));
-}
-
-export function findDaemonSocket(persistDir: string, opts: FindDaemonSocketOptions = {}): string | null {
-  const agent = opts.agent ?? "may";
-  const preferRunning = opts.preferRunning ?? true;
-  const instancesDir = resolve(persistDir, "instances");
-  if (!existsSync(instancesDir)) return null;
-
-  const candidates: Array<{ path: string; running: boolean; instance: string; mtimeMs: number }> = [];
-  try {
-    for (const instance of readdirSync(instancesDir)) {
-      const dir = join(instancesDir, instance);
-      try {
-        if (agent === "*" && instance.startsWith("job-")) continue;
-        const files = readdirSync(dir);
-        for (const file of files) {
-          if (file !== `${agent}.sock` && !(agent === "*" && file.endsWith(".sock"))) continue;
-          const socketPath = join(dir, file);
-          if (!existsSync(socketPath)) continue;
-          let mtimeMs = 0;
-          try {
-            const stat = statSync(socketPath);
-            if (!stat.isSocket?.() && !stat.isFIFO?.() && !allowFileBackedTestSocket(stat)) continue;
-            mtimeMs = stat.mtimeMs;
-          } catch {
-            continue;
-          }
-          let running = false;
-          try {
-            const identity = JSON.parse(readFileSync(join(dir, "identity.json"), "utf-8")) as { status?: string };
-            running = identity.status === "running";
-          } catch {
-            running = false;
-          }
-          candidates.push({ path: socketPath, running, instance, mtimeMs });
-        }
-      } catch {
-        continue;
-      }
-    }
-  } catch {
-    return null;
-  }
-
-  const ranked = candidates.sort((a, b) => {
-    const aDaemon = !a.instance.startsWith("job-");
-    const bDaemon = !b.instance.startsWith("job-");
-    if (agent === "*" && aDaemon !== bDaemon) return aDaemon ? -1 : 1;
-    if (preferRunning && a.running !== b.running) return a.running ? -1 : 1;
-    if (aDaemon !== bDaemon) return aDaemon ? -1 : 1;
-    return b.mtimeMs - a.mtimeMs;
-  });
-  return ranked[0]?.path ?? null;
 }
 
 export function sendSocketCommand(

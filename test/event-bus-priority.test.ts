@@ -41,13 +41,35 @@ describe("EventBus subscriber priority", () => {
     const bus = new EventBus();
     const order: string[] = [];
 
-    bus.subscribe(() => { throw new Error("boom"); }, { priority: "first" });
-    bus.subscribe(() => order.push("first-after-throw"), { priority: "first" });
-    bus.subscribe(() => order.push("normal"));
+    bus.subscribe((event) => { if (event.type === "info") throw new Error("boom"); }, { priority: "first" });
+    bus.subscribe((event) => { if (event.type === "info") order.push("first-after-throw"); }, { priority: "first" });
+    bus.subscribe((event) => { if (event.type === "info") order.push("normal"); });
 
     bus.emit({ type: "info", message: "y" });
 
     expect(order).toEqual(["first-after-throw", "normal"]);
+  });
+
+  it("emits a durable subscriber.failed signal after subscriber exceptions", () => {
+    const bus = new EventBus();
+    const events: any[] = [];
+
+    bus.subscribe((event) => events.push(event), { priority: "first" });
+    bus.subscribe((event) => {
+      if (event.type === "info") throw new Error("boom");
+    });
+
+    bus.emit({ type: "info", message: "z" });
+
+    expect(events.map((event) => event.type)).toEqual(["info", "subscriber.failed"]);
+    expect(events[1]).toMatchObject({
+      type: "subscriber.failed",
+      source: "event-bus",
+      owner: "may",
+      originalEventType: "info",
+      subscriberPriority: "normal",
+      error: "boom",
+    });
   });
 
   it("unsubscribe works for both priorities", () => {

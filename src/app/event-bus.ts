@@ -195,6 +195,15 @@ export type SystemEvent =
       reason?: string;
       task?: string;
     }
+  | {
+      type: "subscriber.failed";
+      source: "event-bus";
+      owner: "may";
+      originalEventType: string;
+      subscriberPriority: "first" | "normal";
+      error: string;
+      timestamp: number;
+    }
 
 /** All typed event types — commands + observations + system */
 export type AgentEvent =
@@ -233,6 +242,9 @@ export type SubscribeOptions = { priority?: "first" | "normal" };
 export class EventBus {
   private firstSubscribers: Subscriber[] = [];
   private normalSubscribers: Subscriber[] = [];
+  private emitDepth = 0;
+  private reportingFailures = false;
+  private pendingFailureEvents: AgentEvent[] = [];
 
   /** Subscribe to all events. Returns unsubscribe function. */
   subscribe(fn: Subscriber, opts?: SubscribeOptions): () => void {
@@ -246,25 +258,60 @@ export class EventBus {
 
   /** Emit an event. Runs "first" subscribers (persistence) before "normal" (handlers/UI). */
   emit(event: AgentEvent): void {
-    for (const fn of this.firstSubscribers) {
-      try {
-        fn(event);
-      } catch (err) {
-        log("warn", `[event-bus] first-priority subscriber threw on event '${event.type}': ${err}`);
+    this.emitDepth++;
+    try {
+      for (const fn of this.firstSubscribers) {
+        try {
+          fn(event);
+        } catch (err) {
+          this.reportSubscriberFailure(event, "first", err);
+        }
       }
-    }
-    for (const fn of this.normalSubscribers) {
-      try {
-        fn(event);
-      } catch (err) {
-        /* subscriber errors never break the bus */
-        log("warn", `[event-bus] subscriber threw on event '${event.type}': ${err}`);
+      for (const fn of this.normalSubscribers) {
+        try {
+          fn(event);
+        } catch (err) {
+          /* subscriber errors never break the bus */
+          this.reportSubscriberFailure(event, "normal", err);
+        }
       }
+    } finally {
+      this.emitDepth--;
+      if (this.emitDepth === 0) this.flushFailureEvents();
     }
   }
 
   /** Number of subscribers. */
   get listenerCount(): number {
     return this.firstSubscribers.length + this.normalSubscribers.length;
+  }
+
+  private reportSubscriberFailure(event: AgentEvent, priority: "first" | "normal", err: unknown): void {
+    const msg = err instanceof Error ? err.message : String(err);
+    log("warn", `[event-bus] ${priority}-priority subscriber threw on event '${event.type}': ${msg}`);
+    if (event.type === "subscriber.failed") return;
+
+    this.pendingFailureEvents.push({
+      type: "subscriber.failed",
+      source: "event-bus",
+      owner: "may",
+      originalEventType: event.type,
+      subscriberPriority: priority,
+      error: msg,
+      timestamp: Date.now(),
+    });
+  }
+
+  private flushFailureEvents(): void {
+    if (this.reportingFailures) return;
+    this.reportingFailures = true;
+    try {
+      while (this.pendingFailureEvents.length > 0) {
+        const failure = this.pendingFailureEvents.shift();
+        if (failure) this.emit(failure);
+      }
+    } finally {
+      this.reportingFailures = false;
+    }
   }
 }
