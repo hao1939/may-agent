@@ -381,9 +381,12 @@
     "name": "escalation",
     "type": "job",
     "handler": "escalation",
+    "agent": "may",
     "enabled": true,
-    "description": "Route blocked/failed session escalations to human. Polls daily. on: removed due to KE-455.",
-    "intervalMs": 86400000
+    "description": "Route blocked/failed session escalations to human from session.escalated events.",
+    "on": [
+      "session.escalated"
+    ]
   },
   {
     "name": "metrics-snapshot",
