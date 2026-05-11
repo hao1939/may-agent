@@ -30,11 +30,14 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Finish the query facade migration for the autonomy paths that still depend on
-raw schema-sensitive reads:
+Finish the query facade migration for evaluator paths that still depend on raw
+schema-sensitive reads:
 
-1. Move evaluator context/candidate reads in `eval-llm-scan.ts` to targeted
-   `sdk.query` helpers where those reads feed judgment.
+1. Review `agents/evaluator/workflows/evaluator-aftermath.ts` and related
+   session-review context collection.
+2. Move only judgment-feeding reads to targeted `ctx.query` helpers.
+3. Leave deterministic artifact ingestion/bookkeeping direct when a helper would
+   not reduce schema risk or complexity.
 
 This is the best next slice because it directly mitigates schema-footgun
 failures without adding a new concept.
@@ -43,7 +46,7 @@ failures without adding a new concept.
 
 | Gap | Risk | Phase |
 |---|---|---|
-| Evaluator scan uses raw DB for judgment/candidate context | Evaluator can inherit brittle schema guessing | Phase 4 |
+| Evaluator aftermath/session review may still use raw DB for judgment context | Evaluator can inherit brittle schema guessing | Phase 4 |
 | Shared `ExecutionResult` exists but is not the normal inspection surface | Sessions and workflows still feel different to debug | Phase 5 |
 | Workflow guard signals are durable, but tool guard signals are not fully converged | Guard triggers are harder to learn from across the system | Phase 6 |
 | Telegram still has some adapter-specific behavior | Replies can diverge from Web UI/CLI event behavior | Phase 2 |
@@ -269,7 +272,8 @@ Stop criteria:
 ## Phase 4: Query Facade Migration
 
 Status: metric alert workflow, alert reactor preflight, project runtime context,
-and closed-loop steward context reads migrated.
+closed-loop steward context, heartbeat context, and evaluator deep-eval scan
+dispatch reads migrated.
 
 Goal: workflows and handlers stop guessing schema for judgment/context reads.
 
@@ -302,9 +306,13 @@ Scope:
 - [x] Add `query.heartbeatContext(...)` for the exact metric/snapshot/alert/
   inbox bundle used by shared heartbeats.
 - [x] Move heartbeat live-context loaders away from raw schema-sensitive SQL.
-- [ ] Move evaluator aftermath/session review context reads away from raw
-  schema-sensitive SQL where the reads are judgment context rather than
-  deterministic artifact bookkeeping.
+- [x] Add `query.evaluatorDeepEvalScan(...)` for the exact active-work and
+  candidate-selection bundle used by `eval-llm-scan`.
+- [x] Move `eval-llm-scan` active-work and candidate-selection reads away from
+  raw `ctx.sdk.getDb()`; artifact ingestion/recording remains direct
+  deterministic bookkeeping.
+- [ ] Review evaluator-aftermath/session review context reads for any remaining
+  schema-sensitive judgment context.
 
 Validation:
 
@@ -360,24 +368,45 @@ Runtime proof, 2026-05-11:
 
 ### Phase 4b: Evaluator Query Slice
 
+Status: first slice implemented and verified for `eval-llm-scan`.
+
 Scope:
 
-- Review `agents/may/handlers/eval-llm-scan.ts`.
-- Keep deterministic artifact ingestion and bookkeeping direct if it is simpler.
-- Move candidate/context reads that feed evaluator judgment to `sdk.query`.
-- Add a query helper only for the exact candidate/context bundle needed.
+- [x] Review `agents/may/handlers/eval-llm-scan.ts`.
+- [x] Keep deterministic artifact ingestion and bookkeeping direct because it
+  validates files and writes `evaluations`.
+- [x] Move candidate/context reads that feed evaluator judgment to `sdk.query`.
+- [x] Add a query helper only for the exact candidate/context bundle needed.
 
 Validation:
 
-- Unit tests cover candidate selection and bounded reads.
-- Manual evaluator scan trigger leaves handler evidence, evaluator workflow run
+- [x] Unit tests cover candidate selection and bounded reads.
+- [x] Manual evaluator scan trigger leaves handler evidence, evaluator workflow run
   id, child evaluator session id, and either artifact ingestion or an explicit
   skip/failure event.
 
 Stop criteria:
 
-- New judgment/action code does not call `getDb()` directly.
+- [x] `eval-llm-scan` judgment/action dispatch code does not call `getDb()`
+  directly.
 - `getDb()` remains in mechanical infra code and explicit compatibility paths.
+
+Runtime proof, 2026-05-11:
+
+- First trigger event: `trigger.eval-llm-scan` event id `558427`, source
+  `codex-runtime-proof`; result event `evaluation.deep_recorded` id `558429`
+  recorded one pending artifact.
+- Second trigger event: `trigger.eval-llm-scan` event id `558431`, source
+  `codex-runtime-proof`; result event `evaluation.deep_dispatched` id `558433`
+  selected session `s_1778406965778_854` for agent `dev`.
+- Workflow run: `wr_1778479946845_mnr0` (`evaluator-deep-eval`), started from
+  the migrated query-selected candidate path.
+- Child session: `s_1778479946904_0` (`evaluator`), source
+  `workflow:evaluator-deep-eval`.
+- Follow-up note: the code now includes `contextSource:
+  "query.evaluatorDeepEvalScan"` on future `evaluation.deep_dispatched` events;
+  this was added after the runtime proof without reloading over the active
+  evaluator session.
 
 ## Phase 5: Execution Inspection And Recovery Symmetry
 

@@ -246,53 +246,20 @@ function processArtifacts(db: any, root: string, limit: number): number {
   return recorded;
 }
 
-function hasActiveDeepEval(db: any, now: number, activeWindowMs: number): boolean {
-  const workflow = db.prepare(
-    `SELECT 1
-     FROM workflow_runs
-     WHERE workflow = ?
-       AND status = 'running'
-       AND startedAt > ?
-     LIMIT 1`,
-  ).get(DEEP_EVAL_WORKFLOW, now - activeWindowMs);
-  if (workflow) return true;
-
-  const row = db.prepare(
-    `SELECT 1
-     FROM sessions
-     WHERE agent = 'evaluator'
-       AND source IN ('eval-llm-scan', 'workflow:evaluator-deep-eval')
-       AND status IN ('running', 'idle')
-       AND startedAt > ?
-     LIMIT 1`,
-  ).get(now - activeWindowMs);
-  return !!row;
-}
-
-function selectCandidate(db: any, now: number, backfillHours: number, fallbackDelayMs: number): Candidate | null {
-  const cutoff = now - backfillHours * 60 * 60_000;
-  const fallbackCutoff = now - fallbackDelayMs;
-  return db.prepare(
-    `SELECT s.sessionId, s.agent, s.status, s.task, s.source, s.startedAt, s.endedAt, s.opCount,
-            e.verdict as heuristicVerdict, e.issues as heuristicIssues
-     FROM sessions s
-     LEFT JOIN evaluations e ON e.sessionId = s.sessionId
-     WHERE s.status IN ('done', 'error', 'interrupted')
-       AND s.agent NOT IN ('evaluator', 'judge')
-       AND COALESCE(s.source, '') NOT IN ('standalone-eval', 'eval-llm-scan', 'workflow:evaluator-deep-eval')
-       AND COALESCE(s.endedAt, s.startedAt) >= ?
-       AND COALESCE(s.endedAt, s.startedAt) <= ?
-       AND NOT EXISTS (
-         SELECT 1 FROM evaluations deep
-         WHERE deep.sessionId = s.sessionId
-           AND deep.evaluatedByHeuristic = 0
-       )
-     ORDER BY
-       CASE WHEN e.verdict = 'good' THEN 0 WHEN e.verdict = 'needs_improvement' THEN 1 ELSE 2 END,
-       COALESCE(s.opCount, 0) DESC,
-       COALESCE(s.endedAt, s.startedAt) DESC
-     LIMIT 1`,
-  ).get(cutoff, fallbackCutoff) as Candidate | null;
+function normalizeCandidate(row: Record<string, unknown> | null | undefined): Candidate | null {
+  if (!row) return null;
+  return {
+    sessionId: String(row.sessionId ?? ""),
+    agent: String(row.agent ?? ""),
+    status: String(row.status ?? ""),
+    task: String(row.task ?? ""),
+    source: row.source == null ? null : String(row.source),
+    startedAt: Number(row.startedAt ?? 0),
+    endedAt: row.endedAt == null ? null : Number(row.endedAt),
+    opCount: row.opCount == null ? null : Number(row.opCount),
+    heuristicVerdict: row.heuristicVerdict == null ? null : String(row.heuristicVerdict),
+    heuristicIssues: row.heuristicIssues == null ? null : String(row.heuristicIssues),
+  };
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
@@ -317,12 +284,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       return;
     }
 
-    if (hasActiveDeepEval(db, now, activeWindowMs)) {
+    const scan = ctx.sdk.query.evaluatorDeepEvalScan({
+      now,
+      backfillHours,
+      fallbackDelayMs,
+      activeWindowMs,
+    });
+
+    if (scan.activeDeepEval) {
       ctx.sdk.log("info", "[eval-llm-scan] Recent deep evaluation is still active; skipping dispatch.");
       return;
     }
 
-    const candidate = selectCandidate(db, now, backfillHours, fallbackDelayMs);
+    const candidate = normalizeCandidate(scan.candidate);
     if (!candidate) {
       ctx.sdk.log("info", "[eval-llm-scan] No eligible session needs non-heuristic evaluation.");
       return;
@@ -357,6 +331,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
     ctx.sdk.emit("evaluation.deep_dispatched", {
       source: "eval-llm-scan",
+      contextSource: "query.evaluatorDeepEvalScan",
       sessionId: candidate.sessionId,
       agent: candidate.agent,
     });

@@ -4,6 +4,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
+import { createQueryService } from "../../../src/lib/query-service.js";
 import { create } from "../../may/handlers/eval-llm-scan.js";
 
 describe("eval-llm-scan handler", () => {
@@ -46,6 +47,7 @@ describe("eval-llm-scan handler", () => {
       sdk: {
         paths: { root, persist, agents },
         getDb: () => db,
+        query: createQueryService({ getDb: () => db }),
         runWorkflow,
         runAgent: vi.fn(() => { throw new Error("runAgent should not be called by eval-llm-scan handler"); }),
         emit: vi.fn(),
