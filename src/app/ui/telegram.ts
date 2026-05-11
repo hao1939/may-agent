@@ -9,7 +9,7 @@
  *   TELEGRAM_CHAT_ID    — Allowed chat ID(s), comma-separated (required for security)
  *
  * Features:
- *   - Incoming messages → manager.steer/followUp with source "human-telegram"
+ *   - Incoming messages → daemon events with source "telegram"
  *   - Assistant responses streamed back as Telegram messages
  *   - Long messages split at 4096 char Telegram limit
  *   - /status, /cancel, /jobs commands
