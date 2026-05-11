@@ -44,6 +44,7 @@ stable across all patterns.
 | Query/projection | Safe read access to events, sessions, metrics, projects, and alerts. |
 | Guard | Mechanical detector around tools or workflow execution. It emits risk/weakness signals and may warn, repair, or block when justified. |
 | Socket control | Universal command/event ingress and realtime event stream. |
+| Agent loading | Discover agent definitions, build tool/workflow/handler surfaces, and apply reloads without changing active sessions. |
 | Recovery | Durable state cleanup, stale session handling, crash recovery. |
 
 Agent patterns are conventions built from these primitives.
@@ -297,6 +298,53 @@ Current state:
   durable traces across CLI, Web UI, Telegram, and operator emits.
 - Telegram is still attached inside the daemon process. Treat that as acceptable
   until the control client is reliable; do not split the process first.
+
+## Agent Loading Boundary
+
+Agent loading is an infra boundary, not a side effect of daemon startup. Its
+job is to turn files into runtime definitions.
+
+Default flow:
+
+```
+discover agent dirs
+  -> read/validate agent.json
+  -> build AgentDefinition
+  -> build ToolSet from presets + local tools
+  -> register definition with manager
+  -> attach cron entries and handler resolver
+  -> emit loader evidence
+```
+
+Reload is the same flow applied again. It updates definitions for future
+sessions; active sessions keep the tools, prompt, model, and runtime context
+they already started with. Reload should not silently mutate in-flight work.
+
+Hot-reload should stay narrow:
+
+- `agent.json` reload: explicit reload command/event, affects future sessions.
+- handler files: hot-reload on handler invocation.
+- `cron.json`: watched/reloaded by cron runner, with unchanged timers preserved.
+- workflows: loaded by workflow runner with cache-busting when invoked.
+- local tools: loaded during agent definition build; future sessions see new
+  tools after reload.
+
+The loader should not decide project behavior, heartbeat meaning, or alert
+judgment. It should only assemble capabilities and register them.
+
+Target module shape:
+
+| Module | Responsibility |
+|---|---|
+| `agent-discovery` | find candidate agent directories and config paths |
+| `agent-config` | parse/validate `agent.json`, resolve conventions |
+| `toolset-loader` | map tool presets and local tools to `AgentTool[]` |
+| `heartbeat-loader` | generate conventional heartbeat cron entries |
+| `handler-loader` | attach handler resolvers and hot-reload wrapper |
+| `agent-registry-loader` | orchestrate discovery -> definition -> manager registration |
+
+Keep these as `src/app/loader/*` modules first. Create a package only if this
+surface becomes useful outside the daemon and has no app-specific imports.
 
 ## Public Surfaces
 
@@ -592,6 +640,7 @@ Existing pieces already align with this direction:
 | Runtime context | `src/lib/runtime-ctx.ts` |
 | Socket protocol | `packages/control/src/protocol.ts` |
 | Socket server/client | `packages/control/src/server.ts`, `packages/control/src/client.ts` |
+| Agent loading | `src/app/agent-loader.ts` (target: split into `src/app/loader/*`) |
 | Web UI projection reader | `packages/webui/src/server.ts` |
 | Agent patterns | `agents/shared/workflows/*`, project docs, heartbeat docs |
 
@@ -601,6 +650,8 @@ the already-shipped boundaries boring:
 - keep execution inspection using the shared result/trace shape consistently,
 - keep `getDb()` limited to mechanical infra code and explicit compatibility
   paths,
+- split large composition/loading modules so their boundaries match this
+  design,
 - fold stable behavior into the shorter architecture/manual docs so agents do
   not learn stale patterns.
 

@@ -30,17 +30,16 @@ to this tracker under the smallest matching phase.
 
 ## Current Next Move
 
-Phase 8 has removed the duplicate project-driver surface. The project-driver
-surface now has one live default: `project`. Phase 2 now has automated proof
-that Telegram project replies, session replies, and common slash commands emit
-daemon events instead of adapter-local actions.
+Phase 8 has removed the duplicate project-driver surface. Phase 1/2 control
+and adapter boundaries have runtime proof. The next simplification is making
+large composition/loading modules match the infra mental model.
 
 Next slice:
 
-1. Continue using runtime event ids as proof for adapter/control boundary
+1. Split the agent loader by responsibility without changing runtime behavior.
+2. Thin `may.ts` into a composition root after the loader boundary is clear.
+3. Continue using runtime event ids as proof for adapter/control boundary
    changes; do not accept adapter-local behavior without durable event evidence.
-2. Keep folding stable infra-surface behavior into the short reference docs
-   when stale guidance is found.
 
 Recently completed:
 
@@ -61,14 +60,15 @@ Recently completed:
 8. [x] Confirm real-human Telegram reply routing against live DB evidence.
 
 This is now the highest-value slice because the event/metric/control boundaries
-are traceable enough; the next risk is duplicated workflow patterns confusing
-agents about how to drive projects.
+are traceable enough; the next risk is large mixed-responsibility runtime files
+making the simple model hard to see and safely evolve.
 
 ## Remaining Gap Summary
 
 | Gap | Risk | Phase |
 |---|---|---|
-| None currently tracked | — | — |
+| `agent-loader.ts` mixes discovery, validation, tool construction, cron ownership, heartbeat generation, handler hot-reload, and cleanup state | Hot-reload/reload semantics are hard to reason about and easy to regress | Phase 9 |
+| `may.ts` mixes CLI modes, daemon assembly, reload handling, Web UI mode, workflow direct-run, and shutdown | The daemon composition root is hard to inspect and encourages cross-boundary edits | Phase 9 |
 
 ## Phase 0: Design State Refresh
 
@@ -847,6 +847,133 @@ Seventh slice, 2026-05-11:
 - Renamed the surviving helper integration tests away from `master-worker`
   terminology.
 - `REGISTRY.md` now records `master-worker*` as retired, not compatibility code.
+
+## Phase 9: Runtime Composition And Loader Boundaries
+
+Goal: make the code shape match the infra model without adding new runtime
+concepts or process boundaries.
+
+### Phase 9a: Agent Loader Boundary
+
+Status: planned.
+
+Current problem: `src/app/agent-loader.ts` is one large module that owns:
+
+- agent directory discovery,
+- `agent.json` parsing and validation,
+- tool preset construction,
+- local tool dynamic imports,
+- per-agent cron instance ownership,
+- auto-heartbeat generation,
+- handler discovery and hot-reload wrappers,
+- active-session cleanup maps.
+
+Target mental model:
+
+```
+discover -> build definition -> register -> attach cron/handlers -> reload future definitions
+```
+
+Reload convention:
+
+- `agent.json` changes require explicit reload and affect future sessions only.
+- active sessions keep their started model/tools/prompt/runtime context.
+- handler files hot-reload on each handler invocation.
+- `cron.json` reload is owned by the cron runner and should preserve unchanged
+  timers.
+- local tools reload with the next explicit agent reload.
+
+Target modules:
+
+- `src/app/loader/agent-discovery.ts`
+- `src/app/loader/agent-config.ts`
+- `src/app/loader/toolset-loader.ts`
+- `src/app/loader/heartbeat-loader.ts`
+- `src/app/loader/handler-loader.ts`
+- `src/app/loader/agent-registry-loader.ts`
+
+Keep the public exports from `src/app/agent-loader.ts` as a compatibility
+barrel during the split. Remove the barrel only after direct imports are
+migrated.
+
+Validation:
+
+- Existing agent loader tests remain green.
+- Add focused tests for reload semantics:
+  - invalid config emits `agent.config_invalid` and does not register,
+  - reload updates future registrations without touching active session state,
+  - handler hot-reload imports a fresh module on invocation,
+  - auto-heartbeat generation remains deterministic.
+- Runtime proof: trigger `reload` through daemon event and record the reload
+  event plus loader evidence for added/updated/skipped agents.
+
+Stop criteria:
+
+- `agent-loader.ts` is a small compatibility barrel or orchestration shim.
+- Loader module responsibilities are obvious from file names.
+- Hot-reload behavior is documented and tested in one place.
+
+### Phase 9b: Thin Daemon Composition Root
+
+Status: planned.
+
+Current problem: `src/app/may.ts` mixes unrelated modes and daemon wiring.
+
+Target modules:
+
+- `src/app/modes/emit.ts`
+- `src/app/modes/web.ts`
+- `src/app/modes/run-workflow.ts`
+- `src/app/modes/oneshot.ts`
+- `src/app/daemon.ts`
+
+`may.ts` should parse arguments, select one mode, and delegate. It should not
+own loader internals, Web UI startup details, workflow direct-run mechanics, or
+shutdown cleanup beyond calling the selected mode.
+
+Validation:
+
+- `bun run check`.
+- Focused tests for command-router/socket/cron still pass.
+- Runtime proof: daemon starts, host `trigger.metrics-snapshot` emit still
+  persists trigger and handler completion events.
+
+Stop criteria:
+
+- The normal daemon path can be read from one file without scanning CLI-only
+  branches.
+- CLI/web/workflow modes can be changed without touching daemon assembly.
+
+### Phase 9c: Storage Module Split
+
+Status: planned after Phase 9a/9b.
+
+Split `src/lib/requests.ts` into tight DB modules while preserving public
+imports:
+
+- `src/lib/db/connection.ts`
+- `src/lib/db/schema.ts`
+- `src/lib/db/events.ts`
+- `src/lib/db/sessions.ts`
+
+Keep `query-service.ts` as the safe read facade. Do not create a `packages/db`
+package until DB modules have stable boundaries and no app-specific imports.
+
+### Phase 9d: Telegram Reply Router Extraction
+
+Status: planned after the composition root is thinner.
+
+Keep Telegram in the daemon process, but extract reply classification into a
+pure router module:
+
+- input: Telegram message plus optional `notification_messages` row,
+- output: event frame (`steer`, `project.comment.created`, `input`,
+  command event, or routing failure evidence).
+
+Validation:
+
+- Existing Telegram reply e2e tests stay green.
+- `scripts/telegram-reply-smoke.ts --hours 24` remains the live proof path.
 
 ## Cross-Cutting Validation
 
