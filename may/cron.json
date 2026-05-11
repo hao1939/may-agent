@@ -318,9 +318,12 @@
     "name": "session-recovery",
     "type": "job",
     "handler": "session-recovery",
+    "agent": "may",
     "enabled": true,
-    "description": "Auto-resume failed sessions (Ambulance Protocol). Polls daily. Note: on:session.failed removed due to KE-455 (runtime ignores entries with on: field).",
-    "intervalMs": 86400000
+    "description": "React to failed sessions by dispatching the session-recovery workflow.",
+    "on": [
+      "session.failed"
+    ]
   },
   {
     "name": "evaluator-aftermath",
