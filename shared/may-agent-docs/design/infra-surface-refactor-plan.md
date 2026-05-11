@@ -938,7 +938,7 @@ Target modules:
 
 - [x] `src/app/modes/emit.ts`
 - [x] `src/app/modes/web.ts`
-- `src/app/modes/run-workflow.ts`
+- [x] `src/app/modes/run-workflow.ts`
 - `src/app/modes/oneshot.ts`
 - `src/app/daemon.ts`
 
@@ -959,7 +959,9 @@ Current proof:
 - Root commits:
   - `df4241c6` split operator emit mode.
   - `094f5723` split Web UI startup mode.
+  - `c938c783` split run-workflow CLI mode.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
+- `bun test test/run-workflow-mode.test.ts` passes.
 - `bun run check` passes.
 
 Stop criteria:
