@@ -110,6 +110,10 @@ Handled the repeated blocked-project nudge during heartbeat. Fresh read-only val
 
 Dispositioned May's P2 blocker question again with fresh evidence rather than changing status: the split metric rows are still absent from `metrics`, while the exact registration packet remains available in `outputs/iteration-6-split-metric-registration.md`. The live source-query values have improved to raw_24h=52 and strict_unresolved_24h=0, but registration still requires a safe runtime DB write by May/human before this project can leave `blocked`.
 
+### 2026-05-11 — Metric alert waiting evidence recheck
+
+Rechecked alert `session.finish-blocked-unresolved-count-24h` after the first triage session. The live metric still reads `current=1` with three consecutive snapshots at `1`, and the only strict unresolved row remains historical interrupted May closed-loop-steward session `s_1778432730435_1172` (`issues=["terminal status: interrupted","finish blocked by uncommitted changes"]`, no successful/partial digest). The project remains paused with no new patch indicated; validate on the next metrics snapshot after the historical row ages out of the 24h window, or resume immediately if a newer strict unresolved row appears.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
