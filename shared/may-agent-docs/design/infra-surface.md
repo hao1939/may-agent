@@ -647,7 +647,16 @@ Existing pieces already align with this direction:
 | Runtime context | `src/lib/runtime-ctx.ts` |
 | Socket protocol | `packages/control/src/protocol.ts` |
 | Socket server/client | `packages/control/src/server.ts`, `packages/control/src/client.ts` |
-| Agent loading | `src/app/agent-loader.ts` (target: split into `src/app/loader/*`) |
+| App entry/runtime | `src/app/may.ts`, `src/app/app-runtime.ts`, `src/app/runtime-exit-modes.ts` |
+| Daemon surface | `src/app/daemon.ts` stable barrel over daemon submodules |
+| Daemon lifecycle | `src/app/daemon-lifecycle.ts` |
+| Daemon event subscribers | `src/app/daemon-events.ts` |
+| Daemon agent startup | `src/app/daemon-agents.ts` |
+| Daemon session startup | `src/app/daemon-sessions.ts` |
+| Daemon loops | `src/app/daemon-loops.ts` |
+| Agent loading | `src/app/agent-loader.ts`, `src/app/loader/*` |
+| Telegram adapter | `src/app/ui/telegram.ts` |
+| Telegram transport/reply/outbound helpers | `src/app/ui/telegram-client.ts`, `src/app/ui/telegram-reply-router.ts`, `src/app/ui/telegram-outbound.ts` |
 | Web UI projection reader | `packages/webui/src/server.ts` |
 | Agent patterns | `agents/shared/workflows/*`, project docs, heartbeat docs |
 
@@ -657,8 +666,8 @@ the already-shipped boundaries boring:
 - keep execution inspection using the shared result/trace shape consistently,
 - keep `getDb()` limited to mechanical infra code and explicit compatibility
   paths,
-- split large composition/loading modules so their boundaries match this
-  design,
+- avoid further module splits unless a concrete sub-concern changes
+  independently or still obscures behavior,
 - fold stable behavior into the shorter architecture/manual docs so agents do
   not learn stale patterns.
 

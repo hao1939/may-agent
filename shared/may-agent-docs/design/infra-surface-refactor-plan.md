@@ -40,10 +40,8 @@ stable re-exports.
 
 Next slice:
 
-1. Run a review/proof pass against the Phase 9 shape: `may.ts`,
-   `app-runtime.ts`, daemon submodules, loader submodules, and Telegram
-   submodules should now read as named runtime concerns rather than mixed
-   buckets.
+1. Fold the stable Phase 9 runtime shape into shorter architecture/manual docs
+   that agents read more often.
 2. Do not split `toolset-loader.ts` unless a concrete sub-concern starts
    changing independently. It is currently large but cohesive: declared preset
    names map to tool factories, with local tool loading at the edge.
@@ -76,7 +74,7 @@ a concrete boundary that still obscures behavior or changes independently.
 
 | Gap | Risk | Phase |
 |---|---|---|
-| Phase 9 needs a runtime proof pass after the module split | Code shape is cleaner, but adapter/control boundary changes should still be proven with durable events, not only tests | Phase 9 review |
+| Stable Phase 9 shape needs to be folded into shorter docs | Agents may still learn stale runtime boundaries from older summary docs | Phase 10/docs |
 | `toolset-loader.ts` is large but cohesive | Splitting it prematurely would add files without reducing mental load; split only if preset factories or local-tool loading start changing independently | Watch |
 
 ## Phase 0: Design State Refresh

@@ -115,8 +115,16 @@ facts, and most recent reasoning.
 
 ## Implementation
 
-- **Input routing:** `src/app/may.ts`, `src/app/chat-session.ts`
+- **Binary entry:** `src/app/may.ts`
+- **Long-running runtime assembly:** `src/app/app-runtime.ts`
+- **Input routing:** `src/app/chat-session.ts`, `src/app/command-router.ts`
+- **Daemon modules:** `src/app/daemon.ts` re-exports lifecycle, event
+  subscribers, agent startup, session startup, and loop modules
+- **Agent loading:** `src/app/agent-loader.ts`, `src/app/loader/*`
 - **Session management:** `src/lib/manager.ts`
 - **System prompt assembly:** `src/lib/manager.ts` → `resolveSystemPrompt()`
 - **Compaction:** pi-agent runtime `Agent` class + may-agent extensions
 - **Socket protocol/server/client:** `packages/control/src/*`
+- **Telegram adapter:** `src/app/ui/telegram.ts`,
+  `src/app/ui/telegram-client.ts`, `src/app/ui/telegram-reply-router.ts`,
+  `src/app/ui/telegram-outbound.ts`

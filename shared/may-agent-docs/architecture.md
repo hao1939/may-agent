@@ -535,3 +535,23 @@ Mechanical infra code may still call manager/runtime internals directly, but
 new judgment/action paths should follow the handler-to-workflow convention. See
 `design/infra-surface.md` for the design and
 `design/infra-surface-refactor-plan.md` for the implementation tracker.
+
+### Runtime Code Shape
+
+The shipped runtime mirrors that convergence:
+
+- `src/app/may.ts` is the thin binary entry: version/path setup, lightweight
+  emit/web-only modes, model registry setup, then `runAppRuntime`.
+- `src/app/app-runtime.ts` is the long-running daemon assembly path.
+- `src/app/daemon.ts` is a stable barrel over focused daemon modules:
+  lifecycle, event subscribers, agent startup, requested session startup, and
+  runtime loops.
+- `src/app/agent-loader.ts` is a compatibility surface over
+  `src/app/loader/*` modules for discovery, config validation, toolsets,
+  heartbeat entries, handler hot-reload, and registry orchestration.
+- Telegram remains in-process, split into transport, reply routing, outbound
+  session-response policy, and the polling adapter.
+
+Do not keep splitting modules just because a file is non-trivial. Split when a
+sub-concern changes independently or still hides the event → workflow → session
+model.
