@@ -118,6 +118,10 @@ Rechecked alert `session.finish-blocked-unresolved-count-24h` after the first tr
 
 Rechecked repeated alert 284 after the process restart. The live metric row still reports `current=1`, the latest six snapshots all remain `1`, and the strict source query still returns exactly one row: historical May `closed-loop-steward` session `s_1778432730435_1172` with `status=interrupted`, `outcome=interrupted`, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`. Chosen operation: `waiting_with_evidence`, because the breach is real but already explained by the pre-existing 24h row; no safe owner-local fix exists except waiting for the strict 24h window to age it out, while any newer strict unresolved row should immediately resume the project.
 
+### 2026-05-11 — Alert 284 latest waiting_with_evidence recheck
+
+Rechecked alert 284 again during metric-alert triage. The metric row remains `current=1`, `threshold=0`, `target=0`, priority `P1`, with eight consecutive snapshots at `1`. The strict source query still returns exactly one unresolved row: May `closed-loop-steward` session `s_1778432730435_1172`, evaluated at `2026-05-10T17:15:51.009Z` with `status=interrupted`, `outcome=interrupted`, no success/partial digest, and issues `["terminal status: interrupted","finish blocked by uncommitted changes"]`. Chosen operation: `waiting_with_evidence`; no new root-cause patch or escalation is indicated because the row is historical and should leave the 24h strict window on the next metrics snapshot after `2026-05-11T17:15:51.009Z`, while any newer strict unresolved row should resume this paused project immediately.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
