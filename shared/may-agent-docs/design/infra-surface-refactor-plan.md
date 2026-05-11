@@ -940,7 +940,7 @@ Target modules:
 - [x] `src/app/modes/web.ts`
 - [x] `src/app/modes/run-workflow.ts`
 - [x] `src/app/modes/oneshot.ts`
-- `src/app/daemon.ts`
+- [x] `src/app/daemon.ts` lifecycle support
 
 `may.ts` should parse arguments, select one mode, and delegate. It should not
 own loader internals, Web UI startup details, workflow direct-run mechanics, or
@@ -961,9 +961,11 @@ Current proof:
   - `094f5723` split Web UI startup mode.
   - `c938c783` split run-workflow CLI mode.
   - `a0d61847` split oneshot CLI mode.
+  - `d7027420` split daemon lifecycle support.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
+- `bun test test/daemon.test.ts` passes.
 - `bun run check` passes.
 
 Stop criteria:
