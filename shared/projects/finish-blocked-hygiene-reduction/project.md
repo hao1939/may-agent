@@ -242,6 +242,10 @@ Triaged P2 raw metric alert 287 again after the latest metric row remained `curr
 
 Documented a project-level exception for repeated P2 alert `session.finish-blocked-uncommitted-count-24h` while the paired strict metric remains healthy. The latest stored metric row still reports raw `current=58` over threshold `50`, and a fresh live source-query/classification pass now finds `59` raw rows but no unresolved dirty exits: `56` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases; source attribution remains repaired scout/steward/may workflow friction. Chosen operation: `document_exception`; accept this raw-friction alert as monitored/expected noise until the next metrics snapshot or until `session.finish-blocked-unresolved-count-24h` breaches / raw sampling exposes a fresh non-recovered source pattern, at which point resume this project immediately.
 
+### 2026-05-11 — Alert 287 documented exception reaffirmed at raw 59
+
+Rechecked repeated P2 alert `session.finish-blocked-uncommitted-count-24h` after the stored metric row reached `current=59` over threshold `50`. The breach remains real raw finish-block friction, but paired strict metric `session.finish-blocked-unresolved-count-24h` remains healthy at `current=0` with the latest ten strict snapshots at `0`; fresh classification of the live raw 24h slice found no unresolved dirty exits (`56` repaired successful exits, `1` repaired partial exit, `2` terminal no-recovery interrupted rows, and `0` other unresolved cases). Chosen operation: `document_exception`; keep accepting the still-breaching raw alert as monitored/expected friction in this paused project unless the strict metric breaches or future raw sampling exposes a new non-recovered source pattern, at which point resume the project immediately.
+
 ## Artifacts
 - outputs/iteration-5-source-specific-residual-sampling.md
 - outputs/iteration-6-split-metric-registration.md
