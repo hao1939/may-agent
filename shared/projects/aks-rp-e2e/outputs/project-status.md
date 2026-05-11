@@ -1,58 +1,52 @@
-# AKS RP E2Ev3 Project — Status Summary
+# AKS RP E2E Testing — Project Status
 
-**Last updated:** 2026-05-11 (iteration 1, current session)
+**Last updated:** 2026-05-11 ~20:00 UTC (iteration 3)
 
-## Goal
-Learn and set up e2e testing for the AKS Resource Provider Go monorepo. Success = able to run e2e tests against a standalone environment, understand the e2ev3 framework architecture, and document the workflow.
+## Current State: BLOCKED — Waiting for Localdeploy to Complete
 
-## Deliverables — Complete ✅
+### What's Done ✅
+- **Documentation complete**: 9 output files covering e2ev3 architecture, standalone setup, scenario catalog, quickref, troubleshooting, writing tests
+- **Go installed**: v1.24.3 at `/usr/local/go/bin/go` (not on default PATH)
+- **Bazel**: bundled inside aksbuilder, no separate install needed
+- **Localdeploy initiated**: `hack/aksbuilder_localdeploy.sh` started ~19:34 UTC on 2026-05-11
 
-| Document | Lines | Description |
-|----------|-------|-------------|
-| `e2ev3-architecture.md` | 208 | Framework internals: Plan/Scenario/Suite/Mutator types, DAG execution via go-workflow |
-| `standalone-setup.md` | 154 | How to deploy & configure a standalone environment for local e2e |
-| `scenario-catalog.md` | 91 | 632 scenarios across 22 active SIGs |
-| `writing-e2e-tests.md` | 290 | Step-by-step guide to authoring new e2ev3 tests |
-| `e2e-quickref.md` | 138 | Cheat-sheet for running tests |
-| `troubleshooting.md` | 109 | Common failures and fixes |
-| `doc-verification.md` | 27 | Verification of docs against live repo |
-| `standalone-readiness-check.sh` | 90 | Script to validate environment prerequisites |
-| `e2e-run-attempt.md` | 44 | Log of attempted test run |
-| `unblock-runbook.md` | 80 | Steps to unblock the standalone environment |
-| `README.md` | 34 | Index of all output files |
+### What's In Progress 🔄
+- **aksbuilder localdeploy** is running on devbox (PID 1077229)
+  - Currently in **bazel build phase** (`--build_tag_filters=ev2 //...`)
+  - Bazel server using ~1.9GB RAM
+  - No env files or standalone config generated yet — expected after build completes
 
-**Total:** 1,307 lines across 12 files
+### What's Blocked ⛔
+- **Cannot run e2e tests** until localdeploy finishes (builds binaries + deploys standalone environment)
+- Expected outputs after localdeploy: Key Vault provisioned, env config generated, RP deployed to standalone
 
-## Blocked ❌ — Cannot Run E2E Tests
+### Next Steps (once localdeploy completes)
+1. Check localdeploy output: `ssh devbox 'ps aux | grep aksbuilder | grep -v grep'` — if no processes, it's done
+2. Find generated config: `ssh devbox 'find /home/hayua/rp -maxdepth 3 -name "*.env" -mmin -120 2>/dev/null'`
+3. Run readiness check: `ssh devbox 'bash /path/to/standalone-readiness-check.sh'`
+4. Run a dev e2e test:
+   ```bash
+   ssh devbox 'export PATH=/usr/local/go/bin:$PATH && cd /home/hayua/rp && test/e2ev3/hack/e2ev3 dev --scenario <pick-one> --debug'
+   ```
+5. Document the actual test execution flow and results
 
-The standalone environment on devbox (`/home/hayua/rp`) is **DOWN**:
+### Key Files on Devbox
+| Path | Purpose |
+|------|---------|
+| `/home/hayua/rp/test/e2ev3/hack/e2ev3` | e2e test entry script |
+| `/home/hayua/rp/hack/aksbuilder_localdeploy.sh` | Standalone deploy wrapper (calls `aksbuilder.sh localdeploy`) |
+| `/usr/local/go/bin/go` | Go 1.24.3 (not on default PATH) |
+| `~/azureconfig.yaml` | Azure config for localdeploy |
 
-- Key Vault DNS (`aks-rp-standalone.vault.azure.net`) → NXDOMAIN
-- Go, Bazel, Bazelisk — not installed on devbox
-- Docker ✓, entry script ✓, SIG directories ✓
-
-### Human Action Required
-
-1. **Install Go + Bazel** on devbox
-2. **Deploy standalone:** `hack/aksbuilder_localdeploy.sh`
-3. **Validate:** `bash outputs/standalone-readiness-check.sh`
-4. **Run test:** `cd /home/hayua/rp && test/e2ev3/hack/e2ev3 dev --scenario <name> --debug`
-
-## Knowledge Summary
-
-| Concept | Detail |
-|---------|--------|
-| Framework location | `test/e2ev3/` |
-| Core types | Plan, Scenario, Suite, Mutator (`runtime/test/types.go`) |
-| DAG engine | `github.com/Azure/go-workflow`, `flow.BatchPipe` |
-| Entry script | `test/e2ev3/hack/e2ev3 <suite> --build-version <VER> --scenario <NAME> --debug` |
-| Standalone entry | `localdev.Main` — applies standalone mutators |
-| Suites | mv (master validation), dev (local), prod, longhaul |
-| Build system | Bazel via `hack/aksbuilder.sh` |
-| SIGs | 24 active (26 directories, 2 inactive) |
-| Standalone mutators | Traffic routing, subscription registration, MSI simulation |
-
-## What's Left
-
-Once unblocked, the only remaining goal milestone is:
-- **Run an actual e2e test** against standalone and document the output
+### Output Files Produced
+| File | Lines | Content |
+|------|-------|---------|
+| `e2ev3-architecture.md` | ~210 | Framework types, lifecycle, DAG orchestration |
+| `standalone-setup.md` | ~155 | Prerequisites, build versions, running tests |
+| `scenario-catalog.md` | ~100 | 632 scenarios across 22 SIGs |
+| `writing-e2e-tests.md` | ~300 | How to write new e2e tests |
+| `e2e-quickref.md` | ~120 | Quick reference card |
+| `troubleshooting.md` | ~80 | Common issues and fixes |
+| `standalone-readiness-check.sh` | ~100 | Readiness check script |
+| `doc-verification.md` | ~50 | Verification of docs against live repo |
+| `e2e-run-attempt.md` | ~60 | First run attempt (failed: env not deployed) |
