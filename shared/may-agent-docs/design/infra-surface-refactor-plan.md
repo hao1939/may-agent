@@ -855,7 +855,7 @@ concepts or process boundaries.
 
 ### Phase 9a: Agent Loader Boundary
 
-Status: partially shipped.
+Status: shipped as compatibility-facade split.
 
 Current problem: `src/app/agent-loader.ts` is one large module that owns:
 
@@ -892,7 +892,7 @@ Target modules:
 - [x] `src/app/loader/toolset-loader.ts`
 - [x] `src/app/loader/heartbeat-loader.ts`
 - [x] `src/app/loader/handler-loader.ts`
-- [ ] `src/app/loader/agent-registry-loader.ts`
+- [x] `src/app/loader/agent-registry-loader.ts`
 
 Keep the public exports from `src/app/agent-loader.ts` as a compatibility
 barrel during the split. Remove the barrel only after direct imports are
@@ -918,6 +918,7 @@ Current proof:
   - `c3202f8d` split toolset construction.
   - `c70eb742` split heartbeat generation.
   - `a7b2ebe2` split handler hot-reload loading.
+  - `e5c18e6e` split registry orchestration.
 - `bun test test/agent-loader.test.ts test/query-db-tool.test.ts` passes.
 - `bun run check` passes.
 
