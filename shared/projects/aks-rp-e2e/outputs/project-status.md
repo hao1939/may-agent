@@ -1,6 +1,6 @@
 # AKS RP E2Ev3 Project — Status Summary
 
-**Last updated:** 2025-07-11
+**Last updated:** 2026-05-11
 
 ## Goal
 Learn and set up e2e testing for the AKS Resource Provider Go monorepo. Success = able to run e2e tests against a standalone environment, understand the e2ev3 framework architecture, and document the workflow.
@@ -21,10 +21,11 @@ Learn and set up e2e testing for the AKS Resource Provider Go monorepo. Success 
 
 ## Blocked ❌
 
-**Cannot run e2e tests.** The standalone environment is DOWN:
-- Key Vault DNS (`aks-rp-e2e-kv.vault.azure.net`) returns NXDOMAIN
+**Cannot run e2e tests.** The standalone environment is DOWN (confirmed 2026-05-11):
+- Key Vault DNS (`hayua-aks-kv.vault.azure.net`) returns NXDOMAIN
+- Go and Bazel not installed on devbox (Docker is running)
 - Root cause: standalone not deployed on devbox
-- **Action needed (human):** Run `hack/aksbuilder_localdeploy.sh` on devbox to provision the environment
+- **Action needed (human):** Run `hack/aksbuilder_localdeploy.sh` on devbox to provision the environment, install Go + Bazel
 - Once deployed, re-run `outputs/standalone-readiness-check.sh` to validate, then execute a test:
   ```bash
   cd /home/hayua/rp
