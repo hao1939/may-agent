@@ -75,4 +75,49 @@ describe("QueryService", () => {
     expect(query.sql("PRAGMA table_info(sessions)").rows.some((row) => row.name === "sessionId")).toBe(true);
     expect(() => query.sql("PRAGMA user_version = 1")).toThrow(/not allowed/);
   });
+
+  it("loads metric alert context behind one schema-aware helper", () => {
+    const { db, query } = harness();
+    const now = 20_000;
+
+    db.run(
+      "INSERT INTO projects (id, path, name, owner, updated_at) VALUES (?, ?, ?, ?, ?)",
+      ["p1", "shared/projects/p1", "Project One", "arc", now],
+    );
+    db.run(
+      `INSERT INTO metrics
+        (id, name, owner, current, threshold, target, priority, project, status, updated_at, alert_op)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["session.failed-triage-rate-3h", "Failed triage rate", "may", 0.4, 0.8, 1, "P1", "p1", "active", now, "<"],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
+      ["session.failed-triage-rate-3h", "threshold", "below target", now - 100],
+    );
+    db.run(
+      "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
+      ["session.failed-triage-rate-3h", 0.4, 9, now, "may", "latest"],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["evaluation.reviewed", "evaluator", "may", JSON.stringify({ ok: true }), now],
+    );
+
+    const context = query.metricAlertContext({
+      metricId: "session.failed-triage-rate-3h",
+      relatedEventTypes: ["evaluation.reviewed"],
+      snapshotLimit: 1,
+      eventLimit: 1,
+    });
+
+    expect(context.metric).toMatchObject({
+      id: "session.failed-triage-rate-3h",
+      explicitOwner: "may",
+      projectOwner: "arc",
+      alertOp: "<",
+    });
+    expect(context.alert).toMatchObject({ metric_id: "session.failed-triage-rate-3h", message: "below target" });
+    expect(context.snapshots).toMatchObject([{ value: 0.4, sample_size: 9, measured_by: "may" }]);
+    expect(context.relatedEvents).toMatchObject([{ event_type: "evaluation.reviewed", owner: "may" }]);
+  });
 });

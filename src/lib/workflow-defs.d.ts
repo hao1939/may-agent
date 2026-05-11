@@ -71,6 +71,7 @@ interface QueryAPI {
   metrics(filter?: Record<string, unknown>): QueryResult;
   alerts(filter?: Record<string, unknown>): QueryResult;
   projects(filter?: Record<string, unknown>): QueryResult;
+  metricAlertContext(filter: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
 }
 
