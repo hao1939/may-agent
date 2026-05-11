@@ -40,24 +40,16 @@ import { createMessageTool } from "../lib/tools/message-tool.js";
 import { VALID_TOOL_PRESETS } from "../lib/tool-preset-registry.js";
 import type { EventBus } from "./event-bus.js";
 import { Cron } from "./cron.js";
+import {
+  loadAgentConfig,
+  validateAgentConfig,
+  type AgentConfig,
+  type ValidationError,
+} from "./loader/agent-config.js";
+import { listAgentDirectories, listConfiguredAgentNames } from "./loader/agent-discovery.js";
 
-// ── Agent config schema (agent.json) ────────────────────────────────────
-
-export interface AgentConfig {
-  name: string;
-  description: string;
-  domain: string;
-  model: string; // key into models map
-  tools: string[]; // preset names: "coding", "agents", "workflow", etc.
-  memoryLimit?: number;
-  /** Enable automatic context compaction for long-running sessions. */
-  compaction?: boolean;
-  /** Block direct delegation to specific agents via agents tool. */
-  delegateDeny?: { agents: string[]; hint: string };
-  /** @deprecated Volatile context should be injected at session time, not in system prompt. */
-  context_files?: string[];
-  /** Maximum state-changing operations (bash, write, edit, commit) per session. */
-}
+export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
+export { listAgentDirectories, listConfiguredAgentNames } from "./loader/agent-discovery.js";
 
 // ── Loader options ──────────────────────────────────────────────────────
 
@@ -95,23 +87,6 @@ const agentCrons = new Map<string, Cron>();
 /** Get all cron instances (for starting/stopping from may.ts). */
 export function getAgentCrons(): Map<string, Cron> {
   return agentCrons;
-}
-
-function listConfiguredAgentNames(agentsRoot: string): string[] {
-  const names = new Set<string>();
-  for (const entry of readdirSync(agentsRoot, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    if (entry.name === "shared" || entry.name === "gym" || entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
-    const configPath = resolve(agentsRoot, entry.name, "agent.json");
-    if (!existsSync(configPath)) continue;
-    try {
-      const config = JSON.parse(readFileSync(configPath, "utf-8")) as { name?: string; disabled?: boolean };
-      if (!config.disabled) names.add(config.name ?? entry.name);
-    } catch {
-      names.add(entry.name);
-    }
-  }
-  return [...names].sort();
 }
 
 /** Register a cleanup function for an agent. */
@@ -411,79 +386,7 @@ async function loadLocalTools(agentName: string, agentDir: string, opts: AgentLo
   return tools;
 }
 
-// ── Validation ──────────────────────────────────────────────────────────
-
-const REQUIRED_FIELDS: (keyof AgentConfig)[] = ["name", "description", "domain", "model", "tools"];
-
-export interface ValidationError {
-  agent: string;
-  field: string;
-  message: string;
-}
-
-/**
- * Validate an agent config. Returns errors (empty array = valid).
- */
-export function validateAgentConfig(
-  config: AgentConfig,
-  models: Record<string, ModelWithApiKey>,
-  agentsRoot: string,
-): ValidationError[] {
-  const errors: ValidationError[] = [];
-  const name = config.name || "<unnamed>";
-
-  // Required fields
-  for (const field of REQUIRED_FIELDS) {
-    if (!config[field]) {
-      errors.push({ agent: name, field, message: `Missing required field "${field}"` });
-    }
-  }
-
-  // Model must exist in the models map
-  if (config.model && !models[config.model]) {
-    errors.push({ agent: name, field: "model", message: `Unknown model "${config.model}"` });
-  }
-
-  // Tool presets must be valid
-  if (config.tools) {
-    if (!Array.isArray(config.tools)) {
-      errors.push({ agent: name, field: "tools", message: `"tools" must be an array` });
-    } else {
-      for (const preset of config.tools) {
-        if (!VALID_TOOL_PRESETS.has(preset)) {
-          errors.push({ agent: name, field: "tools", message: `Unknown tool preset "${preset}"` });
-        }
-      }
-    }
-  }
-
-  return errors;
-}
-
 // ── Load and register agents ────────────────────────────────────────────
-
-function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | null {
-  const configPath = resolve(agentDir, "agent.json");
-  if (!existsSync(configPath)) return null;
-
-  try {
-    const raw = readFileSync(configPath, "utf-8");
-    const config = JSON.parse(raw) as AgentConfig;
-    return config;
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
-    bus.emit({
-      type: "agent.config_invalid",
-      owner: "may",
-      agent: agentDir.split(/[\\/]/).pop() || "<unknown>",
-      count: 1,
-      message: `Failed to parse ${configPath}: ${msg}`,
-      priority: "P0",
-    });
-    return null;
-  }
-}
 
 export interface LoadResult {
   added: string[];
@@ -502,13 +405,7 @@ export async function loadAgents(opts: AgentLoaderOptions): Promise<LoadResult> 
   const updated: string[] = [];
   const allErrors: ValidationError[] = [];
 
-  const entries = readdirSync(agentsRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    if (entry.name === "shared") continue; // shared/ is not an agent
-    if (entry.name.startsWith("_")) continue; // Skip legacy/private directories
-
-    const agentDir = resolve(agentsRoot, entry.name);
+  for (const { dir: agentDir } of listAgentDirectories(agentsRoot)) {
     const config = loadAgentConfig(agentDir, opts.bus);
     if (!config) continue;
 

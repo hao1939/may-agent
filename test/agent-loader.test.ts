@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { loadAgents, validateAgentConfig, type AgentConfig } from "../src/app/agent-loader.js";
+import {
+  listConfiguredAgentNames,
+  loadAgentConfig,
+  loadAgents,
+  validateAgentConfig,
+  type AgentConfig,
+} from "../src/app/agent-loader.js";
 import { findFleetToolPresetIssues, findUnhandledToolPresets, VALID_TOOL_PRESETS } from "../src/lib/tool-preset-registry.js";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -134,6 +140,42 @@ describe("validateAgentConfig", () => {
       });
 
       expect(messages.filter((message) => message.includes("Unknown tool preset"))).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("agent loader boundaries", () => {
+  it("emits agent.config_invalid when agent.json cannot be parsed", () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-config-"));
+    try {
+      const agentDir = join(root, "broken");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(agentDir, "agent.json"), "{");
+
+      const events: Array<{ type: string; agent?: string; message?: string }> = [];
+      const config = loadAgentConfig(agentDir, { emit: (event: any) => events.push(event) } as any);
+
+      expect(config).toBeNull();
+      expect(events.some((event) => event.type === "agent.config_invalid" && event.agent === "broken")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers configured agent names and skips disabled configs", () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-discovery-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const alphaDir = join(agentsRoot, "alpha");
+      const betaDir = join(agentsRoot, "beta");
+      mkdirSync(alphaDir, { recursive: true });
+      mkdirSync(betaDir, { recursive: true });
+      writeFileSync(join(alphaDir, "agent.json"), JSON.stringify({ name: "z-alpha" }));
+      writeFileSync(join(betaDir, "agent.json"), JSON.stringify({ name: "beta", disabled: true }));
+
+      expect(listConfiguredAgentNames(agentsRoot)).toEqual(["z-alpha"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
