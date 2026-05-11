@@ -165,6 +165,10 @@
 - Symptom: routing labels a session as a `success_candidate` with signals like `knowledge update` because the heartbeat discusses or re-checks a recently created KE/proposal, but transcript/tool evidence shows the reviewed session only verified that the prior artifact already exists and wisely produced no duplicate write.
 - Fix: inspect artifact authorship/timing, not just artifact mentions. If the current session only confirms prior work and does fresh live triage, score it as acceptable/good maintenance rather than a fresh knowledge-producing success; separately note the routing false-positive so heuristics can key on write/edit or new-commit evidence.
 
+## Pattern: material-output routing can be false even when the no-op heartbeat is good
+- Symptom: routing says `knowledge update` or other material-output language, but the transcript shows only live checks (inbox, metrics, events, git status) and the session explicitly decides there is nothing new to write.
+- Fix: separate session quality from output materiality. Credit the evidence-backed no-op as operational maintenance if the checks are relevant and lane-aware, but overturn the material-output framing unless there is an actual written artifact, diff, message, or durable state change from the reviewed session.
+
 ## Pattern: claimed escalation in prose is not an actual escalation
 - Symptom: a session summary or heartbeat log says a blocker was "escalated to human" or similar, but the transcript shows no `message()` call, no project update, and no other durable state change that actually performed the escalation.
 - Fix: verify the operational action from tool evidence, not prose. Credit the underlying diagnosis if it is supported by live checks, but downgrade output quality when the session only documents intended escalation instead of performing one.
