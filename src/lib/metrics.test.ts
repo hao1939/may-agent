@@ -65,6 +65,50 @@ describe("MetricService", () => {
     });
   });
 
+  it("opens health alerts only after the configured consecutive failures", () => {
+    const { db, service, emitted } = harness();
+
+    service.define({
+      id: "guard.blocked-count-15m",
+      name: "Guard blocks (15m)",
+      owner: "may",
+      type: "health",
+      target: 0,
+      threshold: 2,
+      unit: "count",
+      alertOp: ">",
+      priority: "P1",
+      config: { alert: { mode: "consecutive_failures", count: 2 } },
+    });
+
+    service.record("guard.blocked-count-15m", 2, { measuredAt: 1_000 });
+    expect(service.evaluate("guard.blocked-count-15m")).toMatchObject([
+      { metricId: "guard.blocked-count-15m", status: "ok" },
+    ]);
+
+    service.record("guard.blocked-count-15m", 3, { measuredAt: 2_000 });
+    expect(service.evaluate("guard.blocked-count-15m")).toMatchObject([
+      { metricId: "guard.blocked-count-15m", status: "ok" },
+    ]);
+
+    service.record("guard.blocked-count-15m", 3, { measuredAt: 3_000 });
+    expect(service.evaluate("guard.blocked-count-15m")).toMatchObject([
+      { metricId: "guard.blocked-count-15m", status: "breached" },
+    ]);
+
+    const alert = db.prepare("SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id = ?").get("guard.blocked-count-15m") as any;
+    expect(alert).toMatchObject({ metric_id: "guard.blocked-count-15m", resolved_at: null });
+    expect(emitted.at(-1)).toMatchObject({
+      type: "metric.breach",
+      data: { owner: "may", metricId: "guard.blocked-count-15m", priority: "P1" },
+    });
+
+    service.record("guard.blocked-count-15m", 0, { measuredAt: 4_000 });
+    expect(service.evaluate("guard.blocked-count-15m")).toMatchObject([
+      { metricId: "guard.blocked-count-15m", status: "recovered" },
+    ]);
+  });
+
   it("supports source-defined metrics and manual alerts", () => {
     const { db, service, emitted } = harness();
 

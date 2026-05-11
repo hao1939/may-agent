@@ -809,6 +809,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       ORDER BY owner, m.priority, m.name
     `).all() as any[];
 
+    const openAlerts = db.prepare(`
+      SELECT ma.id as alertId, ma.metric_id as metricId, ma.alert_type as alertType,
+             ma.message, ma.created_at as createdAt,
+             m.name, m.type,
+             COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'may') as owner,
+             m.owner as explicitOwner, m.project, m.current, m.target, m.threshold,
+             m.unit, m.priority, m.status, m.speed, m.alert_op,
+             m.source, m.updated_at
+      FROM metric_alerts ma
+      INNER JOIN metrics m ON m.id = ma.metric_id
+      LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
+        AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
+      WHERE ma.resolved_at IS NULL
+        AND m.status = 'active'
+      ORDER BY ma.created_at DESC
+    `).all() as any[];
+
+    const openAlertByMetric = new Map(openAlerts.map((alert) => [alert.metricId, alert]));
+    const metricsWithAlertState = metrics.map((metric) => {
+      const alert = openAlertByMetric.get(metric.id);
+      return alert
+        ? { ...metric, alertOpen: true, alertId: alert.alertId, alertMessage: alert.message, alertType: alert.alertType }
+        : { ...metric, alertOpen: false };
+    });
+
     const snapshots = db.prepare(`
       SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.note
       FROM metric_snapshots ms
@@ -824,14 +849,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       FROM metric_snapshots ms ORDER BY ms.measured_at DESC LIMIT 50
     `).all() as any[];
 
-    // Compute alerts: any metric with threshold that's breaching
-    const alerts = metrics.filter((m: any) => {
-      if (m.threshold == null || m.current == null) return false;
-      if (m.alert_op === 'above' || m.alert_op === '>') return m.current > m.threshold;
-      return m.current < m.threshold; // default: '<'
-    });
-
-    return new Response(JSON.stringify({ metrics, latestSnapshots: snapshots, recentSnapshots, alerts }), {
+    return new Response(JSON.stringify({ metrics: metricsWithAlertState, latestSnapshots: snapshots, recentSnapshots, alerts: openAlerts }), {
       headers: { "Content-Type": "application/json" },
     });
   }
