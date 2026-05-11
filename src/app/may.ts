@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import { execSync } from "node:child_process";
 import { resolve, join } from "node:path";
-import { existsSync, readFileSync, appendFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { getModel } from "@mariozechner/pi-ai";
 import type { ModelWithApiKey } from "../lib/types.js";
 import {
@@ -16,13 +16,11 @@ import { attachConsoleUI } from "./ui/console.js";
 import { attachTelegramBot } from "./ui/telegram.js";
 import {
   loadAgents,
-  setAgentSessionId,
-  runAgentCleanup,
   getAgentCrons,
   generateAutoHeartbeats,
   type AgentLoaderOptions,
 } from "./agent-loader.js";
-import { createDaemonLifecycle, createIdentityWriter, formatDurationMs } from "./daemon.js";
+import { attachDaemonEventSubscribers, attachEventPersistence, createDaemonLifecycle, createIdentityWriter, formatDurationMs } from "./daemon.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
@@ -214,63 +212,7 @@ const models: Record<string, ModelWithApiKey> = {
 // ── Infrastructure ─────────────────────────────────────────────────────
 
 const bus = new EventBus();
-
-// DB writer subscriber — persists events to SQLite.
-// Registered with priority "first": v2 invariant that events are durable
-// BEFORE any side-effect handler runs. If a handler triggers work, the
-// originating event is already on disk (audit/replay safety).
-import { DbWriter } from "../lib/db-writer.js";
-const dbWriter = new DbWriter(PERSIST_DIR);
-bus.subscribe(dbWriter.handler, { priority: "first" });
-
-// Session lifecycle subscribers — decoupled side effects
-import {
-  createStuckDetector,
-  createAutoResume,
-  createDigestWriter,
-  createLastSessionWriter,
-} from "../lib/session-subscribers.js";
-bus.subscribe(createDigestWriter(PERSIST_DIR));
-bus.subscribe(createLastSessionWriter(PROJECT_ROOT));
-bus.subscribe(createStuckDetector(
-  (sessionId, _reason) => {
-    bus.emit({ type: "cancel", sessionId } as any);
-  },
-  (agent, sessionId, reason) => {
-    // Circuit-breaker → diagnosis feedback loop: notify May to investigate
-    bus.emit({
-      type: "message.created",
-      from: "system:circuit-breaker",
-      to: "may",
-      content: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
-      intent: "investigate",
-      priority: "P1",
-    } as any);
-  },
-  PERSIST_DIR,
-  () => manager,
-));
-bus.subscribe(createAutoResume(
-  (sessionId, agent, _attempt) => {
-    const ok = manager.resumeInterrupted(sessionId);
-    if (ok) {
-      log("info", `[resume] Resumed ${agent} session ${sessionId}`);
-    } else {
-      log("warn", `[resume] Failed to resume ${sessionId}`);
-    }
-  },
-  (agent, _sessionId, reason) => {
-    log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
-    // Persist + notify (same as RuntimeCtx.escalate)
-    try {
-      const escalationPath = resolve(PERSIST_DIR, "escalations.jsonl");
-      appendFileSync(escalationPath, JSON.stringify({ ts: new Date().toISOString(), agent, reason, notified: true }) + "\n", "utf-8");
-    } catch { /* best-effort */ }
-    bus.emit({ type: "message.created", from: "may", to: "human", content: `⚠️ *Agent Blocked*\n${agent} — ${reason}` } as any);
-  },
-  PERSIST_DIR,
-  () => manager,
-));
+attachEventPersistence({ bus, persistDir: PERSIST_DIR });
 
 let taskSessionId: string | undefined;
 let chatSession: ChatSession | undefined;
@@ -326,47 +268,7 @@ const manager = new SubagentManager({
   bus,
 });
 
-// Agent-loader bookkeeping (track active session IDs, run cleanup on completion)
-bus.subscribe((event) => {
-  if (event.type === "session.start" && "agent" in event && "sessionId" in event) {
-    setAgentSessionId(event.agent as string, event.sessionId as string);
-  }
-  if (event.type === "session.end" && "agent" in event) {
-    runAgentCleanup(event.agent as string);
-  }
-});
-
-// ── Session lifecycle → domain events (thin translator) ────────────────
-// Translates session.end bus events into domain events (dot-separated types).
-// DbWriter persists them, Cron dispatches them to handlers — both via bus subscription.
-bus.subscribe((event) => {
-  if (event.type !== "session.end") return;
-  const info = event as any;
-
-  // Translate → session.failed (for recovery handler)
-  if (info.error && info.status === "error") {
-    bus.emit({ type: "session.failed",
-      sessionId: info.sessionId, agent: info.agent, error: info.error, task: info.task,
-    } as any);
-  }
-
-  // Translate → session.escalated (for escalation handler)
-  const fp = info.finishParams;
-  if (fp && (fp.status === "blocked" || fp.status === "failure")) {
-    bus.emit({ type: "session.escalated",
-      sessionId: info.sessionId, agent: info.agent, finishParams: fp,
-    } as any);
-  }
-
-  // Translate → session.completed (for eval handler)
-  if (info.agent !== "evaluator" && info.agent !== "judge") {
-    bus.emit({ type: "session.completed",
-      sessionId: info.sessionId, agent: info.agent,
-      parentSessionId: info.parentSessionId, outcome: info.outcome,
-      status: info.status, source: info.source, kind: info.kind,
-    } as any);
-  }
-});
+attachDaemonEventSubscribers({ bus, manager, persistDir: PERSIST_DIR, projectRoot: PROJECT_ROOT });
 
 // ── Load agents from agents/*/agent.json ────────────────────────────────
 
