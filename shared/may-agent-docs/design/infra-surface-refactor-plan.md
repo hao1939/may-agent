@@ -940,7 +940,8 @@ Target modules:
 - [x] `src/app/modes/web.ts`
 - [x] `src/app/modes/run-workflow.ts`
 - [x] `src/app/modes/oneshot.ts`
-- [x] `src/app/daemon.ts` lifecycle support and daemon event subscribers
+- [x] `src/app/daemon.ts` lifecycle support, daemon event subscribers, and
+  agent startup assembly
 
 `may.ts` should parse arguments, select one mode, and delegate. It should not
 own loader internals, Web UI startup details, workflow direct-run mechanics, or
@@ -963,6 +964,7 @@ Current proof:
   - `a0d61847` split oneshot CLI mode.
   - `d7027420` split daemon lifecycle support.
   - `8175e024` split daemon event subscribers.
+  - `58bc3a46` split daemon agent startup.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
@@ -971,10 +973,11 @@ Current proof:
 
 Current shape:
 
-- `src/app/may.ts`: 633 lines, still owns mode selection and remaining daemon
+- `src/app/may.ts`: 575 lines, still owns mode selection and remaining daemon
   assembly.
 - `src/app/daemon.ts`: lifecycle, event persistence, session side-effect
-  subscribers, and session-domain event translation.
+  subscribers, session-domain event translation, agent loading, heartbeat
+  convention injection, cron bus subscription, and heartbeat workflow preflight.
 
 Stop criteria:
 
