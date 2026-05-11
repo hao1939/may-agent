@@ -152,6 +152,30 @@ acccvm, airlock, arm64, autoscale, ccp, consts, dataplane, devinfra, dplat, fqdn
 
 Each SIG typically has: `plans/`, `handlers/`, `suites/`, `cmd/`, `pipelines/`
 
+## Dev Suite: All Registered Test Plans (from `cmd/dev/BUILD.bazel`)
+
+The `dev` suite is the kitchen-sink binary for local development. It imports plans/suites from these SIGs:
+
+| SIG | Plan Packages |
+|-----|---------------|
+| autoscale | `clusterautoscaler/plans`, `karpenter/plans`, `keda/plans` |
+| ccp | `coredns/suites`, `localdns/suites`, `metricsserver/suites`, `pafthrottling/plans`, `plans`, `suites`, `suites/plannedmaintenance`, `underlayvpa/suites` |
+| dataplane | `plans` |
+| dplat | `scenarios` |
+| industry | `plans` |
+| managementplane | `addon/suites` |
+| network | `plans/datapath`, `plans/swiftv1`, `plans/swiftv2` |
+| node | `azurelinux/plans`, `httpproxy/suites`, `nativenode/plans`, `preparedimagespecification/plans` |
+| rp | `hcp/plans`, `nativerp/plans`, `nativerp/plans/autoupgrade`, `nativerp/plans/jwtauthenticator`, `virtualmachine/plans`, `virtualmachine/suites` |
+| runtime | `plans` |
+| secops | `clusterfips/plans` |
+| security | `plans` |
+| serverless | `plans` |
+| speculor | `netintegration/plans`, `privatecluster/plans/apiservervnetintegration`, `privatecluster/plans/privatelink`, `storage/plans` |
+| traffic | `plans/apiproxy`, `plans/applink`, `plans/approuting`, `plans/azureservicemesh`, `plans/httpapplicationrouting`, `plans/managedgatewayapi`, `plans/meshlessistio` |
+| windows | `plans` |
+| workload | `plans` |
+
 ## Handlers
 
 Handlers are Go structs implementing `Do(ctx context.Context) error`. They:

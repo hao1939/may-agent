@@ -134,9 +134,21 @@ From the mastervalidation suite, good starter scenarios:
 - `Scenario_Preflight` — Quick preflight validation, no cluster creation
 - Other scenarios in `sigs/rp/nativerp/plans/` — RP-focused tests
 
+## Devbox Current State (as of 2026-05-11)
+
+- **Go**: NOT installed — `which go` returns nothing
+- **Bazel**: NOT installed — `which bazel` returns nothing
+- **aksbuilder binary**: Present at `hack/aksbuilder-linux-amd64`
+- **aksbuilder.sh wrapper**: Present at `hack/aksbuilder.sh`
+- **aksbuilder_localdeploy.sh**: Present — used to deploy standalone
+- **Standalone**: NOT deployed (Key Vault DNS unresolvable)
+
+**To unblock**: Install Go + Bazel, then run `hack/aksbuilder_localdeploy.sh` to deploy standalone.
+
 ## Troubleshooting
 
 - **VPN not connected** → Tests will fail to reach standalone services
 - **Build version wrong** → Traffic won't route to your standalone
 - **Bazel build fails** → Run `aksbuilder tidy` manually, check Go module issues
 - **Timeout** → Default is 1 hour; increase with `--timeout` flag
+- **Go/Bazel not found on devbox** → Install via team-standard setup scripts or manually
