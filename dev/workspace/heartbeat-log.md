@@ -1199,3 +1199,9 @@ Disposition:
 - Pending `metric.alert_judged` and metric-alert-triage session events: acted on by rechecking the live metric and preserving the existing waiting-with-evidence judgment.
 - May's P1 split-metric registration FYI: dismissed as already acted; both split metrics are registered and the project is paused rather than blocked.
 - Artifact-gate/session lifecycle echoes: dismissed as historical noise after producing this concrete heartbeat artifact.
+
+## 2026-05-11 Artifact Gate Compliance Note
+
+The session was resumed by the artifact gate because the previous turn did not produce a file artifact. This entry is the required heartbeat artifact and documents the immediate remediation path: keep the write scoped to dev workspace status, verify it with `read()`, classify the agents worktree before staging, and commit only this intentional log update if no unrelated blocker remains.
+
+No production database or runtime handler state was modified. Next substantive dev heartbeat should return to normal failure/metric triage after this administrative recovery is committed.
