@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   buildNotificationReplyText,
+  buildTelegramReplyRoute,
   buildTelegramQuoteReplyText,
   extractProjectPath,
   normalizeProjectPath,
@@ -75,5 +76,65 @@ describe("telegram reply router helpers", () => {
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
     }
+  });
+
+  it("builds a notification route with project and session context", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "telegram-reply-route-"));
+    try {
+      const sessionDir = join(persistDir, "sessions", "s_route");
+      mkdirSync(sessionDir, { recursive: true });
+      writeFileSync(join(sessionDir, "session-compact.jsonl"), [
+        JSON.stringify({ role: "system", content: [{ type: "text", text: "Route summary" }] }),
+        JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Route action" }] }),
+      ].join("\n"));
+
+      const route = buildTelegramReplyRoute({
+        text: "please continue",
+        replyToMsgId: 42,
+        ctx: {
+          agent: "may",
+          event_type: "message.created",
+          session_id: "s_route",
+          project_id: "agents/shared/projects/demo",
+          data: JSON.stringify({ text: "Original" }),
+        },
+        quotedText: "",
+        projectRoot: root,
+        persistDir,
+        interfaceAgent: "may",
+      });
+
+      expect(route.kind).toBe("notification");
+      if (route.kind !== "notification") return;
+      expect(route.owner).toBe("may");
+      expect(route.projectPath).toBe("agents/shared/projects/demo");
+      expect(route.sessionId).toBe("s_route");
+      expect(route.enrichedText).toContain("Route summary");
+      expect(route.enrichedText).toContain("User says: please continue");
+    } finally {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
+  it("builds quote and missing-context routes without DB context", () => {
+    expect(buildTelegramReplyRoute({
+      text: "ok",
+      replyToMsgId: 1,
+      ctx: null,
+      quotedText: "Prior message",
+      projectRoot: root,
+      persistDir: "/tmp/missing",
+      interfaceAgent: "may",
+    })).toMatchObject({ kind: "quote", enrichedText: buildTelegramQuoteReplyText("ok", "Prior message") });
+
+    expect(buildTelegramReplyRoute({
+      text: "ok",
+      replyToMsgId: 2,
+      ctx: null,
+      quotedText: "",
+      projectRoot: root,
+      persistDir: "/tmp/missing",
+      interfaceAgent: "may",
+    })).toMatchObject({ kind: "missing-context" });
   });
 });
