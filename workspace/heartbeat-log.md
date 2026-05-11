@@ -404,3 +404,34 @@ session pick it up organically.
    ~36h in pending-review. Past the 30h soft threshold I set last pass.
 3. Check whether `closed-loop-reliability` (14/14 milestones, still
    waiting) just needs an owner close — possibly nudge may (self).
+
+## 2026-05-11T02:36Z heartbeat (artifact-gate compliance)
+
+Quick re-check after prior heartbeat (02:35Z) finished partial with no writes.
+
+### DB snapshot
+- Active alerts: 1 — `agent.heartbeat-dark-count-2h` (current=1, threshold=0).
+- Last session per scheduled agent (UTC):
+  - dev 02:35:53, may 02:35:45, arc 02:35:44, evaluator 02:35:44
+  - scout 02:19:28 (~17m ago — within 2h, not the dark one)
+  - **master 2026-05-10 19:27:58** (~7h ago) — this is the dark agent.
+  - tech-lead 2026-05-08 — out of scheduled rotation (manual), expected.
+
+### Interpretation
+The dark-2h alert is firing because **master** has not run since 19:27Z
+yesterday, ~7h gap. Scout is fine (just ran). My prior heartbeat note
+"wait for scout to clear" was wrong — master is the offender. No
+master-related tracked request exists for this; scheduler health is a
+dev/tech-lead concern.
+
+### Actions taken
+- Read-only DB inspection. No nudges filed (master scheduling is outside
+  may's lane; dev already actively working `finish-blocked-hygiene-reduction`
+  and would notice scheduler regressions).
+
+### Next heartbeat should
+1. If master still hasn't run by next pass (>9h gap), file a tracked
+   request to dev/tech-lead: "master heartbeat scheduler dark since
+   2026-05-10 19:27Z".
+2. Re-check alert 286 — if it auto-resolves once master runs, no action
+   needed.
