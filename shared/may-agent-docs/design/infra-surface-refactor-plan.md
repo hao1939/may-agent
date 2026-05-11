@@ -971,6 +971,7 @@ Current proof:
   - `f7b361e2` split task/chat session startup and fixed handler hot-reload
     cache busting.
   - `e7b66b4a` split model registry setup from the composition root.
+  - `a4d4a6a0` split app argument parsing and mode derivation.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
@@ -981,8 +982,10 @@ Current proof:
 
 Current shape:
 
-- `src/app/may.ts`: 430 lines, still owns mode selection and remaining daemon
+- `src/app/may.ts`: 402 lines, still owns mode selection and remaining daemon
   assembly.
+- `src/app/app-args.ts`: pure CLI/env parser for app mode flags, task loading,
+  agent selection, and detached-session env defaults.
 - `src/app/model-registry.ts`: pure model routing/registry setup with coverage
   for LiteLLM proxy and direct Anthropic opus routing.
 - `src/app/daemon.ts`: lifecycle, event persistence, session side-effect
