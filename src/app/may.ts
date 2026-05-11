@@ -7,7 +7,6 @@ import {
   SubagentManager,
 } from "../lib/index.js";
 import { EventBus } from "./event-bus.js";
-import { ChatSession } from "./chat-session.js";
 import { attachCommandRouter } from "./command-router.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import { startCronRuntime } from "./cron-startup.js";
@@ -22,6 +21,7 @@ import {
   prepareDaemonAgents,
   runDaemonKeepalive,
   runInteractiveLoop,
+  startRequestedSession,
 } from "./daemon.js";
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
@@ -218,7 +218,7 @@ const bus = new EventBus();
 attachEventPersistence({ bus, persistDir: PERSIST_DIR });
 
 let taskSessionId: string | undefined;
-let chatSession: ChatSession | undefined;
+let chatSession: Awaited<ReturnType<typeof startRequestedSession>>["chatSession"];
 
 if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
 
@@ -410,43 +410,23 @@ if (ONESHOT_MODE) {
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
-} else if (INITIAL_TASK && !CHAT_MODE) {
-  // ── Task mode: single session, run to completion ─────────────────
-  // Only track as human request if not a detached sub-agent (those have ENV_PARENT_SESSION_ID)
-  taskSessionId = manager.run(interfaceAgent, INITIAL_TASK, {
-    kind: "job",
-    ...(ENV_SESSION_ID ? { sessionId: ENV_SESSION_ID } : {}),
-    ...(ENV_PARENT_SESSION_ID ? { parentSessionId: ENV_PARENT_SESSION_ID } : {}),
-    ...(ENV_PARENT_AGENT ? { parentAgentName: ENV_PARENT_AGENT } : {}),
-  });
-  bus.emit({ type: "info", message: `[task] Started ${interfaceAgent} task session: ${taskSessionId}` });
-  await manager.waitForIdle(taskSessionId);
-} else if (CHAT_MODE) {
-  // ── Chat mode: persistent session via ChatSession ────────────────
-  chatSession = new ChatSession({
-    manager,
-    bus,
-    agentName: interfaceAgent,
-    persistDir: PERSIST_DIR,
-    onDone: () => {
-      emitPrompt();
-    },
-    onReload: handleReload,
-    onClose: () => {
-      bus.emit({ type: "info", message: "[cmd] Closing..." });
-      gracefulShutdown();
-    },
-    onRestart: () => {
-      bus.emit({ type: "info", message: "[cmd] Restarting (supervisord will restart)..." });
-      gracefulRestart();
-    },
-  });
-
-  bus.emit({ type: "info", message: `[chat] Chat session ready. Agent: ${interfaceAgent}` });
-} else {
-  // ── Cron-only mode ───────────────────────────────────────────────
-  bus.emit({ type: "info", message: `[cron-only] No chat session. Running cron jobs only.` });
 }
+
+({ taskSessionId, chatSession } = await startRequestedSession({
+  bus,
+  manager,
+  persistDir: PERSIST_DIR,
+  interfaceAgent,
+  initialTask: INITIAL_TASK,
+  chatMode: CHAT_MODE,
+  envSessionId: ENV_SESSION_ID,
+  envParentSessionId: ENV_PARENT_SESSION_ID,
+  envParentAgent: ENV_PARENT_AGENT,
+  emitPrompt,
+  handleReload,
+  gracefulShutdown,
+  gracefulRestart,
+}));
 
 // ── Write identity ─────────────────────────────────────────────────────
 
