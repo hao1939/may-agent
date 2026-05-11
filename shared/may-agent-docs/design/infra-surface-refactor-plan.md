@@ -973,6 +973,7 @@ Current proof:
   - `e7b66b4a` split model registry setup from the composition root.
   - `a4d4a6a0` split app argument parsing and mode derivation.
   - `5147b0b5` split API gate runtime setup from the composition root.
+  - `0cf138b6` split app runtime assembly from the composition root.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
@@ -983,8 +984,11 @@ Current proof:
 
 Current shape:
 
-- `src/app/may.ts`: 388 lines, still owns mode selection and remaining daemon
-  assembly.
+- `src/app/may.ts`: 100 lines, now owns version/path setup, early lightweight
+  modes, model registry creation, and one runtime delegation.
+- `src/app/app-runtime.ts`: process runtime assembly for the normal app path:
+  event bus, manager, loaders, lifecycle, socket, task/chat startup, cron,
+  Telegram, and main loop.
 - `src/app/app-args.ts`: pure CLI/env parser for app mode flags, task loading,
   agent selection, and detached-session env defaults.
 - `src/app/model-registry.ts`: pure model routing/registry setup with coverage
