@@ -26,7 +26,7 @@ import {
 import { resolveProjectRoot } from "./bundle-mode.js";
 import { getDb, closeAllDbs } from "../lib/requests.js";
 import { log } from "../lib/log.js";
-import { daemonSocketPath, emitDaemonEvent } from "../../packages/control/src/client.js";
+import { parseEmitMode, runEmitMode } from "./modes/emit.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -99,18 +99,13 @@ const CHAT_MODE = process.argv.includes("--chat");
 const ONESHOT_MODE = process.argv.includes("--oneshot");
 const STATUS_MODE = process.argv.includes("--status");
 const MESSAGE_MODE = process.argv.includes("--message");
-const EMIT_MODE = (() => {
-  const idx = process.argv.indexOf("--emit");
-  if (idx !== -1 && process.argv[idx + 1]) {
-    try {
-      return { event: process.argv[idx + 1], data: process.argv[idx + 2] ? JSON.parse(process.argv[idx + 2]) : undefined };
-    } catch (err) {
-      console.error(`Invalid --emit JSON payload: ${err instanceof Error ? err.message : String(err)}`);
-      process.exit(1);
-    }
-  }
-  return null;
-})();
+let EMIT_MODE: ReturnType<typeof parseEmitMode>;
+try {
+  EMIT_MODE = parseEmitMode(process.argv);
+} catch (err) {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
+}
 const RUN_WORKFLOW = (() => {
   const idx = process.argv.indexOf("--run-workflow");
   if (idx !== -1 && process.argv[idx + 1]) {
@@ -141,48 +136,24 @@ const interfaceAgent = (() => {
   return process.env.AGENT || "may";
 })();
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isTransientSocketError(message: string): boolean {
-  return message.includes("ENOENT")
-    || message.includes("ECONNREFUSED")
-    || message.includes("Socket closed before command sent");
-}
-
 if (EMIT_MODE) {
   // ── Operator emit mode: send one event to the running daemon and exit ─
   // Keep this before agent/model startup so operators have a small, reliable
   // control command that does not boot another runtime-shaped process.
-  const socketPath = daemonSocketPath(PERSIST_DIR, {
-    instance: process.env.DAEMON_INSTANCE || INSTANCE_LABEL,
-    interfaceAgent: process.env.DAEMON_AGENT || interfaceAgent,
-  });
-  let lastError: unknown;
-  const maxAttempts = 8;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      await emitDaemonEvent(socketPath, EMIT_MODE.event, EMIT_MODE.data || {}, { timeoutMs: 5000 });
-      console.log(`Event emitted: ${EMIT_MODE.event}`);
-      process.exit(0);
-    } catch (err) {
-      lastError = err;
-      const message = err instanceof Error ? err.message : String(err);
-      if (attempt === 1 && isTransientSocketError(message)) {
-        console.error(`Failed to connect to daemon socket ${socketPath}: ${message}`);
-        console.error("Retrying briefly on the same convention path...");
-      }
-      if (attempt < maxAttempts && isTransientSocketError(message)) {
-        await sleep(500);
-        continue;
-      }
-      break;
-    }
+  try {
+    await runEmitMode({
+      mode: EMIT_MODE,
+      persistDir: PERSIST_DIR,
+      instanceLabel: INSTANCE_LABEL,
+      interfaceAgent,
+      daemonInstance: process.env.DAEMON_INSTANCE,
+      daemonAgent: process.env.DAEMON_AGENT,
+    });
+    process.exit(0);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
   }
-  const message = lastError instanceof Error ? lastError.message : String(lastError);
-  console.error(`Failed to emit ${EMIT_MODE.event} via daemon socket ${socketPath}: ${message}`);
-  process.exit(1);
 }
 
 const WEB_ONLY_MODE = WEB_ENABLED
