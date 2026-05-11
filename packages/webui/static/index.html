@@ -1723,6 +1723,7 @@ function initChat(deepLinkSessionId) {
 let currentAgentSubTab = 'overview';
 let _projectDetailPath = '';  // hoisted: render() reads/writes this on first paint
 let currentAgentChat = null;
+let forceNewAgentChat = false;
 
 /**
  * Telegram-style chat with a specific agent. Reuses the #chat pane:
@@ -1777,6 +1778,7 @@ async function renderAgentDetail(name) {
     <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
     ${summary && summary.model ? `<span style="font-size:11px;color:var(--fg2);background:var(--bg3,#222);padding:2px 7px;border-radius:8px">${esc(summary.model)}</span>` : ''}
     <button onclick="verbHeartbeatNow('${esc(name)}', event)" title="Trigger a heartbeat for ${esc(name)} now" style="margin-left:auto;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">♥ heartbeat-now</button>
+    <button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>
   </div>`;
   if (summary && summary.description) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${esc(summary.description)}</div>`;
@@ -2110,6 +2112,7 @@ function renderSessionPicker() {
   const visible = activeSessions.filter(s => {
     if (seen.has(s.sessionId)) return false;
     if (s.status !== 'running' && !(s.status === 'idle' && s.kind === 'chat')) return false;
+    if (currentAgentChat && s.agent !== currentAgentChat) return false;
     seen.add(s.sessionId);
     return true;
   });
@@ -2379,7 +2382,9 @@ function sendChat() {
     ws.send(JSON.stringify({ type: 'steer', sessionId: currentSessionId, message: msg }));
   } else if (currentAgentChat) {
     // Telegram-style: agent chat with no session yet. POST spawns one.
-    fetch('/api/agents/' + encodeURIComponent(currentAgentChat) + '/message', {
+    const newParam = forceNewAgentChat ? '?new=true' : '';
+    forceNewAgentChat = false;
+    fetch('/api/agents/' + encodeURIComponent(currentAgentChat) + '/message' + newParam, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ content: msg }),
@@ -2396,6 +2401,15 @@ function sendChat() {
 }
 
 document.getElementById('chat-send').addEventListener('click', sendChat);
+
+function resetAgentChat(name) {
+  currentSessionId = null;
+  forceNewAgentChat = true;
+  const messages = document.getElementById('chat-messages');
+  if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">Chat cleared. Send a message to start a new conversation with <b>' + esc(name) + '</b>.</div>';
+  document.getElementById('chat-input').placeholder = 'Type a message to start fresh...';
+  renderSessionPicker();
+}
 document.getElementById('chat-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
 });

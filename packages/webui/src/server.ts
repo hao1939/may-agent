@@ -1723,17 +1723,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!agentName) return json({ error: "agent required" }, 400);
     try {
       const db = _db();
-      // Most-recent non-throwaway session for this agent. We exclude:
-      //   - kind='heartbeat' / 'worker' (workflow-internal sessions)
-      //   - tasks starting with '[heartbeat]' or matching the heartbeat
-      //     prompt body (legacy fallback for sessions that pre-date kind)
+      // Resolve the agent's chat session — only human-initiated conversations,
+      // not workflows, heartbeats, or fork-spawned task sessions.
       const row = db.prepare(`
         SELECT sessionId, status, startedAt, kind, substr(task, 1, 200) as task
         FROM sessions
         WHERE agent = ?
-          AND COALESCE(kind, '') NOT IN ('heartbeat', 'worker')
-          AND (task IS NULL OR task NOT LIKE '[heartbeat]%')
-          AND (task IS NULL OR task NOT LIKE 'You are %waking up for your heartbeat.%')
+          AND (kind = 'chat' OR source IN ('telegram', 'web-ui', 'web', 'cli', 'human'))
         ORDER BY startedAt DESC
         LIMIT 1
       `).get(agentName) as { sessionId: string; status: string; startedAt: number; kind: string | null; task: string } | undefined;
@@ -1761,20 +1757,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    *
    * Either way the response shape is {ok:true, sessionId, deliveredAt}.
    */
-  async function handleAgentMessage(req: Request, agentName: string): Promise<Response> {
+  async function handleAgentMessage(req: Request, agentName: string, url?: URL): Promise<Response> {
     if (!agentName) return json({ error: "agent required" }, 400);
     let body: { content?: string };
     try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
+    const forceNew = url?.searchParams.get("new") === "true";
 
-    // Resolve default session.
-    const resolveResp = handleAgentDefaultSession(agentName);
-    const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
-    if (resolved.sessionId) {
-      const result = await sendDaemonFrame({ type: "steer", sessionId: resolved.sessionId, message: content });
-      if (!result.ok) return json({ error: result.error }, 503);
-      return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
+    // Resolve default session (skip if forcing new chat).
+    if (!forceNew) {
+      const resolveResp = handleAgentDefaultSession(agentName);
+      const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
+      if (resolved.sessionId) {
+        const result = await sendDaemonFrame({ type: "steer", sessionId: resolved.sessionId, message: content });
+        if (!result.ok) return json({ error: result.error }, 503);
+        return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
+      }
     }
 
     // No prior session — spawn one. Use 'fork' command which routes through
@@ -1955,7 +1954,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
         if (heartbeatNowMatch) return handleAgentHeartbeatNow(req, heartbeatNowMatch[1]);
         const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);
-        if (agentMessageMatch) return handleAgentMessage(req, agentMessageMatch[1]);
+        if (agentMessageMatch) return handleAgentMessage(req, agentMessageMatch[1], url);
         const thresholdMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/threshold$/);
         if (thresholdMatch) return handleMetricThreshold(req, decodeURIComponent(thresholdMatch[1]));
         const alertResolveMatch = url.pathname.match(/^\/api\/alerts\/([^/]+)\/resolve$/);
