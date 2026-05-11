@@ -882,6 +882,8 @@ Reload convention:
 - `cron.json` reload is owned by the cron runner and should preserve unchanged
   timers.
 - local tools reload with the next explicit agent reload.
+- workflows reload at workflow invocation/resume boundaries and preserve
+  persisted workflow state instead of mutating a running step in place.
 
 Target modules:
 
@@ -903,6 +905,8 @@ Validation:
   - invalid config emits `agent.config_invalid` and does not register,
   - reload updates future registrations without touching active session state,
   - handler hot-reload imports a fresh module on invocation,
+  - workflow invocation imports current workflow code while persisted workflow
+    state remains resumable,
   - auto-heartbeat generation remains deterministic.
 - Runtime proof: trigger `reload` through daemon event and record the reload
   event plus loader evidence for added/updated/skipped agents.

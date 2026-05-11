@@ -320,14 +320,21 @@ Reload is the same flow applied again. It updates definitions for future
 sessions; active sessions keep the tools, prompt, model, and runtime context
 they already started with. Reload should not silently mutate in-flight work.
 
-Hot-reload should stay narrow:
+Loading contract:
 
-- `agent.json` reload: explicit reload command/event, affects future sessions.
-- handler files: hot-reload on handler invocation.
-- `cron.json`: watched/reloaded by cron runner, with unchanged timers preserved.
-- workflows: loaded by workflow runner with cache-busting when invoked.
-- local tools: loaded during agent definition build; future sessions see new
-  tools after reload.
+| Source | Owner | Reload trigger | Active-session effect | Failure response |
+|---|---|---|---|---|
+| `agent.json` | agent loader | explicit reload command/event | none; future sessions use the new definition | skip that agent, emit loader evidence |
+| `AGENTS.md` and always-loaded prompt files | agent loader | explicit reload command/event | none; future sessions use the new prompt | skip/mark invalid if required files cannot load |
+| local tools under `tools/` | agent loader | explicit reload command/event | none; future sessions see the new toolset | skip bad tool, emit loader evidence |
+| handler files under `handlers/` | handler loader | each handler invocation | none; next invocation imports fresh code | fail that event, emit handler failure evidence |
+| `cron.json` | cron runner | file watch or explicit cron reload | unchanged timers are preserved | skip bad entries, keep valid entries running |
+| workflows under `workflows/` | workflow runner | each workflow invocation/resume | running workflow keeps persisted state; next step imports current workflow code | fail/resume with diagnostic evidence |
+
+Hot-reload should stay narrow. Handlers and workflows can reload at invocation
+boundaries because they are short-lived execution units. Agent definitions,
+prompt inputs, and local tools reload only on explicit reload because they shape
+the session contract.
 
 The loader should not decide project behavior, heartbeat meaning, or alert
 judgment. It should only assemble capabilities and register them.
