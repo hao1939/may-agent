@@ -49,3 +49,6 @@
 
 ## 2026-05-11 — s_1778507996409_211
 - When a persistent-task iteration inherits already-landed deliverables and an external blocker prevents core completion, a small consolidation artifact can still be real value if it accurately inventories the committed outputs, states the live blocker, and gives explicit next steps. Score any finish-path retry separately as an efficiency loss, not as an output-quality failure.
+
+## 2026-05-11 — s_1778508075199_215
+- In metric-alert success-candidate reviews, keep quality credit for a `document_exception` session when it refreshes live counts/classification, records concrete resume conditions, and commits the decision in the canonical project file. If the file already has nearby same-alert entries, note the duplication as an output-quality limitation rather than treating the session as empty.
