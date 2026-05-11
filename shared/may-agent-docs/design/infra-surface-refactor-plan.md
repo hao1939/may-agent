@@ -970,6 +970,7 @@ Current proof:
   - `57203cc9` split daemon interactive and keepalive loops.
   - `f7b361e2` split task/chat session startup and fixed handler hot-reload
     cache busting.
+  - `e7b66b4a` split model registry setup from the composition root.
 - `bun test test/emit-mode.test.ts test/web-mode.test.ts` passes.
 - `bun test test/run-workflow-mode.test.ts` passes.
 - `bun test test/oneshot-mode.test.ts` passes.
@@ -980,8 +981,10 @@ Current proof:
 
 Current shape:
 
-- `src/app/may.ts`: 492 lines, still owns mode selection and remaining daemon
+- `src/app/may.ts`: 430 lines, still owns mode selection and remaining daemon
   assembly.
+- `src/app/model-registry.ts`: pure model routing/registry setup with coverage
+  for LiteLLM proxy and direct Anthropic opus routing.
 - `src/app/daemon.ts`: lifecycle, event persistence, session side-effect
   subscribers, session-domain event translation, agent loading, heartbeat
   convention injection, cron bus subscription, heartbeat workflow preflight, and
