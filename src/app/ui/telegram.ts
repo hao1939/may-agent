@@ -20,6 +20,12 @@ import { setDefaultAutoSelectFamily } from "node:net";
 import { resolve, join } from "node:path";
 import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
+import {
+  buildNotificationReplyText,
+  buildTelegramQuoteReplyText,
+  extractProjectPath,
+  normalizeProjectPath,
+} from "./telegram-reply-router.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
@@ -212,35 +218,8 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
-  function normalizeProjectPath(value: unknown): string | null {
-    if (typeof value !== "string" || !value.trim()) return null;
-    let path = value.trim()
-      .replace(/^\/app\//, "")
-      .replace(new RegExp(`^${escapeRegExp(projectRoot)}/`), "")
-      .replace(/^\.?\//, "")
-      .replace(/\/project\.md$/, "")
-      .replace(/[),.;:]+$/, "")
-      .replace(/\/$/, "");
-    if (!path.startsWith("agents/")) path = `agents/${path}`;
-    if (!/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)[^/\s]+/.test(path)) return null;
-    return path;
-  }
-
-  function extractProjectPath(text: string): string | null {
-    const candidates = text.match(/(?:\/app\/)?(?:agents\/)?(?:shared\/projects\/|[^/\s]+\/workspace\/projects\/)[A-Za-z0-9._-]+(?:\/project\.md)?/g) ?? [];
-    for (const candidate of candidates) {
-      const normalized = normalizeProjectPath(candidate);
-      if (normalized) return normalized;
-    }
-    return null;
-  }
-
-  function escapeRegExp(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  }
-
   async function emitProjectComment(projectPath: string, comment: string): Promise<boolean> {
-    const normalized = normalizeProjectPath(projectPath);
+    const normalized = normalizeProjectPath(projectPath, projectRoot);
     if (!normalized) return false;
 
     const { existsSync } = await import("node:fs");
@@ -295,7 +274,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         const db = getDb(opts.persistDir ?? ".state");
         const ctx = db.prepare("SELECT * FROM notification_messages WHERE telegram_msg_id = ?").get(replyToMsgId) as any;
         if (ctx) {
-          const projectPath = normalizeProjectPath(ctx.project_id);
+          const projectPath = normalizeProjectPath(ctx.project_id, projectRoot);
           if (projectPath && await emitProjectComment(projectPath, text)) {
             bus.emit({ type: "telegram.reply", source: "telegram", owner: ctx.agent || "unknown", enriched: true, projectPath, delivery: "project-comment", originalMsgId: replyToMsgId } as any);
             await sendMessage(chatIdStr, `Comment sent to ${projectPath}. Resuming the project now.`, undefined, {
@@ -307,16 +286,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             return;
           }
 
-          const parts: string[] = [];
-          parts.push(`[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`);
-          if (ctx.data) {
-            try {
-              const data = JSON.parse(ctx.data);
-              if (data.summary) parts.push(`Context: ${data.summary}`);
-              if (data.text) parts.push(`Original notification: ${data.text}`);
-            } catch {}
-          }
-          if (ctx.event_type) parts.push(`Event type: ${ctx.event_type}`);
+          const sessionContext: string[] = [];
 
           // Session context: if we have a sessionId, read the transcript summary
           if (ctx.session_id) {
@@ -348,9 +318,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
                         }
                       } catch {}
                     }
-                    parts.push(`\nSession context (${lines.length} messages):`);
-                    if (summary) parts.push(`  Summary: ${summary.slice(0, 300)}`);
-                    if (lastAssistant) parts.push(`  Last action: ${lastAssistant}`);
+                    sessionContext.push(`\nSession context (${lines.length} messages):`);
+                    if (summary) sessionContext.push(`  Summary: ${summary.slice(0, 300)}`);
+                    if (lastAssistant) sessionContext.push(`  Last action: ${lastAssistant}`);
                   }
                   break;
                 }
@@ -358,9 +328,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             } catch {}
           }
 
-          parts.push("");
-          parts.push(`User says: ${text}`);
-          enrichedText = parts.join("\n");
+          enrichedText = buildNotificationReplyText({ ctx, text, sessionContext });
           bus.emit({ type: "info", message: `[telegram] Enriched reply (ctx: ${ctx.event_type}/${ctx.agent}${ctx.session_id ? "/session" : ""})` });
 
           // Track reply for metric
@@ -386,12 +354,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         } else {
           const quoted = telegramMessageText(replyToMsg);
           if (quoted) {
-            enrichedText = [
-              "[User replying to Telegram message]",
-              `Original Telegram message: ${quoted.slice(0, 1000)}`,
-              "",
-              `User says: ${text}`,
-            ].join("\n");
+            enrichedText = buildTelegramQuoteReplyText(text, quoted);
             bus.emit({ type: "info", message: `[telegram] Enriched reply from Telegram quote (msg ${replyToMsgId})` });
             bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId } as any);
           } else {
@@ -575,7 +538,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     if (event.type === "message.created" && (event as any).to === "human" && (event as any).from === opts.interfaceAgent) {
       if (pendingChatId) {
         const content = String((event as any).content ?? "").slice(0, 4000);
-        const projectId = normalizeProjectPath((event as any).projectPath ?? (event as any).projectId) ?? extractProjectPath(content) ?? undefined;
+        const projectId = normalizeProjectPath((event as any).projectPath ?? (event as any).projectId, projectRoot) ?? extractProjectPath(content, projectRoot) ?? undefined;
         sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String((event as any).from ?? ""), sessionId: "sessionId" in event ? String((event as any).sessionId) : undefined, projectId, summary: content.slice(0, 200) });
       }
     }
