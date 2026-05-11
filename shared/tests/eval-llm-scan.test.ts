@@ -125,4 +125,35 @@ describe("eval-llm-scan handler", () => {
     }));
     expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.failed", expect.anything());
   });
+
+  it("records workflow failures as evaluation.deep_failed without marking the handler failed", async () => {
+    const { db, ctx, runWorkflow } = harness();
+    const endedAt = Date.now() - 60_000;
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_candidate", "dev", "fix a bug", "done", "workflow:dev-heartbeat", endedAt - 30_000, endedAt, 7],
+    );
+    runWorkflow.mockRejectedValue(new Error("deep eval timed out after 240000ms"));
+
+    const handler = create(ctx, {
+      handlerConfig: {
+        backfillHours: 24,
+        fallbackDelayMs: 0,
+        activeWindowMs: 1,
+        artifactLimit: 3,
+      },
+    } as any);
+
+    await handler();
+    await Promise.resolve();
+
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("evaluation.deep_failed", expect.objectContaining({
+      source: "eval-llm-scan",
+      workflow: "evaluator-deep-eval",
+      sessionId: "s_candidate",
+      agent: "dev",
+      error: "deep eval timed out after 240000ms",
+    }));
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.failed", expect.anything());
+  });
 });

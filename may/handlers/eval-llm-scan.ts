@@ -345,12 +345,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       })
       .catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);
-        ctx.sdk.log("warn", `[eval-llm-scan] Evaluator dispatch failed: ${msg}`);
-        ctx.sdk.emit("handler.failed", {
-          handler: "eval-llm-scan",
-          agent: ctx.agentName,
+        ctx.sdk.log("warn", `[eval-llm-scan] Deep evaluator workflow did not complete: ${msg}`);
+        ctx.sdk.emit("evaluation.deep_failed", {
+          source: "eval-llm-scan",
           workflow: DEEP_EVAL_WORKFLOW,
           sessionId: candidate.sessionId,
+          agent: candidate.agent,
           error: msg.slice(0, 200),
         });
       });
