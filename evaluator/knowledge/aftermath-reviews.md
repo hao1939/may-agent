@@ -129,6 +129,10 @@
 - Symptom: a metric-alert workflow does the live checks and even lands a supporting artifact/commit, but the session ends `partial` because of unrelated worktree dirt, and no fresh `metric.alert_judged` event appears afterward.
 - Fix: review the operational judgment and artifact separately from closure completeness. Credit the live analysis and durable note if they are real, but mark the session incomplete for alert-lifecycle purposes when the workflow never records the judgment event that downstream closure tracking expects.
 
+## Pattern: back-to-back metric-alert sessions can duplicate a just-landed judgment
+- Symptom: a follow-up heartbeat re-runs the same metric checks and lands a tiny supporting commit, but a fresh `metric.alert_judged` event for the same `metricId`/`alertId` already exists from another session minutes earlier, so the second session adds little beyond wording drift.
+- Fix: before crediting strong material output, query recent `metric.alert_judged` events for the same alert. If the current evidence was already durably recorded, score the later session as low-delta maintenance unless it resolves a new discrepancy or advances the alert lifecycle.
+
 ## Pattern: metric-alert triage can still be good when `partial` closeout follows a durable judgment
 - Symptom: a metric-alert workflow ends `partial` because unrelated ambient dirt keeps the repo worktree non-clean, but the session already committed its evidence artifact and emitted a fresh `metric.alert_judged` event with a concrete final operation.
 - Fix: score the analytical/operational result from the durable evidence chain, not the terminal status alone. If the live metric checks are sound, the shipped artifact is real, and the judgment event landed, treat the session as successful alert handling with a hygiene caveat rather than as an incomplete triage.
