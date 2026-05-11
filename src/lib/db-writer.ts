@@ -11,6 +11,17 @@ import type { AgentEvent } from "../app/event-bus.js";
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 
+const DURABLE_COMMAND_EVENTS = new Set([
+  "input",
+  "steer",
+  "cancel",
+  "cancel_all",
+  "resume",
+  "reload",
+  "restart",
+  "shutdown",
+]);
+
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
@@ -94,6 +105,18 @@ export class DbWriter {
           break;
 
         default:
+          if (DURABLE_COMMAND_EVENTS.has(event.type)) {
+            try {
+              const ev = event as any;
+              const { type, ...data } = ev;
+              this.db.run(
+                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)",
+                [type, data.source ?? null, data.owner ?? null, JSON.stringify(data), Date.now(), data.urgency ?? "normal"],
+              );
+            } catch { /* table may not exist */ }
+            break;
+          }
+
           // Persist domain events (dot-separated types) to events table
           if (event.type.includes('.')) {
             try {
