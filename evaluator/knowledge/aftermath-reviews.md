@@ -262,6 +262,10 @@
 - Symptom: a session writes and commits a file under `/app/agents/...`, then `finish(success)` fails with `Deliverables not found on disk` when the deliverable is reported as a repo-relative path like `may/workspace/heartbeat-log.md`.
 - Fix: verify the artifact actually exists and inspect the landed commit/diff. If the outcome is otherwise valid, treat the first finish failure as a path-normalization hiccup and expect immediate recovery by retrying with the absolute `/app/agents/...` path. Penalize efficiency lightly, not outcome quality.
 
+## Pattern: blocked finish rows can look interrupted even when output landed
+- Symptom: a worker session calls `finish(status="blocked")`, the session table later shows `status=interrupted`/`outcome=interrupted`, and the finish tool may even print a repo-relative deliverable under `shared/projects/...` as `MISSING` despite a real write/read/commit.
+- Fix: do not treat the interrupted row or `MISSING` marker as dispositive. Check the transcript for write/read/commit evidence, inspect the landed artifact and commit, and compare against current guard path-resolution logic before routing the session as lost output. Credit the session if the blocked closeout still produced a valid committed artifact and useful diagnosis.
+
 ## Pattern: failed write attempts can poison read-back guards
 - Symptom: a session first calls `write()` on a wrong-base relative path like `may/workspace/...`, gets `EACCES`/`ENOENT`, then successfully writes the real file under `/app/agents/...`; later `finish(success)` keeps demanding read-back of the failed path as if it had been modified.
 - Fix: inspect the transcript for the original write result before blaming the agent for missing verification. If the first write failed and no file was created, score the repeated finish blocks as workflow/guard friction, then judge the outcome from the real landed artifact and any eventual partial closeout.
