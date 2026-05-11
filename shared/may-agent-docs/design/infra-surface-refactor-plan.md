@@ -127,16 +127,14 @@ Validation:
 - [x] Unit test convention path construction.
 - [x] Unit test send success and connection failure.
 - [x] Unit test `trigger.<entry-name>` cron convention.
-- [ ] Host smoke: emit `trigger.metrics-snapshot`.
+- [x] Host smoke: emit `trigger.metrics-snapshot`.
 - [x] Container smoke: emit `trigger.metrics-snapshot`.
 
-Host caveat: in the current containerized runtime, the host-visible Unix socket
-is not mounted at the convention path. Rechecked on 2026-05-11:
-`bun src/app/may.ts --emit trigger.metrics-snapshot ...` failed with `ENOENT`
-for both `.state/instances/default/may.sock` and
-`.state/instances/background/may.sock`. The container-local convention path
-works. Treat host-to-container socket access as an environment/ops follow-up,
-not a reason to add socket discovery.
+Host smoke, 2026-05-11: the container exposes the convention socket through the
+mounted `.state` directory. A host-side emit through
+`.state/instances/background/may.sock` persisted `trigger.metrics-snapshot`
+event `559667`, then `metrics-snapshot` emitted `handler.started` `559668` and
+`handler.completed` `559669`.
 
 Stop criteria:
 
