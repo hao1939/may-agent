@@ -40,6 +40,8 @@ Next slice:
 1. Complete the real-human Telegram smoke when a live reply is available.
 2. Continue using runtime event ids as proof for adapter/control boundary
    changes; do not accept adapter-local behavior without durable event evidence.
+3. Keep folding stable infra-surface behavior into the short reference docs
+   when stale guidance is found.
 
 Recently completed:
 
@@ -55,6 +57,8 @@ Recently completed:
    health metric.
 6. [x] Remove the reserved-but-unimplemented `createLLMSession()` SDK method so
    handler authors only see executable SDK surface.
+7. [x] Align `architecture.md`, `runtime.md`, and `heartbeat.md` with the
+   current event -> handler/workflow -> session/function -> evidence model.
 
 This is now the highest-value slice because the event/metric/control boundaries
 are traceable enough; the next risk is duplicated workflow patterns confusing

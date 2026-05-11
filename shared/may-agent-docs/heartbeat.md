@@ -12,7 +12,8 @@ needed.
 ## Data Flow
 
 ```
-Cron tick → heartbeat workflow → loads work context/signals → runs agent session → agent judges/acts/records evidence
+Cron tick → trigger.heartbeat → heartbeat handler → heartbeat workflow
+  → loads work context/signals → runs agent session → agent judges/acts/records evidence
 ```
 
 Heartbeat follows the same work-context convention as projects:
@@ -45,7 +46,7 @@ found during heartbeat should be created or updated as shared projects.
 Each agent has a heartbeat workflow at `agents/<name>/workflows/<name>-heartbeat.ts`:
 - Imports shared data loaders
 - Builds the task prompt with loaded context
-- Calls `sdk.runAgent()` with the agent name and assembled task
+- Calls `ctx.runAgent()` with the agent name and assembled task
 
 ## Auto-Generation
 

@@ -5,7 +5,7 @@
 Core primitive:
 
 ```
-event → runAgent() → session.end
+event → handler/workflow → session/function → evidence → events/metrics
 ```
 
 Migration must be incremental. The current system is production-active.
@@ -86,8 +86,8 @@ The agent just works. The infra triggers, frames, protects, records, and connect
 │                                                                      │
 │  Event Sources              Events               Event Handlers      │
 │  ─────────────              ──────               ──────────────      │
-│  Timers (cron)  ──────────▶ heartbeat         ──▶ runAgent()         │
-│  Metric Engine  ──────────▶ metric.breach     ──▶ runAgent()         │
+│  Timers (cron)  ──────────▶ trigger.*         ──▶ handler → workflow │
+│  Metric Engine  ──────────▶ metric.breach     ──▶ alert workflow     │
 │                             metric.recovered                         │
 │                             metric.stalled                           │
 │  Agent tools    ──────────▶ message.created   ──▶ ack + queue      │
@@ -115,40 +115,42 @@ Typed pub/sub. The backbone.
 
 ```typescript
 type SystemEvent =
-  | { type: "heartbeat"; agent: string }
+  | { type: "trigger.heartbeat"; agent: string; source?: string }
   | { type: "handler.started"; handler: string; agent: string }
   | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
   | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
   | { type: "metric.breach"; metric: Metric; value: number }
   | { type: "metric.recovered"; metric: Metric }
-  | { type: "session.start"; agent: string; id: string; trigger: string; task: string }
+  | { type: "session.start"; agent: string; id: string; source: string; task: string }
   | { type: "session.end"; agent: string; id: string; outcome: Outcome; summary: string }
   | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args: any }
   | { type: "message.created"; from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }
 
-// Heartbeat is a bus event — anything can trigger it: cron timer, socket command,
-// manual trigger, another agent. The bus is the single path.
-bus.on("heartbeat", (e) => runAgent(e.agent, buildHeartbeatTask(e.agent), "heartbeat"));
+// Heartbeat is a workflow-backed handler. Cron, socket, or another event can
+// trigger it; the handler builds/reuses workflow context and the workflow calls
+// ctx.runAgent() for the owner.
+bus.on("trigger.heartbeat", (e) =>
+  runWorkflow("may-heartbeat", buildHeartbeatTask(e.agent), { source: "heartbeat" })
+);
 
-// Metric breach: only P0 (urgent) metrics run an agent directly. Everything else informs
-// the owning agent's next heartbeat via prompt context.
-bus.on("metric.breach", (e) => {
-  if (e.metric.priority === "P0") runAgent(e.metric.owner, buildBreachTask(e), "metric.breach");
-  // P1+: breach is in DB, owning agent will see it at next heartbeat
-});
+// Metric breach creates durable alert state. The alert reactor resolves owner,
+// dedups, and dispatches a triage workflow when the signal needs action.
+bus.on("metric.breach", (e) =>
+  runWorkflow("metric-alert-triage", buildAlertTask(e), { source: "metric-alert-reactor" })
+);
 
 // Messages: persisted to events table (owner = to_agent), included in next heartbeat.
 // No separate messages table — events table with owner field serves as inbox.
 bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
-// Timers are event sources — cron emits heartbeat events on the bus
-registerTimer("may", "*/20 * * * *");  // emits { type: "heartbeat", agent: "may" }
+// Timers are event sources — cron emits trigger events on the bus.
+registerTimer("may", "*/20 * * * *");  // emits { type: "trigger.heartbeat", agent: "may" }
 
-// Event persistence is part of emit, not a subscriber.
-// Implemented inside bus.emit():
+// Event persistence is the first-priority subscriber.
+// Invariant:
 //   function emit(e: SystemEvent) {
-//     db.insertEvent(e);              // durable first
-//     for (const h of handlers) h(e); // then side-effects
+//     persistenceSubscriber(e);       // durable first
+//     for (const h of handlers) h(e); // then side effects
 //   }
 
 // UI backends are just event bus subscribers
@@ -211,7 +213,9 @@ async function measure(metric: Metric): Promise<void> {
 
 **Target: no custom agent runtime loop.** `pi-coding-agent` owns the LLM/tool/session loop.
 
-**Migration:** all callers use `AgentRuntime.runAgent()`. Initially it wraps the current manager. Eventually it delegates directly to pi-coding-agent.
+All execution paths should enter through the manager/SDK/workflow surfaces, not
+through adapter-local LLM calls. Handlers prefer `sdk.runWorkflow(...)`; workflows
+call `ctx.runAgent(...)` when an agent session is the next step.
 
 `pi-coding-agent` provides:
 
@@ -230,7 +234,7 @@ async function measure(metric: Metric): Promise<void> {
 **Our glue** wires pi-coding-agent into the event/metric system:
 
 ```typescript
-async function runAgent(agentName: string, task: string, trigger: string): Promise<SessionResult> {
+async function runAgent(agentName: string, task: string, source: string): Promise<SessionResult> {
   const config = loadConfig(agentName);
   const sessionId = generateId();
 
@@ -253,7 +257,7 @@ async function runAgent(agentName: string, task: string, trigger: string): Promi
   session.subscribe((event) => {
     if (event.type === "agent_end") {
       const result = extractResult(event.messages);
-      db.insertSession({ id: sessionId, agent: agentName, task, trigger, ...result });
+      db.insertSession({ id: sessionId, agent: agentName, task, source, ...result });
       bus.emit({ type: "session.end", agent: agentName, id: sessionId, ...result });
     }
     if (event.type === "tool_execution_end") {
@@ -490,7 +494,8 @@ The goal is fewer execution paths, not minimum LOC.
 ### Autonomous heartbeat
 
 ```
-Timer → heartbeat("may") → runAgent("may", heartbeat.md, "heartbeat")
+Timer/socket → trigger.heartbeat → heartbeat handler → may-heartbeat workflow
+  → ctx.runAgent("may", assembled heartbeat task)
   → runtime context includes metrics, projects, messages
   → agent sees build_health FAILING → calls run_workflow("fix-build", {})
   → workflow: coder implements fix → fn: run tests → done
@@ -501,8 +506,10 @@ Timer → heartbeat("may") → runAgent("may", heartbeat.md, "heartbeat")
 
 ```
 MetricEngine measures api_latency → 300ms (threshold 250ms, 3 consecutive)
-  → metric.breach → runAgent("may", "api_latency breached...", "metric.breach")
-  → agent investigates, triggers workflow
+  → metric.breach + metric_alert row
+  → metric-alert-reactor resolves owner/dedupes
+  → metric-alert-triage workflow runs owner judgment
+  → owner investigates, fixes, downgrades with evidence, or escalates
 ```
 
 ### Inter-agent communication
@@ -514,31 +521,17 @@ Agent "arc" calls message("dev", { intent: "implementation-request", artifact: "
 
 ---
 
-## What Changed (v1 → v2)
+## Current Convergence
 
-| Removed | Rationale |
-|---------|-----------|
-| Zombie cleanup | Sessions timeout; no zombies possible |
-| Resume stale sessions | Pi-agent-core handles crash recovery |
-| Call depth tracking | Turn budgets prevent infinite recursion |
-| API gating | Pi-agent-core handles retries natively |
-| Health audits | Metrics cover system health |
-| Tool receipts | Guards via `beforeToolCall` suffice |
-| Infra retry loop | Pi-agent-core retries built-in |
+The current direction is not "more infra logic." It is fewer execution paths:
 
-Tool guards, DB backup, Telegram: all preserved in v2.
+- timers, adapters, and humans emit events;
+- handlers normalize, dedup, and dispatch workflows;
+- workflows collect context and run sessions/functions;
+- sessions/functions emit evidence;
+- metrics and events make the result observable.
 
----
-
-## Remaining Convergence
-
-Items where current implementation differs from this architecture:
-
-| Gap | Current | Target |
-|-----|---------|--------|
-| ~~Heartbeat trigger~~ | ✅ Done | Cron emits `heartbeat` event on bus; handler subscribes |
-| ~~Typed metrics~~ | ✅ Done | Typed gauge/counter/health/derived with per-metric config |
-| ~~Guard mechanism~~ | ✅ Done | Already middleware (BeforeToolCallHook + composeGuards). Per-agent config deferred to runtime migration. |
-| ~~Agent runtime~~ | ✅ Done | SubagentManager rewritten (uses pi-agent-core Agent directly) |
-
-See `v2-migration-plan.md` and `v2-implementation-notes.md` for migration history.
+Mechanical infra code may still call manager/runtime internals directly, but
+new judgment/action paths should follow the handler-to-workflow convention. See
+`design/infra-surface.md` for the design and
+`design/infra-surface-refactor-plan.md` for the implementation tracker.

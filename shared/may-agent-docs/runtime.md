@@ -16,13 +16,17 @@ User input goes through `ChatSession.handleInput()`:
 
 ### Socket Commands
 
+Socket-local commands are intentionally narrow:
+
 | Command | Route |
 |---------|-------|
-| `input` | Same as typing in console |
-| `steer` | Explicit session targeting (`manager.steer`) |
-| `run` | New job session on named agent |
-| `cancel` | Cancel specific session |
-| `status` | List active sessions |
+| `subscribe` | Open realtime event stream |
+| `status` | Return current active-session status |
+
+Everything else is normalized into a daemon event and routed through the event
+bus. Examples: `input`, `steer`, `cancel`, `resume`, `reload`, `shutdown`,
+`project.comment.created`, and `trigger.<handler-name>`. Event handlers then
+decide whether to call manager mechanics directly or dispatch a workflow.
 
 ### Cron (--cron mode)
 
@@ -30,7 +34,7 @@ User input goes through `ChatSession.handleInput()`:
 |-----------|-----------|
 | JS handler | In-process function, no direct LLM unless the handler/workflow calls one |
 | Detached agent job | `spawnDetachedAgent()` in a separate OS process |
-| Heartbeat handler | Cron-triggered workflow builds context, then starts a fresh agent task session via `ctx.runAgent()` / `sdk.runAgent()` |
+| Heartbeat handler | Cron-triggered handler dispatches heartbeat workflow; the workflow builds context, then starts a fresh agent task session via `ctx.runAgent()` |
 
 ## Event Channels
 
@@ -85,7 +89,9 @@ Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
 ... repeats ...
 ```
 
-**Compaction:** When tokens exceed context threshold, pi-agent-core handles compaction (LLM-powered summarization). Preserves: original task, key facts, most recent reasoning.
+**Compaction:** When tokens exceed context threshold, the pi-agent runtime
+handles compaction (LLM-powered summarization). Preserves: original task, key
+facts, and most recent reasoning.
 
 **Overflow recovery:** When context window is hit, extract progress into handoff document for a new session.
 
@@ -112,5 +118,5 @@ Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
 - **Input routing:** `src/app/may.ts`, `src/app/chat-session.ts`
 - **Session management:** `src/lib/manager.ts`
 - **System prompt assembly:** `src/lib/manager.ts` → `resolveSystemPrompt()`
-- **Compaction:** pi-agent-core `Agent` class + may-agent extensions
-- **Socket:** `src/app/ui/socket.ts`
+- **Compaction:** pi-agent runtime `Agent` class + may-agent extensions
+- **Socket protocol/server/client:** `packages/control/src/*`
