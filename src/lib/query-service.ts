@@ -55,6 +55,14 @@ export interface ProjectQuery extends QueryOptions {
   workflow?: string;
 }
 
+export interface WorkflowRunQuery extends TimeFilter {
+  workflow?: string;
+  status?: string;
+  projectId?: string;
+  parentSessionId?: string;
+  parentWorkflowRunId?: string;
+}
+
 export interface MetricAlertContextQuery {
   metricId: string;
   alertId?: number | null;
@@ -99,6 +107,7 @@ export interface QueryAPI {
   metrics(filter?: MetricQuery): QueryResult;
   alerts(filter?: AlertQuery): QueryResult;
   projects(filter?: ProjectQuery): QueryResult;
+  workflowRuns(filter?: WorkflowRunQuery): QueryResult;
   metricAlertContext(filter: MetricAlertContextQuery): MetricAlertContext;
   metricAlertReactorState(filter: MetricAlertReactorStateQuery): MetricAlertReactorState;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
@@ -268,6 +277,18 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       addEquals(where, params, "status", filter.status);
       addEquals(where, params, "workflow", filter.workflow);
       return select(opts.getDb(), "projects", where, params, "updated_at DESC, id ASC", clampLimit(filter.limit, defaultLimit, maxLimit));
+    },
+
+    workflowRuns(filter = {}) {
+      const where: string[] = [];
+      const params: unknown[] = [];
+      addEquals(where, params, "workflow", filter.workflow);
+      addEquals(where, params, "status", filter.status);
+      addEquals(where, params, "projectId", filter.projectId);
+      addEquals(where, params, "parentSessionId", filter.parentSessionId);
+      addEquals(where, params, "parentWorkflowRunId", filter.parentWorkflowRunId);
+      addSinceUntil(where, params, "startedAt", filter);
+      return select(opts.getDb(), "workflow_runs", where, params, "startedAt DESC", clampLimit(filter.limit, defaultLimit, maxLimit));
     },
 
     metricAlertContext(filter) {
@@ -464,6 +485,7 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     metrics: fail,
     alerts: fail,
     projects: fail,
+    workflowRuns: fail,
     metricAlertContext: failContext,
     metricAlertReactorState: failReactorState,
     sql: fail,

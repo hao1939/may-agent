@@ -39,10 +39,21 @@ describe("QueryService", () => {
       "INSERT INTO sessions (sessionId, agent, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
       ["s3", "scout", "other", "done", "p2", now + 100],
     );
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["wr1", "project", "project: p1", "running", "p1", now + 200],
+    );
+    db.run(
+      "INSERT INTO workflow_runs (runId, workflow, task, status, projectId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+      ["wr2", "project", "project: p2", "done", "p2", now + 300],
+    );
 
     expect(query.sessions({ agent: "may" }).rows.map((row) => row.sessionId)).toEqual(["s2", "s1"]);
     expect(query.sessions({ projectId: "p1", status: "done" }).rows).toMatchObject([
       { sessionId: "s1", agent: "may", status: "done" },
+    ]);
+    expect(query.workflowRuns({ status: "running" }).rows).toMatchObject([
+      { runId: "wr1", workflow: "project", projectId: "p1" },
     ]);
   });
 
