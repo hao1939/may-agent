@@ -55,7 +55,7 @@ describe("eval-llm-scan handler", () => {
     return { root, persist, db, ctx, runWorkflow };
   }
 
-  it("dispatches deep evaluator work through workflow and records validated artifact", async () => {
+  it("dispatches deep evaluator work through workflow and records validated artifact on the next scan", async () => {
     const { db, ctx, runWorkflow } = harness();
     const endedAt = Date.now() - 60_000;
     db.run(
@@ -67,13 +67,13 @@ describe("eval-llm-scan handler", () => {
       handlerConfig: {
         backfillHours: 24,
         fallbackDelayMs: 0,
-        runTimeoutMs: 10_000,
         activeWindowMs: 1,
         artifactLimit: 3,
       },
     } as any);
 
     await handler();
+    await Promise.resolve();
 
     expect(runWorkflow).toHaveBeenCalledWith(
       "evaluator-deep-eval",
@@ -87,8 +87,42 @@ describe("eval-llm-scan handler", () => {
       workflowRunId: "wr_deep",
       sessionId: "s_candidate",
     }));
+
+    await handler();
+
     const row = db.prepare("SELECT verdict, evaluatedByHeuristic FROM evaluations WHERE sessionId = ?").get("s_candidate") as { verdict: string; evaluatedByHeuristic: number } | null;
     expect(row).toEqual({ verdict: "good", evaluatedByHeuristic: 0 });
     expect(existsSync(join(ctx.sdk.paths.root, "agents", "evaluator", "workspace", "deep-evals", "s_candidate.json"))).toBe(true);
+  });
+
+  it("does not emit handler.failed while deep evaluator workflow is still running", async () => {
+    const { db, ctx, runWorkflow } = harness();
+    const endedAt = Date.now() - 60_000;
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      ["s_candidate", "dev", "fix a bug", "done", "workflow:dev-heartbeat", endedAt - 30_000, endedAt, 7],
+    );
+    runWorkflow.mockImplementation(async () => {
+      await new Promise(() => {});
+      return { status: "done" as const, summary: "unreachable", runId: "wr_never" };
+    });
+
+    const handler = create(ctx, {
+      handlerConfig: {
+        backfillHours: 24,
+        fallbackDelayMs: 0,
+        activeWindowMs: 1,
+        artifactLimit: 3,
+      },
+    } as any);
+
+    await handler();
+
+    expect(runWorkflow).toHaveBeenCalledTimes(1);
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("evaluation.deep_dispatched", expect.objectContaining({
+      source: "eval-llm-scan",
+      sessionId: "s_candidate",
+    }));
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.failed", expect.anything());
   });
 });
