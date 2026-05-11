@@ -21,3 +21,11 @@ This is a runtime/provider-auth incident, not a workflow or prompt bug dev can p
 - Owner: May/runtime auth owner.
 - Suggested operation for alert #283: `upgrade_or_escalate` or `fix_root_cause`, not `resolve_stale`, unless a fresh query proves no post-burst failures remain.
 - Next validation query: recent `sessions.status='error'` rows with `opCount=0`, plus bounded transcript inspection for `IDE token expired`.
+
+## 2026-05-10 23:5x UTC heartbeat recheck
+
+The incident is still active. Fresh DB checks show unresolved alert #283 now at `session.first-turn-error-count-1h=7` with threshold `3`; the metric row is May-owned and has no `source_query`/`source_command`, so dev cannot inspect or patch the metric recipe directly.
+
+Recent one-hour `sessions.status='error'` rows include six errors: two `workflow:scout-heartbeat`, two `workflow:evaluator-aftermath`, one `workflow:evaluator-heartbeat`, and one `workflow:arc-heartbeat`. Bounded transcript inspection of the newest first-turn/no-tool sessions (`s_1778457804408_171`, `s_1778457804315_170`, `s_1778457805317_172`, and earlier `s_1778456006231_152`) again found immediate `litellm.AuthenticationError` lines consistent with the same GitHub Copilot IDE token-expired failure.
+
+Judgment is unchanged but stronger: this is not stale burst state and not a dev-owned source bug. The correct alert operation remains May/runtime `fix_root_cause` or `upgrade_or_escalate` for provider auth; resolving stale state would be contradicted by fresh post-burst first-turn auth failures.
