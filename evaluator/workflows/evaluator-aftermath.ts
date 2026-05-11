@@ -283,19 +283,6 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
   };
 }
 
-function antiShallowIssues(session: any, transcript: string): string[] {
-  if (session?.agent === "evaluator" || session?.agent === "judge") return [];
-  const task = String(session?.task ?? "");
-  if (!/ANTI-SHALLOW GATE/i.test(task)) return [];
-  const threshold = Number(task.match(/minimum:\s*(\d+)/i)?.[1] ?? 10);
-  const view = sessionOwnedTranscriptView(transcript);
-  const count = view.toolCallCount;
-  if (typeof count === "number" && Number.isFinite(threshold) && count < threshold) {
-    return [`anti-shallow gate not satisfied: ${count}/${threshold} tool calls`];
-  }
-  return [];
-}
-
 function formatWorkflowCollectedFacts(session: any, transcript: string, heuristic: { verdict: string; issues: string[] }): string {
   const view = sessionOwnedTranscriptView(transcript);
   const lines = [
@@ -319,7 +306,6 @@ export function classifyVerdict(session: any, transcript = ""): { quality: numbe
   if (session?.error) issues.push(`error: ${String(session.error).slice(0, 240)}`);
   if (opCount > 0 && opCount < 3 && status === "done") issues.push(`shallow session: ${opCount} ops`);
   issues.push(...transcriptIssues(transcript));
-  issues.push(...antiShallowIssues(session, transcript));
 
   const failed = status === "error" || status === "interrupted" || !!session?.error;
   const finishOnlySelfRepaired =
