@@ -49,6 +49,8 @@ export interface HandoffOptions {
 export interface HandoffData {
   /** Agent status: "done" or "error". */
   status: string;
+  /** Structured finish() status when the agent called finish(). */
+  finishStatus?: string;
   /** Files that were read during the session. */
   filesRead: string[];
   /** Files that were written during the session. */
@@ -96,6 +98,7 @@ export function extractHandoff(result: TaskResult, opts?: HandoffOptions): Hando
 
   return {
     status: result.status,
+    finishStatus: result.finishResult?.status,
     filesRead: [...keyFacts.filesRead],
     filesWritten: [...keyFacts.filesWritten],
     execCommands: keyFacts.execCommands,
@@ -216,7 +219,8 @@ export function summarizeForHandoff(result: TaskResult, opts?: HandoffOptions): 
   const sections: string[] = [];
 
   // Status line
-  sections.push(`**Status:** ${data.status} (${data.duration})`);
+  const statusLabel = data.finishStatus ? `${data.status} / finish(${data.finishStatus})` : data.status;
+  sections.push(`**Status:** ${statusLabel} (${data.duration})`);
 
   // Key facts: files
   if (includeKeyFacts) {
