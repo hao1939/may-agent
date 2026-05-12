@@ -64,3 +64,6 @@
 
 ## 2026-05-12 — s_1778562089031_767
 - For remote-devbox investigation sessions, treat initial `PATH_HALLUCINATION` failures on `bash ssh ... /home/...` as efficiency loss only when the agent quickly pivots to the remote-execution tool, gets verbatim evidence from the remote host, and lands a focused blocker/status artifact. Judge the committed artifact and live findings, not the first local-shell misfire.
+
+## 2026-05-12 — s_1778578479477_4
+- In classifier/guard-repair aftermath reviews, do not downgrade a session to low-value just because it finishes `partial` after committing. If the transcript shows bug reproduction, the commit lands a scoped fix plus regression test, and the remaining blocker is unrelated ambient worktree dirt that the agent correctly refuses to commit, keep strong quality credit and mark only the closeout friction as efficiency loss.
