@@ -45,6 +45,36 @@ export interface WebUIOptions {
   port: number;
 }
 
+export function extractMarkdownSection(body: string, headings: string | string[]): string | null {
+  const wanted = new Set((Array.isArray(headings) ? headings : [headings]).map((h) => h.trim().toLowerCase()));
+  const lines = body.split(/\r?\n/);
+  let start = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^##\s+(.+?)\s*$/);
+    if (!match) continue;
+    const heading = match[1].trim().toLowerCase();
+    const matched = [...wanted].some((name) => heading === name || heading.startsWith(`${name} `) || heading.startsWith(`${name} (`));
+    if (matched) {
+      start = i + 1;
+      break;
+    }
+  }
+
+  if (start === -1) return null;
+
+  let end = lines.length;
+  for (let i = start; i < lines.length; i++) {
+    if (/^##\s+/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+
+  const section = lines.slice(start, end).join("\n").trim();
+  return section || null;
+}
+
 export function startWebUI(opts: WebUIOptions): { port: number } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;
@@ -1096,10 +1126,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const projectName = identity.name;
     const projectId = `${owner}/${projectName}`;
 
-    // Extract Goal section (everything between '## Goal' and the next '## ').
-    let goal: string | null = null;
-    const goalMatch = body.match(/^##\s+Goal\s*\n([\s\S]*?)(?=\n##\s|$)/m);
-    if (goalMatch) goal = goalMatch[1].trim() || null;
+    // Extract common summary sections (everything until the next "##").
+    const goal = extractMarkdownSection(body, "Goal");
+    const currentState = extractMarkdownSection(body, "Current State");
 
     // Count milestones: lines like '- [ ] foo' / '- [x] foo' anywhere in body.
     const checkboxes = body.match(/^[\s\-*]*\[[ xX]\]/gm) || [];
@@ -1170,6 +1199,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       type: frontmatter.type || null,
       workflow: frontmatter.workflow || null,
       goal,
+      currentState,
       milestonesTotal,
       milestonesDone,
       citedMetrics: [...cited],

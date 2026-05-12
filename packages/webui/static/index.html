@@ -3356,6 +3356,14 @@ async function showProjectDetail(path) {
     html += `<div class="md-rendered" style="font-size:13px">${goalHtml}</div>`;
     html += `</div>`;
   }
+  // Current state.
+  if (detail.currentState) {
+    html += `<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-left:3px solid ${statusColor};border-radius:4px;font-size:13px;line-height:1.5">`;
+    html += `<div style="font-size:10px;color:${statusColor};font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Current State</div>`;
+    const currentStateHtml = window.marked && window.marked.parse ? window.marked.parse(detail.currentState) : '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' + esc(detail.currentState) + '</pre>';
+    html += `<div class="md-rendered" style="font-size:13px;overflow-wrap:anywhere">${currentStateHtml}</div>`;
+    html += `</div>`;
+  }
   // Milestone progress bar.
   if (detail.milestonesTotal > 0) {
     const barColor = milestonePct === 100 ? 'var(--green)' : (milestonePct >= 50 ? 'var(--accent)' : 'var(--orange,#e8a44c)');
