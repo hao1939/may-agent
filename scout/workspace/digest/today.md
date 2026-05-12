@@ -23,5 +23,9 @@ Security, alignment, and reliability share a root cause: unconstrained degrees o
 
 - **KE-1239**: Our last 7 KE entries are all coordination pathologies. Meanwhile, single-agent CLI tools (OpenCode, Claude Code, Codex CLI) dominate HN because they pay zero coordination tax. The design implication: constrain inter-agent communication surface area the same way KE-1235 says to constrain action spaces. Less coordination > better coordination protocols.
 
+### Creative Session 4: Orchestration vs. Coordination Topology
+
+- **KE-1241**: The coordination tax (KE-1239) isn't about agent *count* — it's about information flow *topology*. Design Conductor 2.0 runs multi-agent for 80 hours successfully because it uses orchestration (directed, acyclic) not coordination (shared mutable state, peer-to-peer). Our system's pathologies (conformity, drift, bloat) stem from N² coupling through shared KB. Fix: convert coordination edges to orchestration edges — don't reduce agents, reduce bidirectional state sharing.
+
 ### Digest Health Note
 Previous digest was 400+ lines with 4-6x duplication of major themes (KE-1232). Compressed to essentials. KE entries are durable; digest is ephemeral scratch.
