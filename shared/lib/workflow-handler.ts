@@ -33,6 +33,11 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerM
   return (ctx: HandlerContext, entry: CronEntry) => async (event?: unknown) => {
     if (options.shouldRun && !(await options.shouldRun(ctx, event, entry))) {
       ctx.sdk.log("info", `[workflow-handler:${entry.name}] skipped`);
+      ctx.sdk.emit("handler.skipped", {
+        handler: entry.name,
+        workflow: typeof options.workflow === "string" ? options.workflow : null,
+        reason: "shouldRun returned false",
+      });
       return;
     }
 
@@ -45,8 +50,31 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerM
     if (source) runOpts.source = source;
     if (projectId) runOpts.projectId = projectId;
 
+    const startedAt = Date.now();
     ctx.sdk.log("info", `[workflow-handler:${entry.name}] Dispatching workflow "${workflow}" for ${source ?? ctx.agentName}`);
-    const result = await ctx.sdk.runWorkflow(workflow, task, runOpts);
-    ctx.sdk.log("info", `[workflow-handler:${entry.name}] Workflow "${workflow}" -> ${result.status}`);
+    try {
+      const result = await ctx.sdk.runWorkflow(workflow, task, runOpts);
+      ctx.sdk.log("info", `[workflow-handler:${entry.name}] Workflow "${workflow}" -> ${result.status}`);
+      ctx.sdk.emit("handler.workflow_dispatched", {
+        handler: entry.name,
+        workflow,
+        source: source ?? ctx.agentName,
+        projectId: projectId ?? null,
+        workflowRunId: result.runId ?? null,
+        status: result.status,
+        durationMs: Date.now() - startedAt,
+      });
+    } catch (error: any) {
+      const message = error?.message?.slice(0, 500) ?? String(error).slice(0, 500);
+      ctx.sdk.log("info", `[workflow-handler:${entry.name}] Workflow "${workflow}" ERROR: ${message}`);
+      ctx.sdk.emit("handler.workflow_failed", {
+        handler: entry.name,
+        workflow,
+        source: source ?? ctx.agentName,
+        projectId: projectId ?? null,
+        error: message,
+        durationMs: Date.now() - startedAt,
+      });
+    }
   };
 }
