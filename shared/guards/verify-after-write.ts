@@ -12,7 +12,7 @@
  * Extract tool calls from messages in order.
  */
 function extractToolCalls(messages: any[]): Array<{ name: string; path?: string; index: number }> {
-  const calls: Array<{ name: string; path?: string; index: number }> = [];
+  const calls: Array<{ id?: string; name: string; path?: string; index: number }> = [];
   let idx = 0;
   const failedToolCallIds = new Set<string>();
 
@@ -35,14 +35,26 @@ function extractToolCalls(messages: any[]): Array<{ name: string; path?: string;
     for (const part of msg.content) {
       if (part.type === "toolCall" || part.type === "tool_use") {
         const id = part.id ?? part.toolCallId;
-        if (id && failedToolCallIds.has(id)) continue;
         const name = part.name ?? part.toolName;
         const args = part.arguments ?? part.input ?? {};
-        calls.push({ name, path: args.path, index: idx++ });
+        calls.push({ id, name, path: args.path, index: idx++ });
       }
     }
+
+    // Tool results can arrive after their corresponding assistant message. If a
+    // write/edit tool result is an error, remove the already-recorded call so a
+    // failed write attempt does not create an impossible read-back obligation.
+    // Anthropic transcripts use separate role:"toolResult" messages; inline
+    // toolResult content is handled by the pre-scan above.
+    if (msg.role === "toolResult" && msg.isError) {
+      const id = msg.toolCallId;
+      if (id) failedToolCallIds.add(id);
+      const failedIndex = calls.findIndex((call: any) => call.id === id);
+      if (failedIndex >= 0) calls.splice(failedIndex, 1);
+    }
   }
-  return calls;
+
+  return calls.filter((call: any) => !call.id || !failedToolCallIds.has(call.id));
 }
 
 /**

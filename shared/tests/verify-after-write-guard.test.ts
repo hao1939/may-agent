@@ -14,14 +14,24 @@ function makeEvent(overrides: any = {}): any {
   };
 }
 
-function toolCallMsg(calls: Array<{ name: string; path?: string }>): any {
+function toolCallMsg(calls: Array<{ id?: string; name: string; path?: string }>): any {
   return {
     role: "assistant",
-    content: calls.map(c => ({
+    content: calls.map((c, i) => ({
       type: "toolCall",
+      id: c.id ?? `call-${i}`,
       name: c.name,
       arguments: { path: c.path },
     })),
+  };
+}
+
+function toolErrorMsg(toolCallId: string): any {
+  return {
+    role: "toolResult",
+    toolCallId,
+    isError: true,
+    content: [{ type: "text", text: "EACCES: permission denied" }],
   };
 }
 
@@ -86,6 +96,36 @@ describe("verify-after-write guard", () => {
     expect(demands[0].type).toBe("block");
     expect(demands[0].reason).toContain("C1.3 Verify-After-Write");
     expect(demands[0].reason).toContain("foo.ts");
+  });
+
+  it("does not require read-back for failed write attempts", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([{ id: "failed-write", name: "write", path: "research/out.md" }]),
+          toolErrorMsg("failed-write"),
+        ],
+        finishResult: { status: "success" },
+      },
+    });
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("still requires read-back for a successful write after an earlier failed write", () => {
+    const event = makeEvent({
+      result: {
+        messages: [
+          toolCallMsg([{ id: "failed-write", name: "write", path: "research/out.md" }]),
+          toolErrorMsg("failed-write"),
+          toolCallMsg([{ id: "successful-write", name: "write", path: "agents/out.md" }]),
+        ],
+        finishResult: { status: "success" },
+      },
+    });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].reason).toContain("agents/out.md");
+    expect(demands[0].reason).not.toContain("research/out.md");
   });
 
   it("blocks finish(success) with multiple unverified files", () => {
