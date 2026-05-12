@@ -1287,10 +1287,11 @@ export class SubagentManager {
       errorText = "Agent ended without producing a response";
     }
     const status: "done" | "error" | "interrupted" = session.status === "interrupted" ? "interrupted"
-      : finishParams?.status === "success" ? "done"
       : finishParams?.status === "failure" ? "error"
-      : finishParams?.status === "blocked" ? "interrupted"
       : errorText ? "error"
+      // finish(blocked) and finish(partial) are deliberate terminal reports,
+      // not runtime interruptions. The structured finish status carries the
+      // blocked/partial meaning for workflows and evaluators.
       : "done";
     const lastText = finishParams?.summary ?? assistantText ?? "";
     const durationMs = Date.now() - startedAt;

@@ -150,6 +150,8 @@ export function createAutoResume(
   return (event: AgentEvent) => {
     if (event.type !== "session.end") return;
     if (event.status !== "interrupted") return;
+    const finishStatus = typeof event.finishParams?.status === "string" ? event.finishParams.status : "";
+    if (finishStatus && finishStatus !== "success") return;
     // Use opCount as the work indicator — turnCount is not reliably persisted
     const workDone = (event.opCount ?? (event as any).turnCount ?? 0) > 0;
     if (!workDone) return; // No work done — nothing to resume
