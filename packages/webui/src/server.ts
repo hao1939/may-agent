@@ -75,6 +75,20 @@ export function extractMarkdownSection(body: string, headings: string | string[]
   return section || null;
 }
 
+export function normalizeProjectPathForCompare(path: string): string {
+  return path
+    .trim()
+    .replace(/^\.?\//, "")
+    .replace(/^agents\//, "")
+    .replace(/\/project\.md$/, "")
+    .replace(/\/$/, "");
+}
+
+export function projectPathsMatch(left: string | null | undefined, right: string | null | undefined): boolean {
+  if (!left || !right) return false;
+  return normalizeProjectPathForCompare(left) === normalizeProjectPathForCompare(right);
+}
+
 export function startWebUI(opts: WebUIOptions): { port: number } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;
@@ -1426,6 +1440,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
       const projectFile = join(PROJECT_ROOT, path, "project.md");
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
+      const projectContent = readFileSync(projectFile, "utf-8");
+      const { projectId } = parseProjectIdentity(path, projectContent);
+      const sentAt = Date.now();
 
       const trigger = await sendDaemonFrame({
         type: "project.comment.created",
@@ -1434,11 +1451,78 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         comment,
         author: "hao",
       });
+      if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
-      return json({ ok: true, triggered: trigger.ok, triggerError: trigger.error });
+      let workflow = await waitForProjectWorkflowStart(projectId, path, sentAt, 1500);
+      let fallbackTriggered = false;
+      if (!workflow) {
+        const fallback = await sendDaemonFrame({
+          type: "trigger.project",
+          source: "web-ui",
+          projectPath: path,
+          reason: "comment-created-fallback",
+        });
+        fallbackTriggered = fallback.ok;
+        workflow = await waitForProjectWorkflowStart(projectId, path, sentAt, 2500);
+      }
+
+      return json({
+        ok: true,
+        triggered: true,
+        workflowStarted: Boolean(workflow),
+        workflowRunId: workflow?.runId ?? null,
+        workflowStatus: workflow?.status ?? null,
+        fallbackTriggered,
+      }, workflow ? 200 : 202);
     } catch (e: any) {
       return json({ error: e.message }, 500);
     }
+  }
+
+  async function waitForProjectWorkflowStart(
+    projectId: string,
+    projectPath: string,
+    sinceMs: number,
+    timeoutMs: number,
+  ): Promise<{ runId: string; status: string } | null> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const found = findProjectWorkflowStart(projectId, projectPath, sinceMs - 250);
+      if (found) return found;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return findProjectWorkflowStart(projectId, projectPath, sinceMs - 250);
+  }
+
+  function findProjectWorkflowStart(
+    projectId: string,
+    projectPath: string,
+    sinceMs: number,
+  ): { runId: string; status: string } | null {
+    try {
+      const rows = _db().prepare(
+        `SELECT runId, status, task, projectId, startedAt
+         FROM workflow_runs
+         WHERE startedAt >= ?
+           AND workflow = 'project'
+           AND (projectId = ? OR task LIKE ?)
+         ORDER BY startedAt DESC
+         LIMIT 10`
+      ).all(sinceMs, projectId, `%${normalizeProjectPathForCompare(projectPath)}%`) as Array<{
+        runId?: string;
+        status?: string;
+        task?: string | null;
+        projectId?: string | null;
+      }>;
+      for (const row of rows) {
+        if (row.projectId === projectId || projectPathsMatch(row.task ?? "", projectPath) || String(row.task ?? "").includes(normalizeProjectPathForCompare(projectPath))) {
+          return { runId: row.runId ?? "", status: row.status ?? "running" };
+        }
+      }
+    } catch {
+      // DB confirmation is best-effort; caller already sent the daemon event.
+    }
+    return null;
   }
 
   function handleEvents(url: URL): Response {

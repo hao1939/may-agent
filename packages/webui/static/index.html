@@ -3698,12 +3698,18 @@ async function addProjectComment() {
       body: JSON.stringify({ path: _projectDetailPath, comment })
     });
     const data = await res.json();
+    if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
     input.value = '';
-    if (data.resumed) {
-      statusEl.textContent = '✅ Comment added — project resumed to active';
+    if (data.workflowStarted) {
+      statusEl.textContent = `✅ Comment added — project workflow started${data.workflowRunId ? ' (' + data.workflowRunId + ')' : ''}`;
       statusEl.style.color = 'var(--green)';
+    } else if (data.triggered) {
+      statusEl.textContent = data.fallbackTriggered
+        ? '⚠️ Comment added — fallback trigger sent, workflow start not confirmed yet'
+        : '⚠️ Comment added — trigger sent, workflow start not confirmed yet';
+      statusEl.style.color = 'var(--orange)';
     } else {
-      statusEl.textContent = '✅ Comment added';
+      statusEl.textContent = '⚠️ Comment added — trigger not confirmed';
       statusEl.style.color = 'var(--fg2)';
     }
     statusEl.style.display = 'block';
