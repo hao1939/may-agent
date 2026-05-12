@@ -1,3 +1,36 @@
+# Proposed Strategies — 2026-05-12 11:06Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778583863106_25/session.jsonl` (may)
+- `.state/sessions/history/s_1778582080887_16/session.jsonl` (arc)
+- `.state/sessions/history/s_1778582218276_19/session.jsonl` (may)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- The extractor again produced an all-zero sample on three very recent successful non-evaluator sessions, including two May sessions and one arc session.
+- This strengthens the calibration signal that `extract-strategy.cjs` is still overwhelmingly recovery-biased and remains unable to surface reusable positive tactics from compact clean successful work.
+- The newest sample did not even include lightweight recovery mistakes to latch onto, so the extractor currently contributes no strategy output at all for clean efficient completions.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics so short successful sessions can emit at least one reusable tactic when they contain verified, efficient work.
+2. Keep sampling recent successful sessions until the extractor yields at least one non-recovery lesson on clean work.
+3. Treat repeated all-zero samples as evidence that periodic P63 coverage is currently measuring extractor blind spots more than actual strategy harvest.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778583863106_25/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778582080887_16/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778582218276_19/session.jsonl` returned `"lessons": []`.
+
+---
+
 # Proposed Strategies — 2026-05-12 07:39Z
 
 ## Scope
