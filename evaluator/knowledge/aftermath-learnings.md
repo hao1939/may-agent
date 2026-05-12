@@ -70,3 +70,6 @@
 
 ## 2026-05-12 — s_1778587481691_3
 - For arc coherence-audit heartbeats, give strong quality credit when the agent verifies a design-vs-runtime mismatch against live registry/data, updates the stale design doc in-lane, and queues the remaining implementation choice as a proposal. A quick recovery from missing-`rg` friction or a first blocked `finish(success)` due to missing read-back should reduce efficiency only, not erase the value of the landed KE/design correction.
+
+## 2026-05-12 — s_1778581737427_12
+- For persistent-task investigation sessions, give strong quality credit when the agent isolates the active blocker with a narrower validation run, proves a later stage of the workflow works in practice, and lands reusable project documentation. A first `finish(success)` failure from wrong deliverable-path format should reduce efficiency only; it should not erase the value of a committed, evidence-backed run report and setup update.
