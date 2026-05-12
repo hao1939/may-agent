@@ -431,6 +431,12 @@ export class SubagentManager {
       session.status = "interrupted";
       session.agent.abort();
       this._registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
+      updateSessionDb(this._persistDir, sessionId, {
+        status: "interrupted",
+        endedAt: Date.now(),
+        error: "Cancelled",
+        opCount: session.toolCalls,
+      });
     }
   }
 
@@ -472,7 +478,7 @@ export class SubagentManager {
   // ── Query ──
 
   status(): SessionInfo[] {
-    return [...this._sessions.values()].map(s => ({
+    return [...this._sessions.values()].filter(s => s.status !== "interrupted").map(s => ({
       sessionId: s.sessionId,
       agent: s.agentName,
       task: s.task,
@@ -604,6 +610,19 @@ export class SubagentManager {
     const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
     const stale = new Map<string, (typeof activeSessions)[string]>();
 
+    // meta.json is the session source of truth. Reconcile SQL rows on boot so
+    // cancelled/interrupted sessions do not remain visible as running after a
+    // process restart or older cancel path.
+    for (const [sessionId, persisted] of Object.entries(activeSessions)) {
+      if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
+        updateSessionDb(this._persistDir, sessionId, {
+          status: persisted.status,
+          endedAt: persisted.endedAt ?? Date.now(),
+          error: persisted.error,
+        });
+      }
+    }
+
     const sessionsRoot = join(this._persistDir, "sessions");
     if (existsSync(sessionsRoot)) {
       try {
@@ -673,6 +692,7 @@ export class SubagentManager {
           kind: persisted.kind ?? "job",
           autoClose: persisted.autoClose ?? "immediate",
           requestId: persisted.requestId,
+          projectId: persisted.projectId,
           orderId: persisted.orderId,
           startedAt: persisted.startedAt,
           resumeMessages,

@@ -19,13 +19,29 @@ export interface SessionDbEntry {
   opCount?: number;
 }
 
-/** Insert or replace a session row. */
+/** Insert or update a session row without erasing existing lineage fields. */
 export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   const db = getDb(persistDir);
   db.run(
-    `INSERT OR REPLACE INTO sessions
+    `INSERT INTO sessions
       (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, stepLabel, startedAt, endedAt, error, outcome, opCount)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(sessionId) DO UPDATE SET
+       agent = excluded.agent,
+       task = CASE WHEN excluded.task != '' THEN excluded.task ELSE sessions.task END,
+       status = excluded.status,
+       kind = COALESCE(excluded.kind, sessions.kind),
+       source = COALESCE(excluded.source, sessions.source),
+       parentSessionId = COALESCE(excluded.parentSessionId, sessions.parentSessionId),
+       requestId = COALESCE(excluded.requestId, sessions.requestId),
+       workflowRunId = COALESCE(excluded.workflowRunId, sessions.workflowRunId),
+       projectId = COALESCE(excluded.projectId, sessions.projectId),
+       stepLabel = COALESCE(excluded.stepLabel, sessions.stepLabel),
+       startedAt = COALESCE(excluded.startedAt, sessions.startedAt),
+       endedAt = COALESCE(excluded.endedAt, sessions.endedAt),
+       error = COALESCE(excluded.error, sessions.error),
+       outcome = COALESCE(excluded.outcome, sessions.outcome),
+       opCount = CASE WHEN excluded.opCount > sessions.opCount THEN excluded.opCount ELSE sessions.opCount END`,
     [
       entry.sessionId,
       entry.agent,
