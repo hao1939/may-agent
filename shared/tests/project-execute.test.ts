@@ -297,6 +297,34 @@ describe("execute — worker iteration", () => {
     expect(journal).toContain("### Iteration 2");
   });
 
+  it("does not reuse prior WAITING guidance as worker instructions", async () => {
+    const projDir = setupProjectDir("active");
+    writeFileSync(join(projDir, "journal.md"), [
+      "# Journal",
+      "",
+      "### Iteration 1 — 2026-05-12T00:00:00.000Z",
+      "**Worker**: prior work",
+      "**Reviewer**: WAITING — external deploy is not ready. Resume when: human provides build version",
+      "",
+    ].join("\n"), "utf-8");
+    writeFileSync(
+      join(projDir, "project.md"),
+      readFileSync(join(projDir, "project.md"), "utf-8").replace("**Iteration**: 0", "**Iteration**: 1"),
+      "utf-8",
+    );
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 2\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Checked blocker" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Still blocked\nResume when: human provides build version" });
+
+    await execute(ctx);
+
+    const workerPrompt = ctx.runAgent.mock.calls[0][1];
+    expect(workerPrompt).not.toContain("## Your Instructions\nWAITING");
+    expect(workerPrompt).toContain("finish(blocked/partial) with evidence instead of inventing files");
+  });
+
   it("handles BLOCKED decision from reviewer", async () => {
     const projDir = setupProjectDir("active");
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 2\nreviewEvery: 1`);

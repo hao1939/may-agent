@@ -412,7 +412,9 @@ function getLastGuidance(journalContent: string, iteration: number): string | nu
   );
   const match = journalContent.match(regex);
   if (!match) return null;
-  return match[1].trim().replace(/^CONTINUE[:\s]*/i, "").trim() || null;
+  const guidance = match[1].trim();
+  if (/^(WAITING|BLOCKED)\b/i.test(guidance)) return null;
+  return guidance.replace(/^(CONTINUE|PIVOT)[:\s]*/i, "").trim() || null;
 }
 
 function getRecentJournalEntries(journalContent: string, iteration: number, count: number): string {
@@ -478,7 +480,7 @@ function buildWorkerPrompt(
 
   // Constraints
   prompt += `## Rules\n`;
-  prompt += `- Produce at least one concrete deliverable this iteration.\n`;
+  prompt += `- Produce a concrete deliverable when it advances the current goal. If the current blocker/precondition is still unmet, finish(blocked/partial) with evidence instead of inventing files.\n`;
   prompt += `- Put all output files in: ${outputsDir}/\n`;
   prompt += `- Before finish(success), call read() on every file you write() or edit(); tests and grep can supplement read-back but do not replace it.\n`;
   prompt += `- Before finish(success), run \`cd /app/agents && git status --short\`, classify every dirty path, and stage only intentional deliverables with explicit paths (never broad \`git add .\`). If an intentional deliverable is under the ignored canonical \`shared/projects/\` tree, use \`git add -f <that exact path>\` and explain why.\n`;
