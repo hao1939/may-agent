@@ -19,3 +19,7 @@ Disposition: dismiss for dev with reason `not dev-owned; May is the metric owner
 ## Git Hygiene Note
 
 The agents worktree contained ambient dirty files before this heartbeat wrote this artifact, including runtime `last-session.md` files, scout context/runtime signal files, May-owned `shared/projects/aks-rp-e2e/*`, and `shared/tests/session-recovery.test.ts`. This heartbeat should stage only this investigation artifact and leave unrelated dirty paths untouched.
+
+## 2026-05-11 08:30Z Recheck
+
+The Approved queue remains empty and current dev-owned health signals remain in range (`session.error-rate-6h=0.0947`, `handler.success-rate=1`, `session.finish-blocked-unresolved-count-24h=0`). A fresh unresolved-alert query now returns only alert `308` for `guard.triggered-count-24h`, whose metric row reports `owner=may`, `current=1103`, `threshold=1100`, `alert_op=>`, and priority is defined as `P3` in `agents/may/handlers/metrics-snapshot.ts`. Recent guard events are mostly finish-time dirty-worktree warnings plus a small number of path/read/verification blocks; the only recurring last-hour reason grouping visible from DB is 24 `VERIFICATION DEPTH` finish blocks for shell-written files. Disposition is unchanged: dev dismisses/escalates-to-owner rather than patching, because the metric is May-owned, May has an active heartbeat launched with this exact alert in context, and dev's paused finish-blocked project should not resume while the paired strict unresolved finish-block metric remains `0`.
