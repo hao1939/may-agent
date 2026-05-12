@@ -1,3 +1,43 @@
+# Proposed Strategies — 2026-05-12 08:29Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778565877091_803/session.jsonl` (arc)
+- `.state/sessions/history/s_1778565823117_798/session.jsonl` (may)
+- `.state/sessions/history/s_1778565680509_796/session.jsonl` (may)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 1
+- Sessions with no extracted lessons: 2
+
+## Lessons
+
+### 1. Missing-file reads are still surfacing as avoidable recovery patterns
+**Evidence:** The sampled May review session `s_1778565680509_796` produced `grep: shared/cron.json: No such file or directory` and the extractor emitted a recovery lesson.
+
+**Strategy:**
+- Verify candidate paths with `ls`, `find`, or repo-aware search before issuing targeted `grep`/read commands.
+- Treat missing-file reads as efficiency waste when the path could have been confirmed structurally first.
+- Prefer path discovery over path guessing, especially in cross-project review sessions.
+
+## Calibration Notes
+- Two fresh successful sessions (`s_1778565877091_803`, `s_1778565823117_798`) still yielded zero lessons, while the only extracted lesson was again a recovery pattern rather than a positive tactic.
+- This keeps the calibration hypothesis intact: `extract-strategy.cjs` remains substantially recovery-biased and still under-reports reusable success patterns from compact clean sessions.
+- The new sample does show the extractor can still catch lightweight avoidable waste inside otherwise successful work, so it remains useful for narrow hygiene lessons even when positive-pattern coverage is weak.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics so short successful sessions can emit at least one reusable tactic when they contain verified, efficient work.
+2. Keep sampling recent successful sessions until the extractor yields at least one non-recovery lesson on clean work.
+3. Preserve path-validation guidance in evaluator calibration, since guessed paths continue to surface as low-cost efficiency mistakes.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778565877091_803/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778565823117_798/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778565680509_796/session.jsonl` returned one recovery lesson triggered by `grep: shared/cron.json: No such file or directory`.
+
+---
+
 # Proposed Strategies — 2026-05-12 05:35Z
 
 ## Scope
