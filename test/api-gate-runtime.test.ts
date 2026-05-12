@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { createRuntimeApiGate } from "../src/app/api-gate-runtime.js";
 
 describe("runtime api gate", () => {

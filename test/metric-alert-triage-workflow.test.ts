@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { execute } from "../agents/shared/workflows/metric-alert-triage.ts";
 
-function makeDb() {
-  const rows = {
+function makeDbData() {
+  return {
     metric: {
       id: "arc.quality",
       name: "Arc quality",
@@ -35,22 +35,21 @@ function makeDb() {
       { sessionId: "s_prior", status: "done", source: "heartbeat-arc", startedAt: Date.now() - 30_000, endedAt: Date.now() - 20_000 },
     ],
   };
+}
 
+function makeQuery(rows = makeDbData()) {
   return {
-    prepare(sql: string) {
+    metricAlertContext(_filter: Record<string, unknown>) {
       return {
-        get(..._args: unknown[]) {
-          if (sql.includes("FROM metrics")) return rows.metric;
-          if (sql.includes("FROM metric_alerts")) return rows.alert;
-          return null;
-        },
-        all(..._args: unknown[]) {
-          if (sql.includes("FROM metric_snapshots")) return rows.snapshots;
-          if (sql.includes("FROM events")) return rows.relatedEvents;
-          if (sql.includes("FROM sessions")) return rows.ownerSessions;
-          return [];
-        },
+        metric: rows.metric,
+        alert: rows.alert,
+        alertId: rows.alert.id,
+        snapshots: rows.snapshots,
+        relatedEvents: rows.relatedEvents,
       };
+    },
+    sessions(_filter: Record<string, unknown>) {
+      return { rows: rows.ownerSessions };
     },
   };
 }
@@ -86,7 +85,7 @@ describe("metric-alert-triage workflow", () => {
     const ctx = {
       task: task(),
       agentsRoot: "/tmp/no-agents",
-      getDb: () => makeDb(),
+      query: makeQuery(),
       runFunction: async (_label: string, fn: () => Promise<string>) => ({
         sessionId: "fn_load",
         status: "done",
@@ -140,7 +139,7 @@ describe("metric-alert-triage workflow", () => {
     const ctx = {
       task: task("evaluator.false-good-rate-sample"),
       agentsRoot: "/tmp/no-agents",
-      getDb: () => makeDb(),
+      query: makeQuery(),
       runFunction: async (_label: string, fn: () => Promise<string>) => ({
         sessionId: "fn_load",
         status: "done",
@@ -182,7 +181,7 @@ describe("metric-alert-triage workflow", () => {
     const ctx = {
       task: task(),
       agentsRoot: "/tmp/no-agents",
-      getDb: () => makeDb(),
+      query: makeQuery(),
       runFunction: async (_label: string, fn: () => Promise<string>) => ({
         sessionId: "fn_load",
         status: "done",
@@ -220,7 +219,7 @@ describe("metric-alert-triage workflow", () => {
     const ctx = {
       task: task(),
       agentsRoot: "/tmp/no-agents",
-      getDb: () => makeDb(),
+      query: makeQuery(),
       runFunction: async (_label: string, fn: () => Promise<string>) => ({
         sessionId: "fn_load",
         status: "done",
