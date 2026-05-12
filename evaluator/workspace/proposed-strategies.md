@@ -1,3 +1,36 @@
+# Proposed Strategies — 2026-05-12 05:35Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778564062377_783/session.jsonl` (may)
+- `.state/sessions/history/s_1778564077451_785/session.jsonl` (dev)
+- `.state/sessions/history/s_1778564077585_786/session.jsonl` (arc)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- The extractor again produced an all-zero sample on fresh successful non-evaluator sessions, including a May heartbeat, a dev heartbeat, and a short arc heartbeat.
+- This reinforces the current calibration hypothesis that `extract-strategy.cjs` is still recovery-biased and remains unable to surface lightweight positive tactics from compact successful work.
+- Until positive-pattern heuristics are added, periodic P63 runs on clean successes will continue to under-report reusable strategies.
+
+## Recommended Follow-up
+1. Add a positive-pattern mode or explicit success-pattern heuristics to `extract-strategy.cjs` so clean verified sessions can produce at least one reusable lesson.
+2. Keep sampling recent successful sessions until the extractor yields at least one non-recovery lesson on clean work.
+3. Preserve the current evidence-first logging pattern in this file so future calibrations can compare sample drift over time.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778564062377_783/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778564077451_785/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778564077585_786/session.jsonl` returned `"lessons": []`.
+
+---
+
 # Proposed Strategies — 2026-05-12 03:34Z
 
 ## Scope
