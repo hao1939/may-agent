@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { createModelRegistry } from "../src/app/model-registry.js";
 
 describe("model registry", () => {

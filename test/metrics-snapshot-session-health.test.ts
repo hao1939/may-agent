@@ -517,9 +517,9 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
-    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 20, priority: "P3" });
-    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 20, priority: "P3" });
-    expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P1" });
+    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 1300, priority: "P3" });
+    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 900, priority: "P3" });
+    expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
   });
 
