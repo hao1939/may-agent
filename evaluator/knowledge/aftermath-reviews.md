@@ -238,6 +238,10 @@
 - Symptom: the transcript shows `git add <intended-path>` or even `git add -f <intended-path>`, but the landed commit also contains another staged file from a different lane/agent.
 - Fix: verify the full commit contents with `git show --stat --name-only <commit>`, not just the transcript's add command. Credit the intended artifact if it is real, but downgrade hygiene/output quality when unrelated staged paths were swept into the commit or omitted from `finish()` deliverables.
 
+## Pattern: path-specific force-add still sweeps pre-staged files into the commit
+- Symptom: a session correctly force-adds an ignored deliverable path, but `git status --short` already showed unrelated staged files before the commit, so `git commit` sweeps them in anyway.
+- Fix: before crediting the commit as isolated, compare transcript pre-commit status with the final `git show --stat`. If unrelated files were already staged, treat `git add -f <path>` as insufficient isolation and recommend `git restore --staged <unrelated>` or a blocked/partial finish instead of committing ambient staged work.
+
 ## Pattern: concurrent repo activity can ship a real artifact under the wrong commit identity
 - Symptom: the agent edits a valid file, but its own `git commit` fails (for example on an index lock or concurrent git process) and the staged change later appears inside another agent's successful commit with an unrelated subject/author.
 - Fix: inspect the landed diff and current file content first. If the artifact really shipped, keep substance credit, but downgrade hygiene because the session did not secure an isolated commit or clean closeout. Treat this as stronger than minor inefficiency when the session then relies on that unrelated commit in `finish()`.
