@@ -446,16 +446,10 @@ function buildWorkerPrompt(
   const projectDir = dirname(projectPath);
   const outputsDir = join(projectDir, "outputs");
 
-  // Read unread comments from discussion.md
-  const unreadComments = getUnreadComments(projectDir);
-
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
 
   // Instructions first (reviewer guidance)
   if (lastGuidance) prompt += `## Your Instructions\n${lastGuidance}\n\n`;
-
-  // Feedback from others
-  if (unreadComments) prompt += `## Feedback from Others\n${unreadComments}\n\n`;
 
   // Current milestone
   if (nextMilestone) {
