@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyReviewerProjectDirectives } from "./project.js";
+import { applyReviewerProjectDirectives, stripReviewerDirectives } from "./project.js";
 
 describe("project reviewer directives", () => {
   it("applies reviewer-owned project state updates", () => {
@@ -51,5 +51,19 @@ describe("project reviewer directives", () => {
     expect(updated).toContain("## Current State\nActive: goal changed by human; next work is to get one green e2e case or collect concrete blocker evidence.\n");
     expect(updated).toContain("## Signals\n- e2e.scenario-pass: 0\n- e2e.green-run-evidence: missing\n");
     expect(updated).toContain("## Context\n- keep me");
+  });
+
+  it("keeps directive blocks out of status summaries", () => {
+    const clean = stripReviewerDirectives([
+      "The standalone RP has 0 underlays registered.",
+      "",
+      "Resume when: underlay is registered.",
+      "",
+      "CONTEXT_UPDATE:",
+      "- Root cause identified.",
+      "- Tried 5 regions.",
+    ].join("\n"));
+
+    expect(clean).toBe("The standalone RP has 0 underlays registered.\n\nResume when: underlay is registered.");
   });
 });

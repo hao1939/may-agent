@@ -228,6 +228,16 @@ export function applyReviewerProjectDirectives(projectContent: string, reviewerT
   return next;
 }
 
+export function stripReviewerDirectives(text: string): string {
+  return text
+    .replace(/\n?CONTEXT_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
+    .replace(/\n?GOAL_UPDATE:\s*[\s\S]*?(?=\n(?:CONTEXT_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
+    .replace(/\n?CURRENT_STATE_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CONTEXT_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
+    .replace(/\n?SIGNALS_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CONTEXT_UPDATE|CURRENT_STATE_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
+    .replace(/\n?PLAN_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CONTEXT_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE):|\n\*\*|\n## |$)/gi, "")
+    .trim();
+}
+
 function currentStateLine(label: string, detail: string): string {
   const cleaned = detail.trim();
   return cleaned ? `${label}: ${cleaned}` : `${label}.`;
@@ -809,15 +819,16 @@ async function handleWaitingDecision(
     ls.projectContent = appendJournalEntry(config, ls.projectContent, note, isCommentIteration);
   }
 
+  const cleanDetail = stripReviewerDirectives(decision.detail) || decision.detail;
   ls.projectContent = updateField(ls.projectContent, "Status", "waiting");
-  ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
+  ls.projectContent = updateField(ls.projectContent, "Stop Reason", cleanDetail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
-  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Waiting", decision.detail));
+  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Waiting", cleanDetail));
   cachedWrite(config.projectPath, ls.projectContent);
-  emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: decision.detail.slice(0, 100) });
+  emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: cleanDetail.slice(0, 100) });
   const msg = isCommentIteration
-    ? `Waiting after comment at iteration ${iteration}: ${decision.detail}`
-    : `Waiting at iteration ${iteration}: ${decision.detail}`;
+    ? `Waiting after comment at iteration ${iteration}: ${cleanDetail}`
+    : `Waiting at iteration ${iteration}: ${cleanDetail}`;
   return { outcome: "stopped", result: ctx.done(msg) };
 }
 
@@ -832,15 +843,16 @@ async function handleBlockedDecision(
   decision: { status: string; detail: string; resumeCondition: string },
   isCommentIteration: boolean,
 ): Promise<WorkflowResult> {
+  const cleanDetail = stripReviewerDirectives(decision.detail) || decision.detail;
   ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
-  ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
+  ls.projectContent = updateField(ls.projectContent, "Stop Reason", cleanDetail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Blocker resolved");
-  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Blocked", decision.detail));
+  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Blocked", cleanDetail));
   cachedWrite(config.projectPath, ls.projectContent);
-  emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: decision.detail.slice(0, 100) });
+  emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: cleanDetail.slice(0, 100) });
   const msg = isCommentIteration
-    ? `Blocked by comment at iteration ${iteration}: ${decision.detail}`
-    : `Blocked at iteration ${iteration}: ${decision.detail}`;
+    ? `Blocked by comment at iteration ${iteration}: ${cleanDetail}`
+    : `Blocked at iteration ${iteration}: ${cleanDetail}`;
   return ctx.escalate(msg);
 }
 
