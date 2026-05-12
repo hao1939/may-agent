@@ -133,6 +133,10 @@
 - Symptom: a metric-alert triage session re-runs the live checks correctly, but the only shipped change is another project-journal entry restating the same historical row and same wait condition that were already documented minutes earlier.
 - Fix: separate operational soundness from output materiality. Credit the fresh DB validation and correct hold judgment, but downgrade from strong `good`/material-output language when the artifact adds little delta, especially if the canonical project status/resume fields remain unchanged or inconsistent with the newest evidence.
 
+## Pattern: repeated `document_exception` re-logs can be correct but low-delta output
+- Symptom: a metric-alert triage session rechecks the live raw-vs-strict evidence and then appends another `document_exception` paragraph with essentially the same rationale and resume trigger already documented earlier that day.
+- Fix: credit the live validation and correct exception judgment, but treat the session as maintenance-level output unless it changes the canonical exception state, updates the project status/resume fields, or adds materially new classification/source evidence.
+
 ## Pattern: partial metric-alert triage can miss the durable judgment event
 - Symptom: a metric-alert workflow does the live checks and even lands a supporting artifact/commit, but the session ends `partial` because of unrelated worktree dirt, and no fresh `metric.alert_judged` event appears afterward.
 - Fix: review the operational judgment and artifact separately from closure completeness. Credit the live analysis and durable note if they are real, but mark the session incomplete for alert-lifecycle purposes when the workflow never records the judgment event that downstream closure tracking expects.
