@@ -202,6 +202,11 @@ function updateSection(content: string, heading: string, newContent: string): st
   return content.slice(0, idx + marker.length) + newContent + content.slice(end);
 }
 
+function currentStateLine(label: string, detail: string): string {
+  const cleaned = detail.trim();
+  return cleaned ? `${label}: ${cleaned}` : `${label}.`;
+}
+
 function appendToSection(content: string, heading: string, line: string): string {
   const idx = content.indexOf(`## ${heading}`);
   if (idx === -1) return content + `\n\n## ${heading}\n${line}\n`;
@@ -771,7 +776,7 @@ async function handleWaitingDecision(
   ls.projectContent = updateField(ls.projectContent, "Status", "waiting");
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
-  ls.projectContent = updateSection(ls.projectContent, "Current State", `Waiting: ${decision.detail.slice(0, 150)}`);
+  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Waiting", decision.detail));
   cachedWrite(config.projectPath, ls.projectContent);
   emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: decision.detail.slice(0, 100) });
   const msg = isCommentIteration
@@ -794,7 +799,7 @@ async function handleBlockedDecision(
   ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", decision.detail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Blocker resolved");
-  ls.projectContent = updateSection(ls.projectContent, "Current State", `Blocked: ${decision.detail.slice(0, 150)}`);
+  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Blocked", decision.detail));
   cachedWrite(config.projectPath, ls.projectContent);
   emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: decision.detail.slice(0, 100) });
   const msg = isCommentIteration
@@ -1185,7 +1190,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // Update Current State with reviewer's synthesis
       const ms = extractMilestones(projectContent);
-      const reviewerInsight = decision.detail.slice(0, 200).replace(/^CONTINUE[:\s]*/i, "").trim();
+      const reviewerInsight = decision.detail.replace(/^CONTINUE[:\s]*/i, "").trim();
 
       projectContent = updateSection(projectContent, "Current State",
         `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +

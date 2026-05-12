@@ -172,6 +172,22 @@ describe("execute — worker iteration", () => {
     expect(project).toContain("waiting");
   });
 
+  it("preserves full WAITING detail in Current State", async () => {
+    const projDir = setupProjectDir("active");
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
+    const longDetail = "All documentation milestones are complete and verified. The worker is now attempting to actually deploy and run e2e tests against localdeploy in tmux, which is outside the original documentation-only scope but is the current meaningful next validation step.";
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Documented the workflow" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: `WAITING: ${longDetail}\nResume when: human reviews the expanded e2e scope` });
+
+    await execute(ctx);
+
+    const project = readFileSync(join(projDir, "project.md"), "utf-8");
+    expect(project).toContain(`Waiting: ${longDetail}`);
+    expect(project).toContain("meaningful next validation step");
+  });
+
   it("handles worker errors and escalates after 2 consecutive failures", async () => {
     const projDir = setupProjectDir("active");
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 5\nreviewEvery: 1`);
@@ -215,6 +231,22 @@ describe("execute — worker iteration", () => {
     expect(ctx.escalate).toHaveBeenCalledWith(expect.stringContaining("Blocked"));
     const project = readFileSync(join(projDir, "project.md"), "utf-8");
     expect(project).toContain("blocked");
+  });
+
+  it("preserves full BLOCKED detail in Current State", async () => {
+    const projDir = setupProjectDir("active");
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
+    const longDetail = "The deploy command cannot continue because the devbox tmux session shows localdeploy failed after resolving credentials, and the remaining error requires a human-owned cluster permission change before another run is useful.";
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Tried deploy" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: `BLOCKED: ${longDetail}\nResume when: permission is fixed` });
+
+    await execute(ctx);
+
+    const project = readFileSync(join(projDir, "project.md"), "utf-8");
+    expect(project).toContain(`Blocked: ${longDetail}`);
+    expect(project).toContain("another run is useful");
   });
 
   it("handles PIVOT decision as continue", async () => {
