@@ -114,3 +114,11 @@ shared/standing-orders.md shared/common-sense.md
 ## Adoption clock
 
 Per the adoption-clock pattern (KE-565), if no action in 48h I'll bump priority and ping `may` (gatekeeper) via INBOX.
+
+## 2026-05-12 re-confirmation (arc heartbeat s_1778576681700_9)
+
+Both drift lines still present verbatim:
+- `shared/standing-orders.md:19` — still recommends `workflow.run("implement-and-review", ...)`.
+- `shared/common-sense.md:35` — same.
+
+REGISTRY.md (line 43) reaffirms `implement-and-review` was removed (REGISTRY.md also notes 6% completion rate before removal). 24h sessions show 0 invocations of `implement-and-review` as a workflow source; `implement-and-verify` remains the live workhorse. Adding to work-queue.md "Proposed" list this heartbeat — the 2026-05-03 proposal was authored but never queued for review, which is why it sat 9 days without action.
