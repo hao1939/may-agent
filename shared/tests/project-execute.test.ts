@@ -65,6 +65,42 @@ ${milestones}
   return projDir;
 }
 
+function setupFrontmatterProjectDir(status = "active", iteration = 0) {
+  const projDir = join(TEST_DIR, "yamlproj");
+  mkdirSync(join(projDir, "outputs"), { recursive: true });
+  writeFileSync(join(projDir, "project.md"), `---
+id: yamlproj
+owner: test-agent
+status: ${status}
+type: milestone
+priority: P1
+workflow: project
+iteration: ${iteration}
+---
+
+# Project: YAML Test
+
+## Goal
+Test goal
+
+## Current State
+Not started.
+
+## Context
+
+## Milestones
+- [ ] First milestone
+
+## Resources
+
+## Artifacts
+
+`, "utf-8");
+  writeFileSync(join(projDir, "journal.md"), "# Journal\n\n", "utf-8");
+  writeFileSync(join(projDir, "discussion.md"), "# Discussion\n\n", "utf-8");
+  return projDir;
+}
+
 describe("project module exports", () => {
   it("exports name and description", () => {
     expect(name).toBe("project");
@@ -170,6 +206,49 @@ describe("execute — worker iteration", () => {
     // Check project status
     const project = readFileSync(join(projDir, "project.md"), "utf-8");
     expect(project).toContain("waiting");
+  });
+
+  it("resumes from journal iteration when project frontmatter is stale", async () => {
+    const projDir = setupFrontmatterProjectDir("active", 0);
+    writeFileSync(join(projDir, "journal.md"), [
+      "# Journal",
+      "",
+      "### Iteration 7 — 2026-05-11T00:00:00.000Z",
+      "**Worker**: old run",
+      "**Reviewer**: CONTINUE — keep going",
+      "",
+      "### Iteration 8 — 2026-05-11T00:10:00.000Z",
+      "**Worker**: old run",
+      "**Reviewer**: CONTINUE — keep going",
+      "",
+    ].join("\n"), "utf-8");
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 9\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Did work 9" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Done\nResume when: review" });
+
+    await execute(ctx);
+
+    const journal = readFileSync(join(projDir, "journal.md"), "utf-8");
+    expect(journal).toContain("### Iteration 9");
+    expect(journal).not.toContain("### Iteration 1 —");
+    const project = readFileSync(join(projDir, "project.md"), "utf-8");
+    expect(project).toContain("iteration: 9");
+  });
+
+  it("does not append discussion read markers during worker iterations without comments", async () => {
+    const projDir = setupProjectDir("active");
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Did work" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Done\nResume when: review" });
+
+    await execute(ctx);
+
+    const discussion = readFileSync(join(projDir, "discussion.md"), "utf-8");
+    expect(discussion).not.toContain("---read @iter");
   });
 
   it("preserves full WAITING detail in Current State", async () => {
@@ -333,6 +412,8 @@ describe("execute — comment handling", () => {
     
     const journal = readFileSync(join(projDir, "journal.md"), "utf-8");
     expect(journal).toContain("(comment)");
+    const discussion = readFileSync(join(projDir, "discussion.md"), "utf-8");
+    expect(discussion.match(/---read @iter\d+---/g)).toEqual(["---read @iter1---"]);
   });
 });
 

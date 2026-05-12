@@ -297,6 +297,11 @@ function parseProjectState(content: string): ProjectState {
   return { status, lastIteration };
 }
 
+function parseLastJournalIteration(content: string): number {
+  const iterHeaders = [...content.matchAll(/^### Iteration (\d+)/gm)];
+  return iterHeaders.length > 0 ? Math.max(...iterHeaders.map(m => parseInt(m[1], 10))) : 0;
+}
+
 function extractMilestones(content: string): { total: number; done: number; pending: string[] } {
   const milestones: { done: boolean; text: string }[] = [];
   const lines = content.split("\n");
@@ -897,6 +902,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   let projectContent = readFile(config.projectPath) ?? "";
+  const journalContentAtStart = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
   let state = parseProjectState(projectContent);
 
   // Handle non-active states
@@ -912,7 +918,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // If there ARE pending comments on a done/blocked project, fall through to the loop
   // so the comment iteration processes them. The comment reviewer can change status.
 
-  let iteration = state.lastIteration + 1;
+  const durableLastIteration = Math.max(state.lastIteration, parseLastJournalIteration(journalContentAtStart));
+  if (durableLastIteration > state.lastIteration) {
+    projectContent = updateField(projectContent, "Iteration", String(durableLastIteration));
+    cachedWrite(config.projectPath, projectContent);
+    state = { ...state, lastIteration: durableLastIteration };
+  }
+
+  let iteration = durableLastIteration + 1;
   let consecutiveFailures = 0;
   let continueWithoutProgress = 0;
   let lastMilestoneDone = extractMilestones(projectContent).done;
@@ -1198,8 +1211,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       cachedWrite(config.projectPath, projectContent);
 
-      // Mark discussion as read after this iteration processed comments
-      markDiscussionRead(config.projectDir, iteration);
     }
 
     iteration++;
