@@ -64,18 +64,15 @@ updatedAt FROM projects` on 2026-05-08. When in doubt, the `query_db`
 tool returns the schema in its error hint, or run
 `PRAGMA table_info(<table>)` first. (KE-816)
 
-> **⚠️ opCount is frozen at 0 since 2026-05-07 09:13Z** (KE-796). Every
-> session in the post-cutoff window records `opCount=0` regardless of
-> tools used. Until that runtime is restored, **do not use `AVG(opCount)`
-> or `SUM(opCount)` as a session-effort proxy** — the answer is always
-> zero. Substitute one of:
-> - duration: `(endedAt-startedAt)/1000.0` seconds
-> - outcome: `outcome IS NOT NULL AND length(outcome) > 0`
-> - commit-count via `git log --author=<agent>-agent` keyed on session
->   start timestamps
->
-> The query block below is preserved for diagnostic value (it will start
-> reading useful again when opCount unfreezes), but **expect zeros**.
+> **opCount unfroze 2026-05-09 09:43:39Z** (KE-796 F3 falsified → KE-1236).
+> The runtime now reliably writes a non-zero `opCount` for workflow sessions
+> (3d window: 2141/2344 nonzero, avg ≈12, max 76). Use `AVG(opCount)` again
+> as a session-effort proxy — **but only on windows that begin after
+> 2026-05-09 09:43Z**; any window crossing 2026-05-07 09:13Z → 2026-05-09
+> 09:43Z still mixes in structural zeros from the freeze period. For
+> longer windows, prefer `(endedAt-startedAt)/1000.0` (duration) or
+> `commit-count via git log --author=<agent>-agent` until the freeze
+> period rolls out.
 
 ```sql
 -- Agent effectiveness (last 24h)
