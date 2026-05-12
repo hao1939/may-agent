@@ -22,6 +22,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 - Missing deps causing suite-wide failures: isolate impacted tests, do not attribute to change under review.
 - In success_candidate aftermath reviews, separate finish-hygiene retries from substantive output quality; if a durable artifact was committed and later read back, judge the artifact itself rather than over-weighting the blocked finish attempts.
 - Routing text like "material output" is only a hint; confirm actual output by checking for write/edit calls, deliverables, commits, or changed artifacts before treating a success_candidate as output-producing.
+- Shared-worktree dirt can create false-positive "project artifact" routing signals; verify the reviewed session itself changed or produced the artifact before crediting material output.
 - Heartbeat no-op sessions can still be good outcomes when bounded checks show no actionable signals; do not downgrade them for producing no artifact, but do distinguish them from knowledge-producing/material-output successes.
 
 ## Key Knowledge
