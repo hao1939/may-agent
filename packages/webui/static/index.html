@@ -1721,7 +1721,7 @@ function initChat(deepLinkSessionId) {
   }
 }
 
-let currentAgentSubTab = 'overview';
+let currentAgentSubTab = 'chat';
 let _projectDetailPath = '';  // hoisted: render() reads/writes this on first paint
 let currentAgentChat = null;
 let forceNewAgentChat = false;
@@ -1768,7 +1768,7 @@ async function initAgentChat(name) {
   // #chat pane is visible vs. the detail body in #agents-content.
   await renderAgentDetail(name);
   // Default sub-tab is chat; load the thread.
-  switchAgentSubTab(currentAgentSubTab || 'overview');
+  switchAgentSubTab(currentAgentSubTab || 'chat');
 }
 
 async function renderAgentDetail(name) {
@@ -2141,7 +2141,10 @@ function renderSessionPicker() {
     const statusIcon = s.status === 'idle' ? '💤 ' : '';
     html += `<span class="session-pill" style="display:inline-flex;align-items:center;gap:0;margin-right:4px"><button class="ask-btn" style="${color};border-top-right-radius:0;border-bottom-right-radius:0;border-right:none" onclick="switchSession('${s.sessionId}')" title="${esc(task)}">${statusIcon}${label}</button><button class="ask-btn" style="${color};border-top-left-radius:0;border-bottom-left-radius:0;padding:2px 6px" onclick="verbCancelSession('${s.sessionId}', event)" title="Cancel session">✕</button></span>`;
   }
-  if (visible.length === 0) {
+  if (currentSessionId && !visible.some(s => s.sessionId === currentSessionId)) {
+    const label = currentAgentChat ? `${currentAgentChat} (${currentSessionId.slice(-6)})` : currentSessionId;
+    html += `<button class="ask-btn" style="border-color:var(--accent);color:var(--accent)" onclick="switchSession('${currentSessionId}')" title="${esc(currentSessionId)}">${esc(label)}</button> `;
+  } else if (visible.length === 0) {
     html += '<span style="color:var(--fg2);font-size:11px">No active sessions</span>';
   }
   picker.innerHTML = html;
