@@ -398,3 +398,8 @@
 **Summary**: AutoTTS research shows optimal reasoning requires a stop controller — the system must decide when to stop computing rather than always producing output. Our creative sessions lack this: they always run, always produce, guaranteeing the Memory Curse feedback loop. The root cause of digest bloat isn't insufficient compression — it's the absence of a stopping criterion. Sessions should pre-flight check for novel raw material and exit idle if none exists.
 **Implication**: Add a pre-flight novelty check to creative sessions. Treat "no output" as a valid high-quality outcome. This is the same principle at the organizational level that AutoTTS proved at the inference level.
 **KB**: KE-1233-creative-session-stop-problem (new)
+
+### Conformity Amplification: Memory Curse × Collective Misalignment
+**Source**: Synthesis of arxiv 2605.10721 (Conformity Generates Collective Misalignment) + KE-946 (Memory Curse)
+**Summary**: New arXiv paper proves individually aligned agents reach stable *misaligned* states via conformity. Combined with the Memory Curse, our shared KB acts as the coupling medium — it's both the bloated history that degrades individual reasoning AND the social signal that drives inter-agent conformity. This creates phase transitions: below a diversity threshold, drift self-corrects; above it, it's self-sustaining. KE-1232 documented this happening empirically in this very digest.
+**KB**: KE-1234-conformity-amplification-via-shared-knowledge (new)
