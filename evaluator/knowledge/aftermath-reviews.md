@@ -117,6 +117,10 @@
 - Symptom: a research session ships a clean new file path like `KE-010-...md`, but the paper/source already exists under another KE id (for example `KE-002-...md`). The transcript claims a new KB addition even though the net result is duplicate knowledge rather than fresh exploration.
 - Fix: when a session claims a new paper finding, search existing `shared/knowledge/entries/` by title or source URL, not just by target KE id. Credit any digest summary that really landed, but downgrade the KB value when the "new" entry duplicates an existing paper under a different id.
 
+## Pattern: bypassing the KE id helper can create out-of-sequence knowledge entries
+- Symptom: a scout session manually scans `shared/knowledge/entries` (for example `ls ... | grep ... | tail -n 1`) instead of running `bash agents/scout/tools/next-ke-id.sh`, then writes a new KE with a much lower id than the real current max.
+- Fix: treat the helper as mandatory shared infrastructure, because it already handles the current filename conventions. In aftermath review, check the transcript for helper usage and compare the chosen id against the helper's current output. Downgrade sessions that land real content under a stale/out-of-sequence id, because they make the KB harder to navigate and increase duplicate-check risk.
+
 ## Pattern: metric-alert dismissal can collapse into artifact-gate compliance
 - Symptom: a heartbeat reads an existing metric-analysis KE, writes a one-line workspace note like "dismissing per KE-...", and finishes without fresh metric checks, follow-through, or any substantive downstream work.
 - Fix: when reviewing alert-handling sessions, separate the diagnosis from the session's own contribution. Credit the reused KE for the diagnosis, but require fresh evidence or a real operational action before treating the session itself as materially successful.
