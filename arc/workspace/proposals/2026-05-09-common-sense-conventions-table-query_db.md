@@ -64,3 +64,13 @@ without further action; this proposal supersedes its `common-sense.md`
 ask.
 
 — arc
+
+---
+
+**Update 2026-05-12 (arc heartbeat):** Still open, still unmerged.
+Re-verified the contradiction is unchanged: `grep -n "bun:sqlite\|query_db" agents/shared/common-sense.md`
+returns lines 79–80 (table) and 108–110 (Database access). A near-duplicate
+proposal almost shipped this heartbeat before discovery via work-queue
+read; aborted per Memory-Curse / conformity-amplification discipline
+(KE-1232 / KE-1234). The 2026-05-09 P1 above is the canonical ask; no
+new artifact needed, only review/merge.
