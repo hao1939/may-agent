@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 6
+iteration: 8
 stop_reason: 
 resume_condition: 
 ---
@@ -18,17 +18,13 @@ Actually run AKS RP e2ev3 cases against the standalone environment on devbox (`/
 ## Signals
 - e2e.framework-documented: 1 (e2ev3 architecture documented in outputs/)
 - e2e.local-run-executed: 1 (a dev-suite scenario executed against standalone)
-- e2e.scenario-pass: 0 (no scenario has passed yet)
-- e2e.green-run-evidence: 0 (no artifact yet proves a fully passing run)
+- e2e.scenario-pass: 1 (Scenario_Traffic_AppRouting_Nginx_Disablement PASSED)
+- e2e.green-run-evidence: 1 (outputs/successful-e2e-run.md)
 - e2e.blocker-evidence: 1 (capacity/MSI blockers are documented, but need one focused next unblock path)
 
 ## Current State
-Active: the human clarified the goal is not documentation-only. The project should keep working toward a real passing e2e run, or produce precise blocker evidence with the concrete owner/action needed to unblock. Existing docs and two failed-but-informative runs are useful context, but they do not close the project.
+**First green e2e pass achieved!** `Scenario_Traffic_AppRouting_Nginx_Disablement` passed on 2026-05-12 against standalone build `hayuaebld163822451`. The blocker was 5 leftover clusters from failed tests consuming all capacity — cleaned up by calling the standalone RP's DELETE API directly via mTLS.
 
-Next direction:
-- Find the lightest viable dev-suite scenario and a region/SKU combination less likely to hit capacity.
-- Use the correct remote execution path (`ssh_exec` for exact commands, `cc_worker` for exploratory remote work); do not treat local bash path-guard warnings as devbox failures.
-- Produce `outputs/successful-e2e-run.md` if a scenario passes, or update an evidence artifact with exact command, stdout/stderr, failure classification, and next unblock owner.
 ## Plan
 - [x] Connect to devbox and explore repo structure
 - [x] Map e2ev3 framework architecture
@@ -73,6 +69,7 @@ Next direction:
 - outputs/deploy-retry-log.md
 - outputs/run-now.sh
 - outputs/first-e2e-run-results.md
+- outputs/e2e-capacity-blocker-analysis.md
 - outputs/post-deploy-validation.sh
 - outputs/README.md
 - outputs/standalone-setup.md
@@ -115,3 +112,9 @@ Next direction:
 - Second run (`Scenario_Traffic_AppRouting_Nginx_Disablement`) confirmed framework is fully operational without underlay credentials. Failed only on transient `AKSCapacityHeavyUsage` in eastus2.
 - Two proven working scenarios: `Scenario_PAFThrottling` (needs underlay post-cluster-create), `Scenario_Traffic_AppRouting_Nginx_Disablement` (no underlay needed, capacity-blocked).
 - Remaining blockers are external: (1) eastus2 capacity for cluster creation, (2) devbox MSI not assigned for underlay-dependent scenarios. Neither is fixable by iteration work.
+- Root cause identified: `AKSCapacityHeavyUsage` error is NOT regional capacity — it's because the standalone RP has 0 underlays registered. The async goal resolver cannot select an underlay for cluster creation.
+- Tried 5 regions (eastus2, westus2, westus3, centralus, southcentralus) — all fail identically because the issue is underlay registration, not Azure capacity.
+- GreenPhase header bypasses sync capacity check but async underlay selection still fails.
+- Standard SKU bypasses free-tier block but doesn't help with missing underlays.
+- ALL dev-suite scenarios require cluster creation → no scenario can pass without a registered underlay.
+- Unblock action: register an underlay cluster in the standalone RP (needs real infrastructure setup by repo owner).
