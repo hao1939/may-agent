@@ -134,16 +134,45 @@ From the mastervalidation suite, good starter scenarios:
 - `Scenario_Preflight` — Quick preflight validation, no cluster creation
 - Other scenarios in `sigs/rp/nativerp/plans/` — RP-focused tests
 
-## Devbox Current State (as of 2026-05-11)
+## Devbox Current State (as of 2026-05-12)
 
-- **Go**: Installed (go1.24.3 linux/amd64)
-- **Bazel**: Bundled inside aksbuilder (auto-downloaded to `~/.aksbuilder/bin/bazelisk-linux-amd64-v1.19.0`)
-- **aksbuilder binary**: Present at `hack/aksbuilder-linux-amd64` (also at `devinfraservices/aksbuilder/bzlmod_rules/rules_aksbuilder/aksbuilder`)
+- **Go**: Installed at `/usr/local/go/bin/go` (go1.24.3), but NOT on default PATH — run `export PATH=$PATH:/usr/local/go/bin`
+- **Bazel**: Bundled inside aksbuilder (auto-downloaded to `~/.aksbuilder/bin/bazelisk-linux-amd64-v1.19.0`); 2 idle bazel servers running
+- **aksbuilder binary**: Present at `hack/aksbuilder-linux-amd64`
 - **aksbuilder.sh wrapper**: Present at `hack/aksbuilder.sh`
-- **aksbuilder_localdeploy.sh**: Present — used to deploy standalone
-- **Standalone**: Deployment IN PROGRESS (localdeploy running Bazel build of EV2 artifacts as of 2026-05-11 19:34 UTC)
+- **aksbuilder_localdeploy.sh**: Thin wrapper that calls `aksbuilder.sh localdeploy --workspace <path> --e2eazureconfig ~/azureconfig.yaml --usespoperator`
+- **azureconfig.yaml**: Present at `~/azureconfig.yaml` — configVersion v20200224, subscription `feb5b150-...`, tenant `72f988bf-...`, region `eastus2`
+- **Standalone**: Previous localdeploy (2026-05-11) **completed but likely failed** — no build_version file found anywhere, bazel-bin has partial artifacts (external/, toggles/, toolkit/ but no test/e2ev3/)
+- **Docker**: Running (litellm container active)
+- **kubectl**: Available but no pods (no cluster context configured)
 
-**To unblock**: Install Go (Bazel is bundled inside `aksbuilder`), then run `hack/aksbuilder_localdeploy.sh /home/hayua/rp` to deploy standalone.
+### localdeploy Script (for reference)
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+set -x
+THIS_DIR=$(cd "$(dirname "$0")" && pwd)
+export AKS_E2E_ENABLE_DEV_TOOLING=${AKS_E2E_ENABLE_DEV_TOOLING:-"true"}
+export AKS_E2E_PUBLIC_CCP_POOL_CAPACITY=${AKS_E2E_PUBLIC_CCP_POOL_CAPACITY:-"'1'"}
+export AKS_E2E_PRIVATE_CCP_POOL_CAPACITY=${AKS_E2E_PRIVATE_CCP_POOL_CAPACITY:-"'2'"}
+${THIS_DIR}/aksbuilder.sh localdeploy \
+    --workspace ${1} --e2eazureconfig ~/azureconfig.yaml --usespoperator \
+    --additional-env-vars \
+    "AKS_E2E_ENABLE_DEV_TOOLING=${AKS_E2E_ENABLE_DEV_TOOLING}"
+```
+
+### To deploy standalone (with logging)
+
+```bash
+# SSH into devbox, set Go on PATH, run in tmux with logging
+ssh devbox
+export PATH=$PATH:/usr/local/go/bin
+tmux new-session -d -s deploy "cd ~/rp && bash hack/aksbuilder_localdeploy.sh ~/rp 2>&1 | tee ~/localdeploy.log"
+tmux attach -t deploy  # watch progress
+```
+
+The build version will appear in the output when deployment succeeds. Capture it for `--build-version` flag.
 
 ### Installing Go on Devbox
 
