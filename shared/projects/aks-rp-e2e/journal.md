@@ -1,68 +1,168 @@
 # Journal: aks-rp-e2e
 
-## Iteration 1 — Exploration (2026-05-11)
+This is the curated project journal. The original append-only workflow log is
+preserved in `journal.raw.md` because it contains useful audit evidence, but it
+is noisy: a workflow bug repeatedly restarted local iteration numbering from
+1, so raw headings like `Iteration 1`, `Iteration 2`, and `Iteration 3` are
+workflow-run-local labels, not a monotonic project sequence.
 
-### What we learned
-- AKS RP is a Go monorepo with Bazel build, hosted on devbox at /home/hayua/rp
-- SSH access configured: `ssh devbox` (20.24.129.235, user hayua)
-- E2E has two generations: `test/e2e` (legacy v2) and `test/e2ev3` (current)
-- E2Ev3 is a modular DAG-based test framework using `go-workflow`
-- Tests organized by 25 SIGs: rp, ccp, network, traffic, node, windows, etc.
+## Current State
 
-### E2Ev3 Pattern
-1. **Scenario** = `test.NewScenario("name", new(PlanStruct))`
-2. **Plan** implements `Metadata()` + `Plan() *flow.Workflow`
-3. **Workflow** composes handlers via `flow.BatchPipe` (DAG phases)
-4. **Handlers** = reusable steps (CreateResourceGroup, ClaimVMSize, Preflight, etc.)
-5. **Suites** group scenarios for pipelines (checkin, mastervalidation, prod)
-6. **Mutators** modify scenarios (ARM64, EdgeZone, ReuseCluster, MockStepper)
+The documentation goal is complete. The project is waiting because actual e2e
+execution depends on a healthy standalone deployment on the devbox.
 
-### Key paths
-- `test/e2ev3/sigs/` — 25 SIG directories with plans
-- `test/e2ev3/handlers/` — reusable handlers (aks, azure, k8s, log, sku, to)
-- `test/e2ev3/suites/` — pipeline suites (checkin, autoreversion)
-- `test/e2ev3/cmd/dev/main.go` — dev suite for local debugging
-- `test/e2ev3/hack/e2ev3` — CLI runner
-- `.github/.copilot/domain_knowledge/` — architecture docs
+Completed:
+- `outputs/e2ev3-architecture.md` documents the e2ev3 framework and was
+  verified against the live repo.
+- `outputs/standalone-setup.md` documents the standalone setup and runner flow.
+- `outputs/doc-verification.md` records live-repo verification and the SIG count
+  correction.
+- Supporting artifacts cover authoring, troubleshooting, scenario inventory,
+  readiness checks, run scripts, and deploy-failure analysis.
 
-### How to run
-```bash
-./hack/e2ev3 mv --build-version <BUILD_VER> --scenario Scenario_Preflight --debug
-```
-Requires standalone environment + Azure VPN.
+Blocked:
+- `e2e.local-run-success` needs a live standalone environment.
+- `e2e.sample-test-written` needs either a confirmed live environment or a new
+  explicit goal to write a sample without running it.
+- Latest deploy analysis says localdeploy failed with infrastructure/auth
+  issues: OOM/image pull, expired git auth, SP ID conflict, missing input/config
+  problems. See `outputs/deploy-failure-analysis.md`.
 
-### Decisions
-- Focus on e2ev3 (not legacy e2e) — it's the active framework
-- Start with RP SIG tests (preflight, agent_pool) as they're closest to core RP
+Resume when:
+- Human confirms standalone is deployed and provides the build version, or
+- Human closes the project as documentation-only, or
+- Human defines a new concrete follow-up goal.
 
-## Iteration 0 — Project Setup
-- Created project scaffolding
-### Iteration 1 (comment) — 2026-05-11T12:30:10.198Z
-**Comment**: (No comments yet.)
+## Key Timeline
 
-## 2026-05-11 — hao
-Master, please push on iteration 2 of this project. The Plan has unchecked items:
-- Document e2ev3 framework patterns in `outputs/e2ev3-architecture.md`
-- Understand standalone setup — how to get a build version, prerequisites
+### 2026-05-11 12:30-12:43 UTC - Core Documentation Produced
 
-Use cc_worker via SSH to gather the info from devbox (`ssh devbox`, repo at `/home/hayua/rp`). Save findings to outputs/ in this project directory. Then re-plan iteration 3.
-**Reviewer**: CONTINUE — **Beliefs:**
-1. **I believe**: This is iteration 1 with no prior worker output — the project hasn't started actual exploration yet.
-2. **I'm uncertain about**: Whether SSH access to devbox works from cc_worker, and the structure of the e2ev3 framework in the repo.
-3. **I'd change my mind if**: SSH access doesn't work, in which case we'd need a different approach.
+Master was asked to push iteration 2 and document the e2ev3 framework plus
+standalone setup.
 
-CONTINUE
+Outputs:
+- `outputs/e2ev3-architecture.md`
+- `outputs/standalone-setup.md`
+- `outputs/doc-verification.md`
 
-**(a) Concrete output:** Two files: `outputs/e2ev3-architecture.md` (framework patterns, key types, test lifecycle) and `outputs/standalone-setup.md` (how to build, prerequisites, how to run e2e tests).
+Evidence:
+- Commit `216ce87c7`: initial architecture and standalone setup docs.
+- Commit `667c2735f`: verified docs against live repo and corrected SIG count
+  from 27 to 24.
 
-**(b) What's different:** First attempt.
+Conclusion:
+- The original documentation milestones were satisfied.
 
-**(c) First step:** Use cc_worker to SSH into devbox and explore the repo structure. Start with:
-1. `ssh devbox 'find /home/hayua/rp -type d -name "e2ev3" -o -name "e2e"' | head -40` to locate the e2e framework
-2. `ssh devbox 'ls /home/hayua/rp/test/'` or similar to find test directories
-3. Read key framework files (test runner, base test types, config) to understand architecture
-4. Look for Makefiles or scripts related to standalone setup: `ssh devbox 'grep -r "standalone" /home/hayua/rp/Makefile* /home/hayua/rp/hack/ --include="*.sh" --include="Makefile*" -l'`
-5. Check for any existing docs: `ssh devbox 'find /home/hayua/rp/docs -name "*e2e*" -o -name "*standalone*"'`
+### 2026-05-11 12:47 UTC - Goal Expanded To Running One Case
 
-Save all findings to the two output files. Focus on answering: What is the test lifecycle? How do tests register/discover? What infra do they need? How do you get a build version and run against standalone?
+Hao asked: "please try to run one e2ev3 case to make sure everything is up."
 
+This expanded the work from documentation to execution validation.
+
+Result:
+- A test launch reached the point where the binary authenticated and constructed
+  work, but standalone infrastructure was not available.
+- `outputs/e2e-run-attempt.md` records the first run attempt and blocker.
+
+### 2026-05-11 Afternoon - Supporting Documentation Added
+
+Workers produced useful supporting docs while standalone was unavailable:
+- `outputs/writing-e2e-tests.md`
+- `outputs/e2e-quickref.md`
+- `outputs/README.md`
+- `outputs/scenario-catalog.md`
+- `outputs/troubleshooting.md`
+- `outputs/standalone-readiness-check.sh`
+- `outputs/project-status.md`
+- `outputs/unblock-runbook.md`
+
+Conclusion:
+- These artifacts are useful, but several iterations were redundant because the
+  workflow kept re-entering the project and reusing low iteration numbers.
+
+### 2026-05-11 19:40 UTC - Devbox Progress
+
+The worker installed Go on devbox and initiated standalone deployment via
+`aksbuilder_localdeploy.sh`.
+
+Updated:
+- `outputs/standalone-setup.md`
+
+Conclusion:
+- The project moved from pure documentation toward execution, but the deploy
+  still had to finish before e2e tests could run.
+
+### 2026-05-11 Night To 2026-05-12 - Deploy/Execution Attempts
+
+Workers repeatedly checked deploy state and prepared run/validation scripts:
+- `outputs/test-execution-playbook.md`
+- `outputs/iteration-status.md`
+- `outputs/first-e2e-run.sh`
+- `outputs/run-e2e.sh`
+- `outputs/post-deploy-validation.sh`
+- `outputs/deploy-status.md`
+- `outputs/iteration3-status.md`
+- `outputs/final-status.md`
+
+Most of this was follow-up around the same blocker: standalone was not healthy
+yet, and several SSH commands were impeded by path-hallucination guards treating
+remote `/home/hayua/rp` or `~/...` paths as local paths.
+
+### 2026-05-12 - Deploy Failure Root Causes Captured
+
+`outputs/deploy-failure-analysis.md` was updated with concrete localdeploy
+failure causes and recovery steps.
+
+Current blocker:
+- Human/devbox intervention is needed before another e2e execution attempt is
+  productive.
+
+## Workflow Issue Found
+
+The raw journal and `discussion.md` show repeated iteration labels such as
+`Iteration 1`, `Iteration 2`, `Iteration 3`, and repeated read markers
+`---read @iter1---`.
+
+Root cause:
+- The project workflow previously trusted `project.md` as the only iteration
+  source.
+- During the transition to YAML frontmatter, some runs parsed `iteration:` but
+  did not reliably update it, so subsequent workflow runs restarted at low
+  iteration numbers.
+- Normal worker iterations also appended discussion read markers even when no
+  new discussion was processed.
+
+Fix landed:
+- Commit `92b5048c0` makes project iteration recovery durable by using the max
+  of `project.md` iteration and `journal.md` latest iteration.
+- Commit `be74e09d3` routes project comments through the comment-iteration path
+  and removes redundant discussion injection into worker prompts.
+
+Reading rule:
+- Treat raw `Iteration N` headings before the fix as workflow-run-local labels.
+- Use timestamps and artifact names to understand sequence.
+- Use this curated journal for project status; use `journal.raw.md` only when
+  auditing exact workflow behavior.
+
+## Canonical Artifacts
+
+Primary:
+- `outputs/e2ev3-architecture.md`
+- `outputs/standalone-setup.md`
+- `outputs/doc-verification.md`
+- `outputs/e2e-run-attempt.md`
+- `outputs/deploy-failure-analysis.md`
+
+Useful support:
+- `outputs/writing-e2e-tests.md`
+- `outputs/scenario-catalog.md`
+- `outputs/e2e-quickref.md`
+- `outputs/troubleshooting.md`
+- `outputs/standalone-readiness-check.sh`
+- `outputs/run-e2e.sh`
+- `outputs/post-deploy-validation.sh`
+- `outputs/final-status.md`
+
+Raw evidence:
+- `journal.raw.md`
+- `discussion.md`
