@@ -1,13 +1,13 @@
 ---
 id: aks-rp-e2e
 owner: may
-status: active
+status: waiting
 type: milestone
 priority: P1
 workflow: project
-iteration: 8
-stop_reason: 
-resume_condition: 
+iteration: 9
+stop_reason: blocked on external dependency (underlay registration by repo owner)
+resume_condition: Repo owner registers an underlay cluster in standalone RP, or provides alternative test path
 ---
 
 # Project: AKS RP E2E — Run And Understand E2E Quality
