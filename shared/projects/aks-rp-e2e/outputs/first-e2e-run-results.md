@@ -1,68 +1,81 @@
-# First E2E Run Results
+# First E2E Test Run Results
 
-**Date:** 2026-05-12
-**Build Version:** `hayuaebld163822451`
-**Scenario:** `Scenario_If_Match` candidate (dev suite)
+**Date:** 2026-05-12  
+**Build Version:** `hayuaebld163822451`  
+**Scenario:** `Scenario_PAFThrottling`  
+**Suite:** `dev` (standalone)  
+**Result:** ❌ FAILED — ManagedIdentityCredential not assigned to resource
 
-## Status: IN PROGRESS — Devbox Access Verified
+## Summary
 
-The earlier "cannot SSH to devbox" conclusion was wrong. It came from routing
-remote commands through local `bash`, seeing a local path-guard warning for
-remote `/home/...` paths, and treating that warning as remote access failure.
+Successfully executed the e2ev3 test framework against standalone build `hayuaebld163822451`. The test binary built, loaded config from Azure blob storage, selected the scenario, provisioned the cluster, but failed during the `GetUnderlayCredential` step due to a managed identity configuration issue.
 
-`cc_worker` can execute `ssh devbox '...'` commands and has returned real
-devbox output in sessions `s_1778502610207_137` and `s_1778575778461_3`.
-However, `cc_worker` is a delegated LLM worker, not an exact shell. For
-reproducible stdout/stderr, use `ssh_exec`.
+## What Worked
 
-## Evidence From `cc_worker`
+| Phase | Status | Details |
+|-------|--------|---------|
+| Bazel build | ✅ Succeeded | Cached, 0.265s, binary at `bazel-bin/test/e2ev3/cmd/dev/dev_/dev` |
+| go mod tidy | ✅ Succeeded | All modules tidied |
+| gazelle | ✅ Succeeded | BUILD files regenerated |
+| Config blob | ✅ Succeeded | Loaded from `https://akse2eci.blob.core.windows.net/config/hayuaebld163822451` |
+| Azure CLI auth | ✅ Succeeded | Using AzureCLICredential |
+| Scenario selection | ✅ Succeeded | `Scenario_PAFThrottling` found and selected |
+| RegisterSubscription | ✅ Succeeded | Subscription and default features registered |
+| Provision | ✅ Succeeded | Cluster provisioned |
+| StartTestPlan | ✅ Succeeded | DAG execution started |
+| Teardown | ✅ Succeeded | Resource group `e2erg-bld163822451-yiqfGAfKGKn` deletion initiated |
 
-- `kubectl get pods -n aks-rp` reached devbox but used a stale kubeconfig
-  server name and failed DNS lookup:
-  `aks-e2e-te-rg-aksflexnode-e-26fe00-4sbho5lq.hcp.westus2.staging.azmk8s.io`.
-- `test/e2ev3/hack/e2ev3 dev --build-version hayuaebld163822451` built the
-  dev binary successfully: 2,019 actions in about 43s.
-- The config blob exists and loaded:
-  `https://akse2eci.blob.core.windows.net/config/hayuaebld163822451`.
-- `akse2e.NewTestContext` succeeded.
-- A run without `-s` failed only at scenario selection:
-  `SelectScenario: specify --scenario or -s`.
-- `--list-scenarios` is not a real flag; scenario names were discovered from
-  `test/e2ev3/cmd/dev/main.go`.
+## Failure Point
 
-## Scenario Discovery
-
-Candidate dev-suite scenarios include:
-
-- `Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld`
-- `Scenario_Traffic_AppRouting_Nginx_Disablement`
-- `Scenario_Traffic_ApiProxy_Cert_Rotation`
-- `Scenario_Traffic_ApiProxy_Cert_Rotation_Mock`
-- `Scenario_If_Match`
-- `Scenario_RBAC_Disabled`
-- `Scenario_ComponentVersion`
-- `Scenario_AP_Cross_Version`
-- `Scenario_CNI_Overlay`
-
-`Scenario_ComponentVersion` was not a good first run because it matched multiple
-registered scenarios across Kubernetes versions. `Scenario_If_Match` appeared
-unique and was the next attempted scenario in session `s_1778575778461_3`.
-
-## Next Command
-
-Continue by capturing the result with exact execution:
-
-```json
-{
-  "host": "devbox",
-  "command": "cd /home/hayua/rp && test/e2ev3/hack/e2ev3 dev --build-version hayuaebld163822451 -s Scenario_If_Match --debug --timeout 10m 2>&1 | tail -150",
-  "timeout": 900
-}
+```
+*hcp.GetUnderlayCredential[/subscriptions/18153b17-4e27-4b58-863e-f8105b8892a2/resourceGroups/e2erg-bld163822451-yiqfGAfKGKn/providers/Microsoft.ContainerService/managedClusters/e2eaks-Aru]: [Failed]
+    ManagedIdentityCredential authentication failed. the requested identity isn't assigned to this resource
+    GET http://169.254.169.254/metadata/identity/oauth2/token
+    RESPONSE 400: 400 Bad Request
+    {"error": "invalid_request", "error_description": "Identity not found"}
 ```
 
-## Result
+**Root cause:** The test tried to get underlay credentials for the managed cluster using a Managed Identity that isn't assigned to the devbox VM. This is expected for standalone environments where the devbox doesn't have the same MSI assignments as production CI VMs.
 
-- [ ] PASS — scenario completed successfully
-- [ ] FAIL — scenario failed with actionable test output
-- [x] PARTIAL — access, build, and config loading verified; final scenario
-      result still needs to be captured
+## Steps Skipped Due to Failure
+
+All steps downstream of `GetUnderlayCredential` were skipped:
+- `k8s.ToggleDefaultValueUpdater[apiserver-paf-throttling-count-threshold]`
+- `resourcescaler.SingleGiantVirtualNodeHandler`
+- `Verify PAF Objects`
+- `resourcescaler.DedicatedModeHandler`
+- `k8s.ToggleDefaultValueUpdater[ccp-autoscaler-reconciler-period-in-minutes]`
+- `handlers.DedicatedOom`
+
+## Scenario Naming Discovery
+
+Scenarios in the dev suite are registered from two sources:
+1. **Direct registration** in `BuildTestSuiteCases()` (lines 73-109 of `main.go`)
+2. **Suite imports** via `GetTestScenarios()` / `ListScenarios()` (lines 112-200)
+
+Many scenarios appear in BOTH sources, causing `SelectScenario` to fail with "multiple scenario found". Only scenarios registered in exactly one source work with `-s`. `Scenario_PAFThrottling` (line 189) is unique because it's added directly without also being in a suite's `GetTestScenarios()`.
+
+## Build Pipeline Details
+
+```
+Build version file: {"Version":"hayua-local-1778576938","GitBranch":"hayue/e2e","GitHash":"githash-40b24b73f55d","BuildTime":"2026-05-12T09:08:58Z"}
+163 images registered
+K8s versions: 1.33.0, 1.34.0, 1.35.0, 1.36.0
+Session ID: 202605120919-uIFZU
+Pipeline ID: 68881
+```
+
+## Command Used
+
+```bash
+export PATH=/usr/local/go/bin:$PATH
+cd /home/hayua/rp
+test/e2ev3/hack/e2ev3 dev --build-version hayuaebld163822451 -s Scenario_PAFThrottling --debug
+```
+
+## Next Steps
+
+1. **Fix MSI assignment** — The devbox VM needs the managed identity assigned that `GetUnderlayCredential` expects. This is a standalone environment configuration issue.
+2. **Try a simpler scenario** — Look for scenarios that don't require underlay credentials (e.g., RP-only scenarios like `Scenario_ComponentVersion`). However, most are duplicated in the dev suite.
+3. **Deduplicate scenario registration** — The dev suite's `BuildTestSuiteCases()` should either not directly list scenarios that also come from suite imports, or use a deduplication step.
+4. **Use `--plan` flag** — Check if the framework supports `--plan` to select by plan name instead of scenario name, which might avoid the duplication issue.
