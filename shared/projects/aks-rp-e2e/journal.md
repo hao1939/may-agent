@@ -8,8 +8,9 @@ workflow-run-local labels, not a monotonic project sequence.
 
 ## Current State
 
-The documentation goal is complete. The project is waiting because actual e2e
-execution depends on a healthy standalone deployment on the devbox.
+The documentation goal is complete, devbox access is verified, and the first
+real e2ev3 run has happened. The earlier "Worker cannot SSH to devbox" blocker
+was false: the broken part was context/tool routing, not SSH access.
 
 Completed:
 - `outputs/e2ev3-architecture.md` documents the e2ev3 framework and was
@@ -20,18 +21,21 @@ Completed:
 - Supporting artifacts cover authoring, troubleshooting, scenario inventory,
   readiness checks, run scripts, and deploy-failure analysis.
 
-Blocked:
-- `e2e.local-run-success` needs a live standalone environment.
-- `e2e.sample-test-written` needs either a confirmed live environment or a new
-  explicit goal to write a sample without running it.
-- Latest deploy analysis says localdeploy failed with infrastructure/auth
-  issues: OOM/image pull, expired git auth, SP ID conflict, missing input/config
-  problems. See `outputs/deploy-failure-analysis.md`.
+Current evidence:
+- `ssh_exec` can execute exact commands on devbox.
+- Standalone build `hayuaebld163822451` has a readable config blob.
+- `Scenario_PAFThrottling` executed through the dev suite and reached
+  provisioning/test/teardown phases.
+- The run failed at `GetUnderlayCredential` because ManagedIdentityCredential
+  says the requested identity is not assigned to the resource/devbox VM. See
+  `outputs/first-e2e-run-results.md`.
 
-Resume when:
-- Human confirms standalone is deployed and provides the build version, or
-- Human closes the project as documentation-only, or
-- Human defines a new concrete follow-up goal.
+Next useful work:
+- Do not re-open the SSH/access blocker.
+- Decide whether to fix the devbox MSI assignment or select a smaller scenario
+  that does not require underlay credential access.
+- Run one focused validation after that decision, not broad repeated scenario
+  attempts.
 
 ## Key Timeline
 
@@ -105,17 +109,39 @@ Workers repeatedly checked deploy state and prepared run/validation scripts:
 - `outputs/final-status.md`
 
 Most of this was follow-up around the same blocker: standalone was not healthy
-yet, and several SSH commands were impeded by path-hallucination guards treating
-remote `/home/hayua/rp` or `~/...` paths as local paths.
+yet, and several local `bash` attempts were impeded by path-hallucination guards
+treating remote `/home/hayua/rp` or `~/...` paths as local paths. That was a
+tool-routing problem: remote commands should use `ssh_exec` for exact execution
+or `cc_worker` for delegated exploration.
 
 ### 2026-05-12 - Deploy Failure Root Causes Captured
 
 `outputs/deploy-failure-analysis.md` was updated with concrete localdeploy
 failure causes and recovery steps.
 
-Current blocker:
-- Human/devbox intervention is needed before another e2e execution attempt is
-  productive.
+This blocker was later superseded when Hao provided standalone build version
+`hayuaebld163822451`.
+
+### 2026-05-12 - First Real E2E Run
+
+`Scenario_PAFThrottling` ran against standalone build `hayuaebld163822451` via
+`ssh_exec`.
+
+Evidence:
+- Commit `6e0f14a67`: `e2e: first real test run results - Scenario_PAFThrottling with build hayuaebld163822451`
+- Artifact `outputs/first-e2e-run-results.md`
+- Session `s_1778577667535_0`
+
+Result:
+- Framework build, config loading, scenario selection, subscription
+  registration, provisioning, DAG start, and teardown all worked.
+- The scenario failed at `GetUnderlayCredential` with
+  ManagedIdentityCredential "Identity not found".
+
+Conclusion:
+- The project is no longer blocked on SSH or basic standalone reachability.
+- The next blocker is environment/auth configuration for underlay credential
+  access, or choosing a scenario that avoids that requirement.
 
 ## Workflow Issue Found
 
