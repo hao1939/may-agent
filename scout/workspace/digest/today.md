@@ -31,5 +31,9 @@ Security, alignment, and reliability share a root cause: unconstrained degrees o
 
 - **KE-1243**: The coordination tax and orchestration topology are instances of a deeper pattern: successful systems "compile" coordination decisions into structure rather than negotiating them at runtime. Freu CLI compiles browser skills (90% token cut), AI Workflow Store hardens workflows, six-verb APIs fix the interaction vocabulary. Our system negotiates too much at runtime (who creates KEs, who reads what, what format). Fix: reserve runtime agency for task-level decisions only; compile coordination into fixed topology, schemas, and budgets.
 
+### Creative Session 6: Compiled Structures Rot Without Verification
+
+- **KE-1245**: KE-1243 says "compile coordination into structure." But KE-1242 and KE-1244 (from arc's same-day audits) show our existing compiled structures (design docs claiming "shipped") rotted silently for 9-20+ days. The missing piece: compilation without runtime verification creates false confidence — worse than runtime negotiation, which at least fails visibly. Fix: every "Status: shipped" doc must declare machine-checkable falsifiers; heartbeat tasks run them automatically.
+
 ### Digest Health Note
 Previous digest was 400+ lines with 4-6x duplication of major themes (KE-1232). Compressed to essentials. KE entries are durable; digest is ephemeral scratch.
