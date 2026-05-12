@@ -377,7 +377,7 @@
       <div id="chat-agent-banner" style="display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--accent);border-radius:8px;margin:4px 0;font-size:13px">
         <span style="color:var(--fg2)">Chatting with</span>
         <b class="banner-name" style="color:var(--accent)"></b>
-        <span style="color:var(--fg2);font-size:11px;margin-left:auto">Telegram-style: messages persist; agent resumes from prior context</span>
+        <span class="banner-session" style="color:var(--fg2);font-size:11px;margin-left:auto;font-family:monospace">session: —</span>
       </div>
       <div id="session-picker" style="display:flex;gap:4px;flex-wrap:wrap;padding:4px 0;font-size:12px"></div>
       <div class="chat-messages" id="chat-messages"></div>
@@ -1726,6 +1726,18 @@ let _projectDetailPath = '';  // hoisted: render() reads/writes this on first pa
 let currentAgentChat = null;
 let forceNewAgentChat = false;
 
+function setAgentChatSessionId(sessionId) {
+  const el = document.querySelector('#chat-agent-banner .banner-session');
+  if (!el) return;
+  if (!sessionId) {
+    el.textContent = 'session: —';
+    el.removeAttribute('title');
+    return;
+  }
+  el.title = sessionId;
+  el.innerHTML = `session: <a href="#/sessions/${encodeURIComponent(sessionId)}" style="color:var(--accent);text-decoration:none">${esc(sessionId)}</a>`;
+}
+
 /**
  * Telegram-style chat with a specific agent. Reuses the #chat pane:
  *   1. Fetch /api/agents/:name/default-session to find the agent's persistent
@@ -1747,6 +1759,7 @@ async function initAgentChat(name) {
   if (header) {
     header.style.display = name ? 'flex' : 'none';
     header.querySelector('.banner-name').textContent = name || '';
+    setAgentChatSessionId(null);
   }
   if (!name) { switchSession(null); return; }
   // Render agent detail header + sub-tab nav into #agents-content (above the
@@ -1838,9 +1851,11 @@ async function loadAgentChatThread(name) {
     const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
     const d = await r.json();
     if (d.sessionId) {
+      setAgentChatSessionId(d.sessionId);
       if (d.sessionId !== currentSessionId) switchSession(d.sessionId);
     } else {
       currentSessionId = null;
+      setAgentChatSessionId(null);
       const messages = document.getElementById('chat-messages');
       if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + esc(name) + '</b> yet. Send a message to start one.</div>';
     }
@@ -2138,6 +2153,7 @@ function renderSessionPicker() {
 
 async function switchSession(sessionId) {
   currentSessionId = sessionId;
+  if (currentAgentChat) setAgentChatSessionId(sessionId);
   const messages = document.getElementById('chat-messages');
   messages.innerHTML = '';
 
@@ -2406,6 +2422,7 @@ document.getElementById('chat-send').addEventListener('click', sendChat);
 function resetAgentChat(name) {
   currentSessionId = null;
   forceNewAgentChat = true;
+  setAgentChatSessionId(null);
   const messages = document.getElementById('chat-messages');
   if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">Chat cleared. Send a message to start a new conversation with <b>' + esc(name) + '</b>.</div>';
   document.getElementById('chat-input').placeholder = 'Type a message to start fresh...';
