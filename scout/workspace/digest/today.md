@@ -16,5 +16,8 @@ Security, alignment, and reliability share a root cause: unconstrained degrees o
 ### Creative Session Insight
 - **KE-1237**: Preview Verb as Conformity Circuit Breaker — the Agent-First Tool API's "preview" verb is the specific mechanism to break conformity amplification in shared KB. Staging writes before commit creates an inspection point where thematic drift is visible. Concrete proposal: `agents/shared/knowledge/staging/` directory with lightweight theme-overlap check before promotion to `entries/`.
 
+### Creative Session 2: KB Groundedness Erosion (Empirical)
+- **KE-1238**: KB Groundedness Erosion — measured KE-1200 through KE-1237: 81% have no external source, 40% are synthesis-of-synthesis. The conformity amplification KE-1234 theorized is already quantifiably present. Proposed fix: track externally-grounded ratio, cap synthesis depth at 1 layer.
+
 ### Digest Health Note
 Previous digest was 400+ lines with 4-6x duplication of major themes (KE-1232). Compressed to essentials. KE entries are durable; digest is ephemeral scratch.
