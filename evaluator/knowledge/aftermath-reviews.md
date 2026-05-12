@@ -28,6 +28,10 @@
 - Symptom: a transcript snippet suggests a missing file or path mismatch, but the produced artifact, tracked source file, test, and runtime DB evidence all confirm the deliverable exists.
 - Fix: for success-candidate aftermath reviews, inspect the actual artifact and current tracked files before downgrading the session based on one anomalous tool result. Use transcript anomalies as cautions to note, not as sole grounds to reject a verified outcome.
 
+## Pattern: blocker-avoidance validations can be real technical progress
+- Symptom: a session does not fully clear the original environment blocker, but it intentionally chooses a narrower path that avoids that blocker and proves the system works end-to-end up to a later, independent failure.
+- Fix: credit these sessions when the alternate path is evidence-backed and materially advances diagnosis. Distinguish "framework works, blocked later by external capacity" from "framework still unproven," and note any closeout/guard defects separately from the technical result.
+
 ## Pattern: blocked finishes can be mislabeled as interrupted while still shipping real output
 - Symptom: a worker session calls `finish(status="blocked")`, the `sessions` row later shows `status/outcome=interrupted`, or the finish tool prints a deliverable as `MISSING`, but the transcript plus landed commit prove the artifact was written, read back, and committed.
 - Fix: before classifying these sessions as failed/no-output aftermaths, check the actual committed artifact and the session transcript's write/read/commit sequence. Credit the shipped investigation/report/output, then note the runtime bookkeeping/display mismatch as the true follow-up item.
