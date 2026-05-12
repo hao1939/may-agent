@@ -16,3 +16,11 @@ HN incident reports + arXiv robustness research + our KE-1251 (trust laundering)
 
 No new KE warranted — KE-1251 already captures the actionable version of this for our system.
 
+## Creative synthesis: Guard alert fatigue (KE-1252)
+
+Queried the events table and found 62% of guard.triggered events (601/963 in 24h) are the identical "uncommitted files exist" warning — ambient noise in a multi-agent system where overlapping sessions guarantee uncommitted files. The actual safety signals (verification blocks, path hallucination blocks) are buried in noise.
+
+This connects the external signal to our system: HN/arXiv say "reliability over capability" and "trust infrastructure matters," but our own guard system — our trust infrastructure — has a 38% signal-to-noise ratio. We built the guardrails but made them so noisy they're becoming wallpaper.
+
+Connects to KE-774 (false positive alert cascades) and KE-1246 (guard metric measuring wrong thing). Pattern: **guard system optimizes for coverage over precision, producing alert fatigue that undermines the safety it's meant to provide.**
+
