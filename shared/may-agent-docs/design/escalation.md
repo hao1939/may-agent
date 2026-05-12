@@ -1,8 +1,18 @@
 # Design: Escalation System
 
-**Status:** shipped (partial — `escalation.created` events fire in production; full escalation chain not yet implemented)
-**Date:** 2026-04-22
-**References:** [core-principles.md](../core-principles.md) (P1, P2, P3)
+**Status:** **mostly unimplemented spec** as of 2026-05-12 (audit: KE-1242).
+What is live: per-session `session.escalated` → human router in
+`agents/may/handlers/escalation.ts`, and `escalation.created` emission
+from the project workflow (205 events in the last 30d, all with the
+same reason — i.e. a retry loop, not a lifecycle).
+What is **not** implemented despite appearing as a spec below:
+`escalation.promoted` / `escalation.resolved` / `escalation.dismissed`
+emission, the every-30-min open-escalation sweep + promote/auto-resolve
+handler, the heartbeat "Open Escalations" injection, and the three
+`system.*-escalation*` metrics. Treat those sections as a **proposal**,
+not a description of running behavior. See KE-1242 for falsifiers.
+**Date:** 2026-04-22 (audited 2026-05-12)
+**References:** [core-principles.md](../core-principles.md) (P1, P2, P3); KE-1242
 
 ## Problem
 
