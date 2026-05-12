@@ -50,7 +50,7 @@ Send via Telegram (use `message("human", report)`):
 ```
 
 ## Current State
-Waiting: Daily alert reviews are being produced successfully and sent via Telegram. The worker completed reviews for 2026-05-09 (56 alerts) and 2026-05-10 (39 
+Waiting: Daily alert reviews are being produced successfully and sent via Telegram. The worker completed reviews for 2026-05-09 (56 alerts) and 2026-05-10 (39 alerts, down 30%). The project goal is truncated but the core work is functioning. Resume when: next daily review cycle or human provides the full project goal/additional requirements.
 ## Plan
 
 1. Query `metric_alerts` for last 24h (both resolved and unresolved)

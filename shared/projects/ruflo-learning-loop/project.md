@@ -19,8 +19,7 @@ loops, and adopt only the smallest ideas that improve may-agent's autonomous
 closed loop without adding unnecessary orchestration complexity.
 
 ## Current State
-Iteration 2. Milestones: 0/0 done.
-Reviewer: **I believe**: The worker has spent iteration 2 producing 8+ self-referential bookkeeping artifacts (STATUS.md, NEXT.md, "final consolidation", "closeout", "escalation candidate check") that all say t
+Paused after iteration 12. The Ruflo loop extracted one durable rule: new event types should encode transitions, while periodic state belongs in subsystem-owned files or tables. The loop is not currently running because the iter-12 falsifier has not tripped. Resume when a new periodic-snapshot event type enters the top-15 event volume within 30 days, or Arc chooses a new concrete Ruflo idea for another investigate -> judge -> experiment loop.
 ## Context
 Reference repo:
 - https://github.com/ruvnet/ruflo

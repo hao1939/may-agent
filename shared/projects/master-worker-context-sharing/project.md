@@ -52,7 +52,7 @@ Provenance signals (qualitative, watched in journal):
 - Did master cite worker findings in its reply, or paraphrase them away?
 
 ## Current State
-Waiting: The core delegation wiring is complete. Master (an LLM agent) calls cc_worker/codex_worker tools, which now spawn CLI subagents and return structured 
+Waiting: The core delegation wiring is complete. Master (an LLM agent) calls cc_worker/codex_worker tools, which now spawn CLI subagents and return structured envelopes with status, tool outputs, files touched, and usage stats. Parser tests exist. Commit `08e44231d`. Resume when: human/May reviews the commit and confirms the delegation behavior meets expectations, or identifies gaps.
 ## Plan
 
 Incremental and reversible. Each step lands one thing, then we watch
