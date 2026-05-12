@@ -1,3 +1,36 @@
+# Proposed Strategies — 2026-05-12 03:34Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778556875769_744/session.jsonl` (arc)
+- `.state/sessions/history/s_1778556679326_740/session.jsonl` (may)
+- `.state/sessions/history/s_1778556070922_737/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- The extractor again produced an all-zero sample on fresh successful non-evaluator sessions, including a short arc heartbeat, a longer May heartbeat, and a finished scout research pass.
+- This strengthens the calibration hypothesis that `extract-strategy.cjs` is still overwhelmingly recovery-biased and remains unable to surface lightweight positive tactics from clean successful work.
+- The current extractor only emits optimization lessons after 10+ tool calls or obvious repetition, so compact successful sessions continue to disappear from P63 output even when they may contain reusable patterns.
+
+## Recommended Follow-up
+1. Add a positive-pattern mode or explicit success-pattern heuristics to `extract-strategy.cjs` so clean verified sessions can produce at least one reusable lesson.
+2. Lower or refine the optimization trigger thresholds if the goal is to learn from compact successful sessions rather than only noisy or failure-heavy ones.
+3. Keep sampling recent successful sessions until the extractor yields at least one non-recovery lesson on clean work.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778556875769_744/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778556679326_740/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778556070922_737/session.jsonl` returned `"lessons": []`.
+
+---
+
 # Proposed Strategies — 2026-05-11 19:35Z
 
 ## Scope
