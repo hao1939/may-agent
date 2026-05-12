@@ -95,6 +95,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Gather system context
     let breachedMetrics = new Set<string>();
     let runningProjects = new Set<string>();
+    let liveProjectSessions = new Map<string, string>();
     try {
       for (const a of ctx.sdk.query.alerts({ resolved: false, limit: 500 }).rows)
         if (typeof a.metric_id === "string") breachedMetrics.add(a.metric_id);
@@ -108,6 +109,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           return task.includes(`project: ${projectDir}`) || task.includes(`project: ${project.relPath}`);
         })) {
           runningProjects.add(projectId);
+        }
+        const runningSession = (ctx.sdk.query.sessions({ projectId, status: "running", limit: 1 }).rows[0]
+          ?? ctx.sdk.query.sessions({ projectId, status: "idle", limit: 1 }).rows[0]) as { sessionId?: string } | undefined;
+        if (runningSession?.sessionId) {
+          runningProjects.add(projectId);
+          liveProjectSessions.set(projectId, runningSession.sessionId);
         }
       }
     } catch { /* skip */ }
@@ -159,8 +166,27 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     let launched = 0;
     for (const { project, action } of actions) {
       const pState = healthState.projects[project.relPath];
+      const projectId = projectIdFor(project);
 
-      if (action.type === "skip") { if (project.status !== "closed") pState.consecutiveSkips++; continue; }
+      if (action.type === "skip") {
+        const liveSessionId = liveProjectSessions.get(projectId);
+        if (commentNudge && liveSessionId) {
+          const comment = typeof event?.data?.commentText === "string" ? event.data.commentText : "A new project comment was added.";
+          ctx.sdk.log("info", `[project] Steering live project session ${liveSessionId} for ${project.relPath}: ${action.reason}`);
+          ctx.sdk.emit("steer", {
+            sessionId: liveSessionId,
+            source: "project-comment",
+            message:
+              `[project comment]\n${comment}\n\n` +
+              `This comment is now part of ${project.relPath}/discussion.md. Treat it as current human direction. ` +
+              `If it changes the goal, scope, or next step, adjust your work now and finish promptly so the project reviewer can update project.md.`,
+          });
+          pState.consecutiveSkips = 0;
+          continue;
+        }
+        if (project.status !== "closed") pState.consecutiveSkips++;
+        continue;
+      }
 
       if (action.type === "reactivate") {
         ctx.sdk.log("info", `[project] Reactivating ${project.relPath}: ${action.reason}`);
@@ -213,7 +239,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         writeFileSync(project.projectFile, content, "utf-8");
       }
 
-      const projectId = projectIdFor(project);
       ctx.sdk.runWorkflow(workflowName, task, { source: project.owner, projectId })
         .then((r) => {
           ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}${r.runId ? ` (${r.runId})` : ""}`);

@@ -5,40 +5,31 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 4
+iteration: 6
 stop_reason: 
 resume_condition: 
 ---
 
-# Project: AKS RP E2E — Learn & Setup
+# Project: AKS RP E2E — Run And Understand E2E Quality
 
 ## Goal
-Learn and set up e2e testing for the AKS Resource Provider Go monorepo (hosted on devbox at `/home/hayua/rp`). Success = able to run e2e tests against a standalone environment, understand the e2ev3 framework architecture, and document the workflow for future development.
+Actually run AKS RP e2ev3 cases against the standalone environment on devbox (`/home/hayua/rp`) so we can understand code quality from real execution results. Success = at least one scenario reaches a clear pass, or we collect precise, reproducible blocker evidence and the next unblock action; the existing framework/setup documentation is supporting context, not the finish line.
 
 ## Signals
 - e2e.framework-documented: 1 (e2ev3 architecture documented in outputs/)
 - e2e.local-run-executed: 1 (a dev-suite scenario executed against standalone)
-- e2e.scenario-pass: 0 (no scenario has passed yet; current failure is environment/auth)
-- e2e.sample-test-written: 0 (sample test authoring has not started)
+- e2e.scenario-pass: 0 (no scenario has passed yet)
+- e2e.green-run-evidence: 0 (no artifact yet proves a fully passing run)
+- e2e.blocker-evidence: 1 (capacity/MSI blockers are documented, but need one focused next unblock path)
 
 ## Current State
-Active: devbox access works. The earlier "Worker cannot SSH to devbox" blocker
-was a context/tool-routing mistake, not an access problem. Use `ssh_exec` for
-exact command output and `cc_worker` only for delegated exploration.
+Active: the human clarified the goal is not documentation-only. The project should keep working toward a real passing e2e run, or produce precise blocker evidence with the concrete owner/action needed to unblock. Existing docs and two failed-but-informative runs are useful context, but they do not close the project.
 
-`Scenario_PAFThrottling` was executed through `ssh_exec` against standalone
-build `hayuaebld163822451` and recorded in
-`outputs/first-e2e-run-results.md`. The e2ev3 framework built, loaded the
-config blob, selected the scenario, registered subscription/features,
-provisioned the cluster, started the test DAG, and ran teardown. The current
-real blocker is `GetUnderlayCredential`: ManagedIdentityCredential reports that
-the requested identity is not assigned to the devbox VM/resource.
-
-Do not re-open the SSH/access blocker. Next useful work is to decide whether to
-fix the devbox MSI assignment or find a smaller scenario that avoids underlay
-credential access, then run one focused validation.
-
-## Plan (Iteration 4)
+Next direction:
+- Find the lightest viable dev-suite scenario and a region/SKU combination less likely to hit capacity.
+- Use the correct remote execution path (`ssh_exec` for exact commands, `cc_worker` for exploratory remote work); do not treat local bash path-guard warnings as devbox failures.
+- Produce `outputs/successful-e2e-run.md` if a scenario passes, or update an evidence artifact with exact command, stdout/stderr, failure classification, and next unblock owner.
+## Plan
 - [x] Connect to devbox and explore repo structure
 - [x] Map e2ev3 framework architecture
 - [x] Read domain knowledge docs
@@ -48,8 +39,10 @@ credential access, then run one focused validation.
 - [x] Verify build version `hayuaebld163822451` loads e2ev3 config
 - [x] Run one real dev-suite scenario via `ssh_exec`
 - [x] Capture result and next actionable blocker in `outputs/first-e2e-run-results.md`
-- [ ] Decide next path: fix devbox MSI assignment or find a smaller scenario that avoids underlay credential access
-- [ ] Run one focused validation after that decision
+- [x] Run a second no-underlay scenario and capture capacity failure evidence
+- [ ] Identify the smallest scenario and region/SKU override path most likely to pass
+- [ ] Run one focused validation using that path
+- [ ] Produce `outputs/successful-e2e-run.md` for a green run, or a blocker artifact with exact evidence and owner/action
 
 ## References
 
@@ -96,6 +89,7 @@ credential access, then run one focused validation.
 - outputs/run-e2e.sh
 - outputs/e2ev3-architecture.md
 - outputs/iteration3-status.md
+- outputs/second-e2e-run-results.md
 - outputs/e2e-run-attempt.md
 - outputs/deploy-status.md
 - outputs/e2e-quickref.md
@@ -118,3 +112,6 @@ credential access, then run one focused validation.
 - Non-login SSH commands on devbox do not include `/usr/local/go/bin` on PATH. Prefix e2ev3 commands with `export PATH=/usr/local/go/bin:$PATH`.
 - `Scenario_If_Match` and several other dev-suite scenarios are registered more than once; selection fails with "multiple scenario ... found". `Scenario_PAFThrottling` is unique enough to execute.
 - Real run evidence: session `s_1778577667535_0`, commit `6e0f14a67`, output `outputs/first-e2e-run-results.md`.
+- Second run (`Scenario_Traffic_AppRouting_Nginx_Disablement`) confirmed framework is fully operational without underlay credentials. Failed only on transient `AKSCapacityHeavyUsage` in eastus2.
+- Two proven working scenarios: `Scenario_PAFThrottling` (needs underlay post-cluster-create), `Scenario_Traffic_AppRouting_Nginx_Disablement` (no underlay needed, capacity-blocked).
+- Remaining blockers are external: (1) eastus2 capacity for cluster creation, (2) devbox MSI not assigned for underlay-dependent scenarios. Neither is fixable by iteration work.

@@ -202,6 +202,32 @@ function updateSection(content: string, heading: string, newContent: string): st
   return content.slice(0, idx + marker.length) + newContent + content.slice(end);
 }
 
+function currentGoal(projectContent: string, fallback: string): string {
+  return extractSection(projectContent, "Goal") || fallback;
+}
+
+function extractDirectiveBlock(text: string, name: string): string | null {
+  const pattern = new RegExp(`(?:^|\\n)${escapeRegExp(name)}:\\s*([\\s\\S]*?)(?=\\n(?:GOAL_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE|CONTEXT_UPDATE):|\\n\\*\\*|\\n## |$)`, "i");
+  const match = text.match(pattern);
+  return match?.[1]?.trim() || null;
+}
+
+export function applyReviewerProjectDirectives(projectContent: string, reviewerText: string): string {
+  const updates: Array<[string, string]> = [
+    ["Goal", "GOAL_UPDATE"],
+    ["Current State", "CURRENT_STATE_UPDATE"],
+    ["Signals", "SIGNALS_UPDATE"],
+    ["Plan", "PLAN_UPDATE"],
+  ];
+
+  let next = projectContent;
+  for (const [section, directive] of updates) {
+    const value = extractDirectiveBlock(reviewerText, directive);
+    if (value) next = updateSection(next, section, value.endsWith("\n") ? value : `${value}\n`);
+  }
+  return next;
+}
+
 function currentStateLine(label: string, detail: string): string {
   const cleaned = detail.trim();
   return cleaned ? `${label}: ${cleaned}` : `${label}.`;
@@ -524,11 +550,12 @@ function buildReviewPrompt(
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
   const previousGuidance = getAllReviewerGuidance(journalContent, iteration);
 
-  let prompt = `[REVIEW ONLY — no file edits expected. Do NOT use edit(), write(), or bash commands that modify files. Only read and analyze.]\n\n`;
-  prompt += `You are the PROBLEM-SOLVER for iteration ${iteration} of a persistent task.\n`;
+  let prompt = `You are the PROJECT DRIVER for iteration ${iteration} of a persistent task.\n`;
   prompt += `Your job is to unblock the worker and push the project to completion.\n`;
   prompt += `You are NOT a passive evaluator — you are an active strategist.\n`;
-  prompt += `If something isn't working, propose an alternative approach.\n`;
+  prompt += `You may inspect, run commands, or edit files when that is the cleanest way to understand, unblock, or advance the project.\n`;
+  prompt += `Your scope is different from the worker's scope: you own judgment, project state, next direction, and unblock strategy. You are not read-only.\n`;
+  prompt += `If something isn't working, change the approach instead of repeating guidance.\n`;
   prompt += `Never give the same guidance twice. If previous guidance failed, try a different strategy.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
 
@@ -550,6 +577,7 @@ function buildReviewPrompt(
 
   prompt += `## How This System Works (reference)\n`;
   prompt += `- **Milestone check-off**: When you mention a completed milestone by name, the system matches the first 30 characters (case-insensitive) against your response. Include the exact milestone name to check it off.\n`;
+  prompt += `- **Project state authority**: If the human changed the goal, scope, signals, plan, or current state, update the project with explicit directives. Use \`GOAL_UPDATE:\`, \`SIGNALS_UPDATE:\`, \`PLAN_UPDATE:\`, and/or \`CURRENT_STATE_UPDATE:\`. The workflow will apply these to project.md after your review.\n`;
   prompt += `- **Context maintenance**: You maintain the ## Context section of project.md. After each iteration, add key discoveries/facts that future iterations will need. Remove stale info. Keep it concise — facts only, not narrative.\n`;
   prompt += `  Format your context updates as: CONTEXT_UPDATE: <bullet points to add or replace>\n`;
   prompt += `- **Agent cannot mark done**: Only human/May can mark a project done. If you say DONE, it's auto-converted to WAITING with "awaiting review".\n`;
@@ -1002,15 +1030,20 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const commentWorkerSummary = `[COMMENT ITERATION] Comments to address:\n${pendingComments}`;
 
       const commentReviewPrompt = buildReviewPrompt(
-        config.goal, iteration,
+        currentGoal(projectContent, config.goal), iteration,
         commentWorkerSummary,
         projectContent, journalContent, continueWithoutProgress, features
       );
 
+      const projectContentBeforeReview = projectContent;
       const reviewResult = await ctx.runAgent(config.owner, commentReviewPrompt);
       const decision = extractDecision(reviewResult.status === "error"
         ? "CONTINUE — review errored, auto-continuing"
         : (reviewResult.lastAssistantText ?? ""));
+      const reviewerText = reviewResult.lastAssistantText ?? "";
+      const refreshedAfterReview = readFile(config.projectPath);
+      const reviewerEditedProject = !!refreshedAfterReview && refreshedAfterReview !== projectContentBeforeReview;
+      if (refreshedAfterReview) projectContent = refreshedAfterReview;
 
       const now = new Date().toISOString();
       const commentEntry = `### Iteration ${iteration} (comment) — ${now}\n` +
@@ -1025,6 +1058,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       // Clear comments — they're now in the journal
       projectContent = clearComments(projectContent);
+      projectContent = applyReviewerProjectDirectives(projectContent, reviewerText);
       projectContent = updateField(projectContent, "Iteration", String(iteration));
       cachedWrite(config.projectPath, projectContent);
 
@@ -1042,6 +1076,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Status", "active");
       projectContent = updateField(projectContent, "Stop Reason", "");
       projectContent = updateField(projectContent, "Resume Condition", "");
+      if (!extractDirectiveBlock(reviewerText, "CURRENT_STATE_UPDATE") && !reviewerEditedProject) {
+        projectContent = updateSection(projectContent, "Current State",
+          `Active: human/May comment processed at iteration ${iteration}. Continuing with reviewer direction.\n` +
+          `${decision.detail}\n`);
+      }
       cachedWrite(config.projectPath, projectContent);
       iteration++;
       continue;
@@ -1052,7 +1091,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
     const lastGuidance = getLastGuidance(journalContent, iteration);
     const workerPrompt = buildWorkerPrompt(
-      projectContent, journalContent, config.projectPath, iteration, config.goal, lastGuidance
+      projectContent, journalContent, config.projectPath, iteration, currentGoal(projectContent, config.goal), lastGuidance
     );
 
     const workerResult = await ctx.runAgent(config.worker, workerPrompt);
@@ -1123,9 +1162,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx.emit({ type: "step_start", step: `review-iteration-${iteration}` });
 
       const reviewPrompt = buildReviewPrompt(
-        config.goal, iteration, workerSummary, projectContent, journalContent, continueWithoutProgress, features
+        currentGoal(projectContent, config.goal), iteration, workerSummary, projectContent, journalContent, continueWithoutProgress, features
       );
 
+      const projectContentBeforeReview = projectContent;
       const reviewResult = await ctx.runAgent(config.owner, reviewPrompt);
 
       if (reviewResult.status === "error") {
@@ -1141,6 +1181,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       const decision = extractDecision(reviewResult.lastAssistantText ?? "");
+      const reviewerText = reviewResult.lastAssistantText ?? "";
+      const refreshedAfterReview = readFile(config.projectPath);
+      const reviewerEditedProject = !!refreshedAfterReview && refreshedAfterReview !== projectContentBeforeReview;
+      if (refreshedAfterReview) projectContent = refreshedAfterReview;
       const reviewEntry = `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
 
       if (config.isLegacy) {
@@ -1153,10 +1197,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Update milestone checkboxes based on reviewer's assessment
       const beforeMs = extractMilestones(projectContent).done;
       projectContent = checkOffMilestones(projectContent, decision.detail);
+      projectContent = applyReviewerProjectDirectives(projectContent, reviewerText);
       const afterMs = extractMilestones(projectContent).done;
-      if (afterMs > beforeMs) {
-        cachedWrite(config.projectPath, projectContent);
-      }
+      if (afterMs > beforeMs || projectContent !== readFile(config.projectPath)) cachedWrite(config.projectPath, projectContent);
 
       // Apply context updates from reviewer
       const contextMatch = decision.detail.match(/CONTEXT_UPDATE:\s*([\s\S]*?)(?=\n\*\*|\n##|\n\(|$)/i);
@@ -1207,12 +1250,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Update Current State with reviewer's synthesis
       const ms = extractMilestones(projectContent);
       const reviewerInsight = decision.detail.replace(/^CONTINUE[:\s]*/i, "").trim();
+      const reviewerStateUpdate = extractDirectiveBlock(reviewerText, "CURRENT_STATE_UPDATE");
 
-      projectContent = updateSection(projectContent, "Current State",
-        `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
-        (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
+      if (reviewerStateUpdate || !reviewerEditedProject) {
+        projectContent = updateSection(projectContent, "Current State",
+          reviewerStateUpdate
+            ? `${reviewerStateUpdate}\n`
+            : `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
+              (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
 
-      cachedWrite(config.projectPath, projectContent);
+        cachedWrite(config.projectPath, projectContent);
+      }
 
     }
 
