@@ -186,8 +186,23 @@ go version  # verify
 
 **Note**: Bazel does NOT need to be installed separately — `aksbuilder` (the 34MB statically-linked binary at `hack/aksbuilder-linux-amd64`) bundles its own Bazel toolchain. The `aksbuilder.sh` wrapper only checks for Go.
 
+## Validated Working Example (2026-05-12)
+
+```bash
+ssh devbox
+export PATH=/usr/local/go/bin:$PATH
+cd /home/hayua/rp
+test/e2ev3/hack/e2ev3 dev --build-version hayuaebld163822451 \
+  -s Scenario_Traffic_AppRouting_Nginx_Disablement --debug
+```
+
+This executes the full pipeline: Bazel build → config blob load → scenario select → subscription registration → VM size resolution → resource group creation → cluster creation (PUT to standalone RP). Failed only on transient Azure capacity (`AKSCapacityHeavyUsage` in eastus2).
+
 ## Troubleshooting
 
+- **"multiple scenario X found"** → The dev suite registers many scenarios twice (once directly, once via `GetTestScenarios()`). Use scenarios only listed once in `cmd/dev/main.go`, not also included via bulk `rp.GetTestScenarios()` or checkin suite imports. Safe choices: `Scenario_PAFThrottling`, `Scenario_Traffic_AppRouting_Nginx_Disablement`.
+- **ManagedIdentityCredential "identity not found"** → The scenario requires underlay (svc cluster) access via MSI. Either assign the correct MSI to the devbox VM, or choose a scenario that doesn't embed `plans.AccessSvcUnderlay` / `hcp.UnderlayCredentials`.
+- **AKSCapacityHeavyUsage** → Transient Azure region capacity issue. Retry later or use a different region if supported.
 - **VPN not connected** → Tests will fail to reach standalone services
 - **Build version wrong** → Traffic won't route to your standalone
 - **Bazel build fails** → Run `aksbuilder tidy` manually, check Go module issues
