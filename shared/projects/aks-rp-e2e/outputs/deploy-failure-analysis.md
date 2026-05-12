@@ -1,56 +1,104 @@
-# Standalone Deploy Failure Analysis (2026-05-12)
+# Standalone Deploy Failure Analysis
+
+**Date**: 2026-05-12  
+**Deploy initiated**: ~2026-05-11 19:34 UTC via `aksbuilder_localdeploy.sh`  
+**Deploy failed**: 2026-05-12 00:41:19 UTC  
+**Log**: `~/localdeploy.log` on devbox
 
 ## Summary
-`aksbuilder_localdeploy.sh` ran ~2026-05-11 19:34 UTC in tmux session `deploy`.
-It processed ~5924 lines of output before failing. The tmux session exited.
 
-## Build Version Generated
-`hayua-local-1778544338` (timestamp-based, from image tags in log)
+The localdeploy ran for ~5 hours building and pushing container images. Several sub-workspace builds succeeded (base-os-builder, unittest images pushed to ACR), but the overall deploy failed due to build errors in 4 sub-workspaces.
 
-## Failures (in order of occurrence)
+## Errors (in order)
 
-### 1. deployboximage — Docker Pull Failure (line ~1847)
+### 1. cseappsample — Missing input file
 ```
-Error in fail: Pull command failed
-ERROR: Analysis of target '//:deploybox.image.ev2' failed
+ERROR: cseappsample/BUILD.bazel:16:12: Writing cseappsample-cse-pkg.tar.gz failed:
+  missing input file '//:cseappsample-linux-amd64'
 ```
-- Could not pull `@ubuntu-linux-amd64//image` — auth or network issue
+**Likely cause**: The cseappsample binary wasn't built before the packaging step. Could be a build ordering issue or missing dependency.
 
-### 2. cseappsample — Missing Input (line ~2478)
+### 2. e2eimages — OOM Killed
 ```
-ERROR: Writing cseappsample-cse-pkg.tar.gz failed: missing input file '//:cseappsample-linux-amd64'
+ERROR: e2eimages/BUILD.bazel:174:8: Executing genrule //:mnist-gpu.image.ev2 failed: (Killed)
 ```
+**Likely cause**: The mnist-gpu image build was OOM-killed. This is a resource constraint on the devbox. Consider:
+- Increasing devbox memory
+- Adding `--jobs=4` or lower to reduce parallel bazel actions
+- Skipping GPU test images if not needed
 
-### 3. e2eimages — OOM Kill (line ~4839)
+### 3. clirunner — Config conflict
 ```
-ERROR: Executing genrule //:mnist-gpu.image.ev2 failed: (Killed): bash failed
+ERROR: "multiple CLI_RUNNER_SP_ID with different value"
 ```
-- Devbox is memory-constrained with 8+ parallel bazel servers
+**Likely cause**: Environment or config has conflicting service principal IDs. Check `.env` files or deployment config for duplicate `CLI_RUNNER_SP_ID` entries.
 
-### 4. clirunner — Config Conflict (line ~5293)
+### 4. Main RP workspace — Missing rules_cc
 ```
-"multiple CLI_RUNNER_SP_ID with different value"
+ERROR: Skipping '//deployer/server/...': No repository visible as '@rules_cc' from main repository
 ```
-
-### 5. Main RP Workspace — Missing Bazel Dep (line ~5543)
-```
-ERROR: No repository visible as '@rules_cc' from main repository
-ERROR: error loading package under directory 'deployer/server'
-```
-- Likely needs `git pull` to pick up dependency fixes
-
-### 6. Final (line ~5889)
-```
-{"level":"error","msg":"failed to build, err: error happened: exit status 1"}
+**Likely cause**: Bazel workspace is missing the `rules_cc` external dependency. May need `bazel sync` or the WORKSPACE file is stale. Try:
+```bash
+cd /home/hayua/rp && bazelisk fetch @rules_cc//...
 ```
 
 ## Orphaned Bazel Servers
-8 bazel server processes still running (from ~1.4GB total), started during the failed deploy.
-Kill with: `ssh devbox 'pkill -f "bazel.*server"'` or let them idle-timeout.
+
+8 bazel server processes are still running from the failed deploy, consuming ~3GB+ RAM:
+```
+PID 744976  - bazel(rp)
+PID 1413046 - bazel(distroless)
+PID 1413050 - bazel(cseappsample)
+PID 1413051 - bazel(e2eimages)
+PID 1413063 - bazel(devinfraimagereplication)
+PID 1413077 - bazel(clirunner)
+PID 1414690 - bazel(devimages)
+PID 1534402 - bazel(builder)
+```
+
+**Clean up with**: `bazelisk shutdown` in each workspace, or `pkill -f "bazel\("`
+
+## What Succeeded
+
+These images were pushed to `aksdeploymente2eeastus.azurecr.io`:
+- `base-os-builder:hayua-local-1778544338-linux-amd64`
+- `base-os-builder-cache:hayua-local-1778544338-linux-amd64`
+- `unittest:hayua-local-1778544338-linux-amd64`
 
 ## Recommended Next Steps
-1. `ssh devbox 'cd /home/hayua/rp && git pull'` — pick up latest fixes
-2. Kill orphaned bazel servers to free memory
-3. Retry: `ssh devbox 'cd /home/hayua/rp && nohup hack/aksbuilder_localdeploy.sh > ~/localdeploy2.log 2>&1 &'`
-4. If OOM persists, add `--local_ram_resources=HOST_RAM*.5` to bazel flags
-5. Ask team if there's a known working commit or pre-built standalone
+
+1. **Kill orphaned bazel servers** to free memory:
+   ```bash
+   pkill -f "bazel\("
+   ```
+
+2. **Re-run localdeploy** — the errors may be transient (OOM) or fixable:
+   ```bash
+   cd /home/hayua/rp
+   tmux new -s deploy
+   nohup hack/aksbuilder_localdeploy.sh 2>&1 | tee ~/localdeploy2.log
+   ```
+
+3. **Alternative: skip full deploy, use existing build version** — if another team member has a working standalone, get their build version:
+   ```bash
+   # Check if there's an existing working build version
+   grep -r "build.version\|BUILD_VERSION" /home/hayua/rp/test/e2ev3/ --include="*.env" --include="*.sh" -l
+   ```
+
+4. **Alternative: run e2e binary directly** against an existing standalone (if Key Vault becomes reachable):
+   ```bash
+   export PATH=/usr/local/go/bin:$PATH
+   cd /home/hayua/rp/test/e2ev3
+   hack/e2ev3 dev --build-version=<KNOWN_VERSION> -s <scenario> --test-region eastus2 --debug
+   ```
+
+## Environment Status
+
+| Component | Status |
+|-----------|--------|
+| Go 1.24.3 | ✅ Installed at `/usr/local/go/bin/go` |
+| Bazel | ✅ Via aksbuilder (bundled bazelisk) |
+| e2ev3 script | ✅ Exists at `test/e2ev3/hack/e2ev3` |
+| Key Vault DNS | ❌ NXDOMAIN — standalone not deployed |
+| Standalone env | ❌ Deploy failed |
+| Orphaned processes | ⚠️ 8 bazel servers consuming RAM |
