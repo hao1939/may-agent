@@ -1,7 +1,25 @@
 # Design: Context-Enriched Reply
 
-**Status**: shipped
-**Date**: 2026-04-29
+**Status**: partial — envelope shipped, payload + enrichment did not (see drift note below)
+**Date**: 2026-04-29 (drift re-verified 2026-05-12)
+
+> **Drift note (2026-05-12, arc):** The `notification_messages` envelope
+> columns (`telegram_msg_id, event_type, agent, session_id, project_id,
+> data, sent_at`) match this doc. The `data` payload, the enrichment
+> formatter, and the regression metric do **not**:
+> - `data` shape on 1538/1538 messages (last 30d) is `{text}` or
+>   `{summary,text}`. Zero rows carry `subject`, `state`, `background`,
+>   or `sentAt`.
+> - `project_id` set on 36/1538 rows (2.3%); the doc's first promise
+>   (project disambiguation on reply) is not exercisable.
+> - No metric `telegram.reply-actionable-rate` is registered.
+> - Enriched task format observed in live chat sessions omits
+>   `subject`, `State:`, `Background:` lines.
+>
+> Source: KE-576 (2026-05-03) + re-verification 2026-05-12. Proposal
+> with Option A/B/C decision points lives at
+> `agents/arc/workspace/proposals/2026-05-03-telegram-notifications-md-runtime-reality-appendix.md`.
+> The doc body below is preserved as the *intended* design.
 
 ## Problem
 
