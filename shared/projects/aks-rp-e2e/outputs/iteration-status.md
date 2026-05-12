@@ -1,4 +1,4 @@
-# E2E Testing Project — Status (Iteration 4)
+# E2E Testing Project — Status (Iteration 5)
 
 **Updated:** 2026-05-12
 
@@ -19,10 +19,12 @@ All deliverables produced and verified:
 - **Bazel:** ✅ Bundled in aksbuilder
 
 ## What's Next (once deploy completes)
-1. Verify KV DNS resolves: `nslookup aks-rp-e2e-kv.vault.azure.net`
-2. Run readiness check: `bash outputs/standalone-readiness-check.sh`
-3. Run first e2e test: `test/e2ev3/hack/e2ev3 dev --scenario <pick-simple-one> --debug`
-4. Document results in `outputs/first-e2e-run-results.md`
+1. Copy `post-deploy-validation.sh` to devbox and run it
+2. Or manually: verify KV DNS, then `test/e2ev3/hack/e2ev3 dev --scenario CreateManagedClusterWithDefaults --debug`
+3. Document results in `outputs/first-e2e-run-results.md`
+
+## Deliverables This Iteration
+- `post-deploy-validation.sh` — automated post-deploy check + first e2e test runner
 
 ## Blockers
 - Deploy must complete before any e2e test can run
