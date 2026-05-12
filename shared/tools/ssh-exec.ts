@@ -58,7 +58,7 @@ export function createSshExecTool() {
       required: ["command"],
       additionalProperties: false,
     },
-    async execute(_toolCallId: string, params: any) {
+    async execute(_toolCallId: string, params: any, signal?: AbortSignal) {
       const host = String(params.host || "devbox");
       const command = String(params.command || "");
       const timeoutSec = Number(params.timeout || DEFAULT_TIMEOUT_SEC);
@@ -69,6 +69,9 @@ export function createSshExecTool() {
       }
       if (!command.trim()) {
         return textResult("[error] command is required");
+      }
+      if (signal?.aborted) {
+        return textResult("[aborted]", { host, command, timedOut: false, aborted: true });
       }
 
       return new Promise((resolve) => {
@@ -91,27 +94,37 @@ export function createSshExecTool() {
         const stdout: string[] = [];
         const stderr: string[] = [];
         let timedOut = false;
+        let aborted = false;
         let forceKillTimer: NodeJS.Timeout | null = null;
 
-        const timer = setTimeout(() => {
-          timedOut = true;
+        const stop = (reason: "timeout" | "abort") => {
+          if (reason === "timeout") timedOut = true;
+          if (reason === "abort") aborted = true;
           stopChildProcessGroup(child, "SIGTERM");
+          if (forceKillTimer) return;
           forceKillTimer = setTimeout(() => {
             stopChildProcessGroup(child, "SIGKILL");
           }, 5000);
-        }, Math.max(1, timeoutSec) * 1000);
+        };
+
+        const timer = setTimeout(() => stop("timeout"), Math.max(1, timeoutSec) * 1000);
+        const abortHandler = () => stop("abort");
+        signal?.addEventListener("abort", abortHandler, { once: true });
 
         child.stdout?.on("data", (data: Buffer) => stdout.push(data.toString()));
         child.stderr?.on("data", (data: Buffer) => stderr.push(data.toString()));
 
-        child.on("close", (code, signal) => {
+        child.on("close", (code, childSignal) => {
           clearTimeout(timer);
+          signal?.removeEventListener?.("abort", abortHandler);
           if (forceKillTimer) clearTimeout(forceKillTimer);
           const out = stdout.join("");
           const err = stderr.join("");
           const statusLine = timedOut
             ? `[timeout after ${timeoutSec}s]`
-            : `[exit ${code ?? "unknown"}${signal ? ` signal ${signal}` : ""}]`;
+            : aborted
+              ? `[aborted${childSignal ? ` signal ${childSignal}` : ""}]`
+              : `[exit ${code ?? "unknown"}${childSignal ? ` signal ${childSignal}` : ""}]`;
           const combined = [
             statusLine,
             `$ ssh ${host} ${JSON.stringify(command)}`,
@@ -126,15 +139,17 @@ export function createSshExecTool() {
             host,
             command,
             exitCode: code,
-            signal,
+            signal: childSignal,
             timedOut,
+            aborted,
           }));
         });
 
         child.on("error", (err) => {
           clearTimeout(timer);
+          signal?.removeEventListener?.("abort", abortHandler);
           if (forceKillTimer) clearTimeout(forceKillTimer);
-          resolve(textResult(`[error] ${err.message}`, { host, command, timedOut }));
+          resolve(textResult(`[error] ${err.message}`, { host, command, timedOut, aborted }));
         });
       });
     },

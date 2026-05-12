@@ -91,4 +91,39 @@ describe("ssh_exec tool", () => {
     expect(textOf(result)).toContain("[timeout after 1s]");
     expect(result.details).toMatchObject({ host: "devbox", command: "sleep 100", timedOut: true });
   });
+
+  it("does not spawn when the tool call is already aborted", async () => {
+    const tool = createSshExecTool();
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await tool.execute("t1", { host: "devbox", command: "hostname" }, controller.signal);
+
+    expect(spawnMock).not.toHaveBeenCalled();
+    expect(textOf(result)).toContain("[aborted]");
+    expect(result.details).toMatchObject({ aborted: true, timedOut: false });
+  });
+
+  it("terminates the ssh process group when the tool call is aborted", async () => {
+    vi.useFakeTimers();
+    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => true as any);
+    const tool = createSshExecTool();
+    const child = fakeChild(1357);
+    const controller = new AbortController();
+    spawnMock.mockReturnValue(child);
+
+    const promise = tool.execute("t1", { host: "devbox", command: "sleep 100", timeout: 60 }, controller.signal);
+
+    controller.abort();
+    expect(killSpy).toHaveBeenCalledWith(-1357, "SIGTERM");
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(killSpy).toHaveBeenCalledWith(-1357, "SIGKILL");
+
+    child.emit("close", null, "SIGTERM");
+    const result = await promise;
+
+    expect(textOf(result)).toContain("[aborted signal SIGTERM]");
+    expect(result.details).toMatchObject({ host: "devbox", command: "sleep 100", aborted: true });
+  });
 });
