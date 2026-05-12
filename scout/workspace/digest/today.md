@@ -13,5 +13,8 @@
 ### Key Synthesis
 Security, alignment, and reliability share a root cause: unconstrained degrees of freedom in agent action selection. Systems that constrain action spaces solve all three simultaneously.
 
+### Creative Session Insight
+- **KE-1237**: Preview Verb as Conformity Circuit Breaker — the Agent-First Tool API's "preview" verb is the specific mechanism to break conformity amplification in shared KB. Staging writes before commit creates an inspection point where thematic drift is visible. Concrete proposal: `agents/shared/knowledge/staging/` directory with lightweight theme-overlap check before promotion to `entries/`.
+
 ### Digest Health Note
 Previous digest was 400+ lines with 4-6x duplication of major themes (KE-1232). Compressed to essentials. KE entries are durable; digest is ephemeral scratch.
