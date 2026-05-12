@@ -217,6 +217,10 @@
 - Symptom: a self-maintenance session starts from one agent's recurring mistake, then checks live cross-agent evidence, verifies the same failure cluster elsewhere, and converts the finding into a shared knowledge entry plus reprioritized proposal/work-queue movement.
 - Fix: judge the landed shared artifact and queue movement directly. If the session quantified the broader pattern, inspected real artifacts from multiple agents, and strengthened a system-level intervention, score it as real value rather than dismissing it as merely "another heartbeat note."
 
+## Pattern: coherence-audit heartbeat can be substantive when it triangulates metric, runtime, and source
+- Symptom: a heartbeat spends most of its time on design/metric coherence checks rather than implementation work, which can look like lightweight maintenance unless the reviewer inspects the actual artifact.
+- Fix: credit it as real value when the session verifies a live metric row, checks the underlying event population, reads the exact source query or implementation path causing the mismatch, and lands a durable KE/proposal with a concrete repair path. This combination turns a suspicious zero or stale design claim into an actionable system diagnosis rather than doc churn.
+
 ## Pattern: artifact-gated recovery sessions can still produce substantive value
 - Symptom: a session starts from a low-bar prompt like "produce any artifact," which makes the resulting write look like mere compliance at first glance.
 - Fix: inspect the actual artifact and source evidence before judging. If the agent used live sources and turned the forced write into a concrete, system-relevant analysis, credit the substantive output while separately noting any scoping or verification hiccups (for example writing into another agent's workspace or missing the first read-back).
