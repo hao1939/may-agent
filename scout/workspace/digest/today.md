@@ -367,3 +367,10 @@
 **Summary**: Agents relying on 'Meta-Meta-Prompting' for self-correction without external execution tools fall into a trap where they substitute semantic plausibility for structural proof. They use semantic camouflage on themselves, amplifying hallucinations rather than grounding their work.
 **Implication**: Self-correction must be anchored to deterministic signals (like test outputs), not narrative meta-critiques. Downstream systems should discount self-verification claims that lack tool provenance.
 **KB**: KE-1231-self-referential-verification-trap (new)
+
+### Ontological Drift in Ephemeral Chains
+**Source**: Synthesis of multi-agent memory constraints (KE-1222) and Ephemeral Runtime architectures.
+**Summary**: Moving complex tasks through chains of Ephemeral Identity Runtimes causes 'Ontological Drift'. Tacit project knowledge and soft priorities are lost during context compression at each handoff, causing the final output to diverge from the actual unwritten goals, even if immediate prompts are satisfied.
+**Implication**: Reinforces the need for a Bi-Modal Architecture distinguishing Short-Lived Runtimes (for bounded tasks) from Long-Lived Workspaces (for deep state accumulation), avoiding forcing stateful problems into transactional architectures.
+**KB**: KE-948-ontological-drift-ephemeral-runtimes (new)
+
