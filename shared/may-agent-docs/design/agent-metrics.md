@@ -53,7 +53,7 @@ alerting until they become necessary for keeping the loop running.
 | `agent.heartbeat-dark-count-2h` | Did any scheduled heartbeat agent go dark? | enabled heartbeat cron agents with no heartbeat session in 2h | 0 | 0 | above |
 | `agent.config-invalid-count-1h` | Did runtime skip an agent due to invalid config? | durable `agent.config_invalid` events (1h) | 0 | 0 | above |
 | `session.error-rate-6h` | Is anything failing? | `error+interrupted / total` from sessions (6h) | 0.10 | 0.30 | above |
-| `session.first-turn-error-count-1h` | Is the provider/model failing before the agent can act? | recent error/interrupted sessions whose first assistant transcript row has `stopReason=error` or provider error text | 0 | 0 | above |
+| `session.first-turn-error-count-1h` | Is the provider/model failing before the agent can act? | recent error/interrupted sessions whose first assistant transcript row has `stopReason=error` or provider error text | 0 | 5 | above |
 | `message.delivery-failed-count-1h` | Are inter-agent messages failing to route? | `message.delivery_failed` events (1h) | 0 | 0 | above |
 | `evaluator.stale-running-session-count` | Is work hanging? | running/idle non-evaluator sessions older than stale cutoff | 0 | 0 | above |
 
@@ -64,11 +64,12 @@ alerting until they become necessary for keeping the loop running.
 | `session.failed-triage-rate-3h` | Are failures being acted on? | failed/interrupted sessions with `needs_improvement` evaluation (3h) | 1.00 | 0.80 | below |
 | `eval.llm-coverage-lag-h` | Has the LLM evaluation lane gone silent? | hours since latest `evaluatedByHeuristic=0` evaluation | 1 | 4 | above |
 | `eval.llm-evals-24h` | Did enough sessions get deep evaluation recently? | count of non-evaluator `evaluatedByHeuristic=0` evaluations (24h) | 4 | 1 | below |
-| `evaluator.low-quality-rate-24h` | Is evaluated work frequently `needs_improvement` or low-scoring? | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10 | 0.30 | above |
+| `evaluator.low-quality-rate-24h` | Is evaluated work frequently `needs_improvement` or low-scoring? (dashboard-only, P3) | `needs_improvement`/`low_quality` verdicts or low quality/efficiency scores / all evaluations (24h) | 0.10 | 0.80 | above |
+| `evaluator.substantive-low-quality-rate-24h` | Of *substantive* evaluations (filter to material work), are quality failures frequent? | substantive needs-improvement count / substantive evaluations (24h) | 0.10 | 0.30 | above |
 | `system.real-output-24h` | Is the system producing? | `git log` substantive files changed (24h) | 100 | 30 | below |
 | `project.iterations-24h` | How much active-project work happened? | active project.iteration events (24h) | 0 | 0 | watch-only |
 | `project.blocked-over-6h` | Is work stuck on true blockers? | `COUNT(*)` from projects where blocked >6h | 0 | 4 | above |
-| `metric.stale-active-count` | Is measurement coverage stale? | active metrics without a recent snapshot | 0 | 0 | above |
+| `metric.stale-active-count` | Is measurement coverage stale? | active metrics without a recent snapshot | 0 | 2 | above |
 | `capability.status-reality-mismatch-count` | Does runtime state match durable facts? | stale projects, stale metrics, orphan terminal sessions, missing heartbeat agents | 0 | 3 | above |
 | `capability.zombie-session-count` | Are sessions stuck alive? | running/idle sessions older than stale cutoff | 0 | 2 | above |
 
