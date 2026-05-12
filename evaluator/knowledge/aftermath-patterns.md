@@ -17,3 +17,6 @@ Observed at least once: workflow summary lists opCount=0 while transcript clearl
 
 ## Cross-agent artifact-gate ownership drift
 A session can satisfy write/read/commit hygiene yet still miss its real goal if the artifact lands under another agent's workspace. For artifact-gate retries, always compare the runtime `sessions.agent` value to the edited file path and commit subject; repeated `arc` sessions writing `may/workspace/heartbeat-log.md` are triage, not clean successes.
+
+## Low-signal heartbeat pattern capture still counts
+When a heartbeat has no active alert and the approved queue is empty, credit modest but real value if the agent verifies healthy metrics, isolates one recurring failure pattern with bounded evidence, and leaves a durable note with an explicit reopen trigger. Do not penalize the session just because it chose documentation over an unnecessary patch.
