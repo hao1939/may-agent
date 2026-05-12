@@ -93,6 +93,10 @@
 - Symptom: a route classifier marks a session as `success_candidate` with signals like `knowledge update` because the transcript text merely mentions a path under `agents/.../knowledge/`, even though the session only cited or read an existing KE.
 - Fix: inspect the routing heuristic itself and prefer anchors tied to `write`/`edit` tool-call payloads or committed diffs. Path-shape regexes over free-form transcript prose are too broad and create false-good aftermath reviews.
 
+## Pattern: heartbeat routing can inherit stale "material output" signals from prompt/history context
+- Symptom: a heartbeat/session-review route arrives as `success_candidate` because the prompt or pending-event context mentions an earlier commit, project artifact, or verification command, but the reviewed session itself only performs live checks and finishes `partial`/`done` with no new writes.
+- Fix: separate prior-session context from current-session contribution. For aftermath review, require current-session `write`/`edit`/commit evidence or a durable operational action in the reviewed session before calling it material output; otherwise grade it as lightweight maintenance/false-good routing.
+
 ## Pattern: classifier-bug aftermath sessions create value when they land durable follow-up artifacts
 - Symptom: a reviewed session spends much of its effort proving that a router/guard/classifier made the wrong call, so the work can look meta or circular if the reviewer checks only whether the original route was false.
 - Fix: inspect whether the session verified the real classifier source, connected the incident to prior evidence, and converted the diagnosis into durable follow-up artifacts such as a KE, proposal, queue entry, or implementation request. If those artifacts land and are actionable, credit the session as real system improvement even when part of the transcript is spent on guard/finish recovery.
