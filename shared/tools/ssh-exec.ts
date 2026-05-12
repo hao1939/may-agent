@@ -60,14 +60,21 @@ export function createSshExecTool() {
       }
 
       return new Promise((resolve) => {
+        const sshHome = process.env.HOME || "/app/.state";
+        const sshArgs = [
+          "-F", `${sshHome}/.ssh/config`,
+          "-i", `${sshHome}/.ssh/id_rsa`,
+          host,
+          command,
+        ];
         const spawnOpts: Parameters<typeof spawn>[2] = {
-          env: process.env,
+          env: { ...process.env, HOME: sshHome },
           timeout: Math.max(1, timeoutSec) * 1000,
           stdio: ["ignore", "pipe", "pipe"],
         };
         if (process.getuid?.() === 0) spawnOpts.uid = 1000;
 
-        const child = spawn("ssh", [host, command], spawnOpts);
+        const child = spawn("ssh", sshArgs, spawnOpts);
 
         const stdout: string[] = [];
         const stderr: string[] = [];
