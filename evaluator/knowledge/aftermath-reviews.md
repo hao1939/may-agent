@@ -189,6 +189,10 @@
 - Symptom: a heartbeat makes no repo edits or new artifacts, but it runs live checks that confirm a previously observed incident has actually stayed recovered and that apparent hygiene dirt is ambient rather than the agent's responsibility.
 - Fix: do not require file output as the only signal of value. Verify the fresh DB/query evidence and lane-aware judgment directly from the transcript and current repo state; credit the session as acceptable/good operational maintenance when it prevents unnecessary churn, while still noting that it is not a material knowledge update or code change.
 
+## Pattern: heartbeat review-request triage can be substantive output even when the fix predates the session
+- Symptom: a low-signal heartbeat picks up a pending review request about a suspected bug, and the actual implementation fix was already landed by an earlier session. The current session can look like "just confirming old work" if review checks only whether new code changed.
+- Fix: inspect whether the heartbeat turned the request into a durable disposition by verifying the reviewed artifact, the landed source/test diff, current test results, and a committed follow-up note or reopen trigger. Credit that as real value when it closes inbox noise with evidence rather than spawning duplicate work.
+
 ## Pattern: recap-heavy success candidates can be operationally sound but not material-output sessions
 - Symptom: routing labels a session as a `success_candidate` with signals like `knowledge update` because the heartbeat discusses or re-checks a recently created KE/proposal, but transcript/tool evidence shows the reviewed session only verified that the prior artifact already exists and wisely produced no duplicate write.
 - Fix: inspect artifact authorship/timing, not just artifact mentions. If the current session only confirms prior work and does fresh live triage, score it as acceptable/good maintenance rather than a fresh knowledge-producing success; separately note the routing false-positive so heuristics can key on write/edit or new-commit evidence.
