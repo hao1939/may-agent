@@ -56,8 +56,8 @@ when it disagrees with this table.
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
 | `project.iteration` | `project.ts` on the default project path; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live default plus legacy compatibility shape |
-| `session.failed` | session/runtime layer on session-end with error | ✅ live |
-| `session.completed` | session lifecycle translator after `session.end` for non-evaluator sessions | ✅ live |
+| `session.failed` | session/runtime layer on session-end with error | ⚠️ degraded since 2026-05-03 — emission collapsed ~35× (70/day → 2/day); last 7d = 6 rows, 4 of which are smoke tests; last real production emission 2026-05-02. Errored sessions now arrive on the bus as `session.completed{outcome:'error'}` (~33/day). KE-1248. |
+| `session.completed` | session lifecycle translator after `session.end` for non-evaluator sessions; carries `outcome ∈ {done,error,interrupted}` | ✅ live and now the de-facto channel for errored/interrupted sessions (see `session.failed` row) |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ⚠️ live; see consumer status below |
 | `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
@@ -77,7 +77,7 @@ SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() *
 
 | Handler | Subscribes to | Status notes |
 |---|---|---|
-| `session-recovery` | `session.failed` | ✅ wired as an event-first workflow bridge; handler dispatches `session-recovery` workflow |
+| `session-recovery` | `session.failed` | ⚠️ `on:` subscription is correct but emitter migrated to `session.completed{outcome:'error'}` on 2026-05-03 (KE-1248) — event-driven path has fired zero times on real traffic for ~10d; 5-min timer fallback (`intervalMs: 300000`) is currently doing 100% of recovery work |
 | `evaluator-aftermath` | `session.completed` | ✅ wired through `run-workflow`; `session-aftermath-scan` remains the 7-minute fallback |
 | `session-eval` | `session.completed` | retired legacy path; use `evaluator-aftermath` |
 | `escalation` | `session.escalated` | ✅ wired as event-first routing for explicit blocked/failure finishes |
