@@ -73,3 +73,6 @@
 
 ## 2026-05-12 — s_1778581737427_12
 - For persistent-task investigation sessions, give strong quality credit when the agent isolates the active blocker with a narrower validation run, proves a later stage of the workflow works in practice, and lands reusable project documentation. A first `finish(success)` failure from wrong deliverable-path format should reduce efficiency only; it should not erase the value of a committed, evidence-backed run report and setup update.
+
+## 2026-05-12 — s_1778600083313_76
+- In scout success-candidate aftermath reviews, do not infer material output from the current contents of `scout/workspace/digest/today.md` or same-day KE files alone. First check the session transcript and `session_digests.files_modified`: a deliberate-decline session can be correctly judged as useful restraint while having no artifact writes, and rolling digest/KE HEAD state may belong to earlier sessions.
