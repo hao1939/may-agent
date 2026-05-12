@@ -1,7 +1,7 @@
 # Design: Heartbeat as Agency
 
-**Status**: shipped
-**Date**: 2026-05-06
+**Status**: partially shipped — heartbeat workflow + per-session `agent.decision` event landed (~45/agent/24h across 4 agents). 2 of 3 prescribed agency metrics (`agent.idle-rate`, `agent.self-initiated-rate`) never registered; `agent.heartbeat-coverage` exists only as `handler.heartbeat-coverage` (handler-load namespace, not agency namespace). See KE-1250.
+**Date**: 2026-05-06 (status downgraded 2026-05-12)
 
 ## The reframe
 
@@ -117,6 +117,8 @@ Add (or formalize) **agency metrics** — measurements of whether agents are usi
 - `agent.heartbeat-coverage` — how many distinct agents heartbeat'd in the last N hours. (Already exists.)
 - `agent.idle-rate` — fraction of heartbeats per agent that result in "no action taken." High idle = agent without domain or agent broken. Low idle = healthy ownership.
 - `agent.self-initiated-rate` — fraction of an agent's sessions that come from heartbeat (vs. fork from breach/message/order). Healthy autonomous system has a meaningful fraction of sessions self-initiated.
+
+> **2026-05-12 status (KE-1250):** of the three above, only `handler.heartbeat-coverage` exists in the registry — under the **handler** namespace, not the agency namespace this section names. `agent.idle-rate` and `agent.self-initiated-rate` were never registered (no source references the ids; only this doc + `webui.md`'s mock AGENCY block). Pick a path: register the missing two, rename/alias the existing one to match this namespace, or strike the two from this section as out-of-scope and update `webui.md` to drop the mock rows.
 
 These are not infrastructure metrics ("is cron working") nor output metrics ("are projects advancing"). They are **agency metrics** — measurements of whether the agents are *being* agents.
 
