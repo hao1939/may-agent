@@ -55,3 +55,4 @@ Read `agents/shared/work-queue.md` — section "## Approved" has items ready for
 ## Durable Lessons
 - Finish hygiene: if you commit the intended artifact but `/app/agents` still has unrelated dirty paths, report `finish(partial)` with the exact blocker instead of claiming clean success.
 - For finish-blocked raw alerts, compare the paired strict unresolved metric before patching; raw breaches can be recovered friction and may warrant documented waiting/exception instead of another workflow change.
+- When consecutive scout heartbeat errors have `opCount=1`, inspect the transcript for a single unbounded `cat` of a large digest/log before assuming startup or config failure; a prompt-level bounded-read reminder can be the lowest-risk fix.
