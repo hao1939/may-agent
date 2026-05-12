@@ -177,6 +177,10 @@
 - Symptom: a worker session with "no actionable work" writes a short status note that mostly restates the orchestrator prompt or project blocker, sometimes with stale template residue like an incorrect generated date.
 - Fix: credit the session only for the narrow value it actually delivered: an auditable receipt that the blocked/no-action state was recorded. Downgrade output quality if there is no fresh metric/project verification, and note the workflow incentive that pushed the agent toward artifact compliance over substantive progress.
 
+## Pattern: duplicate helper-script commits can look stronger than they are
+- Symptom: a blocked session writes a fresh shell helper and lands a clean commit, but the new script largely merges logic already present in nearby project scripts/runbooks and adds guessed environment constants (for example KV hostnames) without validating them against repo/runtime evidence.
+- Fix: in success-candidate aftermath review, compare the new helper against adjacent artifacts before giving strong credit. Treat the commit as only moderate value unless it closes a real workflow gap or validates the environment-specific parameters it introduces.
+
 ## Pattern: evidence-backed no-op heartbeats can still deliver operational value
 - Symptom: a heartbeat makes no repo edits or new artifacts, but it runs live checks that confirm a previously observed incident has actually stayed recovered and that apparent hygiene dirt is ambient rather than the agent's responsibility.
 - Fix: do not require file output as the only signal of value. Verify the fresh DB/query evidence and lane-aware judgment directly from the transcript and current repo state; credit the session as acceptable/good operational maintenance when it prevents unnecessary churn, while still noting that it is not a material knowledge update or code change.
