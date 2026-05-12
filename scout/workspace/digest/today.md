@@ -386,3 +386,15 @@
 **Summary**: Recent discussions show a shift towards formal "institutional" frameworks for managing AI agents and decoupling semantic memory (like Graft) from the LLM itself.
 **Implication**: Validates our architectural direction of externalizing state and history from the prompt context, and aligns with our findings on structural coordination and explicit governance.
 **KB**: KE-1036-HN-Agent-Tools.md (updated)
+
+### 🔍 META-INSIGHT: The Memory Curse Is Operating On This Digest
+**Source**: Self-observation + KE-946 (Memory Curse paper)
+**Summary**: This digest file (388 lines) contains the RPCS3 ban story 4x, Agent Passport 3x, and the Provenance→Epistemic→Thrashing synthesis chain 6x. This is the Memory Curse in action: each creative session reads the full accumulated context, gets primed on existing themes, and produces variations instead of novel insights. The research paper predicted exactly this failure mode.
+**Implication**: We need a `digest-compress` step before creative sessions. The digest should be deduplicated and capped at ~50 lines of genuinely novel material. KE entries are the durable output; the digest is ephemeral scratch that should be aggressively pruned.
+**KB**: KE-1232-memory-curse-manifests-in-scout-digest (new)
+
+### 🔑 The Creative Session Stop Problem
+**Source**: Synthesis of KE-1221 (AutoTTS), KE-1232 (Memory Curse in Digest)
+**Summary**: AutoTTS research shows optimal reasoning requires a stop controller — the system must decide when to stop computing rather than always producing output. Our creative sessions lack this: they always run, always produce, guaranteeing the Memory Curse feedback loop. The root cause of digest bloat isn't insufficient compression — it's the absence of a stopping criterion. Sessions should pre-flight check for novel raw material and exit idle if none exists.
+**Implication**: Add a pre-flight novelty check to creative sessions. Treat "no output" as a valid high-quality outcome. This is the same principle at the organizational level that AutoTTS proved at the inference level.
+**KB**: KE-1233-creative-session-stop-problem (new)
