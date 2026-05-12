@@ -1,3 +1,36 @@
+# Proposed Strategies — 2026-05-12 15:37Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 newest non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778600083223_74/session.jsonl` (dev)
+- `.state/sessions/history/s_1778600083313_76/session.jsonl` (scout)
+- `.state/sessions/history/s_1778600083269_75/session.jsonl` (arc)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- The three newest successful non-evaluator logs again returned `"lessons": []`, with `scanned_lines` 57 / 38 / 24 for dev, scout, and arc respectively.
+- This newest all-zero sample again spans multiple agents and includes a substantive successful dev implementation log, so the extractor still fails to harvest reusable positive tactics even when the sample is not limited to ultra-short review/no-op work.
+- Repeated all-zero samples across consecutive runs strengthen the conclusion that `extract-strategy.cjs` remains recovery-biased rather than extracting positive patterns from clean successful sessions.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics keyed to structurally verified completion signals such as `verification_evidence`, test-pass strings, and evidence-backed completion summaries.
+2. Revisit the extractor thresholds so medium-length successful sessions (for example ~25-60 scanned lines) can still emit at least one reusable tactic.
+3. Keep sampling the newest successful non-evaluator sessions until the extractor yields at least one non-recovery lesson on clean work.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778600083223_74/session.jsonl` returned `{"lessons":[],"metadata":{"scanned_lines":57,...}}`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778600083313_76/session.jsonl` returned `{"lessons":[],"metadata":{"scanned_lines":38,...}}`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778600083269_75/session.jsonl` returned `{"lessons":[],"metadata":{"scanned_lines":24,...}}`.
+
+---
+
 # Proposed Strategies — 2026-05-12 15:07Z
 
 ## Scope
