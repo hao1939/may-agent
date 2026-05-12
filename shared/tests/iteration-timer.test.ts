@@ -1,14 +1,5 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { IterationTimer, formatDuration } from '../workflows/iteration-timer';
-
-/**
- * Helper: inject a completed timing record with a known duration.
- * Avoids needing fake timers — we test the stats/format logic directly.
- */
-function injectCompleted(timer: any, id: string, durationMs: number) {
-  const now = Date.now();
-  timer.completed.push({ id, startMs: now - durationMs, endMs: now, durationMs });
-}
 
 describe('IterationTimer', () => {
   let timer: IterationTimer;
@@ -52,24 +43,40 @@ describe('IterationTimer', () => {
       expect(timer.getActiveIterations()).toEqual([]);
     });
 
-    it('measures elapsed time', () => {
-      // Use injected record for deterministic test
-      injectCompleted(timer, 'iter-1', 500);
-      const stats = timer.getStats();
-      expect(stats.count).toBe(1);
-      expect(stats.avg).toBe(500);
+    it('measures elapsed time', async () => {
+      vi.useFakeTimers();
+      timer.startIteration('iter-1');
+      vi.advanceTimersByTime(500);
+      const result = timer.endIteration('iter-1');
+      expect(result.durationMs).toBe(500);
+      vi.useRealTimers();
     });
 
-    it('formats milliseconds correctly', () => {
-      expect(formatDuration(250)).toBe('250ms');
+    it('formats milliseconds correctly', async () => {
+      vi.useFakeTimers();
+      timer.startIteration('iter-1');
+      vi.advanceTimersByTime(250);
+      const result = timer.endIteration('iter-1');
+      expect(result.durationFormatted).toBe('250ms');
+      vi.useRealTimers();
     });
 
-    it('formats seconds correctly', () => {
-      expect(formatDuration(5500)).toBe('5.5s');
+    it('formats seconds correctly', async () => {
+      vi.useFakeTimers();
+      timer.startIteration('iter-1');
+      vi.advanceTimersByTime(5500);
+      const result = timer.endIteration('iter-1');
+      expect(result.durationFormatted).toBe('5.5s');
+      vi.useRealTimers();
     });
 
-    it('formats minutes correctly', () => {
-      expect(formatDuration(125000)).toBe('2m 5s');
+    it('formats minutes correctly', async () => {
+      vi.useFakeTimers();
+      timer.startIteration('iter-1');
+      vi.advanceTimersByTime(125000); // 2m 5s
+      const result = timer.endIteration('iter-1');
+      expect(result.durationFormatted).toBe('2m 5s');
+      vi.useRealTimers();
     });
   });
 
@@ -80,46 +87,71 @@ describe('IterationTimer', () => {
     });
 
     it('computes stats for single iteration', () => {
-      injectCompleted(timer, 'iter-1', 1000);
+      vi.useFakeTimers();
+      timer.startIteration('iter-1');
+      vi.advanceTimersByTime(1000);
+      timer.endIteration('iter-1');
       const stats = timer.getStats();
       expect(stats.count).toBe(1);
       expect(stats.avg).toBe(1000);
       expect(stats.median).toBe(1000);
       expect(stats.p95).toBe(1000);
+      vi.useRealTimers();
     });
 
     it('computes correct average', () => {
-      injectCompleted(timer, 'a', 100);
-      injectCompleted(timer, 'b', 300);
+      vi.useFakeTimers();
+      timer.startIteration('a');
+      vi.advanceTimersByTime(100);
+      timer.endIteration('a');
+      timer.startIteration('b');
+      vi.advanceTimersByTime(300);
+      timer.endIteration('b');
       const stats = timer.getStats();
       expect(stats.avg).toBe(200);
+      vi.useRealTimers();
     });
 
     it('computes correct median for odd count', () => {
+      vi.useFakeTimers();
       for (const dur of [100, 200, 300]) {
-        injectCompleted(timer, `iter-${dur}`, dur);
+        const id = `iter-${dur}`;
+        timer.startIteration(id);
+        vi.advanceTimersByTime(dur);
+        timer.endIteration(id);
       }
       const stats = timer.getStats();
       expect(stats.median).toBe(200);
+      vi.useRealTimers();
     });
 
     it('computes p95 correctly with many samples', () => {
+      vi.useFakeTimers();
       for (let i = 1; i <= 20; i++) {
-        injectCompleted(timer, `iter-${i}`, i * 100);
+        timer.startIteration(`iter-${i}`);
+        vi.advanceTimersByTime(i * 100);
+        timer.endIteration(`iter-${i}`);
       }
       const stats = timer.getStats();
       expect(stats.count).toBe(20);
       expect(stats.min).toBe(100);
       expect(stats.max).toBe(2000);
-      expect(stats.p95).toBe(1900);
+      expect(stats.p95).toBe(1900); // 19th element at 95th percentile
+      vi.useRealTimers();
     });
 
     it('computes min and max', () => {
-      injectCompleted(timer, 'fast', 50);
-      injectCompleted(timer, 'slow', 5000);
+      vi.useFakeTimers();
+      timer.startIteration('fast');
+      vi.advanceTimersByTime(50);
+      timer.endIteration('fast');
+      timer.startIteration('slow');
+      vi.advanceTimersByTime(5000);
+      timer.endIteration('slow');
       const stats = timer.getStats();
       expect(stats.min).toBe(50);
       expect(stats.max).toBe(5000);
+      vi.useRealTimers();
     });
   });
 

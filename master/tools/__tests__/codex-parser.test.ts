@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { parseCodexStream, formatCodexEnvelope } from "../codex-stream-parser";
 
 describe("parseCodexStream", () => {

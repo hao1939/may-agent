@@ -325,6 +325,48 @@ describe("execute — worker iteration", () => {
     expect(workerPrompt).toContain("finish(blocked/partial) with evidence instead of inventing files");
   });
 
+  it("worker prompt tells remote work to use delegation tools before claiming blocked", async () => {
+    const projDir = setupProjectDir("active");
+    writeFileSync(
+      join(projDir, "project.md"),
+      readFileSync(join(projDir, "project.md"), "utf-8").replace(
+        "## Resources\n",
+        "## Resources\n- devbox:/home/hayua/rp — remote repo\n",
+      ),
+      "utf-8",
+    );
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Checked remote" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Done\nResume when: review" });
+
+    await execute(ctx);
+
+    const workerPrompt = ctx.runAgent.mock.calls[0][1];
+    expect(workerPrompt).toContain("use the available remote tool");
+    expect(workerPrompt).toContain("ssh_exec");
+    expect(workerPrompt).toContain("cc_worker");
+    expect(workerPrompt).toContain("It is not evidence that remote access is unavailable");
+  });
+
+  it("review prompt rejects remote blockers based only on local bash guard warnings", async () => {
+    const projDir = setupProjectDir("active");
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "PATH_HALLUCINATION blocked ssh devbox /home/hayua/rp" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Done\nResume when: review" });
+
+    await execute(ctx);
+
+    const reviewPrompt = ctx.runAgent.mock.calls[1][1];
+    expect(reviewPrompt).toContain("exact remote command tools such as `ssh_exec`");
+    expect(reviewPrompt).toContain("delegation tools such as `cc_worker`");
+    expect(reviewPrompt).toContain("Do not declare remote access blocked from a local bash path-guard warning alone");
+    expect(reviewPrompt).toContain("A local bash guard warning is not enough evidence for WAITING or BLOCKED");
+  });
+
   it("handles BLOCKED decision from reviewer", async () => {
     const projDir = setupProjectDir("active");
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 2\nreviewEvery: 1`);

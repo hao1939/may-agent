@@ -1,40 +1,34 @@
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect, vi } from 'vitest';
 import { retry, createCircuitBreaker } from '../retry-strategy.js';
 
 describe('retry', () => {
   it('succeeds on first try', async () => {
-    let calls = 0;
-    const fn = async () => { calls++; return 'ok'; };
+    const fn = vi.fn().mockResolvedValue('ok');
     const result = await retry(fn);
     expect(result).toBe('ok');
-    expect(calls).toBe(1);
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('retries on failure and eventually succeeds', async () => {
-    let calls = 0;
-    const fn = async () => {
-      calls++;
-      if (calls === 1) throw new Error('fail1');
-      if (calls === 2) throw new Error('fail2');
-      return 'ok';
-    };
+    const fn = vi.fn()
+      .mockRejectedValueOnce(new Error('fail1'))
+      .mockRejectedValueOnce(new Error('fail2'))
+      .mockResolvedValue('ok');
     const result = await retry(fn, { maxAttempts: 3, baseDelayMs: 1 });
     expect(result).toBe('ok');
-    expect(calls).toBe(3);
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 
   it('throws after maxAttempts exceeded', async () => {
-    let calls = 0;
-    const fn = async () => { calls++; throw new Error('always fails'); };
+    const fn = vi.fn().mockRejectedValue(new Error('always fails'));
     await expect(retry(fn, { maxAttempts: 2, baseDelayMs: 1 })).rejects.toThrow('always fails');
-    expect(calls).toBe(2);
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 
   it('respects maxAttempts option', async () => {
-    let calls = 0;
-    const fn = async () => { calls++; throw new Error('nope'); };
+    const fn = vi.fn().mockRejectedValue(new Error('nope'));
     await expect(retry(fn, { maxAttempts: 5, baseDelayMs: 1 })).rejects.toThrow();
-    expect(calls).toBe(5);
+    expect(fn).toHaveBeenCalledTimes(5);
   });
 });
 
@@ -54,15 +48,17 @@ describe('createCircuitBreaker', () => {
   });
 
   it('resets after resetMs', async () => {
-    const cb = createCircuitBreaker({ threshold: 1, resetMs: 10 });
+    vi.useFakeTimers();
+    const cb = createCircuitBreaker({ threshold: 1, resetMs: 100 });
     await expect(cb.execute(() => Promise.reject(new Error('x')))).rejects.toThrow();
     expect(cb.getState()).toBe('open');
-    // Wait for reset
-    await new Promise(r => setTimeout(r, 15));
+    vi.advanceTimersByTime(100);
     expect(cb.getState()).toBe('half-open');
+    // Successful call in half-open resets to closed
     const result = await cb.execute(() => Promise.resolve('ok'));
     expect(result).toBe('ok');
     expect(cb.getState()).toBe('closed');
+    vi.useRealTimers();
   });
 
   it('manual reset works', async () => {

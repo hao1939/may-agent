@@ -481,6 +481,8 @@ function buildWorkerPrompt(
   // Constraints
   prompt += `## Rules\n`;
   prompt += `- Produce a concrete deliverable when it advances the current goal. If the current blocker/precondition is still unmet, finish(blocked/partial) with evidence instead of inventing files.\n`;
+  prompt += `- For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), use the available remote tool when one exists. Prefer exact command tools such as \`ssh_exec\` for command output; use delegation tools such as \`cc_worker\` for exploratory remote work. Do not route remote commands through local bash just because they look like shell commands.\n`;
+  prompt += `- A local path/guard warning means the command used the wrong local tool. It is not evidence that remote access is unavailable. Only claim remote access is blocked after trying the remote/delegation path and recording the exact result.\n`;
   prompt += `- Put all output files in: ${outputsDir}/\n`;
   prompt += `- Before finish(success), call read() on every file you write() or edit(); tests and grep can supplement read-back but do not replace it.\n`;
   prompt += `- Before finish(success), run \`cd /app/agents && git status --short\`, classify every dirty path, and stage only intentional deliverables with explicit paths (never broad \`git add .\`). If an intentional deliverable is under the ignored canonical \`shared/projects/\` tree, use \`git add -f <that exact path>\` and explain why.\n`;
@@ -548,7 +550,8 @@ function buildReviewPrompt(
   prompt += `- **Context maintenance**: You maintain the ## Context section of project.md. After each iteration, add key discoveries/facts that future iterations will need. Remove stale info. Keep it concise — facts only, not narrative.\n`;
   prompt += `  Format your context updates as: CONTEXT_UPDATE: <bullet points to add or replace>\n`;
   prompt += `- **Agent cannot mark done**: Only human/May can mark a project done. If you say DONE, it's auto-converted to WAITING with "awaiting review".\n`;
-  prompt += `- **Worker capabilities**: The worker can read/write files, run bash commands, call sub-agents. Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
+  prompt += `- **Worker capabilities**: The worker can read/write files, run local bash commands, call sub-agents, and use any local tools exposed by the runtime (including exact remote command tools such as \`ssh_exec\` and delegation tools such as \`cc_worker\` when present). Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
+  prompt += `- **Remote work convention**: For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), tell the worker to use the available remote tool first. Prefer exact command tools such as \`ssh_exec\` when exact stdout/stderr matters; use delegation tools such as \`cc_worker\` when the worker should reason or inspect. Do not declare remote access blocked from a local bash path-guard warning alone; that warning usually means the command was routed through the wrong local tool.\n`;
   prompt += `- **Iteration budget**: Iterations are finite and expensive. Don't waste them repeating failed approaches.\n\n`;
 
   if (features?.has("verify-before-stop")) {
@@ -584,6 +587,7 @@ function buildReviewPrompt(
   prompt += `4. **Are we closing the loop?** Did we just fix a symptom, or did we prevent recurrence (skill/guard/handler)?\n`;
   prompt += `5. **Is it verified?** Every skill/workflow created must be testable. Is there a gym scenario or test that confirms it works? If not, writing the test IS the next milestone.\n`;
   prompt += `6. **What's blocking progress?** Be specific — not "it's hard" but "X dependency is missing" or "approach Y failed because Z".\n\n`;
+  prompt += `If the proposed blocker is access to a remote host, verify that the worker tried the remote/delegation tool path first. A local bash guard warning is not enough evidence for WAITING or BLOCKED.\n\n`;
 
   if (continueWithoutProgress >= 2) {
     prompt += `\n⚠️ STALL DETECTED: ${continueWithoutProgress} consecutive iterations with no milestone progress.\n`;
