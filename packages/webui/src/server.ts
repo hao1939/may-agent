@@ -922,8 +922,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function serveIndex(): Response {
     const candidates = [
       join(dirname(new URL(import.meta.url).pathname), "..", "static", "index.html"),
-      "/usr/local/share/may-agent-web/static/index.html",
       join(STATE_DIR, "..", "packages", "webui", "static", "index.html"),
+      "/usr/local/share/may-agent-web/static/index.html",
     ];
     for (const p of candidates) {
       if (existsSync(p))
