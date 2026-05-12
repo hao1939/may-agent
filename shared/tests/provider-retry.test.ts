@@ -90,10 +90,13 @@ describe("withRetry", () => {
   });
 
   it("retries on retryable error and succeeds", async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce({ status: 429, message: "rate limited" })
-      .mockRejectedValueOnce({ status: 500, message: "server error" })
-      .mockResolvedValue("ok");
+    let calls = 0;
+    const fn = vi.fn(async () => {
+      calls++;
+      if (calls === 1) throw { status: 429, message: "rate limited" };
+      if (calls === 2) throw { status: 500, message: "server error" };
+      return "ok";
+    });
 
     const result = await withRetry(fn, { maxRetries: 3, baseDelayMs: 10 });
     expect(result.success).toBe(true);

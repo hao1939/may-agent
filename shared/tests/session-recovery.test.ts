@@ -1,22 +1,72 @@
 import { describe, expect, it, vi } from "vitest";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { create } from "../../may/handlers/session-recovery.js";
 import { execute } from "../workflows/session-recovery.js";
 
-function makeCtx(action?: string | null) {
+function makeCtx(action?: string | null, overrides: Record<string, unknown> = {}) {
   const runWorkflow = vi.fn(async () => ({ status: "done" as const, summary: "ok", runId: "wr_recovery" }));
   return {
     agentName: "may",
     sdk: {
+      paths: { root: "/tmp/session-recovery-test", persist: "/tmp/session-recovery-test/.state" },
+      getDb: vi.fn(),
       runAgent: vi.fn(() => { throw new Error("session-recovery handler should dispatch a workflow, not run agents directly"); }),
       runWorkflow,
       emit: vi.fn(),
       log: vi.fn(),
       escalate: vi.fn(),
+      ...overrides,
     },
     getLastDigest: vi.fn(() => action ? { action } : null),
     classifyError: vi.fn(() => "infra"),
     upsertDigest: vi.fn(async () => null),
   } as any;
+}
+
+function staleHarness() {
+  const root = mkdtempSync(join(tmpdir(), "session-recovery-"));
+  const persist = join(root, ".state");
+  const sessionDir = join(persist, "sessions", "s_stale");
+  mkdirSync(sessionDir, { recursive: true });
+  const startedAt = Date.now() - 60 * 60_000;
+  const row = {
+    sessionId: "s_stale",
+    agent: "master",
+    task: "echo hello",
+    status: "running",
+    startedAt,
+  };
+  writeFileSync(join(sessionDir, "meta.json"), JSON.stringify({
+    agent: "master",
+    task: "echo hello",
+    status: "running",
+    startedAt,
+    kind: "job",
+    autoClose: "immediate",
+  }));
+  writeFileSync(join(sessionDir, "session.jsonl"), JSON.stringify({
+    role: "user",
+    content: [{ type: "text", text: "echo hello" }],
+    timestamp: startedAt,
+  }) + "\n");
+
+  const updates: Array<unknown[]> = [];
+  const prepare = vi.fn((sql: string) => {
+    if (sql.includes("SELECT sessionId")) return { all: vi.fn(() => [row]) };
+    if (sql.includes("UPDATE sessions")) return { run: vi.fn((...args: unknown[]) => { updates.push(args); return { changes: 1 }; }) };
+    throw new Error(`Unexpected SQL: ${sql}`);
+  });
+  const db = { prepare };
+  const emit = vi.fn();
+  const ctx = makeCtx(null, {
+    paths: { root, persist },
+    getDb: vi.fn(() => db),
+    emit,
+  });
+  return { root, ctx, emit, updates };
 }
 
 describe("session-recovery handler", () => {
@@ -76,6 +126,49 @@ describe("session-recovery handler", () => {
       sessionId: "s_failed",
       reason: "classifier chose nothing",
     }));
+  });
+
+  it("auto-closes stale immediate sessions with no assistant activity on timer fallback", async () => {
+    const { root, ctx, emit, updates } = staleHarness();
+    try {
+      const handler = create(ctx, {} as any);
+
+      await handler();
+
+      expect(updates).toHaveLength(1);
+      expect(updates[0]).toEqual(expect.arrayContaining([
+        "Auto-closed stale immediate session with no assistant activity",
+        "s_stale",
+      ]));
+      expect(emit).toHaveBeenCalledWith("session.end", expect.objectContaining({
+        sessionId: "s_stale",
+        autoClosed: true,
+        reason: "stale_immediate_no_assistant_activity",
+      }));
+      expect(emit).toHaveBeenCalledWith("session.failed", expect.objectContaining({
+        sessionId: "s_stale",
+        task: "echo hello",
+        autoClosed: true,
+      }));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not auto-close stale immediate sessions that have assistant activity", async () => {
+    const { root, ctx, emit, updates } = staleHarness();
+    try {
+      const jsonlPath = join(root, ".state", "sessions", "s_stale", "session.jsonl");
+      writeFileSync(jsonlPath, readFileSync(jsonlPath, "utf8") + JSON.stringify({ role: "assistant", content: "hello" }) + "\n");
+      const handler = create(ctx, {} as any);
+
+      await handler();
+
+      expect(updates).toHaveLength(0);
+      expect(emit).not.toHaveBeenCalledWith("session.end", expect.anything());
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

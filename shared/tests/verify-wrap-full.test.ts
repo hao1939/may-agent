@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 
 describe('verify-wrap workflow', () => {
   let mod: any;
 
   beforeEach(async () => {
-    vi.resetModules();
     mod = await import('../workflows/verify-wrap');
   });
 
@@ -14,59 +13,66 @@ describe('verify-wrap workflow', () => {
   });
 
   it('runs agent and returns done on success', async () => {
+    const calls: Record<string, any[]> = { runAgent: [], done: [], summarize: [] };
     const ctx = {
       agent: 'test-agent',
       task: 'do something',
-      runAgent: vi.fn().mockResolvedValue({ status: 'ok', lastAssistantText: 'done' }),
-      escalate: vi.fn(),
-      done: vi.fn((msg: string) => ({ type: 'done', message: msg })),
-      summarize: vi.fn().mockReturnValue('Agent completed successfully'),
+      runAgent: async (...args: any[]) => { calls.runAgent.push(args); return { status: 'ok', lastAssistantText: 'done' }; },
+      escalate: (...args: any[]) => { calls.escalate = args; return { type: 'escalate', message: args[0] }; },
+      done: (msg: string) => { calls.done.push(msg); return { type: 'done', message: msg }; },
+      summarize: () => { calls.summarize.push([]); return 'Agent completed successfully'; },
     };
 
     await mod.execute(ctx);
-    expect(ctx.runAgent).toHaveBeenCalledWith('test-agent', 'do something');
-    expect(ctx.done).toHaveBeenCalled();
+    expect(calls.runAgent[0]).toEqual(['test-agent', 'do something']);
+    expect(calls.done.length).toBeGreaterThan(0);
   });
 
   it('escalates on agent error', async () => {
+    const calls: Record<string, any[]> = { escalate: [] };
     const ctx = {
       agent: 'test-agent',
       task: 'do something',
-      runAgent: vi.fn().mockResolvedValue({ status: 'error', error: 'boom', lastAssistantText: 'failed' }),
-      escalate: vi.fn((msg: string) => ({ type: 'escalate', message: msg })),
-      done: vi.fn(),
-      summarize: vi.fn(),
+      runAgent: async () => ({ status: 'error', error: 'boom', lastAssistantText: 'failed' }),
+      escalate: (msg: string) => { calls.escalate.push(msg); return { type: 'escalate', message: msg }; },
+      done: () => {},
+      summarize: () => '',
     };
 
     await mod.execute(ctx);
-    expect(ctx.escalate).toHaveBeenCalledWith(expect.stringContaining('test-agent'));
+    expect(calls.escalate.length).toBeGreaterThan(0);
+    expect(calls.escalate[0]).toContain('test-agent');
   });
 
   it('handles non-string summarize result', async () => {
+    const calls: Record<string, any[]> = { done: [] };
     const ctx = {
       agent: 'a',
       task: 't',
-      runAgent: vi.fn().mockResolvedValue({ status: 'ok' }),
-      escalate: vi.fn(),
-      done: vi.fn((msg: string) => ({ type: 'done', message: msg })),
-      summarize: vi.fn().mockReturnValue({ text: 'obj' }),
+      runAgent: async () => ({ status: 'ok' }),
+      escalate: () => {},
+      done: (msg: string) => { calls.done.push(msg); return { type: 'done', message: msg }; },
+      summarize: () => ({ text: 'obj' }),
     };
 
     await mod.execute(ctx);
-    expect(ctx.done).toHaveBeenCalledWith(expect.stringContaining('completed task successfully'));
+    expect(calls.done.length).toBeGreaterThan(0);
+    expect(calls.done[0]).toContain('completed task successfully');
   });
 
   it('uses error message when no lastAssistantText', async () => {
+    const calls: Record<string, any[]> = { escalate: [] };
     const ctx = {
       agent: 'myagent',
       task: 't',
-      runAgent: vi.fn().mockResolvedValue({ status: 'error', error: 'timeout' }),
-      escalate: vi.fn((msg: string) => ({ type: 'escalate', message: msg })),
-      done: vi.fn(),
-      summarize: vi.fn(),
+      runAgent: async () => ({ status: 'error', error: 'timeout' }),
+      escalate: (msg: string) => { calls.escalate.push(msg); return { type: 'escalate', message: msg }; },
+      done: () => {},
+      summarize: () => '',
     };
 
     await mod.execute(ctx);
-    expect(ctx.escalate).toHaveBeenCalledWith(expect.stringContaining('myagent'));
+    expect(calls.escalate.length).toBeGreaterThan(0);
+    expect(calls.escalate[0]).toContain('myagent');
   });
 });
