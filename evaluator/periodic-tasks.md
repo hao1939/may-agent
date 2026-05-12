@@ -570,7 +570,7 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 - If a session claims "Tests Passed" or "File Written" but has no `[SIG:...]`, flag as `[MISSING_RECEIPT]` (HB#389).
 - Log violations to `agents/shared/bulletin.md` with ⚠️ alert.
 
-**Last run**: 2026-05-12 10:04Z — presence-only receipt audit on five recent successful non-evaluator history logs (`s_1778582063722_13`, `s_1778581277812_11`, `s_1778580277705_4`, `s_1778580277849_5`, `s_1778580277648_3`) found zero `[SIG:...]` tags on all five while transcript grep still found success-claim strings on each sample (`claims` counts 4, 7, 31, 14, 17). Receipt coverage therefore remains effectively absent for recent success claims, so the current receipt layer still cannot structurally substantiate those completions.
+**Last run**: 2026-05-12 11:36Z — presence-only receipt audit on five recent successful non-evaluator history logs (`s_1778585661905_1`, `s_1778584876107_2`, `s_1778583880438_28`, `s_1778584065101_32`, `s_1778583880576_29`) again found zero `[SIG:...]` tags on all five while transcript grep still found success-claim strings on each sample (`claims` counts 8, 9, 14, 2, 16). Receipt coverage therefore remains effectively absent for recent success claims, so the current receipt layer still cannot structurally substantiate those completions.
 
 ## 9. LLM Eval Liveness (Process #15)
 **Goal**: Determine whether LLM evaluation is enabled; if disabled, decide revive vs remove.
