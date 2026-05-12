@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractMarkdownSection } from "./server.js";
+import { extractMarkdownSection, normalizeProjectPathForCompare, projectPathsMatch } from "./server.js";
 
 describe("extractMarkdownSection", () => {
   it("returns the full Current State section without truncating", () => {
@@ -31,5 +31,13 @@ describe("extractMarkdownSection", () => {
     ].join("\n");
 
     expect(extractMarkdownSection(body, "Current State")).toBe("Reviewer: the worker found a real issue.");
+  });
+});
+
+describe("project path matching", () => {
+  it("matches Web UI paths against daemon project paths", () => {
+    expect(projectPathsMatch("agents/shared/projects/alpha-project", "shared/projects/alpha-project")).toBe(true);
+    expect(projectPathsMatch("agents/shared/projects/alpha-project/project.md", "shared/projects/alpha-project/")).toBe(true);
+    expect(normalizeProjectPathForCompare("./agents/shared/projects/alpha-project/project.md")).toBe("shared/projects/alpha-project");
   });
 });
