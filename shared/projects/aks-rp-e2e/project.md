@@ -5,7 +5,9 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 2
+iteration: 1
+stop_reason: 
+resume_condition: 
 ---
 
 # Project: AKS RP E2E — Learn & Setup
