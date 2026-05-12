@@ -450,9 +450,6 @@ function buildWorkerPrompt(
 
   let prompt = `You are working on iteration ${iteration} of a persistent task.\n\n`;
 
-  // Instructions first (reviewer guidance)
-  if (lastGuidance) prompt += `## Your Instructions\n${lastGuidance}\n\n`;
-
   // Current milestone
   if (nextMilestone) {
     prompt += `## Current Milestone\n${nextMilestone}\n`;
@@ -463,6 +460,12 @@ function buildWorkerPrompt(
   prompt += `## Goal\n${goal}\n\n`;
   if (currentState) prompt += `## Current State\n${currentState}\n\n`;
   if (context) prompt += `## Context (accumulated knowledge)\n${context}\n\n`;
+
+  if (lastGuidance) {
+    prompt += `## Prior Reviewer Guidance\n`;
+    prompt += `Use this as a starting point only if it is still consistent with Current State and Context above. Current State and Context are newer authority when they conflict.\n\n`;
+    prompt += `${lastGuidance}\n\n`;
+  }
 
   // Reference: how
   const resources = extractSection(projectContent, "Resources");

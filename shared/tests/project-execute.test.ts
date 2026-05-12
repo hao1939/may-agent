@@ -350,6 +350,42 @@ describe("execute — worker iteration", () => {
     expect(workerPrompt).toContain("It is not evidence that remote access is unavailable");
   });
 
+  it("makes current state newer authority than stale reviewer guidance", async () => {
+    const projDir = setupProjectDir("active");
+    writeFileSync(
+      join(projDir, "journal.md"),
+      [
+        "# Journal",
+        "",
+        "### Iteration 1 — 2026-05-12T00:00:00.000Z",
+        "**Worker**: prior work",
+        "**Reviewer**: CONTINUE — use cc_worker for every devbox command",
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
+    writeFileSync(
+      join(projDir, "project.md"),
+      readFileSync(join(projDir, "project.md"), "utf-8")
+        .replace("**Iteration**: 0", "**Iteration**: 1")
+        .replace("## Current State\nNot started.", "## Current State\nActive: prefer ssh_exec for exact devbox command output"),
+      "utf-8",
+    );
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 2\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Checked remote" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Done\nResume when: review" });
+
+    await execute(ctx);
+
+    const workerPrompt = ctx.runAgent.mock.calls[0][1];
+    expect(workerPrompt).not.toContain("## Your Instructions");
+    expect(workerPrompt).toContain("## Prior Reviewer Guidance");
+    expect(workerPrompt.indexOf("## Current State")).toBeLessThan(workerPrompt.indexOf("## Prior Reviewer Guidance"));
+    expect(workerPrompt).toContain("Current State and Context are newer authority when they conflict");
+  });
+
   it("review prompt rejects remote blockers based only on local bash guard warnings", async () => {
     const projDir = setupProjectDir("active");
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
