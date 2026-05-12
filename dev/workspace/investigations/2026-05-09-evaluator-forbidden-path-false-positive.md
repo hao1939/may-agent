@@ -29,8 +29,21 @@ Owner: evaluator workflow owner, with dev available to review.
 2. Narrow `forbiddenEditPathsFromTask()` to extract paths only from the same constraint sentence/list item, not arbitrary later task/document text. Also avoid treating slash-bearing owner labels without a file extension or repo-root prefix as forbidden paths unless explicitly introduced by `Forbidden:` / `Do not edit:`.
 3. Keep the existing positive tests for explicit forbidden writes (`STATUS.md`, `NEXT.md`) so true constraint violations still route to `needs_triage`.
 
+## 2026-05-11 recurrence: metric-alerts.md read classified as edit
+
+A new evaluator → dev P2 review-request for `s_1778564062377_783` reports the same false-positive class, now against `agents/shared/may-agent-docs/manual/metric-alerts.md`.
+
+Additional evidence checked this heartbeat:
+
+- `agents/evaluator/workspace/aftermath/s_1778564062377_783.md` says the session used only read/list shell commands (`grep`, `cat | grep`, `ls`) on `metric-alerts.md`; no `write`/`edit` tool call touched that path, and review-time `git diff -- agents/shared/may-agent-docs/manual/metric-alerts.md` was empty.
+- `agents/shared/knowledge/entries/KE-944-evaluator-aftermath-forbidden-path-false-positive-recurs-via-do-not-line-conjunction.md` documents the concrete mechanism: `forbiddenEditPathsFromTask()` promotes `metric-alerts.md` because it appears near a `Do NOT` operator instruction, and `editedForbiddenPaths()` can match prose via an unanchored `\b(M|A|AM|MM)` git-status regex.
+- `agents/arc/workspace/proposals/2026-05-11-evaluator-aftermath-forbidden-path-line-scoping.md` is already in the Proposed queue as P1 with the right bounded fix: line-scoped constraint extraction, anchored git-status parsing, and a regression test.
+
+Disposition for the new dev inbox event: acted by confirming it is a duplicate recurrence of the known KE-944/proposal, not a distinct new failure. No code patch applied from this heartbeat because the implementation target is `agents/evaluator/workflows/evaluator-aftermath.ts` and the proposal remains unapproved in `agents/shared/work-queue.md`.
+
 ## Disposition
 
 - Acted on the P2 FYI for `s_1778318889307_18`: confirmed false-positive mechanism and left a bounded fix/test contract.
-- Dismissed as no immediate dev-owned code change because the implementation file is `agents/evaluator/workflows/evaluator-aftermath.ts`, outside dev's normal writable ownership list for heartbeat patches.
+- Acted on the P2 review-request for `s_1778564062377_783`: confirmed recurrence and linked it to KE-944 / the pending P1 proposal rather than creating a duplicate project.
+- Dismissed as no immediate dev-owned code change because the implementation file is `agents/evaluator/workflows/evaluator-aftermath.ts`, outside dev's normal writable ownership list for heartbeat patches, and the work-queue item is Proposed rather than Approved.
 - Related P2 FYI for `s_1778317686099_15` remains covered by `agents/dev/workspace/investigations/2026-05-09-clean-start-interrupts-and-opcount.md`: productive transcript with `opCount=0` confirms accounting false positives.
