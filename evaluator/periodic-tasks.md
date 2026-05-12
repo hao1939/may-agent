@@ -612,6 +612,8 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 - If a session claims "Tests Passed" or "File Written" but has no `[SIG:...]`, flag as `[MISSING_RECEIPT]` (HB#389).
 - Log violations to `agents/shared/bulletin.md` with ⚠️ alert.
 
+**Last run**: 2026-05-12 12:03Z — presence-only receipt audit on five recent successful history logs (`s_1778614463117_155`, `s_1778614151654_154`, `s_1778613724155_153`, `s_1778613678079_152`, `s_1778613585419_151`) again found zero `[SIG:...]` tags on all five while transcript grep still found success-claim strings on each sample (`claims` counts 6, 11, 8, 1, 2). Receipt coverage therefore remains effectively absent for fresh success claims, so the current receipt layer still cannot structurally substantiate those completions.
+
 **Last run**: 2026-05-12 11:36Z — presence-only receipt audit on five recent successful non-evaluator history logs (`s_1778585661905_1`, `s_1778584876107_2`, `s_1778583880438_28`, `s_1778584065101_32`, `s_1778583880576_29`) again found zero `[SIG:...]` tags on all five while transcript grep still found success-claim strings on each sample (`claims` counts 8, 9, 14, 2, 16). Receipt coverage therefore remains effectively absent for recent success claims, so the current receipt layer still cannot structurally substantiate those completions.
 
 ## 9. LLM Eval Liveness (Process #15)
@@ -620,6 +622,12 @@ Interpretation: eval pipeline appears stalled since 2026-05-06T16:46Z while sess
 - Primary signal: recent rows in `evaluations` with `COALESCE(evaluatedByHeuristic,1)=0`.
 - Secondary signal: job/cron references or any dedicated `*llm*` tables. Absence of `*llm*` tables alone is **not** proof that Process #15 is disabled, because LLM evaluations may be stored in the shared `evaluations` table.
 - If both the primary signal and runtime job evidence are missing: treat as "LLM eval disabled or not implemented" and open a tracked item to either (a) add it back, or (b) remove/rename docs that imply it exists.
+
+**Last run**: 2026-05-12 12:03Z — DB canonical check still shows both owned evaluation processes live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778614499309`; `MAX(CASE WHEN COALESCE(evaluatedByHeuristic,1)=0 THEN createdAt END)=1778611013729`; `MAX(sessions.startedAt)=1778614499329`; `MAX(sessions.endedAt)=1778614499257`; `evals_last24h=332`; `llm_evals_last24h=19`; `sessions_done_24h=635`; `stale_running_over_6h=0`). Process #5 remains live and Process #15 remains active; the latest overall evaluation trails the latest session start by only ~0.02s and is ~0.05s newer than the latest completed session, while the latest LLM-eval row trails the latest completed session by about ~58.1m, still within the healthy band implied by the green `eval.llm-coverage-lag-h` signal.
+
+Inbox triage: dismissed the injected pending-event cluster around May session `s_1778613572963_150` as already handled lifecycle echo rather than dropped work. Canonical `sessions` / `evaluations` rows show the target already `status='done'` / `outcome='done'` with recorded evaluation row `verdict='good'`, `quality=0.85`, `efficiency=0.8`, `evaluation_created_at=1778614151644`, and the matching aftermath artifact already exists at `agents/evaluator/workspace/aftermath/s_1778613572963_150.md`.
+
+Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.jsonl`, and `workspace/re-evaluations.jsonl` still contain only placeholder stubs generated 2026-04-29, so there were again no fresh disagreement inputs to process this cycle.
 
 **Last run**: 2026-05-12 13:09Z — DB canonical check still shows both owned evaluation processes live in the shared `evaluations` table (`MAX(evaluations.createdAt)=1778591096285`; `MAX(CASE WHEN COALESCE(evaluatedByHeuristic,1)=0 THEN createdAt END)=1778584510729`; `MAX(sessions.startedAt)=1778591096301`; `MAX(sessions.endedAt)=1778591096229`; `evals_last24h=427`; `llm_evals_last24h=18`; `sessions_done_24h=803`; `stale_running_over_6h=0`). Process #5 remains live and Process #15 remains active; the latest overall evaluation trails the latest completed session by only ~0.06s, while the latest LLM-eval row trails the latest completed session by ~1.83h, still within the healthy band implied by the green `eval.llm-coverage-lag-h` signal.
 
