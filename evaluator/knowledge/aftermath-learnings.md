@@ -61,3 +61,6 @@
 
 ## 2026-05-11 — s_1778523668727_426
 - A scout arXiv sweep can fully satisfy the source-side research constraints (HTTPS `export.arxiv.org` query, `sortOrder=descending`, abstract inspection, readable KEs) and still require aftermath repair if it updates the rolling `scout/workspace/digest/today.md` with a whole-file `write()`. For scout digest sessions, compare the parent-vs-commit diff for net deletions; if the only defect is destructive replacement, a low-risk repair is to restore the parent digest body and append the new session entries.
+
+## 2026-05-12 — s_1778562089031_767
+- For remote-devbox investigation sessions, treat initial `PATH_HALLUCINATION` failures on `bash ssh ... /home/...` as efficiency loss only when the agent quickly pivots to the remote-execution tool, gets verbatim evidence from the remote host, and lands a focused blocker/status artifact. Judge the committed artifact and live findings, not the first local-shell misfire.
