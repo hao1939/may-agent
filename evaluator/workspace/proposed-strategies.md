@@ -1,3 +1,43 @@
+# Proposed Strategies — 2026-05-12 12:36Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778589263895_12/session.jsonl` (may)
+- `.state/sessions/history/s_1778588477706_11/session.jsonl` (scout)
+- `.state/sessions/history/s_1778587481691_3/session.jsonl` (arc)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 1
+- Sessions with no extracted lessons: 2
+
+## Lessons
+
+### 1. Shell syntax mistakes are currently the main way recent successful sessions emit extractor-visible lessons
+**Evidence:** The sampled scout session `s_1778588477706_11` produced `/bin/bash: -c: line 5: syntax error near unexpected token ')'`, and the extractor emitted a recovery lesson from that failure.
+
+**Strategy:**
+- Prefer smaller, structurally verifiable shell commands when composing multi-line bash snippets.
+- Treat shell parse failures as avoidable efficiency waste even inside otherwise successful sessions.
+- Preserve this as another calibration signal: recent clean successful sessions still emit lessons only when there is a lightweight recovery event for the extractor to latch onto.
+
+## Calibration Notes
+- Two fresh successful sessions (`s_1778589263895_12`, `s_1778587481691_3`) still yielded zero lessons despite containing multiple success-claim strings, while the only extracted lesson was again a recovery pattern rather than a positive tactic.
+- This continues the established trend that `extract-strategy.cjs` remains recovery-biased and still under-reports reusable success patterns from compact clean successful work.
+- The newest sample does show that the extractor still catches lightweight avoidable bash waste, but it remains weak at harvesting positive strategy from verified efficient completions.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics so short successful sessions can emit at least one reusable tactic when they contain verified, efficient work.
+2. Keep sampling recent successful sessions until the extractor yields at least one non-recovery lesson on clean work.
+3. Preserve shell-syntax hygiene guidance in evaluator calibration, since malformed bash snippets are still surfacing as low-cost recovery waste.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778589263895_12/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778588477706_11/session.jsonl` returned one recovery lesson triggered by `/bin/bash: -c: line 5: syntax error near unexpected token ')'`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778587481691_3/session.jsonl` returned `"lessons": []`.
+
+---
+
 # Proposed Strategies — 2026-05-12 11:06Z
 
 ## Scope
