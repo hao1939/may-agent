@@ -67,3 +67,6 @@
 
 ## 2026-05-12 — s_1778578479477_4
 - In classifier/guard-repair aftermath reviews, do not downgrade a session to low-value just because it finishes `partial` after committing. If the transcript shows bug reproduction, the commit lands a scoped fix plus regression test, and the remaining blocker is unrelated ambient worktree dirt that the agent correctly refuses to commit, keep strong quality credit and mark only the closeout friction as efficiency loss.
+
+## 2026-05-12 — s_1778587481691_3
+- For arc coherence-audit heartbeats, give strong quality credit when the agent verifies a design-vs-runtime mismatch against live registry/data, updates the stale design doc in-lane, and queues the remaining implementation choice as a proposal. A quick recovery from missing-`rg` friction or a first blocked `finish(success)` due to missing read-back should reduce efficiency only, not erase the value of the landed KE/design correction.
