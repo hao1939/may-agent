@@ -471,6 +471,8 @@ ${redMetricDiagnostics}
 
 Heartbeat is your implicit self-maintenance project. Use the same work model as explicit projects: goal/context + signals -> judgment -> action/evidence.
 
+When heartbeat guidance asks you to review files (digests, logs, knowledge, or transcripts), use read() with offsets/limits or targeted shell commands (tail, sed ranges, grep). Do not dump large files with unbounded cat; oversized tool output can terminate the session before you produce value.
+
 ${metricsBlock}
 ${redMetricContext}
 ## Signals: Active Alerts
