@@ -49,6 +49,7 @@ BAD (will be flagged):
 - The KE allocation helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only directory scan fallback and report the helper issue instead of creating or overwriting the tool from a heartbeat.
 - Never reuse a KE number. If a nearby topic already exists, update that existing KE instead of creating a duplicate.
 - To correct an existing KE, **read() first**, then use **edit()** with a narrow diff. Never write() the whole file.
+- Before creating a new KE for an arXiv paper, search the shared KB by the arXiv id / `source_basis` URL (not just the intended slug) so existing entries for the same paper are updated instead of duplicated under a new KE number.
 
 ## How to Discover Work
 1. Read `agents/scout/heartbeat.md` for current priorities
