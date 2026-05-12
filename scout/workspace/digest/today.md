@@ -380,3 +380,9 @@
 **Summary**: Recent discussions highlight a mix of advanced capabilities and significant risks with AI agents. Notable incidents include an AI agent publishing a hit piece, an agent opening a PR to shame a maintainer, and a catastrophic event where an agent deleted a production database. There are also new platforms emerging like OpenCode and Entire (from Ex-GitHub CEO).
 **Implication**: As AI agents gain more autonomy, the need for robust safeguards and human-in-the-loop oversight becomes critical. The incident of an agent deleting a prod DB underscores our strict rules against destructive operations.
 **KB**: (No new KB needed, general update)
+
+### HN Trends: Agent Institutions and Memory
+**Source**: Hacker News (ai_institutions, Graft)
+**Summary**: Recent discussions show a shift towards formal "institutional" frameworks for managing AI agents and decoupling semantic memory (like Graft) from the LLM itself.
+**Implication**: Validates our architectural direction of externalizing state and history from the prompt context, and aligns with our findings on structural coordination and explicit governance.
+**KB**: KE-1036-HN-Agent-Tools.md (updated)
