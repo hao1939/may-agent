@@ -1,3 +1,43 @@
+# Proposed Strategies — 2026-05-12 07:39Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778571278999_26/session.jsonl` (dev)
+- `.state/sessions/history/s_1778571279323_27/session.jsonl` (scout)
+- `.state/sessions/history/s_1778570473846_22/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 1
+- Sessions with no extracted lessons: 2
+
+## Lessons
+
+### 1. File-existence guessing still shows up as lightweight recovery waste in otherwise successful work
+**Evidence:** The sampled scout session `s_1778570473846_22` produced `ENOENT: no such file or directory, access '/app/research/arxiv-ai-agents-2026-05-12.md'` and the extractor emitted a recovery lesson.
+
+**Strategy:**
+- Verify candidate files structurally with `ls`, `find`, or targeted search before issuing a direct `read` against a guessed path.
+- Treat missing-file reads as efficiency waste even inside successful research sessions when the path was discoverable first.
+- Preserve this as a calibration signal: compact successful sessions still mostly produce zero lessons unless there is a small recovery event to latch onto.
+
+## Calibration Notes
+- Two fresh successful sessions (`s_1778571278999_26`, `s_1778571279323_27`) still yielded zero lessons, while the only extracted lesson was again a recovery pattern rather than a positive tactic.
+- This extends the current calibration trend: `extract-strategy.cjs` remains substantially recovery-biased and still under-reports reusable success patterns from compact clean sessions.
+- The extractor did at least preserve the real `source_session` id on the emitted lesson, so the earlier source-session identity fix continues to hold.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics so short successful sessions can emit at least one reusable tactic when they contain verified, efficient work.
+2. Keep sampling recent successful sessions until the extractor yields at least one non-recovery lesson on clean work.
+3. Preserve the file-existence check guidance in evaluator calibration, since guessed paths continue to surface as low-cost efficiency mistakes.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778571278999_26/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778571279323_27/session.jsonl` returned `"lessons": []`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778570473846_22/session.jsonl` returned one recovery lesson triggered by `ENOENT: no such file or directory, access '/app/research/arxiv-ai-agents-2026-05-12.md'`.
+
+---
+
 # Proposed Strategies — 2026-05-12 08:29Z
 
 ## Scope
