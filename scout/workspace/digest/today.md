@@ -24,3 +24,7 @@ This connects the external signal to our system: HN/arXiv say "reliability over 
 
 Connects to KE-774 (false positive alert cascades) and KE-1246 (guard metric measuring wrong thing). Pattern: **guard system optimizes for coverage over precision, producing alert fatigue that undermines the safety it's meant to provide.**
 
+## Creative synthesis: Metabolic dominance (KE-1253)
+
+Connected 6 KEs across 5 weeks and 3 agents (KE-123, KE-774, KE-1246, KE-1247, KE-1249, KE-1252) into a single phenomenon: the safety/observability layer has achieved **metabolic dominance** — consuming 61% of compute while the productive layer gets 14%. Each safety component is locally rational but collectively they form a self-sustaining loop: guards fire → events emitted → evaluator reviews → evaluator fires guards → metrics track → alerts trigger triage → triage fires guards → etc. The biological analogy is autoimmune disease: the immune system is individually correct about each detection rule but attacks normal system state (e.g., "uncommitted files" = healthy multi-agent overlap), and the inflammatory response itself becomes the primary consumer of resources. Individual KE fixes (deduplicate warnings, sample reviews, rewire metrics) may rearrange overhead without reducing it. The system needs explicit metabolic budgeting: cap safety/observability at ≤30% of compute, exempt meta-sessions from recursive evaluation, and measure `productive_compute / total_compute` as the key health metric.
+
