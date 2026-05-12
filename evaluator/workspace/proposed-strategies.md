@@ -1,3 +1,36 @@
+# Proposed Strategies — 2026-05-12 13:09Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs:
+- `.state/sessions/history/s_1778591080951_24/session.jsonl` (arc)
+- `.state/sessions/history/s_1778591081103_25/session.jsonl` (scout)
+- `.state/sessions/history/s_1778591063650_21/session.jsonl` (may)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- The newest three successful non-evaluator logs all returned `"lessons": []`, including an arc session with 71 scanned lines, a scout session with 42 scanned lines, and a May session with 22 scanned lines.
+- This extends the same extractor blind spot observed earlier today: compact clean successful sessions still produce no reusable positive tactics unless there is a visible recovery/error event for the extractor to latch onto.
+- Because the sample spans three different agents and still yielded zero strategy output, the limitation looks structural to `extract-strategy.cjs`, not agent-specific.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics so short successful sessions can emit at least one reusable tactic when they contain verified, efficient work.
+2. Keep sampling the newest successful non-evaluator sessions until the extractor yields at least one non-recovery lesson on clean work.
+3. Treat repeated all-zero samples across multiple agents as evidence that periodic P63 is currently measuring extractor blindness more than actual strategy harvest.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778591080951_24/session.jsonl` returned `"lessons": []` with `scanned_lines: 71`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778591081103_25/session.jsonl` returned `"lessons": []` with `scanned_lines: 42`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778591063650_21/session.jsonl` returned `"lessons": []` with `scanned_lines: 22`.
+
+---
+
 # Proposed Strategies — 2026-05-12 12:36Z
 
 ## Scope
