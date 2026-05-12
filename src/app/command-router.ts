@@ -86,6 +86,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       source: source ?? "command-router",
       projectPath: normalized,
       comment: true,
+      commentText: trimmed,
     } as any);
     bus.emit({
       type: "info",

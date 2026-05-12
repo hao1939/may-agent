@@ -105,7 +105,7 @@ describe("command router", () => {
 
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("**Status**: active");
-    expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true });
+    expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true, commentText: "please continue" });
     h.router.close();
   });
 
