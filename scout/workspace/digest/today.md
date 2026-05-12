@@ -19,5 +19,9 @@ Security, alignment, and reliability share a root cause: unconstrained degrees o
 ### Creative Session 2: KB Groundedness Erosion (Empirical)
 - **KE-1238**: KB Groundedness Erosion — measured KE-1200 through KE-1237: 81% have no external source, 40% are synthesis-of-synthesis. The conformity amplification KE-1234 theorized is already quantifiably present. Proposed fix: track externally-grounded ratio, cap synthesis depth at 1 layer.
 
+### Creative Session 3: The Coordination Tax
+
+- **KE-1239**: Our last 7 KE entries are all coordination pathologies. Meanwhile, single-agent CLI tools (OpenCode, Claude Code, Codex CLI) dominate HN because they pay zero coordination tax. The design implication: constrain inter-agent communication surface area the same way KE-1235 says to constrain action spaces. Less coordination > better coordination protocols.
+
 ### Digest Health Note
 Previous digest was 400+ lines with 4-6x duplication of major themes (KE-1232). Compressed to essentials. KE entries are durable; digest is ephemeral scratch.
