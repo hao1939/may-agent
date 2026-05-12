@@ -137,19 +137,35 @@ function forbiddenEditPathsFromTask(text: string): string[] {
   const paths = new Set<string>();
   const lines = text.split(/\n/);
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i] ?? "";
-    const lower = line.toLowerCase();
-    if (!/(forbidden|cannot|must not|do not|don't|no edits?|not edit|never edit)/.test(lower)) continue;
+    const constraintText = forbiddenConstraintText(lines[i] ?? "");
+    if (!constraintText) continue;
 
-    for (const match of line.matchAll(/(?:\/app\/|\.state\/|src\/|agents\/)?[\w.-]+(?:\/[\w.-]+)+/g)) {
+    for (const match of constraintText.matchAll(/(?:\/app\/|\.state\/|src\/|agents\/)?[\w.-]+(?:\/[\w.-]+)+/g)) {
       const raw = match[0].replace(/[).,;:'\"]+$/, "");
       if (looksLikeConcreteForbiddenPath(raw)) paths.add(raw);
     }
-    for (const match of line.matchAll(/\b[A-Z][A-Z0-9_-]*\.md\b/g)) {
+    for (const match of constraintText.matchAll(/\b[A-Z][A-Z0-9_-]*\.md\b/g)) {
       paths.add(match[0]);
     }
   }
   return [...paths];
+}
+
+function forbiddenConstraintText(line: string): string | null {
+  const normalized = line.trim().replace(/^[-*•>\s]+/, "").replace(/^\d+[.)]\s+/, "").replace(/\*\*/g, "");
+
+  const forbidden = normalized.match(/\bforbidden\s*:\s*(.+)$/i);
+  if (forbidden) return forbidden[1] ?? "";
+
+  const editProhibition = normalized.match(
+    /\b(?:do\s+not|don't|never|must\s+not|cannot|can't)\s+(?:edit|modify|write|change|touch)\b\s*:?[\s—–-]*(.+)$/i,
+  );
+  if (editProhibition) return editProhibition[1] ?? "";
+
+  const noEdits = normalized.match(/\bno\s+edits?\s+(?:to|under|in)\b\s*:?[\s—–-]*(.+)$/i);
+  if (noEdits) return noEdits[1] ?? "";
+
+  return null;
 }
 
 function looksLikeConcreteForbiddenPath(candidate: string): boolean {

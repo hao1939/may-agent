@@ -564,6 +564,35 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("does not treat required project outputs as forbidden when only project and journal edits are prohibited", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: [
+          "(a) Concrete output: outputs/first-e2e-run-results.md with real test execution output from devbox.",
+          "Put all output files in: /app/agents/shared/projects/aks-rp-e2e/outputs/",
+          "You CANNOT edit the project file or journal.",
+        ].join("\n"),
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: {
+              path: "/app/agents/shared/projects/aks-rp-e2e/outputs/first-e2e-run-results.md",
+              content: "real run output",
+            },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
   it("ignores slash tokens from review-only task prose when extracting forbidden paths", () => {
     const transcript = [
       JSON.stringify({
