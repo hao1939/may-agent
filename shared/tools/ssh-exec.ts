@@ -15,6 +15,18 @@ function truncateMiddle(text: string, max: number): string {
   return `${text.slice(0, head)}\n\n... <truncated ${text.length - head - tail} chars> ...\n\n${text.slice(-tail)}`;
 }
 
+function stopChildProcessGroup(child: ReturnType<typeof spawn>, signal: NodeJS.Signals): void {
+  if (child.pid) {
+    try {
+      process.kill(-child.pid, signal);
+      return;
+    } catch {
+      // Fall back to killing the direct child below.
+    }
+  }
+  child.kill(signal);
+}
+
 export function createSshExecTool() {
   return {
     name: "ssh_exec",
@@ -69,8 +81,8 @@ export function createSshExecTool() {
         ];
         const spawnOpts: Parameters<typeof spawn>[2] = {
           env: { ...process.env, HOME: sshHome },
-          timeout: Math.max(1, timeoutSec) * 1000,
           stdio: ["ignore", "pipe", "pipe"],
+          detached: true,
         };
         if (process.getuid?.() === 0) spawnOpts.uid = 1000;
 
@@ -79,10 +91,14 @@ export function createSshExecTool() {
         const stdout: string[] = [];
         const stderr: string[] = [];
         let timedOut = false;
+        let forceKillTimer: NodeJS.Timeout | null = null;
 
         const timer = setTimeout(() => {
           timedOut = true;
-          child.kill("SIGTERM");
+          stopChildProcessGroup(child, "SIGTERM");
+          forceKillTimer = setTimeout(() => {
+            stopChildProcessGroup(child, "SIGKILL");
+          }, 5000);
         }, Math.max(1, timeoutSec) * 1000);
 
         child.stdout?.on("data", (data: Buffer) => stdout.push(data.toString()));
@@ -90,6 +106,7 @@ export function createSshExecTool() {
 
         child.on("close", (code, signal) => {
           clearTimeout(timer);
+          if (forceKillTimer) clearTimeout(forceKillTimer);
           const out = stdout.join("");
           const err = stderr.join("");
           const statusLine = timedOut
@@ -116,6 +133,7 @@ export function createSshExecTool() {
 
         child.on("error", (err) => {
           clearTimeout(timer);
+          if (forceKillTimer) clearTimeout(forceKillTimer);
           resolve(textResult(`[error] ${err.message}`, { host, command, timedOut }));
         });
       });
