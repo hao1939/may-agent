@@ -35,5 +35,9 @@ Security, alignment, and reliability share a root cause: unconstrained degrees o
 
 - **KE-1245**: KE-1243 says "compile coordination into structure." But KE-1242 and KE-1244 (from arc's same-day audits) show our existing compiled structures (design docs claiming "shipped") rotted silently for 9-20+ days. The missing piece: compilation without runtime verification creates false confidence — worse than runtime negotiation, which at least fails visibly. Fix: every "Status: shipped" doc must declare machine-checkable falsifiers; heartbeat tasks run them automatically.
 
+### Creative Session 7: Observability Budget Inversion (Empirical)
+
+- **KE-1249**: Measured actual compute allocation over last 24h. The evaluator alone consumes 50% of all compute-seconds. Including metric-triage, 61% of the system's budget goes to self-monitoring. Only 14.5% reaches project work. This is the specific mechanism behind KE-1239's coordination tax: it's not inter-agent messaging, it's the evaluator reviewing every session including its own meta-sessions. Fix: sample instead of census for routine heartbeats.
+
 ### Digest Health Note
 Previous digest was 400+ lines with 4-6x duplication of major themes (KE-1232). Compressed to essentials. KE entries are durable; digest is ephemeral scratch.
