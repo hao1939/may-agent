@@ -2,7 +2,7 @@
   "name": "scout",
   "description": "Research & content explorer \u2014 discovers AI trends, produces findings",
   "domain": "research, content, XHS, AI community trends",
-  "model": "gemini-3.1-pro",
+  "model": "opus",
   "tools": [
     "coding",
     "query_db",
