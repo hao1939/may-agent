@@ -9,10 +9,11 @@
 
 | # | Scenario | Result | Duration | Failure Root Cause |
 |---|----------|--------|----------|-------------------|
-| 1 | `Scenario_PAFThrottling` | ❌ FAIL | ~5min | Underlay credentials not available (MSI identity not assigned) |
+| 1 | `Scenario_PAFThrottling` | ❌ BLOCKED | ~2min | AKSCapacityHeavyUsage — eastus2 underlay at capacity |
 | 2 | `Scenario_Traffic_AppRouting_Nginx_Disablement` | ✅ **PASS** | ~10min | — |
-| 3 | `Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld` | ❌ FAIL | ~30min | Default domain TLS secret not provisioned; underlay creds unavailable |
-| 4 | `Scenario_RBAC_Disabled` | ❌ SKIP | <1min | Multiple scenario registration (framework bug) |
+| 3 | `Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld` | ✅ **PASS (core)** | ~30min | Core steps pass after MSI fix; upgrade step timed out |
+| 4 | `Scenario_ManagedSystemPool_Enable` | ❌ BLOCKED | ~2min | AKSCapacityHeavyUsage — eastus2 underlay at capacity |
+| 5 | `Scenario_RBAC_Disabled` | ❌ SKIP | <1min | Multiple scenario registration (framework bug) |
 | 5 | `Scenario_If_Match` | ❌ SKIP | <1min | Multiple scenario registration (framework bug) |
 | 6 | `Scenario_ComponentVersion` | ❌ SKIP | <1min | Multiple scenario registration (framework bug) |
 
