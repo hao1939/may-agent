@@ -20,6 +20,10 @@
 - Symptom: a session first hits `finish()` guards for uncommitted changes or missing post-write verification, then immediately commits the intended file, performs a real read-back, and finishes successfully.
 - Fix: separate hygiene churn from outcome quality. Penalize efficiency modestly, but if transcript evidence plus committed diff confirm a genuine artifact tied to the task, keep credit on the substantive deliverable rather than downgrading the whole session to a false-good.
 
+## Pattern: remote-host log paths are evidence, not local deliverables
+- Symptom: a session correctly completes work on a remote machine, then its first `finish()` fails because it lists remote paths like `devbox:/tmp/...` as deliverables, which do not exist on the local filesystem.
+- Fix: treat the failed closeout as efficiency friction, not automatic outcome failure, if the session then writes a local report artifact that captures the remote log path, reads that report back, and finishes successfully. For builders, prefer a local summary/report file as the deliverable and cite the remote path inside it.
+
 ## Pattern: guard pressure can trigger wrong-scope commits in stewardship sessions
 - Symptom: a coordination/triage session correctly determines it should make no repo edits, hits a `finish()` block on an ambient dirty file, explicitly notes the file is unrelated, then commits it anyway because the guard suggests a commit command.
 - Fix: score the operational diagnosis separately from the hygiene recovery. If the file was not created/edited/owned by the current task, the correct outcome is `partial`/`blocked` with the exact path and owner, not an opportunistic commit just to satisfy closeout.
