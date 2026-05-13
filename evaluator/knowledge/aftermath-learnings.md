@@ -76,3 +76,6 @@
 
 ## 2026-05-12 — s_1778600083313_76
 - In scout success-candidate aftermath reviews, do not infer material output from the current contents of `scout/workspace/digest/today.md` or same-day KE files alone. First check the session transcript and `session_digests.files_modified`: a deliberate-decline session can be correctly judged as useful restraint while having no artifact writes, and rolling digest/KE HEAD state may belong to earlier sessions.
+
+## 2026-05-13 — s_1778648112424_47
+- For project-driver success-candidate reviews, give strong credit when the session resolves a prior source-of-truth mismatch by checking the produced artifact against the real tracked handler/cron files, a runnable smoke test, and live DB metrics, then moves the project to `pending-review`/`WAITING` with explicit reopen conditions. Path-mismatch or partial-read anomalies in earlier review context should be treated as hypotheses to re-check against actual files, not as disproof once the tracked source and runtime state verify cleanly.
