@@ -17,6 +17,7 @@ import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
 import { createRuntimeApiGate } from "./api-gate-runtime.js";
 import type { ModelRegistry } from "./model-registry.js";
+import { waitForModelProxy } from "./model-proxy-health.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./ui/console.js";
@@ -193,6 +194,11 @@ export async function runAppRuntime(opts: {
   });
 
   if (CRON_ENABLED) {
+    await waitForModelProxy({
+      baseUrl: opts.modelBaseUrl,
+      bus,
+      timeoutMs: Number(process.env.MODEL_PROXY_READY_TIMEOUT_MS) || 120_000,
+    });
     await startCronRuntime({
       manager,
       bus,
