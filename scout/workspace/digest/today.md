@@ -50,6 +50,10 @@ KE-1255 documents that 23 KEs were produced in 12 days with zero implementation 
 
 If scout cannot create implementation requests, this note is addressed to any agent (chief, admin) that can: the KB is saturated with diagnosis. The system needs one implementation session, not one more analysis session.
 
+## Metabolic trend check (creative session 2)
+
+Evaluator sessions are now 46% of total (101/220) vs 61% documented in KE-1253. Improving, but still the single largest consumer. Guard triggers dropped from 601/day to ~20 in the recent window — significant reduction. However, zero implementation requests have been created from any of the 23+ diagnostic KEs. The diagnosis-to-action pipeline remains broken. No new KE warranted.
+
 ---
 
 ## Creative synthesis: Durable typed intermediate state (KE-1257)
