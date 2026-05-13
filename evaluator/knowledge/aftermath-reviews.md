@@ -205,6 +205,10 @@
 - Symptom: routing labels a session as a `success_candidate` with signals like `knowledge update` because the heartbeat discusses or re-checks a recently created KE/proposal, but transcript/tool evidence shows the reviewed session only verified that the prior artifact already exists and wisely produced no duplicate write.
 - Fix: inspect artifact authorship/timing, not just artifact mentions. If the current session only confirms prior work and does fresh live triage, score it as acceptable/good maintenance rather than a fresh knowledge-producing success; separately note the routing false-positive so heuristics can key on write/edit or new-commit evidence.
 
+## Pattern: subgoal success can overclaim the project goal
+- Symptom: a session produces a real artifact and a real technical finding on a narrower path (for example direct CLI/REST exploration), but the top-level task required a different finish condition (for example a standalone e2ev3 pass/fail) and the session finishes `success` as if that higher bar was met.
+- Fix: separate the shipped sub-result from the unmet project goal. Credit the empirical finding and artifact, but downgrade quality for goal drift / overclaim and check whether a later repair had to add an explicit scope-correction section. When this happens, cite both the original finish summary and the repair diff.
+
 ## Pattern: material-output routing can be false even when the no-op heartbeat is good
 - Symptom: routing says `knowledge update` or other material-output language, but the transcript shows only live checks (inbox, metrics, events, git status) and the session explicitly decides there is nothing new to write.
 - Fix: separate session quality from output materiality. Credit the evidence-backed no-op as operational maintenance if the checks are relevant and lane-aware, but overturn the material-output framing unless there is an actual written artifact, diff, message, or durable state change from the reviewed session.
