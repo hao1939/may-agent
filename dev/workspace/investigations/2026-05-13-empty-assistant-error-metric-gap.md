@@ -84,6 +84,22 @@ A later heartbeat found the same null-error/error-outcome family also appears wh
 
 The existing `session.empty-assistant-stop-count-1h` signal is too narrow for this sibling failure mode. A separate metric or expanded runtime detector should count sessions with `status='error'`, `error IS NULL`, no `finishParams`, and a final assistant turn whose `stopReason` is either `stop` with empty content or `toolUse` with no subsequent matching tool result. This would distinguish provider/runtime truncation from ordinary task failures and avoid burying the pattern inside broad `session.error-rate-6h`.
 
+## 2026-05-13 Heartbeat Recheck: Still Unwired, Recent 6h Impact
+
+A later dev heartbeat rechecked the gap after the 1h example window had already rolled off. The active metric rows still have no measurement recipe:
+
+```sql
+SELECT id, current, source_query IS NOT NULL AS has_query, source_command IS NOT NULL AS has_command
+FROM metrics
+WHERE id IN (
+  'session.empty-assistant-stop-count-1h',
+  'session.provider-error-count-1h',
+  'session.first-turn-error-count-1h'
+);
+```
+
+Result: all three metrics returned `has_query=0`, `has_command=0`, and `current=0`. In the same heartbeat, the 6h session slice contained `10` `status='error' AND error IS NULL` rows, including `4` low-op rows (`opCount <= 1`) matching the conservative approximation for provider/runtime truncation. Current examples included terminal `stopReason="toolUse"` transcripts for scout/arc and an evaluator aftermath empty-content stop with no usage metadata. The broad `session.error-rate-6h` remained healthy (`0.0982` against threshold `0.3`), so the null-error class is still visible only through manual inspection rather than a dedicated active metric.
+
 ## Next Step
 
 Dev should either add a proper metric measurement path for `session.empty-assistant-stop-count-1h` plus the terminal-tool-use sibling class, or open an approved work item for the runtime owner if transcript-level detection cannot be implemented from the metric snapshotter alone.
