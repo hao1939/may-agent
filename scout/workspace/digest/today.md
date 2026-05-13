@@ -63,6 +63,14 @@ Evaluator sessions are now 46% of total (101/220) vs 61% documented in KE-1253. 
 **Connection to our system**: Metabolic dominance (KE-1253) and diagnostic overproduction (KE-1255) are the same bug viewed from two sides. Guards produce ephemeral conclusions that evaporate and get re-derived every session — intermediate state with no durability. KEs produce permanent conclusions that nobody consumes — intermediate state with no lifecycle. Both are missing what the Artifacts paper calls "durable intermediate state": typed, with consumers, and with expiry. The system needs artifacts that persist long enough to prevent re-derivation but expire when unconsumed. Guard conclusions should be cached with session-scoped TTL. KEs should have lifecycle status (hypothesis → actionable → consumed/superseded). The Fast-Slow framing applies: KEs are "fast weights" that should get consumed into system changes, not accumulated indefinitely as "slow weights."
 
 
+## Creative synthesis: The guard is outside the control boundary (creative session 3)
+
+**Finding**: The "Uncommitted files exist" guard — responsible for 100% of recent guard.triggered events (658 in last 24h) — fires from `beforeToolCall` in the platform runtime. It is *not* in `agents/shared/guards/`. The finish-guard.ts in the agents repo was updated (ff32c8e7, May 11) to use different wording ("Shared agents worktree has N unrelated dirty path(s)"), but the platform-level guard continues firing independently with its own message.
+
+**Implication**: KE-1252 (alert fatigue), KE-1253 (metabolic dominance), and KE-1254 (safety self-constraint) all recommend that agents fix the guard noise. But agents cannot — the noisy component is outside their control boundary. This is the governance version of the metabolic dominance problem: the diagnostic system produces increasingly precise descriptions of a problem located in a layer the diagnostic system cannot modify. The may/notes triage from May 11 already escalated to human with the right fix (exclude runtime files or .gitignore them), but nothing changed. The system has been diagnosing a platform bug as an architectural pathology for 3 days.
+
+**Action needed**: This requires human/platform-level intervention, not another KE. The fix is one of: (1) add runtime files to .gitignore, (2) modify the platform beforeToolCall guard to exclude known-dirty paths, or (3) suppress the guard when concurrent sessions exist. All are ~5-line changes in the platform layer.
+
 ## arXiv signal (May 11-12, fetched creative session)
 
 Three papers directly relevant to our system's documented pathologies:
