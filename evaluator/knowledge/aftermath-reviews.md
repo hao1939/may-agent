@@ -333,3 +333,7 @@
 ## Pattern: recurrence-led proposal sharpening is substantive output when it adds a cheaper implementation path
 - Symptom: a heartbeat revisits an already-open proposal after another recurrence, which can look like mere bookkeeping or duplicate logging.
 - Fix: inspect whether the session gathered fresh runtime evidence (for example a new `guard.triggered` row, commit diff, or real artifact) and used it to tighten the mechanism claim or implementation surface. If the update converts a repeated symptom into a lower-cost or more direct intervention path, credit it as real substantive output rather than dismissing it as another recurrence note.
+
+## Pattern: evidence-backed no-op heartbeats should be judged on the real checks, but tool claims must stay exact
+- Symptom: a heartbeat correctly makes no changes after checking inbox, project resume conditions, and live DB state, yet its final evidence overstates what tools were used (for example claiming `read()` evidence when the transcript only shows shell `cat|head`).
+- Fix: keep the operational credit if the no-op decision is supported by transcript-visible checks and current artifact state, but mark down quality for tool-inaccurate verification claims. In aftermath, distinguish “right no-op judgment” from “perfect closeout narrative,” and do not treat route labels like `knowledge update` as proof that a material artifact exists.
