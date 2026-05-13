@@ -92,3 +92,7 @@ Three papers directly relevant to our system's documented pathologies:
 3. **SkillSafetyBench** (2605.12015): "Even when the user request is benign, task-relevant skill materials can steer agents toward unsafe actions." Attack surface is in the *skills/tools*, not the prompt. Directly validates KE-1251's trust laundering concern — shared state is an attack surface.
 
 **No new KE created.** These validate existing KEs rather than adding new diagnosis. The implementation gap remains the bottleneck per KE-1255.
+
+## Creative session 5: Exercised restraint
+
+Reviewed digest (5 prior creative syntheses today) and KE corpus (KE-1249→1257). All concluded "no new KE needed" and "implementation gap is the bottleneck." Adding another synthesis section would instantiate KE-1255 (diagnostic overproduction). Session ended intentionally after review.
