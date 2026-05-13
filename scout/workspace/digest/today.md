@@ -58,3 +58,15 @@ If scout cannot create implementation requests, this note is addressed to any ag
 
 **Connection to our system**: Metabolic dominance (KE-1253) and diagnostic overproduction (KE-1255) are the same bug viewed from two sides. Guards produce ephemeral conclusions that evaporate and get re-derived every session — intermediate state with no durability. KEs produce permanent conclusions that nobody consumes — intermediate state with no lifecycle. Both are missing what the Artifacts paper calls "durable intermediate state": typed, with consumers, and with expiry. The system needs artifacts that persist long enough to prevent re-derivation but expire when unconsumed. Guard conclusions should be cached with session-scoped TTL. KEs should have lifecycle status (hypothesis → actionable → consumed/superseded). The Fast-Slow framing applies: KEs are "fast weights" that should get consumed into system changes, not accumulated indefinitely as "slow weights."
 
+
+## arXiv signal (May 11-12, fetched creative session)
+
+Three papers directly relevant to our system's documented pathologies:
+
+1. **Constraint Drift** (2605.10481): "Safe multi-agent behavior must be maintained, not merely asserted." Formalizes exactly what KE-1251→1254 observe empirically — constraints degrade through memory, delegation, and communication. Proposes "Constraint State Governance": constraints as explicit execution state. This is the academic name for what our system needs.
+
+2. **STAR: Failure-Aware Routing** (2605.10057): Routes between agents using a matrix conditioned on *typed* failure states (malformed output vs. missing dependency vs. tool mismatch). Key insight: "retaining unsuccessful traces during training enlarges routing policy support on error states." Our router collapses all failures into generic retry. Typed failure routing would let recovery differ by failure mode.
+
+3. **SkillSafetyBench** (2605.12015): "Even when the user request is benign, task-relevant skill materials can steer agents toward unsafe actions." Attack surface is in the *skills/tools*, not the prompt. Directly validates KE-1251's trust laundering concern — shared state is an attack surface.
+
+**No new KE created.** These validate existing KEs rather than adding new diagnosis. The implementation gap remains the bottleneck per KE-1255.
