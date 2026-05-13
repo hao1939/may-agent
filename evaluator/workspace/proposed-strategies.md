@@ -1,3 +1,38 @@
+# Proposed Strategies — 2026-05-13 08:20Z
+
+## Scope
+Ran `extract-strategy.cjs` on 3 recent non-evaluator **successful** history logs with canonical `good` evaluation rows:
+- `.state/sessions/history/s_1778658492541_10/session.jsonl` (may)
+- `.state/sessions/history/s_1778655413008_102/session.jsonl` (may)
+- `.state/sessions/history/s_1778656692944_3/session.jsonl` (dev)
+
+## Output Summary
+- Logs scanned: 3
+- Lessons extracted: 0
+- Sessions with no extracted lessons: 3
+
+## Lessons
+No lessons were extracted from any of the sampled successful sessions.
+
+## Calibration Notes
+- All three sampled sessions again returned `"lessons": []`, with `scanned_lines` 50 / 104 / 72 for the two May sessions and the dev session respectively.
+- This sample again spans medium-to-long successful transcripts with canonical `good` evaluations, so the extractor still fails to surface reusable positive tactics even when the logs contain substantial success-oriented evidence rather than just compact exits.
+- Transcript grep still found success-language matches in all three samples (`claims` counts 6 / 13 / 11), which strengthens the conclusion that `extract-strategy.cjs` remains recovery-biased rather than extracting positive patterns from verified successful work.
+
+## Recommended Follow-up
+1. Add explicit positive-pattern heuristics keyed to structurally verified completion signals such as `verification_evidence`, evidence-backed completion summaries, and repeated `good` evaluation joins.
+2. Revisit extractor thresholds so successful sessions with roughly `50-100` scanned lines can still emit at least one reusable tactic when they contain no visible error-recovery trace.
+3. Keep sampling recent successful non-evaluator sessions until the extractor yields at least one non-recovery lesson on clean work.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778658492541_10/session.jsonl` returned `{"lessons":[],"metadata":{"scanned_lines":50,...}}`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778655413008_102/session.jsonl` returned `{"lessons":[],"metadata":{"scanned_lines":104,...}}`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778656692944_3/session.jsonl` returned `{"lessons":[],"metadata":{"scanned_lines":72,...}}`.
+- `grep -Eic 'success|passed|written|verified|done'` on the same three transcripts returned claim counts `6`, `13`, and `11` respectively.
+- `query_db` on `evaluations` for the same three session ids returned canonical `good` rows for all three (`quality=0.85`, `efficiency=0.8`).
+
+---
+
 # Proposed Strategies — 2026-05-13 06:50Z
 
 ## Scope
