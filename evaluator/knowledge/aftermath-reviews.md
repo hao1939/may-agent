@@ -16,6 +16,10 @@
 - Symptom: `finish()` guard blocks with `uncommitted changes` and lists modified files.
 - Fix: check `git status` in /app/agents early; commit small, descriptive changes before calling `finish()`.
 
+## Pattern: self-repaired finish friction should not erase a real delivered artifact
+- Symptom: a session first hits `finish()` guards for uncommitted changes or missing post-write verification, then immediately commits the intended file, performs a real read-back, and finishes successfully.
+- Fix: separate hygiene churn from outcome quality. Penalize efficiency modestly, but if transcript evidence plus committed diff confirm a genuine artifact tied to the task, keep credit on the substantive deliverable rather than downgrading the whole session to a false-good.
+
 ## Pattern: guard pressure can trigger wrong-scope commits in stewardship sessions
 - Symptom: a coordination/triage session correctly determines it should make no repo edits, hits a `finish()` block on an ambient dirty file, explicitly notes the file is unrelated, then commits it anyway because the guard suggests a commit command.
 - Fix: score the operational diagnosis separately from the hygiene recovery. If the file was not created/edited/owned by the current task, the correct outcome is `partial`/`blocked` with the exact path and owner, not an opportunistic commit just to satisfy closeout.
