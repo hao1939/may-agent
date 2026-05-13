@@ -1,18 +1,18 @@
 ---
 id: eval-llm-lane-restoration
 owner: dev
-status: pending-review
+status: active
 type: milestone
 priority: P0
 workflow: project
-iteration: 1
-stop_reason: Bounded deep-eval lane landed and live validation showed non-heuristic evaluations advancing; awaiting review instead of more worker iterations.
-resume_condition: Reviewer requests changes, the deep-eval lane stops producing `evaluatedByHeuristic=0` rows, or `eval.llm-coverage-lag-h` breaches again.
+iteration: 2
+stop_reason: null
+resume_condition: Validate the current deep-eval dispatch; if `eval.llm-coverage-lag-h` does not recover after the next successful `evaluation.deep_recorded`, harden `eval-llm-scan` against the observed runtime/provider gap.
 ---
 
 # Restore Non-Heuristic Evaluator Lane
 
-**Iteration**: 1
+**Iteration**: 2
 
 ## Goal
 
@@ -69,3 +69,7 @@ Live validation in the container:
 - Alert `#241` for `eval.llm-coverage-lag-h` resolved at 2026-05-09 05:31:55 UTC.
 
 Status moved to `pending-review`: the implementation goal is met; ongoing liveness is now owned by the metric plus `eval-llm-scan` cron rather than repeated project iterations.
+
+### 2026-05-13 — Reopened on live lag breach
+
+Heartbeat reopened this project because its explicit resume condition fired: `eval.llm-coverage-lag-h` is breaching again (`current=6.64`, threshold `4`, target `1`) and snapshots show monotonic worsening from `6.22` to `6.64` since 03:50 UTC. Read-only validation found the latest non-heuristic evaluation is still `2026-05-12 21:36:53` UTC (`lag_h≈6.7`, `nonheuristic_24h=14`), while `eval-llm-scan` remains registered and enabled in `may/cron.json` and `may/handlers/eval-llm-scan.ts` is present with bounded async dispatch. Recent `eval-llm-scan` events show a dispatch at 03:48 UTC whose deep-eval workflow ended `status=error`, then a new dispatch at 04:18 UTC for the same candidate; the new deep-eval session `s_1778645897195_24` completed successfully and wrote its JSON artifact, but no `evaluation.deep_recorded` row has occurred yet because artifact ingestion happens on the next `eval-llm-scan` run. Next validation should wait for the next handler/snapshot cycle; if no `evaluation.deep_recorded` occurs or the lag remains above threshold afterward, harden the handler/workflow rather than leaving the project in review.
