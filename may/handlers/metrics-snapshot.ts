@@ -62,6 +62,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
+  { id: "session.provider-error-count-1h", name: "Provider errors at any turn (1h)", owner: "may", type: "health", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "session.empty-assistant-stop-count-1h", name: "Empty assistant stops (1h)", owner: "may", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
@@ -227,6 +229,13 @@ function sessionJsonlPath(persistDir: string, sessionId: string): string | null 
   return existsSync(archived) ? archived : null;
 }
 
+function assistantHasProviderError(msg: any): boolean {
+  const stopReason = String(msg?.stopReason ?? "").toLowerCase();
+  const errorMessage = String(msg?.errorMessage ?? "").toLowerCase();
+  return stopReason === "error"
+    || /connection error|rate limit|unauthorized|forbidden|unsupported model|unknown model|overloaded|timeout|api/.test(errorMessage);
+}
+
 function hasFirstAssistantProviderError(persistDir: string, sessionId: string): boolean {
   const path = sessionJsonlPath(persistDir, sessionId);
   if (!path) return false;
@@ -242,10 +251,29 @@ function hasFirstAssistantProviderError(persistDir: string, sessionId: string): 
         continue;
       }
       if (msg?.role !== "assistant") continue;
-      const stopReason = String(msg.stopReason ?? "").toLowerCase();
-      const errorMessage = String(msg.errorMessage ?? "").toLowerCase();
-      return stopReason === "error"
-        || /connection error|rate limit|unauthorized|forbidden|unsupported model|unknown model|overloaded|timeout|api/.test(errorMessage);
+      return assistantHasProviderError(msg);
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function hasAnyAssistantProviderError(persistDir: string, sessionId: string): boolean {
+  const path = sessionJsonlPath(persistDir, sessionId);
+  if (!path) return false;
+  try {
+    const prefix = readFilePrefix(path);
+    for (const line of prefix.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      let msg: any;
+      try {
+        msg = JSON.parse(trimmed);
+      } catch {
+        continue;
+      }
+      if (msg?.role === "assistant" && assistantHasProviderError(msg)) return true;
     }
   } catch {
     return false;
@@ -480,8 +508,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       ).all(oneH) as Array<{ sessionId: string }>;
       const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
       const firstTurnErrors = candidates.filter((s) => hasFirstAssistantProviderError(persistDir, s.sessionId)).length;
+      const providerErrors = candidates.filter((s) => hasAnyAssistantProviderError(persistDir, s.sessionId)).length;
       record("session.first-turn-error-count-1h", firstTurnErrors, candidates.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.first-turn-error-count-1h: ${e}`); }
+      record("session.provider-error-count-1h", providerErrors, candidates.length);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring provider-error session metrics: ${e}`); }
 
     try {
       const candidates = db.prepare(
