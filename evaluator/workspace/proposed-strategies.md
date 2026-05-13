@@ -1,3 +1,69 @@
+# Proposed Strategies — 2026-05-13 21:05Z
+
+## Scope
+Re-ran `extract-strategy.cjs --mode strategy` on the same 3 freshest verified-`good` non-evaluator history logs used in the iteration-1 validation:
+- `.state/sessions/history/s_1778701694460_271/session.jsonl` (scout)
+- `.state/sessions/history/s_1778701694150_268/session.jsonl` (may)
+- `.state/sessions/history/s_1778701694563_272/session.jsonl` (dev)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted lessons: 1
+- Positive strategy triggers preserved: 4 distinct triggers across the positive pair
+
+## Lessons
+
+### 1. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** Both positive fresh samples (`s_1778701694150_268` and `s_1778701694563_272`) now emit `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to anchor later tool choices and final completion claims.
+- Treat explicit planning language as a reusable positive pattern, not just narration.
+
+### 2. Use DB schema/error hints to drive the next successful query
+**Evidence:** Both positive fresh samples now emit `Uses DB schema/error hints to recover into a successful follow-up query` after initial `query_db` mistakes.
+
+**Strategy:**
+- When `query_db` returns schema guidance or an available-table hint, pivot to the hinted names immediately.
+- Score schema-guided recovery as a positive tactic when it leads to a successful follow-up query, even if the session began with a guessed column/table.
+- Prefer this over describing the whole session as only error cleanup.
+
+### 3. Turn evidence gathering into one concrete action before finishing
+**Evidence:** Both positive fresh samples now emit `Turns evidence gathering into one concrete action before finishing`; the May sample converts the scan into a `message`, and the Dev sample converts it into a file update.
+
+**Strategy:**
+- After enough evidence is gathered, require one concrete outward action (for example `message`, `edit`, or `write`) before success reporting.
+- Treat the evidence-to-action transition as a reusable completion tactic for heartbeats and implementation sessions.
+
+### 4. Verify edits with a read-before / edit / read-after loop
+**Evidence:** The Dev sample additionally emits `Brackets edit on agents/dev/workspace/investigations/2026-05-13-empty-assistant-error-metric-gap.md with read-before and read-after verification`.
+
+**Strategy:**
+- Read the target file before editing to anchor the patch.
+- Read it again after editing to confirm the exact change before reporting completion.
+- Preserve this as a high-confidence positive tactic because it is structurally verifiable from transcript tool calls.
+
+## Calibration Notes
+- The extractor is no longer in the stale all-zero state on this fresh verified-success batch: it now produces positive `strategy` lessons on 2 of the 3 newest good samples.
+- The remaining zero-output case is still the compact scout sample `s_1778701694460_271`, so compact-success coverage remains incomplete.
+- Optimization lessons can still appear beside the stronger positive tactics on live runs, so consumers should treat the key change here as **positive extraction now works**, not **ranking/noise is fully solved**.
+
+## Regression Snapshot
+- Added fixed fixture: `agents/shared/projects/evaluator-strategy-extractor-calibration/outputs/fixtures/strategy-positive-modern-session/session.jsonl`
+- Added harness: `agents/evaluator/skills/extract-strategy.test.cjs`
+- `node agents/evaluator/skills/extract-strategy.test.cjs` now passes (`Passed: 8`, `Failed: 0`)
+- Fixture run preserves 3 positive strategy triggers on the modern `assistant.content[].toolCall` transcript shape
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778701694150_268/session.jsonl --mode strategy` returned 3 `type: "strategy"` lessons.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778701694563_272/session.jsonl --mode strategy` returned 4 `type: "strategy"` lessons.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778701694460_271/session.jsonl --mode strategy` still returned `{"lessons":[]}`.
+- `node agents/evaluator/skills/extract-strategy.test.cjs` passed with 8 assertions and 0 failures.
+
+---
+
 # Proposed Strategies — 2026-05-13 20:20Z
 
 ## Scope
