@@ -58,7 +58,7 @@ LINKED_CONTEXT_UPDATE:
 - Scope: project-local to `aks-rp-e2e`; do not promote to shared infra until this model proves useful through real iterations.
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS input space.
 - Current deterministic summary: 5 observation filters, 8 AKS input variables, 10 AKS state/behavior expectation variables, 7 feature mappings, 7 test-case evidence mappings.
-- Current feature status: 2 pass (`app-routing-nginx-disablement`, `managedsystem-pool-rest-add-existing`), 4 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths), 1 unknown (`managedsystem-pool-standalone-e2ev3`).
+- Current feature status: 3 pass (`app-routing-nginx-disablement`, `managedsystem-pool-rest-add-existing`, `managedsystem-pool-standalone-e2ev3`), 4 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths), 0 unknown.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
