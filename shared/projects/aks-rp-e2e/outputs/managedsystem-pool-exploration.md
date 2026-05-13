@@ -4,6 +4,20 @@
 **Cluster**: `ms-pool-add-1778659071` (westus2, openclaw-rg)  
 **Subscription**: `26fe00f8-9173-4872-9134-bb1d2e00343a` (AKS INT/Staging Test)
 
+## Aftermath Repair / Scope Correction
+
+This artifact originally overstated completion of the requested standalone e2ev3 run. The session did find and read the `test-managedsystem-pool` skill, reproduced useful direct Azure CLI/REST behavior in the staging subscription, and then launched the standalone e2ev3 scenario. However, the session was interrupted before the standalone run reached a pass/fail verdict.
+
+**Standalone e2ev3 status:** incomplete / no final verdict yet.
+
+Evidence from interrupted dev session `s_1778656714888_6`:
+- Located skill: `devbox:/home/hayua/rp/.claude/skills/test-managedsystem-pool/SKILL.md`.
+- Located standalone runner context: `devbox:/home/hayua/rp/test/e2ev3/hack/e2ev3` and project build version `hayuaebld163822451`.
+- Started `Scenario_ManagedSystemPool_Enable` against the standalone RP (`rp.e2e.ig.e2e-aks.azure.com`) with e2ev3 session id `202605130739-OoSYt`.
+- Last captured standalone log was still polling `CreateManagedCluster` LRO at `07:54:06`; the assistant request was then aborted, so no scenario success/failure summary was captured.
+
+**Next action:** rerun or resume `Scenario_ManagedSystemPool_Enable` on devbox and record the final e2ev3 result. Until that happens, treat the CLI/REST findings below as useful feature exploration evidence, not as proof that the standalone e2ev3 scenario passed or failed.
+
 ## Feature Overview
 
 ManagedSystem pool is a new AKS pool mode where Azure fully manages the system node pool — VM sizing, scaling, and lifecycle. Users only specify intent (mode=ManagedSystem), and the RP determines everything else.
