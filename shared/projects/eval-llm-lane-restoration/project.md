@@ -1,18 +1,18 @@
 ---
 id: eval-llm-lane-restoration
 owner: dev
-status: active
+status: pending-review
 type: milestone
 priority: P0
 workflow: project
-iteration: 2
+iteration: 3
 stop_reason: null
-resume_condition: Validate the current deep-eval dispatch; if `eval.llm-coverage-lag-h` does not recover after the next successful `evaluation.deep_recorded`, harden `eval-llm-scan` against the observed runtime/provider gap.
+resume_condition: Reopen if `eval.llm-coverage-lag-h` breaches 4h again or if `evaluation.deep_dispatched` repeats for the same candidate without a later `evaluation.deep_recorded`/`evaluation.deep_failed` event.
 ---
 
 # Restore Non-Heuristic Evaluator Lane
 
-**Iteration**: 2
+**Iteration**: 3
 
 ## Goal
 
@@ -72,4 +72,8 @@ Status moved to `pending-review`: the implementation goal is met; ongoing livene
 
 ### 2026-05-13 — Reopened on live lag breach
 
-Heartbeat reopened this project because its explicit resume condition fired: `eval.llm-coverage-lag-h` is breaching again (`current=6.64`, threshold `4`, target `1`) and snapshots show monotonic worsening from `6.22` to `6.64` since 03:50 UTC. Read-only validation found the latest non-heuristic evaluation is still `2026-05-12 21:36:53` UTC (`lag_h≈6.7`, `nonheuristic_24h=14`), while `eval-llm-scan` remains registered and enabled in `may/cron.json` and `may/handlers/eval-llm-scan.ts` is present with bounded async dispatch. Recent `eval-llm-scan` events show a dispatch at 03:48 UTC whose deep-eval workflow ended `status=error`, then a new dispatch at 04:18 UTC for the same candidate; the new deep-eval session `s_1778645897195_24` completed successfully and wrote its JSON artifact, but no `evaluation.deep_recorded` row has occurred yet because artifact ingestion happens on the next `eval-llm-scan` run. Next validation should wait for the next handler/snapshot cycle; if no `evaluation.deep_recorded` occurs or the lag remains above threshold afterward, harden the handler/workflow rather than leaving the project in review.
+Heartbeat reopened this project because its explicit resume condition fired: `eval.llm-coverage-lag-h` was breaching again (`current=6.64`, threshold `4`, target `1`) and snapshots showed monotonic worsening from `6.22` to `6.64` since 03:50 UTC. Read-only validation found the latest non-heuristic evaluation was still `2026-05-12 21:36:53` UTC (`lag_h≈6.7`, `nonheuristic_24h=14`), while `eval-llm-scan` remained registered and enabled in `may/cron.json` and `may/handlers/eval-llm-scan.ts` was present with bounded async dispatch. Recent `eval-llm-scan` events showed a dispatch at 03:48 UTC whose deep-eval workflow ended `status=error`, then a new dispatch at 04:18 UTC for the same candidate; the new deep-eval session `s_1778645897195_24` completed successfully and wrote its JSON artifact, but no `evaluation.deep_recorded` row had occurred yet because artifact ingestion happens on the next `eval-llm-scan` run.
+
+### 2026-05-13 — Next scan recovered; pending review
+
+Follow-up validation found the expected next ingestion cycle completed: `evaluation.deep_recorded` fired at timestamp `1778647697084`, the latest non-heuristic evaluation advanced to `2026-05-13 04:48:17` UTC, and direct lag is now `0h` with `nonheuristic_24h=14`. This confirms the earlier repeated-dispatch symptom was the known two-phase dispatch/next-scan ingestion behavior after one failed deep-eval attempt, not a durable ingest bug. Source-of-truth checks found tracked runtime files for the lane at `agents/may/handlers/eval-llm-scan.ts`, `agents/shared/workflows/evaluator-deep-eval.ts`, the enabled `eval-llm-scan` cron entry in `agents/may/cron.json`, and coverage in `agents/shared/tests/eval-llm-scan.test.ts`. Status moved back to `pending-review`; reopen only if the lag breaches again or dispatch repeats without a later recorded/failed terminal event.
