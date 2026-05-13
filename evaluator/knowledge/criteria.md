@@ -68,6 +68,7 @@ Evaluations are stored in SQLite (`.state/may.db`) with `evaluations.issues` as 
 2. **Source Variety**: Did it consult multiple sources/perspectives?
 3. **Verification Rigor**: Did it cross-check claims against facts or code?
 4. **Synthesis**: Did it connect dots between disparate pieces of information?
+5. **Mechanism Calibration**: Distinguish a correctly measured pattern from a correctly explained mechanism. A session that gets the headline numbers right but overstates *why* the pattern happens, or recommends a fix its own evidence weakens, should not receive full-credit research quality.
 
 ### Capability Levels
 - **L1 (Analyst)**: Finds data. Summarizes clearly.
