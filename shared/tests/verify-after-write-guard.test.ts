@@ -277,4 +277,69 @@ describe("verify-after-write guard", () => {
     const demands = guard.handle(event);
     expect(demands).toHaveLength(1);
   });
+
+  it("allows finish when absolute-path writes and edits are read back in later completed steps", () => {
+    const event = makeEvent({
+      completedSteps: [
+        {
+          result: {
+            messages: [toolCallMsg([
+              { id: "write-findings", name: "write", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/underlay-debug-findings.md" },
+            ])],
+          },
+        },
+        {
+          result: {
+            messages: [toolCallMsg([
+              { id: "edit-summary", name: "edit", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" },
+            ])],
+          },
+        },
+        {
+          result: {
+            messages: [toolCallMsg([
+              { id: "read-findings", name: "read", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/underlay-debug-findings.md" },
+              { id: "read-summary", name: "read", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" },
+            ])],
+          },
+        },
+      ],
+      result: {
+        messages: [],
+        finishResult: { status: "success" },
+      },
+    });
+
+    expect(guard.handle(event)).toEqual([]);
+  });
+
+  it("ignores failed edit calls with missing path so they do not create unknown-path obligations", () => {
+    const event = makeEvent({
+      completedSteps: [
+        {
+          result: {
+            messages: [
+              {
+                role: "assistant",
+                content: [{ type: "toolCall", id: "bad-edit", name: "edit", arguments: {} }],
+              },
+              toolErrorMsg("bad-edit"),
+              toolCallMsg([{ id: "good-edit", name: "edit", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" }]),
+            ],
+          },
+        },
+        {
+          result: {
+            messages: [toolCallMsg([{ id: "read-summary", name: "read", path: "agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" }])],
+          },
+        },
+      ],
+      result: {
+        messages: [],
+        finishResult: { status: "success" },
+      },
+    });
+
+    expect(guard.handle(event)).toEqual([]);
+  });
 });
