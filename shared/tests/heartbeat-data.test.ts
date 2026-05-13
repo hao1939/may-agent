@@ -564,10 +564,16 @@ describe("genericHeartbeat", () => {
     writeFileSync(join(TEST_DIR, "bob", "heartbeat.md"), "# Bob", "utf-8");
 
     const ctx = makeCtx({ agentsRoot: TEST_DIR });
-    ctx.runAgent.mockResolvedValueOnce({ status: "error", lastAssistantText: "" });
+    ctx.escalate = vi.fn((reason: string, context?: unknown) => ({ type: "escalate", reason, context }));
+    ctx.runAgent.mockResolvedValueOnce({ sessionId: "s_error", status: "error", error: "Connection error.", lastAssistantText: "" });
 
-    await genericHeartbeat(ctx, "bob");
-    expect(ctx.done).toHaveBeenCalled();
+    const result = await genericHeartbeat(ctx, "bob");
+    expect(ctx.done).not.toHaveBeenCalled();
+    expect(ctx.escalate).toHaveBeenCalledWith(expect.stringContaining("Heartbeat agent session failed"), {
+      sessionId: "s_error",
+      error: "Connection error.",
+    });
+    expect(result.type).toBe("escalate");
   });
 });
 

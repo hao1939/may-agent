@@ -546,5 +546,12 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
     result.status === "error" ? "heartbeat session error" : undefined);
   dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
+  if (result.status === "error") {
+    return ctx.escalate(`Heartbeat agent session failed for ${agent}`, {
+      sessionId: result.sessionId,
+      error: result.error ?? result.lastAssistantText ?? "unknown error",
+    });
+  }
+
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }
