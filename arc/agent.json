@@ -2,7 +2,7 @@
   "name": "arc",
   "description": "System architect & knowledge synthesizer \u2014 discovers patterns, ensures coherence",
   "domain": "system architecture, knowledge synthesis, strategy",
-  "model": "opus-4.7",
+  "model": "opus",
   "tools": [
     "coding",
     "query_db",
