@@ -16,7 +16,14 @@
 | 5 | `Scenario_If_Match` | ❌ SKIP | <1min | Multiple scenario registration (framework bug) |
 | 6 | `Scenario_ComponentVersion` | ❌ SKIP | <1min | Multiple scenario registration (framework bug) |
 
-**Pass rate**: 1/3 executed scenarios (33%). 3 scenarios couldn't even start due to duplicate registration.
+**Pass rate**: 2/3 executed scenarios (67%) after MSI fix. 3 scenarios couldn't even start due to duplicate registration.
+
+### Update (2026-05-13): MSI Fix & DefaultDomain Retry
+- **Root cause**: `akse2ehcp-e2e` MSI was not assigned to devbox VM → all HCP-dependent steps failed
+- **Fix**: Assigned MSI via `az rest --method patch` on the VM
+- **Result**: `Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld` core steps ALL PASS (session `202605131008-FGeEI`)
+- **Remaining**: Upgrade step timed out (context deadline exceeded), teardown canceled
+- See `outputs/underlay-debug-findings.md` for full details
 
 ## Detailed Findings
 
