@@ -1,123 +1,87 @@
 # ManagedSystem Pool Feature Exploration
 
 **Date**: 2026-05-13  
-**Cluster**: `ms-pool-add-1778655487` in `openclaw-rg` (westus2)  
-**Subscription**: `26fe00f8-9173-4872-9134-bb1d2e00343a` (AKS INT/Staging Test)  
-**CLI Extension**: aks-preview 20.0.0b6 (upgraded from 13.0.0b8)
+**Cluster**: `ms-pool-add-1778659071` (westus2, openclaw-rg)  
+**Subscription**: `26fe00f8-9173-4872-9134-bb1d2e00343a` (AKS INT/Staging Test)
 
 ## Feature Overview
 
-ManagedSystem pool is a new AKS pool mode where Azure fully controls VM sizing, scaling, and lifecycle. Users only specify `name` and `mode`; the RP determines everything else.
+ManagedSystem pool is a new AKS pool mode where Azure fully manages the system node pool — VM sizing, scaling, and lifecycle. Users only specify intent (mode=ManagedSystem), and the RP determines everything else.
 
-- **Mode**: `ManagedSystem` (distinct from `System` or `User`)
-- **Type**: `VirtualMachines` (Azure-managed)
-- **VM Size**: `null` (Azure determines)
-- **Node Count**: `null` (Azure determines)
-- **Taints**: `CriticalAddonsOnly=true:NoSchedule`, `CriticalAddonsOnly=true:NoExecute`
-- **Limit**: Maximum 1 ManagedSystem pool per cluster
-- **Toggle**: `enable-managedsystem-pool.yaml` — enabled for e2e, staging (westus2/eastus2euap), and specific subscriptions
-- **Owner**: Hao Yuan, sig: clusterlifecycle
-
-## Skill Location
-
-The skill is at `.claude/skills/test-managedsystem-pool/` containing `SKILL.md` and `test-scripts.md` with 5 test scenarios using Azure CLI.
+| Property | Value |
+|----------|-------|
+| Mode | `ManagedSystem` |
+| Type | `VirtualMachines` (not VMSS) |
+| VM Size | `null` (Azure determines — chose `Standard_DS4_v2`) |
+| Node Count | `null` (Azure determines — provisioned 2 nodes) |
+| Taints | `CriticalAddonsOnly=true:NoSchedule`, `CriticalAddonsOnly=true:NoExecute` |
+| Limit | Max 1 ManagedSystem pool per cluster |
+| Toggle owner | Hao Yuan, sig: clusterlifecycle |
 
 ## Test Results
 
-### Scenario 1: Create Cluster with `--enable-managed-system-pool` — ❌ FAILED (CLI Bug)
+### ✅ Scenario 2: Add ManagedSystem Pool to Existing Cluster (via REST API)
 
+**Steps executed:**
+1. Created normal cluster: `az aks create --resource-group openclaw-rg --name ms-pool-add-1778659071 --node-count 1 --enable-managed-identity --generate-ssh-keys --location westus2` → Succeeded
+2. Added ManagedSystem pool via REST API:
+   ```
+   PUT .../agentPools/mspool01?api-version=2025-04-02-preview
+   Body: {"properties":{"mode":"ManagedSystem"}}
+   ```
+   → Succeeded after ~10 minutes
+
+**Verification results:**
+- Pool `mspool01`: mode=`ManagedSystem`, type=`VirtualMachines`, vmSize=`null`, count=`null`, provisioningState=`Succeeded`
+- Azure auto-selected: 2× `Standard_DS4_v2` (visible in `virtualMachineNodesStatus`)
+- 2 nodes running: `aks-mspool01-28893367-vms1`, `aks-mspool01-28893367-vms2`
+- Taints correctly applied on both nodes: `CriticalAddonsOnly=true:NoSchedule` and `CriticalAddonsOnly=true:NoExecute`
+- Original nodepool1 was cordoned (`SchedulingDisabled`) — system workloads migrate to ManagedSystem pool
+
+### ❌ Scenario 1: Create Cluster with --enable-managed-system-pool (CLI Bug)
+
+**Command:** `az aks create --resource-group openclaw-rg --name ms-pool-test-... --enable-managed-system-pool --enable-managed-identity --generate-ssh-keys --location westus2`
+
+**Error:**
 ```
-az aks create --resource-group openclaw-rg --name ms-pool-test-1778655468 \
-  --enable-managed-system-pool --enable-managed-identity --generate-ssh-keys --location westus2
-```
-
-**Error**:
-```
-(InvalidParameter) ManagedSystem pool 'nodepool1' can only specify 'name' and 'mode' fields.
-Found non-default values for: OSTypeCasePreserved, availabilityProfile, count, networkProfile,
-osType, scaleSetPriority, workloadRuntime
-```
-
-**Finding**: The CLI sends default values for agent pool properties that the RP rejects for ManagedSystem mode. This is a **CLI/RP contract mismatch** — the CLI doesn't strip defaults when `mode=ManagedSystem`.
-
-### Scenario 2: Add ManagedSystem Pool via CLI — ❌ FAILED (Same CLI Bug)
-
-```
-az aks nodepool add --resource-group openclaw-rg --cluster-name ms-pool-add-1778655487 \
-  --name mspool01 --mode ManagedSystem
-```
-
-Same error — CLI sends `OSTypeCasePreserved, availabilityProfile, count, networkProfile, osType, scaleDownMode, scaleSetPriority, workloadRuntime` as non-default.
-
-### Scenario 2 (REST API workaround): Add ManagedSystem Pool via REST — ✅ PASSED
-
-```
-az rest --method PUT \
-  --url ".../agentPools/mspool01?api-version=2025-04-02-preview" \
-  --body '{"properties":{"mode":"ManagedSystem"}}' \
-  --resource https://management.azure.com
+ManagedSystem pool 'nodepool1' can only specify 'name' and 'mode' fields.
+Found non-default values for: OSTypeCasePreserved, availabilityProfile, count,
+networkProfile, osType, scaleSetPriority, workloadRuntime
 ```
 
-**Result**: Pool created successfully. Provisioning went through `Creating` → `Updating` → `Succeeded` (~7 minutes).
+### ❌ Scenario 2 via CLI: Add Pool with `az aks nodepool add --mode ManagedSystem`
 
-**Verified properties**:
-```json
-{
-  "count": null,
-  "mode": "ManagedSystem",
-  "provisioningState": "Succeeded",
-  "taints": ["CriticalAddonsOnly=true:NoSchedule", "CriticalAddonsOnly=true:NoExecute"],
-  "type": "Microsoft.ContainerService/managedClusters/agentPools",
-  "vmSize": null
-}
-```
+**Same error** — CLI sends default values that the RP rejects. Only the REST API (sending just `{"properties":{"mode":"ManagedSystem"}}`) works.
 
-All expected properties match: null vmSize, null count, correct taints, VirtualMachines type.
+## Key Finding: CLI Bug
 
-### Scenario 3: Single ManagedSystem Pool Constraint — ✅ PASSED
+**The `aks-preview` extension (v20.0.0b6) does not properly strip default agent pool fields when mode=ManagedSystem.** The RP validates that ManagedSystem pools must only specify `name` and `mode`, but the CLI populates defaults for `osType`, `count`, `availabilityProfile`, etc.
 
-Attempted to add a second ManagedSystem pool `mspool02` via REST API:
+**Workaround:** Use `az rest` with the ARM API directly, sending only `{"properties":{"mode":"ManagedSystem"}}`.
 
-**Error** (expected):
-```
-(InvalidParameter) Multiple ManagedSystem pools are not allowed in the cluster.
-Please ensure only one ManagedSystem pool is defined.
-```
+**Impact:** Users cannot create ManagedSystem pools through the standard CLI flow. This is a blocking CLI bug.
 
-Constraint correctly enforced.
+## Toggle Configuration
 
-### Scenario 4: Reconcile ManagedSystem Pool — ✅ PASSED
+The feature is enabled for:
+- `deploy-env: e2e` (always)
+- `deploy-env: staging` in `westus2` and `eastus2euap`
+- Specific subscriptions including the test subscription `26fe00f8-...`
 
-Re-PUT the same pool via REST API — accepted with `provisioningState: Updating`, then returned to `Succeeded` with properties intact.
+Default: `false` (not generally available)
 
-### Scenario 5: Delete ManagedSystem Pool — ✅ PASSED
+## Related Code Paths
 
-```
-az aks nodepool delete --resource-group openclaw-rg \
-  --cluster-name ms-pool-add-1778655487 --name mspool01 --no-wait
-```
-
-After ~2 minutes, pool was deleted. Cluster continued running with only the original System pool.
-
-## Summary
-
-| Scenario | Method | Result |
-|----------|--------|--------|
-| 1. Create cluster with `--enable-managed-system-pool` | CLI | ❌ CLI bug — sends defaults RP rejects |
-| 2. Add ManagedSystem pool | CLI | ❌ Same CLI bug |
-| 2. Add ManagedSystem pool | REST API | ✅ Passed |
-| 3. Single pool constraint | REST API | ✅ Passed (correctly rejected) |
-| 4. Reconcile pool | REST API | ✅ Passed |
-| 5. Delete pool | CLI | ✅ Passed |
-
-## Key Finding: CLI/RP Contract Mismatch
-
-The `aks-preview` extension (v20.0.0b6) does not properly strip default agent pool properties when `mode=ManagedSystem`. The RP strictly validates that ManagedSystem pools only have `name` and `mode` set.
-
-**Workaround**: Use the REST API directly with minimal body `{"properties":{"mode":"ManagedSystem"}}`.
-
-**Root Cause**: The CLI's `_aks_agentpool_decorator` populates default values (osType, count, etc.) before sending the request. For ManagedSystem mode, these should be stripped.
+| Path | Purpose |
+|------|---------|
+| `test/e2ev3/mutate/clean_managedsystem_pool.go` | e2ev3 mutator for cleaning ManagedSystem pools |
+| `test/e2ev3/validate/agent_pool/managedsystem_pool.go` | e2ev3 validation logic |
+| `test/e2ev3/sigs/rp/nativerp/plans/managedsystem*.go` | e2ev3 test plans (lifecycle, reconcile) |
+| `test/e2ev3/sigs/rp/virtualmachine/suites/managedsystem.go` | VM-based test suite |
+| `resourceprovider/server/.../poolmode/managedsystem_validator_test.go` | RP-side validation |
+| `nodeprovisioner/server/pkg/handlers/handler_agentpool_managedsystempool_test.go` | Node provisioner handling |
 
 ## Cleanup
 
-Cluster `ms-pool-add-1778655487` deletion initiated (`--no-wait --yes`).
+Test cluster `ms-pool-add-1778659071` deletion initiated (async, `--no-wait`).  
+Pre-existing cluster `openclaw-mspool2` remains in `Failed` (stopped) state — not touched.
