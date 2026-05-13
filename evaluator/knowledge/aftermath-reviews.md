@@ -221,6 +221,10 @@
 - Symptom: a session summary or heartbeat log says a blocker was "escalated to human" or similar, but the transcript shows no `message()` call, no project update, and no other durable state change that actually performed the escalation.
 - Fix: verify the operational action from tool evidence, not prose. Credit the underlying diagnosis if it is supported by live checks, but downgrade output quality when the session only documents intended escalation instead of performing one.
 
+## Pattern: falsifier-closing heartbeat investigations are real material output
+- Symptom: a heartbeat starts from a narrow failure signal or review request, then spends most of its effort connecting that symptom to an existing KE/hypothesis rather than building code. This can look merely recap-heavy if review checks only for new implementation.
+- Fix: inspect whether the session actually closes a prior falsifier or broadens a known failure mode with fresh cross-session/cross-agent evidence, then lands a durable artifact (KE/proposal/report) that changes how future triage should interpret similar failures. If yes, credit it as substantive system learning, not just maintenance.
+
 ## Pattern: heartbeat-to-project escalation can be substantive output
 - Symptom: a heartbeat does not ship code, but it uses fresh runtime evidence to identify a repeated cross-workflow problem with no active owner and turns it into a new shared project with baselines, validation queries, and a concrete next intervention.
 - Fix: inspect the created project artifact and commit rather than downgrading the session as mere maintenance. Credit it as good material output when the project is properly scoped, grounded in live evidence, and creates a durable ownership/validation path for follow-through.
