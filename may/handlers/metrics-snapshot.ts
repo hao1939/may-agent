@@ -229,6 +229,16 @@ function sessionJsonlPath(persistDir: string, sessionId: string): string | null 
   return existsSync(archived) ? archived : null;
 }
 
+function sessionInactiveSince(persistDir: string, sessionId: string, cutoffMs: number): boolean {
+  const path = sessionJsonlPath(persistDir, sessionId);
+  if (!path) return true;
+  try {
+    return statSync(path).mtimeMs < cutoffMs;
+  } catch {
+    return true;
+  }
+}
+
 function assistantHasProviderError(msg: any): boolean {
   const stopReason = String(msg?.stopReason ?? "").toLowerCase();
   const errorMessage = String(msg?.errorMessage ?? "").toLowerCase();
@@ -741,13 +751,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.success-learnings-24h: ${e}`); }
 
     try {
-      record(
-        "evaluator.stale-running-session-count",
-        count(
-          "SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle') AND agent NOT IN ('evaluator', 'judge', 'master') AND startedAt < ?",
-          staleRunningCutoff,
-        ),
-      );
+      const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
+      const candidates = db.prepare(
+        `SELECT sessionId
+         FROM sessions
+         WHERE status IN ('running', 'idle')
+           AND agent NOT IN ('evaluator', 'judge', 'master')
+           AND startedAt < ?
+         ORDER BY startedAt ASC
+         LIMIT 500`,
+      ).all(staleRunningCutoff) as Array<{ sessionId: string }>;
+      const inactive = candidates.filter((s) => sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff)).length;
+      record("evaluator.stale-running-session-count", inactive, candidates.length);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`); }
 
     // ── Measure: Project (with error isolation) ──────────────────────
@@ -805,13 +820,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // ── Measure: status honesty ─────────────────────────────────────
 
-    // C7: Zombie session count (running >30min)
+    // C7: Zombie session count (running >30min without recent transcript activity)
     try {
-      const zombies = count(
-        "SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle') AND startedAt < ?",
-        staleRunningCutoff,
-      );
-      record("capability.zombie-session-count", zombies);
+      const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
+      const candidates = db.prepare(
+        `SELECT sessionId
+         FROM sessions
+         WHERE status IN ('running', 'idle')
+           AND startedAt < ?
+         ORDER BY startedAt ASC
+         LIMIT 500`,
+      ).all(staleRunningCutoff) as Array<{ sessionId: string }>;
+      const zombies = candidates.filter((s) => sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff)).length;
+      record("capability.zombie-session-count", zombies, candidates.length);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring zombie-session-count: ${e}`); }
 
     try {
