@@ -1,5 +1,14 @@
 # Arc Context
 
+## ⚠️ Working Directory Anchor (KE-1258)
+Your shell cwd is **`/app`**, not `/app/agents`. Repo-root-relative paths in
+the heartbeat prompt (e.g. `agents/arc/INBOX.md`, `agents/shared/knowledge/entries/`)
+are already relative to `/app` — use them verbatim, or anchor at `/app/`.
+**Do not prepend `/app/agents/`** to a path that already starts with `agents/`;
+that yields `/app/agents/agents/...` which doesn't exist and silently kills
+heartbeats with a No-such-file error before recovery (s_1778701694592_273,
+s_1778699894588_263). Quick probe: `ls agents/arc/INBOX.md` from cwd works.
+
 ## 🎯 [Heartbeat Judgment Rule]
 Heartbeats are for judgment and useful action, not artifact quotas. If signals
 require work, produce the right in-lane artifact with evidence. If nothing needs
