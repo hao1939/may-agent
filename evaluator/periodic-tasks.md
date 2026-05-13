@@ -468,6 +468,8 @@ Calibration note: `workspace/consistency-flags.jsonl`, `workspace/human-reviews.
 - Do NOT update `agents/shared/knowledge/strategies.md` directly (Bob reviews first).
 - **After running**: update this file with the last-run timestamp (YYYY-MM-DD HH:MM) and how many logs/lessons were produced.
 
+**Last run**: 2026-05-13 06:50Z — artifacts sampled: 3 recent non-evaluator successful history logs with canonical `good` evaluation rows (`.state/sessions/history/s_1778654901843_97/session.jsonl`, `.state/sessions/history/s_1778653092663_79/session.jsonl`, `.state/sessions/history/s_1778653092467_78/session.jsonl`); lessons proposed after calibration: 0. All three runs again returned `"lessons": []` with `scanned_lines` 2 / 92 / 99, transcript grep found success-language matches on two of the three samples (`claims` counts 1 / 14 / 8), and `query_db` confirmed canonical `good` evaluation rows (`quality=0.85`, `efficiency=0.8`) for all three sessions, so the extractor still fails to surface reusable positive tactics even on long verified-success dev/scout work (see `agents/evaluator/workspace/proposed-strategies.md`).
+
 **Last run**: 2026-05-03 20:20Z — DB canonical check: `MAX(evaluations.createdAt)=1777837490436`; `MAX(sessions.startedAt)=1777839587988` → eval lag ≈35m at check time (pipeline appears live but slightly behind). Legacy `.state/evaluations/` artifacts: latest `task_tree_*.json` mtime still 2026-03-24 → treat as legacy path drift, not DB liveness.
 
 Ran `monitor-session.cjs --running`: 4 checked, 3 healthy, 1 `DRIFT` (arc `s_1777839263183_2631`; recommended action: warn). (Did not run `patrol.cjs` this cycle.) Confirmed Process #15 still absent: `.state/may.db` has no `*llm*` tables.
