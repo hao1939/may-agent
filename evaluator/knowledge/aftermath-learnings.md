@@ -79,3 +79,6 @@
 
 ## 2026-05-13 — s_1778648112424_47
 - For project-driver success-candidate reviews, give strong credit when the session resolves a prior source-of-truth mismatch by checking the produced artifact against the real tracked handler/cron files, a runnable smoke test, and live DB metrics, then moves the project to `pending-review`/`WAITING` with explicit reopen conditions. Path-mismatch or partial-read anomalies in earlier review context should be treated as hypotheses to re-check against actual files, not as disproof once the tracked source and runtime state verify cleanly.
+
+## 2026-05-14 — s_1778771966310_131
+- In success-candidate aftermath reviews, verify `session_digests.files_modified` and transcript tool calls before trusting a "knowledge update" route signal. A scout restraint session can read a rolling digest that already contains prior syntheses, making HEAD content look like fresh output even when the session performed no `write`/`edit` and landed no new artifact.
