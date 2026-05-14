@@ -357,3 +357,7 @@
 ## Pattern: evidence-backed no-op heartbeats should be judged on the real checks, but tool claims must stay exact
 - Symptom: a heartbeat correctly makes no changes after checking inbox, project resume conditions, and live DB state, yet its final evidence overstates what tools were used (for example claiming `read()` evidence when the transcript only shows shell `cat|head`).
 - Fix: keep the operational credit if the no-op decision is supported by transcript-visible checks and current artifact state, but mark down quality for tool-inaccurate verification claims. In aftermath, distinguish “right no-op judgment” from “perfect closeout narrative,” and do not treat route labels like `knowledge update` as proof that a material artifact exists.
+
+## Pattern: aftermath-driven prompt tightening can be real durable output
+- Symptom: a low-signal heartbeat or maintenance session mainly reads recent evaluator/aftermath findings, then lands a small prompt or playbook edit instead of code. This can look lightweight if review only counts changed lines.
+- Fix: inspect whether the edit encodes a repeated failure mode into the agent's standing instructions with a narrower, safer operating path (for example an explicit closeout checklist that prevents prior malformed or incomplete heartbeats). When the change is directly tied to recent recurrence evidence, verified with read-back, and committed cleanly, credit it as substantive system improvement rather than dismissing it as cosmetic doc churn.
