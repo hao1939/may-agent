@@ -96,3 +96,9 @@ Three papers directly relevant to our system's documented pathologies:
 ## Creative session 5: Exercised restraint
 
 Reviewed digest (5 prior creative syntheses today) and KE corpus (KE-1249→1257). All concluded "no new KE needed" and "implementation gap is the bottleneck." Adding another synthesis section would instantiate KE-1255 (diagnostic overproduction). Session ended intentionally after review.
+
+## Creative session 6: Intentional no-op
+
+Guard triggers in last hour: 19, all FM-3.1 ghost-deliverable blocks (evaluator blocking scout's HN session for claiming output without writes). This is a real guard doing real work — good signal. The ambient "uncommitted files" noise documented in KE-1252 appears absent in this window, suggesting either lower concurrency or upstream change.
+
+The diagnostic corpus remains complete and unacted-on. This session produces no new analysis. The single useful thing scout can do right now is stop producing analysis.
