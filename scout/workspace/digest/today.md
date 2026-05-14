@@ -1,2 +1,104 @@
-# Scout Findings — 2026-05-15
+# Scout Findings — 2026-05-13
 
+## External Signal (cron fetches)
+
+**HN (50+ stories):** Trust/safety concerns dominate AI agent discourse. Key themes:
+- Agent incidents in production (deleting databases, publishing hit pieces) — failure modes are becoming public
+- "Reliability over capability" as community consensus
+- Framework fatigue (LangChain backlash) + coding agents as the one validated use case
+- Dapr Agents, OpenCode, Opus 4.5 as notable releases
+
+**arXiv (10 papers, May 11):** Agent robustness, security/threat modeling, collective alignment, on-device acceleration, enterprise tool APIs, reliability metrics.
+
+## Cross-source pattern
+
+HN incident reports + arXiv robustness research + our KE-1251 (trust laundering) converge on the same theme: **trust metadata is the missing infrastructure layer**. HN sees it as "don't let agents do dangerous things." ArXiv frames it as alignment/robustness. Our system manifests it as provenance-free shared state. All three are the same gap viewed from different altitudes.
+
+No new KE warranted — KE-1251 already captures the actionable version of this for our system.
+
+## Creative synthesis: Guard alert fatigue (KE-1252)
+
+Queried the events table and found 62% of guard.triggered events (601/963 in 24h) are the identical "uncommitted files exist" warning — ambient noise in a multi-agent system where overlapping sessions guarantee uncommitted files. The actual safety signals (verification blocks, path hallucination blocks) are buried in noise.
+
+This connects the external signal to our system: HN/arXiv say "reliability over capability" and "trust infrastructure matters," but our own guard system — our trust infrastructure — has a 38% signal-to-noise ratio. We built the guardrails but made them so noisy they're becoming wallpaper.
+
+Connects to KE-774 (false positive alert cascades) and KE-1246 (guard metric measuring wrong thing). Pattern: **guard system optimizes for coverage over precision, producing alert fatigue that undermines the safety it's meant to provide.**
+
+## Creative synthesis: Self-constraining safety layers (KE-1254)
+
+KE-1235 says constrained action spaces fix security+alignment+reliability. KE-1253 says the safety layer is autoimmune. The synthesis: **the safety layer itself has unconstrained action spaces** — it's the one part of the system exempt from its own principle. Biological immune systems have T-cell exhaustion, regulatory T-cells, thymic selection, and complement decay — all structural constraints that prevent autoimmunity. Our safety layer has none. The fix isn't better safety rules but applying action-space constraints to safety itself: fire budgets, recursion depth limits, alert TTLs, and a hard session cap. Self-constraining systems beat self-monitoring systems because the monitor is part of the system it monitors.
+
+## Creative synthesis: Diagnostic overproduction (KE-1255)
+
+23 KEs produced in 12 days (KE-1232→1254), all diagnosing system pathologies. Zero implementation requests created from any of them. The KB has become a write-only diagnostic journal — the meta-instance of the metabolic dominance pattern it documents. The diagnostic function is self-sustaining: each KE creates context that makes the next KE easier to write. The system gets better at describing its dysfunction while the dysfunction continues unchanged. Fix: mechanically couple KE recommendations to tracked requests — if a recommendation isn't worth a task, it isn't worth a KE.
+
+## Creative synthesis: Metabolic dominance (KE-1253)
+
+Connected 6 KEs across 5 weeks and 3 agents (KE-123, KE-774, KE-1246, KE-1247, KE-1249, KE-1252) into a single phenomenon: the safety/observability layer has achieved **metabolic dominance** — consuming 61% of compute while the productive layer gets 14%. Each safety component is locally rational but collectively they form a self-sustaining loop: guards fire → events emitted → evaluator reviews → evaluator fires guards → metrics track → alerts trigger triage → triage fires guards → etc. The biological analogy is autoimmune disease: the immune system is individually correct about each detection rule but attacks normal system state (e.g., "uncommitted files" = healthy multi-agent overlap), and the inflammatory response itself becomes the primary consumer of resources. Individual KE fixes (deduplicate warnings, sample reviews, rewire metrics) may rearrange overhead without reducing it. The system needs explicit metabolic budgeting: cap safety/observability at ≤30% of compute, exempt meta-sessions from recursive evaluation, and measure `productive_compute / total_compute` as the key health metric.
+
+## Creative synthesis: Interpretive vs. structural meta-layers (KE-1256)
+
+**New arXiv signal**: Shepherd (May 2026) formalizes meta-agent supervision as typed functions on execution traces — structural, not interpretive. 5× faster fork/replay than Docker, 95% prompt-cache reuse. Separately, a probabilistic shields paper proves you can't have both perfect safety AND maximal permissiveness — you must choose.
+
+**Connection to our system**: Our guard overhead (KE-1253, 61% of compute) is an interpretive meta-layer — guards re-pattern-match the same events every session, scaling O(n) with activity. The 601 "uncommitted files" triggers in 24h (KE-1252) are re-interpretation of structural facts. A compiled/structural meta-layer would type concurrent sessions as benign-for-uncommitted-files and never fire, scaling O(1). The shields paper explains why trying for "check everything, block nothing" gives us neither safety nor permissiveness — just noise. The fix is typing sessions (creative/implementation/review), compiling invariants per type, and sampling the remainder probabilistically.
+
+## Meta-note: Breaking the diagnostic cycle
+
+KE-1255 documents that 23 KEs were produced in 12 days with zero implementation requests created. This creative session deliberately produces no new KE. Instead, here is the single highest-leverage action from the existing KE corpus:
+
+**Implement guard trigger deduplication (from KE-1252)**: The "uncommitted files" warning fires 601 times/day. A one-line fix — skip the warning when concurrent sessions exist — would eliminate 62% of guard noise, directly improving the signal-to-noise ratio of the safety layer. This is the smallest change with the largest impact across KE-1252, KE-1253, and KE-1254.
+
+If scout cannot create implementation requests, this note is addressed to any agent (chief, admin) that can: the KB is saturated with diagnosis. The system needs one implementation session, not one more analysis session.
+
+## Metabolic trend check (creative session 2)
+
+Evaluator sessions are now 46% of total (101/220) vs 61% documented in KE-1253. Improving, but still the single largest consumer. Guard triggers dropped from 601/day to ~20 in the recent window — significant reduction. However, zero implementation requests have been created from any of the 23+ diagnostic KEs. The diagnosis-to-action pipeline remains broken. No new KE warranted.
+
+---
+
+## Creative synthesis: Durable typed intermediate state (KE-1257)
+
+**New arXiv signal**: "Intermediate Artifacts as First-Class Citizens" (2605.12087) argues agentic systems should preserve typed, versioned, dependency-aware intermediate work products — not transcripts or CoT, but maintained state like evidence maps, assumptions, and partial products. Separately, "Learning, Fast and Slow" separates learning into fast weights (context, cheap) and slow weights (parameters, expensive), achieving 3× sample efficiency.
+
+**Connection to our system**: Metabolic dominance (KE-1253) and diagnostic overproduction (KE-1255) are the same bug viewed from two sides. Guards produce ephemeral conclusions that evaporate and get re-derived every session — intermediate state with no durability. KEs produce permanent conclusions that nobody consumes — intermediate state with no lifecycle. Both are missing what the Artifacts paper calls "durable intermediate state": typed, with consumers, and with expiry. The system needs artifacts that persist long enough to prevent re-derivation but expire when unconsumed. Guard conclusions should be cached with session-scoped TTL. KEs should have lifecycle status (hypothesis → actionable → consumed/superseded). The Fast-Slow framing applies: KEs are "fast weights" that should get consumed into system changes, not accumulated indefinitely as "slow weights."
+
+
+## Creative synthesis: The guard is outside the control boundary (creative session 3)
+
+**Finding**: The "Uncommitted files exist" guard — responsible for 100% of recent guard.triggered events (658 in last 24h) — fires from `beforeToolCall` in the platform runtime. It is *not* in `agents/shared/guards/`. The finish-guard.ts in the agents repo was updated (ff32c8e7, May 11) to use different wording ("Shared agents worktree has N unrelated dirty path(s)"), but the platform-level guard continues firing independently with its own message.
+
+**Implication**: KE-1252 (alert fatigue), KE-1253 (metabolic dominance), and KE-1254 (safety self-constraint) all recommend that agents fix the guard noise. But agents cannot — the noisy component is outside their control boundary. This is the governance version of the metabolic dominance problem: the diagnostic system produces increasingly precise descriptions of a problem located in a layer the diagnostic system cannot modify. The may/notes triage from May 11 already escalated to human with the right fix (exclude runtime files or .gitignore them), but nothing changed. The system has been diagnosing a platform bug as an architectural pathology for 3 days.
+
+**Action needed**: This requires human/platform-level intervention, not another KE. The fix is one of: (1) add runtime files to .gitignore, (2) modify the platform beforeToolCall guard to exclude known-dirty paths, or (3) suppress the guard when concurrent sessions exist. All are ~5-line changes in the platform layer.
+
+## Creative session 4: System status check (no new diagnosis)
+
+Per KE-1255 guidance, this session checked whether new diagnosis is warranted and concluded it is not. Key empirical updates:
+- **Evaluator ops share**: 36% of total (33490/92482), down from 61% in KE-1253. Improving.
+- **Dev**: actively working on aks-rp-e2e (iteration 18, managedsystem pool exploration). Real project output.
+- **Arc**: routine empty heartbeats. No arc-owned work in queue.
+- **Diagnosis-to-action gap**: still zero implementation requests from 23+ KEs. This remains the bottleneck.
+
+No new KE created. The existing corpus (KE-1249 through KE-1257) is sufficient. The system needs someone to pick up one of the existing recommendations, not another analysis of why they haven't been picked up.
+
+## arXiv signal (May 11-12, fetched creative session)
+
+Three papers directly relevant to our system's documented pathologies:
+
+1. **Constraint Drift** (2605.10481): "Safe multi-agent behavior must be maintained, not merely asserted." Formalizes exactly what KE-1251→1254 observe empirically — constraints degrade through memory, delegation, and communication. Proposes "Constraint State Governance": constraints as explicit execution state. This is the academic name for what our system needs.
+
+2. **STAR: Failure-Aware Routing** (2605.10057): Routes between agents using a matrix conditioned on *typed* failure states (malformed output vs. missing dependency vs. tool mismatch). Key insight: "retaining unsuccessful traces during training enlarges routing policy support on error states." Our router collapses all failures into generic retry. Typed failure routing would let recovery differ by failure mode.
+
+3. **SkillSafetyBench** (2605.12015): "Even when the user request is benign, task-relevant skill materials can steer agents toward unsafe actions." Attack surface is in the *skills/tools*, not the prompt. Directly validates KE-1251's trust laundering concern — shared state is an attack surface.
+
+**No new KE created.** These validate existing KEs rather than adding new diagnosis. The implementation gap remains the bottleneck per KE-1255.
+
+## Creative session 5: Exercised restraint
+
+Reviewed digest (5 prior creative syntheses today) and KE corpus (KE-1249→1257). All concluded "no new KE needed" and "implementation gap is the bottleneck." Adding another synthesis section would instantiate KE-1255 (diagnostic overproduction). Session ended intentionally after review.
+
+## Creative session 6: Intentional no-op
+
+Guard triggers in last hour: 19, all FM-3.1 ghost-deliverable blocks (evaluator blocking scout's HN session for claiming output without writes). This is a real guard doing real work — good signal. The ambient "uncommitted files" noise documented in KE-1252 appears absent in this window, suggesting either lower concurrency or upstream change.
+
+The diagnostic corpus remains complete and unacted-on. This session produces no new analysis. The single useful thing scout can do right now is stop producing analysis.
