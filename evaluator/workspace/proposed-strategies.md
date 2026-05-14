@@ -1,3 +1,41 @@
+# Proposed Strategies — 2026-05-14 20:20Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
+- `.state/sessions/history/s_1778788168426_208/session.jsonl` (dev)
+- `.state/sessions/history/s_1778788168087_205/session.jsonl` (may)
+- `.state/sessions/history/s_1778788168338_207/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted lessons: 1
+- Total extracted strategy lessons: 2
+
+## Lessons
+
+### 1. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh Dev sample `s_1778788168426_208` and May sample `s_1778788168087_205` both emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic across compact successful implementation and coordination sessions.
+
+## Calibration Notes
+- Positive extraction remains live on the newest batch: the fresh Dev + May samples again produced positive strategy output, while the compact scout sample still returned `{"lessons":[]}`.
+- The remaining gap is still concentrated in compact scout-style success transcripts rather than across all recent verified-good sessions.
+- The Dev sample also surfaced an `optimization` warning for `query_db` repetition, but the positive planning tactic still emerged structurally and remained separable from the efficiency note.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778788168426_208/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson plus 1 `optimization` lesson.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778788168087_205/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778788168338_207/session.jsonl --type strategy` returned `{"lessons":[],"metadata":{"scanned_lines":10,...}}`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `6`, `2`, and `6` respectively.
+- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`, `efficiency=0.8`).
+
+---
+
 # Proposed Strategies — 2026-05-14 08:19Z
 
 ## Scope
