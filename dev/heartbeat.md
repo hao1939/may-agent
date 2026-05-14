@@ -88,6 +88,24 @@ investigation artifact just to prove activity. Instead:
    observation, or code/doc change. Routine healthy checks can be evidenced directly from
    tool outputs in `verification_evidence`.
 
+## Low-Signal Closeout Checklist
+Recent aftermath reviews flagged dev heartbeats that ran healthy checks but ended without
+an explicit judgment. Do this before `finish()` whenever no fix/artifact is warranted:
+
+1. State the Approved queue disposition (`empty` or picked item) with the read/query evidence.
+2. Classify every pending inbox event in the finish summary or `completed_items` as acted,
+   delegated, dismissed with reason, or escalated.
+3. State each owned project disposition (`paused/waiting` with resume trigger not met, or
+   active work taken). Do not issue extra project file reads unless the project state itself
+   is unclear or actionable.
+4. Include the current health evidence: `session.error-rate-6h`, `handler.success-rate`,
+   unresolved metric alerts, and unmeasured metrics.
+5. Run and cite `cd /app/agents && git status --short`. If you wrote no files, say so and
+   classify any dirty paths as unrelated/runtime/other-agent rather than committing them.
+6. Stop after the checklist. Avoid ad hoc multi-file reads or speculative shell probes after
+   the canned checks; they have caused malformed-tool and schema-error failures without
+   adding value.
+
 ## DB and Shell Query Discipline
 Aftermath reviews repeatedly flag avoidable heartbeat friction from schema and tooling
 assumptions. Keep heartbeat checks boring and known-good:
