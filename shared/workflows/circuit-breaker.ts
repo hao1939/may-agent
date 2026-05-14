@@ -21,6 +21,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "
 import { join } from "node:path";
 
 const THRESHOLD = 3; // consecutive errors before tripping
+const AUTO_RESET_MS = 60 * 60 * 1000; // bound transient provider outages to one retry window
 const STATE_FILE = "circuit-breaker-state.json";
 
 interface AgentState {
@@ -74,6 +75,14 @@ export function checkCircuitBreaker(agentsRoot: string, agent: string): string |
     // Manual re-enable detected — reset breaker
     state.agents[agent] = { consecutiveErrors: 0 };
     saveState(agentsRoot, state);
+    return null;
+  }
+
+  const trippedAtMs = agentState.trippedAt ? Date.parse(agentState.trippedAt) : 0;
+  if (trippedAtMs && Date.now() - trippedAtMs >= AUTO_RESET_MS) {
+    state.agents[agent] = { consecutiveErrors: 0 };
+    saveState(agentsRoot, state);
+    try { unlinkSync(signalPath); } catch { /* already gone */ }
     return null;
   }
 

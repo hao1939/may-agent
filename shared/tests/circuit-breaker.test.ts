@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { checkCircuitBreaker, recordOutcome, resetCircuitBreaker } from "../workflows/circuit-breaker.js";
-import { mkdirSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const TEST_ROOT = "/tmp/cb-test-agents";
@@ -43,6 +43,25 @@ describe("circuit-breaker", () => {
       const signalPath = join(TEST_ROOT, "test-agent", "SIGNAL-circuit-breaker.md");
       rmSync(signalPath);
       expect(checkCircuitBreaker(TEST_ROOT, "test-agent")).toBeNull();
+    });
+
+    it("auto-resets stale tripped breakers after the retry window", () => {
+      const statePath = join(TEST_ROOT, "shared", "circuit-breaker-state.json");
+      const signalPath = join(TEST_ROOT, "test-agent", "SIGNAL-circuit-breaker.md");
+      writeFileSync(signalPath, "signal", "utf-8");
+      writeFileSync(statePath, JSON.stringify({
+        agents: {
+          "test-agent": {
+            consecutiveErrors: 3,
+            trippedAt: new Date(Date.now() - 61 * 60 * 1000).toISOString(),
+          },
+        },
+      }), "utf-8");
+
+      expect(checkCircuitBreaker(TEST_ROOT, "test-agent")).toBeNull();
+      expect(existsSync(signalPath)).toBe(false);
+      const state = JSON.parse(readFileSync(statePath, "utf-8"));
+      expect(state.agents["test-agent"].consecutiveErrors).toBe(0);
     });
   });
 
