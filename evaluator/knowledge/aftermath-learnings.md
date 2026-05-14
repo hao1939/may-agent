@@ -82,3 +82,6 @@
 
 ## 2026-05-14 — s_1778771966310_131
 - In success-candidate aftermath reviews, verify `session_digests.files_modified` and transcript tool calls before trusting a "knowledge update" route signal. A scout restraint session can read a rolling digest that already contains prior syntheses, making HEAD content look like fresh output even when the session performed no `write`/`edit` and landed no new artifact.
+
+## 2026-05-14 — s_1778791768331_224
+- In scout heartbeat aftermath reviews, separate operationally sound restraint from lane-fit success: a bounded saturation check can be the right session choice, but if transcript evidence shows only `read` + listing existing KEs and `session_digests.files_modified = []`, it should not be credited as a material knowledge-update success. Rolling `digest/today.md` content is especially prone to false-positive routing because it already carries earlier same-day outputs.
