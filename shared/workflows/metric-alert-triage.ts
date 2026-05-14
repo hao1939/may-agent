@@ -164,6 +164,7 @@ function buildOwnerTask(ctx: AlertContext): string {
     formatRows(ctx.relatedEvents),
     "",
     "## Recent Owner Sessions Since Alert",
+    "Note: `taskPreview` below is synthesized from `sessions.task` for compact context. If you query the DB directly, use the real `task` column, not `taskPreview`.",
     formatRows(ctx.ownerSessions),
     "",
     "Finish hygiene before any successful finish:",
