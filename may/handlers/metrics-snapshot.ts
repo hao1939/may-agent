@@ -53,7 +53,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
     priority: "P1",
     config: { alert: { mode: "sustained", consecutive: 3 } } },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents with sessions in 2h)", owner: "may", type: "gauge", target: 8, threshold: 3, unit: "count", alert_op: "<", priority: "P0" },
+  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents with sessions in 2h)", owner: "may", type: "gauge", target: 5, threshold: 3, unit: "count", alert_op: "<", priority: "P0" },
   { id: "agent.heartbeat-dark-count-2h", name: "Scheduled heartbeat agents dark (2h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "agent.config-invalid-count-1h", name: "Agent config load errors (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
