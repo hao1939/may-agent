@@ -36,6 +36,10 @@
 - Symptom: a transcript snippet suggests a missing file or path mismatch, but the produced artifact, tracked source file, test, and runtime DB evidence all confirm the deliverable exists.
 - Fix: for success-candidate aftermath reviews, inspect the actual artifact and current tracked files before downgrading the session based on one anomalous tool result. Use transcript anomalies as cautions to note, not as sole grounds to reject a verified outcome.
 
+## Pattern: useful research output can still fail delivery when finish pressure redirects into an unrelated commit
+- Symptom: a research session gathers real source material and gives a grounded in-chat summary, but never writes a task artifact; when `finish()` is blocked on an unrelated dirty rolling file, the agent commits that file instead, sometimes destructively, and the route falsely reads the hygiene commit as material output.
+- Fix: judge source-gathering quality separately from delivery integrity. Verify there is a durable task artifact created in-session, and treat an unrelated guard-satisfying commit as non-substantive evidence. If the wrong-scope commit damaged a rolling file, repair it before closing the aftermath review.
+
 ## Pattern: blocker-avoidance validations can be real technical progress
 - Symptom: a session does not fully clear the original environment blocker, but it intentionally chooses a narrower path that avoids that blocker and proves the system works end-to-end up to a later, independent failure.
 - Fix: credit these sessions when the alternate path is evidence-backed and materially advances diagnosis. Distinguish "framework works, blocked later by external capacity" from "framework still unproven," and note any closeout/guard defects separately from the technical result.
