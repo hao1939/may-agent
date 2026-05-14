@@ -109,6 +109,10 @@
 - Symptom: a heartbeat/session-review route arrives as `success_candidate` because the prompt or pending-event context mentions an earlier commit, project artifact, or verification command, but the reviewed session itself only performs live checks and finishes `partial`/`done` with no new writes.
 - Fix: separate prior-session context from current-session contribution. For aftermath review, require current-session `write`/`edit`/commit evidence or a durable operational action in the reviewed session before calling it material output; otherwise grade it as lightweight maintenance/false-good routing.
 
+## Pattern: rolling digest sections can pre-exist the reviewed session and later acquire content
+- Symptom: a scout heartbeat reads `workspace/digest/today.md`, sees a heading for the nominal current creative session already present, then finishes without any write/edit calls. By review time the digest section has body text, making it look like the session produced a digest update even though later runs likely filled it in.
+- Fix: for rolling digest files, attribute output from session-local `write`/`edit`/commit evidence or explicit read-back captured after the write. Do not treat the current digest state alone as proof of the reviewed session's material output.
+
 ## Pattern: classifier-bug aftermath sessions create value when they land durable follow-up artifacts
 - Symptom: a reviewed session spends much of its effort proving that a router/guard/classifier made the wrong call, so the work can look meta or circular if the reviewer checks only whether the original route was false.
 - Fix: inspect whether the session verified the real classifier source, connected the incident to prior evidence, and converted the diagnosis into durable follow-up artifacts such as a KE, proposal, queue entry, or implementation request. If those artifacts land and are actionable, credit the session as real system improvement even when part of the transcript is spent on guard/finish recovery.
