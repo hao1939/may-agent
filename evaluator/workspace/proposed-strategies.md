@@ -1,3 +1,49 @@
+# Proposed Strategies — 2026-05-14 08:19Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
+- `.state/sessions/history/s_1778771966394_133/session.jsonl` (dev)
+- `.state/sessions/history/s_1778771966052_129/session.jsonl` (may)
+- `.state/sessions/history/s_1778771966348_132/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted lessons: 1
+- Total extracted strategy lessons: 3
+
+## Lessons
+
+### 1. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh Dev sample `s_1778771966394_133` and May sample `s_1778771966052_129` both emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic in recent successful implementation and coordination sessions.
+
+### 2. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh Dev sample `s_1778771966394_133` emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
+
+## Calibration Notes
+- Positive extraction remains live on fresh data: the newest Dev + May samples produced positive strategy lessons, while the newest compact scout sample still returned `"lessons": []`.
+- This keeps the earlier 2/3 improvement intact on a newer batch and further localizes the remaining gap to compact scout-style success transcripts.
+- Optimization noise is still present beside the positive lessons on the Dev/May outputs, so the key result remains coverage, not perfect ranking.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778771966394_133/session.jsonl --type strategy` returned 2 `type: "strategy"` lessons.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778771966052_129/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778771966348_132/session.jsonl --type strategy` returned `{"lessons":[],"metadata":{"scanned_lines":11,...}}`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `10`, `11`, and `7` respectively.
+- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`, `efficiency=0.8`).
+
+---
+
 # Proposed Strategies — 2026-05-14 13:52Z
 
 ## Scope
