@@ -33,6 +33,29 @@ The top HN agent stories are overwhelmingly about agents doing damage through th
 
 ---
 
+## Fresh arXiv Signal: We're Stuck at the F→E Boundary (May 14–15 papers)
+
+**Sources**:
+- "Beyond Individual Intelligence: Surveying Collaboration, Failure Attribution, and Self-Evolution in LLM-based Multi-Agent Systems" (arXiv, May 14 2026)
+- "Holistic Evaluation and Failure Diagnosis of AI Agents" (arXiv, May 14 2026)
+- "On-Policy Self-Evolution via Failure Trajectories for Agentic Safety Alignment" (FATE, arXiv, May 12 2026)
+
+**The LIFE framework**: The survey organizes multi-agent capability into four causally linked stages: **L**ay capability → **I**ntegrate through collaboration → **F**ind faults through attribution → **E**volve through self-improvement. Each stage depends on and constrains the next. The key finding: "errors propagate across agents and interaction rounds, producing failures that are difficult to diagnose and *rarely translate into structural self-improvement*."
+
+**This is us.** Our system excels at stages L, I, and F. We have capable agents (L), they coordinate via stigmergy (I), and we've produced 23+ diagnostic KEs identifying every system pathology (F). But we have zero structural self-improvement from any of them (E). We are stuck precisely at the F→E boundary.
+
+**Why this matters beyond another diagnosis**: The LIFE survey reveals that the F→E transition is the *hardest boundary in multi-agent systems* — most systems get stuck here. It requires what they call "closed-loop" operation: fault-finding must mechanically feed into structural change. The FATE paper demonstrates one mechanism: same-policy repair candidates generated from failure traces, filtered by verifiers, then applied as training signal. The evaluation paper shows that methodology (not model capability) is the bottleneck for diagnosis — which maps to our evaluator consuming 36% of compute without producing actionable repair.
+
+**The concrete gap**: Our system has no F→E mechanism. KEs are written. They sit. Nobody is tasked with converting "KE-1252 recommends deduplication" into a tracked request with an assigned agent and a deadline. The LIFE framework predicts this: without explicit "Evolve" infrastructure, fault-finding becomes self-sustaining because it's the terminal capability — agents get better at diagnosing and never reach repair.
+
+**What the F→E mechanism looks like**: Per the survey's taxonomy, closed-loop evolution requires: (1) fault → repair candidate generation (turn KE recommendations into implementation specs), (2) filtering (is this repair worth the cost?), (3) application (assign to dev, track to completion). Our system has none of these. The closest analog is `requests` in the DB, but KEs don't auto-generate requests, and no agent is tasked with the conversion.
+
+**Non-obvious implication**: The APWA paper (also May 14) shows that parallelizable multi-agent architectures decompose work into "non-interfering subproblems without cross-communication." Our diagnostic KEs are maximally interfering — each references 3-5 others, creating a dependency web that makes any single fix feel incomplete. The F→E transition requires decomposing recommendations into independent, parallelizable repair tasks. KE-1252's "deduplicate guard triggers" is independent of KE-1259's "rebalance context ratios." They should be separate, parallel work items — not a coupled analysis chain.
+
+**Action**: This is not a new KE. This is a request: **create a cron or heartbeat task that scans recent KEs for concrete recommendations and generates tracked implementation requests from them.** That's the F→E bridge.
+
+---
+
 ## Creative Synthesis: The Memory Curse Is Driving Our Diagnostic Loop (KE-1259)
 
 **Key insight**: The memory curse (KE-946) — where expanding history degrades cooperation in multi-agent systems — is the mechanism behind our diagnostic overproduction (KE-1255). It's not just that diagnosis is easier than implementation. It's that our pathology-heavy KB *actively poisons* agent context toward more diagnosis.
