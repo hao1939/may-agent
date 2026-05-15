@@ -13,9 +13,6 @@ agents/<name>/
     INDEX.md              # Routing table for references.
     *.md                  # Domain docs, playbooks, long-form knowledge.
 
-  skills/                 # On-demand or explicitly adopted skills.
-    *.md
-
   workspace/              # Scratch/runtime work, not system prompt.
     *.md
 
@@ -26,7 +23,6 @@ agents/<name>/
 shared/
   common-sense.md         # Shared always-loaded behavioral fundamentals.
   knowledge/              # Shared references, read on demand.
-  skills/                 # Shared skill library, read on demand.
   may-agent-docs/         # Architecture and operator docs.
 ```
 
@@ -40,7 +36,7 @@ Only two authored files are always loaded into the v2 system prompt:
 | `agents/<name>/AGENTS.md` | Agent identity, responsibility, constraints, escalation posture | That agent's sessions |
 
 Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
-`knowledge/INDEX.md`, `skills/*.md`, `heartbeat.md`, `last-session.md`, and
+`knowledge/INDEX.md`, `heartbeat.md`, `last-session.md`, and
 `workspace/*` are not automatically loaded into the system prompt.
 
 ## What Goes Where
@@ -50,14 +46,14 @@ Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
 | "I am Bob, the system architect" | `AGENTS.md` | Stable identity |
 | "Own architecture tradeoffs and escalation briefs" | `AGENTS.md` | Durable responsibility |
 | "Use evidence before changing evaluation criteria" | `AGENTS.md` | Always-on constraint |
-| "Long metric debugging recipe" | `knowledge/*.md` or `skills/*.md` | Situational reference |
+| "Long metric debugging recipe" | `knowledge/*.md` | Situational reference |
 | "Read X when handling Y" | `knowledge/INDEX.md` | Discovery routing |
 | Heartbeat investigation prompts | `heartbeat.md` | Heartbeat workflow only |
 | Recent notes, drafts, temporary plans | `workspace/` | Runtime scratch |
 | Generated session continuity | `last-session.md` | Runtime/session context |
 
 If a lesson must affect every session, promote the distilled invariant into
-`AGENTS.md`. If it is situational, keep it in `knowledge/` or `skills/` and
+`AGENTS.md`. If it is situational, keep it in `knowledge/` and
 link it from `knowledge/INDEX.md`.
 
 ## AGENTS.md Shape
@@ -124,7 +120,7 @@ Do not put prose instructions in `agent.json`.
 
 1. Create `agents/<name>/agent.json`.
 2. Create `agents/<name>/AGENTS.md`.
-3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, `skills/*.md`, handlers, or workflows.
+3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows.
 4. Restart or use the runtime reload command.
 
 ## Common Mistakes

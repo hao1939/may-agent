@@ -22,8 +22,8 @@ judges.
 
 - [infra-surface.md](infra-surface.md) is the north-star design.
 - This file is the implementation tracker and review plan.
-- [infra-surface-implementation-plan.md](infra-surface-implementation-plan.md)
-  is historical and should not be updated with new work.
+- `infra-surface-implementation-plan.md` (archived) was the earlier tracker
+  and should not be updated with new work.
 
 Do not create another parallel infra-surface plan. If a new gap appears, add it
 to this tracker under the smallest matching phase.

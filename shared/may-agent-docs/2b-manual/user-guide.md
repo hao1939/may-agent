@@ -169,7 +169,7 @@ indexes are read on demand.
 
 1. Create `agents/<name>/agent.json`
 2. Create `agents/<name>/AGENTS.md` — identity and mission
-3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, `skills/*.md`, handlers, or workflows
+3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows
 4. Restart or type `reload` in chat
 
 See [Agent Convention](agent-convention.md) for full directory layout.
@@ -199,7 +199,7 @@ For async communication, use the `message` tool (emits `message.created`).
 | `job` | Cron, heartbeat, send, task mode | Ephemeral — auto-resumed on restart if stale. |
 | `call` | `agents.call` | Ephemeral — parent re-dispatches on its own resume. |
 
-See [sessions.md](../design/sessions.md) for details.
+See [sessions.md](../2a-design/sessions.md) for details.
 
 ## Socket Protocol
 
@@ -241,7 +241,7 @@ DAEMON_INSTANCE=background may-agent --send scout --message "review your active 
 bun src/app/may.ts --emit trigger.metrics-snapshot '{}'
 ```
 
-See [runtime.md](../design/runtime.md) for socket protocol details.
+See [runtime.md](../2a-design/runtime.md) for socket protocol details.
 
 ## Cron System
 
@@ -254,7 +254,7 @@ Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
 
 Handlers live in `agents/<name>/handlers/` and are auto-discovered.
 
-See [cron.md](../design/cron.md) for details.
+See [cron.md](../2a-design/cron.md) for details.
 
 ## State Directory
 

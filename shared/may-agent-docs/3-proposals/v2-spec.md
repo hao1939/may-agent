@@ -2,8 +2,8 @@
 
 **Status**: Historical — v2 conformance framing. Do not use this document as
 the current execution model. For current infra direction, see
-[infra-surface.md](../design/infra-surface.md), [architecture.md](../design/architecture.md),
-and [infra-surface-refactor-plan.md](../design/infra-surface-refactor-plan.md).
+[infra-surface.md](../2a-design/infra-surface.md), [architecture.md](../2a-design/architecture.md),
+and [infra-surface-refactor-plan.md](../2a-design/infra-surface-refactor-plan.md).
 **Date**: 2026-05-06 (revised 2026-05-08)
 **Companion to**: `../architecture.md` (intent), `v2-implementation-notes.md` (history)
 
@@ -109,7 +109,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 **Claim.** Each iteration builds on the previous one. Today's heartbeat references yesterday's journal. Agents don't re-discover the same problem repeatedly.
 
-**Why.** Per `../architecture.md`, `../work-model.md`, and `../design/heartbeat-as-agency.md`: projects are *context*; without continuity they become amnesia.
+**Why.** Per `../architecture.md`, `../work-model.md`, and `../2a-design/heartbeat-as-agency.md`: projects are *context*; without continuity they become amnesia.
 
 **Measurement.** `capability.journal-reference-rate` — fraction of heartbeat sessions whose `agent.decision` event references prior journal entries (by date stamp or by content phrase) divided by heartbeat sessions where a referenceable journal exists.
 
@@ -545,7 +545,7 @@ execution boundary rather than as the whole system model.
 
 **Claim.** Every heartbeat session emits exactly one `agent.decision` event with `{agent, sessionId, decision: string}` before the action phase.
 
-**Why.** Per `../design/heartbeat-as-agency.md`: agency is invisible without a structured decision. Required for C3 (memory), C8 (observability), and the new web UI.
+**Why.** Per `../2a-design/heartbeat-as-agency.md`: agency is invisible without a structured decision. Required for C3 (memory), C8 (observability), and the new web UI.
 
 **Measurement.** `v2.heartbeat-decision-rate` — fraction of `trigger=heartbeat` sessions with at least one `agent.decision` event. Target 1.0; threshold < 0.95.
 
@@ -561,7 +561,7 @@ execution boundary rather than as the whole system model.
 
 **Claim.** The `metrics` table has a `priority` column with values P0/P1/P2/P3, and `metric-alert-reactor` only forks directly on P0 breaches. Lower-priority breaches are visible to the owner via prompt context but don't fork immediately.
 
-**Why.** Per `../design/heartbeat-as-agency.md`: forking on every breach makes agents reactive; deferring to heartbeat makes them deliberative. P0 is the safety valve.
+**Why.** Per `../2a-design/heartbeat-as-agency.md`: forking on every breach makes agents reactive; deferring to heartbeat makes them deliberative. P0 is the safety valve.
 
 **Measurement.** `v2.fork-on-breach-rate` — fraction of `metric.breach` events that triggered a direct fork. Target = P0-priority-rate (varies by registry); threshold > P0-rate × 1.5.
 

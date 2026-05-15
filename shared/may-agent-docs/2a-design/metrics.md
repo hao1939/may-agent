@@ -117,7 +117,7 @@ breaches; lower-priority alerts remain visible for heartbeat/project/steward
 handling.
 
 Agents handling an alert must follow
-[manual/metric-alerts.md](../manual/metric-alerts.md): judge the alert, choose one
+[manual/metric-alerts.md](../2b-manual/metric-alerts.md): judge the alert, choose one
 operation, and either investigate then fix, calibrate, downgrade, upgrade or
 escalate, resolve stale state, or document an exception.
 
@@ -170,4 +170,4 @@ records their values.
 
 - **Snapshot handler:** `agents/may/handlers/metrics-snapshot.ts`
 - **Alert reactor:** `agents/may/handlers/metric-alert-reactor.ts`
-- **DB schema:** `src/lib/requests.ts`
+- **DB schema:** `src/lib/db/schema.ts`

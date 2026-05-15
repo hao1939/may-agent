@@ -67,7 +67,7 @@ Never return without calling one of these.
 const coder = await ctx.runAgent("coder", task);
 const verify = await ctx.runFunction("verify", async () => {
   const { execSync } = await import("node:child_process");
-  execSync("tsc --noEmit && vitest --run", { encoding: "utf-8" });
+  execSync("tsc --noEmit && bun test", { encoding: "utf-8" });
   return "PASS";
 });
 if (verify.status === "error") {

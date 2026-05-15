@@ -293,8 +293,6 @@ The metric grid lives here, not on the front page. This is where you go when the
 │  AGENCY  (are agents being agents?)                                  │
 │                                                                       │
 │  agent.heartbeat-coverage     13 / 8        ✓                        │
-│  agent.idle-rate              0.18 / 0.30   ✓                        │
-│  agent.self-initiated-rate    0.62 / 0.50   ✓                        │
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤
 │  INFRASTRUCTURE                                                       │

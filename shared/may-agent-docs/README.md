@@ -14,32 +14,32 @@ projects hold durable goal context
 
 Docs follow a hierarchy of truth. Higher tiers govern lower tiers — conflicts are resolved by updating the lower tier.
 
-- **`principles/`** (Tier 1) — Requirements, goals, conventions. Human-authored.
-- **`design/`** (Tier 2) — Architecture and subsystem designs. Agent-drafted, human-signed-off.
-- **`manual/`** (Tier 2) — How-to guides. Derived from principles + implementation.
-- **`proposals/`** (Tier 3) — Plans, specs, historical. May be outdated or superseded.
+- **`1-principles/`** (Tier 1) — Requirements, goals, conventions. Human-authored.
+- **`2a-design/`** (Tier 2a) — Architecture and subsystem designs. Agent-drafted, human-signed-off.
+- **`2b-manual/`** (Tier 2b) — How-to guides. Derived from principles + implementation.
+- **`3-proposals/`** (Tier 3) — Plans, specs, historical. May be outdated or superseded.
 
 ## Reading Paths
 
 ### I want to operate the running system
 
-1. [manual/user-guide.md](manual/user-guide.md) — CLI, Docker, socket, and chat commands
-2. [design/metrics.md](design/metrics.md) — what the live metrics mean
-3. [manual/metric-alerts.md](manual/metric-alerts.md) — how alerts should be handled
-4. [design/runtime.md](design/runtime.md) — runtime internals when something is broken
+1. [manual/user-guide.md](2b-manual/user-guide.md) — CLI, Docker, socket, and chat commands
+2. [design/metrics.md](2a-design/metrics.md) — what the live metrics mean
+3. [manual/metric-alerts.md](2b-manual/metric-alerts.md) — how alerts should be handled
+4. [design/runtime.md](2a-design/runtime.md) — runtime internals when something is broken
 
 ### I want to build or fix agent behavior
 
-1. [principles/work-model.md](principles/work-model.md) — projects, heartbeats, metrics, and triggers
-2. [manual/workflow-authoring.md](manual/workflow-authoring.md) — write workflow-backed behavior
-3. [manual/handler-authoring.md](manual/handler-authoring.md) — bridge events to workflows
-4. [design/sdk.md](design/sdk.md) — the stable TypeScript surface
+1. [principles/work-model.md](1-principles/work-model.md) — projects, heartbeats, metrics, and triggers
+2. [manual/workflow-authoring.md](2b-manual/workflow-authoring.md) — write workflow-backed behavior
+3. [manual/handler-authoring.md](2b-manual/handler-authoring.md) — bridge events to workflows
+4. [design/sdk.md](2a-design/sdk.md) — the stable TypeScript surface
 
 ### I want to change infra
 
-1. [design/architecture.md](design/architecture.md) — current system architecture
-2. [design/infra-surface.md](design/infra-surface.md) — north-star infra boundary
-3. [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) — active tracker
-4. [design/events.md](design/events.md), [design/sessions.md](design/sessions.md), [design/cron.md](design/cron.md) — subsystem details
+1. [design/architecture.md](2a-design/architecture.md) — current system architecture
+2. [design/infra-surface.md](2a-design/infra-surface.md) — north-star infra boundary
+3. [design/infra-surface-refactor-plan.md](2a-design/infra-surface-refactor-plan.md) — active tracker
+4. [design/events.md](2a-design/events.md), [design/sessions.md](2a-design/sessions.md), [design/cron.md](2a-design/cron.md) — subsystem details
 
 See [INDEX.md](INDEX.md) for complete navigation.

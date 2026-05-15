@@ -68,7 +68,7 @@ When a session runs, the LLM receives three blocks:
 ```
 
 Stable across sessions for LLM prefix caching. `DOMAIN.md`, `TOOLS.md`,
-`LESSONS.md`, `knowledge/INDEX.md`, `skills/*.md`, `heartbeat.md`, and
+`LESSONS.md`, `knowledge/INDEX.md`, `heartbeat.md`, and
 `last-session.md` are not automatically loaded.
 
 ### 2. First User Message (changes per session)

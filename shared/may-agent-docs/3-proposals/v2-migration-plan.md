@@ -3,7 +3,7 @@
 **Status**: Historical. The implemented state is captured in
 `v2-implementation-notes.md`; the active architecture reference is
 `../architecture.md`. Current infra-surface work supersedes this plan's older
-direct-session and persistence wording; use `../design/infra-surface.md` for
+direct-session and persistence wording; use `../2a-design/infra-surface.md` for
 new implementation decisions.
 
 ## Reality check: what already exists
@@ -110,7 +110,7 @@ That's the whole migration. No big rewrite.
 - No raw DB access; queryDb is read-only via SDK.
 
 **Acceptance**:
-- A workflow can run `bun vitest --run` as a function step.
+- A workflow can run `bun test` as a function step.
 - Function steps cannot write outside agent workspace.
 - Function steps cannot open the DB file directly.
 

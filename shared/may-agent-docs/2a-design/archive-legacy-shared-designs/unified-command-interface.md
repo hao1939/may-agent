@@ -3,7 +3,7 @@
 **Status**: Superseded by the control-client/control-socket event surface.
 Do not implement this draft directly. Current direction: socket-local
 `subscribe`/`status`, all other adapter actions normalized into daemon events
-through `packages/control`. See `../design/infra-surface.md`.
+through `packages/control`. See `../2a-design/infra-surface.md`.
 **Date**: 2026-05-09
 
 ## Problem

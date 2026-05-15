@@ -222,7 +222,7 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 
 ## The Full SDK + Tool Surface
 
-See [sdk.md](../design/sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
+See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
 
 ### Agent Tools (for LLM sessions — the agent's action surface)
 
@@ -291,11 +291,11 @@ Growth (experimentation, iteration, improvement) is an agent's responsibility, n
 
 ## Project System: Sustained Work
 
-For work that spans multiple sessions, see [projects.md](../design/projects.md).
+For work that spans multiple sessions, see [projects.md](../2a-design/projects.md).
 
 **Project lifecycle:** active → (workflow runs) → waiting/blocked → (human input) → active → done
 
-See [projects.md](../design/projects.md) for the canonical lifecycle.
+See [projects.md](../2a-design/projects.md) for the canonical lifecycle.
 
 ---
 

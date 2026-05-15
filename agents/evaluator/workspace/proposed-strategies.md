@@ -1,3 +1,49 @@
+# Proposed Strategies — 2026-05-15 12:36Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
+- `.state/sessions/history/s_1778847784853_6/session.jsonl` (may)
+- `.state/sessions/history/s_1778847185769_3/session.jsonl` (may)
+- `.state/sessions/history/s_1778846723439_19/session.jsonl` (may)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted `strategy` lessons: 1
+- Total extracted strategy lessons: 3
+
+## Lessons
+
+### 1. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh May samples `s_1778847784853_6` and `s_1778846723439_19` both emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
+
+### 2. Turn evidence gathering into one concrete action before finishing
+**Evidence:** The May sample `s_1778846723439_19` emitted `Turns evidence gathering into one concrete action before finishing`.
+
+**Strategy:**
+- After enough evidence is gathered, convert the scan into one concrete outward action (`message`, `edit`, or `write`) before reporting success.
+- Treat the evidence-to-action transition as a reusable completion tactic for coordination and alert-triage work.
+- Preserve this separately from generic “high activity” or optimization noise.
+
+## Calibration Notes
+- Positive extraction is still live on fresh data, but not robust: two recent May samples produced positive strategy lessons while one other May sample returned only optimization output.
+- The remaining gap is no longer isolated to compact scout transcripts; even recent May success cases can collapse into optimization-only output despite canonical `good` evaluations.
+- This suggests the extractor still overweights churn/optimization signals on alert-triage transcripts and needs better ranking between reusable tactics and exploratory noise.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778847784853_6/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson plus optimization output.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778847185769_3/session.jsonl --type strategy` returned optimization-only output (`{"lessons":[...], no `type: "strategy"` entries) with `scanned_lines: 167`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778846723439_19/session.jsonl --type strategy` returned 2 `type: "strategy"` lessons plus optimization output.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `16`, `24`, and `7` respectively.
+- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`; `efficiency=0.8` for `s_1778847784853_6`, `efficiency=0.35` for the other two).
+
+---
+
 # Proposed Strategies — 2026-05-14 20:20Z
 
 ## Scope
