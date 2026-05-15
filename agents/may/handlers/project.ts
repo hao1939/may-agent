@@ -190,8 +190,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       if (action.type === "reactivate") {
         ctx.sdk.log("info", `[project] Reactivating ${project.relPath}: ${action.reason}`);
-        let content = ph.appendComment(ph.updateField(project.content, "Status", "active"), action.reason);
+        const content = ph.updateField(project.content, "Status", "active");
         writeFileSync(project.projectFile, content, "utf-8");
+        ph.appendDiscussionComment(dirname(project.projectFile), action.reason, "project-handler");
         pState.reactivationAttempts++;
         pState.blockerHash = "";
         pState.consecutiveSkips = 0;
@@ -200,8 +201,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
       if (action.type === "add-comment") {
         ctx.sdk.log("info", `[project] Comment on ${project.relPath}: ${action.reason}`);
-        let content = ph.updateField(ph.appendComment(project.content, action.comment), "Status", "active");
+        const content = ph.updateField(project.content, "Status", "active");
         writeFileSync(project.projectFile, content, "utf-8");
+        ph.appendDiscussionComment(dirname(project.projectFile), action.comment, "project-handler");
         pState.reactivationAttempts++;
         pState.blockerHash = ph.simpleHash(project.blockerReason);
         pState.consecutiveSkips = 0;

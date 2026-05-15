@@ -14,6 +14,7 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { ProjectCache } from "./project-cache.js";
 import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
 import { onProjectCreate } from "./hooks/validate-on-create.js";
+import { unreadDiscussionTail } from "../lib/project-health.js";
 
 export const name: string = "project";
 
@@ -428,16 +429,7 @@ function getUnreadComments(projectDir: string): string {
   try {
     const discPath = join(projectDir, "discussion.md");
     if (!existsSync(discPath)) return "";
-    const content = readFileSync(discPath, "utf-8");
-    const lastMarker = content.lastIndexOf("---read @iter");
-    if (lastMarker === -1) {
-      // No marker yet — everything after "# Discussion\n" is unread
-      const headerEnd = content.indexOf("\n", content.indexOf("# Discussion"));
-      return headerEnd === -1 ? "" : content.slice(headerEnd + 1).trim();
-    }
-    // Content after the last marker line
-    const afterMarker = content.indexOf("\n", lastMarker);
-    return afterMarker === -1 ? "" : content.slice(afterMarker + 1).trim();
+    return unreadDiscussionTail(readFileSync(discPath, "utf-8"));
   } catch { return ""; }
 }
 

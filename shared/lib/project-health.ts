@@ -6,7 +6,7 @@
  * 2. Diagnose what action each project needs
  * 3. Persist health state and inflight tracking
  */
-import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, appendFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -175,6 +175,50 @@ export function appendComment(content: string, comment: string): string {
   return content + `\n## Comments\n${entry}\n`;
 }
 
+/**
+ * Append a comment to the project's discussion.md in the canonical format:
+ *
+ *     ### <author> - YYYY-MM-DD
+ *     <body>
+ *
+ * Creates the file with a `# Discussion` header if missing. This is the
+ * canonical write path; the legacy `appendComment()` writer above still
+ * exists for back-compat with project.md `## Comments` sections.
+ */
+export function appendDiscussionComment(
+  projectDir: string,
+  comment: string,
+  author = "system",
+): void {
+  const date = new Date().toISOString().slice(0, 10);
+  const entry = `\n### ${author.trim() || "system"} - ${date}\n${comment.trim()}\n`;
+  const discPath = `${projectDir}/discussion.md`;
+  if (existsSync(discPath)) appendFileSync(discPath, entry, "utf-8");
+  // Seed with `---read @iter0---` so the no-marker code path (which would
+  // treat the entire body as unread) never fires on a freshly created file.
+  else writeFileSync(discPath, `# Discussion\n\n---read @iter0---\n${entry}`, "utf-8");
+}
+
+/**
+ * Extract the unread tail of a discussion.md file.
+ *
+ * Convention: a `---read @iter<N>---` marker line is appended by the project
+ * workflow after each iteration; anything after the *last* such marker is
+ * unread. If there is no marker yet, everything after the H1 header is unread.
+ * The H1 may be `# Discussion`, `# <project> — Discussion`, etc.
+ */
+export function unreadDiscussionTail(disc: string): string {
+  const lastMarker = disc.lastIndexOf("---read @");
+  if (lastMarker >= 0) {
+    const afterMarker = disc.indexOf("\n", lastMarker);
+    return afterMarker === -1 ? "" : disc.slice(afterMarker + 1).trim();
+  }
+  const h1 = disc.match(/^#\s+.*$/m);
+  if (!h1) return disc.trim();
+  const headerEnd = disc.indexOf("\n", (h1.index ?? 0) + h1[0].length - 1);
+  return headerEnd === -1 ? "" : disc.slice(headerEnd + 1).trim();
+}
+
 // ── Scanning ─────────────────────────────────────────────────────────────
 
 function scanProjectDir(projectsDir: string, relPrefix: string, seen: Set<string>): ProjectInfo[] {
@@ -260,9 +304,7 @@ export function diagnoseProject(
       const discFile = project.projectFile.replace("project.md", "discussion.md");
       if (existsSync(discFile)) {
         const disc = readFileSync(discFile, "utf-8");
-        const lastMarker = disc.lastIndexOf("---read @");
-        const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : disc.replace(/^# Discussion\s*/, "").trim();
-        hasUnread = !!unread;
+        hasUnread = !!unreadDiscussionTail(disc);
       }
     } catch {}
     if (hasUnread) {
@@ -286,9 +328,7 @@ export function diagnoseProject(
       const discFile = project.projectFile.replace("project.md", "discussion.md");
       if (existsSync(discFile)) {
         const disc = readFileSync(discFile, "utf-8");
-        const lastMarker = disc.lastIndexOf("---read @");
-        const unread = lastMarker >= 0 ? disc.slice(disc.indexOf("\n", lastMarker) + 1).trim() : disc.replace(/^# Discussion\s*/, "").trim();
-        hasUnread = !!unread;
+        hasUnread = !!unreadDiscussionTail(disc);
       }
     } catch {}
     // Also check legacy ## Comments in project.md

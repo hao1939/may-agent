@@ -5,7 +5,9 @@ status: active
 type: milestone
 priority: P0
 workflow: project
-iteration: 0
+iteration: 3
+stop_reason: 
+resume_condition: 
 ---
 
 # Project: platform
@@ -33,19 +35,22 @@ discussion live here.
 - Build / test failures in `repos/may-agent/` (`bun test`, `bun run check`)
 
 ## Current State
+Active: human/May comment processed at iteration 3. Continuing with reviewer direction.
+1. **I believe**: There's a new unread comment in comments.md ("smoke test: comment from curl after fix") that needs to be acknowledged/acted on.
+2. **I'm uncertain about**: Whether this comment requires any code changes or is just a verification ping.
+3. **I'd change my mind if**: The comment contained an actual bug report or feature request.
 
-- Code repo moved to `repos/may-agent/` (self-contained: own `.git`, `src/`,
-  `packages/`, `test/`, `container/`, `bundle/`, `ui/`, `docs` symlink into
-  `shared/may-agent-docs/`).
-- Work-project files (`project.md`, `journal.md`, `discussion.md`) live at the
-  project root alongside `repos/`.
-- 35 satellite work-projects depend on this platform; their state is the
-  effective backlog.
+**(a) Concrete output:** Mark the comment as read in `projects/platform/comments.md` by removing its `<!-- unread -->` marker. No code changes needed — this is a smoke-test comment confirming the comment system works.
+
+**(b) What's different:** Previous iterations had no comments to process. Now there's a concrete signal (unread comment) but it's informational only.
+
+**(c) First step:** Read `projects/platform/comments.md`, remove the `<!-- unread -->` marker from the "hao - 2026-05-15" comment, then finish.
 
 ## Plan
 
-- [ ] Wait for signal — failing platform metric, unread comment, or owner push.
-- [ ] When activated: scope the slice, work in `repos/may-agent/`, journal here.
+- [x] Fix failing `sendSocketCommand` test (commit `6d577a42`)
+- [ ] Wait for signal — failing platform metric, unread comment, or owner push
+- [ ] When activated: scope the slice, work in `repos/may-agent/`, journal here
 
 ## Validation
 
@@ -64,3 +69,6 @@ discussion live here.
 ## Journal
 
 See `journal.md`.
+
+
+## Comments
