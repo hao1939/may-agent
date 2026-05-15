@@ -6,7 +6,7 @@ Draft, accepted direction.
 
 ## Problem
 
-`packages/webui` used to contain both the browser UI and the May Agent HTTP adapter. That made the package name misleading because the server code does more than render UI:
+The May Agent browser UI used to live under `packages/webui`, next to server-adapter code. That made the package name misleading because the server code does more than render UI:
 
 - reads `.state/may.db` and transcript files
 - resolves agent, project, and state paths
@@ -16,25 +16,27 @@ Draft, accepted direction.
 - sends steering commands to the daemon control interface
 - builds WebUI read models such as loop traces and project summaries
 
-Those are infra adapter responsibilities. The WebUI should remain a first-class UI package, but it should not own the API server or static-file server.
+Those are infra adapter responsibilities. Project UIs should remain first-class project resources, but they should not own the API server.
 
 ## Decision
 
-Keep `packages/webui` as the browser UI package. Move the HTTP adapter into the May Agent root application under `src/app/http`.
+Move the HTTP adapter into the May Agent root application under `src/app/http`. Move browser UI files into project-owned `ui/` directories under `PROJECTS_ROOT`.
 
 The HTTP adapter is the Web-facing control/read interface for May Agent. It should align with the infra SDK and control-plane vocabulary, with extra read-model endpoints that make the WebUI efficient and understandable.
 
 There is one compiled runtime binary: `may-agent`. WebUI runs as a mode of that binary with `may-agent --web`. Supervisor may keep a separate `may-agent-web` process group for lifecycle isolation, but it should execute the same `may-agent` binary instead of a dedicated WebUI binary.
+
+Static project resources are visible under `/projects/*`, backed directly by `PROJECTS_ROOT`. The root path `/` serves the default May Agent project UI at `/projects/may-agent/ui/index.html` when present, otherwise it falls back to a `/projects` directory listing.
 
 ## Ownership
 
 | Area | Owner | Notes |
 | --- | --- | --- |
 | HTTP route dispatch | `src/app/http` | Bun server, route table, request/response shape |
-| Static file serving | `src/app/http` | Serves WebUI assets; does not own UI content |
+| Static file serving | `src/app/http` | Serves files from `PROJECTS_ROOT`; `/api/*` and `/ws` stay reserved |
 | Daemon socket bridge | `src/app/http` + `packages/control` | HTTP adapter sends events through control package |
 | DB/file read models | `src/app/http/read-model` | Projections for UI and diagnostics |
-| Browser UI assets | `packages/webui` | HTML/CSS/JS, future components, view code |
+| Project UI assets | `PROJECTS_ROOT/<project>/ui` | HTML/CSS/JS owned by each project |
 | Agent/workflow SDK | `packages/sdk` | In-process capability surface for agents/workflows |
 | Socket protocol | `packages/control` | Transport protocol and daemon socket client/server |
 
@@ -95,12 +97,19 @@ src/app/http/
     loop-trace.ts
     project-sections.ts
 
-packages/webui/
-  static/index.html
-  src/client/       # future frontend modules/components, added only when client code exists
+projects/
+  may-agent/
+    project.md
+    ui/
+      index.html
+  <project>/
+    project.md
+    ui/
+      index.html      # optional project-specific UI
+      assets/...
 ```
 
-Boundary rule: `packages/webui` should not expose a server entrypoint. Development and deployment run `may-agent --web`; WebUI package code should import HTTP/view data through browser-facing APIs, not through server-module exports.
+Boundary rule: project UIs are static resources and call the infra API through `/api/*`. The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are handled before static routes. Development and deployment run `may-agent --web`.
 
 ## Migration Plan
 
@@ -108,20 +117,19 @@ Boundary rule: `packages/webui` should not expose a server entrypoint. Developme
 2. Move DB/read-model helpers to `src/app/http/read-model`.
 3. Remove compatibility wrappers from `packages/webui/src`; the private WebUI package should not export the HTTP adapter.
 4. Update runtime imports, bundle scripts, and Docker build so WebUI runs through `may-agent --web` from the single compiled `may-agent` binary.
-5. Keep `packages/webui/static/index.html` in the WebUI package.
+5. Move the default UI to `projects/may-agent/ui/index.html` and serve it from `/`.
 6. Extract the large route table into focused route modules.
 7. Rename and reshape endpoints toward infra-aligned API plus `/api/views/*` read models.
-8. Move remaining WebUI tests or helper imports to the root-app HTTP/read-model modules as route modules stabilize.
+8. Remove the obsolete `packages/webui` package once the UI is fully project-scoped.
 
 ## Non-Goals
 
-- Do not remove or de-prioritize the WebUI.
+- Do not remove or de-prioritize the WebUI; make it project-scoped instead.
 - Do not turn the SDK into an HTTP API mechanically.
 - Do not expose raw DB schema as the stable Web API.
 - Do not move browser UI code into infra modules.
 
 ## Open Questions
 
-- Should WebUI static assets stay as plain HTML during the first split, or should we introduce a frontend build step when route modules stabilize?
 - Which existing `/api/*` endpoints should be preserved as compatibility aliases after the infra-aligned API is introduced?
 - Should WebUI view endpoints use `/api/views/*` immediately, or migrate route-by-route as pages are touched?
