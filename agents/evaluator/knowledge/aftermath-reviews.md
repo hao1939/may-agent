@@ -73,6 +73,10 @@
 - Symptom: an agent copies literal epoch values from a prompt/example into `query_db`, so a supposed “last 6h” or “current running sessions” query actually scans an old window and yields impossible results like negative ages.
 - Fix: treat hardcoded time literals in operational queries as a review smell. When the session goal is live triage, require evidence that the time window was computed at runtime or at least sanity-check the returned ages/counts before crediting the conclusions.
 
+## Pattern: broad task substring filters can self-match prompt text instead of real workflow runs
+- Symptom: an agent queries `sessions` with a loose predicate like `task LIKE '%heartbeat%'` while reviewing a metric-alert or aftermath session whose prompt itself contains the word “heartbeat”, so the result set accidentally includes the current non-heartbeat session and fabricates a fresh heartbeat for one agent.
+- Fix: for workflow/session classification, prefer `source LIKE 'workflow:%-heartbeat'`, `task LIKE '[heartbeat]%'`, or another scope-tight predicate, then sanity-check whether the returned rows are actually heartbeat workflow sessions before using them as timing evidence.
+
 ## Pattern: omitted WHERE can relabel all-time rollups as a time-window snapshot
 - Symptom: a session publishes a table labeled “last 6h” or similar, but the numbers match all-time totals exactly because the aggregate query dropped the time predicate and only kept `GROUP BY agent`.
 - Fix: when reviewing operational rollups, compare the claimed windowed counts against a direct bounded query and, if needed, against all-time totals. If the “windowed” numbers match all-time totals, treat the conclusion as fabricated-by-query, not a minor arithmetic slip.
