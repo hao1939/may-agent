@@ -1,0 +1,757 @@
+{
+  "version": 1,
+  "id": "aks-rp-e2e",
+  "title": "AKS RP E2E Capability Model",
+  "updatedAt": "2026-05-14",
+  "observationVariables": [
+    {
+      "id": "observation.environment",
+      "label": "Observation Environment",
+      "description": "Where the evidence was collected; this is a filter, not AKS product input.",
+      "domain": ["standalone", "staging"]
+    },
+    {
+      "id": "observation.suite",
+      "label": "Observation Suite",
+      "description": "Which e2e suite produced the evidence; this is a filter, not AKS product input.",
+      "domain": ["dev"]
+    },
+    {
+      "id": "observation.host",
+      "label": "Observation Host",
+      "description": "Machine/context used to collect evidence.",
+      "domain": ["devbox"]
+    },
+    {
+      "id": "observation.buildVersion",
+      "label": "Build Version",
+      "description": "AKS RP build/config version used for the current evidence.",
+      "domain": ["hayuaebld163822451", "unknown"]
+    },
+    {
+      "id": "observation.surface",
+      "label": "Observation Surface",
+      "description": "Client/execution surface used to collect evidence; this is not AKS cluster input.",
+      "domain": ["standalone-e2ev3", "arm-rest", "az-cli"]
+    }
+  ],
+  "inputVariables": [
+    {
+      "id": "addon.appRouting.enabled",
+      "label": "App Routing Addon Enabled",
+      "description": "Real AKS input: whether app routing is enabled for the cluster/test path.",
+      "domain": ["true"]
+    },
+    {
+      "id": "appRouting.route.kind",
+      "label": "App Routing Route Kind",
+      "description": "Real AKS input branch for app-routing behavior under test.",
+      "domain": ["nginx-disablement", "default-domain"]
+    },
+    {
+      "id": "tls.secret.provided",
+      "label": "TLS Secret Provided",
+      "description": "Real AKS input/precondition for default-domain traffic behavior.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "identity.mode",
+      "label": "Identity Mode",
+      "description": "Real AKS identity mode/precondition for identity-backed scenarios.",
+      "domain": ["msi", "unknown"]
+    },
+    {
+      "id": "msi.identity.provided",
+      "label": "MSI Identity Provided",
+      "description": "Real AKS input/precondition for MSI-backed behavior.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "agentPool.kind",
+      "label": "Agent Pool Kind",
+      "description": "Real AKS input branch for pool behavior under test.",
+      "domain": ["managedsystem", "unknown"]
+    },
+    {
+      "id": "managedSystem.operation",
+      "label": "ManagedSystem Operation",
+      "description": "Real AKS operation shape for ManagedSystem pool behavior.",
+      "domain": ["create-cluster", "add-existing-pool", "enable-scenario", "unknown"]
+    },
+    {
+      "id": "managedSystem.request.shape",
+      "label": "ManagedSystem Request Shape",
+      "description": "Real request payload shape received by RP for ManagedSystem pool behavior.",
+      "domain": ["minimal-mode-only", "cli-defaults", "unknown"]
+    }
+  ],
+  "inputDependencies": [
+    {
+      "parent": "addon.appRouting.enabled",
+      "parentValue": "true",
+      "child": "appRouting.route.kind",
+      "reason": "App-routing route branches are meaningful only when app routing is enabled."
+    },
+    {
+      "parent": "appRouting.route.kind",
+      "parentValue": "default-domain",
+      "child": "tls.secret.provided",
+      "reason": "Default-domain traffic behavior depends on TLS secret input/precondition."
+    },
+    {
+      "parent": "identity.mode",
+      "parentValue": "msi",
+      "child": "msi.identity.provided",
+      "reason": "MSI identity input/precondition is meaningful only for MSI mode."
+    },
+    {
+      "parent": "agentPool.kind",
+      "parentValue": "managedsystem",
+      "child": "managedSystem.operation",
+      "reason": "ManagedSystem operation branches are meaningful only for ManagedSystem pool input."
+    },
+    {
+      "parent": "agentPool.kind",
+      "parentValue": "managedsystem",
+      "child": "managedSystem.request.shape",
+      "reason": "ManagedSystem RP behavior depends on the request payload shape."
+    }
+  ],
+  "inputConstraints": [],
+  "expectationVariables": [
+    {
+      "id": "cluster.operation.succeeded",
+      "label": "Cluster Operation Succeeded",
+      "description": "AKS cluster operation/state outcome.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "appRouting.nginx.disabled",
+      "label": "App Routing Nginx Disabled",
+      "description": "Expected AKS app-routing state/behavior for nginx disablement.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "appRouting.defaultDomain.configured",
+      "label": "Default Domain Configured",
+      "description": "Expected AKS state for default-domain traffic.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "traffic.route.reachable",
+      "label": "Traffic Route Reachable",
+      "description": "Expected externally observable AKS traffic behavior.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "traffic.http.status",
+      "label": "Traffic HTTP Status",
+      "description": "Expected externally observable HTTP behavior.",
+      "domain": ["200", "timeout", "unknown"]
+    },
+    {
+      "id": "identity.msi.available",
+      "label": "MSI Identity Available",
+      "description": "Expected AKS identity state for MSI-backed behavior.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "paf.throttling.behavior",
+      "label": "PAF Throttling Behavior",
+      "description": "Expected AKS behavior for PAF throttling.",
+      "domain": ["works", "failed", "unknown"]
+    },
+    {
+      "id": "agentPool.managedsystem.ready",
+      "label": "Managedsystem Pool Ready",
+      "description": "Expected AKS state/behavior for managedsystem pool.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "rp.request.accepted",
+      "label": "RP Request Accepted",
+      "description": "Expected RP behavior for the submitted AKS request payload.",
+      "domain": ["true", "false", "unknown"]
+    },
+    {
+      "id": "agentPool.managedsystem.azureManagedNodes",
+      "label": "ManagedSystem Azure-Managed Nodes",
+      "description": "Expected AKS behavior: Azure determines VM size/count and runs managed nodes.",
+      "domain": ["true", "false", "unknown"]
+    }
+  ],
+  "expectationDependencies": [
+    {
+      "parent": "appRouting.defaultDomain.configured",
+      "parentValue": "true",
+      "child": "traffic.route.reachable",
+      "reason": "Route reachability depends on default-domain configuration."
+    },
+    {
+      "parent": "traffic.route.reachable",
+      "parentValue": "true",
+      "child": "traffic.http.status",
+      "reason": "HTTP status is meaningful once the route is reachable."
+    },
+    {
+      "parent": "identity.msi.available",
+      "parentValue": "true",
+      "child": "paf.throttling.behavior",
+      "reason": "PAF throttling behavior depends on MSI identity being available."
+    },
+    {
+      "parent": "rp.request.accepted",
+      "parentValue": "true",
+      "child": "agentPool.managedsystem.ready",
+      "reason": "A ManagedSystem pool can become ready only after RP accepts the request."
+    },
+    {
+      "parent": "agentPool.managedsystem.ready",
+      "parentValue": "true",
+      "child": "agentPool.managedsystem.azureManagedNodes",
+      "reason": "Azure-managed node evidence is meaningful once the ManagedSystem pool is ready."
+    }
+  ],
+  "expectationConstraints": [],
+  "features": [
+    {
+      "id": "app-routing-nginx-disablement",
+      "label": "App Routing Nginx Disablement",
+      "inputPath": [
+        { "variable": "addon.appRouting.enabled", "value": "true" },
+        { "variable": "appRouting.route.kind", "value": "nginx-disablement" }
+      ],
+      "expectationPath": [
+        { "variable": "cluster.operation.succeeded", "value": "true" },
+        { "variable": "appRouting.nginx.disabled", "value": "true" }
+      ]
+    },
+    {
+      "id": "app-routing-default-domain",
+      "label": "App Routing Default Domain Hello World",
+      "inputPath": [
+        { "variable": "addon.appRouting.enabled", "value": "true" },
+        { "variable": "appRouting.route.kind", "value": "default-domain" }
+      ],
+      "expectationPath": [
+        { "variable": "appRouting.defaultDomain.configured", "value": "true" },
+        { "variable": "traffic.route.reachable", "value": "true" },
+        { "variable": "traffic.http.status", "value": "200" }
+      ]
+    },
+    {
+      "id": "paf-throttling",
+      "label": "PAF Throttling",
+      "inputPath": [
+        { "variable": "identity.mode", "value": "msi" }
+      ],
+      "expectationPath": [
+        { "variable": "identity.msi.available", "value": "true" },
+        { "variable": "paf.throttling.behavior", "value": "works" }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-rest-add-existing",
+      "label": "ManagedSystem Pool Add Existing Cluster via ARM REST",
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "add-existing-pool" },
+        { "variable": "managedSystem.request.shape", "value": "minimal-mode-only" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-cli-create-cluster",
+      "label": "ManagedSystem Pool Create Cluster via Azure CLI",
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "create-cluster" },
+        { "variable": "managedSystem.request.shape", "value": "cli-defaults" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-cli-add-existing",
+      "label": "ManagedSystem Pool Add Existing Cluster via Azure CLI",
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "add-existing-pool" },
+        { "variable": "managedSystem.request.shape", "value": "cli-defaults" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-standalone-e2ev3",
+      "label": "ManagedSystem Pool Standalone E2Ev3 Scenario",
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "enable-scenario" },
+        { "variable": "managedSystem.request.shape", "value": "unknown" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ]
+    }
+  ],
+  "testCases": [
+    {
+      "id": "Scenario_Traffic_AppRouting_Nginx_Disablement",
+      "featureId": "app-routing-nginx-disablement",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" }
+      ],
+      "inputPath": [
+        { "variable": "addon.appRouting.enabled", "value": "true" },
+        { "variable": "appRouting.route.kind", "value": "nginx-disablement" }
+      ],
+      "expectationPath": [
+        { "variable": "cluster.operation.succeeded", "value": "true" },
+        { "variable": "appRouting.nginx.disabled", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "cluster.operation.succeeded", "value": "true" },
+        { "variable": "appRouting.nginx.disabled", "value": "true" }
+      ],
+      "result": "pass",
+      "evidence": ["successful-e2e-run"]
+    },
+    {
+      "id": "Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld",
+      "featureId": "app-routing-default-domain",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" }
+      ],
+      "inputPath": [
+        { "variable": "addon.appRouting.enabled", "value": "true" },
+        { "variable": "appRouting.route.kind", "value": "default-domain" },
+        { "variable": "tls.secret.provided", "value": "false" }
+      ],
+      "expectationPath": [
+        { "variable": "appRouting.defaultDomain.configured", "value": "true" },
+        { "variable": "traffic.route.reachable", "value": "true" },
+        { "variable": "traffic.http.status", "value": "200" }
+      ],
+      "observedPath": [
+        { "variable": "appRouting.defaultDomain.configured", "value": "false" },
+        { "variable": "traffic.route.reachable", "value": "false" }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "tls-secret",
+        "summary": "Required TLS secret was not provisioned for the default-domain path."
+      },
+      "evidence": ["e2e-run-results-summary"]
+    },
+    {
+      "id": "Scenario_PAFThrottling",
+      "featureId": "paf-throttling",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" }
+      ],
+      "inputPath": [
+        { "variable": "identity.mode", "value": "msi" },
+        { "variable": "msi.identity.provided", "value": "false" }
+      ],
+      "expectationPath": [
+        { "variable": "identity.msi.available", "value": "true" },
+        { "variable": "paf.throttling.behavior", "value": "works" }
+      ],
+      "observedPath": [
+        { "variable": "identity.msi.available", "value": "false" },
+        { "variable": "paf.throttling.behavior", "value": "failed" }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "msi-identity",
+        "summary": "MSI identity was missing for the PAF throttling path."
+      },
+      "evidence": ["e2e-run-results-summary"]
+    },
+    {
+      "id": "ManagedSystemPool_REST_AddExisting_Staging",
+      "featureId": "managedsystem-pool-rest-add-existing",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "staging" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "unknown" },
+        { "variable": "observation.surface", "value": "arm-rest" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "add-existing-pool" },
+        { "variable": "managedSystem.request.shape", "value": "minimal-mode-only" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "result": "pass",
+      "evidence": ["managedsystem-pool-exploration"]
+    },
+    {
+      "id": "ManagedSystemPool_CLI_CreateCluster",
+      "featureId": "managedsystem-pool-cli-create-cluster",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "staging" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "unknown" },
+        { "variable": "observation.surface", "value": "az-cli" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "create-cluster" },
+        { "variable": "managedSystem.request.shape", "value": "cli-defaults" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "false" },
+        { "variable": "agentPool.managedsystem.ready", "value": "false" }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI sent non-default fields that RP rejects for ManagedSystem pools."
+      },
+      "evidence": ["managedsystem-pool-exploration"]
+    },
+    {
+      "id": "ManagedSystemPool_CLI_AddExisting",
+      "featureId": "managedsystem-pool-cli-add-existing",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "staging" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "unknown" },
+        { "variable": "observation.surface", "value": "az-cli" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "add-existing-pool" },
+        { "variable": "managedSystem.request.shape", "value": "cli-defaults" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "false" },
+        { "variable": "agentPool.managedsystem.ready", "value": "false" }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI nodepool add sent non-default fields that RP rejects for ManagedSystem pools."
+      },
+      "evidence": ["managedsystem-pool-exploration"]
+    },
+    {
+      "id": "Scenario_ManagedSystemPool_Enable",
+      "featureId": "managedsystem-pool-standalone-e2ev3",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" },
+        { "variable": "observation.surface", "value": "standalone-e2ev3" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "enable-scenario" },
+        { "variable": "managedSystem.request.shape", "value": "unknown" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "result": "pass",
+      "evidence": ["iteration24-managedsystem-pool-pass"]
+    }
+  ],
+  "judgments": [
+    {
+      "id": "judgment-app-routing-nginx-disablement-standalone",
+      "featureId": "app-routing-nginx-disablement",
+      "status": "pass",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" },
+        { "variable": "observation.surface", "value": "standalone-e2ev3" }
+      ],
+      "inputPath": [
+        { "variable": "addon.appRouting.enabled", "value": "true" },
+        { "variable": "appRouting.route.kind", "value": "nginx-disablement" }
+      ],
+      "expectationPath": [
+        { "variable": "cluster.operation.succeeded", "value": "true" },
+        { "variable": "appRouting.nginx.disabled", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "cluster.operation.succeeded", "value": "true" },
+        { "variable": "appRouting.nginx.disabled", "value": "true" }
+      ],
+      "evidence": ["successful-e2e-run"],
+      "testCases": ["Scenario_Traffic_AppRouting_Nginx_Disablement"],
+      "summary": "Standalone dev-suite run passed for nginx disablement."
+    },
+    {
+      "id": "judgment-app-routing-default-domain-standalone",
+      "featureId": "app-routing-default-domain",
+      "status": "fail",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" },
+        { "variable": "observation.surface", "value": "standalone-e2ev3" }
+      ],
+      "inputPath": [
+        { "variable": "addon.appRouting.enabled", "value": "true" },
+        { "variable": "appRouting.route.kind", "value": "default-domain" },
+        { "variable": "tls.secret.provided", "value": "false" }
+      ],
+      "expectationPath": [
+        { "variable": "appRouting.defaultDomain.configured", "value": "true" },
+        { "variable": "traffic.route.reachable", "value": "true" },
+        { "variable": "traffic.http.status", "value": "200" }
+      ],
+      "observedPath": [
+        { "variable": "appRouting.defaultDomain.configured", "value": "false" },
+        { "variable": "traffic.route.reachable", "value": "false" }
+      ],
+      "evidence": ["e2e-run-results-summary"],
+      "testCases": ["Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld"],
+      "diagnosis": {
+        "kind": "tls-secret",
+        "summary": "Required TLS secret was not provisioned for the default-domain path."
+      },
+      "nextAction": "Verify the tls.secret.provided=true path or fix TLS secret provisioning."
+    },
+    {
+      "id": "judgment-paf-throttling-standalone",
+      "featureId": "paf-throttling",
+      "status": "fail",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" },
+        { "variable": "observation.surface", "value": "standalone-e2ev3" }
+      ],
+      "inputPath": [
+        { "variable": "identity.mode", "value": "msi" },
+        { "variable": "msi.identity.provided", "value": "false" }
+      ],
+      "expectationPath": [
+        { "variable": "identity.msi.available", "value": "true" },
+        { "variable": "paf.throttling.behavior", "value": "works" }
+      ],
+      "observedPath": [
+        { "variable": "identity.msi.available", "value": "false" },
+        { "variable": "paf.throttling.behavior", "value": "failed" }
+      ],
+      "evidence": ["e2e-run-results-summary"],
+      "testCases": ["Scenario_PAFThrottling"],
+      "diagnosis": {
+        "kind": "msi-identity",
+        "summary": "MSI identity was missing for the PAF throttling path."
+      },
+      "nextAction": "Verify the msi.identity.provided=true path."
+    },
+    {
+      "id": "judgment-managedsystem-rest-add-existing-staging",
+      "featureId": "managedsystem-pool-rest-add-existing",
+      "status": "pass",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "staging" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "unknown" },
+        { "variable": "observation.surface", "value": "arm-rest" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "add-existing-pool" },
+        { "variable": "managedSystem.request.shape", "value": "minimal-mode-only" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "evidence": ["managedsystem-pool-exploration"],
+      "testCases": ["ManagedSystemPool_REST_AddExisting_Staging"],
+      "summary": "ARM REST with minimal mode-only payload created a ManagedSystem pool in staging."
+    },
+    {
+      "id": "judgment-managedsystem-cli-create-staging",
+      "featureId": "managedsystem-pool-cli-create-cluster",
+      "status": "fail",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "staging" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "unknown" },
+        { "variable": "observation.surface", "value": "az-cli" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "create-cluster" },
+        { "variable": "managedSystem.request.shape", "value": "cli-defaults" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "false" },
+        { "variable": "agentPool.managedsystem.ready", "value": "false" }
+      ],
+      "evidence": ["managedsystem-pool-exploration"],
+      "testCases": ["ManagedSystemPool_CLI_CreateCluster"],
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI sent non-default fields that RP rejects for ManagedSystem pools."
+      },
+      "nextAction": "Fix or bypass CLI payload generation; REST workaround is known."
+    },
+    {
+      "id": "judgment-managedsystem-cli-add-existing-staging",
+      "featureId": "managedsystem-pool-cli-add-existing",
+      "status": "fail",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "staging" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "unknown" },
+        { "variable": "observation.surface", "value": "az-cli" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "add-existing-pool" },
+        { "variable": "managedSystem.request.shape", "value": "cli-defaults" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "false" },
+        { "variable": "agentPool.managedsystem.ready", "value": "false" }
+      ],
+      "evidence": ["managedsystem-pool-exploration"],
+      "testCases": ["ManagedSystemPool_CLI_AddExisting"],
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI nodepool add sent non-default fields that RP rejects for ManagedSystem pools."
+      },
+      "nextAction": "Fix or bypass CLI payload generation; REST workaround is known."
+    },
+    {
+      "id": "judgment-managedsystem-standalone-e2ev3",
+      "featureId": "managedsystem-pool-standalone-e2ev3",
+      "status": "pass",
+      "contextPath": [
+        { "variable": "observation.environment", "value": "standalone" },
+        { "variable": "observation.suite", "value": "dev" },
+        { "variable": "observation.host", "value": "devbox" },
+        { "variable": "observation.buildVersion", "value": "hayuaebld163822451" },
+        { "variable": "observation.surface", "value": "standalone-e2ev3" }
+      ],
+      "inputPath": [
+        { "variable": "agentPool.kind", "value": "managedsystem" },
+        { "variable": "managedSystem.operation", "value": "enable-scenario" },
+        { "variable": "managedSystem.request.shape", "value": "unknown" }
+      ],
+      "expectationPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "observedPath": [
+        { "variable": "rp.request.accepted", "value": "true" },
+        { "variable": "agentPool.managedsystem.ready", "value": "true" },
+        { "variable": "agentPool.managedsystem.azureManagedNodes", "value": "true" }
+      ],
+      "evidence": ["iteration24-managedsystem-pool-pass"],
+      "testCases": ["Scenario_ManagedSystemPool_Enable"],
+      "summary": "Standalone e2ev3 run passed for ManagedSystemPool_Enable on build hayuaebld163822451."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "successful-e2e-run",
+      "kind": "artifact",
+      "path": "outputs/successful-e2e-run.md",
+      "summary": "Green evidence for Scenario_Traffic_AppRouting_Nginx_Disablement."
+    },
+    {
+      "id": "e2e-run-results-summary",
+      "kind": "artifact",
+      "path": "outputs/e2e-run-results-summary.md",
+      "summary": "Current summary of passed and failed scenarios."
+    },
+    {
+      "id": "managedsystem-pool-exploration",
+      "kind": "artifact",
+      "path": "outputs/managedsystem-pool-exploration.md",
+      "summary": "Exploration artifact for the managedsystem pool skill and behavior."
+    },
+    {
+      "id": "iteration24-managedsystem-pool-pass",
+      "kind": "artifact",
+      "path": "outputs/iteration24-managedsystem-pool-pass.md",
+      "summary": "Pass evidence for Scenario_ManagedSystemPool_Enable on standalone."
+    },
+    {
+      "id": "managedsystem-standalone-interrupted-session",
+      "kind": "session",
+      "sessionId": "s_1778656714888_6",
+      "summary": "Session was interrupted while standalone Scenario_ManagedSystemPool_Enable was polling CreateAgentPool."
+    }
+  ]
+}

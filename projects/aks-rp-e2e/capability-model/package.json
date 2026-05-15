@@ -1,0 +1,17 @@
+{
+  "name": "@aks-rp-e2e/capability-model",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test src/*.test.ts",
+    "validate": "bun src/validate.ts ../outputs/e2e-capability-model.json"
+  }
+}
