@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager } from "./manager.js";
-import type { BeforeToolCallContext } from "./tools/compose-guards.js";
+import { SubagentManager } from "../src/lib/manager.js";
+import type { BeforeToolCallContext } from "../src/lib/tools/compose-guards.js";
 
 describe("SubagentManager guard signals", () => {
   const roots: string[] = [];

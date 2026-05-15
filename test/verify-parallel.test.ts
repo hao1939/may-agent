@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -13,7 +13,7 @@ import { join } from "node:path";
 // ── QA Identity Auditor Protocol ─────────────────────────────────────────
 
 function readQaIdentity(): string {
-  return readFileSync(join(process.cwd(), "app/agents/qa/AGENTS.md"), "utf-8");
+  return readFileSync(join("/app", "agents/qa/AGENTS.md"), "utf-8");
 }
 
 describe("verify-parallel: QA AGENTS.md policy", () => {

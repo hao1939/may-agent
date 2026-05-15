@@ -1,5 +1,5 @@
 import { Duplex } from "node:stream";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { sendSocketCommand, type SocketEndpoint } from "./client.js";
 import {
   createControlSocketCore,

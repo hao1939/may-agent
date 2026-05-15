@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { join } from "node:path";
 import { resolveRuntimeRoots } from "../src/app/path-roots.js";
 
@@ -14,15 +14,14 @@ afterEach(() => {
 });
 
 describe("resolveRuntimeRoots", () => {
-  it("infers the app root when app/ contains agents/ and shared/", () => {
+  it("infers the canonical /app root when it contains agents/ and shared/", () => {
     for (const key of ENV_KEYS) delete process.env[key];
-    const root = process.cwd();
     const roots = resolveRuntimeRoots(new URL("../src/app/may.ts", import.meta.url).href);
 
-    expect(roots.projectRoot).toBe(join(root, "app"));
-    expect(roots.agentsRoot).toBe(join(root, "app", "agents"));
-    expect(roots.sharedRoot).toBe(join(root, "app", "shared"));
-    expect(roots.projectsRoot).toBe(join(root, "app", "projects"));
+    expect(roots.projectRoot).toBe("/app");
+    expect(roots.agentsRoot).toBe("/app/agents");
+    expect(roots.sharedRoot).toBe("/app/shared");
+    expect(roots.projectsRoot).toBe("/app/projects");
   });
 
   it("honors explicit container roots", () => {

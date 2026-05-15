@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createReadDedupGuard, READ_WARN_THRESHOLD, READ_BLOCK_THRESHOLD } from "../src/lib/tools/read-dedup-guard.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 

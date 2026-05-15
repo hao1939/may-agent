@@ -5,7 +5,7 @@
  *  - Resume path preferring compacted messages over full JSONL
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, rmSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

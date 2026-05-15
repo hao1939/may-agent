@@ -10,7 +10,7 @@
  * against failure modes, not just happy-path code.
  */
 
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "bun:test";
 import { existsSync, readFileSync, writeFileSync, readdirSync, chmodSync } from "node:fs";
 import { join } from "node:path";
 import {

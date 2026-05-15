@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createSessionReadGuard } from "../src/lib/tools/session-read-guard.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 

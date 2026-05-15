@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { parseRunWorkflowMode } from "../src/app/modes/run-workflow.js";
 
 describe("run workflow mode", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { applyErrorNudges, DEFAULT_ERROR_NUDGES, type ErrorNudge } from "../src/lib/tools/bash.js";
 
 describe("applyErrorNudges", () => {

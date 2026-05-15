@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { closeDb, getDb } from "./requests.js";
-import { createMetricService } from "./metrics.js";
+import { closeDb, getDb } from "../src/lib/requests.js";
+import { createMetricService } from "../src/lib/metrics.js";
 
 describe("MetricService", () => {
   const roots: string[] = [];

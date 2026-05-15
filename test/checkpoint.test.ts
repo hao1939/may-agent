@@ -5,7 +5,7 @@
  * step counter, error handling, and JSONL append behavior.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, rmSync, existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 import {

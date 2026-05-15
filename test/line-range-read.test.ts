@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createReadTool } from "../src/lib/tools/read.js";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach } from "bun:test";
 import { createFileReadTracker, getFileReadStats } from "../src/lib/session-subscribers.js";
 import { getDb } from "../src/lib/requests.js";
 import { join } from "node:path";

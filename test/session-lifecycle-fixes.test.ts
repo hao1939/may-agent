@@ -6,7 +6,7 @@
  * Bug 8: resumeSession doesn't restore parentAgentName
  * Bug 10: callDepths map never cleaned for completed root sessions
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "bun:test";
 import { mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

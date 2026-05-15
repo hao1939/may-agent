@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createBashTool } from "../src/lib/tools/bash.js";
 import { isMetaRecursionCommand } from "../src/lib/tools/may-utils.js";
 
@@ -76,7 +76,7 @@ describe("isMetaRecursionCommand", () => {
   it("does NOT block normal commands", () => {
     expect(isMetaRecursionCommand("echo hello")).toBe(false);
     expect(isMetaRecursionCommand("ls -la")).toBe(false);
-    expect(isMetaRecursionCommand("npx vitest --run")).toBe(false);
+    expect(isMetaRecursionCommand("bun test")).toBe(false);
     expect(isMetaRecursionCommand("npx tsc --noEmit")).toBe(false);
     expect(isMetaRecursionCommand("node test.js")).toBe(false);
     expect(isMetaRecursionCommand("cat run/may.ts")).toBe(false);

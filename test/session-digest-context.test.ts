@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { formatDigestContext, type DigestRow } from "../src/lib/session-digest.js";
 
 function makeDigest(overrides: Partial<DigestRow>): DigestRow {

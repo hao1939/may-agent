@@ -7,7 +7,7 @@
  * 3. Backward compatible — guards without redirect/steer work as before
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import { wrapToolsWithReceipts } from "../src/lib/manager-receipts.js";
 import type { BeforeToolCallResult, BeforeToolCallContext } from "../src/lib/tools/compose-guards.js";
 

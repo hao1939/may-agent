@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { isToolError, computeToolArgsKey, TOOL_PIVOT_LIMIT } from "../src/lib/manager.js";
 
 describe("Tool Pivot Heuristic", () => {

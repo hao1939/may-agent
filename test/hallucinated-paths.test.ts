@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { extractHallucinatedRelPath } from "../src/lib/tools/may-utils.js";
 import { createReadTool } from "../src/lib/tools/read.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";

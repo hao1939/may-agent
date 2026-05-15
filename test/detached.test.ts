@@ -7,7 +7,7 @@
  * 3. src/manager.ts — waitForDetached(), detached cancel, detached waitFor tool action
  */
 
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { Duplex } from "node:stream";

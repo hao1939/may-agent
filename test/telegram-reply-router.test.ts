@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,7 +9,7 @@ import {
   extractProjectPath,
   normalizeProjectPath,
   readSessionReplyContext,
-} from "../src/app/ui/telegram-reply-router.js";
+} from "../src/app/transport/telegram-reply-router.js";
 
 describe("telegram reply router helpers", () => {
   const root = "/home/hao/may-agent";

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createBashTool, DEFAULT_BASH_TIMEOUT } from "../src/lib/tools/bash.js";
 
 describe("P113 Bash Resource Caps", () => {

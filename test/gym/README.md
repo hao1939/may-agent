@@ -16,8 +16,8 @@ test/gym/
 │   │   └── judge_criteria.md     #   (optional) LLM judge rubric
 │   └── .../
 ├── gym-runner.ts                 # TypeScript runner (adapters, scoring, judging)
-├── gym-harness.ts                # shared test harness for vitest
-├── gym.test.ts                   # vitest integration tests
+├── gym-harness.ts                # shared test harness for bun test
+├── gym.test.ts                   # bun test integration tests
 ├── lib/
 │   ├── gym-score-utils.ts        # Score class DSL for writing scorers
 │   ├── gym-score-utils.cjs       # CJS bundle (used by success_criteria.js)
@@ -39,10 +39,10 @@ scripts/gym-run.sh phantom-fix --agent coder --lab coder-fm33-fix
 
 Output is JSON: `{ passed, checks[], summary, session_path, work_dir }`.
 
-### Via vitest (CI)
+### Via bun test (CI)
 
 ```bash
-npx vitest --run test/gym/gym.test.ts
+bun test test/gym/gym.test.ts
 ```
 
 ---

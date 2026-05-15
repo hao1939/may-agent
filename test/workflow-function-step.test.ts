@@ -12,7 +12,7 @@
  * are isolated (errors don't kill the workflow).
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 
 describe("workflow function step contract", () => {
   it("runFunction signature is exposed in workflow defs", async () => {

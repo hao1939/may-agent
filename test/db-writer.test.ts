@@ -1,9 +1,9 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach } from "bun:test";
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DbWriter } from "./db-writer.js";
-import { closeDb, getDb } from "./requests.js";
+import { DbWriter } from "../src/lib/db-writer.js";
+import { closeDb, getDb } from "../src/lib/requests.js";
 
 const TEST_DIR = join(tmpdir(), "may-agent-db-writer-test");
 

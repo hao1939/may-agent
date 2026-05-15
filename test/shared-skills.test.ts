@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const ROOT = resolve(import.meta.dirname, "..");
-const SHARED_SKILLS = resolve(ROOT, "app/shared/skills");
+const APP_ROOT = "/app";
+const SHARED_SKILLS = resolve(APP_ROOT, "shared/skills");
 
 function readSkill(path: string): string {
-  const full = resolve(ROOT, path);
+  const full = resolve(APP_ROOT, path);
   expect(existsSync(full), `${path} must exist`).toBe(true);
   return readFileSync(full, "utf-8");
 }
@@ -21,8 +21,8 @@ function frontmatter(content: string): string {
 describe("shared system skills", () => {
   it("new system skills are valid SKILL.md files", () => {
     for (const path of [
-      "app/shared/skills/project-loop-driver/SKILL.md",
-      "app/shared/skills/control-plane-operation/SKILL.md",
+      "shared/skills/project-loop-driver/SKILL.md",
+      "shared/skills/control-plane-operation/SKILL.md",
     ]) {
       const content = readSkill(path);
       const fm = frontmatter(content);
@@ -37,7 +37,7 @@ describe("shared system skills", () => {
   });
 
   it("project-loop-driver encodes the unified project mental model", () => {
-    const content = readSkill("app/shared/skills/project-loop-driver/SKILL.md");
+    const content = readSkill("shared/skills/project-loop-driver/SKILL.md");
     expect(content).toContain("Intensive work");
     expect(content).toContain("Monitoring");
     expect(content).toContain("A project is not a ritual");
@@ -46,7 +46,7 @@ describe("shared system skills", () => {
   });
 
   it("control-plane-operation keeps agents on the event/workflow boundary", () => {
-    const content = readSkill("app/shared/skills/control-plane-operation/SKILL.md");
+    const content = readSkill("shared/skills/control-plane-operation/SKILL.md");
     expect(content).toContain("external input -> socket/control event -> daemon event -> handler -> workflow");
     expect(content).toContain("handler bridge -> workflow");
     expect(content).toContain("docker exec may-agent may-agent --emit");
@@ -54,7 +54,7 @@ describe("shared system skills", () => {
   });
 
   it("reading-metrics treats metrics as signals and avoids schema guessing", () => {
-    const content = readSkill("app/shared/skills/reading-metrics/skill.md");
+    const content = readSkill("shared/skills/reading-metrics/skill.md");
     expect(content).toContain("A metric is a signal, not a judge");
     expect(content).toContain("Prefer injected/live context");
     expect(content).toContain("Do not guess DB");
