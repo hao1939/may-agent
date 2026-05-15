@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import type { CronEntry } from "./cron-tool.js";
-import type { HandlerContext, TriggerEvent } from "./handler-context.js";
-import { createWorkflowHandler } from "./workflow-handler.js";
+import { describe, expect, it } from "bun:test";
+import type { CronEntry } from "../src/lib/cron-tool.js";
+import type { HandlerContext, TriggerEvent } from "../src/lib/handler-context.js";
+import { createWorkflowHandler } from "../src/lib/workflow-handler.js";
 
 describe("createWorkflowHandler", () => {
   function context() {

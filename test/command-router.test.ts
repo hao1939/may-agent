@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { attachCommandRouter } from "./command-router.js";
-import { EventBus, type AgentEvent } from "./event-bus.js";
-import type { ChatSession } from "./chat-session.js";
-import type { SubagentManager } from "../lib/index.js";
+import { attachCommandRouter } from "../src/app/command-router.js";
+import { EventBus, type AgentEvent } from "../src/app/event-bus.js";
+import type { ChatSession } from "../src/app/chat-session.js";
+import type { SubagentManager } from "../src/lib/index.js";
 
 function createHarness(overrides: Partial<SubagentManager> = {}, projectRoot = mkdtempSync(join(tmpdir(), "router-"))) {
   const bus = new EventBus();

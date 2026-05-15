@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -332,7 +332,7 @@ describe("workflow tool: run", () => {
   });
 
   // NOTE: hot-reload works under plain Node (cache-bust via ?t=counter)
-  // but vitest's transform pipeline normalizes query strings, so this
+  // but Bun test's transform pipeline normalizes query strings, so this
   // can't be tested here. Verified manually with node --input-type=module.
 });
 

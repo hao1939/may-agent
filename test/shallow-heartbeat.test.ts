@@ -12,7 +12,7 @@
  * and the result status for heartbeat vs. non-heartbeat tasks.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../src/lib/manager.js";
 import { readSessionMeta } from "../src/lib/persistence.js";
 import type { SubagentDefinition } from "../src/lib/types.js";

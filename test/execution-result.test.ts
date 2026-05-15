@@ -1,16 +1,16 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { closeDb, getDb } from "./requests.js";
+import { closeDb, getDb } from "../src/lib/requests.js";
 import {
   getExecutionResultFromDb,
   resumeDiagnosticToExecutionResult,
   taskResultToExecutionResult,
   workflowToolResultToExecutionResult,
-} from "./execution-result.js";
-import type { TaskResult } from "./types.js";
-import type { WorkflowToolResult } from "./workflow.js";
+} from "../src/lib/execution-result.js";
+import type { TaskResult } from "../src/lib/types.js";
+import type { WorkflowToolResult } from "../src/lib/workflow.js";
 
 describe("ExecutionResult", () => {
   const roots: string[] = [];

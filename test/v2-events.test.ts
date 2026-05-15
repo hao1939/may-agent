@@ -6,7 +6,7 @@
  * variants don't accidentally regress out of the union.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import type { AgentEvent } from "../src/app/event-bus.js";
 
 describe("v2 SystemEvent variants", () => {

@@ -1,9 +1,9 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
-import { EventBus } from "./event-bus.js";
-import { Cron } from "./cron.js";
+import { describe, expect, it, vi } from "bun:test";
+import { EventBus } from "../src/app/event-bus.js";
+import { Cron } from "../src/app/cron.js";
 
 function tempCronConfig(entries: unknown[]): { root: string; configPath: string; cleanup: () => void } {
   const root = mkdtempSync(join(tmpdir(), "may-cron-test-"));

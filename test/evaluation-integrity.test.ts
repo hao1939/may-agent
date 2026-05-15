@@ -8,7 +8,7 @@
  * their own evaluation logic 50% of the time if allowed.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { resolve } from "node:path";
 import { checkCrossEditGuard } from "../src/lib/tools/cross-edit-guard.js";
 

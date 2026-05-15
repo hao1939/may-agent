@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { closeDb, getDb } from "./requests.js";
-import { createQueryService } from "./query-service.js";
+import { closeDb, getDb } from "../src/lib/requests.js";
+import { createQueryService } from "../src/lib/query-service.js";
 
 describe("QueryService", () => {
   const roots: string[] = [];

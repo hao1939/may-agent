@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../src/app/event-bus.js";
-import { attachTelegramBot } from "../src/app/ui/telegram.js";
+import { attachTelegramBot } from "../src/app/transport/telegram.js";
 import { attachCommandRouter } from "../src/app/command-router.js";
 import { getDb } from "../src/lib/requests.js";
 

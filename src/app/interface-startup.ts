@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
 import type { EventBus } from "./event-bus.js";
-import { attachSocketUI, type SocketUI } from "./ui/socket.js";
+import { attachSocketUI, type SocketUI } from "./transport/socket.js";
 
 export interface InterfaceStartupOptions {
   socketEnabled: boolean;

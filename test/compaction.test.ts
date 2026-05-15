@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import {
   createCompactionTransform,
   trimAccumulatedSummary,
@@ -559,7 +559,7 @@ describe("createCompactionTransform", () => {
 
     const messages = [
       userMsg("Run the tests " + longText(20)),
-      toolCallMsg("exec", { command: "npx vitest run" }),
+      toolCallMsg("exec", { command: "bun test" }),
       toolResultMsg("exec", "All tests passed " + longText(30)),
       assistantMsg("Tests passed! " + longText(20)),
       toolCallMsg("exec", { command: "npx tsc --noEmit" }),
@@ -573,7 +573,7 @@ describe("createCompactionTransform", () => {
     const summaryText = (result[0].content as any[])[0].text;
     expect(summaryText).toContain("Key facts");
     expect(summaryText).toContain("Exec commands run:");
-    expect(summaryText).toContain("[ok] npx vitest run");
+    expect(summaryText).toContain("[ok] bun test");
     expect(summaryText).toContain("[FAILED] npx tsc --noEmit");
   });
 
@@ -581,10 +581,10 @@ describe("createCompactionTransform", () => {
     const model = fakeModel(1000);
     const transform = createCompactionTransform(model, { threshold: 0.3, keepRatio: 0.1 });
 
-    // Round 1: run vitest
+    // Round 1: run bun test
     const messages1 = [
       userMsg("Run tests " + longText(20)),
-      toolCallMsg("exec", { command: "npx vitest run" }),
+      toolCallMsg("exec", { command: "bun test" }),
       toolResultMsg("exec", "passed " + longText(30)),
       assistantMsg("ok " + longText(20)),
       userMsg(longText(100)),
@@ -607,7 +607,7 @@ describe("createCompactionTransform", () => {
     const summaryText = (result2[0].content as any[])[0].text;
 
     // Both commands should appear in key facts
-    expect(summaryText).toContain("npx vitest run");
+    expect(summaryText).toContain("bun test");
     expect(summaryText).toContain("npx tsc --noEmit");
   });
 

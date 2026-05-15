@@ -5,9 +5,9 @@
  * and blocks finish(status: "success") appropriately.
  */
 
-import { describe, test, expect } from "vitest";
-import { createVerificationDepthGuard } from "./verification-depth-guard.js";
-import type { BeforeToolCallContext } from "./compose-guards.js";
+import { describe, test, expect } from "bun:test";
+import { createVerificationDepthGuard } from "../src/lib/tools/verification-depth-guard.js";
+import type { BeforeToolCallContext } from "../src/lib/tools/compose-guards.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Helpers

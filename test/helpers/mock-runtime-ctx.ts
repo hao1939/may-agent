@@ -5,7 +5,7 @@
  * tests that use this get the new fields automatically.
  */
 
-import { vi } from "vitest";
+import { vi } from "bun:test";
 import type { RuntimeCtx } from "../../src/lib/handler-context.js";
 import type { HandlerContext } from "../../src/lib/handler-context.js";
 

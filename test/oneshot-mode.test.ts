@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { parseOneshotTimeoutMinutes } from "../src/app/modes/oneshot.js";
 
 describe("oneshot mode", () => {

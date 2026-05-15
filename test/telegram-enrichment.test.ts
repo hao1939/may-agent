@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "bun:test";
 import type { SqliteDb } from "../src/lib/db.js";
 import { openDatabase } from "../src/lib/db.js";
 

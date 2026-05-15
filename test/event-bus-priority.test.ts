@@ -5,7 +5,7 @@
  * triggered by an event is backed by a durable event record on disk.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { EventBus } from "../src/app/event-bus.js";
 
 describe("EventBus subscriber priority", () => {

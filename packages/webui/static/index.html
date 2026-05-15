@@ -444,6 +444,7 @@ let currentTab = 'live';
 let currentRouteParams = {};
 let offset = 0;
 const limit = 30;
+let _currentProjectDetail = null;
 
 // ── Router ────────────────────────────────────────────────────────────
 // Hash routes: #/ #/agents #/agents/<name> #/projects #/projects/:id
@@ -2457,6 +2458,35 @@ function jsStringAttr(s) {
   return attrEsc(JSON.stringify(String(s ?? '')));
 }
 
+function renderMarkdownBlock(text) {
+  if (window.marked?.parse) return window.marked.parse(text || '');
+  return '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' + esc(text || '') + '</pre>';
+}
+
+function extractProjectSection(body, headings) {
+  const wanted = new Set((Array.isArray(headings) ? headings : [headings]).map(h => String(h).trim().toLowerCase()));
+  const lines = String(body || '').split(/\r?\n/);
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^##\s+(.+?)\s*$/);
+    if (!m) continue;
+    const heading = m[1].trim().toLowerCase();
+    for (const name of wanted) {
+      if (heading === name || heading.startsWith(name + ' ') || heading.startsWith(name + ' (')) {
+        start = i + 1;
+        break;
+      }
+    }
+    if (start >= 0) break;
+  }
+  if (start < 0) return '';
+  let end = lines.length;
+  for (let i = start; i < lines.length; i++) {
+    if (/^##\s+/.test(lines[i])) { end = i; break; }
+  }
+  return lines.slice(start, end).join('\n').trim();
+}
+
 // ── Steering verbs ──────────────────────────────────────────────────────────────
 // Tiny toast for verb feedback. Honesty-of-latency: "queued at <time>".
 function toast(msg, kind) {
@@ -3331,6 +3361,7 @@ async function showProjectDetail(path) {
     const r = await fetch(`/api/projects/detail?path=${encodeURIComponent(path)}`);
     detail = await r.json();
     if (detail.error) throw new Error(detail.error);
+    _currentProjectDetail = detail;
   } catch (e) {
     el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load project: ${esc(e.message)}</div>`;
     return;
@@ -3436,15 +3467,18 @@ async function showProjectDetail(path) {
   html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
 
   // ── Sub-tabs ──
+  const hasQualityPanel = detail.name === 'alpha-project';
+  const defaultProjectTab = hasQualityPanel ? 'quality' : 'project';
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
-  html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
+  if (hasQualityPanel) html += `<button class="tab-btn active" onclick="switchProjectTab(this,'quality')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Quality Panel</button>`;
+  html += `<button class="tab-btn ${hasQualityPanel ? '' : 'active'}" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid ${hasQualityPanel ? 'transparent' : 'var(--accent)'};color:${hasQualityPanel ? 'var(--fg2)' : 'var(--accent)'};padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
   const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'lineage')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Lineage</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'sessions')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}</button>`;
   html += `</div>`;
-  html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;max-height:70vh;overflow-y:auto"></div>`;
+  html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px"></div>`;
 
   el.innerHTML = html;
 
@@ -3471,7 +3505,7 @@ async function showProjectDetail(path) {
     });
   }
 
-  loadProjectTab('project');
+  loadProjectTab(defaultProjectTab);
 }
 
 function switchProjectTab(btn, tab) {
@@ -3484,7 +3518,9 @@ async function loadProjectTab(tab) {
   const el = document.getElementById('project-tab-content');
   if (!el) return;
   try {
-    if (tab === 'project') {
+    if (tab === 'quality') {
+      await renderAksRpE2eQualityPanel(el);
+    } else if (tab === 'project') {
       const res = await fetch(`/api/projects/content?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
@@ -3558,6 +3594,491 @@ async function loadProjectTab(tab) {
   } catch(e) {
     el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
   }
+}
+
+async function renderAksRpE2eQualityPanel(el) {
+  const res = await fetch(`/api/projects/content?path=${encodeURIComponent(_projectDetailPath)}`);
+  const data = await res.json();
+  const content = data.content || '';
+  const signals = extractProjectSection(content, 'Signals');
+  const capability = extractProjectSection(content, 'Capability Map');
+  const capabilityModel = extractProjectSection(content, 'Capability Model');
+  const weaknesses = extractProjectSection(content, ['Weaknesses', 'Active Weaknesses']);
+  const validation = extractProjectSection(content, 'Validation');
+  const linkedContext = extractProjectSection(content, 'Linked Context');
+  const plan = extractProjectSection(content, 'Plan');
+  let model = null;
+  let modelError = '';
+  try {
+    const modelRes = await fetch(`/api/projects/artifact?path=${encodeURIComponent(_projectDetailPath)}&file=${encodeURIComponent('outputs/e2e-capability-model.json')}`);
+    const modelData = await modelRes.json();
+    if (!modelRes.ok || modelData.error) throw new Error(modelData.error || `HTTP ${modelRes.status}`);
+    model = JSON.parse(modelData.content || '{}');
+  } catch (e) {
+    modelError = e?.message || String(e);
+  }
+
+  const signalRows = signals.split(/\r?\n/).filter(l => l.trim().startsWith('- '));
+  const passLine = signalRows.find(l => /scenario-pass/i.test(l)) || '';
+  const evidenceLine = signalRows.find(l => /green-run-evidence/i.test(l)) || '';
+  const failureLine = signalRows.find(l => /failure|blocker/i.test(l)) || '';
+
+  function stat(label, value, sub, color) {
+    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:150px">
+      <div style="font-size:10px;color:var(--fg2);text-transform:uppercase;letter-spacing:.05em">${esc(label)}</div>
+      <div style="font-size:22px;font-weight:700;color:${color || 'var(--fg)'};line-height:1.2;margin-top:3px">${esc(value)}</div>
+      <div style="font-size:11px;color:var(--fg2);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${attrEsc(sub || '')}">${esc(sub || '')}</div>
+    </div>`;
+  }
+
+  function card(title, body, opts = {}) {
+    return `<section style="background:var(--bg);border:1px solid ${opts.border || 'var(--border)'};border-radius:8px;padding:14px;min-width:0">
+      <h3 style="margin:0 0 8px;font-size:12px;color:${opts.color || 'var(--fg2)'};text-transform:uppercase;letter-spacing:.05em">${esc(title)}</h3>
+      <div class="md-rendered" style="font-size:13px;line-height:1.5;overflow-wrap:anywhere">${body ? renderMarkdownBlock(body) : '<span style="color:var(--fg2)">Not specified yet.</span>'}</div>
+    </section>`;
+  }
+
+  function resultColor(status) {
+    if (status === 'pass') return 'var(--green)';
+    if (status === 'fail') return 'var(--red)';
+    if (status === 'blocked') return 'var(--yellow)';
+    if (status === 'unknown') return 'var(--fg2)';
+    return 'var(--accent)';
+  }
+
+  function assignmentPath(path) {
+    return (path || []).map(a => `${a.variable}=${a.value}`).join(' → ');
+  }
+
+  function assignmentValue(path, variable) {
+    return (path || []).find(a => a.variable === variable)?.value;
+  }
+
+  function deriveFeatureStatus(feature, tests) {
+    const linked = tests.filter(t => t.featureId === feature.id);
+    if (linked.length === 0) return { status: 'uncovered', tests: linked };
+    for (const status of ['fail', 'blocked', 'unknown', 'pass']) {
+      if (linked.some(t => t.result === status)) return { status, tests: linked };
+    }
+    return { status: 'unknown', tests: linked };
+  }
+
+  function missingBranches(feature, tests, variables) {
+    const linked = tests.filter(t => t.featureId === feature.id);
+    const suggestions = [];
+    for (const assignment of feature.inputPath || []) {
+      const variable = (variables || []).find(v => v.id === assignment.variable);
+      if (!variable || !Array.isArray(variable.domain) || variable.domain.length < 2) continue;
+      const observed = new Set(linked.map(t => assignmentValue(t.inputPath, assignment.variable)).filter(Boolean));
+      for (const value of variable.domain) {
+        if (!observed.has(value)) suggestions.push(`${assignment.variable}=${value}`);
+      }
+    }
+
+    const childVars = new Set((model?.inputDependencies || []).map(dep => dep.child));
+    for (const variable of variables || []) {
+      if (!childVars.has(variable.id)) continue;
+      const relevant = linked.some(t => assignmentValue(t.inputPath, variable.id) != null);
+      if (!relevant) continue;
+      const observed = new Set(linked.map(t => assignmentValue(t.inputPath, variable.id)).filter(Boolean));
+      for (const value of variable.domain || []) {
+        if (!observed.has(value)) suggestions.push(`${variable.id}=${value}`);
+      }
+    }
+
+    return [...new Set(suggestions)].slice(0, 3);
+  }
+
+  function nextQuestion(row, variables) {
+    const status = row.status;
+    const feature = row.feature;
+    const tests = row.tests || [];
+    if (status === 'uncovered') return 'Run first probe for this feature.';
+    if (status === 'unknown') return 'Resolve unknown result with a concrete run or blocker.';
+    if (status === 'blocked') return 'Unblock the blocker, then rerun the same path.';
+    if (status === 'fail') {
+      const latest = tests.find(t => t.result === 'fail') || tests[0];
+      const blocker = latest?.diagnosis?.kind;
+      return blocker ? `Investigate diagnosis=${blocker}.` : 'Classify failure diagnosis.';
+    }
+    const missing = missingBranches(feature, tests, variables);
+    return missing.length ? `Probe missing branch: ${missing[0]}.` : 'No immediate gap from current model.';
+  }
+
+  function judgmentEnv(judgment) {
+    return assignmentValue(judgment.contextPath, 'observation.environment') || 'unknown';
+  }
+
+  function judgmentSurface(judgment) {
+    return assignmentValue(judgment.contextPath, 'observation.surface') || 'unknown';
+  }
+
+  function renderDependencyDag(title, variables, deps) {
+    const byId = Object.fromEntries((variables || []).map(v => [v.id, v]));
+    const children = new Map();
+    const childIds = new Set();
+    for (const dep of deps || []) {
+      if (!children.has(dep.parent)) children.set(dep.parent, []);
+      children.get(dep.parent).push(dep);
+      childIds.add(dep.child);
+    }
+    const roots = (variables || []).map(v => v.id).filter(id => !childIds.has(id)).sort();
+
+    function node(id, depth, seen = new Set()) {
+      const variable = byId[id] || { id, domain: [] };
+      const domain = (variable.domain || []).join(' | ');
+      let out = `<div style="margin-left:${depth * 14}px;padding:5px 0 5px 10px;border-left:1px solid var(--border)">`;
+      out += `<div style="font-family:monospace;font-size:12px;color:var(--fg)">${esc(id)}</div>`;
+      out += `<div style="font-size:11px;color:var(--fg2)">domain: ${esc(domain || '—')}</div>`;
+      if (seen.has(id)) {
+        out += `<div style="font-size:11px;color:var(--red)">cycle reference</div></div>`;
+        return out;
+      }
+      const nextSeen = new Set(seen);
+      nextSeen.add(id);
+      const edges = (children.get(id) || []).sort((a, b) => a.child.localeCompare(b.child));
+      for (const edge of edges) {
+        out += `<div style="margin-top:4px;font-size:11px;color:var(--fg2)">if ${esc(edge.parentValue ?? '*')} then</div>`;
+        out += node(edge.child, depth + 1, nextSeen);
+      }
+      out += `</div>`;
+      return out;
+    }
+
+    let html = `<details style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px" open>`;
+    html += `<summary style="cursor:pointer;font-size:12px;color:var(--fg);font-weight:600">${esc(title)}</summary>`;
+    html += `<div style="margin-top:8px;max-height:260px;overflow:auto">${roots.length ? roots.map(root => node(root, 0)).join('') : '<span style="color:var(--fg2);font-size:12px">No variables.</span>'}</div>`;
+    html += `</details>`;
+    return html;
+  }
+
+  function renderCapabilityModelGraph(model, fallback, error) {
+    if (!model) {
+      return card('Capability Model', fallback || `Model unavailable: ${error || 'unknown error'}`, { border: 'var(--yellow)', color: 'var(--yellow)' });
+    }
+
+    const features = model.features || [];
+    const tests = model.testCases || [];
+    const judgments = model.judgments || [];
+    const evidenceById = Object.fromEntries((model.evidence || []).map(e => [e.id, e]));
+    const statusPriority = ['fail', 'blocked', 'unknown', 'uncovered', 'pass'];
+    const rows = features.map(feature => {
+      const linkedJudgments = judgments.filter(j => j.featureId === feature.id);
+      const fallback = deriveFeatureStatus(feature, tests);
+      const status = linkedJudgments.length
+        ? (statusPriority.find(s => linkedJudgments.some(j => j.status === s)) || 'unknown')
+        : fallback.status;
+      return { feature, status, tests: fallback.tests, judgments: linkedJudgments };
+    });
+
+    function featureGroupMeta(feature) {
+      if (feature.groupId || feature.groupLabel) {
+        return {
+          id: feature.groupId || feature.id,
+          label: feature.groupLabel || feature.label || feature.id,
+        };
+      }
+      if (feature.id?.startsWith('managedsystem-pool-')) {
+        return { id: 'managedsystem-pool', label: 'ManagedSystem Pool' };
+      }
+      return { id: feature.id, label: feature.label || feature.id };
+    }
+
+    const groupMap = new Map();
+    for (const row of rows) {
+      const meta = featureGroupMeta(row.feature);
+      if (!groupMap.has(meta.id)) {
+        groupMap.set(meta.id, { id: meta.id, label: meta.label, rows: [], status: 'uncovered', tests: [], judgments: [] });
+      }
+      const group = groupMap.get(meta.id);
+      group.rows.push(row);
+      group.tests.push(...row.tests);
+      group.judgments.push(...row.judgments);
+    }
+    const groups = [...groupMap.values()].map(group => {
+      group.status = statusPriority.find(status => group.rows.some(row => row.status === status)) || 'unknown';
+      group.judgments.sort((a, b) => statusPriority.indexOf(a.status) - statusPriority.indexOf(b.status));
+      return group;
+    }).sort((a, b) => {
+      const diff = statusPriority.indexOf(a.status) - statusPriority.indexOf(b.status);
+      return diff || a.label.localeCompare(b.label);
+    });
+
+    const counts = groups.reduce((acc, group) => {
+      acc[group.status] = (acc[group.status] || 0) + 1;
+      return acc;
+    }, {});
+    const defaultGroup = groups.find(g => g.status === 'unknown') || groups.find(g => g.status === 'fail') || groups[0];
+    const selectedGroupId = groups.some(g => g.id === window._aksSelectedFeatureGroupId)
+      ? window._aksSelectedFeatureGroupId
+      : defaultGroup?.id;
+    const selected = groups.find(g => g.id === selectedGroupId) || defaultGroup;
+    window._aksSelectedFeatureGroupId = selected?.id || '';
+
+    function evidenceRefs(ids) {
+      return (ids || []).map(id => {
+        const ev = evidenceById[id];
+        if (ev?.path) return `<code title="${attrEsc(ev.summary || '')}">${esc(ev.path)}</code>`;
+        if (ev?.sessionId) return `<code title="${attrEsc(ev.summary || '')}">${esc(ev.sessionId)}</code>`;
+        return `<code>${esc(id)}</code>`;
+      }).join('<br>') || '<span style="color:var(--fg2)">—</span>';
+    }
+
+    function pathSet(assignments) {
+      return new Set((assignments || []).map(a => `${a.variable}=${a.value}`));
+    }
+
+    function renderSpaceCloud(title, variables, assignments, observedAssignments) {
+      const expected = pathSet(assignments);
+      const observed = pathSet(observedAssignments);
+      let out = `<section style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;min-width:0">`;
+      out += `<h4 style="margin:0 0 8px;font-size:12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.05em">${esc(title)}</h4>`;
+      out += `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch">`;
+      for (const v of variables || []) {
+        const active = (v.domain || []).some(value => expected.has(`${v.id}=${value}`) || observed.has(`${v.id}=${value}`));
+        out += `<div style="border:1px solid ${active ? 'var(--accent)' : 'var(--border)'};background:${active ? 'rgba(80,160,220,.10)' : 'var(--bg)'};border-radius:8px;padding:8px;min-width:160px;max-width:260px;opacity:${active ? '1' : '.45'}">`;
+        out += `<div style="font-family:monospace;font-size:11px;margin-bottom:5px;color:${active ? 'var(--fg)' : 'var(--fg2)'}">${esc(v.id)}</div>`;
+        out += `<div style="display:flex;flex-wrap:wrap;gap:4px">`;
+        for (const value of v.domain || []) {
+          const key = `${v.id}=${value}`;
+          const isExpected = expected.has(key);
+          const isObserved = observed.has(key);
+          const bg = isObserved ? 'var(--green)' : isExpected ? 'var(--accent)' : 'var(--bg2)';
+          const color = isObserved || isExpected ? '#fff' : 'var(--fg2)';
+          out += `<span title="${isObserved ? 'observed' : isExpected ? 'expected/input path' : ''}" style="font-size:10px;border:1px solid ${isObserved || isExpected ? bg : 'var(--border)'};background:${bg};color:${color};border-radius:10px;padding:2px 6px">${esc(value)}</span>`;
+        }
+        out += `</div></div>`;
+      }
+      out += `</div></section>`;
+      return out;
+    }
+
+    function renderVariableGraph(title, variables, dependencies, constraints, assignments, observedAssignments) {
+      const expected = pathSet(assignments);
+      const observed = pathSet(observedAssignments);
+      const byId = Object.fromEntries((variables || []).map(v => [v.id, v]));
+      const activeVars = new Set([...(assignments || []), ...(observedAssignments || [])].map(a => a.variable));
+      const expectedValue = Object.fromEntries((assignments || []).map(a => [a.variable, a.value]));
+      const observedValue = Object.fromEntries((observedAssignments || []).map(a => [a.variable, a.value]));
+      const depth = Object.fromEntries((variables || []).map(v => [v.id, 0]));
+      for (let i = 0; i < (variables || []).length; i++) {
+        for (const dep of dependencies || []) {
+          if (depth[dep.parent] == null || depth[dep.child] == null) continue;
+          depth[dep.child] = Math.max(depth[dep.child], depth[dep.parent] + 1);
+        }
+      }
+      const sorted = [...(variables || [])].sort((a, b) => (depth[a.id] - depth[b.id]) || a.id.localeCompare(b.id));
+      const positions = {};
+      const h = Math.max(170, sorted.length * 34 + 36);
+      const w = 330;
+      for (const [idx, variable] of sorted.entries()) {
+        positions[variable.id] = {
+          x: Math.min(292, 24 + (depth[variable.id] || 0) * 86),
+          y: 26 + idx * 34,
+        };
+      }
+
+      let out = `<section style="padding:10px 12px;border-top:1px solid var(--border)">`;
+      out += `<div style="font-size:11px;color:var(--fg2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">${esc(title)}</div>`;
+      out += `<svg width="100%" viewBox="0 0 ${w} ${h}" role="img" style="display:block;background:var(--bg);border:1px solid var(--border);border-radius:8px">`;
+      out += `<title>${esc(title)} dependency graph. Highlighted nodes belong to the selected feature or judgment path.</title>`;
+      for (const dep of dependencies || []) {
+        const from = positions[dep.parent];
+        const to = positions[dep.child];
+        if (!from || !to) continue;
+        const active = activeVars.has(dep.parent) && activeVars.has(dep.child);
+        out += `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${active ? 'var(--accent)' : 'var(--border)'}" stroke-width="${active ? 2 : 1}" opacity="${active ? 0.95 : 0.45}"><title>${esc(dep.parent)} -> ${esc(dep.child)}${dep.parentValue ? ` when ${esc(dep.parentValue)}` : ''}${dep.reason ? `: ${esc(dep.reason)}` : ''}</title></line>`;
+      }
+      for (const constraint of constraints || []) {
+        const fromId = constraint.if?.[0]?.variable;
+        const toId = constraint.then?.[0]?.variable;
+        const from = positions[fromId];
+        const to = positions[toId];
+        if (!from || !to) continue;
+        out += `<line x1="${from.x}" y1="${from.y + 7}" x2="${to.x}" y2="${to.y + 7}" stroke="var(--yellow)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"><title>${esc(constraint.id || 'constraint')}: ${esc(constraint.reason || constraint.kind || '')}</title></line>`;
+      }
+      for (const variable of sorted) {
+        const pos = positions[variable.id];
+        const keyExpected = expectedValue[variable.id] != null ? `${variable.id}=${expectedValue[variable.id]}` : '';
+        const keyObserved = observedValue[variable.id] != null ? `${variable.id}=${observedValue[variable.id]}` : '';
+        const isExpected = keyExpected && expected.has(keyExpected);
+        const isObserved = keyObserved && observed.has(keyObserved);
+        const mismatch = isExpected && isObserved && expectedValue[variable.id] !== observedValue[variable.id];
+        const fill = mismatch ? 'var(--red)' : isObserved ? 'var(--green)' : isExpected ? 'var(--accent)' : 'var(--bg2)';
+        const stroke = activeVars.has(variable.id) ? fill : 'var(--border)';
+        const value = observedValue[variable.id] != null
+          ? `observed=${observedValue[variable.id]}${expectedValue[variable.id] != null ? `, expected=${expectedValue[variable.id]}` : ''}`
+          : expectedValue[variable.id] != null
+            ? `path=${expectedValue[variable.id]}`
+            : `domain=${(variable.domain || []).join(' | ')}`;
+        out += `<g opacity="${activeVars.has(variable.id) ? 1 : 0.42}">`;
+        out += `<circle cx="${pos.x}" cy="${pos.y}" r="${activeVars.has(variable.id) ? 7 : 5}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"><title>${esc(variable.label || variable.id)}\n${esc(variable.description || '')}\n${esc(value)}</title></circle>`;
+        out += `<text x="${pos.x + 12}" y="${pos.y + 4}" fill="${activeVars.has(variable.id) ? 'var(--fg)' : 'var(--fg2)'}" font-size="10" font-family="monospace">${esc(variable.id)}</text>`;
+        if (expectedValue[variable.id] != null || observedValue[variable.id] != null) {
+          out += `<text x="${pos.x + 12}" y="${pos.y + 16}" fill="${mismatch ? 'var(--red)' : 'var(--fg2)'}" font-size="9" font-family="monospace">${esc(value)}</text>`;
+        }
+        out += `</g>`;
+      }
+      out += `</svg>`;
+      out += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:10px;color:var(--fg2)"><span><span style="color:var(--accent)">●</span> expected/input</span><span><span style="color:var(--green)">●</span> observed</span><span><span style="color:var(--red)">●</span> mismatch</span><span><span style="color:var(--yellow)">- -</span> constraint</span></div>`;
+      out += `</section>`;
+      return out;
+    }
+
+    function selectedJudgment() {
+      if (!selected) return null;
+      return selected.judgments.find(j => j.status === 'unknown')
+        || selected.judgments.find(j => j.status === 'fail')
+        || selected.judgments[0]
+        || null;
+    }
+
+    const activeJudgment = selectedJudgment();
+    const selectedFeatureIds = new Set((selected?.rows || []).map(row => row.feature.id));
+    const selectedTests = selected ? tests.filter(t => selectedFeatureIds.has(t.featureId)) : [];
+    const fallbackNext = (selected?.rows || []).map(row => nextQuestion(row, model.inputVariables || [])).find(Boolean);
+    const next = activeJudgment?.nextAction || selected?.judgments?.find(j => j.nextAction)?.nextAction || fallbackNext;
+
+    let html = `<section style="background:var(--bg);border:1px solid var(--accent);border-radius:8px;padding:14px;min-width:0;margin-bottom:12px">`;
+    html += `<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px">`;
+    html += `<div><h3 style="margin:0 0 4px;font-size:13px;color:var(--accent)">Capability Model</h3>`;
+    html += `<div style="font-size:12px;color:var(--fg2)">Feature-first view. Select a feature to audit judgments, runs, evidence, and highlighted input/expectation paths.</div></div>`;
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px">`;
+    for (const status of ['pass', 'fail', 'blocked', 'unknown', 'uncovered']) {
+      html += `<span style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:3px 8px;color:${resultColor(status)}">${esc(status)} ${esc(String(counts[status] || 0))}</span>`;
+    }
+    html += `</div></div>`;
+
+    html += `<div style="display:grid;grid-template-columns:minmax(220px,320px) minmax(0,1fr);gap:14px;align-items:start">`;
+    html += `<aside style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden">`;
+    html += `<div style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--fg2);text-transform:uppercase;letter-spacing:.05em">Features</div>`;
+    for (const group of groups) {
+      const selectedStyle = group.id === selected?.id;
+      const envs = [...new Set((group.judgments || []).map(j => `${judgmentEnv(j)}/${judgmentSurface(j)}`))];
+      html += `<button onclick="window._aksSelectedFeatureGroupId=${jsStringAttr(group.id)};loadProjectTab('quality')" style="display:block;width:100%;text-align:left;background:${selectedStyle ? 'var(--bg3)' : 'transparent'};border:none;border-bottom:1px solid var(--border);padding:10px 12px;cursor:pointer;color:var(--fg)">`;
+      html += `<div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:${resultColor(group.status)};display:inline-block"></span><b style="font-size:12px;line-height:1.25">${esc(group.label)}</b></div>`;
+      html += `<div style="font-family:monospace;font-size:10px;color:var(--fg2);margin-top:3px">${esc(group.id)} · ${esc(String(group.rows.length))} path${group.rows.length === 1 ? '' : 's'}</div>`;
+      html += `<div style="font-size:10px;color:var(--fg2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(envs.join(', ') || 'no judgments')}</div>`;
+      html += `</button>`;
+    }
+    const graphInputPath = activeJudgment?.inputPath || selected?.rows?.[0]?.feature.inputPath || [];
+    const graphExpectationPath = activeJudgment?.expectationPath || selected?.rows?.[0]?.feature.expectationPath || [];
+    const graphObservedPath = activeJudgment?.observedPath || [];
+    html += renderVariableGraph('AKS Input Graph', model.inputVariables || [], model.inputDependencies || [], model.inputConstraints || [], graphInputPath, []);
+    html += renderVariableGraph('Expectation Graph', model.expectationVariables || [], model.expectationDependencies || [], model.expectationConstraints || [], graphExpectationPath, graphObservedPath);
+    html += `</aside>`;
+
+    html += `<div style="min-width:0">`;
+    if (selected) {
+      html += `<section style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">`;
+      html += `<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">`;
+      html += `<div><h3 style="margin:0 0 4px;font-size:16px">${esc(selected.label)}</h3><div style="font-family:monospace;font-size:11px;color:var(--fg2)">${esc(selected.id)} · ${esc(String(selected.rows.length))} modeled path${selected.rows.length === 1 ? '' : 's'} · ${esc(String(selectedTests.length))} test/run record${selectedTests.length === 1 ? '' : 's'}</div></div>`;
+      html += `<div style="font-size:13px;font-weight:700;color:${resultColor(selected.status)}">${esc(selected.status)}</div>`;
+      html += `</div>`;
+      if (next) html += `<div style="margin-top:10px;color:var(--fg2);font-size:12px"><b style="color:var(--fg)">Next:</b> ${esc(next)}</div>`;
+      html += `</section>`;
+
+      html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:12px">`;
+      html += renderSpaceCloud('AKS Input Space', model.inputVariables || [], activeJudgment?.inputPath || selected.rows[0]?.feature.inputPath || [], []);
+      html += renderSpaceCloud('Expected / Observed AKS State', model.expectationVariables || [], activeJudgment?.expectationPath || selected.rows[0]?.feature.expectationPath || [], activeJudgment?.observedPath || []);
+      html += `</div>`;
+
+      html += `<details open style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">`;
+      html += `<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--fg)">Judgments By Environment</summary>`;
+      html += `<div style="overflow:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:720px">`;
+      html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px">Path</th><th style="text-align:left;padding:6px">Environment</th><th style="text-align:left;padding:6px">Surface</th><th style="text-align:left;padding:6px">Status</th><th style="text-align:left;padding:6px">Evidence</th><th style="text-align:left;padding:6px">Diagnosis / Next</th></tr>`;
+      for (const j of selected.judgments || []) {
+        const feature = features.find(f => f.id === j.featureId);
+        const diag = j.diagnosis?.kind ? `${j.diagnosis.kind}${j.diagnosis.summary ? `: ${j.diagnosis.summary}` : ''}` : (j.summary || '');
+        html += `<tr style="border-bottom:1px solid var(--border)">`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(feature?.label || j.featureId)}</td>`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(judgmentEnv(j))}</td>`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(judgmentSurface(j))}</td>`;
+        html += `<td style="padding:6px;color:${resultColor(j.status)};font-weight:700">${esc(j.status)}</td>`;
+        html += `<td style="padding:6px">${evidenceRefs(j.evidence)}</td>`;
+        html += `<td style="padding:6px;color:var(--fg2)">${esc(j.nextAction || diag)}</td>`;
+        html += `</tr>`;
+      }
+      html += `</table></div></details>`;
+
+      html += `<details open style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px">`;
+      html += `<summary style="cursor:pointer;font-size:12px;font-weight:600;color:var(--fg)">Test Scenarios / Runs</summary>`;
+      html += `<div style="overflow:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:760px">`;
+      html += `<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:6px">Test</th><th style="text-align:left;padding:6px">Result</th><th style="text-align:left;padding:6px">Observation</th><th style="text-align:left;padding:6px">AKS Input</th><th style="text-align:left;padding:6px">Expected</th><th style="text-align:left;padding:6px">Observed State</th><th style="text-align:left;padding:6px">Evidence</th></tr>`;
+      for (const t of selectedTests) {
+        html += `<tr style="border-bottom:1px solid var(--border)">`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(t.id)}</td>`;
+        html += `<td style="padding:6px;color:${resultColor(t.result)};font-weight:700">${esc(t.result)}</td>`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(assignmentPath(t.contextPath) || '—')}</td>`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(assignmentPath(t.inputPath) || '—')}</td>`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(assignmentPath(t.expectationPath) || '—')}</td>`;
+        html += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc(assignmentPath(t.observedPath) || '—')}</td>`;
+        html += `<td style="padding:6px">${evidenceRefs(t.evidence)}</td>`;
+        html += `</tr>`;
+      }
+      html += `</table></div></details>`;
+    }
+    html += `</div></div>`;
+    html += `</section>`;
+    return html;
+  }
+
+  const actions = [
+    {
+      label: 'Run Next Probe',
+      text: '[resume] Quality Panel: run the next highest-value Alpha Project probe. Choose the scenario from the project state, execute it on devbox with the right remote tool, and update Capability Map, Weaknesses, and Linked Context with evidence.'
+    },
+    {
+      label: 'Investigate Weakness',
+      text: '[resume] Quality Panel: pick the highest-impact active weakness, inspect the linked evidence and relevant Alpha Source code, then propose a concrete root cause and next validation step.'
+    },
+    {
+      label: 'Propose Fix',
+      text: '[resume] Quality Panel: convert the best-supported weakness into a fix proposal. Include evidence, affected code paths, risk, and the smallest validation command.'
+    },
+    {
+      label: 'Extend Scope',
+      text: '[resume] Quality Panel: extend this project beyond the first green run. Re-plan the next quality-maintenance iteration around scenario coverage, weakness discovery, and code-quality improvement.'
+    },
+  ];
+
+  let html = '';
+  html += `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+    <div>
+      <h2 style="margin:0 0 4px;font-size:18px">Alpha Project Quality Panel</h2>
+      <div style="font-size:12px;color:var(--fg2)">A project-specific control/display panel. project.md remains the source of truth.</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${actions.map(a => `<button onclick="prefillProjectComment(${jsStringAttr(a.text)})" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--fg);padding:7px 10px;font-size:12px;cursor:pointer">${esc(a.label)}</button>`).join('')}</div>
+  </div>`;
+
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">
+    ${stat('Scenario Pass', passLine.match(/:\s*([0-9]+)/)?.[1] || '—', passLine.replace(/^- /, ''), 'var(--green)')}
+    ${stat('Green Evidence', evidenceLine.match(/:\s*([0-9]+)/)?.[1] || '—', evidenceLine.replace(/^- /, ''), 'var(--accent)')}
+    ${stat('Failure Evidence', failureLine.match(/:\s*([0-9]+)/)?.[1] || '—', failureLine.replace(/^- /, ''), 'var(--yellow)')}
+  </div>`;
+
+  html += renderCapabilityModelGraph(model, capabilityModel, modelError);
+
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+    ${card('Capability Map', capability)}
+    ${card('Weaknesses', weaknesses)}
+    ${card('Validation', validation)}
+    ${card('Linked Context', linkedContext)}
+  </div>`;
+
+  if (!capability || !weaknesses) {
+    html += `<div style="margin-top:12px;padding:10px 12px;background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.35);border-radius:8px;color:var(--fg2);font-size:12px">
+      This panel is useful now, but it will become sharper after the project maintains <code>## Capability Map</code>, <code>## Weaknesses</code>, and <code>## Next Action</code> sections directly in project.md.
+    </div>`;
+  }
+
+  html += `<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--fg2);font-size:12px">Show Plan</summary><div class="md-rendered" style="margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px">${renderMarkdownBlock(plan || '')}</div></details>`;
+
+  el.style.whiteSpace = 'normal';
+  el.style.fontFamily = 'inherit';
+  el.style.fontSize = 'inherit';
+  el.classList.remove('md-rendered');
+  el.innerHTML = html;
 }
 
 function openSessionRoute(sessionId) {
@@ -3689,6 +4210,13 @@ function toggleLineageDigest(triggerEl, sessionId) {
   } else {
     container.style.display = 'none';
   }
+}
+
+function prefillProjectComment(text) {
+  const input = document.getElementById('project-comment');
+  if (!input) return;
+  input.value = text || '';
+  input.focus();
 }
 
 async function addProjectComment() {

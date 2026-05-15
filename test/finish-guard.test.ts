@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createFinishGuard } from "../src/lib/tools/finish-guard.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 
@@ -452,7 +452,7 @@ describe("finish-guard", () => {
       },
       [
         assistantWithToolCall("write", { path: "src/foo.ts", content: "hello" }),
-        assistantWithToolCall("bash", { command: "vitest --run test/foo.test.ts" }),
+        assistantWithToolCall("bash", { command: "bun test test/foo.test.ts" }),
       ],
     );
     const result = await guard(ctx);

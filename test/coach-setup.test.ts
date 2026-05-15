@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { mkdtempSync } from "node:fs";
@@ -7,7 +7,7 @@ import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
 
-const AGENTS_ROOT = resolve(import.meta.dirname, "..", "app", "agents");
+const AGENTS_ROOT = "/app/agents";
 const COACH_DIR = resolve(AGENTS_ROOT, "coach");
 
 describe("coach: workflow discovery", () => {

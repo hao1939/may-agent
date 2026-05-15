@@ -5,18 +5,23 @@
  * - request-status queries events/sessions for handler health & agent stats
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
-import { mkdirSync, rmSync } from "node:fs";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { getDb, closeDb } from "../requests.js";
-import { DbWriter } from "../db-writer.js";
+import { tmpdir } from "node:os";
+import { getDb, closeDb } from "../src/lib/requests.js";
+import { DbWriter } from "../src/lib/db-writer.js";
 
-const TEST_DIR = join(process.cwd(), "src/lib/__tests__/.test-event-native");
+let TEST_DIR: string;
 
 beforeEach(() => {
-  try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
-  mkdirSync(TEST_DIR, { recursive: true });
+  TEST_DIR = mkdtempSync(join(tmpdir(), "may-event-native-"));
   closeDb(TEST_DIR);
+});
+
+afterEach(() => {
+  closeDb(TEST_DIR);
+  try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
 });
 
 describe("event-native: events table", () => {

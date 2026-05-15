@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../src/lib/index.js";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";

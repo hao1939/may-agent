@@ -281,7 +281,7 @@ const metrics: MetricDef[] = [
   },
   {
     id: "health.test-count",
-    name: "Test count (vitest)",
+    name: "Test count (bun test)",
     type: "health",
     owner: "tech-lead",
     target: 2000,
@@ -289,7 +289,7 @@ const metrics: MetricDef[] = [
     unit: "count",
     priority: "P1",
     source: "command",
-    source_command: `cd /app && ./node_modules/.bin/vitest --run 2>&1 | grep -oP '\\d+(?= tests)' | tail -1 || echo 0`,
+    source_command: `cd /app && bun test test shared agents --timeout 30000 2>&1 | grep -oE '[0-9]+ pass' | tail -1 | awk '{print $1}' || echo 0`,
   },
   {
     id: "research.knowledge-entries",

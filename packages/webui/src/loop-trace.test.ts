@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { buildLoopTrace } from "./loop-trace.js";
-import { openDatabase, type SqliteDb } from "../../../src/lib/db.js";
+import { openStateDb, type SqliteDb } from "./state-db.js";
 
 describe("buildLoopTrace", () => {
   const roots: string[] = [];
@@ -17,9 +17,15 @@ describe("buildLoopTrace", () => {
   function makeDb(): SqliteDb {
     const root = mkdtempSync(join(tmpdir(), "loop-trace-"));
     roots.push(root);
-    const db = openDatabase(join(root, "may.db"));
+    const db = openStateDb(join(root, "test.db"));
     dbs.push(db);
     db.exec(`
+      DROP TABLE IF EXISTS events;
+      DROP TABLE IF EXISTS metrics;
+      DROP TABLE IF EXISTS metric_alerts;
+      DROP TABLE IF EXISTS metric_snapshots;
+      DROP TABLE IF EXISTS workflow_runs;
+      DROP TABLE IF EXISTS sessions;
       CREATE TABLE events (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         event_type TEXT,

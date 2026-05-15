@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 
 // The two-phase workflow is a .ts file loaded at runtime, not a compiled module.
 // We test the parsing logic by extracting it into testable functions.

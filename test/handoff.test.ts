@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { extractHandoff, summarizeForHandoff } from "../src/lib/handoff.js";
 import type { TaskResult } from "../src/lib/types.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
@@ -776,5 +776,19 @@ describe("extractHandoff → summarizeForHandoff integration", () => {
 
     expect(data.response).toBe("Done!");
     expect(summary).toContain("Done!");
+  });
+
+  it("shows structured finish status when present", () => {
+    const result: TaskResult = {
+      sessionId: "s1",
+      status: "done",
+      lastAssistantText: "blocked on external deploy",
+      messages: [],
+      duration: "1s",
+      outputDir: "/tmp/out",
+      finishResult: { status: "blocked", summary: "blocked on external deploy" },
+    };
+
+    expect(summarizeForHandoff(result)).toContain("**Status:** done / finish(blocked) (1s)");
   });
 });

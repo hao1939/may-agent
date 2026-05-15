@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { createAutoResume } from "./session-subscribers.js";
+import { describe, expect, it, vi } from "bun:test";
+import { createAutoResume } from "../src/lib/session-subscribers.js";
 
 describe("createAutoResume", () => {
   it("does not resume sessions that deliberately finish blocked", () => {

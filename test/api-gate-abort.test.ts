@@ -7,7 +7,7 @@
  *
  * Fix: pass session.abortController.signal to acquire(), and abort it in cancel().
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { ApiGate } from "../src/lib/api-gate.js";
 
 describe("ApiGate abort signal", () => {

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Health check script: runs tsc type checking.
 #
-# vitest intentionally removed — spawns 15+ worker processes consuming
+# Vitest intentionally removed — spawns 15+ worker processes consuming
 # >1GB RAM each. Workers survive process timeouts as orphans and
 # accumulate until the container is OOM killed. Test suite validation
 # belongs in CI or explicit QA review, not automated health checks.

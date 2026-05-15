@@ -19,7 +19,7 @@ services:
       - "${NOVNC_PORT:-6080}:6080"
       - "${WEB_PORT:-8080}:8080"
     volumes:
-      - ../app:/app
+      - /app:/app
       - ../packages/control:/app/packages/control
       - ../packages/webui:/app/packages/webui
       - /home/example-user/litellm/github_copilot:/app/.copilot:ro
