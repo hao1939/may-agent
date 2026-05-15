@@ -86,10 +86,9 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex 2>/dev/null || true
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
-# Copy web UI and shared control package (not embedded in the WebUI process)
+# Copy shared control package and the default May Agent project UI.
 COPY packages/control/ /app/packages/control/
-COPY packages/webui/ /app/packages/webui/
-COPY packages/webui/static/ /usr/local/share/may-agent-web/static/
+COPY ui/ /app/projects/may-agent/ui/
 
 # CLI agent configs (codex needs config.toml to route through litellm)
 COPY container/codex-config.toml /etc/codex/config.toml
