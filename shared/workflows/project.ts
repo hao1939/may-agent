@@ -206,8 +206,47 @@ function currentGoal(projectContent: string, fallback: string): string {
   return extractSection(projectContent, "Goal") || fallback;
 }
 
+function sectionHasContent(content: string): boolean {
+  return content
+    .split("\n")
+    .map(line => line.trim())
+    .some(line => line && !/^[-_]+$/.test(line) && !/^none$/i.test(line) && line !== "-");
+}
+
+function planHasOpenWork(plan: string): boolean {
+  return plan
+    .split("\n")
+    .map(line => line.trim())
+    .some(line =>
+      /^[-*]\s*\[\s\]/.test(line) ||
+      /^\d+\.\s*\[\s\]/.test(line) ||
+      /^(?:[-*]\s*|\d+\.\s*)?[🔄⏳🚧]/u.test(line)
+    );
+}
+
+function projectHasOpenAutonomousWork(projectContent: string): boolean {
+  const nextAction = extractSection(projectContent, "Next Action");
+  if (sectionHasContent(nextAction)) return true;
+  const plan = extractSection(projectContent, "Plan") || extractSection(projectContent, "Milestones");
+  return planHasOpenWork(plan);
+}
+
+function isCompletionStyleWaiting(detail: string): boolean {
+  return /all milestones complete|waiting for (?:human )?review|close or extend scope|project(?: is| remains)? complete|done now|all done/i.test(detail);
+}
+
+const REVIEWER_DIRECTIVES = [
+  "GOAL_UPDATE",
+  "CURRENT_STATE_UPDATE",
+  "SIGNALS_UPDATE",
+  "PLAN_UPDATE",
+  "CONTEXT_UPDATE",
+  "LINKED_CONTEXT_UPDATE",
+];
+
 function extractDirectiveBlock(text: string, name: string): string | null {
-  const pattern = new RegExp(`(?:^|\\n)${escapeRegExp(name)}:\\s*([\\s\\S]*?)(?=\\n(?:GOAL_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE|CONTEXT_UPDATE):|\\n\\*\\*|\\n## |$)`, "i");
+  const directiveBoundary = REVIEWER_DIRECTIVES.map(escapeRegExp).join("|");
+  const pattern = new RegExp(`(?:^|\\n)${escapeRegExp(name)}:\\s*([\\s\\S]*?)(?=\\n(?:${directiveBoundary}):|\\n\\*\\*|\\n## |\\n\\([a-z]\\)|$)`, "i");
   const match = text.match(pattern);
   return match?.[1]?.trim() || null;
 }
@@ -218,6 +257,8 @@ export function applyReviewerProjectDirectives(projectContent: string, reviewerT
     ["Current State", "CURRENT_STATE_UPDATE"],
     ["Signals", "SIGNALS_UPDATE"],
     ["Plan", "PLAN_UPDATE"],
+    ["Context", "CONTEXT_UPDATE"],
+    ["Linked Context", "LINKED_CONTEXT_UPDATE"],
   ];
 
   let next = projectContent;
@@ -229,13 +270,13 @@ export function applyReviewerProjectDirectives(projectContent: string, reviewerT
 }
 
 export function stripReviewerDirectives(text: string): string {
-  return text
-    .replace(/\n?CONTEXT_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
-    .replace(/\n?GOAL_UPDATE:\s*[\s\S]*?(?=\n(?:CONTEXT_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
-    .replace(/\n?CURRENT_STATE_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CONTEXT_UPDATE|SIGNALS_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
-    .replace(/\n?SIGNALS_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CONTEXT_UPDATE|CURRENT_STATE_UPDATE|PLAN_UPDATE):|\n\*\*|\n## |$)/gi, "")
-    .replace(/\n?PLAN_UPDATE:\s*[\s\S]*?(?=\n(?:GOAL_UPDATE|CONTEXT_UPDATE|CURRENT_STATE_UPDATE|SIGNALS_UPDATE):|\n\*\*|\n## |$)/gi, "")
-    .trim();
+  let next = text;
+  const directiveBoundary = REVIEWER_DIRECTIVES.map(escapeRegExp).join("|");
+  for (const directive of REVIEWER_DIRECTIVES) {
+    const pattern = new RegExp(`\\n?${escapeRegExp(directive)}:\\s*[\\s\\S]*?(?=\\n(?:${directiveBoundary}):|\\n\\*\\*|\\n## |\\n\\([a-z]\\)|$)`, "gi");
+    next = next.replace(pattern, "");
+  }
+  return next.trim();
 }
 
 function currentStateLine(label: string, detail: string): string {
@@ -294,7 +335,10 @@ Not started.
 - Project created from workflow request; refine metrics and signals during the first iteration.
 
 ## Context
-(Key discoveries and facts will be accumulated here by the reviewer across iterations.)
+(Current operating facts maintained by the reviewer. Keep this concise and remove stale or conflicting facts.)
+
+## Linked Context
+- Add links to authoritative artifacts, source files, remote paths, sessions, or runbooks as they become useful. Agents should read linked context on demand instead of copying everything into project.md.
 
 ## Plan
 - [ ] Define success criteria and first milestone
@@ -477,6 +521,8 @@ function buildWorkerPrompt(
   const nextMilestone = ms.pending.length > 0 ? ms.pending[0] : null;
   const currentState = extractSection(projectContent, "Current State") || null;
   const context = extractSection(projectContent, "Context") || null;
+  const linkedContext = extractSection(projectContent, "Linked Context") || null;
+  const nextAction = extractSection(projectContent, "Next Action") || null;
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 3);
   const features = parseFeatures(projectContent);
   const focused = features.has("focused-context");
@@ -495,7 +541,9 @@ function buildWorkerPrompt(
   // Context: why
   prompt += `## Goal\n${goal}\n\n`;
   if (currentState) prompt += `## Current State\n${currentState}\n\n`;
-  if (context) prompt += `## Context (accumulated knowledge)\n${context}\n\n`;
+  if (context) prompt += `## Context (current operating facts)\n${context}\n\n`;
+  if (linkedContext) prompt += `## Linked Context (read on demand)\n${linkedContext}\n\n`;
+  if (nextAction) prompt += `## Next Action\n${nextAction}\n\n`;
 
   if (lastGuidance) {
     prompt += `## Prior Reviewer Guidance\n`;
@@ -521,12 +569,13 @@ function buildWorkerPrompt(
   prompt += `## Rules\n`;
   prompt += `- Produce a concrete deliverable when it advances the current goal. If the current blocker/precondition is still unmet, finish(blocked/partial) with evidence instead of inventing files.\n`;
   prompt += `- For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), use the available remote tool when one exists. Prefer exact command tools such as \`ssh_exec\` for command output; use delegation tools such as \`cc_worker\` for exploratory remote work. Do not route remote commands through local bash just because they look like shell commands.\n`;
+  prompt += `- When calling \`cc_worker\`, include a compact fresh Project Operating Context block from this prompt: Goal, Current State, Context, current milestone, exact ask, and relevant Linked Context entries. Do not paste every linked file by default; tell \`cc_worker\` which linked context to read on demand. \`cc_worker\` resumes old history by design; if that old history is misleading or no longer useful, call it with \`new_session: true\` and state that the fresh project context is authoritative.\n`;
   prompt += `- A local path/guard warning means the command used the wrong local tool. It is not evidence that remote access is unavailable. Only claim remote access is blocked after trying the remote/delegation path and recording the exact result.\n`;
   prompt += `- Put all output files in: ${outputsDir}/\n`;
   prompt += `- Before finish(success), call read() on every file you write() or edit(); tests and grep can supplement read-back but do not replace it.\n`;
-  prompt += `- Before finish(success), run \`cd /app/agents && git status --short\`, classify every dirty path, and stage only intentional deliverables with explicit paths (never broad \`git add .\`). If an intentional deliverable is under the ignored canonical \`shared/projects/\` tree, use \`git add -f <that exact path>\` and explain why.\n`;
+  prompt += `- Before finish(success), run \`cd /app && git status --short\`, classify every dirty path, and stage only intentional deliverables with explicit paths (never broad \`git add .\`). If an intentional deliverable is under the ignored canonical \`projects/\` tree, use \`git add -f <that exact path>\` and explain why.\n`;
   prompt += `- If unrelated or unsafe dirty paths remain, do not commit them just to satisfy the guard; finish(partial/blocked) with the exact path and owner/escalation needed.\n`;
-  prompt += `- After committing, re-run \`cd /app/agents && git status --short\`; success requires a clean agents worktree or an explicit blocker, and verification_evidence must cite the clean-status check plus commit id.\n`;
+  prompt += `- After committing, re-run \`cd /app && git status --short\`; success requires a clean app worktree or an explicit blocker, and verification_evidence must cite the clean-status check plus commit id.\n`;
   prompt += `- You CANNOT edit the project file or journal.\n`;
 
   return prompt;
@@ -559,6 +608,12 @@ function buildReviewPrompt(
   const ms = extractMilestones(projectContent);
   const recentEntries = getRecentJournalEntries(journalContent, iteration, 2);
   const previousGuidance = getAllReviewerGuidance(journalContent, iteration);
+  const currentState = extractSection(projectContent, "Current State") || "";
+  const context = extractSection(projectContent, "Context") || "";
+  const nextAction = extractSection(projectContent, "Next Action") || "";
+  const plan = extractSection(projectContent, "Plan") || extractSection(projectContent, "Milestones") || "";
+  const linkedContext = extractSection(projectContent, "Linked Context") || "";
+  const hasOpenWork = projectHasOpenAutonomousWork(projectContent);
 
   let prompt = `You are the PROJECT DRIVER for iteration ${iteration} of a persistent task.\n`;
   prompt += `Your job is to unblock the worker and push the project to completion.\n`;
@@ -568,6 +623,15 @@ function buildReviewPrompt(
   prompt += `If something isn't working, change the approach instead of repeating guidance.\n`;
   prompt += `Never give the same guidance twice. If previous guidance failed, try a different strategy.\n\n`;
   prompt += `## Goal\n${goal}\n\n`;
+  if (currentState) prompt += `## Current State\n${currentState}\n\n`;
+  if (context) prompt += `## Context\n${context}\n\n`;
+  if (nextAction) prompt += `## Next Action\n${nextAction}\n\n`;
+  if (plan) prompt += `## Plan\n${plan}\n\n`;
+  if (linkedContext) prompt += `## Linked Context\n${linkedContext}\n\n`;
+  if (hasOpenWork) {
+    prompt += `## Open Work Signal\n`;
+    prompt += `This project still has explicit autonomous work in Next Action or Plan. Completion-style WAITING is not a valid decision until you either finish that work, replace it with a better next action, or prove a concrete external precondition blocks it.\n\n`;
+  }
 
   const metrics = parseMetrics(projectContent);
   if (metrics.length > 0) {
@@ -587,12 +651,15 @@ function buildReviewPrompt(
 
   prompt += `## How This System Works (reference)\n`;
   prompt += `- **Milestone check-off**: When you mention a completed milestone by name, the system matches the first 30 characters (case-insensitive) against your response. Include the exact milestone name to check it off.\n`;
-  prompt += `- **Project state authority**: If the human changed the goal, scope, signals, plan, or current state, update the project with explicit directives. Use \`GOAL_UPDATE:\`, \`SIGNALS_UPDATE:\`, \`PLAN_UPDATE:\`, and/or \`CURRENT_STATE_UPDATE:\`. The workflow will apply these to project.md after your review.\n`;
-  prompt += `- **Context maintenance**: You maintain the ## Context section of project.md. After each iteration, add key discoveries/facts that future iterations will need. Remove stale info. Keep it concise — facts only, not narrative.\n`;
-  prompt += `  Format your context updates as: CONTEXT_UPDATE: <bullet points to add or replace>\n`;
+  prompt += `- **Project state authority**: If the human changed the goal, scope, signals, plan, current state, or linked context, update the project with explicit directives. Use \`GOAL_UPDATE:\`, \`SIGNALS_UPDATE:\`, \`PLAN_UPDATE:\`, \`CURRENT_STATE_UPDATE:\`, and/or \`LINKED_CONTEXT_UPDATE:\`. The workflow will apply these to project.md after your review.\n`;
+  prompt += `- **Context maintenance**: You maintain the ## Context section of project.md as current operating facts, not history. Remove stale or conflicting facts. Keep it concise — facts only, not narrative.\n`;
+  prompt += `  Format your context update as: CONTEXT_UPDATE: <full replacement ## Context content>. This replaces the whole section; it is not appended.\n`;
+  prompt += `- **Linked Context maintenance**: Keep ## Linked Context as the index of linked evidence and deeper reading: artifact paths, source paths, remote paths, sessions, or runbooks. Do not copy long evidence into Context when a link is enough.\n`;
+  prompt += `  Format linked-context changes as: LINKED_CONTEXT_UPDATE: <full replacement ## Linked Context content>.\n`;
   prompt += `- **Agent cannot mark done**: Only human/May can mark a project done. If you say DONE, it's auto-converted to WAITING with "awaiting review".\n`;
   prompt += `- **Worker capabilities**: The worker can read/write files, run local bash commands, call sub-agents, and use any local tools exposed by the runtime (including exact remote command tools such as \`ssh_exec\` and delegation tools such as \`cc_worker\` when present). Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
   prompt += `- **Remote work convention**: For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), tell the worker to use the available remote tool first. Prefer exact command tools such as \`ssh_exec\` when exact stdout/stderr matters; use delegation tools such as \`cc_worker\` when the worker should reason or inspect. Do not declare remote access blocked from a local bash path-guard warning alone; that warning usually means the command was routed through the wrong local tool.\n`;
+  prompt += `- **Delegation context**: If the worker uses \`cc_worker\`, its prompt must carry the fresh project frame plus relevant Linked Context entries. The worker should ask \`cc_worker\` to read linked files only as needed. Keeping the old cc session is useful for continuity, but it must not override project.md. If the old cc session appears confused or polluted, direct the worker to use \`new_session: true\`.\n`;
   prompt += `- **Iteration budget**: Iterations are finite and expensive. Don't waste them repeating failed approaches.\n\n`;
 
   if (features?.has("verify-before-stop")) {
@@ -643,9 +710,10 @@ function buildReviewPrompt(
   prompt += `2. **PIVOT** — The current approach has failed. Describe a fundamentally different strategy.\n`;
   prompt += `   Use when: same guidance failed 2+ times, worker is stuck in a loop, the approach has a design flaw.\n`;
   prompt += `   "This is hard" is NOT blocked — that's PIVOT.\n\n`;
-  prompt += `3. **WAITING** — Work has reached a point where a precondition must be met before continuing.\n`;
+  prompt += `3. **WAITING** — Work has reached a point where a concrete external precondition must be met before continuing.\n`;
   prompt += `   Format: WAITING: <reason>. Resume when: <specific condition>\n`;
-  prompt += `   Examples: "PR submitted, waiting for merge", "All milestones complete, waiting for review"\n\n`;
+  prompt += `   Examples: "PR submitted, waiting for merge", "standalone environment is down; resume when devbox health check passes".\n`;
+  prompt += `   Do not use WAITING for "all milestones complete" when Next Action, unresolved plan work, failed evidence, or unexplored signals remain. Re-plan with CONTINUE/PIVOT instead.\n\n`;
   prompt += `4. **BLOCKED** — There is a specific external dependency that no amount of worker iteration can resolve.\n`;
   prompt += `   Format: BLOCKED: <reason>. Resume when: <specific condition>\n`;
   prompt += `   Examples: missing API key, needs human policy decision, requires access not available.\n\n`;
@@ -775,6 +843,21 @@ async function handleWaitingDecision(
   isCommentIteration: boolean,
   features: Set<string>,
 ): Promise<StopHandlerResult> {
+  const cleanDetail = stripReviewerDirectives(decision.detail) || decision.detail;
+
+  if (projectHasOpenAutonomousWork(ls.projectContent) && isCompletionStyleWaiting(cleanDetail)) {
+    const entry = `**System**: WAITING overridden to CONTINUE — project still has explicit Next Action or unresolved Plan work. Reviewer said: ${cleanDetail.slice(0, 300)}\n\n`;
+    ls.projectContent = appendJournalEntry(config, ls.projectContent, entry, isCommentIteration);
+    ls.projectContent = updateField(ls.projectContent, "Status", "active");
+    ls.projectContent = updateField(ls.projectContent, "Stop Reason", "");
+    ls.projectContent = updateField(ls.projectContent, "Resume Condition", "");
+    ls.projectContent = updateSection(ls.projectContent, "Current State",
+      `Active: reviewer proposed waiting, but explicit Next Action or unresolved Plan work remains. Continue by resolving or replacing that work.\n`);
+    cachedWrite(config.projectPath, ls.projectContent);
+    emitProjectEvent(ctx, config, "project.waiting_overridden", { iteration, reason: cleanDetail.slice(0, 100) });
+    return { outcome: "continue" };
+  }
+
   // Optional evaluator gate (feature flag)
   if (features.has("evaluator-gate")) {
     const stepLabel = isCommentIteration ? `evaluate-comment-${iteration}` : `evaluate-iteration-${iteration}`;
@@ -819,7 +902,6 @@ async function handleWaitingDecision(
     ls.projectContent = appendJournalEntry(config, ls.projectContent, note, isCommentIteration);
   }
 
-  const cleanDetail = stripReviewerDirectives(decision.detail) || decision.detail;
   ls.projectContent = updateField(ls.projectContent, "Status", "waiting");
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", cleanDetail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
@@ -1212,20 +1294,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = applyReviewerProjectDirectives(projectContent, reviewerText);
       const afterMs = extractMilestones(projectContent).done;
       if (afterMs > beforeMs || projectContent !== readFile(config.projectPath)) cachedWrite(config.projectPath, projectContent);
-
-      // Apply context updates from reviewer
-      const contextMatch = decision.detail.match(/CONTEXT_UPDATE:\s*([\s\S]*?)(?=\n\*\*|\n##|\n\(|$)/i);
-      if (contextMatch) {
-        const newContext = contextMatch[1].trim();
-        if (newContext) {
-          const existingContext = extractSection(projectContent, "Context");
-          const updatedContext = existingContext
-            ? existingContext + "\n" + newContext
-            : newContext;
-          projectContent = updateSection(projectContent, "Context", updatedContext + "\n");
-          cachedWrite(config.projectPath, projectContent);
-        }
-      }
 
       if (decision.status === "waiting" || decision.status === "blocked") {
         const ls: LoopState = { projectContent, continueWithoutProgress };
