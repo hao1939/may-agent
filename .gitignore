@@ -50,6 +50,20 @@ agents/*/last-session.md
 # Generated test fixtures
 **/__test_project_coverage__/
 
+# Local project runtime artifacts. Commit intentional outputs with `git add -f`.
+projects/*/journal.md
+projects/*/outputs/**
+!projects/*/outputs/README.md
+!projects/aks-rp-e2e/outputs/e2e-capability-model.json
+
+# Local gym experiment material. Commit intentional scenarios with `git add -f`.
+gym/experiments/run-exp*-baseline.js
+gym/scenarios/*/environment/**
+gym/scenarios/*/success_criteria*.js
+
+# Local knowledge drafts. Commit reviewed knowledge entries with `git add -f`.
+shared/knowledge/entries/KE-*.md
+
 # Legacy top-level paths that should not be reintroduced after cleanup
 /projects/outputs/
 /shared/projects
