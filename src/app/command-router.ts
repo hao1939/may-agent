@@ -39,8 +39,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       .replace(/\/project\.md$/, "")
       .replace(/[),.;:]+$/, "")
       .replace(/\/$/, "");
+    path = path
+      .replace(/^agents\/shared\/projects\//, "projects/")
+      .replace(/^shared\/projects\//, "projects/");
+    if (/^projects\/[^/\s]+$/.test(path)) return path;
     if (!path.startsWith("agents/")) path = `agents/${path}`;
-    if (!/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)[^/\s]+$/.test(path)) return null;
+    if (!/^agents\/[^/]+\/workspace\/projects\/[^/\s]+$/.test(path)) return null;
     return path;
   }
 

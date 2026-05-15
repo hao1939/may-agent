@@ -95,7 +95,7 @@ describe("command router", () => {
 
   it("applies project.comment.created and nudges the project", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "router-project-"));
-    const projectPath = "agents/shared/projects/demo";
+    const projectPath = "projects/demo";
     const projectDir = join(projectRoot, projectPath);
     mkdirp(projectDir);
     writeFileSync(join(projectDir, "project.md"), "**Status**: blocked\n", "utf-8");

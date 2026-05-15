@@ -15,9 +15,10 @@ describe("telegram reply router helpers", () => {
   const root = "/home/example-user/may-agent";
 
   it("normalizes shared and workspace project paths", () => {
-    expect(normalizeProjectPath("/app/agents/shared/projects/demo/project.md", root)).toBe("agents/shared/projects/demo");
+    expect(normalizeProjectPath("/app/projects/demo/project.md", root)).toBe("projects/demo");
+    expect(normalizeProjectPath("/app/agents/shared/projects/demo/project.md", root)).toBe("projects/demo");
     expect(normalizeProjectPath(`${root}/agents/scout/workspace/projects/learn/project.md`, root)).toBe("agents/scout/workspace/projects/learn");
-    expect(normalizeProjectPath("shared/projects/demo", root)).toBe("agents/shared/projects/demo");
+    expect(normalizeProjectPath("shared/projects/demo", root)).toBe("projects/demo");
   });
 
   it("rejects non-project paths", () => {
@@ -27,7 +28,8 @@ describe("telegram reply router helpers", () => {
   });
 
   it("extracts the first project path from message text", () => {
-    expect(extractProjectPath("Please review agents/shared/projects/demo/project.md now", root)).toBe("agents/shared/projects/demo");
+    expect(extractProjectPath("Please review projects/demo/project.md now", root)).toBe("projects/demo");
+    expect(extractProjectPath("Please review agents/shared/projects/demo/project.md now", root)).toBe("projects/demo");
   });
 
   it("builds notification reply text from stored context and session context", () => {
@@ -35,14 +37,14 @@ describe("telegram reply router helpers", () => {
       ctx: {
         event_type: "message.created",
         agent: "may",
-        project_id: "agents/shared/projects/demo",
+        project_id: "projects/demo",
         data: JSON.stringify({ summary: "Needs review", text: "Original alert" }),
       },
       text: "Looks good",
       sessionContext: ["\nSession context (3 messages):", "  Last action: waiting"],
     });
 
-    expect(text).toContain("[User replying to notification from may about project \"agents/shared/projects/demo\"]");
+    expect(text).toContain("[User replying to notification from may about project \"projects/demo\"]");
     expect(text).toContain("Context: Needs review");
     expect(text).toContain("Original notification: Original alert");
     expect(text).toContain("Session context (3 messages):");
@@ -95,7 +97,7 @@ describe("telegram reply router helpers", () => {
           agent: "may",
           event_type: "message.created",
           session_id: "s_route",
-          project_id: "agents/shared/projects/demo",
+          project_id: "projects/demo",
           data: JSON.stringify({ text: "Original" }),
         },
         quotedText: "",
@@ -107,7 +109,7 @@ describe("telegram reply router helpers", () => {
       expect(route.kind).toBe("notification");
       if (route.kind !== "notification") return;
       expect(route.owner).toBe("may");
-      expect(route.projectPath).toBe("agents/shared/projects/demo");
+      expect(route.projectPath).toBe("projects/demo");
       expect(route.sessionId).toBe("s_route");
       expect(route.enrichedText).toContain("Route summary");
       expect(route.enrichedText).toContain("User says: please continue");
