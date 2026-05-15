@@ -392,11 +392,11 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     const now = Date.now();
     db.run(
       "INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-      ["active-work", "shared/projects/active-work", "active-work", "may", "active", now],
+      ["active-work", "projects/active-work", "active-work", "may", "active", now],
     );
     db.run(
       "INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-      ["closed-work", "shared/projects/closed-work", "closed-work", "may", "closed", now],
+      ["closed-work", "projects/closed-work", "closed-work", "may", "closed", now],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",

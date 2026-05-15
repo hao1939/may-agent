@@ -69,21 +69,21 @@ describe("validateFinishDeliverables", () => {
     expect(fs.existsSync).toHaveBeenCalledWith("/absolute/path.ts");
   });
 
-  it("accepts agents-repo-relative deliverable paths when the agents-prefixed file exists", () => {
+  it("accepts agent-local deliverable paths when the agents-prefixed file exists", () => {
     (fs.existsSync as any).mockImplementation((p: string) =>
-      p === "/app/agents/shared" || p === "/app/agents/shared/projects/demo/project.md",
+      p === "/app/agents/arc" || p === "/app/agents/arc/heartbeat.md",
     );
 
     const result = validateFinishDeliverables(
-      [{ path: "shared/projects/demo/project.md", description: "project" }],
+      [{ path: "arc/heartbeat.md", description: "heartbeat" }],
       "success",
       "/app",
     );
 
     expect(result.valid).toBe(true);
     expect(result.missing).toEqual([]);
-    expect(fs.existsSync).toHaveBeenCalledWith("/app/shared/projects/demo/project.md");
-    expect(fs.existsSync).toHaveBeenCalledWith("/app/agents/shared/projects/demo/project.md");
+    expect(fs.existsSync).toHaveBeenCalledWith("/app/arc/heartbeat.md");
+    expect(fs.existsSync).toHaveBeenCalledWith("/app/agents/arc/heartbeat.md");
   });
 });
 

@@ -15,8 +15,8 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
-import type { CronEntry } from "../../shared/agent-sdk.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.js";
+import type { CronEntry } from "../../../shared/agent-sdk.js";
 
 const MAX_RECOVERY_ATTEMPTS = 2;
 const STALE_AUTOCLOSE_MS = 30 * 60_000;

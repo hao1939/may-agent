@@ -13,9 +13,9 @@
  * metric within the last 24h.
  */
 
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.js";
-import type { CronEntry } from "../../shared/agent-sdk.js";
-import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.js";
+import type { CronEntry } from "../../../shared/agent-sdk.js";
+import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 const DIRECT_TRIAGE_AFTER_MS = 10 * 60 * 1000;

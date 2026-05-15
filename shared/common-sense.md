@@ -10,7 +10,7 @@ Understanding the system helps you work WITH it, not against it.
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
 ### Projects
-Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `agents/shared/projects/<name>/project.md`. The project file is your memory across sessions. (See `agents/shared/may-agent-docs/projects.md` for the canonical layout. Projects must live under `shared/projects/`; the legacy `agents/<you>/workspace/projects/` location is no longer scanned.)
+Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `projects/<name>/project.md`. The project file is your memory across sessions. (See `shared/may-agent-docs/manual/agent-convention.md` for the canonical layout. Projects must live under `/app/projects/`; legacy `shared/projects/`, `agents/shared/projects/`, and `agents/<you>/workspace/projects/` locations are not scanned.)
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
@@ -70,20 +70,20 @@ Standard locations — follow these, don't invent alternatives:
 | What | Where |
 |------|-------|
 | Your skills | `agents/<you>/skills/` |
-| Your projects | `agents/shared/projects/<name>/` (only valid location — legacy `agents/<you>/workspace/projects/` no longer scanned) |
+| Your projects | `projects/<name>/` |
 | Your knowledge | `agents/<you>/knowledge/` |
-| Shared knowledge | `agents/shared/knowledge/` |
-| Knowledge essentials | `agents/shared/knowledge-essentials.md` |
-| Architecture docs | `agents/shared/may-agent-docs/architecture/` |
-| Design docs | `agents/shared/may-agent-docs/design/` |
+| Shared knowledge | `shared/knowledge/` |
+| Knowledge essentials | `shared/knowledge-essentials.md` |
+| Architecture docs | `shared/may-agent-docs/architecture/` |
+| Design docs | `shared/may-agent-docs/design/` |
 | Metrics | `metrics` table (read via bun:sqlite readonly) |
 | Sessions | `sessions` table (read via bun:sqlite readonly) |
-| Gym scenarios | `agents/gym/scenarios/` |
+| Gym scenarios | `gym/scenarios/` |
 
 ## Environment
 
 - **Root:** `/app`. Do NOT use `/Users/`, `/home/`, or `~`.
-- **Agent files** live in `/app/agents/` (its own git repo). Commit from within: `cd /app/agents && git add <your-files> && git commit -m "<agent>: <what>"`.
+- **Agent files** live in `/app/agents/`. Projects live in `/app/projects/`. Commit from `/app`.
 - **Searching files:** Always exclude noise directories. Use `grep --exclude-dir=.state --exclude-dir=node_modules --exclude-dir=.git` or `find -path './.state' -prune -o -path './node_modules' -prune -o ...`. Without this, results are dominated by caches and logs.
 
 ## Safety — Destructive Operations FORBIDDEN

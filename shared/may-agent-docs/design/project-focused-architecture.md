@@ -211,8 +211,6 @@ During the transition:
 - Project folders live under host `app/projects/`.
 - A temporary host compatibility symlink may keep `/app/agents`
   pointing at `app/` while older docs and local tools are migrated.
-- Compatibility symlinks keep old imports and links working:
-  `/app/agents/shared -> /app/shared` and `/app/shared/projects -> /app/projects`.
 
 Runtime roots:
 
@@ -224,5 +222,4 @@ PROJECTS_ROOT=/app/projects
 STATE_DIR=/app/.state
 ```
 
-Code should use the explicit roots above instead of reconstructing
-`shared/projects` from `AGENTS_ROOT`.
+Code should use the explicit roots above. Do not reconstruct or depend on legacy `shared/projects` paths.

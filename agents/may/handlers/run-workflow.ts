@@ -1,9 +1,9 @@
 /**
  * run-workflow — cron handler that dispatches a workflow via the SDK.
  */
-import { createWorkflowHandler } from "../../shared/agent-sdk.ts";
-import type { HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
-import type { CronEntry } from "../../shared/agent-sdk.ts";
+import { createWorkflowHandler } from "../../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule } from "../../../shared/agent-sdk.ts";
+import type { CronEntry } from "../../../shared/agent-sdk.ts";
 
 interface RunWorkflowConfig {
   workflow: string;

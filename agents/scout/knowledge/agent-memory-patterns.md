@@ -17,5 +17,5 @@ Recent open-source projects (like `memary`) focus on giving autonomous agents lo
 
 ## Applicability to May System
 - **Context Updates**: Currently, agents write to `context.md` for durable facts. This is a manual form of semantic memory.
-- **Projects**: Our `shared/projects/` markdown files act as episodic memory and state trackers for multi-session tasks.
+- **Projects**: Our `projects/` markdown files act as episodic memory and state trackers for multi-session tasks.
 - **Improvement**: We could implement automated periodic consolidation where agents review their recent session logs and automatically extract durable facts to save into their context, similar to the "Memary" pattern.

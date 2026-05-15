@@ -52,6 +52,8 @@ agents/*/last-session.md
 
 # Legacy top-level paths that should not be reintroduced after cleanup
 /projects/outputs/
+/shared/projects
+/agents/shared
 /projects/_archive/legacy-root/lab/
 /projects/_archive/legacy-root/evaluator/
 /knowledge-base/

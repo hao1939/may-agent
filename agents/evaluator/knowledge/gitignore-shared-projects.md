@@ -1,8 +1,6 @@
-# Gitignore note: agents/shared/projects may be ignored
+# Legacy note: agents/shared/projects is obsolete
 
-In the `agents/` git repo, `agents/shared/projects/*` can be ignored by `.gitignore`.
+Projects now live under `/app/projects/<id>/`. The old `agents/shared/projects` and `shared/projects` paths are obsolete and should not be used.
 
 Implications:
-- If you edit files under `agents/shared/projects/...`, a plain `git add shared/projects/...` may fail with “paths are ignored”.
-- Use `git add -f <path>` for those project files (or adjust ignore rules only with human approval).
-- Before calling `finish()`, run `git status` to confirm there are no unstaged/uncommitted changes that will trip the finish guard.
+- - - Before calling `finish()`, run `git status` to confirm there are no unstaged/uncommitted changes that will trip the finish guard.

@@ -1,5 +1,5 @@
 import type { WorkflowContext } from "@may-agent/sdk";
-import { genericHeartbeat } from "../../shared/workflows/heartbeat-data.js";
+import { genericHeartbeat } from "../../../shared/workflows/heartbeat-data.js";
 
 export const name = "may-heartbeat";
 export const description = "may's heartbeat.";

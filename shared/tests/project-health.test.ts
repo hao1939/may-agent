@@ -41,12 +41,12 @@ describe('project-health', () => {
   });
 
   describe('validateProjectFormat', () => {
-    it('accepts canonical shared project frontmatter', () => {
+    it('accepts canonical project frontmatter', () => {
       const content = '---\nid: test-proj\nowner: bob\nstatus: active\n---\n\n# Test\n';
       expect(validateProjectFormat(content, 'test-proj')).toEqual([]);
     });
 
-    it('rejects legacy bold metadata in shared projects', () => {
+    it('rejects legacy bold metadata in projects', () => {
       const content = '# Test\n\n**Owner:** bob\n**Status:** active\n';
       expect(validateProjectFormat(content, 'test-proj')).toEqual(expect.arrayContaining([
         'missing YAML frontmatter',
@@ -57,15 +57,15 @@ describe('project-health', () => {
       ]));
     });
 
-    it('flags master-worker in live shared projects', () => {
+    it('flags master-worker in live projects', () => {
       const active = '---\nid: test-proj\nowner: bob\nstatus: active\nworkflow: master-worker\n---\n\n# Test\n';
       const closed = '---\nid: test-proj\nowner: bob\nstatus: closed\nworkflow: master-worker\n---\n\n# Test\n';
 
       expect(validateProjectFormat(active, 'test-proj')).toContain(
-        'shared projects should use workflow: project; master-worker is legacy/archived only'
+        'projects should use workflow: project; master-worker is legacy/archived only'
       );
       expect(validateProjectFormat(closed, 'test-proj')).toContain(
-        'shared projects should use workflow: project; master-worker is legacy/archived only'
+        'projects should use workflow: project; master-worker is legacy/archived only'
       );
     });
   });
@@ -88,7 +88,7 @@ describe('project-health', () => {
 
   describe('diagnoseProject', () => {
     const baseProject: ProjectInfo = {
-      relPath: 'shared/projects/test-proj',
+      relPath: 'projects/test-proj',
       projectFile: '/tmp/test-proj/project.md',
       content: '# Test\n**Status**: active\n**Owner**: bob',
       status: 'active',
@@ -122,7 +122,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastLaunch: Date.now() - 30_000, // 30s ago — within 60s cooldown
           },
@@ -138,7 +138,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastLaunch: now - 30_000,
           },
@@ -193,7 +193,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastStatusChange: Date.now() - 3 * 60 * 60 * 1000,
           },
@@ -209,7 +209,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastStatusChange: Date.now() - 3 * 60 * 60 * 1000, // 3 hours ago
           },
@@ -225,7 +225,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastStatusChange: now - 3 * 60 * 60 * 1000,
             lastEscalation: now - 10 * 60 * 1000,
@@ -248,7 +248,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastLaunch: now - 60 * 1000,
           },
@@ -265,7 +265,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastStatusChange: Date.now() - 30 * 60 * 1000, // 30 min ago
           },
@@ -280,7 +280,7 @@ describe('project-health', () => {
       const state: HealthState = {
         lastFullScan: 0,
         projects: {
-          'shared/projects/test-proj': {
+          'projects/test-proj': {
             ...newProjectHealthEntry(),
             lastStatusChange: Date.now() - 60 * 1000,
           },
@@ -393,9 +393,9 @@ describe('project-health', () => {
       expect(projects).toEqual([]);
     });
 
-    it('scans shared projects directory', () => {
+    it('scans projects directory', () => {
       const tmpRoot = path.join(tmpdir(), `agents-${Date.now()}`);
-      const projDir = path.join(tmpRoot, 'shared', 'projects', 'my-proj');
+      const projDir = path.join(tmpRoot, 'projects', 'my-proj');
       fs.mkdirSync(projDir, { recursive: true });
       fs.writeFileSync(
         path.join(projDir, 'project.md'),
@@ -409,9 +409,9 @@ describe('project-health', () => {
       fs.rmSync(tmpRoot, { recursive: true });
     });
 
-    it('flags shared projects with legacy metadata format', () => {
+    it('flags projects with legacy metadata format', () => {
       const tmpRoot = path.join(tmpdir(), `agents-${Date.now()}`);
-      const projDir = path.join(tmpRoot, 'shared', 'projects', 'legacy-proj');
+      const projDir = path.join(tmpRoot, 'projects', 'legacy-proj');
       fs.mkdirSync(projDir, { recursive: true });
       fs.writeFileSync(
         path.join(projDir, 'project.md'),
@@ -430,7 +430,7 @@ describe('project-health', () => {
     it('calls db.run with correct params', () => {
       const mockDb = { run: vi.fn() };
       const proj: ProjectInfo = {
-        relPath: 'shared/projects/test-proj',
+        relPath: 'projects/test-proj',
         projectFile: '/tmp/test/project.md',
         content: '---\nid: test-proj\nname: Test Project\nowner: bob\nstatus: active\n---\n\n# Test\n- [x] Done\n- [ ] Todo\n',
         status: 'active',

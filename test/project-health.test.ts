@@ -161,7 +161,7 @@ describe("MAX_LAUNCHES_PER_TICK", () => {
 
 function makeProject(overrides: Partial<ProjectInfo> = {}): ProjectInfo {
   return {
-    relPath: "shared/projects/test-proj",
+    relPath: "projects/test-proj",
     projectFile: "/tmp/fake/project.md",
     content: "# Test\n**Status**: active",
     status: "active",
@@ -196,7 +196,7 @@ describe("diagnoseProject", () => {
     const p = makeProject({ status: "active" });
     const state = makeHealthState({
       projects: {
-        "shared/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastLaunch: now - 30_000, // 30s ago, within 60s cooldown
         },
@@ -211,7 +211,7 @@ describe("diagnoseProject", () => {
     const p = makeProject({ status: "waiting" });
     const state = makeHealthState({
       projects: {
-        "shared/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastStatusChange: now - 3 * 60 * 60 * 1000, // 3 hours ago
         },
@@ -225,7 +225,7 @@ describe("diagnoseProject", () => {
     const p = makeProject({ status: "waiting" });
     const state = makeHealthState({
       projects: {
-        "shared/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastStatusChange: now - 30 * 60 * 1000, // 30 min ago
         },
@@ -239,7 +239,7 @@ describe("diagnoseProject", () => {
     const p = makeProject({ status: "done" });
     const state = makeHealthState({
       projects: {
-        "shared/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastStatusChange: now - 5 * 60 * 1000,
         },
@@ -254,7 +254,7 @@ describe("diagnoseProject", () => {
     const p = makeProject({ status: "blocked" });
     const state = makeHealthState({
       projects: {
-        "shared/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastStatusChange: now - 25 * 60 * 60 * 1000,
         },

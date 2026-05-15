@@ -21,7 +21,7 @@ const COMMENT_RESUME_STATUSES = new Set(["waiting", "blocked", "pending-review",
 // ── Types ────────────────────────────────────────────────────────────────
 
 export interface ProjectInfo {
-  /** Relative project path, e.g. "projects/my-project" or legacy "shared/projects/my-project" */
+  /** Relative project path, e.g. "projects/my-project" */
   relPath: string;
   /** Absolute path to project.md */
   projectFile: string;
@@ -42,8 +42,6 @@ export interface ProjectInfo {
 export interface ProjectScanRoots {
   /** Canonical first-class projects directory. */
   projectsRoot: string;
-  /** Optional legacy fallback directory, normally shared/projects. */
-  legacyProjectsRoot?: string;
 }
 
 export interface HealthAction {
@@ -129,7 +127,7 @@ export function validateProjectFormat(content: string, expectedId?: string): str
   }
   const status = meta.status?.toLowerCase() || "active";
   if (meta.workflow?.startsWith("master-worker")) {
-    errors.push("shared projects should use workflow: project; master-worker is legacy/archived only");
+    errors.push("projects should use workflow: project; master-worker is legacy/archived only");
   }
   if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
     errors.push("metadata duplicated as bold body field");
@@ -207,20 +205,14 @@ function scanProjectDir(projectsDir: string, relPrefix: string, seen: Set<string
   return projects;
 }
 
-/** Scan all projects. Prefer /projects and fall back to legacy shared/projects. */
+/** Scan all first-class projects under /projects. */
 export function scanAllProjects(root: string | ProjectScanRoots): ProjectInfo[] {
   const seen = new Set<string>();
   if (typeof root === "string") {
-    return [
-      ...scanProjectDir(join(root, "projects"), "projects", seen),
-      ...scanProjectDir(join(root, "shared", "projects"), "shared/projects", seen),
-    ];
+    return scanProjectDir(join(root, "projects"), "projects", seen);
   }
 
-  return [
-    ...scanProjectDir(root.projectsRoot, "projects", seen),
-    ...(root.legacyProjectsRoot ? scanProjectDir(root.legacyProjectsRoot, "shared/projects", seen) : []),
-  ];
+  return scanProjectDir(root.projectsRoot, "projects", seen);
 }
 
 // ── Diagnosis ────────────────────────────────────────────────────────────

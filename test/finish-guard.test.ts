@@ -161,7 +161,7 @@ describe("finish-guard handle", () => {
   it("detects persistent-task requirement from project: field", () => {
     const demands = guard.handle(
       makeEvent({
-        task: 'project: agents/shared/projects/my-project\ngoal: do stuff',
+        task: 'project: projects/my-project\ngoal: do stuff',
         result: { finishResult: { status: "success" }, messages: [] },
       }),
     );

@@ -12,9 +12,9 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-} from "../../shared/workflows/heartbeat-data.js";
-import { checkCircuitBreaker, recordOutcome } from "../../shared/workflows/circuit-breaker.js";
-import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../shared/workflows/dispatch-dedup-guard.js";
+} from "../../../shared/workflows/heartbeat-data.js";
+import { checkCircuitBreaker, recordOutcome } from "../../../shared/workflows/circuit-breaker.js";
+import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../../shared/workflows/dispatch-dedup-guard.js";
 
 export const name = "scout-heartbeat";
 export const description = "Scout's creative heartbeat — synthesize, connect, discover.";

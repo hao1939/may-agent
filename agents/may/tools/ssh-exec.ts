@@ -1,4 +1,4 @@
-import { createSshExecTool } from "../../shared/tools/ssh-exec";
+import { createSshExecTool } from "../../../shared/tools/ssh-exec";
 
 export default function factory() {
   return createSshExecTool();

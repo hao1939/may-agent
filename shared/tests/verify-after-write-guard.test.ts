@@ -284,22 +284,22 @@ describe("verify-after-write guard", () => {
         {
           result: {
             messages: [toolCallMsg([
-              { id: "write-findings", name: "write", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/underlay-debug-findings.md" },
+              { id: "write-findings", name: "write", path: "/app/projects/aks-rp-e2e/outputs/underlay-debug-findings.md" },
             ])],
           },
         },
         {
           result: {
             messages: [toolCallMsg([
-              { id: "edit-summary", name: "edit", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" },
+              { id: "edit-summary", name: "edit", path: "/app/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" },
             ])],
           },
         },
         {
           result: {
             messages: [toolCallMsg([
-              { id: "read-findings", name: "read", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/underlay-debug-findings.md" },
-              { id: "read-summary", name: "read", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" },
+              { id: "read-findings", name: "read", path: "/app/projects/aks-rp-e2e/outputs/underlay-debug-findings.md" },
+              { id: "read-summary", name: "read", path: "/app/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" },
             ])],
           },
         },
@@ -324,13 +324,13 @@ describe("verify-after-write guard", () => {
                 content: [{ type: "toolCall", id: "bad-edit", name: "edit", arguments: {} }],
               },
               toolErrorMsg("bad-edit"),
-              toolCallMsg([{ id: "good-edit", name: "edit", path: "/app/agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" }]),
+              toolCallMsg([{ id: "good-edit", name: "edit", path: "/app/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" }]),
             ],
           },
         },
         {
           result: {
-            messages: [toolCallMsg([{ id: "read-summary", name: "read", path: "agents/shared/projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" }])],
+            messages: [toolCallMsg([{ id: "read-summary", name: "read", path: "projects/aks-rp-e2e/outputs/e2e-run-results-summary.md" }])],
           },
         },
       ],

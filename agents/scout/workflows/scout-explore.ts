@@ -5,8 +5,8 @@
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { checkCircuitBreaker, recordOutcome } from "../../shared/workflows/circuit-breaker.js";
-import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../shared/workflows/dispatch-dedup-guard.js";
+import { checkCircuitBreaker, recordOutcome } from "../../../shared/workflows/circuit-breaker.js";
+import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../../shared/workflows/dispatch-dedup-guard.js";
 
 export const name = "scout-explore";
 export const description = "Routine discovery — fetch and process a specific source.";

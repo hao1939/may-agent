@@ -6,7 +6,7 @@
  * sessions that still have no evaluation and ended at least 7 minutes ago.
  */
 
-import type { CronEntry, HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
+import type { CronEntry, HandlerContext, HandlerModule } from "../../../shared/agent-sdk.ts";
 
 type ScanConfig = {
   workflow?: string;

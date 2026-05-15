@@ -180,7 +180,7 @@ relying on it; if it returns a match, use `git add -f` and re-check
 with `git ls-files -- <path>` that the file is now tracked.
 
 Safer durable lanes (no `-f` needed): `shared/knowledge/entries/KE-*.md`
-and `shared/projects/<id>/journal.md`. Prefer those for any artifact
+and `projects/<id>/journal.md`. Prefer those for any artifact
 worth surviving a worktree refresh.
 
 Treat `last-session.md` as read-only wrapper output.

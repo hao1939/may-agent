@@ -9,7 +9,7 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join } from "node:path";
-import type { CronEntry, HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
+import type { CronEntry, HandlerContext, HandlerModule } from "../../../shared/agent-sdk.ts";
 
 type ScanConfig = {
   backfillHours?: number;

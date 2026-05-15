@@ -8,8 +8,8 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-} from "../../shared/workflows/heartbeat-data.js";
-import { checkCircuitBreaker, recordOutcome } from "../../shared/workflows/circuit-breaker.js";
+} from "../../../shared/workflows/heartbeat-data.js";
+import { checkCircuitBreaker, recordOutcome } from "../../../shared/workflows/circuit-breaker.js";
 
 export const name = "coach-heartbeat";
 export const description = "coach's 2-phase heartbeat: plan first, then execute.";

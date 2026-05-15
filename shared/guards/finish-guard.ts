@@ -119,11 +119,9 @@ import * as path from "path";
 /**
  * Return plausible on-disk locations for a declared deliverable path.
  *
- * The finish tool runs with project root `/app`, while agents often work inside
- * the `/app/agents` repository and naturally report paths such as
- * `shared/projects/x/project.md` or `arc/heartbeat.md`.  Treat those as
- * repo-relative aliases for `shared/...` / `agents/arc/...` instead of
- * rejecting otherwise-real deliverables as ghosts.
+ * The finish tool runs with project root `/app`, while agents often report
+ * agent-local paths such as `arc/heartbeat.md`. Treat those as aliases for
+ * `agents/arc/...` instead of rejecting otherwise-real deliverables as ghosts.
  */
 function deliverablePathCandidates(deliverablePath: string, rootDir: string): string[] {
   if (path.isAbsolute(deliverablePath)) return [deliverablePath];

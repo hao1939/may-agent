@@ -399,7 +399,7 @@ export function transcriptOutputSignals(session: any, transcript: string): strin
 
   if (/"name":"(?:write|edit|apply_patch)"/.test(ownText)) signals.add("file write/edit");
   if (/\bgit\s+commit\b/.test(ownText)) signals.add("git commit");
-  if (/agents\/shared\/projects\/[^/\s"']+\/(?:outputs\/|project\.md|journal\.md)/.test(ownText)) {
+  if (/(?:\/app\/)?projects\/[^/\s"']+\/(?:outputs\/|project\.md|journal\.md)/.test(ownText)) {
     signals.add("project artifact");
   }
   if (/agents\/[^/\s"']+\/knowledge\//.test(ownText)) signals.add("knowledge update");

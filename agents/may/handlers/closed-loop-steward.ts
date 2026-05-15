@@ -6,8 +6,8 @@
  * failures are moving toward closure.
  */
 
-import type { CronEntry, HandlerContext, HandlerModule } from "../../shared/agent-sdk.ts";
-import { listConfiguredAgents, resolveMetricOwner } from "../../shared/lib/metric-ownership.ts";
+import type { CronEntry, HandlerContext, HandlerModule } from "../../../shared/agent-sdk.ts";
+import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 
 type Config = {
   lookbackMs?: number;

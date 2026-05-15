@@ -14,7 +14,7 @@ Instead of complex peer-to-peer message passing (which often leads to protocol b
 ## Contrast with Legacy Approaches
 
 *   **Legacy (Direct Messaging):** Actor A sends JSON payload to Actor B. B must be listening. B must understand A's specific format. Failure requires complex retry logic in A.
-*   **Stigmergic (Environment):** Actor A updates `shared/projects/feature-x.md`. Actor B wakes up, scans `shared/projects/`, sees the update, and processes it.
+*   **Stigmergic (Environment):** Actor A updates `projects/feature-x/project.md`. Actor B wakes up, scans `projects/`, sees the update, and processes it.
 
 ## Key Insights for SOUL System
 

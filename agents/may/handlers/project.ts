@@ -9,12 +9,12 @@
  */
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../shared/agent-sdk.ts";
-import type { CronEntry } from "../../shared/agent-sdk.ts";
-import type { ProjectInfo, HealthAction } from "../../shared/lib/project-health.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.ts";
+import type { CronEntry } from "../../../shared/agent-sdk.ts";
+import type { ProjectInfo, HealthAction } from "../../../shared/lib/project-health.ts";
 
 async function loadProjectHealth() {
-  return await import(`../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../shared/lib/project-health.ts");
+  return await import(`../../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../../shared/lib/project-health.ts");
 }
 
 function normalizeProjectPath(value: unknown): string | null {

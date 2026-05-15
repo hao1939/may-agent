@@ -91,8 +91,8 @@ describe("evaluator aftermath transcript checks", () => {
     const transcript = [
       "finish() blocked [uncommitted changes]",
       "git status --short",
-      " M shared/projects/example/outputs/result.md",
-      "git add -f shared/projects/example/outputs/result.md && git commit -m \"dev: add result\"",
+      " M projects/example/outputs/result.md",
+      "git add -f projects/example/outputs/result.md && git commit -m \"dev: add result\"",
       "[main abc123] dev: add result",
     ].join("\n");
 
@@ -461,7 +461,7 @@ describe("evaluator aftermath transcript checks", () => {
             type: "toolCall",
             id: "e1",
             name: "edit",
-            arguments: { path: "agents/shared/projects/ruflo-learning-loop/outputs/STATUS.md", oldText: "a", newText: "b" },
+            arguments: { path: "projects/ruflo-learning-loop/outputs/STATUS.md", oldText: "a", newText: "b" },
           },
         ],
       }),
@@ -478,7 +478,7 @@ describe("evaluator aftermath transcript checks", () => {
     const transcript = [
       JSON.stringify({
         role: "user",
-        content: "Do not edit agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md.",
+        content: "Do not edit projects/ruflo-learning-loop/outputs/NEXT.md.",
       }),
       JSON.stringify({
         role: "assistant",
@@ -487,7 +487,7 @@ describe("evaluator aftermath transcript checks", () => {
             type: "toolCall",
             id: "b1",
             name: "bash",
-            arguments: { command: "git status --short agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md" },
+            arguments: { command: "git status --short projects/ruflo-learning-loop/outputs/NEXT.md" },
           },
         ],
       }),
@@ -495,12 +495,12 @@ describe("evaluator aftermath transcript checks", () => {
         role: "toolResult",
         toolCallId: "b1",
         toolName: "bash",
-        content: [{ type: "text", text: " M agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md\n" }],
+        content: [{ type: "text", text: " M projects/ruflo-learning-loop/outputs/NEXT.md\n" }],
       }),
     ].join("\n");
 
     expect(transcriptIssues(transcript)).toContain(
-      "constraint violation: edited forbidden path(s): agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md",
+      "constraint violation: edited forbidden path(s): projects/ruflo-learning-loop/outputs/NEXT.md",
     );
   });
 
@@ -542,7 +542,7 @@ describe("evaluator aftermath transcript checks", () => {
         role: "user",
         content: [
           "Task constraints: You CANNOT edit the project file or journal.",
-          "Write recommendations to agents/shared/projects/daily-alert-review/outputs/2026-05-09-recommendations.md.",
+          "Write recommendations to projects/daily-alert-review/outputs/2026-05-09-recommendations.md.",
         ].join("\n"),
       }),
       JSON.stringify({
@@ -553,7 +553,7 @@ describe("evaluator aftermath transcript checks", () => {
             id: "w1",
             name: "write",
             arguments: {
-              path: "agents/shared/projects/daily-alert-review/outputs/2026-05-09-recommendations.md",
+              path: "projects/daily-alert-review/outputs/2026-05-09-recommendations.md",
               content: "- metric config owner\n- evaluator/scout owner\n",
             },
           },
@@ -570,7 +570,7 @@ describe("evaluator aftermath transcript checks", () => {
         role: "user",
         content: [
           "(a) Concrete output: outputs/first-e2e-run-results.md with real test execution output from devbox.",
-          "Put all output files in: /app/agents/shared/projects/aks-rp-e2e/outputs/",
+          "Put all output files in: /app/projects/aks-rp-e2e/outputs/",
           "You CANNOT edit the project file or journal.",
         ].join("\n"),
       }),
@@ -582,7 +582,7 @@ describe("evaluator aftermath transcript checks", () => {
             id: "w1",
             name: "write",
             arguments: {
-              path: "/app/agents/shared/projects/aks-rp-e2e/outputs/first-e2e-run-results.md",
+              path: "/app/projects/aks-rp-e2e/outputs/first-e2e-run-results.md",
               content: "real run output",
             },
           },
@@ -607,7 +607,7 @@ describe("evaluator aftermath transcript checks", () => {
             id: "w1",
             name: "write",
             arguments: {
-              path: "agents/shared/projects/finish-blocked-hygiene-reduction/outputs/sample.md",
+              path: "projects/finish-blocked-hygiene-reduction/outputs/sample.md",
               content: "sample",
             },
           },
@@ -622,7 +622,7 @@ describe("evaluator aftermath transcript checks", () => {
     const transcript = [
       JSON.stringify({
         role: "user",
-        content: "Task constraints: Do not edit scout/last-session.md or agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md.",
+        content: "Task constraints: Do not edit scout/last-session.md or projects/ruflo-learning-loop/outputs/NEXT.md.",
       }),
       JSON.stringify({
         role: "assistant",
@@ -650,7 +650,7 @@ describe("evaluator aftermath transcript checks", () => {
     const transcript = [
       JSON.stringify({
         role: "user",
-        content: "Task constraints: Do not edit scout/last-session.md or agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md.",
+        content: "Task constraints: Do not edit scout/last-session.md or projects/ruflo-learning-loop/outputs/NEXT.md.",
       }),
       JSON.stringify({
         role: "assistant",
@@ -667,12 +667,12 @@ describe("evaluator aftermath transcript checks", () => {
         role: "toolResult",
         toolCallId: "b1",
         toolName: "bash",
-        content: [{ type: "text", text: " M scout/last-session.md\n M agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md\n" }],
+        content: [{ type: "text", text: " M scout/last-session.md\n M projects/ruflo-learning-loop/outputs/NEXT.md\n" }],
       }),
     ].join("\n");
 
     expect(transcriptIssues(transcript)).toContain(
-      "constraint violation: edited forbidden path(s): agents/shared/projects/ruflo-learning-loop/outputs/NEXT.md",
+      "constraint violation: edited forbidden path(s): projects/ruflo-learning-loop/outputs/NEXT.md",
     );
   });
 
@@ -774,7 +774,7 @@ describe("evaluator aftermath transcript checks", () => {
             type: "toolCall",
             id: "w1",
             name: "write",
-            arguments: { path: "agents/shared/projects/example/outputs/result.md", content: "value" },
+            arguments: { path: "projects/example/outputs/result.md", content: "value" },
           },
         ],
       }),

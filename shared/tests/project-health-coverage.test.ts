@@ -41,14 +41,14 @@ describe("scanAllProjects - filesystem traversal", () => {
     expect(result).toEqual([]);
   });
 
-  it("returns empty when no shared/projects directory exists", () => {
+  it("returns empty when no projects directory exists", () => {
     fs.mkdirSync(path.join(tmpDir, "agent1"), { recursive: true });
     const result = scanAllProjects(tmpDir);
     expect(result).toEqual([]);
   });
 
   it("skips directories without project.md", () => {
-    const projDir = path.join(tmpDir, "shared", "projects", "my-proj");
+    const projDir = path.join(tmpDir, "projects", "my-proj");
     fs.mkdirSync(projDir, { recursive: true });
     // No project.md file
     const result = scanAllProjects(tmpDir);
@@ -56,7 +56,7 @@ describe("scanAllProjects - filesystem traversal", () => {
   });
 
   it("scans projects with project.md", () => {
-    const projDir = path.join(tmpDir, "shared", "projects", "my-proj");
+    const projDir = path.join(tmpDir, "projects", "my-proj");
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(
       path.join(projDir, "project.md"),
@@ -70,7 +70,7 @@ describe("scanAllProjects - filesystem traversal", () => {
   });
 
   it("defaults projects without workflow metadata to the project workflow", () => {
-    const projDir = path.join(tmpDir, "shared", "projects", "default-workflow");
+    const projDir = path.join(tmpDir, "projects", "default-workflow");
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(
       path.join(projDir, "project.md"),
@@ -83,7 +83,7 @@ describe("scanAllProjects - filesystem traversal", () => {
   });
 
   it("defaults status to active when missing", () => {
-    const projDir = path.join(tmpDir, "shared", "projects", "proj2");
+    const projDir = path.join(tmpDir, "projects", "proj2");
     fs.mkdirSync(projDir, { recursive: true });
     fs.writeFileSync(path.join(projDir, "project.md"), "# Project\nSome content\n");
     const result = scanAllProjects(tmpDir);
@@ -91,8 +91,8 @@ describe("scanAllProjects - filesystem traversal", () => {
     expect(result[0].status).toBe("active");
   });
 
-  it("skips _archive directory under shared/projects", () => {
-    const archDir = path.join(tmpDir, "shared", "projects", "_archive", "old");
+  it("skips _archive directory under projects", () => {
+    const archDir = path.join(tmpDir, "projects", "_archive", "old");
     fs.mkdirSync(archDir, { recursive: true });
     fs.writeFileSync(path.join(archDir, "project.md"), "---\nid: old\nowner: may\nstatus: active\n---\n\n# Old\n");
     const result = scanAllProjects(tmpDir);
@@ -108,9 +108,9 @@ describe("scanAllProjects - filesystem traversal", () => {
     expect(result).toEqual([]);
   });
 
-  it("handles multiple shared projects", () => {
+  it("handles multiple projects", () => {
     for (const proj of ["proj1", "proj2", "proj3", "proj4"]) {
-      const projDir = path.join(tmpDir, "shared", "projects", proj);
+      const projDir = path.join(tmpDir, "projects", proj);
       fs.mkdirSync(projDir, { recursive: true });
       fs.writeFileSync(path.join(projDir, "project.md"), `---\nid: ${proj}\nowner: alice\nstatus: active\n---\n\n# ${proj}\n`);
     }
@@ -127,7 +127,7 @@ describe("diagnoseProject - uncovered branches", () => {
 
   function makeProject(overrides: Partial<ProjectInfo> = {}): ProjectInfo {
     return {
-      relPath: "agent1/workspace/projects/test-proj",
+      relPath: "projects/test-proj",
       projectFile: "/tmp/nonexistent/project.md",
       content: "# Test\n**Status**: active\n",
       status: "active",
@@ -163,7 +163,7 @@ describe("diagnoseProject - uncovered branches", () => {
     const proj = makeProject({ status: "active" });
     const state: HealthState = {
       projects: {
-        "agent1/workspace/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastLaunch: now - 30_000, // 30 sec ago, within 60s cooldown
         },
@@ -204,7 +204,7 @@ describe("diagnoseProject - uncovered branches", () => {
     const proj = makeProject({ status: "blocked" });
     const state: HealthState = {
       projects: {
-        "agent1/workspace/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastLaunch: now - 3 * 60 * 60 * 1000, // 3 hours ago
         },
@@ -218,7 +218,7 @@ describe("diagnoseProject - uncovered branches", () => {
     const proj = makeProject({ status: "waiting" });
     const state: HealthState = {
       projects: {
-        "agent1/workspace/projects/test-proj": {
+        "projects/test-proj": {
           ...newProjectHealthEntry(),
           lastLaunch: now - 25 * 60 * 60 * 1000, // 25 hours ago
         },
@@ -247,7 +247,7 @@ describe("diagnoseProject - uncovered branches", () => {
     fs.writeFileSync(path.join(projDir, "discussion.md"), "# Discussion\n\n### hao - 2026-05-08\nPlease revise the plan.\n");
 
     const proj = makeProject({
-      relPath: "shared/projects/proj",
+      relPath: "projects/proj",
       projectFile: path.join(projDir, "project.md"),
       status: "pending-review",
       owner: "scout",
@@ -269,7 +269,7 @@ describe("diagnoseProject - uncovered branches", () => {
     fs.writeFileSync(path.join(projDir, "discussion.md"), "# Discussion\n\n### hao - 2026-05-08\nPlease revise the plan.\n");
 
     const proj = makeProject({
-      relPath: "shared/projects/proj",
+      relPath: "projects/proj",
       projectFile: path.join(projDir, "project.md"),
       status: "pending-review",
       owner: "scout",
@@ -277,7 +277,7 @@ describe("diagnoseProject - uncovered branches", () => {
     });
     const state: HealthState = {
       projects: {
-        "shared/projects/proj": {
+        "projects/proj": {
           ...newProjectHealthEntry(),
           lastLaunch: now - 60_000,
         },
@@ -309,7 +309,7 @@ describe("diagnoseProject - closed with unread discussion", () => {
     fs.writeFileSync(path.join(projDir, "discussion.md"), "# Discussion\n\nSome unread comment\n");
 
     const proj: ProjectInfo = {
-      relPath: "agent1/workspace/projects/proj",
+      relPath: "projects/proj",
       projectFile: path.join(projDir, "project.md"),
       content: "# P\n**Status**: closed\n",
       status: "closed",
