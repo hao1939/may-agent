@@ -75,16 +75,30 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     // not look fully unread to the project workflow.
     else writeFileSync(discussionFile, `# Discussion\n\n---read @iter0---\n${entry}`, "utf-8");
 
-    // Legacy project files used bold status fields. YAML projects are resumed
-    // by the project handler after the project.nudge event below.
-    let resumedLegacy = false;
+    // Flip status to `active` so downstream watchers see the project as
+    // pushable immediately, not on the next handler tick.
+    let resumed = false;
     let content = readFileSync(projectFile, "utf-8");
-    const statusMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
-    const currentStatus = statusMatch ? statusMatch[1].trim().toLowerCase() : "";
-    if (["blocked", "waiting"].includes(currentStatus)) {
+
+    // Legacy bold-field form: `**Status**: waiting`
+    const legacyMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
+    if (legacyMatch && ["blocked", "waiting", "paused", "pending-review"].includes(legacyMatch[1].trim().toLowerCase())) {
       content = content.replace(/^\*\*Status\*\*:\s*.+$/m, "**Status**: active");
       writeFileSync(projectFile, content, "utf-8");
-      resumedLegacy = true;
+      resumed = true;
+    }
+
+    // YAML frontmatter form: `status: waiting` (inside the leading `---` block)
+    const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (fmMatch) {
+      const statusLine = fmMatch[1].match(/^status:\s*(.+)$/m);
+      const current = statusLine ? statusLine[1].trim().toLowerCase() : "";
+      if (["blocked", "waiting", "paused", "pending-review"].includes(current)) {
+        const newFrontmatter = fmMatch[1].replace(/^status:\s*.+$/m, "status: active");
+        content = content.replace(fmMatch[0], `---\n${newFrontmatter}\n---`);
+        writeFileSync(projectFile, content, "utf-8");
+        resumed = true;
+      }
     }
 
     bus.emit({
@@ -96,7 +110,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     } as any);
     bus.emit({
       type: "info",
-      message: `[project.comment] Appended comment and nudged ${normalized}${resumedLegacy ? " (legacy status resumed)" : ""}`,
+      message: `[project.comment] Appended comment and nudged ${normalized}${resumed ? " (status → active)" : ""}`,
     });
     return true;
   }

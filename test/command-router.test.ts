@@ -109,6 +109,37 @@ describe("command router", () => {
     h.router.close();
   });
 
+  it("flips YAML frontmatter status -> active on comment", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "router-project-yaml-"));
+    const projectPath = "projects/demo-yaml";
+    const projectDir = join(projectRoot, projectPath);
+    mkdirp(projectDir);
+    writeFileSync(
+      join(projectDir, "project.md"),
+      [
+        "---",
+        "id: demo-yaml",
+        "owner: tech-lead",
+        "status: waiting",
+        "---",
+        "",
+        "# Demo",
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
+    const h = createHarness({}, projectRoot);
+
+    h.bus.emit({ type: "project.comment.created", projectPath, comment: "wake up", source: "test", author: "hao" });
+
+    const projContent = readFileSync(join(projectDir, "project.md"), "utf-8");
+    expect(projContent).toContain("status: active");
+    expect(projContent).not.toContain("status: waiting");
+    expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("wake up");
+    expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true, commentText: "wake up" });
+    h.router.close();
+  });
+
   it("handles session.cancel.requested", () => {
     const cancelled: string[] = [];
     const h = createHarness({ cancel: (sessionId: string) => { cancelled.push(sessionId); } } as Partial<SubagentManager>);
