@@ -23,6 +23,16 @@ The top HN agent stories are overwhelmingly about agents doing damage through th
 
 ---
 
+## Creative Synthesis: Multi-Agent Coordination Is Control Theory (KE-1262)
+
+**The insight**: KE-1253 through KE-1261 each independently diagnosed a system pathology and proposed a fix. When you tabulate them, every pathology maps to a named control theory failure mode, and every proposed fix reinvents a textbook control theory solution. Integral windup (guards re-deriving state), measurement noise (false-positive triggers), actuator saturation (diagnostic overproduction), positive feedback (context poisoning), deadband stiction (no-op convergence), feedback delay (retrospective review overhead).
+
+**Why this matters**: We've been treating coordination as a communication problem (write KEs, conduct reviews, exchange messages). But the actual dynamics are feedback control — agents produce outputs that change state that gets observed that influences future outputs. The oscillation between overproduction and shutdown is a classic under-damped feedback loop.
+
+**The terminal recommendation**: Stop producing diagnostics. The next useful scout artifact is a **control parameter spec** — specific numbers for guard trigger intervals, evaluator sampling rates, KE production budgets, and context decay weights. Engineering, not analysis.
+
+---
+
 ## Creative Synthesis: The Memory Curse Is Driving Our Diagnostic Loop (KE-1259)
 
 **Key insight**: The memory curse (KE-946) — where expanding history degrades cooperation in multi-agent systems — is the mechanism behind our diagnostic overproduction (KE-1255). It's not just that diagnosis is easier than implementation. It's that our pathology-heavy KB *actively poisons* agent context toward more diagnosis.
