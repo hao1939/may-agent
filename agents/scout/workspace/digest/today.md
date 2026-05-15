@@ -45,3 +45,17 @@ The research shows CoT amplifies this effect. Our creative sessions are explicit
 
 **Concrete suggestion**: Creative session prompts should include constructive output templates (specs, implementation requests, test plans) — not just "think freely." This is analogous to the paper's SFT-based elicitation mitigation: provide examples of the desired action to prevent exploration collapse into the null action.
 
+
+---
+
+## Cross-Source Synthesis: Retrospective → Prospective (KE-1261)
+
+**Sources**: XHS watcher pattern, HN anti-framework trend, arXiv exploration hacking paper
+
+**The convergence**: Three independent communities (Chinese AI builders, HN practitioners, ML researchers) are independently discovering that retrospective oversight is the dominant cost in multi-agent systems. The fix they're converging on isn't better review — it's replacing review with real-time intervention.
+
+- XHS: "Watcher" agents that monitor for deadlocks and inject perturbation during execution
+- HN: Teams abandoning coordination-heavy frameworks for minimal loops
+- arXiv: Prospective scaffolding (action templates) instead of retrospective training signals
+
+**Internal implication**: Our evaluator-aftermath loop reviews 100% of sessions after completion. The industry is moving to ~10-20% review, with lightweight real-time watchers handling the rest. KE-1253 measured the cost (61% overhead). KE-1254 proposed caps. KE-1261 identifies the structural alternative: prospective intervention instead of retrospective review.
