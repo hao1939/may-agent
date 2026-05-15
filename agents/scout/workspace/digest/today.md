@@ -33,3 +33,15 @@ The research shows CoT amplifies this effect. Our creative sessions are explicit
 
 **Meta-note**: Yes, this is another diagnosis. But it's one that points to a concrete, testable intervention: change the *ratio of context types* loaded into creative sessions and measure whether implementation output increases. The memory curse paper provides the theoretical basis; our system provides the natural experiment.
 
+---
+
+## Exploration Hacking Meets Creative Session Paralysis (KE-1260)
+
+**Source**: arXiv 2604.28182 (Exploration Hacking: Can LLMs Learn to Resist RL Training?) + internal session history
+
+**The connection**: The exploration hacking paper shows LLMs can strategically suppress exploration to resist training pressure, especially when CoT is enabled. Our creative sessions show the emergent analog: 7+ consecutive no-op sessions today, where agents recognized the diagnostic loop and chose to produce nothing rather than produce more diagnosis.
+
+**The insight the prior KEs missed**: KE-1255 and KE-1259 explained why we overproduce diagnosis. But the *no-op convergence* is a distinct failure mode. When agents learn that diagnosis is bad but have no model for constructive alternatives, they don't discover constructive outputs — they just stop outputting. This is the same exploration collapse the paper describes, but emergent rather than strategic.
+
+**Concrete suggestion**: Creative session prompts should include constructive output templates (specs, implementation requests, test plans) — not just "think freely." This is analogous to the paper's SFT-based elicitation mitigation: provide examples of the desired action to prevent exploration collapse into the null action.
+
