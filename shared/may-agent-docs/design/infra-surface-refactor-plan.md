@@ -1075,12 +1075,12 @@ pure router module:
 
 Current state:
 
-- [x] `src/app/ui/telegram-reply-router.ts` owns pure project-path
+- [x] `src/app/transport/telegram-reply-router.ts` owns pure project-path
   normalization/extraction, enriched reply text builders, and compact session
   context extraction for reply enrichment.
-- [x] `src/app/ui/telegram-reply-router.ts` also owns reply-route decisions:
+- [x] `src/app/transport/telegram-reply-router.ts` also owns reply-route decisions:
   notification reply, quote fallback, and missing-context evidence.
-- [x] `src/app/ui/telegram.ts` still owns side effects: DB lookup, event
+- [x] `src/app/transport/telegram.ts` still owns side effects: DB lookup, event
   emission, project comment writes, steering, and Telegram acknowledgements.
 - Root commit: `bb98d54b` extract Telegram reply router helpers.
 - Root commit: `77d69992` extract Telegram session reply context.
@@ -1107,9 +1107,9 @@ session summaries, human-directed proactive messages, and alert forwarding.
 
 Current state:
 
-- [x] `src/app/ui/telegram-outbound.ts` owns outbound session tracking and
+- [x] `src/app/transport/telegram-outbound.ts` owns outbound session tracking and
   Telegram-facing response decisions.
-- [x] `src/app/ui/telegram.ts` delegates outbound close/alert behavior and uses
+- [x] `src/app/transport/telegram.ts` delegates outbound close/alert behavior and uses
   the outbound module for active root chat session lookup when handling
   `/cancel`.
 - Root commit: `713ed468` extract Telegram outbound routing.
@@ -1131,10 +1131,10 @@ message and outbound session policy code.
 
 Current state:
 
-- [x] `src/app/ui/telegram-client.ts` owns `apiCall`, `sendMessage`,
+- [x] `src/app/transport/telegram-client.ts` owns `apiCall`, `sendMessage`,
   Telegram message splitting, Markdown fallback retry, and persistence of
   notification context for reply enrichment.
-- [x] `src/app/ui/telegram.ts` constructs the client and uses `apiCall` /
+- [x] `src/app/transport/telegram.ts` constructs the client and uses `apiCall` /
   `sendMessage` as its transport boundary.
 - Root commit: `120da75d` extract Telegram API client.
 

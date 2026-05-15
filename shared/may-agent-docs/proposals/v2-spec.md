@@ -2,7 +2,7 @@
 
 **Status**: Historical — v2 conformance framing. Do not use this document as
 the current execution model. For current infra direction, see
-[infra-surface.md](../design/infra-surface.md), [architecture.md](../architecture.md),
+[infra-surface.md](../design/infra-surface.md), [architecture.md](../design/architecture.md),
 and [infra-surface-refactor-plan.md](../design/infra-surface-refactor-plan.md).
 **Date**: 2026-05-06 (revised 2026-05-08)
 **Companion to**: `../architecture.md` (intent), `v2-implementation-notes.md` (history)

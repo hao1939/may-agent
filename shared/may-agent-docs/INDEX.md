@@ -16,34 +16,34 @@ sessions/functions. Projects hold durable goal context.
 
 | Need | Read |
 |------|------|
-| Operate or debug a running instance | [manual/user-guide.md](manual/user-guide.md), [metrics.md](metrics.md), [runtime.md](runtime.md) |
-| Handle an alert | [manual/metric-alerts.md](manual/metric-alerts.md), [metrics.md](metrics.md), [events.md](events.md) |
-| Write behavior | [work-model.md](work-model.md), [manual/workflow-authoring.md](manual/workflow-authoring.md), [manual/handler-authoring.md](manual/handler-authoring.md) |
-| Change infra boundaries | [architecture.md](architecture.md), [design/infra-surface.md](design/infra-surface.md), [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) |
-| Update agent conventions | [manual/agent-convention.md](manual/agent-convention.md), [heartbeat.md](heartbeat.md), [projects.md](projects.md) |
+| Operate or debug a running instance | [manual/user-guide.md](manual/user-guide.md), [metrics.md](design/metrics.md), [runtime.md](design/runtime.md) |
+| Handle an alert | [manual/metric-alerts.md](manual/metric-alerts.md), [metrics.md](design/metrics.md), [events.md](design/events.md) |
+| Write behavior | [work-model.md](principles/work-model.md), [manual/workflow-authoring.md](manual/workflow-authoring.md), [manual/handler-authoring.md](manual/handler-authoring.md) |
+| Change infra boundaries | [architecture.md](design/architecture.md), [design/infra-surface.md](design/infra-surface.md), [design/infra-surface-refactor-plan.md](design/infra-surface-refactor-plan.md) |
+| Update agent conventions | [manual/agent-convention.md](manual/agent-convention.md), [heartbeat.md](design/heartbeat.md), [projects.md](design/projects.md) |
 
 ## Start Here
 
 | Doc | What |
 |-----|------|
-| [core-principles.md](core-principles.md) | 11 architecture principles. Read this first. |
-| [architecture.md](architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
-| [work-model.md](work-model.md) | Unified model: projects hold context, metrics signal, triggers wake, agents judge |
-| [sdk.md](sdk.md) | AgentSDK + WorkflowSDK: the system's canonical capability surface |
+| [core-principles.md](principles/core-principles.md) | 11 architecture principles. Read this first. |
+| [architecture.md](design/architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
+| [work-model.md](principles/work-model.md) | Unified model: projects hold context, metrics signal, triggers wake, agents judge |
+| [sdk.md](design/sdk.md) | AgentSDK + WorkflowSDK: the system's canonical capability surface |
 
 ## Subsystems
 
 | Doc | What |
 |-----|------|
-| [sessions.md](sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
-| [events.md](events.md) | Event-native architecture: immutable events, inbox, event types |
-| [cron.md](cron.md) | Cron system: scheduling, handler execution, hot-reload |
-| [heartbeat.md](heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
-| [metrics.md](metrics.md) | Metrics pipeline: schema, snapshots, alerts, health metrics |
-| [projects.md](projects.md) | Project system: format, lifecycle, handler, shared location |
-| [agents.md](agents.md) | Agent cooperation: call/message, session tree, context |
-| [runtime.md](runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
-| [evolution.md](evolution.md) | How agents extend abilities: lesson -> skill -> workflow -> guard -> handler |
+| [sessions.md](design/sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
+| [events.md](design/events.md) | Event-native architecture: immutable events, inbox, event types |
+| [cron.md](design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
+| [heartbeat.md](design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
+| [metrics.md](design/metrics.md) | Metrics pipeline: schema, snapshots, alerts, health metrics |
+| [projects.md](design/projects.md) | Project system: format, lifecycle, handler, shared location |
+| [agents.md](design/agents.md) | Agent cooperation: call/message, session tree, context |
+| [runtime.md](design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
+| [evolution.md](principles/evolution.md) | How agents extend abilities: lesson -> skill -> workflow -> guard -> handler |
 
 ## Manual (How-To Guides)
 
@@ -94,8 +94,8 @@ Proposals under consideration and historical docs preserved for context.
 
 | Doc | What |
 |-----|------|
-| [evidence-first.md](evidence-first.md) | How to validate ideas: hypothesis -> evidence -> build |
-| [code-vs-data.md](code-vs-data.md) | When to use guards vs context.md vs workflows |
+| [evidence-first.md](principles/evidence-first.md) | How to validate ideas: hypothesis -> evidence -> build |
+| [code-vs-data.md](principles/code-vs-data.md) | When to use guards vs context.md vs workflows |
 
 ## Agent Skills
 

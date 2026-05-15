@@ -159,7 +159,7 @@ These notes are kept as history, not as a current task list.
 2. **Old socket module** — Use registry instead of manual normalization
 3. **`src/app/may.ts`** — Add `cmd` subcommand, wire existing flags as aliases
 4. **Old web adapter** — Add `POST /api/cmd`
-5. **`src/app/ui/telegram.ts`** — Route `/command` through registry
+5. **`src/app/transport/telegram.ts`** — Route `/command` through registry
 
 ## Implementation Order
 

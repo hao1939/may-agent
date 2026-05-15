@@ -10,7 +10,7 @@ When something happens — metric breaches, project changes, session fails, agen
 
 The EventBus is the central nervous system. Commands go in, observations come out. Components subscribe and react.
 
-**Elaborated in:** [events.md](events.md)
+**Elaborated in:** [events.md](../design/events.md)
 
 ## 2. Everything has an owner — owner is the backstop, not the first responder
 
@@ -28,7 +28,7 @@ Owner means: if this falls on the floor, it's your problem. Owners don't do all 
 
 Agents exist as **accountability boundaries**. We don't have multiple agents because we need multiple workers — any LLM can do anything. We have separate agents because we need distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
-**Elaborated in:** [metrics.md](metrics.md), [design/agent-metrics.md](design/agent-metrics.md)
+**Elaborated in:** [metrics.md](../design/metrics.md), [design/agent-metrics.md](../design/agent-metrics.md)
 
 ## 3. Events must be consumed
 
@@ -36,7 +36,7 @@ No event fires into the void. Something must consume it — a handler, a subscri
 
 The escalation chain is: best-fit handler -> assigned agent -> owner -> May -> Hao.
 
-**Elaborated in:** [projects.md](projects.md), [design/escalation.md](design/escalation.md)
+**Elaborated in:** [projects.md](../design/projects.md), [design/escalation.md](../design/escalation.md)
 
 ## 4. Context is discovered, not dumped
 
@@ -52,7 +52,7 @@ This is deliberately minimal. Dumping context produces agents that skim. Discove
 
 Continuity across sessions comes from project journals, heartbeat reads, and `last-session.md` — not from memory injection.
 
-**Elaborated in:** [sessions.md](sessions.md), [heartbeat.md](heartbeat.md)
+**Elaborated in:** [sessions.md](../design/sessions.md), [heartbeat.md](../design/heartbeat.md)
 
 ## 5. Evidence before systems
 
@@ -93,7 +93,7 @@ Metrics inform decisions; they don't make them. A regression is a signal to inve
 
 If an agent's output quality drops while their metric improves, the metric is being gamed. The system should catch this — May watches for the pattern.
 
-**Elaborated in:** [metrics.md](metrics.md)
+**Elaborated in:** [metrics.md](../design/metrics.md)
 
 ## 8. Supervision is async and decoupled
 
@@ -104,7 +104,7 @@ Agents work independently. May reviews asynchronously. Intervention is the excep
 
 Agents don't need to know they're being supervised. The gatekeeper pattern requires zero code — it's a behavioral convention that May follows during her normal observation cycle.
 
-**Elaborated in:** [agents.md](agents.md)
+**Elaborated in:** [agents.md](../design/agents.md)
 
 ## 9. Convention over configuration
 

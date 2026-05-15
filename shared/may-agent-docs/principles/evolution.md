@@ -1,5 +1,7 @@
 # Agent Evolution: How to Extend Your Abilities
 
+**Status**: draft — describes the desired evolution model, not yet fully implemented.
+
 ## The Progression
 
 Every agent capability follows the same arc:
@@ -83,7 +85,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const code = await ctx.runAgent(ctx.agent, ctx.task);
   const verify = await ctx.runFunction("verify", async () => {
     const { execSync } = await import("node:child_process");
-    return execSync("bun vitest --run", { encoding: "utf-8" });
+    return execSync("bun test", { encoding: "utf-8" });
   });
   if (verify.status === "error") return ctx.escalate("Tests failed");
   return ctx.done("Implemented and verified");
@@ -220,7 +222,7 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 
 ## The Full SDK + Tool Surface
 
-See [sdk.md](sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
+See [sdk.md](../design/sdk.md) for the canonical AgentSDK and WorkflowSDK interfaces.
 
 ### Agent Tools (for LLM sessions — the agent's action surface)
 
@@ -289,11 +291,11 @@ Growth (experimentation, iteration, improvement) is an agent's responsibility, n
 
 ## Project System: Sustained Work
 
-For work that spans multiple sessions, see [projects.md](projects.md).
+For work that spans multiple sessions, see [projects.md](../design/projects.md).
 
 **Project lifecycle:** active → (workflow runs) → waiting/blocked → (human input) → active → done
 
-See [projects.md](projects.md) for the canonical lifecycle.
+See [projects.md](../design/projects.md) for the canonical lifecycle.
 
 ---
 

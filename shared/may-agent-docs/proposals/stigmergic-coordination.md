@@ -2,7 +2,7 @@
 
 **Status:** draft
 **Date:** 2026-05-03 (revised 2026-05-08)
-**References:** [../architecture.md](../architecture.md), [../work-model.md](../work-model.md), [../design/heartbeat-as-agency.md](../design/heartbeat-as-agency.md)
+**References:** [../architecture.md](../design/architecture.md), [../work-model.md](../principles/work-model.md), [../design/heartbeat-as-agency.md](../design/heartbeat-as-agency.md)
 
 ## Claim
 

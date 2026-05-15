@@ -106,6 +106,10 @@ heartbeat context.
 
 ## DB Table
 
+Effective query schema for the project cache. The canonical project source is
+still `projects/<name>/project.md`; this table is a projection for UI, metrics,
+and runtime queries.
+
 ```sql
 CREATE TABLE projects (
   id TEXT PRIMARY KEY,
@@ -119,8 +123,7 @@ CREATE TABLE projects (
   iteration INTEGER DEFAULT 0,
   milestones_done INTEGER DEFAULT 0,
   milestones_total INTEGER DEFAULT 0,
-  updated_at INTEGER,
-  closed_at INTEGER
+  updated_at INTEGER
 );
 ```
 
@@ -128,4 +131,12 @@ CREATE TABLE projects (
 
 - **Project handler:** `agents/may/handlers/project.ts`
 - **Health lib:** `shared/lib/project-health.ts`
-- **DB schema:** `src/lib/requests.ts` (projects table)
+- **DB schema:** `src/lib/db/schema.ts` (projects table)
+- **Project query/projection helpers:** `src/lib/query-service.ts` and project handler cache sync
+
+## Current Gaps To Close
+
+- Project cache schema should stay generated or checked against `schema.ts` so
+  docs do not drift into non-existent columns.
+- Project docs are the context map. Runtime projections should not become a
+  second source of truth for project intent.

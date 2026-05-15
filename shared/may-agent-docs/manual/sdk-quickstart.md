@@ -1,7 +1,7 @@
 # SDK Quick Reference
 
 The AgentSDK is available to all handlers via `ctx.sdk`. See
-[sdk.md](../sdk.md) for the full interface.
+[sdk.md](../design/sdk.md) for the full interface.
 
 ## Run an Agent
 

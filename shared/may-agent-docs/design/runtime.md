@@ -125,6 +125,6 @@ facts, and most recent reasoning.
 - **System prompt assembly:** `src/lib/manager.ts` → `resolveSystemPrompt()`
 - **Compaction:** pi-agent runtime `Agent` class + may-agent extensions
 - **Socket protocol/server/client:** `packages/control/src/*`
-- **Telegram adapter:** `src/app/ui/telegram.ts`,
-  `src/app/ui/telegram-client.ts`, `src/app/ui/telegram-reply-router.ts`,
-  `src/app/ui/telegram-outbound.ts`
+- **Telegram adapter:** `src/app/transport/telegram.ts`,
+  `src/app/transport/telegram-client.ts`, `src/app/transport/telegram-reply-router.ts`,
+  `src/app/transport/telegram-outbound.ts`

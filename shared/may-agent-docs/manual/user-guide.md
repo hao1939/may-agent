@@ -199,7 +199,7 @@ For async communication, use the `message` tool (emits `message.created`).
 | `job` | Cron, heartbeat, send, task mode | Ephemeral — auto-resumed on restart if stale. |
 | `call` | `agents.call` | Ephemeral — parent re-dispatches on its own resume. |
 
-See [sessions.md](../sessions.md) for details.
+See [sessions.md](../design/sessions.md) for details.
 
 ## Socket Protocol
 
@@ -241,7 +241,7 @@ DAEMON_INSTANCE=background may-agent --send scout --message "review your active 
 bun src/app/may.ts --emit trigger.metrics-snapshot '{}'
 ```
 
-See [runtime.md](../runtime.md) for socket protocol details.
+See [runtime.md](../design/runtime.md) for socket protocol details.
 
 ## Cron System
 
@@ -254,7 +254,7 @@ Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
 
 Handlers live in `agents/<name>/handlers/` and are auto-discovered.
 
-See [cron.md](../cron.md) for details.
+See [cron.md](../design/cron.md) for details.
 
 ## State Directory
 

@@ -12,7 +12,7 @@ handler, the heartbeat "Open Escalations" injection, and the three
 `system.*-escalation*` metrics. Treat those sections as a **proposal**,
 not a description of running behavior. See KE-1242 for falsifiers.
 **Date:** 2026-04-22 (audited 2026-05-12)
-**References:** [core-principles.md](../core-principles.md) (P1, P2, P3); KE-1242
+**References:** [core-principles.md](../principles/core-principles.md) (P1, P2, P3); KE-1242
 
 ## Problem
 

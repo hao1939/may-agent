@@ -10,6 +10,10 @@ Events are the primary communication mechanism. State is derived from events whe
 
 ## Schema
 
+Effective query schema. Some columns may be added by migrations after the base
+`CREATE TABLE`; agents should rely on the event/query surfaces instead of
+assuming the original DDL is complete.
+
 ```sql
 CREATE TABLE events (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +29,21 @@ CREATE TABLE events (
 
 ## Event Types
 
-The canonical list is the `SystemEvent` union in `src/app/event-bus.ts`. Key categories agents encounter:
+This doc is the canonical event taxonomy. `src/app/event-bus.ts` should converge
+on these core events, but the implementation can temporarily persist dynamic
+event names from adapters, workflows, and handlers. When the code and this doc
+differ, treat it as an implementation gap to resolve or a design issue to
+revisit explicitly; do not silently invent a third naming scheme.
+
+Key categories agents encounter:
+
+### Timers and triggers
+```
+timer.heartbeat_due { owner, entry }
+```
+
+Timers are event sources. Cron/timer code should emit timer events; handlers
+then bridge them to workflows.
 
 ### Handler lifecycle (paired)
 ```
@@ -42,23 +60,36 @@ session.end        { sessionId, agent, status, summary }
 
 ### Metrics
 ```
-metric.breach      { metric, value }
-metric.recovered   { metric }
-metric.stalled     { metric }
-metric.alert_judged { metric, action, reason }
+metric.breach       { owner, metricId, metricName, current, threshold, target?, message, priority? }
+metric.recovered    { metricId, metricName }
+metric.stalled      { owner, metricId, metricName, message }
+metric.alert_judged { alertId?, metricId, owner, verdict, reason, evidence? }
 ```
+
+Metrics are signals, not judgments. `metric.breach` wakes or informs the owner;
+the owner agent judges whether to fix, calibrate, downgrade, escalate, or record
+an accepted exception.
 
 ### Agent communication
 ```
 message.created    { from, to, content, intent?, priority? }
 escalation.created { id, agent, reason, level }
-agent.decision     { agent, sessionId, decision }
+agent.decision     { agent, sessionId, decision, evidence? }
 ```
 
-### Other (see SystemEvent for full list)
+### Project, adapter, and guard events
 ```
-project.iteration, project.completed, telegram.reply, tool.executed, ...
+project.comment.created { projectId, author, text }
+project.iteration       { project, iteration }
+project.status_changed  { project, from, to }
+telegram.reply          { chatId?, messageId?, target?, text }
+guard.triggered         { owner, source, guard, action, reason, sessionId?, workflowRunId?, projectId? }
+tool.executed           { agent, sessionId, tool, args? }
 ```
+
+Some of these are currently dynamic event-store names rather than variants in
+`SystemEvent`. The design direction is to type the stable core names while still
+allowing adapter-local evidence events when needed.
 
 ## Inbox (time-window based)
 
@@ -118,6 +149,19 @@ path: normalize at the edge, persist via the bus, and let subscribers react.
 
 ## Implementation
 
+- **Typed core events:** `src/app/event-bus.ts`
 - **Persistence:** `src/lib/db-writer.ts` subscribes to bus, writes all events
-- **Inbox query:** `src/lib/runtime-ctx.ts` → `getInbox()`
-- **Heartbeat injection:** `shared/workflows/heartbeat-data.ts` → `loadInbox()`
+- **Inbox query:** `src/lib/runtime-ctx.ts` -> `getInbox()`
+- **Heartbeat injection:** `shared/workflows/heartbeat-data.ts` -> `loadInbox()`
+
+## Current Gaps To Close
+
+- The typed `SystemEvent` union does not yet include every documented taxonomy
+  event.
+- Heartbeat dispatch still has legacy event naming in places; converge on
+  `timer.heartbeat_due` at the boundary and keep workflow names conventional
+  (`<owner>-heartbeat`).
+- Some historical names remain in docs, tests, or old event rows. Normalize at
+  the boundary rather than teaching agents multiple names.
+- Event payload examples should use IDs and owner/context fields, not embedded
+  metric/session objects, unless the payload truly needs the full object.

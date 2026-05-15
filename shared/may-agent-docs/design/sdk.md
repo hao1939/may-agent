@@ -12,7 +12,7 @@ runWorkflow(workflow, task, opts) -> pre-orchestrated sessions/functions
 A workflow is not a separate kind of intelligence. It is a reusable
 orchestration pattern around sessions.
 
-## Target Interface
+## Current Interface
 
 ```typescript
 interface AgentSDK {
@@ -25,7 +25,7 @@ interface AgentSDK {
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
   escalate(target: string, reason: string): void;
-  paths: { persist: string; root: string; agents: string };
+  paths: { persist: string; root: string; agents: string; shared: string; projects: string };
 }
 ```
 
@@ -65,7 +65,7 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | `log(level, msg)` | Log a diagnostic message. |
 | `message(target, content)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
 | `escalate(target, reason)` | SOS. Enters escalation chain, may trigger immediate wake. |
-| `paths` | `{ persist, root, agents }` — system directories. |
+| `paths` | `{ persist, root, agents, shared, projects }` — system directories. |
 
 ## WorkflowSDK
 
@@ -75,10 +75,8 @@ Workflows get an extended interface:
 interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
-  runAgent(agent: string, task: string): Promise<TaskResult>;
-  runWorkflow(name: string, task: string): Promise<WorkflowResult>;
   done(summary: string, opts?: { deliverables?, contextUpdates?, nextSteps? }): WorkflowResult;
-  escalate(target: string, reason: string): void;
+  // escalate() is inherited from AgentSDK; workflow contexts may terminate on escalation.
 }
 ```
 
@@ -91,7 +89,12 @@ return shapes can differ, but both should answer:
 - what evidence/output it produced,
 - where the trace can be inspected.
 
-Shared execution view:
+Target shared execution view:
+
+Current implementation returns `TaskResult` and `WorkflowResult` directly. The
+design direction is to map both into this shared view for UI, diagnostics,
+tests, and resume handling; code that needs current behavior should use the
+current result types above.
 
 ```typescript
 interface ExecutionResult {
@@ -136,8 +139,17 @@ The SDK and agent tools are two sides of the same coin:
 ## Implementation
 
 - **Types:** `src/lib/sdk.ts`
+- **Package facade:** `packages/sdk/src/index.ts`
 - **Wrapper:** `src/lib/sdk-impl.ts` (delegates to manager, bus, DB)
 - **Wiring:** `src/app/agent-loader.ts` remains the compatibility surface over `src/app/loader/*`; handler/workflow contexts build `ctx.sdk` via `buildAgentSDK()`
+
+## Current Gaps To Close
+
+- `runAgent()` and `runWorkflow()` share the same mental model, but their return
+  values are not yet mapped through the target `ExecutionResult` view.
+- Resume is not yet symmetric across sessions and workflows.
+- `getDb()` remains a compatibility escape hatch. New code should prefer
+  `query` and `metrics` so infra internals can keep moving.
 
 ## Design Rationale
 

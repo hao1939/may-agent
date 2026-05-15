@@ -111,26 +111,43 @@ The agent just works. The infra triggers, frames, protects, records, and connect
 
 ### 1. Event Bus
 
-Typed pub/sub. The backbone.
+Typed pub/sub plus a durable event store. The backbone.
+
+Design contract:
+
+- event names are dot-separated and stable;
+- every event is persisted before side-effect subscribers run;
+- events carry enough owner/project/session/workflow context to route and
+  diagnose later;
+- typed core events should converge with the event taxonomy in
+  [events.md](events.md).
+
+Current implementation note: `src/app/event-bus.ts` types the most common core
+events today, while the event table can still persist dynamic event names from
+adapters, workflows, and handlers. Treat untyped-but-documented event names as
+implementation gaps, not as permission to invent incompatible names.
 
 ```typescript
 type SystemEvent =
-  | { type: "trigger.heartbeat"; agent: string; source?: string }
+  | { type: "timer.heartbeat_due"; owner: string; entry: string }
   | { type: "handler.started"; handler: string; agent: string }
   | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
   | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
-  | { type: "metric.breach"; metric: Metric; value: number }
-  | { type: "metric.recovered"; metric: Metric }
-  | { type: "session.start"; agent: string; id: string; source: string; task: string }
-  | { type: "session.end"; agent: string; id: string; outcome: Outcome; summary: string }
-  | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args: any }
+  | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }
+  | { type: "metric.recovered"; metricId: string; metricName: string }
+  | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }
+  | { type: "session.start"; sessionId: string; agent: string; source?: string; task: string; workflowRunId?: string; projectId?: string; parentSessionId?: string }
+  | { type: "session.end"; sessionId: string; agent: string; status: string; summary?: string; workflowRunId?: string; projectId?: string }
+  | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args?: unknown }
   | { type: "message.created"; from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }
+  | { type: "project.comment.created"; projectId: string; author: string; text: string }
+  | { type: "guard.triggered"; owner: string; source: "workflow" | "tool"; guard: string; action: string; reason: string; sessionId?: string; workflowRunId?: string; projectId?: string }
 
 // Heartbeat is a workflow-backed handler. Cron, socket, or another event can
 // trigger it; the handler builds/reuses workflow context and the workflow calls
 // ctx.runAgent() for the owner.
-bus.on("trigger.heartbeat", (e) =>
-  runWorkflow("may-heartbeat", buildHeartbeatTask(e.agent), { source: "heartbeat" })
+bus.on("timer.heartbeat_due", (e) =>
+  runWorkflow(`${e.owner}-heartbeat`, buildHeartbeatTask(e.owner), { source: "timer.heartbeat_due" })
 );
 
 // Metric breach creates durable alert state. The alert reactor resolves owner,
@@ -143,8 +160,8 @@ bus.on("metric.breach", (e) =>
 // No separate messages table — events table with owner field serves as inbox.
 bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
-// Timers are event sources — cron emits trigger events on the bus.
-registerTimer("may", "*/20 * * * *");  // emits { type: "trigger.heartbeat", agent: "may" }
+// Timers are event sources — cron emits timer events on the bus.
+registerTimer("may", "*/20 * * * *");  // emits { type: "timer.heartbeat_due", owner: "may" }
 
 // Event persistence is the first-priority subscriber.
 // Invariant:
@@ -190,9 +207,25 @@ async function measure(metric: Metric): Promise<void> {
 
   if (newStatus !== prevStatus) {
     db.updateMetricStatus(metric.id, newStatus);
-    if (newStatus === "breach") bus.emit({ type: "metric.breach", metric, value });
-    if (newStatus === "ok" && prevStatus !== "ok") bus.emit({ type: "metric.recovered", metric });
-    if (newStatus === "stalled") bus.emit({ type: "metric.stalled", metric });
+    if (newStatus === "breach") {
+      bus.emit({
+        type: "metric.breach",
+        owner: resolveMetricOwner(metric),
+        metricId: metric.id,
+        metricName: metric.name,
+        current: value,
+        threshold: metric.threshold,
+        target: metric.target,
+        message: explainBreach(metric, value),
+        priority: metric.priority,
+      });
+    }
+    if (newStatus === "ok" && prevStatus !== "ok") {
+      bus.emit({ type: "metric.recovered", metricId: metric.id, metricName: metric.name });
+    }
+    if (newStatus === "stalled") {
+      bus.emit({ type: "metric.stalled", owner: resolveMetricOwner(metric), metricId: metric.id, metricName: metric.name, message: explainStall(metric) });
+    }
   }
 }
 ```
@@ -231,7 +264,9 @@ call `ctx.runAgent(...)` when an agent session is the next step.
 | Custom tools | `customTools` option |
 | Event subscription | `session.subscribe(listener)` |
 
-**Our glue** wires pi-coding-agent into the event/metric system:
+**Our glue** wires pi-coding-agent into the event/metric system. The exact
+runtime code lives behind the manager/SDK/workflow surfaces; this sketch shows
+the intended boundary, not a literal function body to copy.
 
 ```typescript
 async function runAgent(agentName: string, task: string, source: string): Promise<SessionResult> {
@@ -251,14 +286,14 @@ async function runAgent(agentName: string, task: string, source: string): Promis
     ],
   });
 
-  session.agent.state.systemPrompt = buildPrompt(config, db);
+  session.agent.state.systemPrompt = resolveSystemPrompt(config);
 
   // Bridge pi-coding-agent events → system EventBus
   session.subscribe((event) => {
     if (event.type === "agent_end") {
       const result = extractResult(event.messages);
-      db.insertSession({ id: sessionId, agent: agentName, task, source, ...result });
-      bus.emit({ type: "session.end", agent: agentName, id: sessionId, ...result });
+      db.insertSession({ sessionId, agent: agentName, task, source, ...result });
+      bus.emit({ type: "session.end", agent: agentName, sessionId, ...result });
     }
     if (event.type === "tool_execution_end") {
       bus.emit({ type: "tool.executed", agent: agentName, sessionId, tool: event.toolName, args: event.args });
@@ -277,8 +312,11 @@ async function runAgent(agentName: string, task: string, source: string): Promis
 The system prompt is deliberately small and stable. Metrics, projects, messages,
 and recent history are runtime/session context, not cached system prompt.
 
+This is the design shape. The current implementation is
+`src/lib/manager.ts -> resolveSystemPrompt()`.
+
 ```typescript
-function buildPrompt(config: AgentConfig): string {
+function resolveSystemPrompt(config: AgentConfig): string {
   return [
     shared.commonSense,                           // common-sense.md — shared fundamentals
     config.identity,                              // AGENTS.md — role identity
@@ -299,26 +337,30 @@ Agent-defined step sequences with **two step types**: agent steps (LLM) and func
 
 // Function step — mechanical, no LLM
 { fn: "run-tests", exec: async (ctx) => {
-    const r = await ctx.exec("bun vitest --run");
+    const r = await ctx.exec("bun test");
     return { outcome: r.exitCode === 0 ? "success" : "error", summary: r.stdout.slice(-500) };
   }
 }
 ```
 
-#### Workflow Step Context
+#### Workflow Context
 
-Function steps use the same safety boundary as agent tools. They do not open DB files directly, bypass path restrictions, or write outside allowed roots.
+Function steps use the same safety boundary as agent tools. They do not open DB
+files directly, bypass path restrictions, or write outside allowed roots.
+
+Design contract: workflow code gets a context-specific handle over the same
+infra capabilities as the SDK. It should not grow a parallel private API.
 
 ```typescript
-interface WorkflowStepContext {
-  exec: (cmd: string) => Promise<ExecResult>;            // scoped, same sandbox as bash tool
-  readFile: (path: string) => string;                    // scoped to workspace
-  writeFile: (path: string, content: string) => void;   // scoped to workspace
-  queryDb: (sql: string) => any[];                       // read-only
-  emit: (event: SystemEvent) => void;                    // bus.emit
-  runWorkflow: (name: string, input: Record<string, string>) => Promise<WorkflowResult>;
-  prev?: StepResult;
-  input: Record<string, string>;
+interface WorkflowContext {
+  task: string;
+  agent: string;
+  sdk: InfraSDK;
+  runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
+  runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
+  runFunction<T>(label: string, fn: () => Promise<T>): Promise<T>;
+  done(summary: string): WorkflowResult;
+  escalate(reason: string, context?: unknown): WorkflowResult;
 }
 ```
 
@@ -455,7 +497,7 @@ CREATE TABLE events (...);            -- see events.md
 CREATE TABLE projects (...);          -- see projects.md
 ```
 
-Full schemas are in `src/lib/requests.ts`. The docs above show the columns agents care about.
+Full schemas are in `src/lib/db/schema.ts`, with query helpers in `src/lib/query-service.ts`. The docs above show the effective columns agents care about.
 
 ---
 
@@ -494,12 +536,12 @@ The goal is fewer execution paths, not minimum LOC.
 ### Autonomous heartbeat
 
 ```
-Timer/socket → trigger.heartbeat → heartbeat handler → may-heartbeat workflow
-  → ctx.runAgent("may", assembled heartbeat task)
-  → runtime context includes metrics, projects, messages
-  → agent sees build_health FAILING → calls run_workflow("fix-build", {})
-  → workflow: coder implements fix → fn: run tests → done
-  → session.end → metric engine re-measures → ✅
+Timer/socket -> timer.heartbeat_due -> heartbeat handler -> may-heartbeat workflow
+  -> ctx.runAgent("may", assembled heartbeat task)
+  -> runtime context includes metrics, projects, messages
+  -> agent sees build_health FAILING -> calls run_workflow("fix-build", {})
+  -> workflow: coder implements fix -> fn: run tests -> done
+  -> session.end -> metric engine re-measures -> healthy signal
 ```
 
 ### Reactive metric breach

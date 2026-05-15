@@ -117,7 +117,7 @@ breaches; lower-priority alerts remain visible for heartbeat/project/steward
 handling.
 
 Agents handling an alert must follow
-[manual/metric-alerts.md](manual/metric-alerts.md): judge the alert, choose one
+[manual/metric-alerts.md](../manual/metric-alerts.md): judge the alert, choose one
 operation, and either investigate then fix, calibrate, downgrade, upgrade or
 escalate, resolve stale state, or document an exception.
 

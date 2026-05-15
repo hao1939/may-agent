@@ -4,6 +4,10 @@
 
 Every agent interaction is a **session** — a single LLM conversation with tools.
 
+Effective query schema. Some columns are added by migrations after the base
+`CREATE TABLE`; agents should rely on the effective schema exposed by the SDK/query
+surface, not hand-copy base DDL.
+
 ```sql
 CREATE TABLE sessions (
   sessionId       TEXT PRIMARY KEY,
@@ -21,7 +25,7 @@ CREATE TABLE sessions (
   error           TEXT,
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
-  stepLabel       TEXT              -- workflow step label, if part of a workflow
+  stepLabel       TEXT              -- migration-added workflow step label
 );
 ```
 
@@ -60,8 +64,9 @@ The DB is the queryable index. Disk is the source of truth for message history.
 ## Implementation
 
 - **Manager:** `src/lib/manager.ts` — spawns/manages sessions
-- **DB writes:** `src/lib/db-writer.ts` — persists session events
-- **Queries:** `src/lib/requests.ts` → `upsertSession()`, `updateSessionDb()`
+- **DB writes:** `src/lib/db-writer.ts` and `src/lib/db/sessions.ts`
+- **DB schema:** `src/lib/db/schema.ts`
+- **Queries:** prefer `src/lib/query-service.ts` / SDK `query` over direct SQL in agent-facing code
 
 ## Design Decisions
 

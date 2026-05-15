@@ -655,8 +655,8 @@ Existing pieces already align with this direction:
 | Daemon session startup | `src/app/daemon-sessions.ts` |
 | Daemon loops | `src/app/daemon-loops.ts` |
 | Agent loading | `src/app/agent-loader.ts`, `src/app/loader/*` |
-| Telegram adapter | `src/app/ui/telegram.ts` |
-| Telegram transport/reply/outbound helpers | `src/app/ui/telegram-client.ts`, `src/app/ui/telegram-reply-router.ts`, `src/app/ui/telegram-outbound.ts` |
+| Telegram adapter | `src/app/transport/telegram.ts` |
+| Telegram transport/reply/outbound helpers | `src/app/transport/telegram-client.ts`, `src/app/transport/telegram-reply-router.ts`, `src/app/transport/telegram-outbound.ts` |
 | Web UI projection reader | `packages/webui/src/server.ts` |
 | Agent patterns | `shared/workflows/*`, project docs, heartbeat docs |
 

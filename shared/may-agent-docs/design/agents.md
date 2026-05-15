@@ -57,7 +57,7 @@ call creates children; fork creates independent sessions:
 ```typescript
 interface TaskResult {
   sessionId: string;
-  status: string;          // "done" | "error" | "interrupted"
+  status: string;          // commonly "done", "error", or "interrupted"; not a closed enum today
   lastAssistantText: string;
 }
 ```
