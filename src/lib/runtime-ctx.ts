@@ -33,6 +33,8 @@ export interface RuntimeCtx {
   persistDir: string;
   projectRoot: string;
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
 }
 
 export interface RuntimeCtxOptions {
@@ -40,6 +42,8 @@ export interface RuntimeCtxOptions {
   persistDir: string;
   projectRoot: string;
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   agentName: string;
 }
 
@@ -65,6 +69,8 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+    projectsRoot: opts.projectsRoot,
   };
 }
 

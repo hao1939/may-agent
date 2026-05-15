@@ -26,6 +26,8 @@ export interface SDKDeps {
   persistDir: string;
   projectRoot: string;
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   agentName: string;
   /** Manager instance — for runWorkflow delegation. */
   manager?: SubagentManager;
@@ -55,6 +57,8 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         persistDir: deps.persistDir,
         projectRoot: deps.projectRoot,
         agentsRoot: deps.agentsRoot,
+        sharedRoot: deps.sharedRoot,
+        projectsRoot: deps.projectsRoot,
         agentName: deps.agentName,
       });
       const agentForWorkflow = opts?.source ?? deps.agentName;
@@ -66,9 +70,9 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentName: agentForWorkflow,
         persistDir: deps.persistDir,
         workflowDir: join(deps.agentsRoot, agentForWorkflow, "workflows"),
-        sharedWorkflowDir: join(deps.agentsRoot, "shared", "workflows"),
+        sharedWorkflowDir: join(deps.sharedRoot, "workflows"),
         guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
-        sharedGuardsDir: join(deps.agentsRoot, "shared", "guards"),
+        sharedGuardsDir: join(deps.sharedRoot, "guards"),
         projectId: opts?.projectId,
       });
       return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated", runId };
@@ -142,6 +146,8 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       persist: deps.persistDir,
       root: deps.projectRoot,
       agents: deps.agentsRoot,
+      shared: deps.sharedRoot,
+      projects: deps.projectsRoot,
     },
   };
 }

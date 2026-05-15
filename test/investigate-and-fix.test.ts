@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 // Import the workflow directly
-import { execute, name, description } from "../agents/optimizer/workflows/investigate-and-fix.js";
+import { execute, name, description } from "../agents/agents/optimizer/workflows/investigate-and-fix.js";
 import type { WorkflowContext, WorkflowResult, WorkflowEvent } from "../src/lib/workflow.js";
 import type { TaskResult } from "../src/lib/types.js";
 

@@ -40,4 +40,10 @@ describe("project path matching", () => {
     expect(projectPathsMatch("agents/shared/projects/alpha-project/project.md", "shared/projects/alpha-project/")).toBe(true);
     expect(normalizeProjectPathForCompare("./agents/shared/projects/alpha-project/project.md")).toBe("shared/projects/alpha-project");
   });
+
+  it("normalizes canonical project-root paths", () => {
+    expect(normalizeProjectPathForCompare("/app/projects/alpha-project/project.md")).toBe("projects/alpha-project");
+    expect(projectPathsMatch("/app/projects/alpha-project", "projects/alpha-project/project.md")).toBe(true);
+    expect(projectPathsMatch("/app/agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(false);
+  });
 });

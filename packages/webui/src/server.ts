@@ -76,12 +76,20 @@ export function extractMarkdownSection(body: string, headings: string | string[]
 }
 
 export function normalizeProjectPathForCompare(path: string): string {
-  return path
+  const normalized = path
     .trim()
+    .replace(/^\/app\/agents\/shared\/projects\//, "shared/projects/")
+    .replace(/^\/app\/shared\/projects\//, "shared/projects/")
+    .replace(/^\/app\/projects\//, "projects/")
     .replace(/^\.?\//, "")
     .replace(/^agents\//, "")
     .replace(/\/project\.md$/, "")
     .replace(/\/$/, "");
+  const sharedIdx = normalized.indexOf("shared/projects/");
+  if (sharedIdx >= 0) return normalized.slice(sharedIdx);
+  const projectsIdx = normalized.indexOf("projects/");
+  if (projectsIdx >= 0) return normalized.slice(projectsIdx);
+  return normalized;
 }
 
 export function projectPathsMatch(left: string | null | undefined, right: string | null | undefined): boolean {
@@ -94,6 +102,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const PORT = opts.port;
   const PROJECT_ROOT = process.env.PROJECT_ROOT || resolve(STATE_DIR, "..");
   const AGENTS_ROOT = process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents");
+  const SHARED_ROOT = process.env.SHARED_ROOT
+    || (existsSync(resolve(PROJECT_ROOT, "shared")) ? resolve(PROJECT_ROOT, "shared") : resolve(AGENTS_ROOT, "shared"));
+  const PROJECTS_ROOT = process.env.PROJECTS_ROOT
+    || (existsSync(resolve(PROJECT_ROOT, "projects")) ? resolve(PROJECT_ROOT, "projects") : resolve(SHARED_ROOT, "projects"));
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
 
@@ -163,14 +175,57 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function parseProjectIdentity(path: string, content?: string): { owner: string; name: string; projectId: string } {
-    const parts = path.split("/");
-    const name = parts[1] === "shared" && parts[2] === "projects"
-      ? parts[3]?.replace(/\.md$/, "") ?? ""
-      : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
-    let owner = parts[1] === "shared" ? "shared" : parts[1] ?? "";
+    const normalized = normalizeProjectPathForCompare(path);
+    const parts = normalized.split("/");
+    const name = parts[0] === "shared" && parts[1] === "projects"
+      ? parts[2]?.replace(/\.md$/, "") ?? ""
+      : parts[0] === "projects"
+        ? parts[1]?.replace(/\.md$/, "") ?? ""
+        : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    let owner = parts[0] === "shared" || parts[0] === "projects" ? "shared" : parts[1] ?? "";
     const ownerMatch = content?.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
     if (ownerMatch?.[1]) owner = ownerMatch[1].trim().replace(/^["']|["']$/g, "");
     return { owner, name, projectId: `${owner}/${name}` };
+  }
+
+  function projectNameFromPath(path: string): string {
+    return parseProjectIdentity(path).name;
+  }
+
+  function isAllowedProjectPath(path: string): boolean {
+    const normalized = normalizeProjectPathForCompare(path);
+    return /^projects\/[^/]+(?:\/.*)?$/.test(normalized)
+      || /^shared\/projects\/[^/]+(?:\/.*)?$/.test(normalized)
+      || /^[^/]+\/workspace\/projects\/[^/]+(?:\/.*)?$/.test(normalized);
+  }
+
+  function projectPathCandidates(path: string): string[] {
+    const normalized = normalizeProjectPathForCompare(path);
+    const clean = normalized.replace(/\/project\.md$/, "").replace(/\/$/, "");
+    const name = projectNameFromPath(clean);
+    const candidates = [
+      resolve(PROJECT_ROOT, clean),
+      resolve(PROJECT_ROOT, path),
+    ];
+    if (name) {
+      candidates.push(resolve(PROJECTS_ROOT, name));
+      candidates.push(resolve(SHARED_ROOT, "projects", name));
+      candidates.push(resolve(AGENTS_ROOT, "shared", "projects", name));
+    }
+    return [...new Set(candidates)];
+  }
+
+  function resolveProjectDir(path: string): string {
+    const candidates = projectPathCandidates(path);
+    return candidates.find((candidate) => existsSync(candidate)) ?? candidates[0];
+  }
+
+  function resolveProjectFile(path: string): string {
+    if (path.endsWith(".md")) {
+      const dir = resolveProjectDir(path.replace(/\/project\.md$/, ""));
+      return resolve(dir, "project.md");
+    }
+    return resolve(resolveProjectDir(path), "project.md");
   }
 
   function conventionSocketPath(): string {
@@ -900,7 +955,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function handleBrowse(url: URL): Response {
     const relPath = url.searchParams.get("path") ?? "";
-    const sharedDir = join(STATE_DIR, "..", "agents", "shared");
+    const sharedDir = SHARED_ROOT;
 
     // Security: only allow browsing under agents/shared/
     const absPath = join(sharedDir, relPath);
@@ -955,7 +1010,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const content = readFileSync(projectFile, "utf-8");
         // Parse YAML frontmatter if present (current convention).
         // Legacy per-agent projects may still use old `**Owner**: x` lines.
-        const isSharedProject = relPath.startsWith("agents/shared/projects/");
+        const normalizedRelPath = normalizeProjectPathForCompare(relPath);
+        const isSharedProject = normalizedRelPath.startsWith("projects/") || normalizedRelPath.startsWith("shared/projects/");
         let frontmatter: Record<string, string> = {};
         const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
         if (fmMatch) {
@@ -1022,17 +1078,22 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     };
 
     try {
-      // Scan shared projects (new location)
-      const sharedProjDir = join(AGENTS_ROOT, "shared", "projects");
-      if (existsSync(sharedProjDir)) {
-        for (const entry of readdirSync(sharedProjDir, { withFileTypes: true })) {
+      // Scan first-class projects, then legacy shared/projects for compatibility.
+      const seen = new Set<string>();
+      const scanSharedProjectsDir = (dir: string, relPrefix: string) => {
+        if (!existsSync(dir)) return;
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
           if (!entry.isDirectory()) continue;
-          const projectFile = join(sharedProjDir, entry.name, "project.md");
+          if (seen.has(entry.name)) continue;
+          const projectFile = join(dir, entry.name, "project.md");
           if (!existsSync(projectFile)) continue;
-          const relPath = `agents/shared/projects/${entry.name}`;
+          const relPath = `${relPrefix}/${entry.name}`;
+          seen.add(entry.name);
           processProject(projectFile, relPath, entry.name, "unknown");
         }
-      }
+      };
+      scanSharedProjectsDir(PROJECTS_ROOT, "projects");
+      scanSharedProjectsDir(resolve(SHARED_ROOT, "projects"), "shared/projects");
 
       // Scan legacy per-agent locations
       for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
@@ -1055,7 +1116,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
     if (path.endsWith(".md")) return json({ content: "(Legacy project — journal is in the project file)" });
-    const journalPath = join(PROJECT_ROOT, path, "journal.md");
+    const journalPath = resolve(resolveProjectDir(path), "journal.md");
     try {
       return json({ content: readFileSync(journalPath, "utf-8") });
     } catch {
@@ -1067,7 +1128,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
     if (path.endsWith(".md")) return json({ content: "(Legacy project — no discussion file)" });
-    const discPath = join(PROJECT_ROOT, path, "discussion.md");
+    const discPath = resolve(resolveProjectDir(path), "discussion.md");
     try {
       return json({ content: readFileSync(discPath, "utf-8") });
     } catch {
@@ -1078,13 +1139,38 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectContent(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
-    const filePath = path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md");
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
+    const filePath = resolveProjectFile(path);
     try {
       const content = readFileSync(filePath, "utf-8");
       return json({ content });
     } catch {
       return json({ content: "(No project file found)" });
+    }
+  }
+
+  function handleProjectArtifact(url: URL): Response {
+    const path = url.searchParams.get("path");
+    const file = url.searchParams.get("file");
+    if (!path) return json({ error: "path required" }, 400);
+    if (!file) return json({ error: "file required" }, 400);
+    if (path.endsWith(".md")) return json({ error: "artifact reads require a project directory path" }, 400);
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
+    if (file.startsWith("/") || file.includes("\0") || file.split(/[\\/]+/).includes("..")) {
+      return json({ error: "invalid file path" }, 400);
+    }
+
+    const projectDir = resolveProjectDir(path);
+    const artifactPath = resolve(projectDir, file);
+    if (artifactPath !== projectDir && !artifactPath.startsWith(`${projectDir}/`)) {
+      return json({ error: "Access denied" }, 403);
+    }
+
+    try {
+      const content = readFileSync(artifactPath, "utf-8");
+      return json({ content });
+    } catch {
+      return json({ error: "Artifact not found" }, 404);
     }
   }
 
@@ -1109,8 +1195,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectDetail(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
-    const filePath = path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md");
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
+    const filePath = resolveProjectFile(path);
     if (!existsSync(filePath)) return json({ error: "not found" }, 404);
 
     let content = "";
@@ -1261,10 +1347,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectLineage(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
     let content = "";
-    try { content = readFileSync(path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md"), "utf-8"); } catch {}
+    try { content = readFileSync(resolveProjectFile(path), "utf-8"); } catch {}
     const { name, projectId } = parseProjectIdentity(path, content);
 
     // link confidence ranking; lower = stronger.
@@ -1376,9 +1462,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectSessions(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
     // Canonical projectId is owner/name, even for shared path.
     let content = "";
-    try { content = readFileSync(path.endsWith(".md") ? join(PROJECT_ROOT, path) : join(PROJECT_ROOT, path, "project.md"), "utf-8"); } catch {}
+    try { content = readFileSync(resolveProjectFile(path), "utf-8"); } catch {}
     const { name, projectId } = parseProjectIdentity(path, content);
 
     // Two-tier query:
@@ -1436,9 +1523,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const body = await req.json() as { path?: string; comment?: string };
       const { path, comment } = body;
       if (!path || !comment) return json({ error: "path and comment required" }, 400);
-      if (!path.match(/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)/)) return json({ error: "Access denied" }, 403);
+      if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
-      const projectFile = join(PROJECT_ROOT, path, "project.md");
+      const projectFile = resolveProjectFile(path);
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
       const projectContent = readFileSync(projectFile, "utf-8");
       const { projectId } = parseProjectIdentity(path, projectContent);
@@ -2034,6 +2121,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
+      if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/lineage") return handleProjectLineage(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);

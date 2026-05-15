@@ -119,6 +119,12 @@ interface WorkflowContext {
   /** Agents root directory. */
   agentsRoot: string;
 
+  /** Shared conventions, workflows, guards, docs directory. */
+  sharedRoot: string;
+
+  /** First-class projects directory. */
+  projectsRoot: string;
+
   // ── Workflow-specific ──────────────────────────────────────────────
 
   /** Run a sub-agent, wait for it to finish, return result. */

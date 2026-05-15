@@ -10,6 +10,8 @@ import { runWorkflowMode } from "./modes/run-workflow.js";
 export async function runRequestedExitMode(opts: {
   appArgs: AppArgs;
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   projectRoot: string;
   persistDir: string;
   bus: EventBus;
@@ -49,6 +51,8 @@ export async function runRequestedExitMode(opts: {
         mode: runWorkflow,
         dryRun,
         agentsRoot: opts.agentsRoot,
+        sharedRoot: opts.sharedRoot,
+        projectsRoot: opts.projectsRoot,
         projectRoot: opts.projectRoot,
         persistDir: opts.persistDir,
         bus: opts.bus,

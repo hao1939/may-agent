@@ -298,8 +298,8 @@ function getRecentDelegations(stateDir: string, count: number): DelegationEntry[
   return parseJsonlLines<DelegationEntry>(lines);
 }
 
-function readFocusTasks(agentsRoot: string): string {
-  const focusPath = join(agentsRoot, "shared", "focus-tasks.md");
+function readFocusTasks(sharedRoot: string): string {
+  const focusPath = join(sharedRoot, "focus-tasks.md");
   if (!existsSync(focusPath)) return "(no focus-tasks.md found)";
   try {
     const content = readFileSync(focusPath, "utf-8");
@@ -515,8 +515,9 @@ function formatMarkdown(
  *
  * @param stateDir - Path to .state/ directory
  * @param agentsRoot - Path to agents/ directory
+ * @param sharedRoot - Path to shared/ directory
  */
-export function createSystemStatusTool(stateDir: string, agentsRoot: string): AgentTool {
+export function createSystemStatusTool(stateDir: string, agentsRoot: string, sharedRoot = join(agentsRoot, "shared")): AgentTool {
   return {
     name: "system_status",
     label: "System Status Dashboard",
@@ -546,7 +547,7 @@ export function createSystemStatusTool(stateDir: string, agentsRoot: string): Ag
       const history = getRecentHistory(stateDir, windowMs);
       const delegations = getRecentDelegations(stateDir, 50);
       const jobs = getRecentJobs(stateDir, 50);
-      const focus = readFocusTasks(agentsRoot);
+      const focus = readFocusTasks(sharedRoot);
       const todoSummary = readTodoSummary(stateDir);
 
       // Fetch metrics — filtered by agent if provided, otherwise all active

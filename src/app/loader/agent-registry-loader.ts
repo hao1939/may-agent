@@ -10,6 +10,8 @@ import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;

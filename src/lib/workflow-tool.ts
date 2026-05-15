@@ -744,6 +744,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         persistDir: persistDir ?? "",
         projectRoot: "",
         agentsRoot: "",
+        sharedRoot: "",
+        projectsRoot: "",
       }),
       // Overlay emit to also call onEvent for workflow lifecycle logging
       emit: (event: { type: string; [key: string]: unknown }) => {
