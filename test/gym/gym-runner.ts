@@ -21,7 +21,7 @@
  *   --run-all             Run all matching scenarios sequentially
  */
 
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   cpSync,
@@ -36,7 +36,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { learnFromSession } from "../../app/shared/evaluation/context-learn.js";
+
+function learnFromSession(_opts: { agentDir: string; messages: any[] }): { added: string[] } {
+  return { added: [] };
+}
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -591,27 +594,41 @@ function exportCombinedTranscript(phaseResults: AdapterResult[], workDir: string
 
 function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
   const criteriaPath = join(scenarioDir, "success_criteria.js");
-  try {
-    const output = execSync(`node "${criteriaPath}" "${workDir}"`, {
-      encoding: "utf-8",
-      timeout: 30000,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    return JSON.parse(output.trim());
-  } catch (err: unknown) {
-    // Scorers exit non-zero on failure but still emit valid JSON to stdout.
-    // execSync throws on non-zero exit, so capture stdout from the error.
-    const execErr = err as { stdout?: string; stderr?: string };
-    if (execErr.stdout) {
-      try {
-        return JSON.parse(execErr.stdout.trim());
-      } catch {
-        // stdout wasn't valid JSON — fall through to generic failure
-      }
+  const bun = (globalThis as {
+    Bun?: {
+      spawnSync?: (
+        cmd: string[],
+        opts?: { stdout?: "pipe"; stderr?: "pipe" },
+      ) => { stdout?: Uint8Array; stderr?: Uint8Array };
+    };
+  }).Bun;
+  const result = bun?.spawnSync
+    ? (() => {
+        const proc = bun.spawnSync!(["node", criteriaPath, workDir], { stdout: "pipe", stderr: "pipe" });
+        const decoder = new TextDecoder();
+        return {
+          stdout: proc.stdout ? decoder.decode(proc.stdout) : "",
+          stderr: proc.stderr ? decoder.decode(proc.stderr) : "",
+        };
+      })()
+    : spawnSync("node", [criteriaPath, workDir], {
+        encoding: "utf-8",
+        timeout: 30000,
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+  // Scorers exit non-zero on failed scenario checks but still emit valid JSON.
+  // Use Bun.spawnSync under Bun because its child_process shim drops stdout for
+  // non-zero exits.
+  if (result.stdout) {
+    try {
+      return JSON.parse(result.stdout.trim());
+    } catch {
+      // stdout wasn't valid JSON — fall through to generic failure
     }
-    const stderr = execErr.stderr ? ` (${execErr.stderr.trim().slice(0, 200)})` : "";
-    return { passed: false, checks: [], summary: `scoring failed${stderr}` };
   }
+  const stderr = result.stderr ? ` (${result.stderr.trim().slice(0, 200)})` : "";
+  return { passed: false, checks: [], summary: `scoring failed${stderr}` };
 }
 
 // ── LLM Judge ──────────────────────────────────────────────────────────
@@ -1588,7 +1605,36 @@ function main() {
   }
 
   const adapter = adapterFactory();
-  const result = runScenario(args.scenario, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
+  let result: RunResult;
+  try {
+    result = runScenario(args.scenario, adapter, args.agent, args.lab, args.timeout, args.commonSense || undefined);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result = {
+      scenario: args.scenario,
+      adapter: adapter.name,
+      agent: args.agent,
+      lab_fork: args.lab || null,
+      workflow: false,
+      passed: false,
+      checks: [{ name: "scenario", passed: false, detail: message }],
+      judgments: [],
+      summary: message.includes("Missing:") ? `scenario not found or incomplete: ${message}` : message,
+      agent_status: "error",
+      duration_ms: 0,
+      session_id: "",
+      session_path: "",
+      work_dir: "",
+      gym_root: "",
+      prompt_hash: null,
+      prompt_text: null,
+      framework_sha: computeFrameworkSha(),
+      model: null,
+      categories: [],
+      tags: [],
+      tier: null,
+    };
+  }
   console.log(JSON.stringify(result, null, 2));
 
   if (!result.passed) process.exit(1);

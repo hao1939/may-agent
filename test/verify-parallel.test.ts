@@ -13,7 +13,7 @@ import { join } from "node:path";
 // ── QA Identity Auditor Protocol ─────────────────────────────────────────
 
 function readQaIdentity(): string {
-  return readFileSync(join(process.cwd(), "agents/qa/AGENTS.md"), "utf-8");
+  return readFileSync(join(process.cwd(), "app/agents/qa/AGENTS.md"), "utf-8");
 }
 
 describe("verify-parallel: QA AGENTS.md policy", () => {

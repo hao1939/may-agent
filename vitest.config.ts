@@ -38,11 +38,25 @@ export default defineConfig({
       ".state/**",
       // Gym scenario environment files are standalone scripts, not vitest tests
       "agents/gym/scenarios/**/environment/**",
+      "app/gym/scenarios/**/environment/**",
       // bun:test files (incompatible with vitest — run via `bun test src/lib/`)
       "src/lib/__tests__/**",
       // Agent-generated test files with missing dependencies
       "agents/shared/projects/outputs/**",
       "agents/shared/tests/**",
+      // app/shared/projects is a compatibility symlink to app/projects; avoid duplicate runs.
+      "app/shared/projects/**",
+      // app/agents/shared is a compatibility symlink to app/shared; avoid duplicate runs.
+      "app/agents/shared/**",
+      // Retired evaluator/context-learning module tests. The active evaluator path is workflow-based.
+      "app/shared/tests/context-learn*.test.ts",
+      "app/shared/tests/evaluator.test.ts",
+      "app/shared/tests/evaluator-extended.test.ts",
+      "app/shared/tests/evaluator-deep.test.ts",
+      // Old duplicate of the canonical heartbeat-data tests under app/shared/tests.
+      "app/test/heartbeat-data.test.ts",
+      // Standalone CommonJS harnesses, not Vitest suites.
+      "app/agents/**/skills/*.test.cjs",
     ],
   },
 });
