@@ -14,9 +14,9 @@ import type { WorkflowToolResult } from "../src/lib/workflow.js";
 import type { TaskResult } from "../src/lib/types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEST_GUARDS_DIR = join(__dirname, "__test-guards__");
+const TEST_GUARDS_DIR = join(__dirname, "fixtures/guards");
 // Directory containing our test-two-step workflow
-const TEST_WORKFLOW_DIR = join(__dirname, "__test-guards__");
+const TEST_WORKFLOW_DIR = join(__dirname, "fixtures/guards");
 
 // ── Mock helpers ───────────────────────────────────────────────────────
 
