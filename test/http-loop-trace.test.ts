@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { buildLoopTrace } from "./loop-trace.js";
-import { openStateDb, type SqliteDb } from "./state-db.js";
+import { buildLoopTrace } from "../src/app/http/read-model/loop-trace.js";
+import { openStateDb, type SqliteDb } from "../src/app/http/read-model/state-db.js";
 
 describe("buildLoopTrace", () => {
   const roots: string[] = [];

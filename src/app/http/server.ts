@@ -3,7 +3,7 @@
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
  * Can run standalone: bun src/app/http/server.ts --state-dir .state --port 8080
- * Can be imported:    import { startWebUI } from "@may-agent/webui"
+ * Imported by app modes; not exported by packages/webui.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

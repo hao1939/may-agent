@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { extractMarkdownSection, normalizeProjectPathForCompare, projectPathsMatch } from "./server.js";
+import { extractMarkdownSection, normalizeProjectPathForCompare, projectPathsMatch } from "../src/app/http/server.js";
 
 describe("extractMarkdownSection", () => {
   it("returns the full Current State section without truncating", () => {
