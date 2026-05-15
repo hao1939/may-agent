@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../../src/lib/requests.js";
 import { createQueryService } from "../../../src/lib/query-service.js";
-import { create } from "../../may/handlers/eval-llm-scan.js";
+import { create } from "../../agents/may/handlers/eval-llm-scan.js";
 
 describe("eval-llm-scan handler", () => {
   const roots: string[] = [];

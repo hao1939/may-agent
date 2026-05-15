@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseProjectMeta } from "../shared/lib/project-health.ts";
 
-const PROJECTS_DIR = join(process.cwd(), "agents", "shared", "projects");
+const PROJECTS_DIR = join(process.cwd(), "app", "projects");
 const TERMINAL_STATUSES = new Set(["closed", "complete", "done"]);
 
 function activeProjectFiles(): string[] {

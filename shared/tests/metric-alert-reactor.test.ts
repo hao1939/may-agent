@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { create } from "../../may/handlers/metric-alert-reactor.js";
+import { create } from "../../agents/may/handlers/metric-alert-reactor.js";
 
 function makeCtx() {
   const state = {

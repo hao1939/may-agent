@@ -50,7 +50,7 @@ describe("circuit-breaker extended", () => {
   it("returns reason when errors at threshold", () => {
     const statePath = "/agents/shared/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
-      agents: { bob: { consecutiveErrors: 3, trippedAt: "2024-01-01T00:00:00Z" } }
+      agents: { bob: { consecutiveErrors: 3, trippedAt: new Date().toISOString() } }
     });
     // Signal file must exist
     const signalPath = "/agents/bob/SIGNAL-circuit-breaker.md";

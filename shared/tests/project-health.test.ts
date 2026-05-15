@@ -438,8 +438,6 @@ describe('project-health', () => {
         blockerReason: '',
         workflow: 'master-worker',
       };
-      // Mock statSync
-      vi.spyOn(fs, 'statSync').mockReturnValue({ mtimeMs: 1000 } as any);
       upsertProject(mockDb, proj);
       expect(mockDb.run).toHaveBeenCalledTimes(1);
       const args = mockDb.run.mock.calls[0][1];
@@ -448,7 +446,6 @@ describe('project-health', () => {
       expect(args[3]).toBe('bob'); // owner
       expect(args[9]).toBe(1); // milestones_done
       expect(args[10]).toBe(2); // milestones_total
-      vi.restoreAllMocks();
     });
   });
 

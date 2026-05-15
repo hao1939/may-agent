@@ -151,7 +151,7 @@ describe("project.ts — [resume] comment fast-path", () => {
 describe("project.ts — evaluator-gate feature", () => {
   beforeEach(() => { cleanup(); flushProjectCache(); });
 
-  it("evaluator-gate FAIL overrides WAITING to CONTINUE", async () => {
+  it("unresolved plan work overrides WAITING to CONTINUE", async () => {
     const projDir = setupProject({
       status: "active",
       features: "evaluator-gate",
@@ -163,18 +163,17 @@ describe("project.ts — evaluator-gate feature", () => {
     ctx.runAgent
       .mockResolvedValueOnce({ status: "success", lastAssistantText: "Did the work" }) // worker
       .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: all done\nResume when: review" }) // reviewer
-      .mockResolvedValueOnce({ status: "success", lastAssistantText: "SCORE: 3\nNot good enough" }) // evaluator FAIL
-      // After evaluator override to CONTINUE, next iteration:
+      // Unresolved plan work overrides WAITING to CONTINUE, so the next iteration runs:
       .mockResolvedValueOnce({ status: "success", lastAssistantText: "More work done" }) // worker iter 2
       .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: really done\nResume when: review" }) // reviewer
-      .mockResolvedValueOnce({ status: "success", lastAssistantText: "SCORE: 3\nStill not enough" }); // evaluator FAIL again -> auto-advance
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "More work done" }) // worker iter 3
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "CONTINUE: still not enough" }); // reviewer
 
     const result = await execute(ctx);
 
-    // After 2 evaluator FAILs, should auto-advance to WAITING
     const journal = readFileSync(join(projDir, "journal.md"), "utf-8");
-    expect(journal).toContain("Evaluator");
-    expect(journal).toContain("FAIL");
+    expect(journal).toContain("WAITING overridden to CONTINUE");
+    expect(journal).toContain("project still has explicit Next Action or unresolved Plan work");
   });
 
   it("evaluator-gate PASS allows WAITING to proceed", async () => {
@@ -326,7 +325,7 @@ describe("project.ts — parseFeatures verify-before-stop", () => {
 describe("project.ts — CONTEXT_UPDATE from reviewer", () => {
   beforeEach(() => { cleanup(); flushProjectCache(); });
 
-  it("applies context updates with existing context", async () => {
+  it("replaces existing context with current operating facts", async () => {
     const projDir = setupProject({ status: "active" });
     // Pre-populate context section
     let content = readFileSync(join(projDir, "project.md"), "utf-8");
@@ -344,6 +343,7 @@ describe("project.ts — CONTEXT_UPDATE from reviewer", () => {
 
     const finalContent = readFileSync(join(projDir, "project.md"), "utf-8");
     expect(finalContent).toContain("New discovery");
-    expect(finalContent).toContain("Existing fact");
+    expect(finalContent).not.toContain("Existing fact");
+    expect(finalContent).not.toContain("(b) Approach");
   });
 });

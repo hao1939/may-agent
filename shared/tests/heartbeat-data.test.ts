@@ -19,9 +19,11 @@ import {
 } from "../workflows/heartbeat-data.js";
 
 const TEST_DIR = join("/tmp", "__test_hb_tmp__");
+const DEDUP_FILE = join(process.cwd(), ".state", "dispatch-dedup.json");
 
 function cleanup() {
   try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
+  try { rmSync(DEDUP_FILE, { force: true }); } catch {}
 }
 
 function makeDb(overrides: Record<string, any> = {}) {
@@ -144,7 +146,7 @@ describe("loadMetrics", () => {
   });
 
   it("keeps retired v2 spec coverage out of active metrics", () => {
-    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
     const activeRegistry = source.slice(
       source.indexOf("const ALL_METRICS"),
       source.indexOf("const RETIRED_METRIC_IDS"),

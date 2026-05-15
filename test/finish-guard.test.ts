@@ -1,8 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
+
+vi.mock("node:child_process", () => ({
+  execFileSync: vi.fn(() => ""),
+}));
+
 import {
   validateFinishDeliverables,
   enforceFinishDeliverables,
@@ -10,6 +15,13 @@ import {
   enforceVerificationEvidence,
   guard,
 } from "../shared/guards/finish-guard.js";
+
+const mockedExecFileSync = vi.mocked(execFileSync);
+
+beforeEach(() => {
+  mockedExecFileSync.mockReset();
+  mockedExecFileSync.mockReturnValue("");
+});
 
 describe("validateFinishDeliverables", () => {
   it("returns valid for null deliverables", () => {
@@ -196,9 +208,10 @@ describe("finish-guard handle", () => {
     const root = mkdtempSync(join(tmpdir(), "finish-guard-dirty-"));
     try {
       const agentsDir = join(root, "agents");
+      mkdirSync(join(agentsDir, ".git"), { recursive: true });
       mkdirSync(join(agentsDir, "scout"), { recursive: true });
-      execFileSync("git", ["init"], { cwd: agentsDir });
       writeFileSync(join(agentsDir, "scout", "other.md"), "other agent work");
+      mockedExecFileSync.mockReturnValue("?? scout/other.md\n");
 
       const demands = guard.handle(makeEvent({
         agentName: "dev",
@@ -220,11 +233,12 @@ describe("finish-guard handle", () => {
     const root = mkdtempSync(join(tmpdir(), "finish-guard-touched-"));
     try {
       const agentsDir = join(root, "agents");
+      mkdirSync(join(agentsDir, ".git"), { recursive: true });
       mkdirSync(join(agentsDir, "dev"), { recursive: true });
       mkdirSync(join(agentsDir, "scout"), { recursive: true });
-      execFileSync("git", ["init"], { cwd: agentsDir });
       writeFileSync(join(agentsDir, "dev", "own.md"), "session work");
       writeFileSync(join(agentsDir, "scout", "other.md"), "other agent work");
+      mockedExecFileSync.mockReturnValue("?? dev/own.md\n?? scout/other.md\n");
 
       const demands = guard.handle(makeEvent({
         agentName: "dev",

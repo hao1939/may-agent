@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const ROOT = process.cwd().endsWith("/agents") ? process.cwd() : join(process.cwd(), "agents");
+const ROOT = process.cwd().endsWith("/app/agents") ? process.cwd() : join(process.cwd(), "app", "agents");
 const CRON_PATH = join(ROOT, "may", "cron.json");
 const HANDLER_PATH = join(ROOT, "may", "handlers", "eval-llm-scan.ts");
 

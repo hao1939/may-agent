@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { create } from "../../may/handlers/closed-loop-steward.js";
+import { create } from "../../agents/may/handlers/closed-loop-steward.js";
 
 function makeStewardContext(alerts: unknown[] = []) {
   return {

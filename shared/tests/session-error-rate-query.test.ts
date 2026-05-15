@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 describe("session metrics queries", () => {
   it("counts only terminal sessions in the session.error-rate-6h denominator", () => {
-    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
 
     expect(source).toContain(
       "SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')",
@@ -15,7 +15,7 @@ describe("session metrics queries", () => {
   });
 
   it("excludes Clean start (fresh) interruptions from the session.error-rate-6h numerator", () => {
-    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
 
     expect(source).toContain("status = 'error'");
     expect(source).toContain("status = 'interrupted' AND COALESCE(error, '') != 'Clean start (fresh)'");
@@ -25,7 +25,7 @@ describe("session metrics queries", () => {
   });
 
   it("excludes Clean start (fresh) interruptions from session.failed-triage-rate-3h denominator and numerator", () => {
-    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
     const failedTriageBlock = source.slice(
       source.indexOf('record("session.failed-triage-rate-3h"') - 1500,
       source.indexOf('record("session.failed-triage-rate-3h"') + 200,
@@ -37,13 +37,13 @@ describe("session metrics queries", () => {
   });
 
   it("counts skipped aftermath evaluations as acted-on failures for session.failed-triage-rate-3h", () => {
-    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
 
     expect(source).toContain("AND e.verdict IN ('needs_improvement', 'skipped')");
   });
 
   it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {
-    const source = readFileSync(resolve(__dirname, "../../may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
 
     expect(source).toContain('record("session.failed-triage-rate-3h", failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);');
   });

@@ -19,7 +19,7 @@ function assert(condition, label, details = '') {
 }
 
 function repoPath(...parts) {
-  return path.resolve(__dirname, '..', '..', '..', ...parts);
+  return path.resolve(__dirname, '..', '..', '..', '..', ...parts);
 }
 
 async function runCase(label, logPath) {
@@ -38,8 +38,7 @@ async function runCase(label, logPath) {
 
 (async () => {
   const fixturePath = repoPath(
-    'agents',
-    'shared',
+    'app',
     'projects',
     'evaluator-strategy-extractor-calibration',
     'outputs',

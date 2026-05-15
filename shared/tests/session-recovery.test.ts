@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { create } from "../../may/handlers/session-recovery.js";
+import { create } from "../../agents/may/handlers/session-recovery.js";
 import { execute } from "../workflows/session-recovery.js";
 
 function makeCtx(action?: string | null) {

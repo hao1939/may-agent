@@ -3,6 +3,7 @@
  * Validates that the pipeline stages (validate → health-check → summarize) coordinate correctly.
  */
 import { describe, it, expect } from "vitest";
+import { resolve } from "node:path";
 import {
   mergeWorkflowConfig,
   shouldProceedAfterHealthCheck,
@@ -72,7 +73,8 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     const cache = new ProjectCache(50, 0);
     
     // Read a real file
-    const content = cache.read("/app/agents/shared/package.json");
+    const packageJsonPath = resolve("app/shared/package.json");
+    const content = cache.read(packageJsonPath);
     expect(content).toContain("vitest");
 
     const stats = cache.getStats();
@@ -80,7 +82,7 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     expect(stats.totalHits).toBe(0);
 
     // Second read should hit cache
-    const content2 = cache.read("/app/agents/shared/package.json");
+    const content2 = cache.read(packageJsonPath);
     expect(content2).toBe(content);
     expect(cache.getStats().totalHits).toBe(1);
   });

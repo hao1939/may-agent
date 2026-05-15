@@ -28,7 +28,7 @@ function runGym(args: string): { stdout: string; stderr: string; status: number 
     const result = spawnSync("bash", [RUN_GYM, ...splitArgs(args)], {
       cwd: PROJECT_ROOT,
       timeout: 120_000,
-      env: { ...process.env, GYM_PROJECT_ROOT: PROJECT_ROOT },
+      env: { ...process.env, GYM_PROJECT_ROOT: PROJECT_ROOT, GYM_AGENT_CMD: "true", GYM_NO_RECORD: "1" },
       stdio: ["ignore", stdoutFd, stderrFd],
     });
     closeSync(stdoutFd);
@@ -49,8 +49,20 @@ function runGym(args: string): { stdout: string; stderr: string; status: number 
   }
 }
 
+function runArgs(args: string): string {
+  if (args.includes("--list") || args.includes("--adapter")) return args;
+  return `${args} --adapter generic`;
+}
+
+function parseGymJson(stdout: string): any {
+  const start = stdout.indexOf("{");
+  const end = stdout.lastIndexOf("}");
+  if (start < 0 || end < start) throw new Error(`No JSON object in output:\n${stdout}`);
+  return JSON.parse(stdout.slice(start, end + 1));
+}
+
 function gym(args: string): string {
-  const result = runGym(args);
+  const result = runGym(runArgs(args));
   if (result.status !== 0) {
     throw Object.assign(new Error(`run-gym failed with status ${result.status}`), result);
   }
@@ -58,7 +70,7 @@ function gym(args: string): string {
 }
 
 function gymAllowFail(args: string): { stdout: string; stderr: string; status: number } {
-  const result = runGym(args);
+  const result = runGym(runArgs(args));
   return {
     stdout: result.stdout,
     stderr: result.stderr,
@@ -73,7 +85,7 @@ describe("gym runner --list", () => {
     expect(lines.length).toBeGreaterThan(40);
     // Each line has name\ttier\tcategories format
     for (const line of lines.slice(0, 5)) {
-      expect(line.split("\t").length).toBeGreaterThanOrEqual(2);
+      expect(line.trim().split(/\s+/).length).toBeGreaterThanOrEqual(2);
     }
   });
 
@@ -125,7 +137,7 @@ describe("gym runner --list", () => {
 describe("gym runner single scenario", () => {
   it("produces valid GymResult JSON for phantom-fix (stub mode)", () => {
     const { stdout } = gymAllowFail("phantom-fix --agent amy --timeout 2");
-    const result = JSON.parse(stdout);
+    const result = parseGymJson(stdout);
 
     // Verify GymResult structure
     expect(result).toHaveProperty("scenario", "phantom-fix");
@@ -135,13 +147,13 @@ describe("gym runner single scenario", () => {
     expect(Array.isArray(result.checks)).toBe(true);
     expect(typeof result.summary).toBe("string");
     expect(result).toHaveProperty("agent_status");
-    expect(typeof result.duration).toBe("string");
+    expect(typeof result.duration_ms).toBe("number");
     expect(result).toHaveProperty("gym_root");
   });
 
   it("checks array has name/passed fields", () => {
     const { stdout } = gymAllowFail("phantom-fix --agent coder --timeout 2");
-    const result = JSON.parse(stdout);
+    const result = parseGymJson(stdout);
 
     for (const check of result.checks) {
       expect(check).toHaveProperty("name");
@@ -153,7 +165,7 @@ describe("gym runner single scenario", () => {
   it("returns error for nonexistent scenario", () => {
     const { stdout, status } = gymAllowFail("nonexistent-scenario-xyz");
     expect(status).not.toBe(0);
-    const result = JSON.parse(stdout);
+    const result = parseGymJson(stdout);
     expect(result.passed).toBe(false);
     expect(result.scenario).toBe("nonexistent-scenario-xyz");
     expect(result.summary).toContain("not found");
@@ -161,7 +173,7 @@ describe("gym runner single scenario", () => {
 
   it("success_criteria.js is invoked against work dir", () => {
     const { stdout } = gymAllowFail("phantom-fix --agent amy --timeout 2");
-    const result = JSON.parse(stdout);
+    const result = parseGymJson(stdout);
     // phantom-fix criteria checks for specific things — should have multiple checks
     expect(result.checks.length).toBeGreaterThan(0);
     // At least one check should have a name containing a meaningful identifier
