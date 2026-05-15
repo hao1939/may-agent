@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { execute } from "../agents/shared/workflows/metric-alert-triage.ts";
+import { execute } from "../app/shared/workflows/metric-alert-triage.ts";
 
 function makeDbData() {
   return {

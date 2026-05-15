@@ -20,7 +20,7 @@
 import { readdir, readFile, appendFile, writeFile } from "fs/promises";
 import { join, basename } from "path";
 
-const LIBRARY = "agents/shared/knowledge/library";
+const LIBRARY = "app/shared/knowledge/library";
 const POSTS_DIR = join(LIBRARY, "posts");
 const DEEP_DIVES_DIR = join(LIBRARY, "deep-dives");
 const TOPICS_DIR = join(LIBRARY, "topics");

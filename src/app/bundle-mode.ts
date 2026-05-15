@@ -41,7 +41,7 @@ export function getWorkerCommand(args: string[], mayTsPath: string) {
 
 /**
  * Resolve PROJECT_ROOT safely.
- * In bundled mode: use env var or cwd, but validate agents/ exists.
+ * In bundled mode: use env var or cwd, but validate app/agents or agents exists.
  * In dev mode: use import.meta.url-based resolution as before.
  */
 export function resolveProjectRoot(importMetaUrl: string): string {
@@ -51,10 +51,10 @@ export function resolveProjectRoot(importMetaUrl: string): string {
 
   if (isBundled()) {
     const cwd = process.cwd();
-    if (!existsSync(resolve(cwd, "agents"))) {
+    if (!existsSync(resolve(cwd, "app", "agents")) && !existsSync(resolve(cwd, "agents"))) {
       console.error(
-        "Error: 'agents/' directory not found in current working directory.\n" +
-          "Please run from the project root or set PROJECT_ROOT environment variable.",
+        "Error: app/agents or agents directory not found in current working directory.\n" +
+          "Please run from the repo root, app root, or set PROJECT_ROOT.",
       );
       process.exit(1);
     }

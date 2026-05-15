@@ -41,7 +41,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SCENARIOS_DIR="$PROJECT_ROOT/agents/gym/scenarios"
+SCENARIOS_DIR="$PROJECT_ROOT/app/gym/scenarios"
 
 # Ensure bun is available
 for _bun_dir in "$PROJECT_ROOT/.state/.bun/bin" "$HOME/.bun/bin"; do

@@ -27,7 +27,7 @@ EXP_ID="${1:?Usage: lab-run.sh EXP-XXX}"
 DRY_RUN=false
 [ "${2:-}" = "--dry-run" ] && DRY_RUN=true
 
-EXP_DIR="agents/shared/knowledge/experiments/$EXP_ID"
+EXP_DIR="app/shared/knowledge/experiments/$EXP_ID"
 DESIGN="$EXP_DIR/design.json"
 RESULTS_DIR="$EXP_DIR/runs"
 
@@ -74,13 +74,13 @@ for arm_name, arm_config in design['arms'].items():
         setup = arm_config.get('setup', {})
         if 'context_file' in setup:
             src = setup['context_file']
-            dst = f'agents/{agent}/context.md'
+            dst = f'app/agents/{agent}/context.md'
             if src:
                 os.system(f'cp {src} {dst}')
             else:
                 os.system(f'rm -f {dst}')
         if 'append_context' in setup:
-            dst = f'agents/{agent}/context.md'
+            dst = f'app/agents/{agent}/context.md'
             existing = ''
             try:
                 with open(dst) as f: existing = f.read()
@@ -88,17 +88,17 @@ for arm_name, arm_config in design['arms'].items():
             with open(dst, 'w') as f: f.write(existing.rstrip() + '\n' + setup['append_context'] + '\n')
         if 'install_skill' in setup:
             skill_name = setup['install_skill']
-            src_dir = f'agents/shared/skills/{skill_name}'
-            dst_dir = f'agents/{agent}/skills/{skill_name}'
+            src_dir = f'app/shared/skills/{skill_name}'
+            dst_dir = f'app/agents/{agent}/skills/{skill_name}'
             if os.path.isdir(src_dir):
-                os.makedirs(f'agents/{agent}/skills', exist_ok=True)
+                os.makedirs(f'app/agents/{agent}/skills', exist_ok=True)
                 os.system(f'cp -r {src_dir} {dst_dir}')
         if 'remove_skill' in setup:
             skill_name = setup['remove_skill']
-            os.system(f'rm -rf agents/{agent}/skills/{skill_name}')
+            os.system(f'rm -rf app/agents/{agent}/skills/{skill_name}')
         if 'model' in setup:
             # Temporarily override model in agent.json
-            agent_json = f'agents/{agent}/agent.json'
+            agent_json = f'app/agents/{agent}/agent.json'
             with open(agent_json) as f: agent_cfg = json.load(f)
             setup['_original_model'] = agent_cfg.get('model')
             agent_cfg['model'] = setup['model']
@@ -145,12 +145,12 @@ for arm_name, arm_config in design['arms'].items():
     setup = arm_config.get('setup', {})
     agent = arm_config.get('agent', 'coder')
     if 'context_file' in setup or 'append_context' in setup:
-        os.system(f'rm -f agents/{agent}/context.md')
+        os.system(f'rm -f app/agents/{agent}/context.md')
     if 'install_skill' in setup:
         skill_name = setup['install_skill']
-        os.system(f'rm -rf agents/{agent}/skills/{skill_name}')
+        os.system(f'rm -rf app/agents/{agent}/skills/{skill_name}')
     if 'model' in setup and '_original_model' in setup:
-        agent_json = f'agents/{agent}/agent.json'
+        agent_json = f'app/agents/{agent}/agent.json'
         try:
             with open(agent_json) as f: agent_cfg = json.load(f)
             if setup['_original_model']:

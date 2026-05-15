@@ -22,7 +22,7 @@ for _bun_dir in "$PROJECT_ROOT/.state/.bun/bin" "$HOME/.bun/bin"; do
 done
 
 GYM_DIR="$PROJECT_ROOT/test/gym/scenarios"
-AGENTS_REPO="$PROJECT_ROOT/agents"
+AGENTS_REPO="$PROJECT_ROOT/app/agents"
 
 SCENARIO=""
 AGENT_NAME="coder"

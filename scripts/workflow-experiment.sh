@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SCENARIO_DIR="$PROJECT_ROOT/test/gym/scenarios/skip-verification-workflow"
 ORIG_SCENARIO_DIR="$PROJECT_ROOT/test/gym/scenarios/skip-verification"
-AGENTS_REPO="$PROJECT_ROOT/agents"
+AGENTS_REPO="$PROJECT_ROOT/app/agents"
 
 AGENT_NAME="optimizer"
 NUM_RUNS=1

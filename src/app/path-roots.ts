@@ -11,14 +11,12 @@ export interface RuntimeRoots {
 }
 
 function inferAppRoot(sourceRoot: string): string {
-  for (const name of ["app", "agents"]) {
-    const nestedAppRoot = resolve(sourceRoot, name);
-    if (
-      existsSync(resolve(nestedAppRoot, "agents"))
-      && existsSync(resolve(nestedAppRoot, "shared"))
-    ) {
-      return nestedAppRoot;
-    }
+  const nestedAppRoot = resolve(sourceRoot, "app");
+  if (
+    existsSync(resolve(nestedAppRoot, "agents"))
+    && existsSync(resolve(nestedAppRoot, "shared"))
+  ) {
+    return nestedAppRoot;
   }
   return sourceRoot;
 }
