@@ -75,7 +75,7 @@ describe("telegram reply e2e", () => {
                 text: "show details",
                 reply_to_message: {
                   message_id: 100,
-                  text: "Project needs attention: shared/projects/example",
+                  text: "Project needs attention: projects/example",
                 },
               },
             },
@@ -238,7 +238,7 @@ describe("telegram reply e2e", () => {
 
   it("turns a Telegram reply to a project notification into a project comment nudge", async () => {
     const projectRoot = mkdtempSync(resolve(tmpdir(), "telegram-project-root-"));
-    const projectDir = join(projectRoot, "agents", "shared", "projects", "example-project");
+    const projectDir = join(projectRoot, "projects", "example-project");
     mkdirSync(projectDir, { recursive: true });
     writeFileSync(
       join(projectDir, "project.md"),
@@ -249,7 +249,7 @@ describe("telegram reply e2e", () => {
     const db = getDb(persistDir);
     db.run(
       "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [700, "message.created", "may", null, "agents/shared/projects/example-project", JSON.stringify({ text: "Project needs review" }), Date.now()],
+      [700, "message.created", "may", null, "projects/example-project", JSON.stringify({ text: "Project needs review" }), Date.now()],
     );
 
     const sentMessages: Array<{ chat_id: string; text: string }> = [];
@@ -323,7 +323,7 @@ describe("telegram reply e2e", () => {
 
     await waitFor(() => {
       expect(nudges).toHaveLength(1);
-      expect(nudges[0].projectPath).toBe("agents/shared/projects/example-project");
+      expect(nudges[0].projectPath).toBe("projects/example-project");
       expect(nudges[0].comment).toBe(true);
       expect(inputs).toHaveLength(0);
       expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please revise the scoped plan");

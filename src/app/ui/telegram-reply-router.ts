@@ -76,13 +76,17 @@ export function normalizeProjectPath(value: unknown, projectRoot: string): strin
     .replace(/\/project\.md$/, "")
     .replace(/[),.;:]+$/, "")
     .replace(/\/$/, "");
+  path = path
+    .replace(/^agents\/shared\/projects\//, "projects/")
+    .replace(/^shared\/projects\//, "projects/");
+  if (/^projects\/[^/\s]+/.test(path)) return path;
   if (!path.startsWith("agents/")) path = `agents/${path}`;
-  if (!/^agents\/(shared\/projects\/|[^/]+\/workspace\/projects\/)[^/\s]+/.test(path)) return null;
+  if (!/^agents\/[^/]+\/workspace\/projects\/[^/\s]+/.test(path)) return null;
   return path;
 }
 
 export function extractProjectPath(text: string, projectRoot: string): string | null {
-  const candidates = text.match(/(?:\/app\/)?(?:agents\/)?(?:shared\/projects\/|[^/\s]+\/workspace\/projects\/)[A-Za-z0-9._-]+(?:\/project\.md)?/g) ?? [];
+  const candidates = text.match(/(?:\/app\/)?(?:(?:agents\/)?shared\/projects\/|projects\/|(?:agents\/)?[^/\s]+\/workspace\/projects\/)[A-Za-z0-9._-]+(?:\/project\.md)?/g) ?? [];
   for (const candidate of candidates) {
     const normalized = normalizeProjectPath(candidate, projectRoot);
     if (normalized) return normalized;

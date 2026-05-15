@@ -27,16 +27,34 @@ function normalizeStatusPath(line: string): string {
   return line.replace(/^[ MARCUD?!]{1,2}\s+/, "").trim();
 }
 
-function isGeneratedRuntimePath(path: string, agentName: string): boolean {
-  return path === `${agentName}/last-session.md`;
+type RepoLayout = "app" | "legacy-agents";
+
+function isGeneratedRuntimePath(path: string, agentName: string, layout: RepoLayout): boolean {
+  const agentPrefix = layout === "app" ? `agents/${agentName}` : agentName;
+  return path === `${agentPrefix}/last-session.md`;
 }
 
-function normalizeAgentRepoPath(path: string): string | undefined {
+function normalizeAgentRepoPath(path: string, layout: RepoLayout = "legacy-agents"): string | undefined {
   const normalized = path
-    .replace(/^\/app\/agents\//, "")
     .replace(/^\/app\//, "")
     .replace(/^\.\//, "")
     .replace(/\/+/g, "/");
+
+  if (layout === "app") {
+    if (normalized.startsWith("shared/projects/")) return normalized.replace(/^shared\/projects\//, "projects/");
+    if (normalized.startsWith("agents/shared/projects/")) return normalized.replace(/^agents\/shared\/projects\//, "projects/");
+    if (
+      normalized.startsWith("agents/") ||
+      normalized.startsWith("shared/") ||
+      normalized.startsWith("projects/") ||
+      normalized.startsWith(".lab/") ||
+      normalized.startsWith("gym/")
+    ) {
+      return normalized;
+    }
+    return undefined;
+  }
+
   if (normalized.startsWith("agents/")) return normalized.slice("agents/".length);
   if (
     normalized.startsWith("shared/") ||
@@ -64,11 +82,11 @@ function stripShellTokenQuotes(token: string): string {
   return trimmed;
 }
 
-function extractBashWritePaths(command: string): string[] {
+function extractBashWritePaths(command: string, layout: RepoLayout): string[] {
   const paths: string[] = [];
   const add = (raw: string | undefined) => {
     if (!raw) return;
-    const normalized = normalizeAgentRepoPath(stripShellTokenQuotes(raw));
+    const normalized = normalizeAgentRepoPath(stripShellTokenQuotes(raw), layout);
     if (normalized) paths.push(normalized);
   };
 
@@ -95,7 +113,7 @@ function extractBashWritePaths(command: string): string[] {
   return [...new Set(paths)];
 }
 
-function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messages"]): string[] {
+function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messages"], layout: RepoLayout): string[] {
   const paths: string[] = [];
   for (const msg of messages) {
     if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
@@ -113,11 +131,11 @@ function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messa
       }
 
       if ((name === "write" || name === "edit") && typeof args.path === "string") {
-        const normalized = normalizeAgentRepoPath(args.path);
+        const normalized = normalizeAgentRepoPath(args.path, layout);
         if (normalized) paths.push(normalized);
       }
       if (name === "bash" && typeof args.command === "string") {
-        paths.push(...extractBashWritePaths(args.command));
+        paths.push(...extractBashWritePaths(args.command, layout));
       }
     }
   }
@@ -126,6 +144,17 @@ function extractToolWritePaths(messages: BeforeToolCallContext["context"]["messa
 
 function changedPathFromStatusLine(line: string): string {
   return normalizeStatusPath(line);
+}
+
+function resolveAgentRepo(projectRoot: string): { dir: string; layout: RepoLayout; label: string } | null {
+  if (existsSync(resolve(projectRoot, ".git"))) {
+    return { dir: projectRoot, layout: "app", label: "app repo" };
+  }
+  const legacyAgentsDir = resolve(projectRoot, "agents");
+  if (existsSync(resolve(legacyAgentsDir, ".git"))) {
+    return { dir: legacyAgentsDir, layout: "legacy-agents", label: "agents repo" };
+  }
+  return null;
 }
 
 function isSameOrChild(path: string, ownerPath: string): boolean {
@@ -149,12 +178,14 @@ function runGit(args: string[], cwd: string, timeoutMs: number): Promise<string>
 /**
  * Create a beforeToolCall hook that guards finish() for uncommitted agent changes.
  *
- * Checks `git status --porcelain` in the agents/ sub-repo for files under
- * `<agentName>/`, `shared/`, `.lab/`, and `gym/`. If uncommitted changes
+ * Checks `git status --porcelain` in the app repo for files under
+ * `agents/<agentName>/`, `shared/`, `projects/`, `.lab/`, and `gym/`. The
+ * legacy `<projectRoot>/agents` repo layout is still accepted during migration.
+ * If uncommitted changes
  * exist, blocks the finish() call with instructions to commit.
  *
  * @param agentName - The agent's name (e.g., "bob", "coach"). Empty = skip guard.
- * @param projectRoot - Absolute path to project root (agents/ is a sub-dir).
+ * @param projectRoot - Absolute path to app root, or a legacy root containing agents/.
  */
 export function createCommitGuard(
   agentName: string,
@@ -167,11 +198,9 @@ export function createCommitGuard(
     // Skip if no agent name (chat sessions / non-agent contexts)
     if (!agentName) return undefined;
 
-    // Skip if agents sub-repo doesn't exist
-    const agentsGitDir = resolve(projectRoot, "agents", ".git");
-    if (!existsSync(agentsGitDir)) return undefined;
-
-    const agentsDir = resolve(projectRoot, "agents");
+    const repo = resolveAgentRepo(projectRoot);
+    if (!repo) return undefined;
+    const agentPathPrefix = repo.layout === "app" ? `agents/${agentName}` : agentName;
 
     try {
       // Check broad candidate paths, then narrow to this session's claimed or
@@ -179,15 +208,16 @@ export function createCommitGuard(
       // but blocking on all dirty shared/ files pressures agents into committing
       // unrelated work.
       const pathsToCheck = [
-        `${agentName}/`,
+        `${agentPathPrefix}/`,
         "shared/",
+        ...(repo.layout === "app" ? ["projects/"] : []),
         ".lab/",
         "gym/",
       ];
 
       const statusOutput = await runGit(
         ["status", "--porcelain", "--untracked-files=all", "--", ...pathsToCheck],
-        agentsDir,
+        repo.dir,
         GIT_TIMEOUT_MS,
       );
 
@@ -198,10 +228,10 @@ export function createCommitGuard(
       // Count changed files
       const allFileLines = changedFiles.split("\n").filter((line) => line.trim());
       const ignoredFileLines = allFileLines.filter((line) =>
-        isGeneratedRuntimePath(normalizeStatusPath(line), agentName),
+        isGeneratedRuntimePath(normalizeStatusPath(line), agentName, repo.layout),
       );
       const fileLines = allFileLines.filter((line) =>
-        !isGeneratedRuntimePath(normalizeStatusPath(line), agentName),
+        !isGeneratedRuntimePath(normalizeStatusPath(line), agentName, repo.layout),
       );
 
       if (fileLines.length === 0) return undefined; // Runtime handoff/log churn should not block finish.
@@ -210,9 +240,9 @@ export function createCommitGuard(
         deliverables?: Array<{ path?: string }>;
       };
       const claimedPaths = (args.deliverables ?? [])
-        .map((d) => typeof d.path === "string" ? normalizeAgentRepoPath(d.path) : undefined)
+        .map((d) => typeof d.path === "string" ? normalizeAgentRepoPath(d.path, repo.layout) : undefined)
         .filter((p): p is string => !!p);
-      const touchedPaths = extractToolWritePaths(ctx.context.messages);
+      const touchedPaths = extractToolWritePaths(ctx.context.messages, repo.layout);
       const ownedPaths = new Set([...claimedPaths, ...touchedPaths]);
 
       const ownedFileLines = ownedPaths.size > 0
@@ -220,13 +250,13 @@ export function createCommitGuard(
             const changedPath = changedPathFromStatusLine(line);
             return [...ownedPaths].some((ownedPath) => isSameOrChild(changedPath, ownedPath));
           })
-        : fileLines.filter((line) => changedPathFromStatusLine(line).startsWith(`${agentName}/`));
+        : fileLines.filter((line) => changedPathFromStatusLine(line).startsWith(`${agentPathPrefix}/`));
 
       if (ownedFileLines.length === 0) {
         return {
           block: false,
           reason:
-            `Uncommitted files exist in agents/, but none match this session's deliverables or write/edit paths. ` +
+            `Uncommitted files exist in the ${repo.label}, but none match this session's deliverables or write/edit paths. ` +
             `Do not commit unrelated files just to satisfy finish().`,
         };
       }
@@ -239,14 +269,19 @@ export function createCommitGuard(
       const addPaths = ownedFileLines.map(changedPathFromStatusLine);
 
       // If any changed path is under */workspace/*, use `git add -f` because
-      // agents/.gitignore ignores workspace/ contents.
-      const needsForce = addPaths.some((path) => path.includes("/workspace/") || path.startsWith("shared/projects/"));
+      // the app repo ignores workspace/ contents. Project outputs may also be
+      // ignored by local app-root policy and should be force-added explicitly.
+      const needsForce = addPaths.some((path) =>
+        path.includes("/workspace/") ||
+        path.startsWith("projects/") ||
+        path.startsWith("shared/projects/")
+      );
       const addCmd = `${needsForce ? "git add -f" : "git add"} -- ${addPaths.map(shellQuote).join(" ")}`;
 
       return {
         block: true,
         reason:
-          `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in agents/:\n` +
+          `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in the ${repo.label}:\n` +
           `${fileList}\n\n` +
           `For each listed file: commit it if it is intentional, or restore it if it was accidental. Do not commit accidental changes just to satisfy finish().\n\n` +
           (ignoredFileLines.length > 0
@@ -256,7 +291,7 @@ export function createCommitGuard(
             ? `Not blocking on unrelated dirty file(s):\n${fileLines.filter((line) => !ownedFileLines.includes(line)).map((line) => `  ${line}`).join("\n")}\n\n`
             : "") +
           `Commit them with a descriptive message before calling finish():\n` +
-          `  cd ${projectRoot}/agents && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
+          `  cd ${repo.dir} && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
           `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for evidence-first debugging"\n` +
           `Bad messages: "update files", "changes"\n\n` +
           `Then call finish() again.`,

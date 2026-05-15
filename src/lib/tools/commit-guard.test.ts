@@ -18,6 +18,16 @@ function setupRepo(): string {
   return root;
 }
 
+function setupAppRepo(): string {
+  const root = mkdtempSync(join(tmpdir(), "may-commit-guard-app-"));
+  tmpRoots.push(root);
+  mkdirSync(join(root, "agents", "may"), { recursive: true });
+  mkdirSync(join(root, "projects"), { recursive: true });
+  mkdirSync(join(root, "shared"), { recursive: true });
+  execFileSync("git", ["init"], { cwd: root, stdio: "ignore" });
+  return root;
+}
+
 function finishContext(deliverables: string[], writePaths: string[] = []): BeforeToolCallContext {
   return {
     toolCall: { name: "finish", id: "finish-1" },
@@ -86,5 +96,27 @@ describe("commit-guard", () => {
     expect(result?.reason).toContain("Not blocking on unrelated dirty file");
     expect(result?.reason).toContain("shared/unrelated.md");
     expect(result?.reason).toContain("git add -- 'may/note.md'");
+  });
+
+  test("uses the app-root repo layout when .git lives at project root", async () => {
+    const root = setupAppRepo();
+    mkdirSync(join(root, "projects/demo/outputs"), { recursive: true });
+    mkdirSync(join(root, "agents/may/workspace"), { recursive: true });
+    writeFileSync(join(root, "projects/demo/outputs/result.md"), "result");
+    writeFileSync(join(root, "agents/may/workspace/note.md"), "note");
+
+    const guard = createCommitGuard("may", root);
+    const result = await guard(finishContext(
+      ["projects/demo/outputs/result.md"],
+      ["/app/agents/may/workspace/note.md"],
+    ));
+
+    expect(result?.block).toBe(true);
+    expect(result?.reason).toContain("projects/demo/outputs/result.md");
+    expect(result?.reason).toContain("agents/may/workspace/note.md");
+    expect(result?.reason).toContain(`cd ${root}`);
+    expect(result?.reason).toContain("git add -f --");
+    expect(result?.reason).toContain("'projects/demo/outputs/result.md'");
+    expect(result?.reason).toContain("'agents/may/workspace/note.md'");
   });
 });
