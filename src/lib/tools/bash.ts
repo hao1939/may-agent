@@ -17,6 +17,7 @@ function getShellEnv(): NodeJS.ProcessEnv {
 	// manually exporting PATH every time. This eliminates ~8% of all bash
 	// calls that were pure boilerplate `export PATH=".state/.bun/bin:$PATH"`.
 	const stateDir = process.env.STATE_DIR
+		?? (existsSync("/app/.state") ? "/app/.state" : undefined)
 		?? (existsSync(join(process.cwd(), "app", ".state"))
 			? join(process.cwd(), "app", ".state")
 			: join(process.cwd(), ".state"));

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { createBashTool } from "./bash.js";
+import { describe, expect, it } from "bun:test";
+import { createBashTool } from "../src/lib/tools/bash.js";
 
 describe("bash tool PATH env", () => {
 	it("should make bun available without explicit PATH export", async () => {

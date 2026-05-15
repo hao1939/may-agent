@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import { buildRuntimeCtx } from "../src/lib/runtime-ctx.js";
 import type { RuntimeCtx } from "../src/lib/handler-context.js";
 

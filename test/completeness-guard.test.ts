@@ -12,7 +12,7 @@
  * - Configurable: block vs warn, filename, agent list, callback
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import { createCompletenessGuard } from "../src/lib/tools/completeness-guard.js";
 import type { BeforeToolCallContext } from "../src/lib/tools/compose-guards.js";
 

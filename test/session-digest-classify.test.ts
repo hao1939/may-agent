@@ -7,7 +7,7 @@
  * Also tests logShadowComparison() logging helper.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { classifyDigest, logShadowComparison } from "../src/lib/session-digest.js";
 import type { DigestRow } from "../src/lib/session-digest.js";
 

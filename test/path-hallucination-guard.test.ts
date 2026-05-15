@@ -5,9 +5,9 @@
  * and allows legitimate search/grep commands through.
  */
 
-import { describe, test, expect } from "vitest";
-import { createPathHallucinationGuard } from "./path-hallucination-guard.js";
-import type { BeforeToolCallContext } from "./compose-guards.js";
+import { describe, test, expect } from "bun:test";
+import { createPathHallucinationGuard } from "../src/lib/tools/path-hallucination-guard.js";
+import type { BeforeToolCallContext } from "../src/lib/tools/compose-guards.js";
 
 // ──────────────────────────────────────────────────────────────────────
 // Helpers

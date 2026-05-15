@@ -9,10 +9,10 @@
  * - Output formatting
  *
  * Note: Job history comes from SQLite (requests table) which requires bun:sqlite.
- * Under vitest (Node.js), job queries return empty results gracefully.
+ * Under the test runner, job queries return empty results gracefully.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -248,11 +248,11 @@ describe("system-status tool", () => {
     expect(text).toContain("❌"); // error delegation
   });
 
-  it("shows job health section (empty when SQLite unavailable in vitest)", async () => {
+  it("shows job health section (empty when SQLite unavailable in tests)", async () => {
     const result = await tool.execute("test-call-6", {});
     const text = (result.content[0] as { type: "text"; text: string }).text;
 
-    // Job data comes from SQLite (requests table) which isn't available in vitest (Node.js).
+    // Job data comes from SQLite (requests table) which isn't available in this test environment.
     // The tool handles this gracefully by returning empty results.
     expect(text).toContain("⏱️ Cron/Jobs");
   });

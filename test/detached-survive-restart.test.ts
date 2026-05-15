@@ -9,7 +9,7 @@
  * process (persisted.pid) is still alive.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../src/lib/manager.js";
 import { RegistryStore, ensureSessionDir, sessionOutputDir } from "../src/lib/persistence.js";
 import type { SubagentDefinition } from "../src/lib/types.js";

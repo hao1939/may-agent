@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "bun:test";
 import { createBackgroundExecTool } from "../src/lib/background-exec.js";
 
 describe("background_exec tool", () => {

@@ -1,9 +1,9 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { getNotificationMessage } from "../src/lib/db/notifications.js";
-import { createTelegramClient, splitTelegramMessage } from "../src/app/ui/telegram-client.js";
+import { createTelegramClient, splitTelegramMessage } from "../src/app/transport/telegram-client.js";
 
 function response(ok: boolean, result: unknown, description?: string): Response {
   return {

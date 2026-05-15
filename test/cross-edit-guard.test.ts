@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { checkCrossEditGuard } from "../src/lib/tools/cross-edit-guard.js";
 
 const ROOT = "/app";

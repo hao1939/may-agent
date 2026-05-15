@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createEmptyArgsGuard } from "../src/lib/tools/empty-args-guard.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 

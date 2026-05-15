@@ -10,8 +10,24 @@
     "rootDir": ".",
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@may-agent/sdk": [
+        "packages/sdk/src/index.ts"
+      ],
+      "@may-agent/sdk/testing": [
+        "packages/sdk/src/testing.ts"
+      ]
+    },
+    "ignoreDeprecations": "6.0"
   },
-  "include": ["src", "packages", "agents/shared/evaluation"],
-  "exclude": ["agents/gym"]
+  "include": [
+    "src",
+    "packages",
+    "agents/shared/evaluation"
+  ],
+  "exclude": [
+    "agents/gym"
+  ]
 }

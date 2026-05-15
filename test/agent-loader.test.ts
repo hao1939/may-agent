@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import {
   generateAutoHeartbeats,
   listConfiguredAgentNames,
@@ -13,7 +13,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-const AGENTS_ROOT = resolve(import.meta.dirname, "..", "app", "agents");
+const AGENTS_ROOT = "/app/agents";
 
 const fakeModels = {
   opus: { id: "opus", provider: "anthropic" },

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createFinishTool } from "../src/lib/tools/lifecycle.js";
 import type { FinishToolOptions } from "../src/lib/tools/lifecycle.js";
 import { mkdirSync, writeFileSync, rmSync } from "fs";

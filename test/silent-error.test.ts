@@ -11,7 +11,7 @@
  * treats this as an error.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { SubagentDefinition } from "../src/lib/types.js";
 import type { Model } from "@mariozechner/pi-ai";

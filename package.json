@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "bun vitest --run",
+    "test": "bun test test/ packages/",
+    "test:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
+    "check:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
     "bundle": "mkdir -p bundle && bun build --compile src/app/binary-entry.ts --outfile bundle/may-agent && bun build --compile packages/webui/src/server.ts --outfile bundle/may-agent-web",
     "reload": "bun run bundle && docker cp bundle/may-agent may-agent:/usr/local/bin/may-agent && docker cp bundle/may-agent-web may-agent:/usr/local/bin/may-agent-web && docker exec may-agent chmod +x /usr/local/bin/may-agent /usr/local/bin/may-agent-web && docker exec may-agent supervisorctl restart may-agent may-agent-web",
     "reload:web": "bun run bundle && docker cp bundle/may-agent-web may-agent:/usr/local/bin/may-agent-web && docker exec may-agent chmod +x /usr/local/bin/may-agent-web && docker exec may-agent supervisorctl restart may-agent-web",
@@ -34,8 +36,7 @@
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
-    "typescript": "^6.0.2",
-    "vitest": "^3.2.4"
+    "typescript": "^6.0.2"
   },
   "engines": {
     "node": ">=20.0.0"

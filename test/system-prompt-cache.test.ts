@@ -1,4 +1,4 @@
-import { describe, it } from "vitest";
+import { describe, it } from "bun:test";
 import { SubagentManager } from "../src/lib/manager.js";
 
 describe("System Prompt Caching", () => {

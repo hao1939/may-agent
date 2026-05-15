@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { EventBus } from "../src/app/event-bus.js";
-import { attachTelegramOutbound } from "../src/app/ui/telegram-outbound.js";
+import { attachTelegramOutbound } from "../src/app/transport/telegram-outbound.js";
 
 describe("telegram outbound routing", () => {
   it("streams root chat text and avoids duplicate end summaries", () => {

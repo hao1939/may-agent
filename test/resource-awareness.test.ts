@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { COST_SIGNAL_DURATION_MS, COST_SIGNAL_BYTES } from "../src/lib/manager-receipts.js";
 
 describe("Resource Awareness (Agent-RRM)", () => {

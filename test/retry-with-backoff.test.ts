@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { retryWithBackoff } from "../src/lib/retry-with-backoff.js";
 
 describe("retryWithBackoff()", () => {

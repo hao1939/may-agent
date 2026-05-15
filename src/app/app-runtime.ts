@@ -20,8 +20,8 @@ import type { ModelRegistry } from "./model-registry.js";
 import { waitForModelProxy } from "./model-proxy-health.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
-import { attachConsoleUI } from "./ui/console.js";
-import { attachTelegramBot } from "./ui/telegram.js";
+import { attachConsoleUI } from "./transport/console.js";
+import { attachTelegramBot } from "./transport/telegram.js";
 
 export async function runAppRuntime(opts: {
   appArgs: AppArgs;

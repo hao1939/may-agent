@@ -6,12 +6,12 @@
  * demands (warn, run_step, block) are resolved during executeWorkflow.
  */
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect } from "bun:test";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createWorkflowTool } from "./workflow-tool.js";
-import type { WorkflowToolResult } from "./workflow.js";
-import type { TaskResult } from "./types.js";
+import { createWorkflowTool } from "../src/lib/workflow-tool.js";
+import type { WorkflowToolResult } from "../src/lib/workflow.js";
+import type { TaskResult } from "../src/lib/types.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_GUARDS_DIR = join(__dirname, "__test-guards__");

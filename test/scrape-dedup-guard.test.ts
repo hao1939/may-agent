@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { createScrapeDedupGuard, SCRAPE_BLOCK_THRESHOLD } from "../src/lib/tools/scrape-dedup-guard.js";
 import type { BeforeToolCallContext } from "../src/lib/tools/compose-guards.js";
 

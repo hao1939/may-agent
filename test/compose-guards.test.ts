@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { composeGuards } from "../src/lib/tools/compose-guards.js";
 import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
 

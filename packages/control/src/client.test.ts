@@ -1,5 +1,5 @@
 import { Duplex } from "node:stream";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { daemonSocketPath, sendDaemonEvent, type SocketEndpoint } from "./client.js";
 
 function okEndpoint(): SocketEndpoint {
