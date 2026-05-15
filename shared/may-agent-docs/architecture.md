@@ -343,7 +343,7 @@ Messages carry intent + pointer, not large payloads. Shared artifacts remain sou
   "from": "arc",
   "to": "dev",
   "intent": "implementation-request",
-  "artifact": "agents/shared/projects/auth-rewrite/proposal.md",
+  "artifact": "projects/auth-rewrite/proposal.md",
   "content": "Proposal approved. Please implement."
 }
 ```

@@ -24,7 +24,7 @@ The explicit-message channel is barely used. Coordination clearly happens — it
 
 Three stigmergic substrates already exist:
 
-1. **Shared project files** (`agents/shared/projects/<name>/project.md` + journal). The canonical source of truth for cross-agent work. Agents communicate progress by editing the file, not by sending a message about it.
+1. **Shared project files** (`projects/<name>/project.md` + journal). The canonical source of truth for cross-agent work. Agents communicate progress by editing the file, not by sending a message about it.
 2. **Metrics** (the `metrics` table). Agents monitor shared metrics to decide when to act, instead of waiting to be paged.
 3. **Knowledge entries** (`agents/shared/knowledge/`). Cross-agent learning without direct messaging.
 

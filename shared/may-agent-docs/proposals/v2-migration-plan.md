@@ -19,7 +19,7 @@ Surprisingly, the bones of v2 are largely in place. We don't need to rewrite —
 | Tool guards | `src/lib/tools/*-guard.ts` (14 files, ~2k LOC) | Already runtime middleware via `compose-guards.ts`. ✅ |
 | Workflows | `src/lib/workflow-tool.ts` (1143 LOC) | Has agent steps. **No function steps.** |
 | Typed metrics | `metrics-snapshot` handler measures 6 metrics | **No type system** (gauge/counter/health/derived). All gauge-ish today. |
-| Project format | `agents/shared/projects/<id>/project.md` | ✅ matches v2 doc |
+| Project format | `projects/<id>/project.md` | ✅ matches v2 doc |
 | DB safety | hourly backup, integrity check, single connection | ✅ already done |
 
 **Conclusion**: v2 is mostly a rename + tightening exercise. The hard work (guards, DB safety, persistence, agent runtime) is already done.

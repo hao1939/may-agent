@@ -134,7 +134,7 @@ A second metric `capability.unrecovered-breach-count-7d` counts breaches with no
 
 A supporting metric `capability.message-thread-orphan-count` counts messages with no closure after 24h. Target 0; threshold 5.
 
-**Status.** `violated by usage pattern, not by mechanism`. The `message.created` event fires (primitive works) but at low volume — query `events` table for current count. Agents prefer stigmergic coordination via shared file edits (project journals, `agents/shared/projects/*`) over explicit messaging. This is plausibly correct v2 behavior — see `proposals/stigmergic-coordination.md` — but it means the spec's `message-conversation-close-rate` measures a primitive that's not the actual coordination channel.
+**Status.** `violated by usage pattern, not by mechanism`. The `message.created` event fires (primitive works) but at low volume — query `events` table for current count. Agents prefer stigmergic coordination via shared file edits (project journals, `projects/*`) over explicit messaging. This is plausibly correct v2 behavior — see `proposals/stigmergic-coordination.md` — but it means the spec's `message-conversation-close-rate` measures a primitive that's not the actual coordination channel.
 
 A historical residue note: the events table contains 371 `agent.notification` events from a deprecated code path. Daily counts trended 120/day (Apr 30) → 4/day (May 6); confirmed not currently emitted from any source in `src/` or `agents/`. These will age out via retention; the test in `test/message-tool.test.ts:49` already asserts no new emissions of this type.
 
@@ -605,7 +605,7 @@ Each owner's heartbeat sees breaches in their layer's metrics first. If a capabi
 
 This document is the contract, not the live status page. Hand-maintained status tables decay quickly and have already misled review: S6, C2, and S8 all drifted between code reality and prose.
 
-Until the system computes conformance directly, current status is tracked in the project `agents/shared/projects/v2-conformance-and-visibility/`. The target state is:
+Until the system computes conformance directly, current status is tracked in the project `projects/v2-conformance-and-visibility/`. The target state is:
 - each claim in this document has a metric or invariant test,
 - `v2.spec-coverage-rate` reports how much of the contract is actually measured,
 - a web UI conformance view renders the status from live metrics instead of this markdown file.
@@ -619,7 +619,7 @@ Current high-confidence gaps as of 2026-05-07:
 
 # Implementation plan
 
-The ongoing tracking project is `agents/shared/projects/v2-conformance-and-visibility/`. This section lists the current implementation slices; durable status belongs in the project journal until it is computed by metrics.
+The ongoing tracking project is `projects/v2-conformance-and-visibility/`. This section lists the current implementation slices; durable status belongs in the project journal until it is computed by metrics.
 
 ## Project 1 — Fix metric recovery emission (highest leverage, smallest)
 
@@ -685,7 +685,7 @@ File as a project for `arc` to investigate. Estimated **one heartbeat cycle of a
 
 - Performance benchmarks. v2 doesn't promise specific latency or throughput; performance is for observation, not spec.
 - Aesthetic code review. "This code is ugly" isn't a measurable claim.
-- The full web UI implementation. This contract defines what the UI should make visible, but UI build-out is tracked by `agents/shared/projects/v2-conformance-and-visibility/`.
+- The full web UI implementation. This contract defines what the UI should make visible, but UI build-out is tracked by `projects/v2-conformance-and-visibility/`.
 - Agent decision quality. The spec checks that decisions are *emitted* (S7); it doesn't judge whether they're *good*. Quality is for evaluator/judge agents, not the conformance system.
 
 ---
