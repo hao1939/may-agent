@@ -197,6 +197,10 @@
 - Symptom: a heartbeat session ships no file diff, commit, or message, but it explicitly verifies empty inbox/owned-signal state, checks recent session context, and consciously avoids producing filler artifacts that a guard would otherwise incentivize.
 - Fix: do not force-fit these into `knowledge update` or `ghost deliverable` narratives. Judge them as lightweight operational maintenance: credit the no-op decision when transcript evidence shows the agent checked the relevant signals and avoided log-padding, while still penalizing any guard-churn retries as efficiency loss.
 
+## Pattern: verification-only closes can trip Ghost Deliverable on implementation-sounding wording
+- Symptom: a session makes no file changes and correctly intends to finish as analysis/verification only, but its first `finish()` summary says things like "completed triage" or "fix warranted / no fix warranted" in a way the guard interprets as claimed implementation output.
+- Fix: verify whether the transcript shows only read/query/bash inspection plus no deliverables. If so, treat the blocked closeout as wording friction, not fake output; the right recovery is a narrower verification-only summary, and aftermath scoring should preserve credit for the underlying judgment while applying at most a small efficiency penalty.
+
 ## Pattern: source commit is not enough for metric calibration if live runtime state disagrees
 - Symptom: a metric-alert triage commits the threshold change in source and may even print a successful direct DB write from bash, but `query_db` still shows the live metric row at the old threshold afterward.
 - Fix: treat this as incomplete calibration, not a full success. For alert-triage reviews, always verify the runtime `metrics` row with `query_db` in addition to the committed source diff, and flag direct shell writes against guessed DB paths as unsafe evidence unless the live row confirms the change.
