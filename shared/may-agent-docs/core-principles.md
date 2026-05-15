@@ -115,7 +115,7 @@ When behavior can be derived from a naming convention, don't build configuration
 - File under `agents/bob/` (skills/, knowledge/, workspace/) → bob owns it. No mapping needed.
 - Heartbeat workflow for `scout` → scout's heartbeat. No routing table needed.
 
-(Note: shared projects at `agents/shared/projects/<name>/` no longer encode owner in the path — ownership lives in the YAML frontmatter of `project.md`. This is the one place we accepted configuration over convention, because projects must be shareable across owners.)
+(Note: shared projects at `projects/<name>/` do not encode owner in the path — ownership lives in the YAML frontmatter of `project.md`. This is the one place we accepted configuration over convention, because projects must be shareable across owners.)
 
 Conventions are self-documenting, zero-maintenance, and enforce consistency. Configuration is a liability — it drifts, requires code to read, and creates a single point of failure.
 

@@ -127,7 +127,7 @@ bun run build
 bun run down && bun run up
 
 # Agents repo
-cd /home/hao/may-agent/agents
+cd /home/hao/may-agent/app
 git checkout v0.2-pre-v2-migration
 ```
 

@@ -391,7 +391,7 @@ Without this loop, agents thrash — re-discovering the same problem each breach
 Project files keep the current canonical structure:
 
 ```markdown
-# agents/shared/projects/<projectId>/project.md
+# projects/<projectId>/project.md
 
 ## Goal
 What we're doing and what done looks like.
@@ -439,8 +439,8 @@ CREATE TABLE projects (id, name, owner, status, path, updated_at);
 | Heartbeat instructions | `agents/<name>/heartbeat.md` |
 | Config | `agents/<name>/agent.json` |
 | Workflows | `agents/<name>/workflows/*.ts` |
-| Projects | `agents/shared/projects/<id>/project.md` |
-| Work queue | `agents/shared/work-queue.md` |
+| Projects | `projects/<id>/project.md` |
+| Work queue | `shared/work-queue.md` |
 | Session transcripts | Pi-coding-agent SessionManager format |
 
 #### DB (queryable, time-series)

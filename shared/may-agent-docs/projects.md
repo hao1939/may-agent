@@ -13,7 +13,8 @@ journal.
 
 ## Location
 
-All projects live at: `agents/shared/projects/<name>/project.md`
+All projects live at: `projects/<name>/project.md` under the app root
+(`/app/projects/<name>/project.md` in the container).
 
 Shared across agents — any agent can own/advance a project.
 
@@ -72,9 +73,16 @@ signal/comment/metric/event
   -> resume signal can make it active again
 ```
 
-**Key rule:** `active` means push now. Do not keep a project `active` only to
-monitor it. Monitoring belongs in `resume_condition`, `resume_after`, metrics,
-events, cron/steward checks, and heartbeat context.
+**Key rule:** `active` means push now. Completion of milestones is a judgment
+point, not a stop command. If `Next Action`, unresolved plan work, failed
+evidence, or new signals remain, re-plan and continue. Use `waiting` only for a
+real external precondition, `blocked` for a dependency the worker cannot resolve,
+and `closed` only after explicit human/May closure or a goal that truly no longer
+needs ownership.
+
+Do not keep a project `active` only to monitor it. Monitoring belongs in
+`resume_condition`, `resume_after`, metrics, events, cron/steward checks, and
+heartbeat context.
 
 ## Status Transitions
 
@@ -119,5 +127,5 @@ CREATE TABLE projects (
 ## Implementation
 
 - **Project handler:** `agents/may/handlers/project.ts`
-- **Health lib:** `agents/shared/lib/project-health.ts`
+- **Health lib:** `shared/lib/project-health.ts`
 - **DB schema:** `src/lib/requests.ts` (projects table)
