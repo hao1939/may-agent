@@ -18,7 +18,7 @@
  *     `event_type='message.created'` and `owner=<recipient>`, which is what
  *     the inbox query (in runtime-ctx.getInbox) reads.
  *
- * See: agents/shared/may-agent-docs/proposals/v2-architecture.md (Messages)
+ * See: shared/may-agent-docs/proposals/v2-architecture.md (Messages)
  */
 
 import { existsSync } from "node:fs";

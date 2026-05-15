@@ -58,8 +58,14 @@ describe("checkCrossEditGuard (P53/P70 cross-agent protection)", () => {
     expect(isAllowed("/app/agents/coder/knowledge/coaching.md", "bob")).toBe(true);
   });
 
-  it("allows writes to shared/ directory", () => {
-    expect(isAllowed("/app/agents/shared/bulletin.md", "bob")).toBe(true);
+  it("allows writes to canonical shared/ directory", () => {
+    expect(isAllowed("/app/shared/bulletin.md", "bob")).toBe(true);
+  });
+
+  it("blocks non-May writes to canonical shared system guidance", () => {
+    const result = checkCrossEditGuard("/app/shared/common-sense.md", "bob", PROJECT_ROOT);
+    expect(result.blocked).toBe(true);
+    expect(result.message).toContain("shared/common-sense.md");
   });
 
   it("allows writes outside agents/ entirely", () => {

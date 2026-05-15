@@ -7,7 +7,7 @@
  * System logging (log.ts) is a separate, independent channel — never routed
  * through the bus — to avoid circular dependencies.
  *
- * See: agents/shared/may-agent-docs/events.md
+ * See: shared/may-agent-docs/events.md
  */
 
 import { log } from "../lib/log.js";
@@ -237,7 +237,7 @@ export type SubscribeOptions = { priority?: "first" | "normal" };
  *     durable before any side-effect handler runs. This is a v2 invariant: if a handler
  *     triggers work, the originating event is already on disk.
  *
- * See: agents/shared/may-agent-docs/proposals/v2-architecture.md (Event Persistence as Invariant)
+ * See: shared/may-agent-docs/proposals/v2-architecture.md (Event Persistence as Invariant)
  */
 export class EventBus {
   private firstSubscribers: Subscriber[] = [];

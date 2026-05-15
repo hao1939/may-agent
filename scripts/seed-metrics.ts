@@ -8,7 +8,7 @@
  * Does NOT overwrite existing metrics — only inserts new ones.
  *
  * Initial metrics come from the approved design doc:
- *   agents/shared/may-agent-docs/design/metrics-system.md
+ *   shared/may-agent-docs/design/metrics-system.md
  *
  * Hao's decisions applied:
  *   - REMOVED: cost.daily (deferred)
@@ -300,7 +300,7 @@ const metrics: MetricDef[] = [
     unit: "count",
     priority: "P2",
     source: "command",
-    source_command: `find /app/agents/shared/knowledge/entries/ -name '*.md' 2>/dev/null | wc -l`,
+    source_command: `find /app/shared/knowledge/entries/ -name '*.md' 2>/dev/null | wc -l`,
   },
 
   // ── Manual metrics (source = 'manual') ────────────────────────────

@@ -1,9 +1,24 @@
-node_modules
-.state
+# Runtime/build outputs
+node_modules/
+dist/
+bundle/
+.state/
 *.sock
 *.pid
-.git
-dist
-pi-deps
-bundle
-litellm/github_copilot
+*.log
+*.db
+*.db-*
+
+# VCS and local agent state
+.git/
+.claude/
+.codex/
+.agents/
+.env
+
+# Large or host-specific data not copied by the Dockerfile
+pi-deps/
+litellm/github_copilot/
+test/
+design/
+docs/

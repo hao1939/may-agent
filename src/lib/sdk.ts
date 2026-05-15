@@ -4,7 +4,7 @@
  * The canonical capability surface of the may-agent system.
  * Agent tools, handlers, workflows, and gym runners all go through this.
  *
- * Design: agents/shared/may-agent-docs/sdk.md
+ * Design: shared/may-agent-docs/sdk.md
  */
 
 import type { SqliteDb } from "./db.js";

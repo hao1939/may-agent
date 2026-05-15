@@ -36,14 +36,14 @@ describe("extractMarkdownSection", () => {
 
 describe("project path matching", () => {
   it("matches Web UI paths against daemon project paths", () => {
-    expect(projectPathsMatch("agents/shared/projects/alpha-project", "shared/projects/alpha-project")).toBe(true);
-    expect(projectPathsMatch("agents/shared/projects/alpha-project/project.md", "shared/projects/alpha-project/")).toBe(true);
-    expect(normalizeProjectPathForCompare("./agents/shared/projects/alpha-project/project.md")).toBe("shared/projects/alpha-project");
+    expect(projectPathsMatch("agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(true);
+    expect(projectPathsMatch("agents/shared/projects/alpha-project/project.md", "projects/alpha-project/")).toBe(true);
+    expect(normalizeProjectPathForCompare("./agents/shared/projects/alpha-project/project.md")).toBe("projects/alpha-project");
   });
 
   it("normalizes canonical project-root paths", () => {
     expect(normalizeProjectPathForCompare("/app/projects/alpha-project/project.md")).toBe("projects/alpha-project");
     expect(projectPathsMatch("/app/projects/alpha-project", "projects/alpha-project/project.md")).toBe(true);
-    expect(projectPathsMatch("/app/agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(false);
+    expect(projectPathsMatch("/app/agents/shared/projects/alpha-project", "projects/alpha-project")).toBe(true);
   });
 });
