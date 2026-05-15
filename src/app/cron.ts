@@ -194,7 +194,23 @@ export class Cron {
     this.entries.push(entry);
     this.buildEventSubscriptions();
     if (this.started && entry.enabled !== false) {
-      this.startEntry(entry);
+      // For handler-based entries not yet registered, try handlerResolver first
+      if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
+        const entrySnapshot = { ...entry };
+        this.handlerResolver(entry.name, entrySnapshot)
+          .then((resolved) => {
+            if (resolved) {
+              this.startEntry(entrySnapshot);
+            } else {
+              this.onError?.(`Synthetic entry "${entry.name}" handler "${entry.handler}" could not be resolved`);
+            }
+          })
+          .catch(() => {
+            this.onError?.(`Synthetic entry "${entry.name}" handler resolution failed`);
+          });
+      } else {
+        this.startEntry(entry);
+      }
     }
   }
 
