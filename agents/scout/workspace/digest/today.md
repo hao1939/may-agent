@@ -108,3 +108,22 @@ The research shows CoT amplifies this effect. Our creative sessions are explicit
 **Why this isn't just "do less"**: It's a structural claim about information flow. Clock-driven creative sessions create a standing wave of self-referential analysis because the session *must* produce something but has nothing new to process. Event-driven sessions only fire when there's genuine entropy to reduce. The distinction is between a pull system (produce when demanded by new signal) and a push system (produce because the clock says so).
 
 **Testable prediction**: If you correlate creative session quality (measured by: did the output lead to any implementation?) against "hours since last novel external signal ingested," quality will be near-zero for sessions fired <24h after the last creative session with no intervening new signal.
+
+---
+
+## Why the F→E Transition Fails: Model Homogeneity as Hidden Cause
+
+**Sources cross-referenced**:
+- arXiv 2604.26561 "Preserving Disagreement: Architectural Heterogeneity" (Apr 30 triage) — different models reduce artificial consensus 70.9% → 46.1%
+- "Self-Correction Trends 2026" (scout knowledge) — same-model reflection is unreliable; "instinct-reflection misalignment" means a model that generates X can't effectively critique X
+- KE-1262 (control theory framing) + today's digest (F→E boundary from LIFE framework)
+
+**The connection nobody made**: Our system uses the same underlying model for every agent. The heterogeneity research shows same-model agents converge artificially. The self-correction research shows same-model reflection can't escape its own blind spots. Combined, these predict exactly what we observe: agents that are excellent at *agreeing something is broken* (convergent diagnosis) but unable to *generate structurally different solutions* (divergent implementation).
+
+The F→E boundary isn't just a missing mechanism (no KE→request pipeline). It's a **cognitive monoculture problem**. Scout diagnoses, evaluator reviews, guard triggers — all through the same model's lens. They converge on the same analytical frame (find more problems) because that's the shared model's high-confidence region. Implementation requires a different cognitive mode: concrete specification, trade-off evaluation, satisficing under constraints. A homogeneous model ensemble systematically under-explores that mode.
+
+**The specific prediction**: If you assigned a different model family to the agent responsible for converting KE recommendations into implementation specs (the missing "E" agent), the F→E transition rate would increase — not because the other model is smarter, but because it has different blind spots and different confidence distributions. Heterogeneity breaks the diagnostic convergence trap.
+
+**Why this matters beyond our system**: The LIFE framework identifies F→E as the hardest multi-agent boundary. The heterogeneity paper shows model diversity improves deliberation. But nobody has connected these: **the F→E boundary may be hardest specifically in homogeneous-model systems**, because fault-finding and self-evolution require cognitively different modes that a single model family can't span. This would predict that heterogeneous multi-agent systems cross the F→E boundary more readily — a testable hypothesis.
+
+**Practical implication**: Before building complex F→E pipelines, try the cheap intervention: assign the implementation/evolution role to a different model. The architectural heterogeneity paper's 25-point consensus reduction suggests this alone could unlock structural change capacity that no amount of same-model prompting can achieve.
