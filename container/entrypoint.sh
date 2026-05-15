@@ -42,12 +42,8 @@ cp /etc/codex/config.toml "${HOME}/.codex/config.toml"
 # whole state tree on every boot. Recursive chown makes restarts scale with
 # session history size and can block the Web UI from starting for a long time.
 mkdir -p "${STATE_DIR}" "${AGENTS_ROOT}" "${PROJECTS_ROOT}" "${SHARED_ROOT}"
-if [ ! -e "${AGENTS_ROOT}/shared" ] && [ -d "${SHARED_ROOT}" ]; then
-  ln -s "${SHARED_ROOT}" "${AGENTS_ROOT}/shared" 2>/dev/null || true
-fi
-if [ ! -e "${SHARED_ROOT}/projects" ] && [ -d "${PROJECTS_ROOT}" ]; then
-  ln -s "${PROJECTS_ROOT}" "${SHARED_ROOT}/projects" 2>/dev/null || true
-fi
+[ -L "${AGENTS_ROOT}/shared" ] && rm -f "${AGENTS_ROOT}/shared"
+[ -L "${SHARED_ROOT}/projects" ] && rm -f "${SHARED_ROOT}/projects"
 for path in "${STATE_DIR}" "${STATE_DIR}/chrome-profile" "${AGENTS_ROOT}" "${PROJECTS_ROOT}" "${SHARED_ROOT}"; do
   if [ -e "$path" ] && [ "$(stat -c '%u:%g' "$path" 2>/dev/null)" != "1000:1000" ]; then
     chown mayagent:mayagent "$path" 2>/dev/null || true

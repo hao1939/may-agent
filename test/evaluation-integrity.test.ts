@@ -115,7 +115,7 @@ describe("P98 Evaluation Integrity — Immutable Ruler", () => {
     });
 
     it("still blocks philosophy.md edits from non-may agents", () => {
-      const result = guardPath("agents/shared/philosophy.md", "bob");
+      const result = guardPath("shared/philosophy.md", "bob");
       expect(result.blocked).toBe(true);
       expect(result.message).toContain("philosophy.md");
     });

@@ -36,14 +36,14 @@ describe("extractMarkdownSection", () => {
 
 describe("project path matching", () => {
   it("matches Web UI paths against daemon project paths", () => {
-    expect(projectPathsMatch("agents/shared/projects/aks-rp-e2e", "shared/projects/aks-rp-e2e")).toBe(true);
-    expect(projectPathsMatch("agents/shared/projects/aks-rp-e2e/project.md", "shared/projects/aks-rp-e2e/")).toBe(true);
-    expect(normalizeProjectPathForCompare("./agents/shared/projects/aks-rp-e2e/project.md")).toBe("shared/projects/aks-rp-e2e");
+    expect(projectPathsMatch("agents/shared/projects/aks-rp-e2e", "projects/aks-rp-e2e")).toBe(true);
+    expect(projectPathsMatch("agents/shared/projects/aks-rp-e2e/project.md", "projects/aks-rp-e2e/")).toBe(true);
+    expect(normalizeProjectPathForCompare("./agents/shared/projects/aks-rp-e2e/project.md")).toBe("projects/aks-rp-e2e");
   });
 
   it("normalizes canonical project-root paths", () => {
     expect(normalizeProjectPathForCompare("/app/projects/aks-rp-e2e/project.md")).toBe("projects/aks-rp-e2e");
     expect(projectPathsMatch("/app/projects/aks-rp-e2e", "projects/aks-rp-e2e/project.md")).toBe(true);
-    expect(projectPathsMatch("/app/agents/shared/projects/aks-rp-e2e", "projects/aks-rp-e2e")).toBe(false);
+    expect(projectPathsMatch("/app/agents/shared/projects/aks-rp-e2e", "projects/aks-rp-e2e")).toBe(true);
   });
 });

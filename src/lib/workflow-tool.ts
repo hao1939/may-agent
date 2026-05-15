@@ -193,7 +193,7 @@ function listWorkflowFiles(workflowDir: string, sharedDir?: string): string[] {
   } catch {
     // workflowDir may not exist
   }
-  // Shared workflows (agents/shared/workflows/) — only add if not already present by name
+  // Shared workflows (shared/workflows/) — only add if not already present by name
   if (sharedDir) {
     try {
       const agentNames = new Set(files.map((f) => f.split("/").pop()));
@@ -508,13 +508,13 @@ export async function runWorkflowDirect(
 export interface WorkflowToolOptions {
   manager: SubagentManager;
   workflowDir: string;
-  /** Shared workflows directory (agents/shared/workflows/). Workflows here
+  /** Shared workflows directory (shared/workflows/). Workflows here
    *  are available to all agents, but agent-specific workflows take priority
    *  if they share the same filename. */
   sharedWorkflowDir?: string;
   /** Agent-specific guards directory. */
   guardsDir?: string;
-  /** Shared guards directory (agents/shared/guards/). */
+  /** Shared guards directory (shared/guards/). */
   sharedGuardsDir?: string;
   /** Persist directory for saving workflow run records. */
   persistDir?: string;

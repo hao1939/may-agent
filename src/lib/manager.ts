@@ -7,7 +7,7 @@
  * No zombie cleanup, no call depth tracking, no API gating, no health audits.
  * Sessions timeout. Metrics cover health. Pi-agent-core retries.
  *
- * See: agents/shared/may-agent-docs/architecture.md §3 "Agent Runs"
+ * See: shared/may-agent-docs/architecture.md §3 "Agent Runs"
  */
 
 import { Agent } from "@mariozechner/pi-agent-core";
@@ -1187,9 +1187,8 @@ export class SubagentManager {
     return root ? join(root, "agents", def.name) : undefined;
   }
 
-  private resolveSharedPromptPath(agentDir: string | undefined): string {
-    if (agentDir) return join(dirname(agentDir), "shared", "common-sense.md");
-    return join(this._projectRoot, "agents", "shared", "common-sense.md");
+  private resolveSharedPromptPath(_agentDir: string | undefined): string {
+    return join(this._projectRoot, "shared", "common-sense.md");
   }
 
   private loadPromptFile(path: string): string | undefined {
@@ -1216,7 +1215,7 @@ export class SubagentManager {
     if (relAgentDir) lines.push(`- Agent directory: ${relAgentDir}`);
     if (relWorkspace) lines.push(`- Workspace: ${relWorkspace} (scratch/runtime work)`);
     if (relKnowledge) lines.push(`- Knowledge: ${relKnowledge} (read on demand; start with INDEX.md when needed)`);
-    lines.push("- Already in context: agents/shared/common-sense.md and this agent's AGENTS.md when present.");
+    lines.push("- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.");
     lines.push("- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.");
     if (toolNames.length > 0) {
       lines.push(`- Available tools: ${toolNames.join(", ")}`);

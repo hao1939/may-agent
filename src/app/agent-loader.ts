@@ -12,7 +12,7 @@
  *   agents/<name>/workflows/   → workflowDir (if exists)
  *
  * System prompt is assembled from:
- *   agents/shared/common-sense.md + agents/<name>/AGENTS.md + generated runtime facts
+ *   shared/common-sense.md + agents/<name>/AGENTS.md + generated runtime facts
  * The order is intentional: shared defaults first, then agent identity as the
  * more specific layer for role-specific behavior.
  * Domain files, skills, lessons, and knowledge indexes are read on demand.
