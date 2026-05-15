@@ -197,6 +197,10 @@
 - Symptom: a heartbeat session ships no file diff, commit, or message, but it explicitly verifies empty inbox/owned-signal state, checks recent session context, and consciously avoids producing filler artifacts that a guard would otherwise incentivize.
 - Fix: do not force-fit these into `knowledge update` or `ghost deliverable` narratives. Judge them as lightweight operational maintenance: credit the no-op decision when transcript evidence shows the agent checked the relevant signals and avoided log-padding, while still penalizing any guard-churn retries as efficiency loss.
 
+## Pattern: heartbeat prompts that require explicit dispositions raise the bar above a bare health snapshot
+- Symptom: a heartbeat session correctly gathers live health data and finishes cleanly, but the prompt also required per-signal act/delegate/dismiss/escalate handling and at least one concrete improvement action. The transcript shows only snapshot queries plus a no-change finish.
+- Fix: score these as low-value maintenance rather than strong material-output successes. For good-session credit, require transcript evidence of explicit signal dispositions, a delegation/message, a project move, or another concrete improvement action that answers the prompt beyond "all clear."
+
 ## Pattern: verification-only closes can trip Ghost Deliverable on implementation-sounding wording
 - Symptom: a session makes no file changes and correctly intends to finish as analysis/verification only, but its first `finish()` summary says things like "completed triage" or "fix warranted / no fix warranted" in a way the guard interprets as claimed implementation output.
 - Fix: verify whether the transcript shows only read/query/bash inspection plus no deliverables. If so, treat the blocked closeout as wording friction, not fake output; the right recovery is a narrower verification-only summary, and aftermath scoring should preserve credit for the underlying judgment while applying at most a small efficiency penalty.
