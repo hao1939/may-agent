@@ -24,28 +24,13 @@ function inferAppRoot(sourceRoot: string): string {
   return sourceRoot;
 }
 
-function firstExisting(...paths: string[]): string | null {
-  for (const path of paths) {
-    if (existsSync(path)) return path;
-  }
-  return null;
-}
-
 export function resolveRuntimeRoots(importMetaUrl: string): RuntimeRoots {
   const sourceRoot = resolveProjectRoot(importMetaUrl);
   const explicitRoot = process.env.APP_ROOT || process.env.PROJECT_ROOT;
   const projectRoot = resolve(explicitRoot || inferAppRoot(sourceRoot));
   const agentsRoot = resolve(process.env.AGENTS_ROOT || resolve(projectRoot, "agents"));
-  const sharedRoot = resolve(
-    process.env.SHARED_ROOT
-      || firstExisting(resolve(projectRoot, "shared"), resolve(agentsRoot, "shared"))
-      || resolve(projectRoot, "shared"),
-  );
-  const projectsRoot = resolve(
-    process.env.PROJECTS_ROOT
-      || firstExisting(resolve(projectRoot, "projects"), resolve(sharedRoot, "projects"))
-      || resolve(projectRoot, "projects"),
-  );
+  const sharedRoot = resolve(process.env.SHARED_ROOT || resolve(projectRoot, "shared"));
+  const projectsRoot = resolve(process.env.PROJECTS_ROOT || resolve(projectRoot, "projects"));
   const persistDir = resolve(process.env.STATE_DIR || resolve(projectRoot, ".state"));
 
   return { projectRoot, agentsRoot, sharedRoot, projectsRoot, persistDir };

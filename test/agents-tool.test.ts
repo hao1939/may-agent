@@ -127,16 +127,16 @@ describe("V2 agents tool", () => {
       agent: "coder",
       task: "Drive the project loop",
       context_files: [
-        "agents/shared/skills/project-loop-driver/SKILL.md",
-        "agents/shared/skills/reading-metrics/skill.md",
+        "shared/skills/project-loop-driver/SKILL.md",
+        "shared/skills/reading-metrics/skill.md",
       ],
     });
 
     expect(result.status).toBe("done");
     expect(dispatchedTask).toContain("Drive the project loop");
     expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
-    expect(dispatchedTask).toContain("agents/shared/skills/project-loop-driver/SKILL.md");
-    expect(dispatchedTask).toContain("agents/shared/skills/reading-metrics/skill.md");
+    expect(dispatchedTask).toContain("shared/skills/project-loop-driver/SKILL.md");
+    expect(dispatchedTask).toContain("shared/skills/reading-metrics/skill.md");
   });
 
   it("fork appends context_files to the session task", async () => {
@@ -159,14 +159,14 @@ describe("V2 agents tool", () => {
       action: "fork",
       agent: "coder",
       task: "Investigate the socket route",
-      context_files: ["agents/shared/skills/control-plane-operation/SKILL.md"],
+      context_files: ["shared/skills/control-plane-operation/SKILL.md"],
     });
 
     expect(result.status).toBe("started");
     expect(result.sessionId).toBe("s_context_files");
     expect(dispatchedTask).toContain("Investigate the socket route");
     expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
-    expect(dispatchedTask).toContain("agents/shared/skills/control-plane-operation/SKILL.md");
+    expect(dispatchedTask).toContain("shared/skills/control-plane-operation/SKILL.md");
   });
 
   it("cancel on non-existent session returns cancelled (no-op)", async () => {

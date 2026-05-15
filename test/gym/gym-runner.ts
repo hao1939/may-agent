@@ -145,7 +145,7 @@ interface AdapterOpts {
   sandboxAgents?: boolean;
   /**
    * Path to a custom common-sense.md to overlay into the sandboxed agents
-   * directory, replacing agents/shared/common-sense.md. Enables clean A/B of
+   * directory, replacing shared/common-sense.md. Enables clean A/B of
    * per-agent rules that duplicate framework-level common-sense text
    * (coach Iter 7 infra: unblocks measurement for C1.6/C1.7 ceiling effect).
    * When set without --lab or sandboxAgents, a sandbox copy is created.
@@ -1394,7 +1394,7 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
     envLines.push(`- Agent directory: agents/${agentName}`);
     if (existsSync(workspace)) envLines.push(`- Workspace: agents/${agentName}/workspace (scratch/runtime work)`);
     if (existsSync(knowledgeDir)) envLines.push(`- Knowledge: agents/${agentName}/knowledge (read on demand; start with INDEX.md when needed)`);
-    envLines.push(`- Already in context: agents/shared/common-sense.md and this agent's AGENTS.md when present.`);
+    envLines.push(`- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.`);
     envLines.push(``);
     envLines.push(`All paths are relative to project root unless absolute paths are explicitly provided.`);
     sections.push(envLines.join("\n"));

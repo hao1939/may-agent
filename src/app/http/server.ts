@@ -78,15 +78,15 @@ export function extractMarkdownSection(body: string, headings: string | string[]
 export function normalizeProjectPathForCompare(path: string): string {
   const normalized = path
     .trim()
-    .replace(/^\/app\/agents\/shared\/projects\//, "shared/projects/")
-    .replace(/^\/app\/shared\/projects\//, "shared/projects/")
+    .replace(/^\/app\/agents\/shared\/projects\//, "projects/")
+    .replace(/^\/app\/shared\/projects\//, "projects/")
+    .replace(/^agents\/shared\/projects\//, "projects/")
+    .replace(/^shared\/projects\//, "projects/")
     .replace(/^\/app\/projects\//, "projects/")
     .replace(/^\.?\//, "")
     .replace(/^agents\//, "")
     .replace(/\/project\.md$/, "")
     .replace(/\/$/, "");
-  const sharedIdx = normalized.indexOf("shared/projects/");
-  if (sharedIdx >= 0) return normalized.slice(sharedIdx);
   const projectsIdx = normalized.indexOf("projects/");
   if (projectsIdx >= 0) return normalized.slice(projectsIdx);
   return normalized;
@@ -102,10 +102,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const PORT = opts.port;
   const PROJECT_ROOT = process.env.PROJECT_ROOT || resolve(STATE_DIR, "..");
   const AGENTS_ROOT = process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents");
-  const SHARED_ROOT = process.env.SHARED_ROOT
-    || (existsSync(resolve(PROJECT_ROOT, "shared")) ? resolve(PROJECT_ROOT, "shared") : resolve(AGENTS_ROOT, "shared"));
-  const PROJECTS_ROOT = process.env.PROJECTS_ROOT
-    || (existsSync(resolve(PROJECT_ROOT, "projects")) ? resolve(PROJECT_ROOT, "projects") : resolve(SHARED_ROOT, "projects"));
+  const SHARED_ROOT = process.env.SHARED_ROOT || resolve(PROJECT_ROOT, "shared");
+  const PROJECTS_ROOT = process.env.PROJECTS_ROOT || resolve(PROJECT_ROOT, "projects");
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const DAEMON_AGENT = process.env.DAEMON_AGENT || process.env.AGENT || "may";
 
@@ -177,12 +175,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function parseProjectIdentity(path: string, content?: string): { owner: string; name: string; projectId: string } {
     const normalized = normalizeProjectPathForCompare(path);
     const parts = normalized.split("/");
-    const name = parts[0] === "shared" && parts[1] === "projects"
-      ? parts[2]?.replace(/\.md$/, "") ?? ""
-      : parts[0] === "projects"
-        ? parts[1]?.replace(/\.md$/, "") ?? ""
-        : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
-    let owner = parts[0] === "shared" || parts[0] === "projects" ? "shared" : parts[1] ?? "";
+    const name = parts[0] === "projects"
+      ? parts[1]?.replace(/\.md$/, "") ?? ""
+      : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
+    let owner = parts[0] === "projects" ? "shared" : parts[1] ?? "";
     const ownerMatch = content?.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
     if (ownerMatch?.[1]) owner = ownerMatch[1].trim().replace(/^["']|["']$/g, "");
     return { owner, name, projectId: `${owner}/${name}` };
@@ -195,7 +191,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function isAllowedProjectPath(path: string): boolean {
     const normalized = normalizeProjectPathForCompare(path);
     return /^projects\/[^/]+(?:\/.*)?$/.test(normalized)
-      || /^shared\/projects\/[^/]+(?:\/.*)?$/.test(normalized)
       || /^[^/]+\/workspace\/projects\/[^/]+(?:\/.*)?$/.test(normalized);
   }
 
@@ -209,8 +204,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     ];
     if (name) {
       candidates.push(resolve(PROJECTS_ROOT, name));
-      candidates.push(resolve(SHARED_ROOT, "projects", name));
-      candidates.push(resolve(AGENTS_ROOT, "shared", "projects", name));
     }
     return [...new Set(candidates)];
   }
@@ -957,7 +950,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const relPath = url.searchParams.get("path") ?? "";
     const sharedDir = SHARED_ROOT;
 
-    // Security: only allow browsing under agents/shared/
+    // Only allow browsing under the shared root.
     const absPath = join(sharedDir, relPath);
     if (!absPath.startsWith(sharedDir)) return json({ error: "Access denied" }, 403);
 
@@ -1095,7 +1088,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         // Parse YAML frontmatter if present (current convention).
         // Legacy per-agent projects may still use old `**Owner**: x` lines.
         const normalizedRelPath = normalizeProjectPathForCompare(relPath);
-        const isSharedProject = normalizedRelPath.startsWith("projects/") || normalizedRelPath.startsWith("shared/projects/");
+        const isSharedProject = normalizedRelPath.startsWith("projects/");
         let frontmatter: Record<string, string> = {};
         const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
         if (fmMatch) {
@@ -1162,7 +1155,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     };
 
     try {
-      // Scan first-class projects, then legacy shared/projects for compatibility.
+      // Scan first-class projects.
       const seen = new Set<string>();
       const scanSharedProjectsDir = (dir: string, relPrefix: string) => {
         if (!existsSync(dir)) return;
@@ -1177,7 +1170,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         }
       };
       scanSharedProjectsDir(PROJECTS_ROOT, "projects");
-      scanSharedProjectsDir(resolve(SHARED_ROOT, "projects"), "shared/projects");
 
       // Scan legacy per-agent locations
       for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
@@ -1459,7 +1451,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
       // tier 2: workflow_runs tagged with this project, plus legacy runs
       // whose task mentions the project path or name.
-      // Project path appears in master-worker tasks like 'project: /app/agents/shared/projects/<name>'.
+      // Project path appears in master-worker tasks like 'project: /app/projects/<name>'.
       const runRows = db.prepare(
         `SELECT runId FROM workflow_runs WHERE projectId = ? OR task LIKE ? OR task LIKE ? LIMIT 200`
       ).all(projectId, `%${path}%`, `%projects/${name}%`) as Array<{ runId: string }>;
@@ -1472,7 +1464,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
 
       // tier 3: file_reads of any file inside the project dir.
-      // filePath patterns vary: '/app/agents/shared/projects/<name>/...', './agents/...', 'agents/...'
+      // filePath patterns vary: '/app/projects/<name>/...', './agents/...', 'agents/...'
       const readRows = db.prepare(
         `SELECT DISTINCT sessionId FROM file_reads WHERE filePath LIKE ? OR filePath LIKE ? OR filePath LIKE ? LIMIT 500`
       ).all(
@@ -1909,7 +1901,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             if (!HIDDEN.has(status)) projByOwner[key].active += 1;
           }
         };
-        scanDir(join(AGENTS_ROOT, "shared", "projects"), null);
+        scanDir(PROJECTS_ROOT, null);
         for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
           if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
           scanDir(join(AGENTS_ROOT, dir.name, "workspace", "projects"), dir.name);
@@ -1940,7 +1932,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
    * that exist on disk but aren't auto-injected.
    *
    * Source of truth (manager.ts:resolveSystemPrompt):
-   *   1. agents/shared/common-sense.md  (shared defaults, every agent)
+   *   1. shared/common-sense.md         (shared defaults, every agent)
    *   2. agents/<name>/AGENTS.md         (agent identity; role-specific behavior takes precedence)
    *   3. <runtime metadata block>        (synthesized at session start)
    *   PLUS def.systemPrompt if explicitly set in agent.json (overrides 1+2).
@@ -1986,7 +1978,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       });
     } else {
       // Standard prompt assembly: shared defaults, then role-specific identity.
-      const sharedPath = join(AGENTS_ROOT, "shared", "common-sense.md");
+      const sharedPath = join(SHARED_ROOT, "common-sense.md");
       const sharedFile = readFile(sharedPath, "shared/common-sense.md", "manager.ts");
       if (sharedFile) promptFiles.push({ ...sharedFile, source: "shared (every agent)" });
       const agentsMd = readFile(join(agentDir, "AGENTS.md"), "AGENTS.md", "identity");

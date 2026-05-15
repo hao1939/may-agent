@@ -3,7 +3,7 @@
  *
  * Protected files (per agent): AGENTS.md, agent.json, heartbeat.md
  * LESSONS.md is NOT protected — Coach and Bob need cross-agent access for Growth Cycle and consolidation.
- * Also protected: agents/shared/philosophy.md and common-sense.md (only "may" can write)
+ * Also protected: shared/philosophy.md and shared/common-sense.md (only "may" can write)
  *
  * Exception: Agent "may" is exempt from all restrictions.
  */
@@ -42,7 +42,7 @@ export interface CrossEditGuardResult {
  *
  * @param absolutePath - Resolved absolute path of the file being written/edited
  * @param agentName - Name of the calling agent (undefined = no guard)
- * @param projectRoot - Project root directory (agents/ lives here)
+ * @param projectRoot - Project root directory (agents/ and shared/ live here)
  * @returns { blocked: false } if allowed, { blocked: true, message } if denied
  */
 export function checkCrossEditGuard(
@@ -57,6 +57,18 @@ export function checkCrossEditGuard(
   if (agentName.toLowerCase() === "may") return { blocked: false };
 
   const agentsDir = resolve(projectRoot, "agents");
+  const sharedDir = resolve(projectRoot, "shared");
+
+  if (absolutePath.startsWith(sharedDir + sep) || absolutePath === sharedDir) {
+    const relSharedPath = relative(sharedDir, absolutePath);
+    if (relSharedPath === "philosophy.md" || relSharedPath === "common-sense.md") {
+      return {
+        blocked: true,
+        message: `⚠️ WRITE BLOCKED: Agent "${agentName}" cannot modify shared/${relSharedPath}. Only May can edit shared system-level guidance.\n\nCannot resolve? Escalate to May via message({ to: "may", content: ... }).`,
+      };
+    }
+    return { blocked: false };
+  }
 
   // Check if path is under agents/
   if (!absolutePath.startsWith(agentsDir + sep) && absolutePath !== agentsDir) {

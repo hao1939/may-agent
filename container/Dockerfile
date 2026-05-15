@@ -86,8 +86,8 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex 2>/dev/null || true
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
-# Copy shared control package and the default May Agent project UI.
-COPY packages/control/ /app/packages/control/
+# Copy the default May Agent project UI for image-only runs. Local compose
+# mounts /app from the host, so the host project tree is the source of truth.
 COPY ui/ /app/projects/may-agent/ui/
 
 # CLI agent configs (codex needs config.toml to route through litellm)
@@ -126,4 +126,3 @@ EXPOSE 6080
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-# bust 1777583705

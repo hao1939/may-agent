@@ -4,7 +4,7 @@
  * This is the ONLY component that writes to the DB.
  * Core emits events, DbWriter persists them.
  *
- * See: agents/shared/may-agent-docs/events.md
+ * See: shared/may-agent-docs/events.md
  */
 
 import type { AgentEvent } from "../app/event-bus.js";
