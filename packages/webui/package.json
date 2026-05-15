@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "bin": {
-    "may-agent-web": "./src/server.ts"
-  },
   "exports": {
     ".": "./src/server.ts"
   },
@@ -14,7 +11,7 @@
     "static"
   ],
   "scripts": {
-    "dev": "bun src/server.ts --state-dir /app/.state --port 8080",
+    "dev": "WEB_PORT=8080 bun ../../src/app/may.ts --web",
     "check": "tsc --noEmit -p tsconfig.json"
   }
 }

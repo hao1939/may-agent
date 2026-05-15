@@ -75,8 +75,6 @@ if (WEB_ONLY_MODE) {
   await runWebOnlyMode({
     stateDir: PERSIST_DIR,
     port: parseWebPort(process.env.WEB_PORT),
-    instanceLabel: INSTANCE_LABEL,
-    writeIdentity,
   });
 }
 
