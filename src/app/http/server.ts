@@ -1073,8 +1073,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function serveIndex(): Response {
-    const mayAgentUi = resolve(PROJECTS_ROOT, "may-agent", "ui", "index.html");
-    if (existsSync(mayAgentUi)) return serveFile(mayAgentUi);
+    const platformUi = resolve(PROJECTS_ROOT, "platform", "ui", "index.html");
+    if (existsSync(platformUi)) return serveFile(platformUi);
     return serveProjectStatic("/projects");
   }
 
