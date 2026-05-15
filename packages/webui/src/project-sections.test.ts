@@ -40,4 +40,10 @@ describe("project path matching", () => {
     expect(projectPathsMatch("agents/shared/projects/aks-rp-e2e/project.md", "shared/projects/aks-rp-e2e/")).toBe(true);
     expect(normalizeProjectPathForCompare("./agents/shared/projects/aks-rp-e2e/project.md")).toBe("shared/projects/aks-rp-e2e");
   });
+
+  it("normalizes canonical project-root paths", () => {
+    expect(normalizeProjectPathForCompare("/app/projects/aks-rp-e2e/project.md")).toBe("projects/aks-rp-e2e");
+    expect(projectPathsMatch("/app/projects/aks-rp-e2e", "projects/aks-rp-e2e/project.md")).toBe(true);
+    expect(projectPathsMatch("/app/agents/shared/projects/aks-rp-e2e", "projects/aks-rp-e2e")).toBe(false);
+  });
 });

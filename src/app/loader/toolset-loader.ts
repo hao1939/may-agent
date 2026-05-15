@@ -23,6 +23,8 @@ import { listConfiguredAgentNames } from "./agent-discovery.js";
 
 export interface ToolsetLoaderOptions {
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   projectRoot: string;
   persistDir: string;
   manager: SubagentManager;
@@ -94,7 +96,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "workflow": {
         const workflowDir = resolve(agentDir, "workflows");
-        const sharedWorkflowDir = resolve(opts.agentsRoot, "shared", "workflows");
+        const sharedWorkflowDir = resolve(opts.sharedRoot, "workflows");
         tools.push(
           createWorkflowTool({
             manager,
@@ -102,7 +104,15 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             sharedWorkflowDir,
             persistDir,
             agentName: config.name,
-            runtimeCtx: buildRuntimeCtx({ bus, persistDir, projectRoot, agentsRoot: opts.agentsRoot, agentName: config.name }),
+            runtimeCtx: buildRuntimeCtx({
+              bus,
+              persistDir,
+              projectRoot,
+              agentsRoot: opts.agentsRoot,
+              sharedRoot: opts.sharedRoot,
+              projectsRoot: opts.projectsRoot,
+              agentName: config.name,
+            }),
             callerSessionId: () => {
               const sid = opts.getAgentSessionId(config.name);
               if (!sid) throw new Error(`No active ${config.name} session`);
@@ -175,7 +185,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "system-status":
       case "system_status": {
-        tools.push(createSystemStatusTool(opts.persistDir, opts.agentsRoot));
+        tools.push(createSystemStatusTool(opts.persistDir, opts.agentsRoot, opts.sharedRoot));
         break;
       }
 

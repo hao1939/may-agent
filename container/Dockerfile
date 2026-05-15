@@ -117,6 +117,8 @@ ENV HOME=/app/.state
 ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app
 ENV AGENTS_ROOT=/app/agents
+ENV SHARED_ROOT=/app/shared
+ENV PROJECTS_ROOT=/app/projects
 ENV STATE_DIR=/app/.state
 ENV PATH=/app/.state/.bun/bin:/usr/local/bin:$PATH
 

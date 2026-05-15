@@ -12,6 +12,8 @@ import {
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   projectRoot: string;
   persistDir: string;
   models: Record<string, ModelWithApiKey>;
@@ -21,6 +23,8 @@ export async function prepareDaemonAgents(opts: {
 }): Promise<{ loaderOpts: AgentLoaderOptions }> {
   const loaderOpts: AgentLoaderOptions = {
     agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+    projectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,

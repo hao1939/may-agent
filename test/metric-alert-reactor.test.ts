@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { create } from "../agents/may/handlers/metric-alert-reactor.ts";
+import { create } from "../agents/agents/may/handlers/metric-alert-reactor.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
 import { createQueryService } from "../src/lib/query-service.js";
 
@@ -28,7 +28,7 @@ describe("metric-alert-reactor", () => {
     const logs: string[] = [];
     const handler = create({
       sdk: {
-        paths: { root, agents: agentsRoot },
+        paths: { root, agents: agentsRoot, shared: join(root, "shared"), projects: join(root, "projects") },
         getDb: () => {
           throw new Error("db unavailable");
         },
@@ -70,7 +70,7 @@ describe("metric-alert-reactor", () => {
     const logs: string[] = [];
     const handler = create({
       sdk: {
-        paths: { root, agents: agentsRoot },
+        paths: { root, agents: agentsRoot, shared: join(root, "shared"), projects: join(root, "projects") },
         getDb: () => db,
         query: createQueryService({ getDb: () => db }),
         emit: () => {},

@@ -20,6 +20,8 @@ export async function runWorkflowMode(opts: {
   mode: RunWorkflowMode;
   dryRun: boolean;
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   projectRoot: string;
   persistDir: string;
   bus: EventBus;
@@ -27,7 +29,7 @@ export async function runWorkflowMode(opts: {
   models: Record<string, ModelWithApiKey>;
   apiKey: string;
 }): Promise<void> {
-  const wfPath = await findWorkflowPath(opts.agentsRoot, opts.mode.name);
+  const wfPath = await findWorkflowPath(opts.agentsRoot, opts.sharedRoot, opts.mode.name);
   if (!wfPath) {
     throw new Error(`Workflow "${opts.mode.name}" not found`);
   }
@@ -39,6 +41,8 @@ export async function runWorkflowMode(opts: {
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
     agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+    projectsRoot: opts.projectsRoot,
     agentName: "cli",
   });
 
@@ -129,11 +133,12 @@ export async function runWorkflowMode(opts: {
   if (result.type === "escalate") console.log("Reason:", result.reason);
 }
 
-async function findWorkflowPath(agentsRoot: string, workflowName: string): Promise<string | null> {
+async function findWorkflowPath(agentsRoot: string, sharedRoot: string, workflowName: string): Promise<string | null> {
   const searchDirs = [
     ...readdirSync(agentsRoot, { withFileTypes: true })
       .filter((d) => d.isDirectory() && !d.name.startsWith("."))
       .map((d) => join(agentsRoot, d.name, "workflows")),
+    join(sharedRoot, "workflows"),
     join(agentsRoot, "shared", "workflows"),
   ];
 

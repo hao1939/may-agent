@@ -5,13 +5,18 @@ export INSTANCE="${INSTANCE:-background}"
 export DAEMON_INSTANCE="${DAEMON_INSTANCE:-${INSTANCE}}"
 export DAEMON_AGENT="${DAEMON_AGENT:-may}"
 export DISPLAY=:99
+export PROJECT_ROOT="${PROJECT_ROOT:-/app}"
+export APP_ROOT="${APP_ROOT:-${PROJECT_ROOT}}"
+export AGENTS_ROOT="${AGENTS_ROOT:-${APP_ROOT}/agents}"
+export SHARED_ROOT="${SHARED_ROOT:-${APP_ROOT}/shared}"
+export PROJECTS_ROOT="${PROJECTS_ROOT:-${APP_ROOT}/projects}"
 export STATE_DIR="${STATE_DIR:-/app/.state}"
 
 # Chrome binary (arch-dependent)
 export CHROME_BIN=""
 [ -x /opt/google/chrome/chrome ] && export CHROME_BIN=/opt/google/chrome/chrome
 [ -z "$CHROME_BIN" ] && [ -x /usr/bin/chromium ] && export CHROME_BIN=/usr/bin/chromium
-mkdir -p /app/.state/chrome-profile
+mkdir -p "${STATE_DIR}/chrome-profile"
 
 # may-agent args for supervisord. Web runs in a separate process so workflow
 # or LLM work cannot block the dashboard event loop.
@@ -36,8 +41,14 @@ cp /etc/codex/config.toml "${HOME}/.codex/config.toml"
 # Ensure mount roots are writable by mayagent (uid 1000) without walking the
 # whole state tree on every boot. Recursive chown makes restarts scale with
 # session history size and can block the Web UI from starting for a long time.
-mkdir -p /app/.state /app/agents
-for path in /app/.state /app/.state/chrome-profile /app/agents; do
+mkdir -p "${STATE_DIR}" "${AGENTS_ROOT}" "${PROJECTS_ROOT}" "${SHARED_ROOT}"
+if [ ! -e "${AGENTS_ROOT}/shared" ] && [ -d "${SHARED_ROOT}" ]; then
+  ln -s "${SHARED_ROOT}" "${AGENTS_ROOT}/shared" 2>/dev/null || true
+fi
+if [ ! -e "${SHARED_ROOT}/projects" ] && [ -d "${PROJECTS_ROOT}" ]; then
+  ln -s "${PROJECTS_ROOT}" "${SHARED_ROOT}/projects" 2>/dev/null || true
+fi
+for path in "${STATE_DIR}" "${STATE_DIR}/chrome-profile" "${AGENTS_ROOT}" "${PROJECTS_ROOT}" "${SHARED_ROOT}"; do
   if [ -e "$path" ] && [ "$(stat -c '%u:%g' "$path" 2>/dev/null)" != "1000:1000" ]; then
     chown mayagent:mayagent "$path" 2>/dev/null || true
   fi

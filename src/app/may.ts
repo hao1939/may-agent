@@ -1,15 +1,14 @@
 import { execSync } from "node:child_process";
-import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import {
   createIdentityWriter,
 } from "./daemon.js";
-import { resolveProjectRoot } from "./bundle-mode.js";
 import { runEmitMode } from "./modes/emit.js";
 import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
 import { createModelRegistry } from "./model-registry.js";
 import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
+import { resolveRuntimeRoots } from "./path-roots.js";
 
 // ── --version / -v: print version + git SHA and exit immediately ────────
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
@@ -24,9 +23,10 @@ if (process.argv.includes("--version") || process.argv.includes("-v")) {
   process.exit(0);
 }
 
-const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
-const AGENTS_ROOT = resolve(process.env.AGENTS_ROOT || resolve(PROJECT_ROOT, "agents"));
-const PERSIST_DIR = resolve(process.env.STATE_DIR || resolve(PROJECT_ROOT, ".state"));
+const ROOTS = resolveRuntimeRoots(import.meta.url);
+const PROJECT_ROOT = ROOTS.projectRoot;
+const AGENTS_ROOT = ROOTS.agentsRoot;
+const PERSIST_DIR = ROOTS.persistDir;
 
 // ── Instance identity ───────────────────────────────────────────────────
 
@@ -92,6 +92,8 @@ await runAppRuntime({
   anthropicDirect,
   projectRoot: PROJECT_ROOT,
   agentsRoot: AGENTS_ROOT,
+  sharedRoot: ROOTS.sharedRoot,
+  projectsRoot: ROOTS.projectsRoot,
   persistDir: PERSIST_DIR,
   instance: INSTANCE,
   instanceLabel: INSTANCE_LABEL,

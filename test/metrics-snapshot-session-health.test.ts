@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { create } from "../agents/may/handlers/metrics-snapshot.ts";
+import { create } from "../agents/agents/may/handlers/metrics-snapshot.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
 import { createMetricService } from "../src/lib/metrics.js";
 
@@ -20,7 +20,12 @@ describe("metrics-snapshot session health metrics", () => {
   function sdk(root: string, db: ReturnType<typeof getDb>, emit: (event: any) => void = () => {}) {
     return {
       getDb: () => db,
-      paths: { root, agents: join(root, "agents") },
+      paths: {
+        root,
+        agents: join(root, "agents"),
+        shared: join(root, "shared"),
+        projects: join(root, "projects"),
+      },
       log: () => {},
       emit,
       metrics: createMetricService({
@@ -515,7 +520,7 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
     expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
     expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P1" });
-    expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
+    expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 2, priority: "P2" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 1300, priority: "P3" });
     expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 900, priority: "P3" });

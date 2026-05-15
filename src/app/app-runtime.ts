@@ -31,6 +31,8 @@ export async function runAppRuntime(opts: {
   anthropicDirect: boolean;
   projectRoot: string;
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   persistDir: string;
   instance: string;
   instanceLabel: string;
@@ -93,6 +95,8 @@ export async function runAppRuntime(opts: {
 
   const { loaderOpts } = await prepareDaemonAgents({
     agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+    projectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     models: opts.models,
@@ -157,6 +161,8 @@ export async function runAppRuntime(opts: {
   await runRequestedExitMode({
     appArgs: opts.appArgs,
     agentsRoot: opts.agentsRoot,
+    sharedRoot: opts.sharedRoot,
+    projectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     persistDir: opts.persistDir,
     bus,

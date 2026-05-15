@@ -19,7 +19,7 @@ services:
       - "${NOVNC_PORT:-6080}:6080"
       - "${WEB_PORT:-8080}:8080"
     volumes:
-      - ../agents:/app/agents
+      - ../agents:/app
       - ../packages/control:/app/packages/control
       - ../packages/webui:/app/packages/webui
       - ../.state:/app/.state

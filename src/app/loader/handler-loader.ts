@@ -12,6 +12,8 @@ let hotReloadImportSeq = 0;
 
 export interface AgentHandlerLoaderOptions {
   agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot: string;
   persistDir: string;
   projectRoot: string;
   manager: SubagentManager;
@@ -22,7 +24,7 @@ export interface AgentHandlerLoaderOptions {
 export async function loadHandlersForAgentCrons(
   opts: AgentHandlerLoaderOptions,
 ): Promise<{ registered: string[]; errors: string[] }> {
-  const { agentsRoot, persistDir, projectRoot, manager, bus } = opts;
+  const { agentsRoot, sharedRoot, projectsRoot, persistDir, projectRoot, manager, bus } = opts;
   const registered: string[] = [];
   const errors: string[] = [];
 
@@ -32,12 +34,14 @@ export async function loadHandlersForAgentCrons(
 
     if (handlersNeeded.length === 0) continue;
 
-    const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, agentName });
+    const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, sharedRoot, projectsRoot, agentName });
     const sdk = buildAgentSDK({
       bus,
       persistDir,
       projectRoot,
       agentsRoot,
+      sharedRoot,
+      projectsRoot,
       agentName,
       manager,
       callAgent: (agent, task, callOpts) => manager.callAgent(agent, task, callOpts) as any,
