@@ -13,10 +13,14 @@ function getShellConfig(): { shell: string; args: string[] } {
 
 function getShellEnv(): NodeJS.ProcessEnv {
 	const env = { ...process.env };
-	// Prepend .state/.bun/bin to PATH so agents can run `bun` without
+	// Prepend the runtime state's bun install to PATH so agents can run `bun` without
 	// manually exporting PATH every time. This eliminates ~8% of all bash
 	// calls that were pure boilerplate `export PATH=".state/.bun/bin:$PATH"`.
-	const bunDir = join(process.cwd(), ".state", ".bun", "bin");
+	const stateDir = process.env.STATE_DIR
+		?? (existsSync(join(process.cwd(), "app", ".state"))
+			? join(process.cwd(), "app", ".state")
+			: join(process.cwd(), ".state"));
+	const bunDir = join(stateDir, ".bun", "bin");
 	if (existsSync(bunDir)) {
 		env.PATH = `${bunDir}:${env.PATH ?? ""}`;
 	}
@@ -187,7 +191,7 @@ export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
 	},
 	{
 		pattern: /bun:\s*command not found/i,
-		hint: "\n\n💡 Hint: bun should be on PATH automatically (.state/.bun/bin). If not found, check that .state/.bun/bin/bun exists.",
+		hint: "\n\n💡 Hint: bun should be on PATH automatically from the runtime state directory. If not found, check STATE_DIR or app/.state/.bun/bin/bun.",
 	},
 	{
 		pattern: /npx:\s*command not found/i,
