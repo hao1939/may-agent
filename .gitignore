@@ -1,18 +1,31 @@
-# Dependencies — never track
+# Dependencies - never track
 node_modules/
+shared/node_modules/
 
-# Runtime state — never track
+# Runtime state - never track
 .state/
+shared/.state/
 *.log
 *.bak
 *.pre-slim
+.initialized
+may.db
+*.db-wal
+*.db-shm
 
-# Removed directories — these were consolidated elsewhere, don't re-add
+# Build artifacts - never track
+bundle/
+may-agent-bin
+coverage/
+shared/coverage/
+shared/coverage-out/
+test/gym/.gym-runner-bundle*.mjs
+test/gym/stats.db
+
+# Removed legacy shared directories - don't re-add
 shared/protocols/
 shared/research/
 shared/research-projects/
-# shared/projects/ is the canonical persistent-project location; keep specs trackable.
-# Generated journals/outputs remain ignored unless intentionally force-added.
 shared/projects/*/*
 !shared/projects/*/project.md
 shared/deep-dives/
@@ -20,33 +33,23 @@ shared/designs/
 shared/tasks/
 shared/tools/
 
-# Federation conflict artifacts — ephemeral, reviewed manually
+# Federation conflict artifacts - ephemeral, reviewed manually
 *.conflict-k3s
 *.conflict-local
 
-# Lab experiments — ephemeral
+# Lab experiments - ephemeral
 .lab/
 
-# Workspace — agent scratch, not shared knowledge
-*/workspace/*
-!*/workspace/.gitkeep
+# Agent scratch/runtime, not shared knowledge
+agents/*/last-session.md
+**/workspace/**
+!**/workspace/.gitkeep
 
-# These belong in the main may-agent repo, not the agents repo
-src/
-test/
-scripts/
-bundle/
-config/
-environment/
+# Generated test fixtures
+**/__test_project_coverage__/
+
+# Legacy top-level paths that should not be reintroduced after cleanup
 /knowledge-base/
 /knowledge/
 /workspace/
-*.js
-!agents/*/handlers/*.ts
-may-agent-bin
-.initialized
-coverage/
-coverage/
-shared/coverage-out/
-node_modules/
-node_modules/
+/evaluator/
