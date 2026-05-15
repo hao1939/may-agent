@@ -1,3 +1,31 @@
+# Proposed Strategies — 2026-05-15 13:53Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
+- `.state/sessions/history/s_1778852335459_11/session.jsonl` (tech-lead)
+- `.state/sessions/history/s_1778852283979_10/session.jsonl` (tech-lead)
+- `.state/sessions/history/s_1778851435366_6/session.jsonl` (arc)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 0
+- Sessions with zero extracted positive `strategy` lessons: 3
+- Total extracted strategy lessons: 0
+
+## Calibration Notes
+- This fresh sample regressed back to zero positive extraction: the newest tech-lead and arc `good` sessions produced either no lessons or optimization-only output despite canonical `good` evaluations and nontrivial success-language counts.
+- The gap is therefore broader than compact scout transcripts: concise supervisory / architecture success sessions are also collapsing to empty or optimization-only output.
+- One sample (`s_1778852335459_11`) is extremely short (`scanned_lines: 2`), but the other two still scanned 28 and 19 lines respectively and only emitted optimization noise, so the extractor is still under-detecting reusable positive tactics on fresh successful coordination work.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778852335459_11/session.jsonl --type strategy` returned `{"lessons":[],...}` with `scanned_lines: 2`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778852283979_10/session.jsonl --type strategy` returned only one `optimization` lesson (`Elevated tool usage (12 calls)`) and no `type: "strategy"` entries, with `scanned_lines: 28`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778851435366_6/session.jsonl --type strategy` returned only one `optimization` lesson (`Ignored tool outputs (3 instances)`) and no `type: "strategy"` entries, with `scanned_lines: 19`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `1`, `15`, and `7` respectively.
+- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`, `efficiency=0.8` for `s_1778852335459_11` and `s_1778852283979_10`; `quality=0.85`, `efficiency=0.8` for `s_1778851435366_6`).
+
+---
+
 # Proposed Strategies — 2026-05-15 12:36Z
 
 ## Scope
