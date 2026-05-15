@@ -14,15 +14,15 @@ afterEach(() => {
 });
 
 describe("resolveRuntimeRoots", () => {
-  it("infers the staged app root when agents/ contains agents/ and shared/", () => {
+  it("infers the app root when app/ contains agents/ and shared/", () => {
     for (const key of ENV_KEYS) delete process.env[key];
     const root = process.cwd();
     const roots = resolveRuntimeRoots(new URL("../src/app/may.ts", import.meta.url).href);
 
-    expect(roots.projectRoot).toBe(join(root, "agents"));
-    expect(roots.agentsRoot).toBe(join(root, "agents", "agents"));
-    expect(roots.sharedRoot).toBe(join(root, "agents", "shared"));
-    expect(roots.projectsRoot).toBe(join(root, "agents", "projects"));
+    expect(roots.projectRoot).toBe(join(root, "app"));
+    expect(roots.agentsRoot).toBe(join(root, "app", "agents"));
+    expect(roots.sharedRoot).toBe(join(root, "app", "shared"));
+    expect(roots.projectsRoot).toBe(join(root, "app", "projects"));
   });
 
   it("honors explicit container roots", () => {
