@@ -27,8 +27,8 @@ EXIT_CODE=${PIPESTATUS[0]:-$?}
 # Performance regression detection
 PERF_THRESHOLD=5
 echo "Running performance check (threshold: ${PERF_THRESHOLD}s)..."
-VITEST_OUTPUT=$(npx vitest run 2>&1) || true
-DURATION=$(echo "$VITEST_OUTPUT" | grep -oP 'Duration\s+\K[\d.]+' | head -1)
+TEST_OUTPUT=$(cd /app && bun run test 2>&1) || true
+DURATION=$(echo "$TEST_OUTPUT" | grep -oE 'in [0-9.]+s' | tail -1 | grep -oE '[0-9.]+')
 PERF_WARNING=""
 if [ -n "$DURATION" ]; then
   DURATION_INT=${DURATION%.*}

@@ -72,16 +72,16 @@ else
   echo "⏭️ tsc not installed, skipping typecheck"
 fi
 
-# Run vitest (skip if not installed)
-if [[ -x ./node_modules/.bin/vitest ]]; then
-  echo "Running vitest --run..."
-  if ! ./node_modules/.bin/vitest --run 2>&1; then
-    echo "❌ vitest failed. Changes remain on $BRANCH for investigation."
+# Run Bun tests
+if command -v bun >/dev/null 2>&1; then
+  echo "Running bun run test..."
+  if ! bun run test 2>&1; then
+    echo "❌ bun test failed. Changes remain on $BRANCH for investigation."
     exit 1
   fi
-  echo "✅ vitest passed"
+  echo "✅ bun run test passed"
 else
-  echo "⏭️ vitest not installed, skipping tests"
+  echo "⏭️ bun not installed, skipping tests"
 fi
 
 # Merge to main

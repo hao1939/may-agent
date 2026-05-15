@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { calculateCorrectionRate, formatReport, Session } from '../correction-rate';
 
 describe('calculateCorrectionRate', () => {

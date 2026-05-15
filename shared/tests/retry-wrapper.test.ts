@@ -1,7 +1,7 @@
 /**
  * Tests for workflows/retry-wrapper.ts
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import {
   mergeConfig,
   createInitialCircuitState,

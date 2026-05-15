@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import type { WorkflowGuardEvent } from "@may-agent/sdk";
 
 // Import the guard module - milestone-quality exports `guard`

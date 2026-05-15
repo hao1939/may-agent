@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "bun:test";
 import { execute } from "../workflows/metric-alert-triage.js";
 
 describe("metric-alert-triage workflow", () => {

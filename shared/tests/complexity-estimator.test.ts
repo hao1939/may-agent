@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { estimateComplexity } from '../workflows/complexity-estimator';
 
 describe('complexity-estimator', () => {

@@ -103,7 +103,7 @@ Correct: finish(status: "blocked", blockers: [{reason: "binary.bin is a binary f
 ```  
 Task: "Run the test suite"
 Discovery: Test framework not installed, can't install it
-Correct: finish(status: "blocked", blockers: [{reason: "vitest not installed", context: "Tried npm install, npx vitest, and direct node execution. None available."}])
+Correct: finish(status: "blocked", blockers: [{reason: "test runner unavailable", context: "Tried npm install, npx Bun test runner, and direct node execution. None available."}])
 ```
 
 ### Contradictory requirements

@@ -29,8 +29,8 @@ Mark `[x]` on success. On failure → refine the task or rescope.
 ### Phase 4: Verify Intent (P14 — mandatory before reporting success)
 Before reporting anything as "done", YOU must verify — not trust workflow output:
 
-1. **`tsc --noEmit`** — must exit 0.
-2. **`npx vitest --run`** — must pass. If new tests were added, confirm they're included.
+1. **`bun run typecheck`** — must exit 0.
+2. **`bun run test`** — must pass. If new tests were added, confirm they're included.
 3. **Intent check** — verify the *specific ask* was met, not just that code compiles:
    - "Add field X" → read the file, confirm the field exists with correct type.
    - "Fix bug Z" → reproduce the scenario, confirm Z no longer occurs.

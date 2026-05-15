@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { recordIteration, getMetrics } from '../iteration-monitor';
 import { unlinkSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
 describe('iteration-monitor', () => {
-  const logPath = join(tmpdir(), `iteration-test-${Date.now()}.json`);
+  const logPath = join(tmpdir(), `iteration-test-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
 
   afterEach(() => {
     try { unlinkSync(logPath); } catch {}

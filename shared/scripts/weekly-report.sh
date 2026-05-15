@@ -13,9 +13,9 @@ mkdir -p "$REPORT_DIR"
 
 # 1. Test metrics
 cd "$SHARED_DIR"
-TEST_OUTPUT=$(npx vitest run 2>&1 | tail -5)
-TEST_FILES=$(echo "$TEST_OUTPUT" | grep -oP '\d+ passed' | head -1 | grep -oP '\d+')
-TEST_COUNT=$(echo "$TEST_OUTPUT" | grep "Tests" | grep -oP '\d+ passed' | grep -oP '\d+')
+TEST_OUTPUT=$(cd /app && bun run test 2>&1 | tail -5)
+TEST_FILES=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ files?' | head -1 | grep -oE '[0-9]+')
+TEST_COUNT=$(echo "$TEST_OUTPUT" | grep -oE '[0-9]+ pass' | tail -1 | grep -oE '[0-9]+')
 
 # 2. Iteration log stats
 LOG_FILE="$STATE_DIR/iteration-log.json"

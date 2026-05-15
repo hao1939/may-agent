@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { extractFailureChains, formatFailureChains } from "../evaluation/failure-chain.js";
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 

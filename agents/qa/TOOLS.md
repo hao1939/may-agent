@@ -7,7 +7,7 @@
 
 - `read` — read files from the project
 - `write` — create or modify files
-- `bash` — run shell commands (tsc, vitest, git, grep, etc.)
+- `bash` — run shell commands (tsc, bun test, git, grep, etc.)
 - `edit` — surgical text replacement in files
 - `handoff` — transfer artifacts or request reviews from other agents (P82-compliant)
 

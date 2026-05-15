@@ -19,7 +19,7 @@ _Staging area for behavioral fixes. Graduates into heartbeat.md/DOMAIN.md/SOUL.m
 - For tasks touching >3 files, create `workspace/strategy.md` FIRST.
 
 ### 🔴 TSC Verification — No Pipes (C34)
-Run `npx tsc --noEmit; echo "EXIT:$?"` — never pipe through `tail`/`head`. Use `scripts/health-check.sh` for combined tsc+vitest.
+Run `bun run typecheck; echo "EXIT:$?"` — never pipe through `tail`/`head`. Use `scripts/health-check.sh` for combined tsc+Bun test runner.
 
 ### 🔴 Commit Discipline
 - NEVER commit when tests are failing.
@@ -29,8 +29,8 @@ Run `npx tsc --noEmit; echo "EXIT:$?"` — never pipe through `tail`/`head`. Use
 **Interleave verification with edits** — edit → verify → edit → verify. Never batch verification to end.
 
 **Fallback ladder** (if primary method fails/times out):
-1. Targeted vitest: `npx vitest --run test/specific.test.ts`
-2. Type check: `npx tsc --noEmit; echo "EXIT:$?"`
+1. Targeted Bun test runner: `bun test path/to/specific.test.ts`
+2. Type check: `bun run typecheck; echo "EXIT:$?"`
 3. Read-back: `read("path/to/changed/file")` — confirm your edit landed
 4. Existence: `ls path/to/changed/file` — file exists at all
 

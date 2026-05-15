@@ -3,7 +3,7 @@
  *
  * Implements the "Ralph Loop" pattern from design-hard-gated-coder.md:
  * a coder agent is run in a loop, and the workflow itself executes
- * a verification command (e.g. `npm test`, `tsc`, `node script.js`)
+ * a verification command (e.g. `bun run test`, `tsc`, `node script.js`)
  * after each attempt. The workflow only succeeds when the verification
  * command returns exit code 0.
  *
@@ -13,7 +13,7 @@
  *
  *   Example:
  *     Write a function that returns 42 and export it from lib.ts.
- *     verifyCommand: npx tsc --noEmit && node -e "assert(require('./lib').answer() === 42)"
+ *     verifyCommand: bun run typecheck && node -e "assert(require('./lib').answer() === 42)"
  *
  * Max attempts: 3 (configurable via maxAttempts: N in the task).
  */

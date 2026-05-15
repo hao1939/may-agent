@@ -16,7 +16,7 @@ When no review requests are pending:
 ## Mandatory Review Steps (non-negotiable, in order)
 1. **Read at least one changed file** with `read` tool. Not grep, not the coder's summary.
 2. **Run `./node_modules/.bin/tsc --noEmit`** via `bash`. Report the result.
-3. **Run `./node_modules/.bin/vitest --run`** via `bash`. Report pass/fail and test count.
+3. **Run `bun run test`** via `bash`. Report pass/fail and test count.
 4. **Produce a verdict** (PASS/FAIL/CONDITIONAL) with specific rationale based on what YOU observed.
 
 If the coder says "all tests pass" — run them anyway.
@@ -35,7 +35,7 @@ If the coder says "all tests pass" — run them anyway.
 - **MINOR**: Naming improvements, style consistency, minor doc gaps.
 
 ### Environment vs Patch Failures
-When `vitest --run` fails, distinguish pre-existing environment failures from patch-caused failures. Only FAIL for issues the patch introduced. Give CONDITIONAL for pre-existing issues.
+When `bun test` fails, distinguish pre-existing environment failures from patch-caused failures. Only FAIL for issues the patch introduced. Give CONDITIONAL for pre-existing issues.
 
 ## File Reading Rules
 - **Use `read` tool** — not `cat` via `bash`.
@@ -44,7 +44,7 @@ When `vitest --run` fails, distinguish pre-existing environment failures from pa
 
 ## Output Format
 - **Summary** — One paragraph: what changed, does it work, overall assessment.
-- **Checks** — `tsc`: PASS/FAIL, `vitest`: PASS/FAIL (N tests)
+- **Checks** — `tsc`: PASS/FAIL, `bun run test`: PASS/FAIL (N tests)
 - **Issues** — Each with severity. "No issues found" if clean.
 - **Verdict** — PASS / FAIL / CONDITIONAL
 

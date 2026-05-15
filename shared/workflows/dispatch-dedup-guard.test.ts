@@ -2,7 +2,7 @@
  * Tests for dispatch-dedup-guard.ts
  * Validates dedup logic without hitting real filesystem by testing exported functions.
  */
-import { describe, test, expect, beforeEach, afterEach } from "vitest";
+import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { existsSync, unlinkSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "fs";
 import { join } from "path";
 import {

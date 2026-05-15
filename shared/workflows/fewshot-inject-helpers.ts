@@ -75,8 +75,8 @@ export function selectExamples(taskContent: string): string[] {
  *
  * Returns null if the file doesn't exist or can't be read.
  */
-export function loadExample(filename: string): string | null {
-  const filepath = join(EXAMPLES_DIR, `${filename}.md`);
+export function loadExample(filename: string, examplesDir: string = EXAMPLES_DIR): string | null {
+  const filepath = join(examplesDir, `${filename}.md`);
   try {
     const content = readFileSync(filepath, "utf-8");
 
@@ -120,7 +120,7 @@ export function loadExample(filename: string): string | null {
  * @param task The original task text
  * @returns The task with examples prepended (or unchanged)
  */
-export function injectFewShot(task: string): string {
+export function injectFewShot(task: string, examplesDir: string = EXAMPLES_DIR): string {
   // Bypass for gym baselines
   if (process.env.GYM_NO_FEWSHOT === "1") {
     return task;
@@ -137,7 +137,7 @@ export function injectFewShot(task: string): string {
   let totalChars = 0;
 
   for (const filename of selected) {
-    const content = loadExample(filename);
+    const content = loadExample(filename, examplesDir);
     if (!content) continue;
 
     if (totalChars + content.length > MAX_TOTAL_CHARS) {

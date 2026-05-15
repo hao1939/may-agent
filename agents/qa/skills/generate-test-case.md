@@ -71,7 +71,7 @@ If the red-path is subtle, add one positive-path test to prevent over-fixing.
 
 ### Step 7 — Prove Determinism
 Run the test repeatedly or in isolation.
-- `npx vitest --run path/to/test --repeat 5`
+- `bun test path/to/test --rerun-each 5`
 
 If flakiness appears:
 - remove timing assumptions

@@ -1,0 +1,3 @@
+[test]
+# Keep raw `bun test` from treating top-level gym scenario fixtures as default suite tests.
+root = "shared"

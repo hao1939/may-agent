@@ -69,7 +69,7 @@ actual state:
 
 ```bash
 # Run tests to see what actually passes/fails
-npx vitest --run 2>&1 | tail -20
+bun run test 2>&1 | tail -20
 
 # Or check system state
 git log --oneline -5

@@ -2,7 +2,7 @@
  * Tests for guards/auto-test.ts
  * Validates the auto-test guard detects source changes without test confirmation.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 // We import the guard's internals by importing the module
 // The guard file exports { guard } with name, events, handle

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import * as lib from '../../lib/index.js';
 
 describe('barrel exports', () => {

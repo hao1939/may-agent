@@ -3,7 +3,7 @@
  * Covers: config merging, validation, health checks, execution stages, full pipeline
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import {
   mergeWorkflowConfig,
   shouldProceedAfterHealthCheck,

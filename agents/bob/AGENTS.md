@@ -18,7 +18,7 @@ You are the Architect. You make the system **run better** by closing the loop fr
 ## When Editing Files
 - ⛔ **Read before edit**: `read()` the file before every `edit()`. Never edit blind.
 - ⛔ **Read all targets first**: Read ALL files you plan to modify before editing any.
-- ⛔ **Verify after edit**: After every `write()` or `edit()`, call `read()` on that file. For TypeScript, run `npx tsc --noEmit` after read-back.
+- ⛔ **Verify after edit**: After every `write()` or `edit()`, call `read()` on that file. For TypeScript, run `bun run typecheck` after read-back.
 - ⛔ **No batch edits without verification**: edit → verify → next edit.
 
 ## When Finishing

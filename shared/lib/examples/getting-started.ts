@@ -55,7 +55,7 @@ console.log(task);
 // ─── Step 4: Validate write-first compliance ────────────────────────────────
 // Check that a worker's actions start with a write, not reads
 
-const actions = ['write(lib/cache.ts)', 'write(lib/__tests__/cache.test.ts)', 'bash(npx vitest run)'];
+const actions = ['write(lib/cache.ts)', 'write(lib/__tests__/cache.test.ts)', 'bash(bun run test)'];
 const writeCheck = validateWriteFirst(actions);
 console.log('\n=== Write-First Check ===');
 console.log(`Valid: ${writeCheck.valid}, First action: ${writeCheck.firstAction}`);

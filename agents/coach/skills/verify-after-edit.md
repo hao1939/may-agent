@@ -18,7 +18,7 @@ This scoping is based on EXP results (2026-08): blanket verification of all writ
 
 ### For code files (.ts, .js, .py):
 1. **Read it back**: `read("src/parser.ts")` — confirm the edit landed
-2. **Type-check or lint**: `bash({ command: "npx tsc --noEmit src/parser.ts" })` — confirms no syntax errors
+2. **Type-check or lint**: `bash({ command: "bun run typecheck" })` — confirms no syntax errors
 
 ### For any file:
 1. **Read-back minimum**: Always `read()` the file after writing
@@ -55,7 +55,7 @@ edit({ path: "src/handler.ts", oldText: ..., newText: ... })
 read({ path: "src/handler.ts", offset: 10, limit: 15 })
 → [verify the changed lines are correct]
 
-bash({ command: "npx tsc --noEmit" })
+bash({ command: "bun run typecheck" })
 → No errors. Confirmed: edit is type-safe.
 ```
 

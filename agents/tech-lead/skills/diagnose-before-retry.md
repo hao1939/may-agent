@@ -16,14 +16,14 @@ When a bash command exits non-zero, you MUST:
 
 ### ❌ Bad: Blind retry
 ```
-$ npm test        → exit 1 (module not found)
-$ npm test        → exit 1 (same error)
+$ bun run test    → exit 1 (module not found)
+$ bun run test    → exit 1 (same error)
 $ npm install     → finally realizes dep missing
 ```
 
 ### ✅ Good: Diagnose first
 ```
-$ npm test        → exit 1: "Cannot find module './utils/db'"
+$ bun run test    → exit 1: "Cannot find module './utils/db'"
   → Analysis: utils/db.ts doesn't exist. Check if it was renamed or moved.
 $ find . -name "db*" -path "*/utils/*"
   → Found: ./src/utils/database.ts — import path is wrong

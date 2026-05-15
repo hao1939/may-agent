@@ -49,7 +49,7 @@ Match your verification to what you're claiming:
 |---|---|
 | Edited a file | `read()` the modified section back |
 | Fixed a bug | `run_test` → check `details.status` == "success" |
-| Changed TypeScript | `npx tsc --noEmit` → 0 errors |
+| Changed TypeScript | `bun run typecheck` → 0 errors |
 | Added a feature | `run_test` → check `details.meta.passed` > 0 |
 | Created a new file | `ls` to confirm it exists (read-back optional for small files) |
 | Ran a sed command | `read()` or `grep` the target to confirm the change landed |
@@ -92,7 +92,7 @@ If verification fails → fix the issue → re-verify → repeat until it passes
 
 ### AP-6: "Wrong Target Verification"
 **Pattern**: Agent runs verification but in the wrong directory, against the wrong file, or with the wrong command scope. The verification "passes" but doesn't prove the actual change is correct.
-**Why it happens**: Agent copies a verification command from memory or instructions without adjusting the cwd/path to match the actual workspace. Or agent runs `npx vitest --run` (all tests) instead of the specific test file for the change.
+**Why it happens**: Agent copies a verification command from memory or instructions without adjusting the cwd/path to match the actual workspace. Or agent runs `bun run test` (all tests) instead of the specific test file for the change.
 **Fix**: Before running any verification command, confirm:
 1. **Correct cwd**: `pwd` matches where your changes live
 2. **Correct target**: The test file or compile scope covers the files you changed
@@ -100,7 +100,7 @@ If verification fails → fix the issue → re-verify → repeat until it passes
 
 If verification fails with path/module errors, fix the command — don't switch to a different verification that happens to pass on unrelated code.
 
-**Evidence**: tech-lead ran `cd /app && npm test` (wrong cwd, wrong runner), got exit 1, then ran `npx vitest --run` (correct) but never re-ran the original failing command to confirm full coverage.
+**Evidence**: an agent ran a broad or wrong-scope test command, then switched to another command that passed without proving the original changed code path was covered.
 
 ### AP-7: "Proceed Despite Red Flags"
 **Pattern**: Verification reveals a missing or incomplete deliverable, but the agent proceeds anyway — marking the task done or promoting the work.

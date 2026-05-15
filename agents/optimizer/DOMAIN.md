@@ -72,8 +72,8 @@ Target one problem at a time.
 
 ### 3. Implement
 Make the change yourself — edit the relevant files directly.
-- Run `npx tsc --noEmit` to verify compilation
-- Run `npx vitest --run` to verify tests pass
+- Run `bun run typecheck` to verify compilation
+- Run `bun run test` to verify tests pass
 - If adding new behavior, add tests
 
 ### 4. Verify

@@ -2,7 +2,7 @@
  * Tests for workflows/index.ts barrel export
  * Ensures all expected symbols are re-exported correctly.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 describe('workflows/index barrel export', () => {
   it('exports saveIncrementalCheckpoint from incremental-checkpoint', async () => {

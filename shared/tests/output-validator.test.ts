@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { validateOutput, findDuplicate, validateContentType, hashContent } from "../workflows/output-validator.js";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 

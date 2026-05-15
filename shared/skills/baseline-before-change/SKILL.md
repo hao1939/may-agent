@@ -56,11 +56,11 @@ afterward. Record the results.
 
 ```
 # Example for TypeScript projects:
-npx tsc --noEmit 2>&1 | tail -20
+bun run typecheck 2>&1 | tail -20
 # Note: X errors found (or clean)
 
 # Example for test suites:
-npx vitest --run 2>&1 | tail -30
+bun run test 2>&1 | tail -30
 # Note: N passed, M failed, K skipped
 
 # Example for file state:
@@ -78,7 +78,7 @@ meaningless.
 Explicitly state the baseline in your reasoning before proceeding:
 
 - "Baseline: `tsc --noEmit` shows 0 errors"
-- "Baseline: `vitest --run` shows 14 passed, 2 failed (test-x, test-y)"
+- "Baseline: `bun run test` shows 14 passed, 2 failed (test-x, test-y)"
 - "Baseline: file has 247 lines, last line is `export default config`"
 
 This creates an auditable record. If you later need to claim something is
@@ -141,7 +141,7 @@ of retroactive investigation.
 
 ### AP-2: "Scope Mismatch Baseline"
 **Pattern**: Agent runs `tsc --noEmit` as baseline but then verifies with
-`npx vitest --run`, or baselines in directory A but makes changes in directory B.
+`bun run test`, or baselines in directory A but makes changes in directory B.
 The baseline and verification don't cover the same scope, making comparison invalid.
 
 **Fix**: Write down the exact verification command before starting. Use that same
@@ -159,7 +159,7 @@ isn't evidence. The 5-second cost of a baseline is trivial compared to the minut
 spent debugging ambiguous failures.
 
 **Fix**: Make baselining automatic for any session that will run verification. The
-rule is simple: if you plan to run `tsc` or `vitest` after changes, run it before
+rule is simple: if you plan to run `tsc` or `Bun test runner` after changes, run it before
 changes too.
 
 ---

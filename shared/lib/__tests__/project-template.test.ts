@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { generateProject, ProjectConfig } from '../project-template.js';
 
 describe('generateProject', () => {

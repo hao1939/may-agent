@@ -64,7 +64,7 @@ you see the error:
 
 | Category | Signal | Example |
 |----------|--------|---------|
-| **Missing tool** | exit 127, "not found" | `npx tsc` → `npx: not found` |
+| **Missing tool** | exit 127, "not found" | `bun run typecheck` → `tsc: not found` |
 | **Missing path** | ENOENT, "No such file" | `read("agents/bob/todo.md")` → ENOENT |
 | **Edit mismatch** | "Found 0 occurrences" | `edit()` oldText doesn't match file content |
 | **Edit ambiguity** | "Found N occurrences" | `edit()` oldText matches multiple locations |
@@ -84,8 +84,7 @@ Each obstacle category has a pre-defined fallback ladder. Execute the **first
 available alternative** — don't deliberate, just go down the list:
 
 #### Missing tool fallbacks
-1. **Try the base command** without the wrapper: `tsc` instead of `npx tsc`,
-   `vitest` instead of `npx vitest`
+1. **Use the repo scripts**: `bun run typecheck` for TypeScript and `bun run test` for the curated test suite
 2. **Try node direct**: `node -e "require('typescript').transpileModule(...)"` or
    `node --check <file>` for syntax checking
 3. **Try a simpler check**: `grep` for syntax patterns, `read()` back the file
@@ -198,7 +197,7 @@ human intervention or a fundamentally different approach.
 
 ### AP-1: Blind Retry (same command, same error)
 The agent hits an error and retries the exact same command hoping for a
-different result. `npx tsc` fails with "not found" → agent runs `npx tsc`
+different result. `bun run typecheck` fails with "not found" → agent diagnoses the missing local toolchain instead of repeating it
 again → same error. This wastes turns and never succeeds.
 
 **Why it happens**: The agent treats environmental errors like transient

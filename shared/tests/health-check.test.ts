@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { parseMetrics, isAtTarget, extractLastActivity, isStalled, analyzeProject, checkHealth } from "../workflows/health-check.js";
 
 describe("health-check", () => {

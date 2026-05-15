@@ -11,9 +11,9 @@ echo ""
 
 # Test metrics
 echo "┌─ TEST SUITE ─────────────────────────────"
-TEST_OUTPUT=$(npx vitest run 2>&1 || true)
-FILES_LINE=$(echo "$TEST_OUTPUT" | grep "Test Files" || echo "Test Files  unknown")
-TESTS_LINE=$(echo "$TEST_OUTPUT" | grep "^ *Tests" | head -1 || echo "Tests  unknown")
+TEST_OUTPUT=$(cd /app && bun run test 2>&1 || true)
+FILES_LINE=$(echo "$TEST_OUTPUT" | grep -E "across [0-9]+ files?" || echo "Test files unknown")
+TESTS_LINE=$(echo "$TEST_OUTPUT" | grep -E "[0-9]+ pass" | head -1 || echo "Tests unknown")
 echo "│ $FILES_LINE"
 echo "│ $TESTS_LINE"
 echo ""

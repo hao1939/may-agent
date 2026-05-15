@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 
 const guardModule = await import('../guards/cost-limit');
 const { guard } = guardModule;

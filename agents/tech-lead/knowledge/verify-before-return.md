@@ -16,7 +16,7 @@ Tech-Lead trusts workflow output ("QA PASS") as proof of success. But:
 Before reporting success, YOU must verify:
 
 1. **`tsc --noEmit`** → exit 0
-2. **`npx vitest --run`** → all pass
+2. **`bun run test`** → all pass
 3. **Intent check** — the *specific* thing asked for:
    - "Add field X" → `grep 'X' file.ts` — confirm it exists
    - "Fix bug Z" → reproduce scenario — confirm Z is gone
@@ -29,7 +29,7 @@ Before reporting success, YOU must verify:
 ❌ "Coder implemented and QA reviewed. Success."
 
 ## Correct Pattern
-✅ "tsc exited 0. 47 tests pass (npx vitest --run). Verified: `grep 'opBudget' src/lib/types.ts` shows the field on line 42 with type `number | undefined`. Intent met."
+✅ "tsc exited 0. 47 tests pass (bun run test). Verified: `grep 'opBudget' src/lib/types.ts` shows the field on line 42 with type `number | undefined`. Intent met."
 
 ## Why This Matters
 Every false "Done" wastes Bob's entire session. Bob can't recover from a lie — he's already moved on. The cost of running 3 commands before responding is ~5 seconds. The cost of a false success is ~5 minutes of Bob's time + a failed session.

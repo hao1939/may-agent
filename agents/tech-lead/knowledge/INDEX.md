@@ -2,7 +2,7 @@
 
 ## ⚠️ Verify-Before-Return (READ THIS)
 See `knowledge/verify-before-return.md` — 31% of your "Done" messages are lies.
-Before reporting success: `tsc --noEmit` + `npx vitest --run` + intent check. Quote evidence.
+Before reporting success: `tsc --noEmit` + `bun run test` + intent check. Quote evidence.
 
 ## Team
 Tech-lead is the Builder (Opus). Drives implementation via coder+QA.
@@ -32,7 +32,7 @@ finish guards, structured delegation, active nudge thresholds, QA review phases.
 - `src/lib/` — core library
 - `src/app/` — application layer
 - `agents/` — agent configs (**gitignored** — changes are on disk only, not committed)
-- `test/` — test files (use `npm test` or `npx tsx test/...`)
+- `shared/**` and `agents/**` — app tests (use `bun run test`; use `bun test path/to/file.test.ts` for targeted checks)
 
 ## Project Evolution (Key Decisions)
 - **`handoff()` removed** (commit `fd5bda9`): Replaced by `agents.send()` + request tracking. No handoff tool exists.

@@ -71,7 +71,7 @@ export async function execute(options: ${FUNC_NAME^}Options = {}): Promise<${FUN
 EOF
 
 cat > "$TEST_FILE" << EOF
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'bun:test';
 import { execute } from '../workflows/${NAME}.js';
 
 describe('${NAME}', () => {
@@ -115,4 +115,4 @@ echo ""
 echo "Next steps:"
 echo "  1. Edit $WORKFLOW_FILE to implement your logic"
 echo "  2. Edit $TEST_FILE to add real test cases"
-echo "  3. Run: npx vitest run tests/${NAME}.test.ts"
+echo "  3. Run: bun test shared/tests/${NAME}.test.ts"

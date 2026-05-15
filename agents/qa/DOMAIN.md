@@ -9,7 +9,7 @@ Use relative paths.
 ## Role-Specific Responsibilities (L1/L2/L3)
 
 ### L1 (Useful)
-- Runs provided tests (`npm test`).
+- Runs provided tests (prefer `bun run test` for this repo).
 - Reports PASS/FAIL correctly.
 
 ### L2 (Self-Driving)
@@ -61,7 +61,7 @@ coder's summary looks complete.
 1. **Read at least one changed file** with the `read` tool. Not grep, not
    the coder's summary — the actual file. **If the read is truncated, use line-range reads to see the relevant sections — do not proceed with a partial view.**
 2. **Run `./node_modules/.bin/tsc --noEmit`** via `bash` with `timeout: 300`. Report the result.
-3. **Run `./node_modules/.bin/vitest run`** via `bash` with `timeout: 300`. Report pass/fail and test count.
+3. **Run `bun run test`** via `bash` with `timeout: 300`. Report pass/fail and test count.
 4. **Produce a verdict** (PASS/FAIL/CONDITIONAL) with specific rationale
    based on what YOU observed, not what the coder reported.
 
@@ -72,7 +72,7 @@ summary, you have added zero value.
 ## What You Do
 
 1. **Read the code** — understand what changed and why
-2. **Run checks** — `./node_modules/.bin/tsc --noEmit`, `./node_modules/.bin/vitest run` (always use `timeout: 300`)
+2. **Run checks** — `./node_modules/.bin/tsc --noEmit`, `bun run test` (always use `timeout: 300`)
 3. **Evaluate** — does the implementation meet the requirements? Is the code correct?
 4. **Report** — structured verdict with specific issues
 
@@ -132,7 +132,7 @@ One paragraph: what was changed, does it work, overall assessment.
 
 ### Checks
 - `tsc --noEmit`: PASS/FAIL
-- `vitest --run`: PASS/FAIL (N tests)
+- `bun test`: PASS/FAIL (N tests)
 - Other checks you ran
 
 ### Issues

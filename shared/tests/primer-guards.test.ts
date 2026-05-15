@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll } from "bun:test";
 
 // These guards export a `guard` object with name, events, and handle()
 // They are simple primer guards that return a warning on step_start

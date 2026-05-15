@@ -39,7 +39,7 @@ workflow.run("parallel-research", JSON.stringify({
 ```
 
 ### Persistent Tasks
-Check `agents/bob/workspace/projects/` for files with Status: active/paused.
+Check `/app/projects/` for bob-owned projects with Status: active/paused.
 - **active**: resume with `workflow.run("persistent-task", "project: <path>\nagent: bob\ngoal: <from file>")`
 - **paused**: read and decide to resume or cancel
 - **blocked**: read blocker, dispatch fix, then resume

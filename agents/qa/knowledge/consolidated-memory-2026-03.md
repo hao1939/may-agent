@@ -5,8 +5,8 @@ Source: `agents/qa/workspace/journal.md` entries spanning 2026-03-16 to 2026-03-
 ## Durable Facts
 - `agents/qa/workspace/todo.md` was removed/refactored away; some sessions now see `ENOENT` when attempting to read it. The request DB is intended to be the single source of truth for pending work.
 - Repo gates for this project are consistently:
-  - `npx tsc --noEmit`
-  - `npx vitest --run`
+  - `bun run typecheck`
+  - `bun run test`
 
 ## Durable Patterns (What to Keep Doing)
 - When repo gates are green but a code snippet *looks* malformed, treat it as a readability/maintenance smell and call it out explicitly; avoid claiming it is a syntax error unless confirmed by `tsc` or direct parsing evidence.
@@ -19,4 +19,4 @@ Source: `agents/qa/workspace/journal.md` entries spanning 2026-03-16 to 2026-03-
 - **Repo hygiene**: Uncommitted local diffs can appear during QA sessions and must be surfaced as process risks to avoid accidental drift.
 
 ## Dead Ends / Don’t Repeat
-- Don’t treat the presence of a suspiciously formatted call as a compile error if `npx tsc --noEmit` is passing; verify with a line-range read and/or compilation output before escalating severity.
+- Don’t treat the presence of a suspiciously formatted call as a compile error if `bun run typecheck` is passing; verify with a line-range read and/or compilation output before escalating severity.

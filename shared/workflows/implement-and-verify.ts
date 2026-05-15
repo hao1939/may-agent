@@ -23,9 +23,9 @@
  *     ./node_modules/.bin/tsc --noEmit && ./node_modules/.bin/vitest --run
  */
 
-import { execSync } from "node:child_process";
+import { execSync as defaultExecSync } from "node:child_process";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { injectFewShot } from "./fewshot-inject-helpers.js";
+import { injectFewShot as defaultInjectFewShot } from "./fewshot-inject-helpers.js";
 
 export const name: string = "implement-and-verify";
 
@@ -79,9 +79,12 @@ interface VerifyResult {
   output: string;
 }
 
-function runVerification(command: string): VerifyResult {
+function runVerification(
+  command: string,
+  execSyncImpl: typeof defaultExecSync = defaultExecSync,
+): VerifyResult {
   try {
-    const output = execSync(command, {
+    const output = execSyncImpl(command, {
       encoding: "utf-8",
       timeout: 120_000, // 2 min — vitest can be slow
       stdio: ["pipe", "pipe", "pipe"],
@@ -104,7 +107,18 @@ function runVerification(command: string): VerifyResult {
 
 // ── Main workflow ──────────────────────────────────────────────────────
 
-export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
+export interface ImplementAndVerifyDependencies {
+  execSync?: typeof defaultExecSync;
+  injectFewShot?: typeof defaultInjectFewShot;
+}
+
+export function createImplementAndVerifyExecutor(
+  deps: ImplementAndVerifyDependencies = {},
+): (ctx: WorkflowContext) => Promise<WorkflowResult> {
+  const execSyncImpl = deps.execSync ?? defaultExecSync;
+  const injectFewShotImpl = deps.injectFewShot ?? defaultInjectFewShot;
+
+  return async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // Parse input
   let parsed: ParsedInput;
   try {
@@ -128,7 +142,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // EXP-050: Removed stateApproach() wrapping — it added 1.76-3.78x
       // overhead with zero quality benefit. See H-085.
       // EXP-094/095: Inject domain-matched few-shot examples (task-level).
-      const enrichedTask = injectFewShot(task);
+      const enrichedTask = injectFewShotImpl(task);
       coderTask =
         `${enrichedTask}\n\n` +
         `## Verification\n` +
@@ -172,7 +186,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     // ── Verify step ────────────────────────────────────────────────
     ctx.emit({ type: "step_start", step: `verify-attempt-${attempt}` });
 
-    const verify = runVerification(verifyCommand);
+    const verify = runVerification(verifyCommand, execSyncImpl);
 
     if (verify.passed) {
       return ctx.done(
@@ -196,4 +210,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `Verification failed after ${maxAttempts} attempts`,
     { verifyCommand, lastOutput: lastVerifyOutput }
   );
+  };
 }
+
+export const execute = createImplementAndVerifyExecutor();

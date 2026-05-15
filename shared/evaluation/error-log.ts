@@ -73,7 +73,7 @@ export function parseIssueToErrorEntry(
  *
  * @see agents/bob/workspace/brief-structured-error-log.md
  */
-export function appendErrorLogs(result: TaskEvaluationResult, children: ChildSessionInfo[]): void {
+export function appendErrorLogs(result: TaskEvaluationResult, children: ChildSessionInfo[], baseDir = "."): void {
   const timestamp = new Date().toISOString();
 
   for (const child of children) {
@@ -125,7 +125,7 @@ export function appendErrorLogs(result: TaskEvaluationResult, children: ChildSes
     if (entries.length === 0) continue;
 
     // Write to agents/{agent}/ERROR_LOG.jsonl as JSONL
-    const errorLogPath = join("agents", child.agent, "ERROR_LOG.jsonl");
+    const errorLogPath = join(baseDir, "agents", child.agent, "ERROR_LOG.jsonl");
 
     const lines = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
 

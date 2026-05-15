@@ -1,12 +1,5 @@
 import { EventEmitter } from "node:events";
-import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-
-const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
-
-vi.mock("node:child_process", () => ({
-  spawn: spawnMock,
-}));
-
+import { beforeEach, describe, expect, it, vi } from "bun:test";
 import { createSshExecTool } from "../tools/ssh-exec";
 
 function textOf(result: any): string {
@@ -22,15 +15,27 @@ function fakeChild(pid = 12345): any {
   return child;
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe("ssh_exec tool", () => {
+  let spawnMock: any;
+  let killMock: any;
+
   beforeEach(() => {
-    spawnMock.mockReset();
+    spawnMock = vi.fn();
+    killMock = vi.fn(() => true);
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-  });
+  function makeTool() {
+    return createSshExecTool({
+      spawn: spawnMock,
+      kill: killMock,
+      timeoutToMs: (seconds) => seconds,
+      forceKillDelayMs: 5,
+    });
+  }
 
   it("exposes an exact remote command interface", () => {
     const tool = createSshExecTool();
@@ -41,27 +46,24 @@ describe("ssh_exec tool", () => {
   });
 
   it("rejects non-approved hosts before spawning ssh", async () => {
-    const tool = createSshExecTool();
-
-    const result = await tool.execute("t1", { host: "prod", command: "hostname" });
+    const result = await makeTool().execute("t1", { host: "prod", command: "hostname" });
 
     expect(textOf(result)).toContain('SSH host "prod" is not allowed');
+    expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("requires a command", async () => {
-    const tool = createSshExecTool();
-
-    const result = await tool.execute("t1", { host: "devbox", command: "" });
+    const result = await makeTool().execute("t1", { host: "devbox", command: "" });
 
     expect(textOf(result)).toContain("command is required");
+    expect(spawnMock).not.toHaveBeenCalled();
   });
 
   it("spawns ssh in its own process group so timeout can stop remote work", async () => {
-    const tool = createSshExecTool();
     const child = fakeChild();
     spawnMock.mockReturnValue(child);
 
-    const promise = tool.execute("t1", { host: "devbox", command: "hostname" });
+    const promise = makeTool().execute("t1", { host: "devbox", command: "hostname" });
     child.emit("close", 0, null);
     await promise;
 
@@ -71,19 +73,16 @@ describe("ssh_exec tool", () => {
   });
 
   it("settles timed-out ssh commands by terminating the process group", async () => {
-    vi.useFakeTimers();
-    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => true as any);
-    const tool = createSshExecTool();
     const child = fakeChild(2468);
     spawnMock.mockReturnValue(child);
 
-    const promise = tool.execute("t1", { host: "devbox", command: "sleep 100", timeout: 1 });
+    const promise = makeTool().execute("t1", { host: "devbox", command: "sleep 100", timeout: 1 });
 
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(killSpy).toHaveBeenCalledWith(-2468, "SIGTERM");
+    await delay(3);
+    expect(killMock).toHaveBeenCalledWith(-2468, "SIGTERM");
 
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(killSpy).toHaveBeenCalledWith(-2468, "SIGKILL");
+    await delay(8);
+    expect(killMock).toHaveBeenCalledWith(-2468, "SIGKILL");
 
     child.emit("close", null, "SIGTERM");
     const result = await promise;
@@ -93,11 +92,10 @@ describe("ssh_exec tool", () => {
   });
 
   it("does not spawn when the tool call is already aborted", async () => {
-    const tool = createSshExecTool();
     const controller = new AbortController();
     controller.abort();
 
-    const result = await tool.execute("t1", { host: "devbox", command: "hostname" }, controller.signal);
+    const result = await makeTool().execute("t1", { host: "devbox", command: "hostname" }, controller.signal);
 
     expect(spawnMock).not.toHaveBeenCalled();
     expect(textOf(result)).toContain("[aborted]");
@@ -105,20 +103,17 @@ describe("ssh_exec tool", () => {
   });
 
   it("terminates the ssh process group when the tool call is aborted", async () => {
-    vi.useFakeTimers();
-    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => true as any);
-    const tool = createSshExecTool();
     const child = fakeChild(1357);
     const controller = new AbortController();
     spawnMock.mockReturnValue(child);
 
-    const promise = tool.execute("t1", { host: "devbox", command: "sleep 100", timeout: 60 }, controller.signal);
+    const promise = makeTool().execute("t1", { host: "devbox", command: "sleep 100", timeout: 60 }, controller.signal);
 
     controller.abort();
-    expect(killSpy).toHaveBeenCalledWith(-1357, "SIGTERM");
+    expect(killMock).toHaveBeenCalledWith(-1357, "SIGTERM");
 
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(killSpy).toHaveBeenCalledWith(-1357, "SIGKILL");
+    await delay(8);
+    expect(killMock).toHaveBeenCalledWith(-1357, "SIGKILL");
 
     child.emit("close", null, "SIGTERM");
     const result = await promise;

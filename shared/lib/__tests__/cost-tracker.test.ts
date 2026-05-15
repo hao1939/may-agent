@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { recordUsage, getUsageSummary } from '../cost-tracker.js';
 import { unlinkSync } from 'fs';
 import { tmpdir } from 'os';

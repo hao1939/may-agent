@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test Gate: Regression guard for 95/95 test file baseline
+# Test Gate: Regression guard for the curated Bun app health suite
 # Exits non-zero if any test fails
 
 set -euo pipefail
@@ -9,14 +9,16 @@ cd "$(dirname "$0")/.."
 echo "🧪 Running test gate..."
 echo "========================"
 
-OUTPUT=$(npx vitest run 2>&1) || true
-EXIT_CODE=${PIPESTATUS[0]:-$?}
+set +e
+OUTPUT=$(cd .. && bun run test 2>&1)
+EXIT_CODE=$?
+set -e
 
 # Extract summary line
-SUMMARY=$(echo "$OUTPUT" | grep -E "Test Files" || echo "No summary found")
+SUMMARY=$(echo "$OUTPUT" | grep -E "[0-9]+ pass" | tail -1 || echo "No summary found")
 echo "$SUMMARY"
 
-if echo "$OUTPUT" | grep -q "Test Files.*failed"; then
+if [ "${EXIT_CODE}" -ne 0 ]; then
   echo ""
   echo "❌ TEST GATE FAILED"
   echo "Failing tests:"

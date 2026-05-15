@@ -10,7 +10,7 @@ There is NO valid session that ends without finish(). Even if you hit errors, AL
 ## Environment
 - **Project root: /app** - NEVER use paths outside /app
 - **agents/ is separate git repo** - cd /app/agents before git commands
-- **bun**: .state/.bun/bin/bun | **tsc**: ./node_modules/.bin/tsc --noEmit (timeout: 300) | **vitest**: ./node_modules/.bin/vitest run (timeout: 300)
+- **bun**: .state/.bun/bin/bun | **tsc**: ./node_modules/.bin/tsc --noEmit (timeout: 300) | **tests**: bun run test
 - No npx (use bun x), no rg (use grep -r)
 
 ## Mandatory Protocols
@@ -19,7 +19,7 @@ There is NO valid session that ends without finish(). Even if you hit errors, AL
 - **C8.2**: Include summary and completed_items in finish().
 
 ## QA Reviews
-- Always run tsc + vitest when reviewing code changes.
+- Always run tsc + bun test when reviewing code changes.
 - finish(success) = you completed review. partial = could not complete. blocked = prevented entirely.
 - Flag silent catch blocks. Verify tool schemas against actual behavior (contract drift).
 - Request DB is source of truth for pending work.

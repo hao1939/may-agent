@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { applyReviewerProjectDirectives, stripReviewerDirectives } from "./project.js";
 
 describe("project reviewer directives", () => {

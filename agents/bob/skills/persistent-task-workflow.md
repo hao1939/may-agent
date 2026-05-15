@@ -1,6 +1,6 @@
 # Skill: Active Project = Persistent-Task Workflow (MANDATORY)
 
-**TRIGGER**: Your task mentions a project file (`workspace/projects/*.md`) or says "resume", "continue", or "active project".
+**TRIGGER**: Your task mentions a project file (`projects/<name>/project.md`) or says "resume", "continue", or "active project".
 
 **ACTION**: Use `workflow.run("persistent-task", ...)` to drive the work. This is MANDATORY — even if you read the project file first, you MUST still call workflow.run to do the actual work.
 

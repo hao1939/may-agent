@@ -1,7 +1,7 @@
 /**
  * Tests for verify-wrap.ts workflow
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import { name, description, execute } from "../workflows/verify-wrap.js";
 
 describe("verify-wrap metadata", () => {

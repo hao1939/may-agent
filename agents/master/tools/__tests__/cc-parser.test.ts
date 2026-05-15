@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { parseCCStream, formatEnvelope } from "../cc-stream-parser";
 
 describe("parseCCStream", () => {

@@ -18,7 +18,7 @@ You keep the codebase healthy, simple, and working.
 Pick 2-3. Check the code and data.
 
 **Code health:**
-- Are there TypeScript errors in the build? Run `npx tsc --noEmit` and fix them.
+- Are there TypeScript errors in the build? Run `bun run typecheck` and fix them.
 - Is there dead code that should be removed? What was added recently that nobody uses?
 - Are there files in the wrong place? (agent logic in src/, infra code in agents/)
 

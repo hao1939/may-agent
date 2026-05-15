@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 
 // Import the guard module
 const guardModule = await import("../guards/verify-after-write.ts");

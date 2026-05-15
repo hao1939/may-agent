@@ -15,10 +15,14 @@ function truncateMiddle(text: string, max: number): string {
   return `${text.slice(0, head)}\n\n... <truncated ${text.length - head - tail} chars> ...\n\n${text.slice(-tail)}`;
 }
 
-function stopChildProcessGroup(child: ReturnType<typeof spawn>, signal: NodeJS.Signals): void {
+function stopChildProcessGroup(
+  child: ReturnType<typeof spawn>,
+  signal: NodeJS.Signals,
+  kill: typeof process.kill = process.kill,
+): void {
   if (child.pid) {
     try {
-      process.kill(-child.pid, signal);
+      kill(-child.pid, signal);
       return;
     } catch {
       // Fall back to killing the direct child below.
@@ -27,7 +31,18 @@ function stopChildProcessGroup(child: ReturnType<typeof spawn>, signal: NodeJS.S
   child.kill(signal);
 }
 
-export function createSshExecTool() {
+export interface SshExecToolDependencies {
+  spawn?: typeof spawn;
+  kill?: typeof process.kill;
+  timeoutToMs?: (seconds: number) => number;
+  forceKillDelayMs?: number;
+}
+
+export function createSshExecTool(deps: SshExecToolDependencies = {}) {
+  const spawnImpl = deps.spawn ?? spawn;
+  const killImpl = deps.kill ?? process.kill;
+  const timeoutToMs = deps.timeoutToMs ?? ((seconds: number) => Math.max(1, seconds) * 1000);
+  const forceKillDelayMs = deps.forceKillDelayMs ?? 5000;
   return {
     name: "ssh_exec",
     label: "SSH Exec",
@@ -89,7 +104,7 @@ export function createSshExecTool() {
         };
         if (process.getuid?.() === 0) spawnOpts.uid = 1000;
 
-        const child = spawn("ssh", sshArgs, spawnOpts);
+        const child = spawnImpl("ssh", sshArgs, spawnOpts);
 
         const stdout: string[] = [];
         const stderr: string[] = [];
@@ -100,14 +115,14 @@ export function createSshExecTool() {
         const stop = (reason: "timeout" | "abort") => {
           if (reason === "timeout") timedOut = true;
           if (reason === "abort") aborted = true;
-          stopChildProcessGroup(child, "SIGTERM");
+          stopChildProcessGroup(child, "SIGTERM", killImpl);
           if (forceKillTimer) return;
           forceKillTimer = setTimeout(() => {
-            stopChildProcessGroup(child, "SIGKILL");
-          }, 5000);
+            stopChildProcessGroup(child, "SIGKILL", killImpl);
+          }, forceKillDelayMs);
         };
 
-        const timer = setTimeout(() => stop("timeout"), Math.max(1, timeoutSec) * 1000);
+        const timer = setTimeout(() => stop("timeout"), timeoutToMs(timeoutSec));
         const abortHandler = () => stop("abort");
         signal?.addEventListener("abort", abortHandler, { once: true });
 

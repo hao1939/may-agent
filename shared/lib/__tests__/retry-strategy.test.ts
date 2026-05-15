@@ -1,5 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach, setSystemTime } from 'bun:test';
 import { retry, createCircuitBreaker } from '../retry-strategy.js';
+
+afterEach(() => {
+  setSystemTime();
+});
 
 describe('retry', () => {
   it('succeeds on first try', async () => {
@@ -10,10 +14,12 @@ describe('retry', () => {
   });
 
   it('retries on failure and eventually succeeds', async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce(new Error('fail1'))
-      .mockRejectedValueOnce(new Error('fail2'))
-      .mockResolvedValue('ok');
+    const outcomes: Array<Error | string> = [new Error('fail1'), new Error('fail2'), 'ok'];
+    const fn = vi.fn(async () => {
+      const next = outcomes.shift();
+      if (next instanceof Error) throw next;
+      return next;
+    });
     const result = await retry(fn, { maxAttempts: 3, baseDelayMs: 1 });
     expect(result).toBe('ok');
     expect(fn).toHaveBeenCalledTimes(3);
@@ -48,17 +54,18 @@ describe('createCircuitBreaker', () => {
   });
 
   it('resets after resetMs', async () => {
-    vi.useFakeTimers();
+    const now = Date.now();
+    setSystemTime(now);
     const cb = createCircuitBreaker({ threshold: 1, resetMs: 100 });
     await expect(cb.execute(() => Promise.reject(new Error('x')))).rejects.toThrow();
     expect(cb.getState()).toBe('open');
-    vi.advanceTimersByTime(100);
+    setSystemTime(now + 100);
     expect(cb.getState()).toBe('half-open');
     // Successful call in half-open resets to closed
     const result = await cb.execute(() => Promise.resolve('ok'));
     expect(result).toBe('ok');
     expect(cb.getState()).toBe('closed');
-    vi.useRealTimers();
+    setSystemTime();
   });
 
   it('manual reset works', async () => {

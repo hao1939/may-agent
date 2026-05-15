@@ -56,7 +56,7 @@ Don't start editing code yourself unless the fix is trivially small (< 3 lines) 
 ```
 # Good: analysis + action in same response
 "I see the boundary inconsistency on line 73. Running tests to confirm:"
-[tool_call: bash "npx vitest --run ..."]
+[tool_call: bash "bun run test"]
 
 # Bad: analysis only, no action
 "I see the boundary inconsistency on line 73. Let me run the tests to confirm."
@@ -69,7 +69,7 @@ Don't start editing code yourself unless the fix is trivially small (< 3 lines) 
 
 **Rule:** Before your final message reporting success, you MUST run verification yourself:
 1. `tsc --noEmit` → must exit 0
-2. `npx vitest --run` → must pass
+2. `bun run test` → must pass
 3. Intent-specific check: read the changed file, run the feature, confirm the *ask* was met (not just that code compiles)
 4. Quote the evidence in your completion message (exit codes, test counts, specific output)
 
@@ -78,7 +78,7 @@ Don't start editing code yourself unless the fix is trivially small (< 3 lines) 
 ```
 # Good: verify then report
 exec tsc --noEmit        # exit 0
-exec npx vitest --run    # 1057 tests pass
+exec bun run test    # 1057 tests pass
 exec grep 'newField' src/lib/types.ts  # confirms intent
 "Done. tsc clean, 1057 tests pass, newField confirmed in types.ts line 42."
 

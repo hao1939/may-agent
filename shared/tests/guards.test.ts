@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach } from "bun:test";
 
 // We'll import the guard modules directly
 // Since they export `guard: WorkflowGuard`, we test the handle() function

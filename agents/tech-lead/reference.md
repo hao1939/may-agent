@@ -30,7 +30,7 @@ workflow.run("implement-and-verify", "Implement <feature> from dispatch-board. F
 **Multi-step delivery:**
 ```javascript
 workflow.run("persistent-task", `
-project: agents/tech-lead/workspace/projects/<feature>.md
+project: projects/<feature>/project.md
 owner: tech-lead
 worker: coder
 goal: <implementation goal>
@@ -61,7 +61,7 @@ On every other heartbeat, prioritize feature delivery over infra/exploration:
 - Post-dispatch continuation: after forking, exit within 3 ops.
 
 ### Active Persistent Tasks
-Check `agents/tech-lead/workspace/projects/` for Status: active/paused/blocked.
+Check `/app/projects/` for tech-lead-owned projects with Status: active/paused/blocked.
 - Active: resume with `workflow.run("persistent-task", ...)`
 - Paused: read file, decide resume or cancel
 - Blocked: read blocker, dispatch fix, then resume

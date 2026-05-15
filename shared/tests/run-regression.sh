@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression gate script — runs full vitest suite and outputs pass/fail summary
+# Regression gate script — runs the Bun test suite and outputs pass/fail summary
 # Usage: ./run-regression.sh
 # Exit code: 0 = all pass, 1 = failures detected
 
@@ -13,13 +13,13 @@ echo "  REGRESSION GATE — ${TIMESTAMP}"
 echo "═══════════════════════════════════════════════════"
 echo ""
 
-# Run vitest and capture output
-OUTPUT=$(cd "$SCRIPT_DIR" && npx vitest run 2>&1)
+# Run Bun tests and capture output
+OUTPUT=$(cd "$SCRIPT_DIR/.." && bun run test 2>&1)
 EXIT_CODE=$?
 
-# Extract summary line (e.g., "Tests  1509 passed (1509)")
-TESTS_LINE=$(echo "$OUTPUT" | grep -E "Tests\s+" | tail -1)
-FILES_LINE=$(echo "$OUTPUT" | grep -E "Test Files\s+" | tail -1)
+# Extract the Bun runner summary lines.
+TESTS_LINE=$(echo "$OUTPUT" | grep -E "[0-9]+ pass" | tail -1)
+FILES_LINE=$(echo "$OUTPUT" | grep -E "[0-9]+ files?" | tail -1 || true)
 
 echo "$FILES_LINE"
 echo "$TESTS_LINE"

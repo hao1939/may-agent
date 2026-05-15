@@ -1,15 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "bun:test";
 import {
   extractErrorCodes,
   parseIssueToErrorEntry,
   appendErrorLogs,
 } from "../evaluation/error-log.js";
-
-vi.mock("node:fs", async () => {
-  const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
-  return { ...actual, appendFileSync: vi.fn(), mkdirSync: vi.fn() };
-});
-import { appendFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 describe("extractErrorCodes", () => {
   it("extracts FM codes from issue string", () => {
@@ -41,7 +38,9 @@ describe("parseIssueToErrorEntry", () => {
 });
 
 describe("appendErrorLogs", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  function tempRoot(): string {
+    return mkdtempSync(join(tmpdir(), "error-log-test-"));
+  }
 
   it("writes JSONL entries for agents with FM-coded issues", () => {
     const result = {
@@ -50,13 +49,15 @@ describe("appendErrorLogs", () => {
       },
     } as any;
     const children = [{ sessionId: "sess-1", agent: "coder" }] as any;
-    appendErrorLogs(result, children);
-    expect(mkdirSync).toHaveBeenCalled();
-    expect(appendFileSync).toHaveBeenCalledWith(
-      expect.stringContaining("ERROR_LOG.jsonl"),
-      expect.stringContaining("FM-1.2"),
-      "utf-8"
-    );
+    const root = tempRoot();
+    try {
+      appendErrorLogs(result, children, root);
+      const log = readFileSync(join(root, "agents", "coder", "ERROR_LOG.jsonl"), "utf-8");
+      expect(log).toContain("FM-1.2");
+      expect(log).toContain("WRONG");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("skips agents with no FM-coded issues", () => {
@@ -66,19 +67,31 @@ describe("appendErrorLogs", () => {
       },
     } as any;
     const children = [{ sessionId: "sess-1", agent: "coder" }] as any;
-    appendErrorLogs(result, children);
-    expect(appendFileSync).not.toHaveBeenCalled();
+    const root = tempRoot();
+    try {
+      appendErrorLogs(result, children, root);
+      expect(() => readFileSync(join(root, "agents", "coder", "ERROR_LOG.jsonl"), "utf-8")).toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("skips agents not in result", () => {
     const result = { agents: {} } as any;
     const children = [{ sessionId: "sess-1", agent: "coder" }] as any;
-    appendErrorLogs(result, children);
-    expect(appendFileSync).not.toHaveBeenCalled();
+    const root = tempRoot();
+    try {
+      appendErrorLogs(result, children, root);
+      expect(() => readFileSync(join(root, "agents", "coder", "ERROR_LOG.jsonl"), "utf-8")).toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("handles appendFileSync errors gracefully", () => {
-    (appendFileSync as any).mockImplementation(() => { throw new Error("EACCES"); });
+    const dir = tempRoot();
+    const root = join(dir, "not-a-dir");
+    writeFileSync(root, "blocks mkdir");
     const result = {
       agents: {
         "sess-1": { score: 3, issues: ["[FM-1.2][X] y"], suggestions: [] },
@@ -86,6 +99,6 @@ describe("appendErrorLogs", () => {
     } as any;
     const children = [{ sessionId: "sess-1", agent: "coder" }] as any;
     // Should not throw
-    expect(() => appendErrorLogs(result, children)).not.toThrow();
+    expect(() => appendErrorLogs(result, children, root)).not.toThrow();
   });
 });

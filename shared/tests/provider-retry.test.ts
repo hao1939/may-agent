@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "bun:test";
 import {
   classifyError,
   isRetryableError,
@@ -90,10 +90,16 @@ describe("withRetry", () => {
   });
 
   it("retries on retryable error and succeeds", async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce({ status: 429, message: "rate limited" })
-      .mockRejectedValueOnce({ status: 500, message: "server error" })
-      .mockResolvedValue("ok");
+    const outcomes: Array<any> = [
+      { status: 429, message: "rate limited" },
+      { status: 500, message: "server error" },
+      "ok",
+    ];
+    const fn = vi.fn(async () => {
+      const next = outcomes.shift();
+      if (typeof next === "string") return next;
+      throw next;
+    });
 
     const result = await withRetry(fn, { maxRetries: 3, baseDelayMs: 10 });
     expect(result.success).toBe(true);
@@ -124,9 +130,14 @@ describe("withRetry", () => {
 
   it("calls onRetry callback", async () => {
     const onRetry = vi.fn();
-    const fn = vi.fn()
-      .mockRejectedValueOnce(new Error("timeout"))
-      .mockResolvedValue("ok");
+    let first = true;
+    const fn = vi.fn(async () => {
+      if (first) {
+        first = false;
+        throw new Error("timeout");
+      }
+      return "ok";
+    });
 
     await withRetry(fn, { maxRetries: 3, baseDelayMs: 10, onRetry });
     expect(onRetry).toHaveBeenCalledTimes(1);
@@ -151,9 +162,14 @@ describe("withRetry", () => {
   });
 
   it("tracks totalDelayMs", async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce(new Error("timeout"))
-      .mockResolvedValue("ok");
+    let first = true;
+    const fn = vi.fn(async () => {
+      if (first) {
+        first = false;
+        throw new Error("timeout");
+      }
+      return "ok";
+    });
 
     const result = await withRetry(fn, { maxRetries: 3, baseDelayMs: 10 });
     expect(result.totalDelayMs).toBeGreaterThan(0);
@@ -162,9 +178,14 @@ describe("withRetry", () => {
 
 describe("withRetryWrapper", () => {
   it("wraps a function with retry behavior", async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce(new Error("timeout"))
-      .mockResolvedValue("result");
+    let first = true;
+    const fn = vi.fn(async () => {
+      if (first) {
+        first = false;
+        throw new Error("timeout");
+      }
+      return "result";
+    });
 
     const wrapped = withRetryWrapper(fn, { maxRetries: 3, baseDelayMs: 10 });
     const result = await wrapped("arg1", "arg2");

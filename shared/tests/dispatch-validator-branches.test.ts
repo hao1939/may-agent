@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { validateDispatch, isDispatchable } from "../workflows/dispatch-validator.ts";
 
 describe("dispatch-validator uncovered branches", () => {
