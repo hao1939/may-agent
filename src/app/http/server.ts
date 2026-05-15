@@ -3,7 +3,7 @@
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
  * Can run standalone: bun src/app/http/server.ts --state-dir .state --port 8080
- * Imported by app modes; not exported by packages/webui.
+ * Imported by app modes; serves project UI from PROJECTS_ROOT.
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -17,7 +17,7 @@ declare const Bun: {
   }): { port: number };
 };
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
-import { join, resolve, dirname } from "node:path";
+import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
@@ -988,18 +988,101 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  function serveIndex(): Response {
-    const candidates = [
-      join(dirname(new URL(import.meta.url).pathname), "..", "webui", "static", "index.html"),
-      resolve(PROJECT_ROOT, "packages", "webui", "static", "index.html"),
-      join(STATE_DIR, "..", "packages", "webui", "static", "index.html"),
-      "/usr/local/share/may-agent-web/static/index.html",
-    ];
-    for (const p of candidates) {
-      if (existsSync(p))
-        return new Response(readFileSync(p, "utf-8"), { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" } });
+  function contentTypeFor(path: string): string {
+    switch (extname(path).toLowerCase()) {
+      case ".html": return "text/html; charset=utf-8";
+      case ".css": return "text/css; charset=utf-8";
+      case ".js": return "text/javascript; charset=utf-8";
+      case ".json": return "application/json; charset=utf-8";
+      case ".md": return "text/markdown; charset=utf-8";
+      case ".txt": return "text/plain; charset=utf-8";
+      case ".svg": return "image/svg+xml";
+      case ".png": return "image/png";
+      case ".jpg":
+      case ".jpeg": return "image/jpeg";
+      case ".gif": return "image/gif";
+      case ".webp": return "image/webp";
+      case ".ico": return "image/x-icon";
+      default: return "application/octet-stream";
     }
-    return new Response("index.html not found", { status: 404 });
+  }
+
+  function htmlEscape(value: string): string {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function isInsideProjectsRoot(path: string): boolean {
+    const rel = relative(PROJECTS_ROOT, path);
+    return rel === "" || (!rel.startsWith("..") && !rel.startsWith("/"));
+  }
+
+  function projectStaticPathFromUrl(pathname: string): string | null {
+    const raw = pathname === "/projects" ? "" : pathname.replace(/^\/projects\/?/, "");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  function serveFile(path: string): Response {
+    return new Response(readFileSync(path), {
+      headers: {
+        "Content-Type": contentTypeFor(path),
+        "Cache-Control": "no-cache",
+      },
+    });
+  }
+
+  function serveProjectDirectory(path: string, urlPath: string): Response {
+    const indexPath = join(path, "index.html");
+    if (existsSync(indexPath) && statSync(indexPath).isFile()) return serveFile(indexPath);
+
+    const normalizedUrlPath = urlPath.endsWith("/") ? urlPath : `${urlPath}/`;
+    const rel = relative(PROJECTS_ROOT, path);
+    const title = rel ? `/projects/${rel}` : "/projects";
+    const parent = rel ? `<li><a href="${htmlEscape(normalizedUrlPath)}../">../</a></li>` : "";
+    const entries = readdirSync(path)
+      .map((name) => {
+        const fullPath = join(path, name);
+        const stat = statSync(fullPath);
+        return { name, isDir: stat.isDirectory(), size: stat.size };
+      })
+      .sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name));
+    const rows = entries.map((entry) => {
+      const href = `${normalizedUrlPath}${encodeURIComponent(entry.name)}${entry.isDir ? "/" : ""}`;
+      const label = `${entry.name}${entry.isDir ? "/" : ""}`;
+      const meta = entry.isDir ? "dir" : `${entry.size} bytes`;
+      return `<li><a href="${htmlEscape(href)}">${htmlEscape(label)}</a> <span>${htmlEscape(meta)}</span></li>`;
+    }).join("\n");
+    return new Response(`<!doctype html>
+<html><head><meta charset="utf-8"><title>${htmlEscape(title)}</title>
+<style>body{font:14px system-ui,sans-serif;margin:32px;line-height:1.5}a{color:#0969da;text-decoration:none}a:hover{text-decoration:underline}ul{list-style:none;padding:0}li{padding:4px 0;border-bottom:1px solid #eee}span{color:#666;margin-left:12px;font-size:12px}</style>
+</head><body><h1>${htmlEscape(title)}</h1><ul>${parent}${rows}</ul></body></html>`, {
+      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" },
+    });
+  }
+
+  function serveProjectStatic(pathname: string): Response {
+    const relPath = projectStaticPathFromUrl(pathname);
+    if (relPath === null) return new Response("Bad path", { status: 400 });
+    const absPath = resolve(PROJECTS_ROOT, relPath);
+    if (!isInsideProjectsRoot(absPath)) return new Response("Forbidden", { status: 403 });
+    if (!existsSync(absPath)) return new Response("Not found", { status: 404 });
+    const stat = statSync(absPath);
+    if (stat.isDirectory()) return serveProjectDirectory(absPath, pathname);
+    if (stat.isFile()) return serveFile(absPath);
+    return new Response("Not found", { status: 404 });
+  }
+
+  function serveIndex(): Response {
+    const mayAgentUi = resolve(PROJECTS_ROOT, "may-agent", "ui", "index.html");
+    if (existsSync(mayAgentUi)) return serveFile(mayAgentUi);
+    return serveProjectStatic("/projects");
   }
 
   function handleProjects(): Response {
@@ -2164,7 +2247,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (alertResolveMatch) return handleAlertResolve(req, alertResolveMatch[1]);
       }
 
-      if (url.pathname === "/" || url.pathname === "/index.html") return serveIndex();
+      if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return serveIndex();
+      if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/"))) return serveProjectStatic(url.pathname);
       return new Response("Not found", { status: 404 });
     },
     websocket: {

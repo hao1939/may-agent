@@ -21,7 +21,6 @@ services:
     volumes:
       - /app:/app
       - ../packages/control:/app/packages/control
-      - ../packages/webui:/app/packages/webui
       - /home/example-user/litellm/github_copilot:/app/.copilot:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
