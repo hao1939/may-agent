@@ -34,7 +34,7 @@ System architecture and subsystem designs.
 | [events.md](2a-design/events.md) | Event-native architecture: immutable events, inbox, event types |
 | [sessions.md](2a-design/sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
 | [runtime.md](2a-design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
-| [metrics.md](2a-design/metrics.md) | Metrics pipeline: schema, snapshots, alerts, health metrics |
+| [metrics.md](2a-design/metrics.md) | Metrics: schema, pipeline, alerts, registry, balanced pairs, blind spots |
 | [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
 | [heartbeat.md](2a-design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
 | [agents.md](2a-design/agents.md) | Agent cooperation: call/message, session tree, context |
@@ -44,19 +44,14 @@ System architecture and subsystem designs.
 
 | Doc | Status | What |
 |-----|--------|------|
-| [infra-surface.md](2a-design/infra-surface.md) | Accepted | North-star: infra primitives, agent patterns, SDK/control surfaces |
-| [infra-surface-refactor-plan.md](2a-design/infra-surface-refactor-plan.md) | Active tracker | Phased implementation tracker for infra surface boundaries |
-| [unified-events.md](2a-design/unified-events.md) | Shipped | Unified event taxonomy |
-| [guards-as-signals.md](2a-design/guards-as-signals.md) | Shipped (partial) | Guards as detection signals with default observability |
-| [agent-metrics.md](2a-design/agent-metrics.md) | Approved | Metrics as system vitals; project metrics with balanced pairs |
-| [heartbeat-as-agency.md](2a-design/heartbeat-as-agency.md) | Shipped | Heartbeats as the moments agents are autonomous |
+| [system-boundary.md](2a-design/system-boundary.md) | Accepted | North-star: infra primitives, agent patterns, SDK/control surfaces |
+| [system-boundary-tracker.md](2a-design/system-boundary-tracker.md) | Active tracker | Phased implementation tracker for system boundary |
+| [guards.md](2a-design/guards.md) | Shipped (partial) | Guards as detection signals with default observability |
 | [escalation.md](2a-design/escalation.md) | Partial | Basic routing shipped; lifecycle proposed |
 | [telegram-notifications.md](2a-design/telegram-notifications.md) | Partial | Envelope shipped; enrichment proposed |
-| [webui.md](2a-design/webui.md) | Shipped (partial) | Web UI design |
-| [webui-agents-metrics-tabs.md](2a-design/webui-agents-metrics-tabs.md) | Shipped | Agents/projects/metrics as first-class nav resources |
-| [webui-operator-goals.md](2a-design/webui-operator-goals.md) | Draft | Operator-goal-driven UI redesign |
-| [http-api-webui-boundary.md](2a-design/http-api-webui-boundary.md) | Accepted | Separate HTTP adapter from webui package |
-| [handler-surface-audit.md](2a-design/handler-surface-audit.md) | First slice | Handler infra surface audit |
+| [webui.md](2a-design/webui.md) | Shipped (partial) | Web UI design: surfaces, steering, nav |
+| [http-boundary.md](2a-design/http-boundary.md) | Accepted | Separate HTTP adapter from webui package |
+| [handler-audit.md](2a-design/handler-audit.md) | First slice | Handler infra surface audit |
 
 ## Tier 2 — Manual
 
@@ -85,6 +80,23 @@ Proposals under consideration and historical docs preserved for context.
 
 ---
 
+## Archive
+
+Superseded and retired docs in `2a-design/archive-legacy-shared-designs/`:
+
+- `master-worker.md` — retired persistent worker/reviewer design
+- `project-focused-architecture.md` — absorbed into `projects.md` + `architecture.md`
+- `infra-surface-implementation-plan.md` — superseded by `system-boundary-tracker.md`
+- `unified-command-interface.md` — superseded by `packages/control` event frames
+- `agent-metrics.md` — merged into `metrics.md`
+- `unified-events.md` — operational status merged into `events.md`
+- `webui-agents-metrics-tabs.md` — merged into `webui.md`
+- `webui-operator-goals.md` — merged into `webui.md`
+- `heartbeat-as-agency.md` — merged into `heartbeat.md`
+- `guard-escalation-override.md`, `guard-review-process.md` — early guard designs
+
+---
+
 ## Quick Lookup
 
 | Need | Read |
@@ -92,5 +104,5 @@ Proposals under consideration and historical docs preserved for context.
 | Operate or debug a running instance | [user-guide.md](2b-manual/user-guide.md), [metrics.md](2a-design/metrics.md), [runtime.md](2a-design/runtime.md) |
 | Handle an alert | [metric-alerts.md](2b-manual/metric-alerts.md), [metrics.md](2a-design/metrics.md), [events.md](2a-design/events.md) |
 | Write behavior | [work-model.md](1-principles/work-model.md), [workflow-authoring.md](2b-manual/workflow-authoring.md), [handler-authoring.md](2b-manual/handler-authoring.md) |
-| Change infra boundaries | [architecture.md](2a-design/architecture.md), [infra-surface.md](2a-design/infra-surface.md) |
+| Change infra boundaries | [architecture.md](2a-design/architecture.md), [system-boundary.md](2a-design/system-boundary.md) |
 | Update agent conventions | [agent-convention.md](2b-manual/agent-convention.md), [heartbeat.md](2a-design/heartbeat.md), [projects.md](2a-design/projects.md) |

@@ -28,7 +28,7 @@ Owner means: if this falls on the floor, it's your problem. Owners don't do all 
 
 Agents exist as **accountability boundaries**. We don't have multiple agents because we need multiple workers — any LLM can do anything. We have separate agents because we need distinct owners who accumulate domain context, watch domain metrics, and are the definitive answer to "who's responsible for this?"
 
-**Elaborated in:** [metrics.md](../2a-design/metrics.md), [design/agent-metrics.md](../2a-design/agent-metrics.md)
+**Elaborated in:** [metrics.md](../2a-design/metrics.md), [design/metrics.md](../2a-design/metrics.md)
 
 ## 3. Events must be consumed
 

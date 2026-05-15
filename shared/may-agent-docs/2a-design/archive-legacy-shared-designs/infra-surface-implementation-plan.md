@@ -1,13 +1,13 @@
 # Infra Surface Implementation Plan
 
 **Status**: Historical. Superseded by
-[infra-surface-refactor-plan.md](infra-surface-refactor-plan.md).
+[system-boundary-tracker.md](../system-boundary-tracker.md).
 
 This file used to track early implementation slices for
-[infra-surface.md](infra-surface.md). Its useful content has been folded into
-the canonical refactor plan so agents do not have to reconcile multiple active
+[system-boundary.md](../system-boundary.md). Its useful content has been folded into
+the canonical tracker so agents do not have to reconcile multiple active
 plans.
 
 Do not add new work here. Update
-[infra-surface-refactor-plan.md](infra-surface-refactor-plan.md) instead.
+[system-boundary-tracker.md](../system-boundary-tracker.md) instead.
 

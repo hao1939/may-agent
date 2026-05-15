@@ -38,8 +38,8 @@ Docs follow a hierarchy of truth. Higher tiers govern lower tiers — conflicts 
 ### I want to change infra
 
 1. [design/architecture.md](2a-design/architecture.md) — current system architecture
-2. [design/infra-surface.md](2a-design/infra-surface.md) — north-star infra boundary
-3. [design/infra-surface-refactor-plan.md](2a-design/infra-surface-refactor-plan.md) — active tracker
+2. [design/system-boundary.md](2a-design/system-boundary.md) — north-star infra boundary
+3. [design/system-boundary-tracker.md](2a-design/system-boundary-tracker.md) — active tracker
 4. [design/events.md](2a-design/events.md), [design/sessions.md](2a-design/sessions.md), [design/cron.md](2a-design/cron.md) — subsystem details
 
 See [INDEX.md](INDEX.md) for complete navigation.

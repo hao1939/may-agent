@@ -19,7 +19,7 @@ Metrics do not directly drive work or make decisions. The unified work model is:
 - The agent **judges** what the signal means using goal, facts, history, and a causal theory, then acts, records evidence, or escalates.
 - Only **P0 (urgent) metrics fork the agent directly**, bypassing the heartbeat. Everything else waits for the agent to look.
 
-This is intentional — see `heartbeat-as-agency.md`. Forking on every breach makes agents reactive; deferring to heartbeats makes them deliberative. Metrics are vitals, not pagers.
+This is intentional — see `heartbeat.md`. Forking on every breach makes agents reactive; deferring to heartbeats makes them deliberative. Metrics are vitals, not pagers.
 
 ## Architecture
 

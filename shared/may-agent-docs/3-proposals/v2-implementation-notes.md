@@ -1,7 +1,7 @@
 # v2 Implementation Notes (Historical — as of v0.2)
 
 **Status**: Historical — written during v0.2 migration. For current direction, see
-[infra-surface.md](../2a-design/infra-surface.md).
+[system-boundary.md](../2a-design/system-boundary.md).
 
 > **⚠️ Historical document.** Written during v0.2 migration. The system has since evolved:
 > - `SubagentManager` was rewritten (not just wrapped)

@@ -4,7 +4,7 @@
 plan for the infra surface work. The older implementation tracker has been
 folded into this file; the gap mitigation notes are incorporated here.
 
-This plan pushes [infra-surface.md](infra-surface.md) from accepted direction to
+This plan pushes [system-boundary.md](system-boundary.md) from accepted direction to
 boring runtime behavior. It is not a rewrite plan. Each slice should remove one
 source of boundary confusion and leave visible evidence that the system is
 easier to operate.
@@ -20,7 +20,7 @@ judges.
 
 ## Plan Boundaries
 
-- [infra-surface.md](infra-surface.md) is the north-star design.
+- [system-boundary.md](system-boundary.md) is the north-star design.
 - This file is the implementation tracker and review plan.
 - `infra-surface-implementation-plan.md` (archived) was the earlier tracker
   and should not be updated with new work.
@@ -84,7 +84,7 @@ old gaps.
 
 Scope:
 
-- Update [infra-surface.md](infra-surface.md) so shipped work is described as
+- Update [system-boundary.md](system-boundary.md) so shipped work is described as
   current state, not future work.
 - Keep detailed status in this tracker.
 - Mark `sdk.query`, `packages/control`, convention-path operator emit,
@@ -93,7 +93,7 @@ Scope:
 
 Validation:
 
-- A reviewer can read `infra-surface.md` for the model and this file for work
+- A reviewer can read `system-boundary.md` for the model and this file for work
   state without finding contradictory "next gaps."
 
 ## Working Rules
@@ -308,7 +308,7 @@ the generic workflow handler.
 
 Goal: handlers are bridges. Judgment and repair live in workflows.
 
-Reference: [handler-surface-audit.md](handler-surface-audit.md).
+Reference: [handler-audit.md](handler-audit.md).
 
 First migration: `metric-alert-reactor`. It is the most self-contained
 judgment/action bridge and its loop trace value is immediately visible.
@@ -794,7 +794,7 @@ Second slice, 2026-05-11:
   - `manual/workflow-authoring.md` lists current reusable shared patterns
     (`project`, `metric-alert-triage`, `implement-and-verify`) instead of
     advertising `master-worker`.
-  - `design/unified-events.md` describes `project.iteration` as default
+  - `design/events.md` describes `project.iteration` as default
     `project` output plus legacy compatibility shape.
 - Test fixture for normal project scanning now uses `workflow: project` so tests
   do not keep teaching the legacy workflow as the normal active case.

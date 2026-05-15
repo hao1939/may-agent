@@ -165,3 +165,62 @@ path: normalize at the edge, persist via the bus, and let subscribers react.
   the boundary rather than teaching agents multiple names.
 - Event payload examples should use IDs and owner/context fields, not embedded
   metric/session objects, unless the payload truly needs the full object.
+
+## Operational Status (appendix, refreshed 2026-05-07)
+
+This section reflects what the runtime actually emits and consumes, so readers do
+not mistake the taxonomy above for a live wiring diagram. Keep this table in sync
+when the wiring changes; the taxonomy is aspirational when it disagrees with this
+table.
+
+### Emitter Reality
+
+Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current numbers.
+
+| Event type | Emitted by | Status |
+|---|---|---|
+| `handler.started` | cron runner on every handler invocation | ✅ live |
+| `handler.completed` | cron runner at handler success | ✅ live |
+| `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
+| `project.iteration` | `project.ts` on the default project path; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live default plus legacy compatibility shape |
+| `session.failed` | session/runtime layer on session-end with error | ⚠️ degraded since 2026-05-03 — emission collapsed ~35× (70/day → 2/day); errored sessions now arrive as `session.completed{outcome:'error'}` (~33/day). KE-1248. |
+| `session.completed` | session lifecycle translator after `session.end` for non-evaluator sessions; carries `outcome ∈ {done,error,interrupted}` | ✅ live and now the de-facto channel for errored/interrupted sessions |
+| `project.status_changed` | no emitter exists | ❌ aspirational |
+| `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ⚠️ live; see consumer status below |
+| `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
+| `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
+| `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
+
+Note: `session.failed` and `session.completed` are translated from `session.end`
+in `src/app/may.ts`. `project.status_changed` still has no emitter.
+
+### Consumer Reality
+
+Query for live numbers:
+```sql
+SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() * 1000 - 86400000 * 7 GROUP BY handler_name;
+```
+
+| Handler | Subscribes to | Status notes |
+|---|---|---|
+| `session-recovery` | `session.failed` | ⚠️ emitter migrated to `session.completed{outcome:'error'}` (KE-1248) — event path fires zero times on real traffic; 5-min timer fallback does 100% of recovery work |
+| `evaluator-aftermath` | `session.completed` | ✅ wired; `session-aftermath-scan` remains the 7-minute fallback |
+| `escalation` | `session.escalated` | ✅ wired as event-first routing for blocked/failure finishes |
+| `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
+| (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781 |
+| `context-learn` | `context-learn` | ❌ replaced by timer-driven `context-learn-poller` |
+
+### When Extending This Design
+
+Before adding a new `on:`-only handler:
+1. Confirm the source event is emitted (query `events` table for ≥1 row in the last 7 days).
+2. Add a timer-driven fallback only when the workflow needs delayed/backfill behavior.
+
+Before adding a new event type to the `SystemEvent` union:
+1. Identify the emitter site in code, not just in this spec. A type added here without an emitter is the failure mode that produced `project.status_changed` above.
+
+### See Also
+
+- KE-454 — `handler.completed` fires on failed sessions
+- KE-455 — every event-only handler has fired zero times
+- KE-468 — `project.iteration` has two incompatible payload shapes

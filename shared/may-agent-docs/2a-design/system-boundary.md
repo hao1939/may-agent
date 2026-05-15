@@ -150,7 +150,7 @@ high-impact risk. The default handler should not decide whether to block.
 Current state: workflow and tool-level guard triggers emit durable
 `guard.triggered` events with owner/session/workflow context where available.
 Guard metrics separate actionable short-window block health from 24h watch
-signals. See [guards-as-signals.md](guards-as-signals.md).
+signals. See [guards.md](guards.md).
 
 ## Agent Bridge
 
@@ -691,7 +691,7 @@ Keep this incremental.
 
 ## Implementation Checklist
 
-See [infra-surface-refactor-plan.md](infra-surface-refactor-plan.md) for the
+See [system-boundary-tracker.md](system-boundary-tracker.md) for the
 canonical implementation tracker. Do not create another parallel tracker.
 
 The target principle:
