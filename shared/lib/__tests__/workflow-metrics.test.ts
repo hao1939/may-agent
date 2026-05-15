@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getWorkflowMetrics } from '../workflow-metrics.js';
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
 import { join } from 'path';
 
-const TEST_DIR = join(process.cwd(), '.state', '__test-wf-metrics__');
+const TEST_DIR = join(tmpdir(), 'may-agent-wf-metrics-test');
 const TEST_LOG = join(TEST_DIR, 'iteration-log.json');
 
 beforeEach(() => {

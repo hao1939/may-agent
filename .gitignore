@@ -4,6 +4,7 @@ shared/node_modules/
 
 # Runtime state - never track
 .state/
+.state.pre-app-root-migration-*/
 shared/.state/
 *.log
 *.bak

@@ -32,7 +32,6 @@ interface DispatchDb {
   version: number;
 }
 
-const STATE_DIR = ".state";
 const DEDUP_FILE = "dispatch-dedup.json";
 const MAX_FAILURES_BEFORE_BLOCK = 3;
 const WINDOW_DAYS = 7;
@@ -40,7 +39,10 @@ const PREFIX_LENGTH = 80;
 export const DEFAULT_RUNNING_LEASE_MS = 10 * 60 * 1000;
 
 function getDbPath(): string {
-  return join(STATE_DIR, DEDUP_FILE);
+  const cwd = process.cwd();
+  const stateDir = process.env.STATE_DIR
+    ?? (existsSync(join(cwd, "app", ".state")) ? join(cwd, "app", ".state") : join(cwd, ".state"));
+  return join(stateDir, DEDUP_FILE);
 }
 
 function loadDb(): DispatchDb {
@@ -56,8 +58,9 @@ function loadDb(): DispatchDb {
 }
 
 function saveDb(db: DispatchDb): void {
-  mkdirSync(STATE_DIR, { recursive: true });
-  writeFileSync(getDbPath(), JSON.stringify(db, null, 2));
+  const path = getDbPath();
+  mkdirSync(path.slice(0, path.lastIndexOf("/")), { recursive: true });
+  writeFileSync(path, JSON.stringify(db, null, 2));
 }
 
 function makeKey(agent: string, task: string): string {

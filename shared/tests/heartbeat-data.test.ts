@@ -4,7 +4,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 
 import {
   loadMetrics,
@@ -19,9 +20,11 @@ import {
 } from "../workflows/heartbeat-data.js";
 
 const TEST_DIR = join("/tmp", "__test_hb_tmp__");
-const DEDUP_FILE = join(process.cwd(), ".state", "dispatch-dedup.json");
+const DEDUP_FILE = join(tmpdir(), "may-agent-heartbeat-data-test", "dispatch-dedup.json");
+const ORIGINAL_STATE_DIR = process.env.STATE_DIR;
 
 function cleanup() {
+  process.env.STATE_DIR = dirname(DEDUP_FILE);
   try { rmSync(TEST_DIR, { recursive: true, force: true }); } catch {}
   try { rmSync(DEDUP_FILE, { force: true }); } catch {}
 }
@@ -579,4 +582,11 @@ describe("genericHeartbeat", () => {
   });
 });
 
-afterAll(() => { cleanup(); });
+afterAll(() => {
+  cleanup();
+  if (ORIGINAL_STATE_DIR === undefined) {
+    delete process.env.STATE_DIR;
+  } else {
+    process.env.STATE_DIR = ORIGINAL_STATE_DIR;
+  }
+});

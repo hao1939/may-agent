@@ -20,19 +20,19 @@ export interface UsageSummary {
   byWorkflow: Record<string, { total: number; avg: number; count: number }>;
 }
 
-const LOG_PATH = join(process.cwd(), '.state', 'usage-log.json');
+const LOG_PATH = join(process.env.STATE_DIR ?? join(process.cwd(), '.state'), 'usage-log.json');
 
-function readLog(): UsageRecord[] {
+function readLog(logPath = LOG_PATH): UsageRecord[] {
   try {
-    return JSON.parse(readFileSync(LOG_PATH, 'utf-8'));
+    return JSON.parse(readFileSync(logPath, 'utf-8'));
   } catch {
     return [];
   }
 }
 
-function writeLog(records: UsageRecord[]): void {
-  mkdirSync(dirname(LOG_PATH), { recursive: true });
-  writeFileSync(LOG_PATH, JSON.stringify(records, null, 2));
+function writeLog(records: UsageRecord[], logPath = LOG_PATH): void {
+  mkdirSync(dirname(logPath), { recursive: true });
+  writeFileSync(logPath, JSON.stringify(records, null, 2));
 }
 
 export function recordUsage(entry: {
@@ -41,14 +41,14 @@ export function recordUsage(entry: {
   promptTokens: number;
   completionTokens: number;
   model?: string;
-}): void {
-  const records = readLog();
+}, logPath = LOG_PATH): void {
+  const records = readLog(logPath);
   records.push({ ...entry, timestamp: Date.now() });
-  writeLog(records);
+  writeLog(records, logPath);
 }
 
-export function getUsageSummary(lastNHours?: number): UsageSummary {
-  let records = readLog();
+export function getUsageSummary(lastNHours?: number, logPath = LOG_PATH): UsageSummary {
+  let records = readLog(logPath);
 
   if (lastNHours !== undefined) {
     const cutoff = Date.now() - lastNHours * 3600 * 1000;

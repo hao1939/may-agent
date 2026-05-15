@@ -3,9 +3,10 @@ import { generateProject } from '../lib/project-template.js';
 import { recordIteration, getMetrics } from '../lib/iteration-monitor.js';
 import { analyzeIterations } from '../lib/session-analyzer.js';
 import * as fs from 'fs';
+import { tmpdir } from 'os';
 import * as path from 'path';
 
-const TEST_LOG = path.join(process.cwd(), '.state', 'iteration-log-smoke-test.json');
+const TEST_LOG = path.join(tmpdir(), 'may-agent-smoke-test', 'iteration-log-smoke-test.json');
 
 describe('Smoke Test: Integrated Toolkit', () => {
   beforeEach(() => {
@@ -46,10 +47,10 @@ describe('Smoke Test: Integrated Toolkit', () => {
 
     // Record iterations using the monitor
     for (const iter of iterations) {
-      recordIteration(iter);
+      recordIteration(iter, TEST_LOG);
     }
 
-    const metrics = getMetrics();
+    const metrics = getMetrics(undefined, TEST_LOG);
     expect(metrics.deliverableRate).toBeGreaterThanOrEqual(0.8);
     expect(metrics.firstAttemptRate).toBeGreaterThanOrEqual(0.8);
     expect(metrics.avgDuration).toBeGreaterThan(0);
