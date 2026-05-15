@@ -22,9 +22,8 @@ COPY src/ src/
 COPY packages/ packages/
 COPY tsconfig.json ./
 
-# Compile standalone binaries
+# Compile standalone binary
 RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
-RUN bun build --compile packages/webui/src/server.ts --outfile /build/may-agent-web
 
 # ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
 FROM debian:bookworm-slim
@@ -85,7 +84,6 @@ RUN npm install -g @anthropic-ai/claude-code @openai/codex 2>/dev/null || true
 # Copy compiled runtime tools from builder. The service runs from the standalone
 # may-agent binary, but agent/operator commands and docs assume `bun` exists.
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
-COPY --from=builder /build/may-agent-web /usr/local/bin/may-agent-web
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
 # Copy web UI and shared control package (not embedded in the WebUI process)
