@@ -71,7 +71,9 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     const discussionFile = join(projectDir, "discussion.md");
     const entry = `\n### ${author?.trim() || "hao"} - ${date}\n${trimmed}\n`;
     if (existsSync(discussionFile)) appendFileSync(discussionFile, entry, "utf-8");
-    else writeFileSync(discussionFile, `# Discussion\n${entry}`, "utf-8");
+    // Seed with `---read @iter0---` so a freshly created discussion.md does
+    // not look fully unread to the project workflow.
+    else writeFileSync(discussionFile, `# Discussion\n\n---read @iter0---\n${entry}`, "utf-8");
 
     // Legacy project files used bold status fields. YAML projects are resumed
     // by the project handler after the project.nudge event below.
