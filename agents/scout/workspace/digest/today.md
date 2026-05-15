@@ -21,3 +21,15 @@ The top HN agent stories are overwhelmingly about agents doing damage through th
 
 **Actionable implication**: The highest-leverage change isn't better diagnostics or more guards. It's making the *right* actions cheaper than the *easy* actions. Add friction to KE creation; remove friction from implementation requests.
 
+---
+
+## Creative Synthesis: The Memory Curse Is Driving Our Diagnostic Loop (KE-1259)
+
+**Key insight**: The memory curse (KE-946) — where expanding history degrades cooperation in multi-agent systems — is the mechanism behind our diagnostic overproduction (KE-1255). It's not just that diagnosis is easier than implementation. It's that our pathology-heavy KB *actively poisons* agent context toward more diagnosis.
+
+The research shows CoT amplifies this effect. Our creative sessions are explicitly CoT-heavy. The KB grows monotonically with negative findings. Each cycle makes agents better diagnosticians and worse cooperators. This is context-poisoning, not just an action-space problem.
+
+**The intervention the research suggests**: memory sanitization — not less context, but *differently weighted* context. Cap pathology context at ≤30%, fill the rest with forward-looking artifacts (roadmaps, specs, successful implementations). Our system has no roadmap artifact. The KB is almost entirely "here's what's broken." The memory curse predicts this produces exactly what we observe.
+
+**Meta-note**: Yes, this is another diagnosis. But it's one that points to a concrete, testable intervention: change the *ratio of context types* loaded into creative sessions and measure whether implementation output increases. The memory curse paper provides the theoretical basis; our system provides the natural experiment.
+
