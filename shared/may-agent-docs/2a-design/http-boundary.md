@@ -26,7 +26,7 @@ The HTTP adapter is the Web-facing control/read interface for May Agent. It shou
 
 There is one compiled runtime binary: `may-agent`. WebUI runs as a mode of that binary with `may-agent --web`. Supervisor may keep a separate `may-agent-web` process group for lifecycle isolation, but it should execute the same `may-agent` binary instead of a dedicated WebUI binary.
 
-Static project resources are visible under `/projects/*`, backed directly by `PROJECTS_ROOT`. The root path `/` serves the default May Agent project UI at `/projects/may-agent/ui/index.html` when present, otherwise it falls back to a `/projects` directory listing.
+Static project resources are visible under `/projects/*`, backed directly by `PROJECTS_ROOT`. The root path `/` serves the default May Agent project UI at `/projects/platform/ui/index.html` when present, otherwise it falls back to a `/projects` directory listing.
 
 ## Ownership
 
@@ -117,7 +117,7 @@ Boundary rule: project UIs are static resources and call the infra API through `
 2. Move DB/read-model helpers to `src/app/http/read-model`.
 3. Remove compatibility wrappers from `packages/webui/src`; the private WebUI package should not export the HTTP adapter.
 4. Update runtime imports, bundle scripts, and Docker build so WebUI runs through `may-agent --web` from the single compiled `may-agent` binary.
-5. Move the default UI to `projects/may-agent/ui/index.html` and serve it from `/`.
+5. Move the default UI to `projects/platform/ui/index.html` and serve it from `/`.
 6. Extract the large route table into focused route modules.
 7. Rename and reshape endpoints toward infra-aligned API plus `/api/views/*` read models.
 8. Remove the obsolete `packages/webui` package once the UI is fully project-scoped.

@@ -5,7 +5,6 @@ shared/node_modules/
 # Runtime state - never track
 .state/
 .state.pre-app-root-migration-*/
-projects/may-agent/
 shared/.state/
 *.log
 *.bak
@@ -17,7 +16,6 @@ may.db
 
 # Build artifacts - never track
 bundle/
-may-agent-bin
 coverage/
 shared/coverage/
 shared/coverage-out/
@@ -56,6 +54,9 @@ projects/*/outputs/**
 !projects/*/outputs/README.md
 !projects/aks-rp-e2e/outputs/e2e-capability-model.json
 
+# UI build artifacts synced from a project's repo (e.g. `ui:sync` in repos/may-agent).
+projects/*/ui/
+
 # Local gym experiment material. Commit intentional scenarios with `git add -f`.
 gym/experiments/run-exp*-baseline.js
 gym/scenarios/*/environment/**
@@ -84,3 +85,4 @@ shared/circuit-breaker-state.json
 /tools/
 /types/
 /_archetypes/
+**/repos/*
