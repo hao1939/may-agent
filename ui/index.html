@@ -479,6 +479,36 @@ function routeTo(route) {
   // hashchange handler will fire and call render()
 }
 
+// ── Project identity ─────────────────────────────────────────────────────
+// URLs and table-row clicks carry a *project id*, never a server-side
+// filesystem path. The id is the canonical handle the URL exposes:
+//
+//   top-level work-project       projects/<name>                  id: '<name>'
+//   per-agent project (legacy)   agents/<owner>/workspace/projects/<name>
+//                                                                  id: '<owner>/<name>'
+//   shared project (legacy)      shared/projects/<name>            id: 'shared/<name>'
+//
+// All UI route-building goes through projectIdOf(p), and all server calls
+// go through projectPathOf(id). Do not splice path prefixes inline.
+function projectIdOf(p) {
+  const path = (p && p.path) || '';
+  if (path.startsWith('projects/')) return path.slice('projects/'.length);
+  const m = path.match(/^agents\/([^/]+)\/workspace\/projects\/(.+)$/);
+  if (m) return m[1] + '/' + m[2];
+  if (path.startsWith('shared/projects/')) return 'shared/' + path.slice('shared/projects/'.length);
+  return path; // unknown shape: pass through, server will reject
+}
+
+function projectPathOf(id) {
+  if (!id) return null;
+  if (id.startsWith('shared/')) return 'shared/projects/' + id.slice('shared/'.length);
+  if (id.includes('/')) {
+    const idx = id.indexOf('/');
+    return 'agents/' + id.slice(0, idx) + '/workspace/projects/' + id.slice(idx + 1);
+  }
+  return 'projects/' + id;
+}
+
 function render() {
   const { tab, params } = parseHash();
   currentTab = tab;
@@ -526,11 +556,11 @@ function render() {
   if (tab === 'metrics') loadMetricsTab();
   if (tab === 'system') loadEvents();
   if (tab === 'projects') {
-    // Project id deep-link: #/projects/<owner>/<name> or legacy 'shared/projects/<name>'
+    // Project id deep-link: #/projects/<id>
     if (params.id) {
-      // params.id arrives as e.g. 'shared/projects/foo' or '<owner>/workspace/projects/<name>'
-      // The existing showProjectDetail() expects a full 'agents/...' path.
-      _projectDetailPath = 'agents/' + params.id;
+      // params.id is the canonical id form: '<name>', '<owner>/<name>',
+      // or 'shared/<name>'. Server paths are reconstructed via projectPathOf().
+      _projectDetailPath = projectPathOf(params.id);
       showProjectDetail(_projectDetailPath);
     } else {
       _projectDetailPath = null;
@@ -944,8 +974,8 @@ async function renderLivenessProjects() {
       const metricSummary = (p.metrics && p.metrics.length)
         ? `${p.metrics.length} metric${p.metrics.length === 1 ? '' : 's'}`
         : '';
-      // Path -> route id (strip 'agents/' prefix)
-      const routeId = String(p.path || '').replace(/^agents\//, '');
+      // Path -> route id
+      const routeId = projectIdOf(p);
       html += `<div class="liveness-item" style="cursor:pointer;display:flex;align-items:center;gap:10px" onclick="routeTo('/projects/' + '${attrEsc(routeId)}')">
         <span style="color:${pulseColor};font-size:14px" title="${formatAgo(p.updatedAt)}">${pulse}</span>
         <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>${esc(p.name)}</strong>${owner ? ` <span class="meta">${esc(owner)}</span>` : ''}</span>
@@ -2042,8 +2072,8 @@ async function loadAgentOverview(name) {
       html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;overflow:hidden">`;
       for (const p of [...activeProjects, ...inactiveProjects]) {
         const muted = HIDDEN.has(p.status);
-        const projPath = (p.path || '').replace(/^agents\//, '');
-        html += `<div onclick="routeTo('/projects/' + '${attrEsc(projPath)}')" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);cursor:pointer;${muted ? 'opacity:0.55' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
+        const projId = projectIdOf(p);
+        html += `<div onclick="routeTo('/projects/' + '${attrEsc(projId)}')" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);cursor:pointer;${muted ? 'opacity:0.55' : ''}" onmouseover="this.style.background='var(--bg3,#222)'" onmouseout="this.style.background=''">`;
         html += `<div style="min-width:0"><div style="font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</div><div style="font-size:10px;color:var(--fg2)">${p.milestonesDone ?? 0}/${p.milestonesTotal ?? 0} milestones · iter ${p.iteration ?? 0}</div></div>`;
         html += `<div style="font-size:11px;color:var(--fg2)">${esc(p.status||'')}</div>`;
         html += `<div style="font-size:10px;color:var(--fg2);white-space:nowrap">${p.updatedAt ? timeAgo(p.updatedAt) : '—'}</div>`;
@@ -3328,7 +3358,7 @@ async function loadProjects() {
         ? `<div style="display:flex;align-items:center;gap:4px"><div style="width:60px;height:6px;background:var(--bg3);border-radius:3px"><div style="width:${Math.round(p.milestonesDone/p.milestonesTotal*100)}%;height:100%;background:var(--green);border-radius:3px"></div></div><span>${p.milestonesDone}/${p.milestonesTotal}</span></div>`
         : '<span style="color:var(--fg2)">—</span>';
 
-      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="routeTo('/projects/' + '${attrEsc(p.path.replace(/^agents\//, ''))}')">` +
+      html += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="routeTo('/projects/' + '${attrEsc(projectIdOf(p))}')">` +
         `<td style="padding:8px;font-weight:500">${esc(p.name)}</td>` +
         `<td>${esc(p.owner)}</td>` +
         `<td><span style="color:${statusColor}">${esc(p.status)}</span></td>` +
