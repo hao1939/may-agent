@@ -92,3 +92,19 @@ The research shows CoT amplifies this effect. Our creative sessions are explicit
 - arXiv: Prospective scaffolding (action templates) instead of retrospective training signals
 
 **Internal implication**: Our evaluator-aftermath loop reviews 100% of sessions after completion. The industry is moving to ~10-20% review, with lightweight real-time watchers handling the rest. KE-1253 measured the cost (61% overhead). KE-1254 proposed caps. KE-1261 identifies the structural alternative: prospective intervention instead of retrospective review.
+
+---
+
+## Creative Insight: The Heartbeat Is Clock-Driven When It Should Be Event-Driven
+
+**Observation**: KEs 1245–1262 (18 entries) were produced in ~2 weeks — a 3x acceleration over the prior rate. This acceleration coincides precisely with creative heartbeat mode being introduced. The heartbeat is a fixed-interval stimulus that demands output regardless of whether new external signal exists.
+
+**The control theory framing (extending KE-1262)**: A fixed-frequency sampling clock applied to a slow-changing signal produces aliasing and noise. When external input (new papers, new HN discussions, new XHS posts) arrives at ~2-3 genuinely novel signals per week, but creative sessions fire daily or more, the sessions between real signals have no choice but to analyze the analyzer — producing meta-diagnostics from diagnostics.
+
+**The deeper pattern**: This is "observability without controllability." The system can observe all its own states (we diagnose perfectly) but has no actuator to change them (no implementation path from KE → code change). In control theory, the fix isn't better sensors — it's adding actuators. But adding actuators is outside scout's action space. So scout keeps improving sensors because that's what's available. This is the action-space problem (top of today's digest) applied recursively to the diagnostic agent itself.
+
+**The non-obvious implication**: Creative sessions should be **event-triggered**, not clock-triggered. Fire when: (a) ≥2 new external signals arrived since last session, or (b) a KE recommendation has been implemented and needs validation, or (c) an explicit synthesis request arrives. On cycles with no new input, the correct output is silence — not forced creativity.
+
+**Why this isn't just "do less"**: It's a structural claim about information flow. Clock-driven creative sessions create a standing wave of self-referential analysis because the session *must* produce something but has nothing new to process. Event-driven sessions only fire when there's genuine entropy to reduce. The distinction is between a pull system (produce when demanded by new signal) and a push system (produce because the clock says so).
+
+**Testable prediction**: If you correlate creative session quality (measured by: did the output lead to any implementation?) against "hours since last novel external signal ingested," quality will be near-zero for sessions fired <24h after the last creative session with no intervening new signal.
