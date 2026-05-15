@@ -28,7 +28,7 @@ context automatically. You do NOT need to read the file — it's already availab
 Use these criteria to score each agent by their role.
 
 ## 2. Identify Roles
-For each agent in the transcript, identify its **Role** using `agents/shared/team.md`
+For each agent in the transcript, identify its **Role** using `shared/team.md`
 or the mapping below:
 - **Coder, Tech Lead, Master** → Builder
 - **May, Manager** → Supervisor
@@ -108,7 +108,7 @@ scores come from the rubric below, not the agent's self-assessment. Flag as
 ### Fake Policy Refusal Detection
 If an agent refuses a task by citing a safety policy, **verify the policy
 exists** in the agent's `SOUL.md`, `DOMAIN.md`, `LESSONS.md`, or
-`agents/shared/philosophy.md`. Known real policies include P1, P2, P5, P6,
+`shared/philosophy.md`. Known real policies include P1, P2, P5, P6,
 P8, P53, P96, P108. If the cited policy is hallucinated, flag as
 `[FABRICATED_REFUSAL]` — quality capped at 0.1. If the policy exists but is
 misapplied to the situation, flag as `[MISAPPLIED_REFUSAL]` — quality
@@ -139,7 +139,7 @@ If a coder edits a file but never runs a command to verify the edit (test, build
 
 ### Tool Hallucination
 If an agent attempts to use non-existent tools (e.g., `Edit`, `MultiEdit`).
-**IMPORTANT**: Check `agents/shared/team.md` for each agent's actual toolset before flagging.
+**IMPORTANT**: Check `shared/team.md` for each agent's actual toolset before flagging.
 Common REAL tools that must NOT be flagged: `agents`, `workflow`, `cron`, `socket_watch`, `scrape_webpage`, `bash`.
 Common FAKE tools that should be flagged: `exec`, `Edit`, `MultiEdit`, `Search`, `subagents`.
 **Flag as**: `[HALLUCINATION]`

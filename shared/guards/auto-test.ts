@@ -1,4 +1,5 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
 /**
  * auto-test guard — warns when source files are modified without test confirmation.
  *

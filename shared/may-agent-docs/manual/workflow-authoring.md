@@ -2,7 +2,7 @@
 
 ## Basics
 
-A workflow is a TypeScript file in `agents/<name>/workflows/` or `agents/shared/workflows/`. It exports `name`, `description`, and an `execute` function:
+A workflow is a TypeScript file in `agents/<name>/workflows/` or `shared/workflows/`. It exports `name`, `description`, and an `execute` function:
 
 Workflows are deliberately synchronous: each step returns a result before the
 next step runs, and `runWorkflow()` resolves only when the workflow is done or
@@ -139,7 +139,7 @@ const result = await ctx.runWorkflow("implement-and-verify", task);
 
 | Location | Visibility | Use case |
 |----------|-----------|----------|
-| `agents/shared/workflows/` | All agents | Reusable patterns (`project`, `metric-alert-triage`, `implement-and-verify`) |
+| `shared/workflows/` | All agents | Reusable patterns (`project`, `metric-alert-triage`, `implement-and-verify`) |
 | `agents/<name>/workflows/` | That agent only | Agent-specific (heartbeat, domain workflows) |
 
 ## Guards (Advanced)
@@ -177,5 +177,5 @@ custom metric plumbing unless the guard needs behavior beyond the default.
 bun src/app/may.ts --run-workflow implement-and-verify "fix the type error"
 
 # Or invoke from a handler test
-bun test agents/shared/workflows/__tests__/my-workflow.test.ts
+bun test shared/workflows/__tests__/my-workflow.test.ts
 ```

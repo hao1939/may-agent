@@ -20,7 +20,7 @@ export interface ValidationResult {
 }
 
 /**
- * Parse project directory from a task string like "project: agents/shared/projects/foo"
+ * Parse project directory from a task string like "project: projects/foo"
  */
 export function parseProjectDir(task: string | undefined): string | null {
   if (!task) return null;

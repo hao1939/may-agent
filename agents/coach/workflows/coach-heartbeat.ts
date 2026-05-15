@@ -1,4 +1,5 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
+import { join } from "node:path";
 import {
   loadMetrics,
   loadProjects,
@@ -9,7 +10,6 @@ import {
   runRedMetricCommands,
 } from "../../shared/workflows/heartbeat-data.js";
 import { checkCircuitBreaker, recordOutcome } from "../../shared/workflows/circuit-breaker.js";
-import { join } from "node:path";
 
 export const name = "coach-heartbeat";
 export const description = "coach's 2-phase heartbeat: plan first, then execute.";

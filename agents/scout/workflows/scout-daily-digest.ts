@@ -1,4 +1,3 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * Scout daily digest — compile findings and send to Hao via Telegram.
  *
@@ -7,6 +6,7 @@
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "scout-daily-digest";
 export const description = "Compile and send daily research digest.";

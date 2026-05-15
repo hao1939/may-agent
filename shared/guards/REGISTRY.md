@@ -33,7 +33,7 @@ import { loadGuards, runGuards } from "../../shared/guards/loader.js";
 ## Writing Guards
 
 ```ts
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 export const guard: WorkflowGuard = {
   name: "my-guard",
@@ -66,4 +66,4 @@ Before designing or modifying guards that act as hard gates (blocking or injecti
 6. **Max 3 related gates** — performance degrades at 4+ gates regardless of relevance.
 7. **Measure product quality** — "Did the fix work?" not "Did the agent write ARTIFACT.md?" (KE-181).
 
-Full details: `agents/shared/knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`
+Full details: `shared/knowledge/entries/KE-182-hard-gate-design-rules-synthesis.md`

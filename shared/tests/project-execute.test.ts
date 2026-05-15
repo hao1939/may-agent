@@ -52,6 +52,8 @@ Not started.
 
 ## Context
 
+## Linked Context
+
 ## Milestones
 ${milestones}
 
@@ -87,6 +89,8 @@ Test goal
 Not started.
 
 ## Context
+
+## Linked Context
 
 ## Milestones
 - [ ] First milestone
@@ -183,7 +187,7 @@ describe("execute — worker iteration", () => {
   beforeEach(() => { cleanup(); flushProjectCache(); });
 
   it("runs worker then reviewer, updates journal", async () => {
-    const projDir = setupProjectDir("active");
+    const projDir = setupProjectDir("active", "- [x] First milestone\n- [x] Second milestone");
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
     
     // Worker response
@@ -297,6 +301,35 @@ describe("execute — worker iteration", () => {
     expect(journal).toContain("### Iteration 2");
   });
 
+  it("overrides completion-style WAITING when Next Action still exists", async () => {
+    const projDir = setupProjectDir("active");
+    const projectPath = join(projDir, "project.md");
+    writeFileSync(
+      projectPath,
+      readFileSync(projectPath, "utf-8").replace(
+        "## Resources\n",
+        "## Next Action\nRetry the failed scenario and update evidence.\n\n## Resources\n",
+      ),
+      "utf-8",
+    );
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test goal\nowner: test-agent\nworker: test-agent\nmaxIterations: 2\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Did work 1" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: All milestones complete, waiting for review\nResume when: human review" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Did work 2" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "BLOCKED: remote lab unavailable\nResume when: lab is back" });
+
+    await execute(ctx);
+
+    const journal = readFileSync(join(projDir, "journal.md"), "utf-8");
+    expect(journal).toContain("WAITING overridden to CONTINUE");
+    expect(journal).toContain("### Iteration 2");
+    const reviewPrompt = ctx.runAgent.mock.calls[1][1];
+    expect(reviewPrompt).toContain("## Next Action");
+    expect(reviewPrompt).toContain("Open Work Signal");
+  });
+
   it("does not reuse prior WAITING guidance as worker instructions", async () => {
     const projDir = setupProjectDir("active");
     writeFileSync(join(projDir, "journal.md"), [
@@ -330,6 +363,9 @@ describe("execute — worker iteration", () => {
     writeFileSync(
       join(projDir, "project.md"),
       readFileSync(join(projDir, "project.md"), "utf-8").replace(
+        "## Linked Context\n",
+        "## Linked Context\n- outputs/evidence.md — remote evidence to read on demand\n",
+      ).replace(
         "## Resources\n",
         "## Resources\n- devbox:/home/hayua/rp — remote repo\n",
       ),
@@ -347,6 +383,11 @@ describe("execute — worker iteration", () => {
     expect(workerPrompt).toContain("use the available remote tool");
     expect(workerPrompt).toContain("ssh_exec");
     expect(workerPrompt).toContain("cc_worker");
+    expect(workerPrompt).toContain("## Linked Context (read on demand)");
+    expect(workerPrompt).toContain("outputs/evidence.md");
+    expect(workerPrompt).toContain("include a compact fresh Project Operating Context block");
+    expect(workerPrompt).toContain("read on demand");
+    expect(workerPrompt).toContain("new_session: true");
     expect(workerPrompt).toContain("It is not evidence that remote access is unavailable");
   });
 
@@ -527,7 +568,7 @@ describe("execute — DONE auto-conversion", () => {
   beforeEach(() => { cleanup(); flushProjectCache(); });
 
   it("converts DONE to WAITING automatically", async () => {
-    const projDir = setupProjectDir("active");
+    const projDir = setupProjectDir("active", "- [x] First milestone\n- [x] Second milestone");
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
     
     ctx.runAgent
@@ -606,8 +647,14 @@ Not started.
 describe("execute — context updates", () => {
   beforeEach(() => { cleanup(); flushProjectCache(); });
 
-  it("applies CONTEXT_UPDATE from reviewer", async () => {
+  it("replaces Context from reviewer CONTEXT_UPDATE", async () => {
     const projDir = setupProjectDir("active");
+    const projectPath = join(projDir, "project.md");
+    writeFileSync(
+      projectPath,
+      readFileSync(projectPath, "utf-8").replace("## Context\n", "## Context\n- Stale fact\n"),
+      "utf-8",
+    );
     const ctx = makeCtx(`project: ${projDir}\ngoal: Test\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
     
     ctx.runAgent
@@ -618,6 +665,30 @@ describe("execute — context updates", () => {
     
     const project = readFileSync(join(projDir, "project.md"), "utf-8");
     expect(project).toContain("Important discovery about X");
+    expect(project).not.toContain("Stale fact");
+  });
+
+  it("replaces Linked Context from reviewer LINKED_CONTEXT_UPDATE", async () => {
+    const projDir = setupProjectDir("active");
+    const projectPath = join(projDir, "project.md");
+    writeFileSync(
+      projectPath,
+      readFileSync(projectPath, "utf-8").replace("## Linked Context\n", "## Linked Context\n- outputs/stale.md — stale link\n"),
+      "utf-8",
+    );
+    const ctx = makeCtx(`project: ${projDir}\ngoal: Test\nowner: test-agent\nworker: test-agent\nmaxIterations: 1\nreviewEvery: 1`);
+
+    ctx.runAgent
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "Found linked evidence" })
+      .mockResolvedValueOnce({ status: "success", lastAssistantText: "WAITING: Done\nResume when: review\nLINKED_CONTEXT_UPDATE: - outputs/current.md — current evidence\n(b) no leak" });
+
+    await execute(ctx);
+
+    const project = readFileSync(projectPath, "utf-8");
+    const linkedContext = project.slice(project.indexOf("## Linked Context"), project.indexOf("## Milestones"));
+    expect(project).toContain("outputs/current.md");
+    expect(project).not.toContain("outputs/stale.md");
+    expect(linkedContext).not.toContain("(b) no leak");
   });
 });
 

@@ -642,7 +642,7 @@ Existing pieces already align with this direction:
 | Event bus | `src/app/event-bus.ts` |
 | Metrics API | `src/lib/metrics.ts` |
 | Handler SDK | `src/lib/sdk.ts`, `src/lib/sdk-impl.ts`, `src/lib/handler-context.ts` |
-| Agent import boundary | `agents/shared/agent-sdk.ts` |
+| Agent import boundary | `shared/agent-sdk.ts` |
 | Workflow context | `src/lib/workflow.ts`, `src/lib/workflow-tool.ts` |
 | Runtime context | `src/lib/runtime-ctx.ts` |
 | Socket protocol | `packages/control/src/protocol.ts` |
@@ -658,7 +658,7 @@ Existing pieces already align with this direction:
 | Telegram adapter | `src/app/ui/telegram.ts` |
 | Telegram transport/reply/outbound helpers | `src/app/ui/telegram-client.ts`, `src/app/ui/telegram-reply-router.ts`, `src/app/ui/telegram-outbound.ts` |
 | Web UI projection reader | `packages/webui/src/server.ts` |
-| Agent patterns | `agents/shared/workflows/*`, project docs, heartbeat docs |
+| Agent patterns | `shared/workflows/*`, project docs, heartbeat docs |
 
 The main gap is not a missing grand architecture. The remaining work is keeping
 the already-shipped boundaries boring:

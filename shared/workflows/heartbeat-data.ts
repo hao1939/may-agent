@@ -1,4 +1,3 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * Shared heartbeat data loaders.
  *
@@ -10,7 +9,8 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "./dispatch-dedup-guard.js";
 import { listConfiguredAgents, resolveMetricOwner } from "../lib/metric-ownership.ts";
@@ -31,8 +31,13 @@ export function findRelatedKEs(
   limit = 3,
 ): string[] {
   try {
-    const dir = join(agentsRoot, "shared", "knowledge", "entries");
-    if (!existsSync(dir)) return [];
+    const appRoot = basename(agentsRoot) === "agents" ? dirname(agentsRoot) : agentsRoot;
+    const dirs = [
+      join(appRoot, "shared", "knowledge", "entries"),
+      join(agentsRoot, "shared", "knowledge", "entries"),
+    ];
+    const dir = dirs.find((candidate) => existsSync(candidate));
+    if (!dir) return [];
     const matches: { name: string; num: number }[] = [];
     for (const entry of readdirSync(dir)) {
       if (!entry.startsWith("KE-") || !entry.endsWith(".md")) continue;
@@ -54,6 +59,19 @@ export function findRelatedKEs(
 
 function getAgentsRoot(ctx: WorkflowContext): string {
   return ctx.agentsRoot || join(process.cwd(), "agents");
+}
+
+function getAppRoot(ctx: WorkflowContext): string {
+  const maybeSdkRoot = (ctx as any).sdk?.paths?.root ?? (ctx as any).paths?.root;
+  if (typeof maybeSdkRoot === "string" && maybeSdkRoot) return maybeSdkRoot;
+  const agentsRoot = getAgentsRoot(ctx);
+  return basename(agentsRoot) === "agents" ? dirname(agentsRoot) : agentsRoot;
+}
+
+function getProjectsRoot(ctx: WorkflowContext): string {
+  const maybeProjects = (ctx as any).sdk?.paths?.projects ?? (ctx as any).paths?.projects;
+  if (typeof maybeProjects === "string" && maybeProjects) return maybeProjects;
+  return join(getAppRoot(ctx), "projects");
 }
 
 const heartbeatContextCache = new WeakMap<object, Map<string, any>>();
@@ -148,7 +166,7 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
           if (relatedKEs.length > 0) {
             line += `\n  → 📚 Prior analyses of this metric (READ BEFORE ACTING):`;
             for (const ke of relatedKEs) {
-              line += `\n     • agents/shared/knowledge/entries/${ke}`;
+              line += `\n     • shared/knowledge/entries/${ke}`;
             }
             line += `\n     If prior KEs identify this red metric as caused by fabricated/phantom data, do NOT treat it as a new investigation — follow the documented remediation or escalate.`;
           }
@@ -167,7 +185,7 @@ export function loadProjects(ctx: WorkflowContext, agent: string): string {
     const lines: string[] = [];
 
     // Scan shared projects (new location)
-    const sharedProjDir = join(getAgentsRoot(ctx), "shared", "projects");
+    const sharedProjDir = getProjectsRoot(ctx);
     if (existsSync(sharedProjDir)) {
       for (const entry of readdirSync(sharedProjDir, { withFileTypes: true })) {
         if (!entry.isDirectory()) continue;
@@ -334,7 +352,7 @@ export function formatMetricsBlock(ctx: WorkflowContext, agent: string): string 
 
 ${metrics}
 
-**Judge the signal in context.** Read the relevant project/agent context, then follow agents/shared/may-agent-docs/manual/metric-alerts.md. Do NOT take destructive actions (rebuild DB, delete files, rename production data). If the fix requires destructive changes, escalate to human.
+**Judge the signal in context.** Read the relevant project/agent context, then follow shared/may-agent-docs/manual/metric-alerts.md. Do NOT take destructive actions (rebuild DB, delete files, rename production data). If the fix requires destructive changes, escalate to human.
 
 ---
 `;
@@ -464,7 +482,7 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   const redMetricContext = redMetricDiagnostics ? `
 ${redMetricDiagnostics}
 
-**Review the diagnostic results above.** For each red metric, follow agents/shared/may-agent-docs/manual/metric-alerts.md and choose one operation: investigate then fix, calibrate, downgrade with evidence, upgrade/escalate emergency, resolve stale state, or document an exception.
+**Review the diagnostic results above.** For each red metric, follow shared/may-agent-docs/manual/metric-alerts.md and choose one operation: investigate then fix, calibrate, downgrade with evidence, upgrade/escalate emergency, resolve stale state, or document an exception.
 ` : "";
 
   const prompt = `You are **${agent}** waking up for your heartbeat.
@@ -477,7 +495,7 @@ ${metricsBlock}
 ${redMetricContext}
 ## Signals: Active Alerts
 ${alerts || "None — all clear."}
-If any alert is yours, follow agents/shared/may-agent-docs/manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.
+If any alert is yours, follow shared/may-agent-docs/manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.
 
 ## Signals: Pending Events (inbox)
 ${inbox || "No pending events."}

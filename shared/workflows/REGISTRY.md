@@ -85,7 +85,7 @@ Historical: Three duplicate sets were consolidated. All promoted shared copies h
 
 ## Effectiveness Tracking
 
-**Last measured**: 2026-04-04T09:45 — see `agents/shared/knowledge/experiments/EXP-001/results.md`
+**Last measured**: 2026-04-04T09:45 — see `shared/knowledge/experiments/EXP-001/results.md`
 **Previous update**: 2026-04-04T08:30 (corrected — previous data had fabricated/misattributed numbers)
 
 ⚠️ **DATA INTEGRITY NOTE** (2026-04-04): The previous version of this section contained fabricated
@@ -112,7 +112,7 @@ verified against actual workflow run files and the sessions database.
 **Note**: On-disk run files (59) are a subset of DB runs (180). Many runs were archived to history/ without retaining run files. The DB is the authoritative source.
 
 ### EXP-001: Workflow vs Non-Workflow Comparison (2026-04-04)
-Full report: `agents/shared/knowledge/experiments/EXP-001/results.md`
+Full report: `shared/knowledge/experiments/EXP-001/results.md`
 
 **Headline**: Workflows do NOT improve quality scores — they cost 2.7x more per good outcome.
 - Workflow good rate: 42.7% vs non-workflow 45.5% (-2.8pp)
@@ -146,7 +146,7 @@ because agents don't know the workflows exist (not in SOUL.md, not in context).
 - Fix: Restore `workflow.run()` instructions to heartbeats (sent to May, req:de3c001e).
 
 ### EXP-050: implement-and-verify Overhead Analysis (2026-04-07)
-Full report: `agents/shared/knowledge/experiments/EXP-050/results.md`
+Full report: `shared/knowledge/experiments/EXP-050/results.md`
 
 **Headline**: implement-and-verify as designed INCREASES overhead vs direct coder for simple tasks.
 - "State Approach" forced externalization adds 1.76–3.78x duration overhead on medium-complexity tasks

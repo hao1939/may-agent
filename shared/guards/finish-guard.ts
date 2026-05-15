@@ -1,4 +1,5 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
 /**
  * finish-guard — FM-3.4 Persistent-Task Enforcement.
  *
@@ -121,7 +122,7 @@ import * as path from "path";
  * The finish tool runs with project root `/app`, while agents often work inside
  * the `/app/agents` repository and naturally report paths such as
  * `shared/projects/x/project.md` or `arc/heartbeat.md`.  Treat those as
- * repo-relative aliases for `agents/shared/...` / `agents/arc/...` instead of
+ * repo-relative aliases for `shared/...` / `agents/arc/...` instead of
  * rejecting otherwise-real deliverables as ghosts.
  */
 function deliverablePathCandidates(deliverablePath: string, rootDir: string): string[] {
@@ -393,7 +394,7 @@ export const guard: WorkflowGuard = {
     if (!finishResult || finishResult.status !== "success") return [];
 
     const demands: Demand[] = [];
-    const dirtyWarning = dirtyWorktreeWarning(event, finishResult as FinishCallParams);
+    const dirtyWarning = dirtyWorktreeWarning(event, finishResult as unknown as FinishCallParams);
     if (dirtyWarning) demands.push(dirtyWarning);
 
     // Get the task text from the event

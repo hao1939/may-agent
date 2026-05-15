@@ -206,10 +206,10 @@ Implemented staging layout:
 
 During the transition:
 
-- Host path `/home/hao/may-agent/app` is mounted as `/app`.
+- Host path `/app` is mounted as `/app`.
 - Agent identity folders live under host `app/agents/`.
 - Project folders live under host `app/projects/`.
-- A temporary host compatibility symlink may keep `/home/hao/may-agent/agents`
+- A temporary host compatibility symlink may keep `/app/agents`
   pointing at `app/` while older docs and local tools are migrated.
 - Compatibility symlinks keep old imports and links working:
   `/app/agents/shared -> /app/shared` and `/app/shared/projects -> /app/projects`.

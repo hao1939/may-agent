@@ -50,7 +50,7 @@ Each skill has ONE status:
 
 ### 🗄️ Archived Skills (2026-04-13)
 
-The following skills were archived to `agents/shared/skills/archive/` during dead skill cleanup.
+The following skills were archived to `shared/skills/archive/` during dead skill cleanup.
 See `archive/README.md` for full details and restoration instructions.
 
 **Untested + ceiling effect** (7 skills — baseline already passes, skill unnecessary):

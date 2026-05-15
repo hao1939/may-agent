@@ -10,7 +10,7 @@ This directory contains reusable skills (markdown guides) that agents can read t
 ## Structure
 - Each skill is a markdown file or directory.
 - Agents read the skill, follow the instructions, and execute.
-- Prefer `agents/shared/skills/<name>/SKILL.md` for new shared skills.
+- Prefer `shared/skills/<name>/SKILL.md` for new shared skills.
 - Keep skills narrow. If a behavior needs deterministic execution, use a
   workflow or handler instead of adding a longer skill.
 

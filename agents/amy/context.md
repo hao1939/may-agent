@@ -27,14 +27,14 @@
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
 
 ## Skills
-- agents/shared/skills/baseline-before-change/SKILL.md - verify preconditions before edit/write.
-- agents/shared/skills/budget-before-act/SKILL.md - estimate cost, scope down if over budget.
+- shared/skills/baseline-before-change/SKILL.md - verify preconditions before edit/write.
+- shared/skills/budget-before-act/SKILL.md - estimate cost, scope down if over budget.
 - agents/amy/skills/verify-before-finish.md - verification before finish(success).
 - agents/amy/skills/establish-working-directory.md - start with pwd and ls.
-- agents/shared/skills/session-awareness-guard/skill.md - verify output before finish.
+- shared/skills/session-awareness-guard/skill.md - verify output before finish.
 
 ## Shared Toolkit
-See agents/shared/README-shared-toolkit.md.
+See shared/README-shared-toolkit.md.
 
 [SIG: 1777642448:5028e7c2]
 
@@ -42,7 +42,7 @@ See agents/shared/README-shared-toolkit.md.
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
 

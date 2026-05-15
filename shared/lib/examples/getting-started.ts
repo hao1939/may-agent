@@ -1,7 +1,7 @@
 /**
  * Getting Started with the Shared Toolkit
  * 
- * This file demonstrates how to use the key utilities from agents/shared/lib/
+ * This file demonstrates how to use the key utilities from shared/lib/
  * together in a realistic workflow. Import what you need from the barrel export.
  */
 
@@ -44,8 +44,8 @@ console.log(`Valid: ${validation.valid}, Errors: ${validation.errors.length}, Wa
 
 const task = createTaskTemplate({
   goal: 'Implement request caching layer',
-  targetPath: 'agents/shared/lib/cache.ts',
-  testPath: 'agents/shared/lib/__tests__/cache.test.ts',
+  targetPath: 'shared/lib/cache.ts',
+  testPath: 'shared/lib/__tests__/cache.test.ts',
   context: 'Use LRU strategy with 1000-entry max',
 });
 

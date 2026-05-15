@@ -1,4 +1,5 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
 /**
  * no-secret-leak guard — blocks workflow if step output contains API key patterns.
  *

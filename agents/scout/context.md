@@ -1,7 +1,7 @@
 # Scout Context
 
 ## Resources
-- Knowledge base: `agents/shared/knowledge/entries/`
+- Knowledge base: `shared/knowledge/entries/`
 - **Web access**: Use `bash` with `curl` to fetch real data from accessible sources:
   - arXiv API: `curl -sL 'https://export.arxiv.org/api/query?search_query=...&max_results=5'`
     - ⚠️ MUST use `https://export.arxiv.org` — `http://` returns empty responses or 403. Never use `http://export.arxiv.org`.
@@ -19,12 +19,12 @@
 ## REQUIRED: Check Shared Manifest
 At the START of every session, run:
 ```bash
-bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
+bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
 ```
 This finds prior work related to your current project. Read any matches before starting.
-- Design docs: `agents/shared/may-agent-docs/design/`
+- Design docs: `shared/may-agent-docs/design/`
 - System metrics: use `query_db` tool to query metrics table
-- Common sense: `agents/shared/common-sense.md`
+- Common sense: `shared/common-sense.md`
 
 ## Verification Evidence Format (EXP-267)
 When calling finish(success), each verification_evidence item MUST follow this format:
@@ -45,7 +45,7 @@ BAD (will be flagged):
 - To add new knowledge, allocate the KE id mechanically from the shared KB, not from memory or today's digest:
   1. Run `bash agents/scout/tools/next-ke-id.sh` from the project root (`/app`).
   2. Use the printed `KE-NNNN` id exactly once with a descriptive slug.
-  3. Before writing, verify no collision with `ls agents/shared/knowledge/entries/KE-NNNN-* agents/shared/knowledge/entries/KE-NNNN.md 2>/dev/null`.
+  3. Before writing, verify no collision with `ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null`.
 - The KE allocation helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only directory scan fallback and report the helper issue instead of creating or overwriting the tool from a heartbeat.
 - Never reuse a KE number. If a nearby topic already exists, update that existing KE instead of creating a duplicate.
 - To correct an existing KE, **read() first**, then use **edit()** with a narrow diff. Never write() the whole file.

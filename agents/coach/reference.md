@@ -45,7 +45,7 @@ workflow.run("verify-wrap", "Analyze C1.1 system-wide regression. Query .state/m
 
 **Scenario design:**
 ```javascript
-workflow.run("verify-wrap", "Design gym scenario for error-cascade-diagnosis. Must have clear success criteria. Output: agents/gym/scenarios/error-cascade-diagnosis-v2/")
+workflow.run("verify-wrap", "Design gym scenario for error-cascade-diagnosis. Must have clear success criteria. Output: gym/scenarios/error-cascade-diagnosis-v2/")
 ```
 
 **Skill regression testing:**

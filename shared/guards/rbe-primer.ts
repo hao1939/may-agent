@@ -1,4 +1,5 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
 /**
  * rbe-primer — Step-start reminder to read before edit.
  *

@@ -226,7 +226,7 @@ describe("circuit-breaker + worker-retry integration", () => {
     // Record failure — circuit doesn't care about retry delays
     recordOutcome(tempDir, AGENT, true);
     const state = JSON.parse(
-      readFileSync(join(tempDir, "shared", "circuit-breaker-state.json"), "utf-8"),
+      readFileSync(join(tempDir, ".state", "circuit-breaker-state.json"), "utf-8"),
     );
     expect(state.agents[AGENT].consecutiveErrors).toBe(1);
   });

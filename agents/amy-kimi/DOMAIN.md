@@ -38,11 +38,11 @@ Amy's full archive has been merged into your `library/`. Use `grep` to search ac
 ## Output
 
 When you find something that matters:
-- **For Bob** — design insights, architecture patterns, philosophy challenges → post to `agents/shared/bulletin.md`
+- **For Bob** — design insights, architecture patterns, philosophy challenges → post to `shared/bulletin.md`
 - **For tech-lead** — implementation patterns, frameworks, tools worth evaluating → post to bulletin
 - **For Scout** — papers, repos, technical deep-dives worth extended research → post to bulletin with `Relevant to: scout`
 
 ## Write Scope
 - `agents/amy-kimi/workspace/` — working files
 - `agents/amy-kimi/knowledge/` — your archive
-- `agents/shared/bulletin.md` — cross-team findings
+- `shared/bulletin.md` — cross-team findings

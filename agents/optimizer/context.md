@@ -47,9 +47,9 @@ Rules:
 
 ## Active Skills
 
-📘 `agents/shared/skills/budget-before-act/SKILL.md` — estimate cost, scope down, checkpoint at 50%/75%
+📘 `shared/skills/budget-before-act/SKILL.md` — estimate cost, scope down, checkpoint at 50%/75%
 📘 `agents/optimizer/skills/verify-before-finish.md` — **MANDATORY**: last 5 calls must include verification
-📘 `agents/shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
+📘 `shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
 
 ## Hao's Preferences
 
@@ -74,13 +74,13 @@ Rules:
 
 At the START of every session, run:
 ```bash
-bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
+bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
 ```
 This finds prior work related to your current project. Read any matches before starting new analysis.
 
 ## Shared Toolkit
 
-See `agents/shared/README-shared-toolkit.md` for utilities at `agents/shared/lib/`.
+See `shared/README-shared-toolkit.md` for utilities at `shared/lib/`.
 
 ## Verification Evidence Format (EXP-267)
 When calling finish(success), each verification_evidence item MUST follow this format:

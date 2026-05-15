@@ -17,7 +17,7 @@ This is your **creative** session. Cron tasks handle routine fetching. Here you 
 - Is there a trend forming that's not yet obvious?
 
 ## Output
-- Shared KB entries: `agents/shared/knowledge/entries/KE-NNN.md`
+- Shared KB entries: `shared/knowledge/entries/KE-NNN.md`
 - Today's digest: `agents/scout/workspace/digest/today.md`
 - Working notes: `agents/scout/knowledge/`
 
@@ -26,11 +26,11 @@ Before creating a new shared KE, run this from the project root (`/app`):
 ```bash
 bash agents/scout/tools/next-ke-id.sh
 ```
-The helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only `find agents/shared/knowledge/entries ...` fallback and report the helper issue instead of creating or overwriting the tool.
+The helper is shared infrastructure. Run it as-is; if it is unavailable, use a read-only `find shared/knowledge/entries ...` fallback and report the helper issue instead of creating or overwriting the tool.
 
 Use the returned `KE-NNNN` id with a descriptive slug, then verify the target id is still unused:
 ```bash
-ls agents/shared/knowledge/entries/KE-NNNN-* agents/shared/knowledge/entries/KE-NNNN.md 2>/dev/null
+ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev/null
 ```
 If the `ls` finds any file, stop and pick the next max+1 id. If the topic already exists, update the existing KE instead.
 

@@ -89,8 +89,8 @@ describe("isConfigValid", () => {
 
 describe("extractProjectPath", () => {
   it("extracts path from task string", () => {
-    const cfg = mergeWorkflowConfig({ task: "project: agents/shared/projects/foo" });
-    expect(extractProjectPath(cfg)).toBe("agents/shared/projects/foo");
+    const cfg = mergeWorkflowConfig({ task: "project: projects/foo" });
+    expect(extractProjectPath(cfg)).toBe("projects/foo");
   });
 
   it("returns null for missing project prefix", () => {

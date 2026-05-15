@@ -2,34 +2,31 @@
 
 ## Current Documentation
 
-The canonical convention docs are now maintained in two places:
+The canonical convention docs are maintained under the current app layout:
 
-### Directory layout & system prompt assembly
-→ `docs/agent-convention.md`
+### Directory Layout And System Prompt Assembly
 
-### Full convention library (behavioral, operational, coordination, knowledge management)
-→ `agents/coach/skills/agent-conventions/SKILL.md` (index)
-→ `agents/coach/skills/agent-conventions/*.md` (detailed docs)
+→ `shared/may-agent-docs/manual/agent-convention.md`
 
-### Design philosophy
-→ `agents/shared/philosophy.md`
+### Agent Operating Skills
 
-### Team roster
-→ `agents/shared/team.md`
+→ `shared/skills/README.md`
+→ `shared/skills/LIBRARY.md`
+→ `shared/skills/*/SKILL.md`
 
----
+### Design Philosophy And Work Model
 
-## Knowledge Library Tier
+→ `shared/may-agent-docs/core-principles.md`
+→ `shared/may-agent-docs/work-model.md`
+→ `shared/may-agent-docs/design/project-focused-architecture.md`
 
-Agents can place large reference material in `knowledge/library/` instead of the
-`knowledge/` root. Library files are **not** auto-loaded into the system prompt.
-Instead, the manager lists available `.md` files in a "Reference Library" footer so
-the agent knows what's available and can `read` them on demand.
+### Team And Agent Docs
 
-See `docs/agent-convention.md` → "Library tier" section for full details.
+→ `shared/may-agent-docs/agents.md`
+→ `agents/<agent>/AGENTS.md`
 
 ---
 
-*This file previously contained the full folder layout conventions. That content
-was split into the convention library (maintained by coach) and the directory
-convention doc (maintained by optimizer/human). See the links above.*
+## Layout Rule
+
+Top-level `/app` should expose only the core namespaces: `agents/`, `shared/`, `projects/`, `gym/`, `test/`, runtime `.state/`, and repo metadata. Legacy root content belongs in scoped agent/project/shared folders or under `projects/_archive/legacy-root/`.

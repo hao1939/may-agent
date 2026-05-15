@@ -42,13 +42,13 @@ describe("circuit-breaker extended", () => {
   });
 
   it("returns null when errors below threshold", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({ agents: { bob: { consecutiveErrors: 2 } } });
     expect(checkCircuitBreaker("/agents", "bob")).toBeNull();
   });
 
   it("returns reason when errors at threshold", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 3, trippedAt: new Date().toISOString() } }
     });
@@ -62,7 +62,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("auto-resets when signal file deleted", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 5, trippedAt: "2024-01-01" } }
     });
@@ -82,7 +82,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("recordOutcome trips breaker at threshold", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     // Pre-load with 2 errors
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 2, lastError: "prev" } }
@@ -99,7 +99,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("recordOutcome resets on success", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 1 } }
     });
@@ -113,7 +113,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("recordOutcome cleans signal on success after trip", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     const signalPath = "/agents/bob/SIGNAL-circuit-breaker.md";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 5, trippedAt: "2024-01-01" } }
@@ -125,7 +125,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("recordOutcome does not clean signal when not previously tripped", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 1 } }
     });
@@ -135,7 +135,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("resetCircuitBreaker clears state and signal", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     const signalPath = "/agents/bob/SIGNAL-circuit-breaker.md";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 5, trippedAt: "2024-01-01" } }
@@ -153,7 +153,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("does not re-trip already tripped breaker", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
       agents: { bob: { consecutiveErrors: 4, trippedAt: "2024-01-01" } }
     });
@@ -168,7 +168,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("handles corrupt state file gracefully", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = "not json";
     
     // readFileSync will return the string, JSON.parse will fail, loadState returns default
@@ -201,7 +201,7 @@ describe("circuit-breaker extended", () => {
   });
 
   it("signal file contains agent name and instructions", () => {
-    const statePath = "/agents/shared/circuit-breaker-state.json";
+    const statePath = "/agents/.state/circuit-breaker-state.json";
     fs._store[statePath] = JSON.stringify({
       agents: { myagent: { consecutiveErrors: 2 } }
     });

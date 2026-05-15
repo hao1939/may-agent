@@ -11,7 +11,7 @@ import {
   shouldRefreshEvaluation,
   transcriptOutputSignals,
   transcriptIssues,
-} from "../../agents/evaluator/workflows/evaluator-aftermath.ts";
+} from "./evaluator-aftermath.ts";
 
 describe("evaluator aftermath transcript checks", () => {
   it("flags schema guessing and runtime handoff commit friction", () => {

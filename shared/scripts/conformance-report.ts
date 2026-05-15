@@ -6,17 +6,17 @@
  *   2. Session trace completeness (context.read + agent.decision events)
  *   3. Current metric values vs targets
  *
- * Usage: npx tsx agents/shared/scripts/conformance-report.ts
- * Output: agents/shared/projects/outputs/conformance-report.html
+ * Usage: npx tsx shared/scripts/conformance-report.ts
+ * Output: projects/closed-loop-reliability/outputs/conformance-report.html
  */
 
 import { existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 
-const ROOT = join(import.meta.dirname || __dirname, "../../..");
-const DB_PATH = join(ROOT, "agents/may.db");
-const OUTPUT_DIR = join(ROOT, "agents/shared/projects/outputs");
+const ROOT = join(import.meta.dirname || __dirname, "../..");
+const DB_PATH = join(ROOT, ".state/may.db");
+const OUTPUT_DIR = join(ROOT, "projects/closed-loop-reliability/outputs");
 const OUTPUT_PATH = join(OUTPUT_DIR, "conformance-report.html");
 
 interface Session {

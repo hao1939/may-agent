@@ -109,5 +109,5 @@ From WKWA-006 Section 6:
 ## File Locations
 
 - Agent-specific skills: `agents/<name>/skills/`
-- Shared skills: `agents/shared/skills/<skill-name>/SKILL.md`
-- Skill library index: `agents/shared/skills/LIBRARY.md`
+- Shared skills: `shared/skills/<skill-name>/SKILL.md`
+- Skill library index: `shared/skills/LIBRARY.md`

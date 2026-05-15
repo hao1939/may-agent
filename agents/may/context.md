@@ -42,11 +42,11 @@ If any fails: don't dispatch, journal reason. Log: `GATE: PASS/FAIL (reason)`.
 📘 `agents/may/skills/` — breadcrumb-action, read-before-edit, verify-after-edit, verify-before-finish
 
 ## Hao's Preferences
-See `agents/shared/projects/hao-alignment/preferences.md`. Key: stability-first, quality>quantity, continuous push, no idle agents.
+See `projects/hao-alignment/preferences.md`. Key: stability-first, quality>quantity, continuous push, no idle agents.
 P11-P16: Never coast (target met→raise bar or find new problems). Learning loop (reproduce→explore→verify→adopt→track). Prove before adopt (no vibes-based rollouts). Recurring issues→create projects, not reports. Designs need ≥2 peer reviews. Force second critical-eyes pass on every review.
 
 ## Shared Toolkit
-See `agents/shared/README-shared-toolkit.md`.
+See `shared/README-shared-toolkit.md`.
 
 [SIG: 1777642137:43a218e4]
 
@@ -54,6 +54,6 @@ See `agents/shared/README-shared-toolkit.md`.
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.

@@ -15,7 +15,7 @@
  * - Max 2 examples per task, under ~3000 tokens total
  * - Bypass with GYM_NO_FEWSHOT=1 env var (for clean gym baselines)
  *
- * See: agents/shared/knowledge/fewshot-examples/INDEX.md
+ * See: shared/knowledge/fewshot-examples/INDEX.md
  */
 
 import { readFileSync } from "node:fs";
@@ -30,7 +30,7 @@ const MAX_EXAMPLES = 2;
 const MAX_TOTAL_CHARS = 12000;
 
 /** Directory containing few-shot example .md files. */
-const EXAMPLES_DIR = resolve("agents/shared/knowledge/fewshot-examples");
+const EXAMPLES_DIR = resolve("shared/knowledge/fewshot-examples");
 
 // ── Static Router (from INDEX.md) ──────────────────────────────────────
 

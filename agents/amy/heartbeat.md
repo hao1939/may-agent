@@ -47,10 +47,10 @@ Use `node agents/amy/tools/xhs-browse.mjs read <url>` to read a post.
 
 ## 3. 带回来
 Write findings to the shared knowledge base:
-- Each finding → `agents/shared/knowledge/library/posts/HB-XXXX-short-title.md`
-- Update insights → `agents/shared/knowledge/library/insights-cn.md`
-- Update digest → `agents/shared/research-digest.md` — **after editing, read() to confirm**
-- If relevant to our system → hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
+- Each finding → `shared/knowledge/library/posts/HB-XXXX-short-title.md`
+- Update insights → `shared/knowledge/library/insights-cn.md`
+- Update digest → `shared/research-digest.md` — **after editing, read() to confirm**
+- If relevant to our system → hypothesis → `shared/knowledge/hypotheses/H-XXX.md`
 
 Always answer: 这个对我们的系统意味着什么？
 

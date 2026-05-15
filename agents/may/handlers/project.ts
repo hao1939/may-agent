@@ -1,7 +1,7 @@
 /**
  * project — Project Health Monitor (thin handler)
  *
- * Core logic lives in agents/shared/lib/project-health.ts.
+ * Core logic lives in shared/lib/project-health.ts.
  * This handler scans projects, diagnoses health, and executes actions:
  *   - launch-workflow for active projects
  *   - reactivate/add-comment for blocked projects
@@ -47,7 +47,7 @@ function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unkn
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  const agentsRoot = resolve(ctx.sdk.paths.root, "agents");
+  const projectsRoot = ctx.sdk.paths.projects ?? resolve(ctx.sdk.paths.root, "projects");
   const stateFile = resolve(ctx.sdk.paths.root, ".state/project-health-state.json");
 
   return async (event?: TriggerEvent) => {
@@ -55,7 +55,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const now = Date.now();
     const healthState = ph.readHealthState(stateFile);
 
-    const projects = ph.scanAllProjects(agentsRoot);
+    const projects = ph.scanAllProjects({ projectsRoot });
     if (projects.length === 0) {
       emitSkip(ctx, "No projects found.", { eventType: event?.type ?? "timer.tick" });
       return;

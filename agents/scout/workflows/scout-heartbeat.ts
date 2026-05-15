@@ -1,4 +1,4 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 /**
  * Scout heartbeat — creative autonomous sessions.
  *
@@ -52,7 +52,7 @@ This session is for **creative, autonomous work** — things nobody asked you to
 - Find non-obvious implications for our agent system
 - Make connections between disparate research areas
 - Identify emerging trends before they're obvious
-- Update or create shared knowledge entries (agents/shared/knowledge/entries/KE-NNN.md)
+- Update or create shared knowledge entries (shared/knowledge/entries/KE-NNN.md)
 - Append any notable insights to agents/scout/workspace/digest/today.md
 
 ${metricsBlock}

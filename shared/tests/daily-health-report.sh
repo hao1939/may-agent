@@ -6,15 +6,16 @@ set -o pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SHARED_DIR="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$SHARED_DIR/projects/outputs"
+ROOT_DIR="$(dirname "$SHARED_DIR")"
+OUTPUT_DIR="$ROOT_DIR/projects/closed-loop-reliability/outputs"
 REPORT_FILE="$OUTPUT_DIR/daily-health-report.md"
 TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
 mkdir -p "$OUTPUT_DIR"
 
 # Run test suite
-cd "$SHARED_DIR"
-TEST_OUTPUT=$(npx vitest run 2>&1)
+cd "$ROOT_DIR"
+TEST_OUTPUT=$(bun run test 2>&1)
 TEST_EXIT=$?
 
 # Parse test counts
@@ -34,7 +35,7 @@ fi
 
 # Scan project statuses
 PROJECT_TABLE=""
-for proj_dir in "$SHARED_DIR"/projects/*/; do
+for proj_dir in "$ROOT_DIR"/projects/*/; do
   [ -d "$proj_dir" ] || continue
   proj_name=$(basename "$proj_dir")
   [ "$proj_name" = "outputs" ] && continue

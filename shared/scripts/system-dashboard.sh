@@ -49,8 +49,8 @@ echo ""
 
 # Deliverables
 echo "┌─ DELIVERABLES ────────────────────────────"
-DELIV_COUNT=$(find projects/outputs -type f 2>/dev/null | wc -l | xargs)
-echo "│ Files in projects/outputs: $DELIV_COUNT"
+DELIV_COUNT=$(find projects -mindepth 2 -maxdepth 2 -type d -name outputs 2>/dev/null | while read -r d; do find "$d" -type f; done | wc -l | xargs)
+echo "│ Files in project-scoped outputs/: $DELIV_COUNT"
 echo ""
 
 echo "╚══════════════════════════════════════════╝"

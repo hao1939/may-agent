@@ -17,10 +17,10 @@ Follow the chain. Go deep.
 
 ## 3. 带回来
 Write findings to the shared knowledge base (not your local workspace):
-- Each finding → `agents/shared/knowledge/library/posts/HB-XXXX-short-title.md` (self-contained)
-- Update insights → `agents/shared/knowledge/library/insights-cn.md`
-- Update digest → `agents/shared/research-digest.md` — **after editing, read() to confirm**
-- If directly relevant to our system → hypothesis → `agents/shared/knowledge/hypotheses/H-XXX.md`
+- Each finding → `shared/knowledge/library/posts/HB-XXXX-short-title.md` (self-contained)
+- Update insights → `shared/knowledge/library/insights-cn.md`
+- Update digest → `shared/research-digest.md` — **after editing, read() to confirm**
+- If directly relevant to our system → hypothesis → `shared/knowledge/hypotheses/H-XXX.md`
 
 ⚠️ **Verify writes**: After editing any shared file (research-digest.md, bulletin.md, insights-cn.md), call `read()` on that file before moving on. Edits can silently fail.
 
@@ -32,6 +32,6 @@ CAPTCHA or Chrome down? After 2 failed attempts, pivot:
 - Synthesize findings you already have — connect what you haven't connected yet
 
 ## 5. 收工
-**No interesting finds this cycle?** Don't just exit. Consult `agents/shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a note). Produce a measurable artifact.
+**No interesting finds this cycle?** Don't just exit. Consult `shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a note). Produce a measurable artifact.
 
 Write session notes. Call `finish()`.

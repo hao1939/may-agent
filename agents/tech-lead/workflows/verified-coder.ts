@@ -1,5 +1,3 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
-
 /**
  * verified-coder workflow — Hard-Gated Coder (Wrapper Verification)
  *
@@ -21,6 +19,7 @@
  */
 
 import { execSync } from "node:child_process";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name: string = "verified-coder";
 

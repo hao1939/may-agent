@@ -2,7 +2,7 @@
 
 _Staging area for behavioral fixes. Each entry should graduate into structure (heartbeat.md, DOMAIN.md, SOUL.md) within 2 weeks, then be deleted._
 
-**Shared conventions (C22–C40) are in `agents/shared/LESSONS.md`. Only agent-specific lessons below.**
+**Shared conventions (C22–C40) are in `shared/LESSONS.md`. Only agent-specific lessons below.**
 
 ## Active Band-Aids
 

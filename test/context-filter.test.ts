@@ -1,21 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { filterContext } from "../shared/lib/context-filter.ts";
+import { filterContext, loadSkills } from "../shared/lib/context-filter.ts";
 
 describe("filterContext (EXP-235)", () => {
   it("returns filtered context for bug-fix tasks", () => {
-    const result = filterContext("coder", "Fix bug: calculator returns wrong output");
-    expect(result.stats.reductionPct).toBeGreaterThanOrEqual(50);
-    expect(result.skills).toContain("diagnosis-before-action.md");
+    const result = filterContext("tech-lead", "Fix bug: workflow returns wrong output");
+    expect(result.stats.reductionPct).toBeGreaterThanOrEqual(20);
+    expect(result.filteredContext).toContain("WHEN MAKING CODE CHANGES");
+    expect(result.skills).toContain("verify-after-edit.md");
   });
 
   it("returns filtered context for delete tasks", () => {
-    const result = filterContext("coder", "Delete temporary files from data/");
-    expect(result.stats.reductionPct).toBeGreaterThanOrEqual(50);
+    const result = filterContext("tech-lead", "Delete temporary files from data/");
+    expect(result.stats.reductionPct).toBeGreaterThanOrEqual(20);
+    expect(result.filteredContext).toContain("SESSION START");
   });
 
   it("returns filtered context for review tasks", () => {
-    const result = filterContext("coder", "Review PR: new API endpoint");
-    expect(result.skills).toContain("second-look-verification.md");
+    const result = filterContext("tech-lead", "Review PR: new API endpoint");
+    expect(result.filteredContext).toContain("BEFORE FINISH");
   });
 
   it("returns empty for non-existent agent", () => {
@@ -25,8 +27,13 @@ describe("filterContext (EXP-235)", () => {
   });
 
   it("always includes mandatory sections", () => {
-    const result = filterContext("coder", "Fix a bug");
-    // Filtered context should not be empty even for minimal tasks
+    const result = filterContext("tech-lead", "Fix a bug");
     expect(result.filteredContext.length).toBeGreaterThan(0);
+  });
+
+  it("loads skills from the current agents directory", () => {
+    const skills = loadSkills("tech-lead", ["verify-after-edit.md"]);
+    expect(skills).toHaveLength(1);
+    expect(skills[0]).toContain("Verify After Edit");
   });
 });

@@ -4,8 +4,8 @@
 
 - Project root: `/app`. `agents/` is separate git repo. No `src/` or `package.json` at root.
 - bun: `.state/.bun/bin/bun`. No npx — use `bun x`. No sudo.
-- query_db for DB. KB search: `bash agents/shared/scripts/kb-find.sh DD-770`
-- Commit: `bash agents/shared/scripts/commit-and-merge.sh "message"`
+- query_db for DB. KB search: `bash shared/scripts/kb-find.sh DD-770`
+- Commit: `bash shared/scripts/commit-and-merge.sh "message"`
 - Gym: `export GYM_AGENT_BIN=/usr/local/bin/may-agent`. Use `--timeout 600` single / `--timeout 1800` batch 10+.
 
 ## Session Discipline (activation: throughout session)
@@ -29,10 +29,10 @@
 
 ## When Doing Research (activation: designing experiments, writing KEs)
 
-- Design docs: `agents/shared/may-agent-docs/design/`
+- Design docs: `shared/may-agent-docs/design/`
 - Scaffold scripts: `agents/bob/workspace/scripts/new-hypothesis.sh`, `new-ke.sh`, `new-experiment.sh`
 - Briefs to tech-lead: use `workflow reviewed-delivery`
-- **Pre-Work Discovery Check**: `grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md`
+- **Pre-Work Discovery Check**: `grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md`
 
 ## Key Findings (activation: when designing interventions)
 
@@ -46,7 +46,7 @@
 
 ## Required Skills
 📘 `agents/bob/skills/` — gym-execution-checklist, knowledge-base-navigation, persistent-task-workflow, verify-before-finish, cross-reference-source-code, read-only-finish-protocol
-📘 `agents/shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
+📘 `shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
 
 ## Shared Toolkit
-See `agents/shared/README-shared-toolkit.md`.
+See `shared/README-shared-toolkit.md`.

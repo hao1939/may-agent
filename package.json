@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@may-agent/sdk": "file:projects/may-agent/packages/sdk",
     "puppeteer-core": "^24.42.0"
   },
   "devDependencies": {

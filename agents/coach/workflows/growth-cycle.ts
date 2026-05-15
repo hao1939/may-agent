@@ -1,7 +1,6 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
-
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   promoteAgent,
   discardAgent,
@@ -104,7 +103,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `- Working directory: /app\n` +
     `- No npm — use bun or ./node_modules/.bin/\n` +
     `- Agent files: /app/agents/<name>/\n` +
-    `- Gym scenarios: /app/agents/gym/scenarios/\n` +
+    `- Gym scenarios: /app/gym/scenarios/\n` +
     `- Lab forks: /app/agents/.lab/<fork-name>/\n` +
     `- Scripts: /app/scripts/\n` +
     `- Do NOT use /root/, /home/, /Users/, or ~/ paths\n\n`;
@@ -134,12 +133,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `## Instructions\n` +
       `1. Read \`agents/coach/knowledge/method-catalog.md\` — find this method's entry.\n` +
       `2. Read documentation and examples related to this method:\n` +
-      `   - For skills: read \`agents/shared/skills/\` for examples\n` +
+      `   - For skills: read \`shared/skills/\` for examples\n` +
       `   - For workflows: read existing workflows in \`agents/*/workflows/\`\n` +
       `   - For heartbeat steps: read \`agents/*/heartbeat.md\` examples\n` +
       `   - For knowledge files: read \`agents/*/knowledge/\` examples\n` +
       `   - For agent.json: read the agent-loader source for config options\n` +
-      `3. Pick a simple gym scenario to test with: \`ls agents/gym/scenarios/\`\n` +
+      `3. Pick a simple gym scenario to test with: \`ls gym/scenarios/\`\n` +
       `4. Pick a target agent (preferably coder — simplest agent).\n` +
       `5. Design a small experiment: what change will you make using this method?\n` +
       `6. Report: what you learned about the method, your experiment plan.`
@@ -157,7 +156,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       `   - If the catalog has evidence for this pattern → use the proven method.\n` +
       `   - If no evidence → pick the method you think fits best (you'll test it).\n` +
       `5. Identify which agent needs the fix.\n` +
-      `6. Identify which gym scenarios can test this fix (check \`agents/gym/scenarios/\` with \`ls\`).\n` +
+      `6. Identify which gym scenarios can test this fix (check \`gym/scenarios/\` with \`ls\`).\n` +
       `7. Report:\n` +
       `   - Error pattern (FM code + description)\n` +
       `   - Target agent\n` +

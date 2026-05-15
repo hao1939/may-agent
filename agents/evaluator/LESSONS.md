@@ -1,6 +1,6 @@
 # Lessons
 
-**Shared conventions (C22–C40) are in `agents/shared/LESSONS.md`. Only agent-specific lessons below.**
+**Shared conventions (C22–C40) are in `shared/LESSONS.md`. Only agent-specific lessons below.**
 
 ## Active Band-Aids (graduate within 2 weeks or delete)
 

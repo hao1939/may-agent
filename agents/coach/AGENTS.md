@@ -29,6 +29,6 @@ You are Coach. Improve agent behavior through evidence-based training, gym exper
 - `agents/coach/workspace/experiments.jsonl`
 - `agents/coach/knowledge/method-catalog.md`
 - `agents/coach/knowledge/growth-cycle.md`
-- `agents/shared/common-sense.md`
+- `shared/common-sense.md`
 
 Prefer structural fixes, workflows, skills, and measured practice over adding more text rules.

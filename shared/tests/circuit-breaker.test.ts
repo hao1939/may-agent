@@ -7,7 +7,7 @@ const TEST_ROOT = "/tmp/cb-test-agents";
 
 function setup() {
   rmSync(TEST_ROOT, { recursive: true, force: true });
-  mkdirSync(join(TEST_ROOT, "shared"), { recursive: true });
+  mkdirSync(join(TEST_ROOT, ".state"), { recursive: true });
   mkdirSync(join(TEST_ROOT, "test-agent"), { recursive: true });
 }
 
@@ -46,7 +46,7 @@ describe("circuit-breaker", () => {
     });
 
     it("auto-resets stale tripped breakers after the retry window", () => {
-      const statePath = join(TEST_ROOT, "shared", "circuit-breaker-state.json");
+      const statePath = join(TEST_ROOT, ".state", "circuit-breaker-state.json");
       const signalPath = join(TEST_ROOT, "test-agent", "SIGNAL-circuit-breaker.md");
       writeFileSync(signalPath, "signal", "utf-8");
       writeFileSync(statePath, JSON.stringify({
@@ -111,7 +111,7 @@ describe("circuit-breaker", () => {
 
     it("stores error detail", () => {
       recordOutcome(TEST_ROOT, "test-agent", true, "provider timeout");
-      const state = JSON.parse(readFileSync(join(TEST_ROOT, "shared", "circuit-breaker-state.json"), "utf-8"));
+      const state = JSON.parse(readFileSync(join(TEST_ROOT, ".state", "circuit-breaker-state.json"), "utf-8"));
       expect(state.agents["test-agent"].lastError).toBe("provider timeout");
     });
 

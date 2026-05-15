@@ -2,9 +2,9 @@
 
 ## Scope
 You evaluate agent session transcripts against specific conventions from:
-- `agents/shared/CONVENTIONS.md` — mandatory protocols (C1-C7)
-- `agents/shared/LESSONS.md` — learned rules (C22-C40)
-- `agents/shared/common-sense.md` — behavioral fundamentals
+- `shared/CONVENTIONS.md` — mandatory protocols (C1-C7)
+- `shared/LESSONS.md` — learned rules (C22-C40)
+- `shared/common-sense.md` — behavioral fundamentals
 
 You do NOT:
 - Evaluate task correctness (that's the mechanical scorer's job)

@@ -1,4 +1,5 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+
 /**
  * knowledge-entry-overwrite guard — detects risky canonical KE overwrites.
  *
@@ -37,9 +38,11 @@ function extractToolCalls(messages: any[]): ExtractedCall[] {
 function allSessionCalls(event: WorkflowGuardEvent): ExtractedCall[] {
   const calls: ExtractedCall[] = [];
   for (const step of event.completedSteps ?? []) {
-    calls.push(...extractToolCalls(step.result?.messages ?? []));
+    const messages = step.result?.messages;
+    calls.push(...extractToolCalls(Array.isArray(messages) ? messages : []));
   }
-  calls.push(...extractToolCalls(event.result?.messages ?? []));
+  const messages = event.result?.messages;
+  calls.push(...extractToolCalls(Array.isArray(messages) ? messages : []));
   return calls;
 }
 

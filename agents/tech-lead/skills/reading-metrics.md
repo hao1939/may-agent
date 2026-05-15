@@ -14,7 +14,7 @@ Every heartbeat. Metrics are at the top of your heartbeat prompt.
 ## How to Investigate a Bad Metric
 
 ### 1. Understand what the metric measures
-Read the metric name carefully. If unsure, check `agents/shared/may-agent-docs/design/` for the metric definition.
+Read the metric name carefully. If unsure, check `shared/may-agent-docs/design/` for the metric definition.
 
 ### 2. Check recent history
 ```bash
@@ -39,9 +39,9 @@ console.table(rows);
 ### 5. Close the loop — prevent recurrence
 Fixing the immediate problem is not enough. Ask: **will this happen again?**
 
-- **Same metric breached 3+ times?** → Write a guard that catches the condition during workflow execution. See `agents/shared/guards/verify-after-write.ts` for an example.
+- **Same metric breached 3+ times?** → Write a guard that catches the condition during workflow execution. See `shared/guards/verify-after-write.ts` for an example.
 - **Manual check you keep doing every heartbeat?** → Write a handler that automates it (zero LLM cost). See `agents/may/handlers/watchdog.ts` for an example.
-- **Pattern you've learned?** → Write a skill teaching other agents how to handle it. See `agents/shared/skills/` for format.
+- **Pattern you've learned?** → Write a skill teaching other agents how to handle it. See `shared/skills/` for format.
 - **Nothing you can do programmatically?** → Create a project to track the ongoing effort.
 
 The evolution ladder: **skill** (advisory) → **guard** (enforced during workflows) → **handler** (automated, no LLM). Each step moves work from expensive (LLM reasoning) to cheap (code execution).

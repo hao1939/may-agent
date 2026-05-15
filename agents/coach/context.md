@@ -37,15 +37,15 @@ concise evidence instead of padding a status file.
 📘 `agents/coach/skills/evidence-over-narrative.md`, `infrastructure-map.md`, `log-error.md`
 📘 `agents/coach/skills/verify-after-edit.md`, `verify-before-finish.md`, `context-rule-gym-ceiling.md`
 📘 `agents/coach/skills/work-session-scaffold.md` — Phase 0-4 for work sessions.
-📘 `agents/shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
-📘 `agents/shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
+📘 `shared/skills/terminal-state-check.md` — **MANDATORY**: check project status in first 3 calls, exit immediately if closed
+📘 `shared/skills/retry-aware-dispatch/` — Before dispatching multi-session tasks, check prior attempts. After 5 failures, STOP and write blocker report.
 
 ## Hao's Preferences
 Stability-first, guards stay strong, quality>quantity, observability, knowledge APPLIED not stored, convention-driven, consolidation, automate monitoring, agent identity, knowledge hygiene.
 P11: Never coast—target met means raise the bar. P12: Learning loop (reproduce→explore→verify→adopt→track). P13: Prove before adopt—gym verification before promoting changes. P14: Recurring issue → create a project, not a report. P15: Discuss designs with peer agents before finalizing. P16: Force a second what's-wrong pass on every review.
 
 ## Shared Toolkit
-See `agents/shared/README-shared-toolkit.md`.
+See `shared/README-shared-toolkit.md`.
 
 [SIG: 1777642137:085e1085]
 
@@ -53,7 +53,7 @@ See `agents/shared/README-shared-toolkit.md`.
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
 

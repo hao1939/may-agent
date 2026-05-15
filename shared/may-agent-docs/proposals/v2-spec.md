@@ -229,7 +229,7 @@ A historical residue note: the events table contains 371 `agent.notification` ev
 
 Two-part:
 - *Continuous*: `capability.process-uptime-h` (hours since earliest currently-running session, computed in `metrics-snapshot.ts`) and `capability.unexpected-restart-count-7d` (restarts not initiated by humans). Target: low restart count, growing uptime.
-- *Scenario*: scheduled chaos test in `agents/gym/scenarios/crash-recovery/` that kills the may-agent process at random intervals and measures time to first successful heartbeat. Result is written as a metric: `capability.crash-recovery-time-last-test-s`. The metric has a freshness threshold — a stale result (> 7 days) is itself a breach.
+- *Scenario*: scheduled chaos test in `gym/scenarios/crash-recovery/` that kills the may-agent process at random intervals and measures time to first successful heartbeat. Result is written as a metric: `capability.crash-recovery-time-last-test-s`. The metric has a freshness threshold — a stale result (> 7 days) is itself a breach.
 
 **Target / threshold.** Restart-time < 60s. Unexpected restarts < 5 / 7d. Scenario freshness < 7d.
 

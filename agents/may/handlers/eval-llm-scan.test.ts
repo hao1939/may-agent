@@ -3,16 +3,14 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { closeDb, getDb } from "../../../src/lib/requests.js";
-import { createQueryService } from "../../../src/lib/query-service.js";
-import { create } from "../../agents/may/handlers/eval-llm-scan.js";
+import { createTestRuntime } from "@may-agent/sdk/testing";
+import { create } from "./eval-llm-scan.js";
 
 describe("eval-llm-scan handler", () => {
   const roots: string[] = [];
 
   afterEach(() => {
     for (const root of roots.splice(0)) {
-      closeDb(join(root, ".state"));
       rmSync(root, { recursive: true, force: true });
     }
   });
@@ -23,7 +21,8 @@ describe("eval-llm-scan handler", () => {
     const persist = join(root, ".state");
     const agents = join(root, "agents");
     mkdirSync(agents, { recursive: true });
-    const db = getDb(persist);
+    const runtime = createTestRuntime({ root, persist, agents });
+    const db = runtime.db;
     const runWorkflow = vi.fn(async (_workflow: string, _task: string) => {
       const artifactDir = join(root, "agents", "evaluator", "workspace", "deep-evals");
       mkdirSync(artifactDir, { recursive: true });
@@ -45,9 +44,9 @@ describe("eval-llm-scan handler", () => {
     const ctx = {
       agentName: "evaluator",
       sdk: {
-        paths: { root, persist, agents },
+        ...runtime.sdk,
+        paths: { ...runtime.sdk.paths, root, persist, agents },
         getDb: () => db,
-        query: createQueryService({ getDb: () => db }),
         runWorkflow,
         runAgent: vi.fn(() => { throw new Error("runAgent should not be called by eval-llm-scan handler"); }),
         emit: vi.fn(),

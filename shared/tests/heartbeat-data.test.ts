@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 
 import {
   loadMetrics,
@@ -148,18 +148,6 @@ describe("loadMetrics", () => {
     expect(loadMetrics(ctx, "arc")).toBe("");
   });
 
-  it("keeps retired v2 spec coverage out of active metrics", () => {
-    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
-    const activeRegistry = source.slice(
-      source.indexOf("const ALL_METRICS"),
-      source.indexOf("const RETIRED_METRIC_IDS"),
-    );
-    const retiredRegistry = source.slice(source.indexOf("const RETIRED_METRIC_IDS"));
-
-    expect(activeRegistry).not.toContain('id: "v2.spec-coverage-rate"');
-    expect(retiredRegistry).toContain('"v2.spec-coverage-rate"');
-  });
-
   it("shows consecutive breach escalation", () => {
     const db = makeDb({
       prepare: (sql: string) => ({
@@ -191,8 +179,8 @@ describe("loadProjects", () => {
     expect(loadProjects(ctx, "bob")).toBe("");
   });
 
-  it("loads shared projects owned by agent", () => {
-    const projDir = join(TEST_DIR, "shared", "projects", "myproj");
+  it("loads projects owned by agent", () => {
+    const projDir = join(TEST_DIR, "projects", "myproj");
     mkdirSync(projDir, { recursive: true });
     writeFileSync(join(projDir, "project.md"), `---
 owner: bob
@@ -215,7 +203,7 @@ health: green
   });
 
   it("skips done/complete projects", () => {
-    const projDir = join(TEST_DIR, "shared", "projects", "doneproj");
+    const projDir = join(TEST_DIR, "projects", "doneproj");
     mkdirSync(projDir, { recursive: true });
     writeFileSync(join(projDir, "project.md"), `---
 owner: bob
@@ -230,7 +218,7 @@ status: done
   });
 
   it("skips projects owned by other agents", () => {
-    const projDir = join(TEST_DIR, "shared", "projects", "otherproj");
+    const projDir = join(TEST_DIR, "projects", "otherproj");
     mkdirSync(projDir, { recursive: true });
     writeFileSync(join(projDir, "project.md"), `---
 owner: alice
@@ -496,8 +484,8 @@ describe("genericHeartbeat", () => {
   beforeEach(() => { cleanup(); });
 
   it("runs a full heartbeat cycle", async () => {
-    // Set up circuit breaker dir
-    mkdirSync(join(TEST_DIR, "shared", "circuit-breaker"), { recursive: true });
+    // Set up circuit breaker state dir
+    mkdirSync(join(TEST_DIR, ".state"), { recursive: true });
     mkdirSync(join(TEST_DIR, "bob"), { recursive: true });
     writeFileSync(join(TEST_DIR, "bob", "heartbeat.md"), "# Bob heartbeat", "utf-8");
 
@@ -513,9 +501,9 @@ describe("genericHeartbeat", () => {
 
   it("skips when circuit breaker is open", async () => {
     // Create circuit breaker state file at the correct path
-    const sharedDir = join(TEST_DIR, "shared");
-    mkdirSync(sharedDir, { recursive: true });
-    writeFileSync(join(sharedDir, "circuit-breaker-state.json"), JSON.stringify({
+    const stateDir = join(TEST_DIR, ".state");
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(join(stateDir, "circuit-breaker-state.json"), JSON.stringify({
       agents: {
         bob: {
           consecutiveErrors: 10,

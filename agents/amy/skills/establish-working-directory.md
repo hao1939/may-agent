@@ -6,8 +6,8 @@
 ## Protocol
 
 1. **First call**: `ls` at project root to see what exists
-2. **If file not found**: `find . -name "<filename>" -not -path "*/node_modules/*" -not -path "*/.state/*" -not -path "*/agents/gym/*"` (exclude noise)
-3. **Pick the match closest to project root** — never pick paths under `agents/gym/scenarios/` unless the task explicitly says gym
+2. **If file not found**: `find . -name "<filename>" -not -path "*/node_modules/*" -not -path "*/.state/*" -not -path "*/gym/*"` (exclude noise)
+3. **Pick the match closest to project root** — never pick paths under `gym/scenarios/` unless the task explicitly says gym
 4. **`cd` to that directory and confirm** with `ls` before doing any work
 5. **Never use `find /`** — stay within the project
 

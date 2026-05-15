@@ -5,6 +5,7 @@ shared/node_modules/
 # Runtime state - never track
 .state/
 .state.pre-app-root-migration-*/
+projects/may-agent/
 shared/.state/
 *.log
 *.bak
@@ -50,7 +51,20 @@ agents/*/last-session.md
 **/__test_project_coverage__/
 
 # Legacy top-level paths that should not be reintroduced after cleanup
+/projects/outputs/
+/projects/_archive/legacy-root/lab/
+/projects/_archive/legacy-root/evaluator/
 /knowledge-base/
 /knowledge/
 /workspace/
 /evaluator/
+shared/circuit-breaker-state.json
+/architect/
+/coder/
+/config/
+/docs/
+/environment/
+/skills/
+/tools/
+/types/
+/_archetypes/

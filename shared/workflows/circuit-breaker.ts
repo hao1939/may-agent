@@ -18,7 +18,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 const THRESHOLD = 3; // consecutive errors before tripping
 const AUTO_RESET_MS = 60 * 60 * 1000; // bound transient provider outages to one retry window
@@ -34,7 +34,18 @@ interface BreakerState {
   agents: Record<string, AgentState>;
 }
 
+function getAppRoot(agentsRoot: string): string {
+  if (basename(agentsRoot) === "agents" && dirname(agentsRoot) !== dirname(dirname(agentsRoot))) {
+    return dirname(agentsRoot);
+  }
+  return agentsRoot;
+}
+
 function getStatePath(agentsRoot: string): string {
+  return join(getAppRoot(agentsRoot), ".state", STATE_FILE);
+}
+
+function getLegacyStatePath(agentsRoot: string): string {
   return join(agentsRoot, "shared", STATE_FILE);
 }
 
@@ -43,15 +54,18 @@ function getSignalPath(agentsRoot: string, agent: string): string {
 }
 
 function loadState(agentsRoot: string): BreakerState {
-  try {
-    return JSON.parse(readFileSync(getStatePath(agentsRoot), "utf-8"));
-  } catch {
-    return { agents: {} };
+  for (const path of [getStatePath(agentsRoot), getLegacyStatePath(agentsRoot)]) {
+    try {
+      return JSON.parse(readFileSync(path, "utf-8"));
+    } catch {}
   }
+  return { agents: {} };
 }
 
 function saveState(agentsRoot: string, state: BreakerState): void {
-  writeFileSync(getStatePath(agentsRoot), JSON.stringify(state, null, 2), "utf-8");
+  const path = getStatePath(agentsRoot);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(state, null, 2), "utf-8");
 }
 
 /**

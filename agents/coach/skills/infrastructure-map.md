@@ -68,7 +68,7 @@
 | Session evaluation | `agents/evaluator/skills/monitor-session.cjs` | Not in the harness |
 | Finish tool behavior | **Runtime harness** — look at error messages, not source | Not greppable in `src/lib/tools/` |
 | Skill loading | `src/lib/growth.ts` + agent's `skills/` directory | — |
-| Workflow implementations | `agents/shared/workflows/*.ts` | Not in `src/` |
+| Workflow implementations | `shared/workflows/*.ts` | Not in `src/` |
 
 ### Key Principle
 
@@ -126,7 +126,7 @@ scripts/gym-batch.sh --scenarios <scenario> --agent coder --lab coder-with-skill
 ### A/B Experiments via Lab Scripts
 
 ```bash
-# Create experiment design at agents/shared/knowledge/experiments/EXP-XXX/design.json
+# Create experiment design at shared/knowledge/experiments/EXP-XXX/design.json
 # Run it:
 scripts/lab-run.sh EXP-XXX
 scripts/lab-run.sh EXP-XXX --dry-run  # preview

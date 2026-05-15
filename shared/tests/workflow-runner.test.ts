@@ -27,7 +27,7 @@ describe("workflow-runner", () => {
   describe("mergeWorkflowConfig", () => {
     it("applies defaults for empty partial", () => {
       const cfg = mergeWorkflowConfig({});
-      expect(cfg.projectRoot).toBe("/app/agents/shared");
+      expect(cfg.projectRoot).toBe("/app");
       expect(cfg.task).toBe("");
       expect(cfg.maxIterations).toBe(5);
       expect(cfg.healthCheckEnabled).toBe(true);
@@ -147,7 +147,7 @@ describe("workflow-runner", () => {
 
   describe("runValidationStage", () => {
     it("passes with a valid task referencing existing project", async () => {
-      const cfg = mergeWorkflowConfig({ task: "Work on projects/test", projectRoot: "/app/agents/shared" });
+      const cfg = mergeWorkflowConfig({ task: "Work on projects/test", projectRoot: "/app" });
       const result = await runValidationStage(cfg);
       expect(result.stage).toBe("validate");
       // May or may not succeed depending on filesystem, but should not throw

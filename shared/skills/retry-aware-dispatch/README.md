@@ -52,10 +52,10 @@ When dispatching recurring work, include attempt count:
 
 ## Tooling: Dispatch Registry
 
-A concrete implementation is available at `agents/shared/tools/dispatch-registry.sh`:
+A concrete implementation is available at `shared/tools/dispatch-registry.sh`:
 
 ```bash
-source agents/shared/tools/dispatch-registry.sh
+source shared/tools/dispatch-registry.sh
 
 # Before dispatching:
 dispatch_check "agent-name" "task description"   # exits 0=ok, 1=blocked
@@ -72,4 +72,4 @@ This implements the 3-strike rule with 6h cooldown and automatic reset on succes
 ## Evidence
 - EXP-860 design: 70+ zombie sessions observed per 24h cycle in production
 - Root cause: no retry tracking, no backoff, no escalation path
-- Layer 2 implementation: `agents/shared/tools/dispatch-registry.sh` (deployed 2026-05-05)
+- Layer 2 implementation: `shared/tools/dispatch-registry.sh` (deployed 2026-05-05)

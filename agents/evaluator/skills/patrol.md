@@ -21,5 +21,5 @@ Returns a JSON report.
 - **WARNING**: Investigation required (L4 Stuck Task).
 
 ## Dependencies
-- `agents/shared/compliance-snapshot.json` (Baseline)
+- `shared/compliance-snapshot.json` (Baseline)
 - `.state/delegations.jsonl` (Runtime State)

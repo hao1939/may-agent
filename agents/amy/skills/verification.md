@@ -100,7 +100,7 @@ If verification fails → fix the issue → re-verify → repeat until it passes
 
 If verification fails with path/module errors, fix the command — don't switch to a different verification that happens to pass on unrelated code.
 
-**Evidence**: tech-lead ran `cd /home/hao/may-agent && npm test` (wrong cwd, wrong runner), got exit 1, then ran `npx vitest --run` (correct) but never re-ran the original failing command to confirm full coverage.
+**Evidence**: tech-lead ran `cd /app && npm test` (wrong cwd, wrong runner), got exit 1, then ran `npx vitest --run` (correct) but never re-ran the original failing command to confirm full coverage.
 
 ### AP-7: "Proceed Despite Red Flags"
 **Pattern**: Verification reveals a missing or incomplete deliverable, but the agent proceeds anyway — marking the task done or promoting the work.

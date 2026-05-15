@@ -3,12 +3,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseProjectMeta } from "../shared/lib/project-health.ts";
 
-const PROJECTS_DIR = join(process.cwd(), "app", "projects");
+const PROJECTS_DIR = join(process.cwd(), "projects");
 const TERMINAL_STATUSES = new Set(["closed", "complete", "done"]);
 
 function activeProjectFiles(): string[] {
   return readdirSync(PROJECTS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("_") && entry.name !== "may-agent")
     .map((entry) => join(PROJECTS_DIR, entry.name, "project.md"))
     .filter((path) => existsSync(path))
     .filter((path) => {

@@ -1,5 +1,5 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
 import { describe, it, expect } from "vitest";
+import type { WorkflowGuardEvent } from "@may-agent/sdk";
 
 // Import the guard module - milestone-quality exports `guard`
 // We need to import the file to access the guard and the internal scoreMilestone

@@ -2,7 +2,7 @@
 
 ## ⚠️ Working Directory Anchor (KE-1258)
 Your shell cwd is **`/app`**, not `/app/agents`. Repo-root-relative paths in
-the heartbeat prompt (e.g. `agents/arc/INBOX.md`, `agents/shared/knowledge/entries/`)
+the heartbeat prompt (e.g. `agents/arc/INBOX.md`, `shared/knowledge/entries/`)
 are already relative to `/app` — use them verbatim, or anchor at `/app/`.
 **Do not prepend `/app/agents/`** to a path that already starts with `agents/`;
 that yields `/app/agents/agents/...` which doesn't exist and silently kills
@@ -16,10 +16,10 @@ changing, finish with concise evidence instead of padding a heartbeat log. There
 is no mandatory write/edit count or tool-call quota.
 
 ## Resources
-- Knowledge base: `agents/shared/knowledge/entries/` (read ALL of these)
-- Design docs: `agents/shared/may-agent-docs/design/` (the system's architecture)
-- Core principles: `agents/shared/may-agent-docs/design/core-principles.md`
-- Common sense: `agents/shared/common-sense.md`
+- Knowledge base: `shared/knowledge/entries/` (read ALL of these)
+- Design docs: `shared/may-agent-docs/design/` (the system's architecture)
+- Core principles: `shared/may-agent-docs/design/core-principles.md`
+- Common sense: `shared/common-sense.md`
 - Session patterns: read via bun:sqlite readonly, e.g.
   `bun -e "const {Database}=require('bun:sqlite'); const db=new Database('.state/may.db',{readonly:true}); console.log(db.prepare('SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status').all())"`
 - Metrics: same pattern with `SELECT * FROM metrics WHERE status='active'`
@@ -53,7 +53,7 @@ is no mandatory write/edit count or tool-call quota.
 ```
 
 ## Output Locations
-- Knowledge entries: `agents/shared/knowledge/entries/`
+- Knowledge entries: `shared/knowledge/entries/`
 - Proposals: `agents/arc/workspace/proposals/`
 - Analysis: `agents/arc/workspace/analysis/`
 
@@ -61,6 +61,6 @@ is no mandatory write/edit count or tool-call quota.
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.

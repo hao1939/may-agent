@@ -112,7 +112,7 @@ describe("parseProjectDir", () => {
   });
 
   it("parses nested project path", () => {
-    expect(parseProjectDir("project: agents/shared/projects/foo")).toBe("agents/shared/projects/foo");
+    expect(parseProjectDir("project: projects/foo")).toBe("projects/foo");
   });
 
   it("handles extra whitespace after colon", () => {

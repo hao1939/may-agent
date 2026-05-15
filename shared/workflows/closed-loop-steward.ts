@@ -1,6 +1,4 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
-
-import type { WorkflowContext, WorkflowResult } from "../../../src/lib/workflow.js";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "closed-loop-steward";
 

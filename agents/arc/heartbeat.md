@@ -4,7 +4,7 @@
 0. **Check INBOX**: read `agents/arc/INBOX.md`. If non-empty, treat its items
    as inputs to today's priorities. (Self-fix per KE-417 — arc eats its own
    dogfood; this is the existence proof for the priority-0 INBOX pattern.)
-1. **Read new knowledge**: check `agents/shared/knowledge/entries/` for recent additions. **Before forecasting on any metric, grep entries for the metric name and read the three most recent matching KEs.** Skipping this step is how KE-561 inherited an out-of-date cadence model (see KE-562).
+1. **Read new knowledge**: check `shared/knowledge/entries/` for recent additions. **Before forecasting on any metric, grep entries for the metric name and read the three most recent matching KEs.** Skipping this step is how KE-561 inherited an out-of-date cadence model (see KE-562).
 2. **Check system health**: query metrics, look for patterns
 3. **Find contradictions**: compare design docs to actual behavior
 4. **Synthesize**: connect observations into insights
@@ -101,7 +101,7 @@ WHERE status='active';
 ```
 
 **Tooling note:** Canonical access is the **`query_db` tool**, per
-`agents/shared/common-sense.md` "Database access" (rewritten 2026-05-07
+`shared/common-sense.md` "Database access" (rewritten 2026-05-07
 in commit 2b267db20 — KE-434 is now closed; the tool *is* implemented at
 runtime). Example: `query_db({ "sql": "SELECT agent, COUNT(*) c FROM sessions GROUP BY agent" })`.
 Verified working 2026-05-08 00:48Z (this heartbeat).
@@ -114,14 +114,14 @@ contradicts the shared convention.
 
 ## System Coherence Audit
 Every heartbeat, pick ONE of these areas and check for staleness:
-- `agents/shared/common-sense.md` — does it reference frozen agents or removed systems?
-- `agents/shared/standing-orders.md` — still accurate?
-- `agents/shared/may-agent-docs/design/*.md` — contradicts current behavior?
-- `agents/shared/knowledge/entries/` — any entries no longer true?
+- `shared/common-sense.md` — does it reference frozen agents or removed systems?
+- `shared/standing-orders.md` — still accurate?
+- `shared/may-agent-docs/design/*.md` — contradicts current behavior?
+- `shared/knowledge/entries/` — any entries no longer true?
 - Active agent SOUL.md/context.md — references outdated tools or systems?
 
 If you find stale content:
-1. **Lane check first.** If the file is in `agents/shared/knowledge/entries/`, `agents/shared/may-agent-docs/design/`, or `agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — out-of-lane edits are silently stashed by the heartbeat wrapper and discarded (KE-450, KE-451). Write a proposal in `agents/arc/workspace/proposals/` and a KE entry describing the staleness.
+1. **Lane check first.** If the file is in `shared/knowledge/entries/`, `shared/may-agent-docs/design/`, or `agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — out-of-lane edits are silently stashed by the heartbeat wrapper and discarded (KE-450, KE-451). Write a proposal in `agents/arc/workspace/proposals/` and a KE entry describing the staleness.
 2. Write a knowledge entry explaining what changed and why.
 3. If the fix requires human decision, write a proposal in `agents/arc/workspace/proposals/`.
 
@@ -138,7 +138,7 @@ For (2): the output must be **empty**. Any line returned is a tracked file with 
 ## Proposal Submission
 When you write a proposal in `agents/arc/workspace/proposals/`:
 1. Write the full proposal file as normal
-2. Append a line to `agents/shared/work-queue.md` under "## Proposed (needs review)":
+2. Append a line to `shared/work-queue.md` under "## Proposed (needs review)":
    ```
    - [ ] [P0|P1|P2] <title> — agents/arc/workspace/proposals/<filename> (proposed: YYYY-MM-DD)
    ```
@@ -155,8 +155,8 @@ will see it. Aftermath caught this on `s_1778322020840_11` (commit
 `8bd7aa604`) → KE-916.
 
 Durable artifacts go to one of:
-- `agents/shared/knowledge/entries/KE-NNN-*.md`
-- `agents/shared/projects/<id>/journal.md` (or project.md)
+- `shared/knowledge/entries/KE-NNN-*.md`
+- `projects/<id>/journal.md` (or project.md)
 - `agents/arc/workspace/proposals/*.md`
 - `agents/arc/workspace/analysis/*.md` (scratch — files already tracked
   under here are grandfathered, but new files need `git add -f`; see

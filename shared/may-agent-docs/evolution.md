@@ -44,7 +44,7 @@ Lessons are not auto-loaded. Promote only durable always-on behavior into
 
 A skill is a lesson with structure: context, principles, actions, anti-patterns.
 
-**Where it lives:** `agents/shared/skills/<name>/SKILL.md`
+**Where it lives:** `shared/skills/<name>/SKILL.md`
 
 **Format:**
 ```yaml
@@ -72,7 +72,7 @@ Workflow execution is synchronous by design. A workflow step waits for its
 agent/function/sub-workflow result before the next step runs; this keeps
 orchestration simple and auditable.
 
-**Where it lives:** `agents/shared/workflows/<name>.ts`
+**Where it lives:** `shared/workflows/<name>.ts`
 
 **Interface:**
 ```typescript
@@ -104,7 +104,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 A guard runs on workflow step events. It detects mechanical risks, emits
 observable signals, and may intervene when justified.
 
-**Where it lives:** Inline in workflow definitions, or `agents/shared/guards/<name>.ts`
+**Where it lives:** Inline in workflow definitions, or `shared/guards/<name>.ts`
 
 **Interface:**
 ```typescript
@@ -301,7 +301,7 @@ See [projects.md](projects.md) for the canonical lifecycle.
 
 ### "I want agents to always run tests after code changes"
 
-**Level 4 (Guard):** `agents/shared/guards/auto-test.ts` — injects a test step after any code-writing step.
+**Level 4 (Guard):** `shared/guards/auto-test.ts` — injects a test step after any code-writing step.
 
 ### "I want a daily research scan"
 
@@ -309,11 +309,11 @@ See [projects.md](projects.md) for the canonical lifecycle.
 
 ### "Implement then verify is our default flow"
 
-**Level 3 (Workflow):** `agents/shared/workflows/implement-and-verify.ts` — any project can declare `workflow: implement-and-verify` in its YAML frontmatter.
+**Level 3 (Workflow):** `shared/workflows/implement-and-verify.ts` — any project can declare `workflow: implement-and-verify` in its YAML frontmatter.
 
 ### "Never commit secrets to git"
 
-**Level 4 (Guard):** `agents/shared/guards/no-secret-leak.ts` — blocks workflow if step output contains secret patterns.
+**Level 4 (Guard):** `shared/guards/no-secret-leak.ts` — blocks workflow if step output contains secret patterns.
 
 ### "Check if project is stalled and re-launch"
 

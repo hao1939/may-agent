@@ -30,7 +30,7 @@ Heartbeat follows the same work-context convention as projects:
 
 ## What Gets Loaded
 
-The heartbeat workflow (`agents/shared/workflows/heartbeat-data.ts`) loads:
+The heartbeat workflow (`shared/workflows/heartbeat-data.ts`) loads:
 
 1. **Metrics** — owned metrics with current values, breaches, trends
 2. **Projects** — active projects with status, milestones, last activity
@@ -75,6 +75,6 @@ context, not in `heartbeat.md`.
 
 ## Implementation
 
-- **Shared loaders:** `agents/shared/workflows/heartbeat-data.ts`
+- **Shared loaders:** `shared/workflows/heartbeat-data.ts`
 - **Auto-generation:** `src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
 - **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts`

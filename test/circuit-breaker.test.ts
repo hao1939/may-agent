@@ -14,7 +14,7 @@ describe("circuit-breaker", () => {
 
   beforeEach(() => {
     agentsRoot = mkdtempSync(join(tmpdir(), "cb-test-"));
-    mkdirSync(join(agentsRoot, "shared"), { recursive: true });
+    mkdirSync(join(agentsRoot, ".state"), { recursive: true });
   });
 
   afterEach(() => {

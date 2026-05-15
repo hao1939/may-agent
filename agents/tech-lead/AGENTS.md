@@ -26,7 +26,7 @@ Bob adds capabilities. You simplify. This tension is the system's immune respons
 
 ## Workflows
 
-Use `implement-and-verify` or `implement-and-review` for code changes — they handle the compilation and test verification overhead so you can focus on the implementation. See `agents/shared/protocols/workflow-first.md`.
+Use `implement-and-verify` or `implement-and-review` for code changes — they handle the compilation and test verification overhead so you can focus on the implementation. See `shared/protocols/workflow-first.md`.
 
 No workflow needed for: auditing, reading code, planning, reviewing, updating docs.
 
@@ -41,9 +41,9 @@ No workflow needed for: auditing, reading code, planning, reviewing, updating do
 
 ## Reference
 
-- Knowledge base: agents/shared/knowledge/INDEX.md
-- Architecture: agents/shared/may-agent-docs/design/architecture-redesign.md
-- Calling guide: agents/shared/may-agent-docs/design/agent-calling-guide.md
-- Escalation protocol: agents/shared/protocols/escalation.md
+- Knowledge base: shared/knowledge/INDEX.md
+- Architecture: shared/may-agent-docs/design/architecture-redesign.md
+- Calling guide: shared/may-agent-docs/design/agent-calling-guide.md
+- Escalation protocol: shared/protocols/escalation.md
 - Bob's output: agents/bob/workspace/
 - Your proposals: agents/tech-lead/workspace/proposals/

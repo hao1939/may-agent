@@ -10,15 +10,19 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const AGENTS_ROOT = resolve(
+const APP_ROOT = resolve(
   import.meta.dirname ?? new URL(".", import.meta.url).pathname,
   "../../"
 );
+const AGENTS_ROOT = join(APP_ROOT, "agents");
 
 // Universal entries always injected regardless of task
 const ALWAYS_INJECT_MARKERS = [
-  "## Mandatory Procedures",
-  "## Lessons from Experience",
+  "Mandatory Procedures",
+  "SESSION START",
+  "WHEN RUNNING TOOLS",
+  "BEFORE FINISH",
+  "Lessons from Experience",
 ];
 
 interface RuleMapping {
@@ -29,12 +33,12 @@ interface RuleMapping {
 }
 
 const RULE_MAPPINGS: RuleMapping[] = [
-  { id: "rule1-trace-data-flow", keywords: ["bug", "fix", "wrong output", "incorrect", "error", "trace", "data flow"], sectionMarker: "### Rule 1", skills: ["diagnosis-before-action.md"] },
-  { id: "rule2-destructive-ops", keywords: ["delete", "remove", "clean", "purge", "drop", "destroy", "rm"], sectionMarker: "### Rule 2", skills: [] },
-  { id: "rule3-run-tests", keywords: ["test", "implement", "create", "build", "add", "fix", "change", "modify", "update"], sectionMarker: "### Rule 3", skills: [] },
+  { id: "rule1-trace-data-flow", keywords: ["bug", "fix", "wrong output", "incorrect", "error", "trace", "data flow"], sectionMarker: "WHEN MAKING CODE CHANGES", skills: ["verify-after-edit.md"] },
+  { id: "rule2-destructive-ops", keywords: ["delete", "remove", "clean", "purge", "drop", "destroy", "rm"], sectionMarker: "WHEN MAKING CODE CHANGES", skills: [] },
+  { id: "rule3-run-tests", keywords: ["test", "implement", "create", "build", "add", "fix", "change", "modify", "update"], sectionMarker: "WHEN MAKING CODE CHANGES", skills: [] },
   { id: "rule4-security", keywords: ["html", "xss", "sanitize", "security", "user input", "markdown", "render", "injection"], sectionMarker: "### Rule 4", skills: [] },
   { id: "rule5-full-pipeline", keywords: ["pipeline", "downstream", "cascade", "module", "integration", "chain", "flow"], sectionMarker: "### Rule 5", skills: ["multi-file-discovery-completeness.md"] },
-  { id: "rule6-review", keywords: ["review", "pr", "pull request", "code review", "audit"], sectionMarker: "### Rule 6", skills: ["second-look-verification.md"] },
+  { id: "rule6-review", keywords: ["review", "pr", "pull request", "code review", "audit"], sectionMarker: "BEFORE FINISH", skills: [] },
   { id: "rule7-test-coverage", keywords: ["bug", "fix", "test", "regression", "edge case", "coverage"], sectionMarker: "### Rule 7", skills: [] },
   { id: "rule8-blocked", keywords: ["multiple", "items", "tasks", "list", "blocked", "missing"], sectionMarker: "### Rule 8", skills: ["task-instruction-compliance.md"] },
 ];
@@ -70,7 +74,7 @@ function extractSections(content: string, markers: Set<string>): string {
 
     if (headingMatch) {
       const depth = headingMatch[1].length;
-      const isAlways = ALWAYS_INJECT_MARKERS.some(m => line.startsWith(m));
+      const isAlways = ALWAYS_INJECT_MARKERS.some(m => line.includes(m));
       const isMatched = [...markers].some(m => line.includes(m));
 
       if (isAlways || isMatched) {

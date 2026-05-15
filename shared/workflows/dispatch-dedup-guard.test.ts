@@ -16,6 +16,7 @@ import {
 
 const DEDUP_FILE = ".state/dispatch-dedup.json";
 const ORIGINAL_CWD = process.cwd();
+const ORIGINAL_STATE_DIR = process.env.STATE_DIR;
 const TEST_CWD = join("/tmp", "__dispatch_dedup_guard_test__");
 
 function clearDb() {
@@ -31,10 +32,16 @@ describe("dispatch-dedup-guard", () => {
     rmSync(TEST_CWD, { recursive: true, force: true });
     mkdirSync(TEST_CWD, { recursive: true });
     process.chdir(TEST_CWD);
+    process.env.STATE_DIR = join(TEST_CWD, ".state");
     clearDb();
   });
   afterEach(() => {
     clearDb();
+    if (ORIGINAL_STATE_DIR === undefined) {
+      delete process.env.STATE_DIR;
+    } else {
+      process.env.STATE_DIR = ORIGINAL_STATE_DIR;
+    }
     process.chdir(ORIGINAL_CWD);
     rmSync(TEST_CWD, { recursive: true, force: true });
   });
@@ -69,7 +76,7 @@ describe("dispatch-dedup-guard", () => {
     }
     const result = shouldDispatch("bob", "doomed-task");
     expect(result.allowed).toBe(false);
-    expect(result.reason).toContain("3 failure");
+    expect(result.reason).toContain("failure outcomes");
   });
 
   test("success resets failure counter", () => {

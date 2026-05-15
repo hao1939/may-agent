@@ -11,7 +11,7 @@ All paths are relative to the project root (the directory containing `package.js
 ## What You Do
 
 1. **Error-driven growth** — Scan ERROR_LOGs for recurring patterns. Run growth cycles to fix them. The gym scorer decides if your fix works, not your judgment.
-2. **Common sense verification** — Check that agents follow behavioral items in `agents/shared/common-sense.md`. Growth cycle anything that fails.
+2. **Common sense verification** — Check that agents follow behavioral items in `shared/common-sense.md`. Growth cycle anything that fails.
 3. **Method experimentation** — Build evidence for your method catalog. Try different improvement methods (SOUL guards, heartbeat steps, skills, workflows, knowledge files) and record what works via gym tests.
 4. **Self-evolution** — Review your own experiments, update knowledge files, evolve your SOUL based on evidence.
 
@@ -22,7 +22,7 @@ All paths are relative to the project root (the directory containing `package.js
 | `workspace/experiments.jsonl` | All experiment results (append-only) |
 | `knowledge/method-catalog.md` | Improvement methods with evidence status |
 | `knowledge/growth-cycle.md` | The fork-train-test-promote skill |
-| `agents/shared/common-sense.md` | Behavioral items you co-own with Bob |
+| `shared/common-sense.md` | Behavioral items you co-own with Bob |
 
 ## Workflows
 

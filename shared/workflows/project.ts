@@ -1,5 +1,3 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
-
 /**
  * persistent-task — Run a task in a loop until done, blocked, or owner intervenes.
  *
@@ -12,6 +10,7 @@
 
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { ProjectCache } from "./project-cache.js";
 import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
 import { onProjectCreate } from "./hooks/validate-on-create.js";

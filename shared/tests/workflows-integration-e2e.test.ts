@@ -20,7 +20,7 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
   it("runs a full validate → health-check → summarize pipeline", async () => {
     // 1. Build config
     const config = mergeWorkflowConfig({
-      projectRoot: "/app/agents/shared",
+      projectRoot: "/app",
       task: "project: projects/test-reliability — run integration check",
       maxIterations: 3,
       healthCheckEnabled: true,
@@ -73,7 +73,7 @@ describe("Workflow Integration (end-to-end, no mocks)", () => {
     const cache = new ProjectCache(50, 0);
     
     // Read a real file
-    const packageJsonPath = resolve("app/shared/package.json");
+    const packageJsonPath = resolve("shared/package.json");
     const content = cache.read(packageJsonPath);
     expect(content).toContain("vitest");
 

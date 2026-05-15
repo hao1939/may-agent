@@ -55,8 +55,8 @@ Use `research-to-production`, `implement-and-verify`, or `parallel-research` whe
 
 ## Reference
 
-- Knowledge base: agents/shared/knowledge/INDEX.md
-- Library: agents/shared/knowledge/library/
-- Design docs: agents/shared/may-agent-docs/design/
-- Evidence-first process: agents/shared/may-agent-docs/design/evidence-first-process.md
+- Knowledge base: shared/knowledge/INDEX.md
+- Library: shared/knowledge/library/
+- Design docs: shared/may-agent-docs/design/
+- Evidence-first process: shared/may-agent-docs/design/evidence-first-process.md
 - Tech-lead proposals: agents/tech-lead/workspace/proposals/

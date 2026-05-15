@@ -1,7 +1,6 @@
-/// <reference path="../../../src/workflow-defs.d.ts" />
-
 import { writeFileSync, appendFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   promoteAgent,
   discardAgent,
@@ -54,7 +53,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `   - Target agent\n` +
     `   - Error pattern (FM code) or method to learn\n` +
     `   - Method to apply (can be a hypothesis from the catalog)\n` +
-    `   - Gym scenario(s) to test against (check \`ls agents/gym/scenarios/\`)\n` +
+    `   - Gym scenario(s) to test against (check \`ls gym/scenarios/\`)\n` +
     `   - Fork name (e.g., coder-sprint-1, optimizer-sprint-2)\n` +
     `7. Write the plan to \`agents/coach/workspace/sprint-plan.md\`\n` +
     `8. Report the full plan.`

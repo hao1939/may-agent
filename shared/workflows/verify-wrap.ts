@@ -1,11 +1,11 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
-
 /**
  * verify-wrap — Simple wrapper workflow that runs an agent task.
  * 
  * Used by cron jobs (reflect, optimize, common-sense-verify, research-intake)
  * that just need to run a single agent session with their configured task.
  */
+
+import type { WorkflowContext } from "@may-agent/sdk";
 
 export const name = "verify-wrap";
 export const description = "Simple wrapper: runs the configured agent with the given task.";

@@ -1,26 +1,15 @@
 /**
- * sdk-adapter.ts — In-process AgentSDK adapter for the gym runner.
+ * sdk-adapter.ts — public SDK helpers for gym tests.
  *
- * Wraps the running may-agent system to provide AgentSDK to gym scenarios.
- * Import this from the gym runner when executing scenarios in-process.
- *
- * Usage:
- *   import { createInProcessAdapter } from "./sdk-adapter.ts";
- *   const sdk = createInProcessAdapter(manager, bus, persistDir, projectRoot, agentsRoot);
- *   await runScenario(sdk);
+ * App-owned gym code must not import infra internals. In-process adapters are
+ * created by infra; app tests use the public SDK testing surface.
  */
 
-import { buildAgentSDK } from "../../src/lib/sdk-impl.js";
-import type { AgentSDK } from "../../src/lib/sdk.js";
-import type { EventBus } from "../../src/app/event-bus.js";
+import type { AgentSDK, SDKTaskResult } from "@may-agent/sdk";
+import { createTestRuntime } from "@may-agent/sdk/testing";
 
 interface AdapterOpts {
-  bus: EventBus;
-  persistDir: string;
-  projectRoot: string;
-  agentsRoot: string;
-  /** Manager's callAgent function. */
-  callAgent: (agent: string, task: string, opts?: any) => Promise<any>;
+  [key: string]: unknown;
 }
 
 /**
@@ -28,10 +17,8 @@ interface AdapterOpts {
  * This is the "real" adapter — scenarios run against the live system.
  */
 export function createInProcessAdapter(opts: AdapterOpts): AgentSDK {
-  return buildAgentSDK({
-    ...opts,
-    agentName: "gym",
-  });
+  void opts;
+  throw new Error("createInProcessAdapter is an infra-owned adapter. App gym tests should use createStubAdapter() or @may-agent/sdk/testing.");
 }
 
 /**
@@ -39,26 +26,16 @@ export function createInProcessAdapter(opts: AdapterOpts): AgentSDK {
  * Returns canned responses. Use for scenario structure validation.
  */
 export function createStubAdapter(opts?: {
-  runAgentResponse?: Partial<import("../../src/lib/sdk.js").TaskResult>;
+  runAgentResponse?: Partial<SDKTaskResult>;
 }): AgentSDK {
-  const defaultResult = {
+  const defaultResult: SDKTaskResult = {
     sessionId: "stub-session",
     status: "done",
     lastAssistantText: opts?.runAgentResponse?.lastAssistantText ?? "Stub response",
     ...opts?.runAgentResponse,
   };
 
-  const events: Array<{ type: string; data?: Record<string, unknown> }> = [];
-  const logs: string[] = [];
-
-  return {
-    runAgent: async () => defaultResult as any,
-    createLLMSession: async () => { throw new Error("createLLMSession not available in stub mode"); },
-    emit: (type, data) => { events.push({ type, data }); },
-    getDb: () => { throw new Error("getDb not available in stub mode"); },
-    log: (_level, msg) => { logs.push(msg); },
-    notify: (_target, msg) => { logs.push(`[notify] ${msg}`); },
-    escalate: (_target, reason) => { logs.push(`[escalate] ${reason}`); },
-    paths: { persist: "/tmp/gym-stub", root: "/tmp/gym-stub", agents: "/tmp/gym-stub/agents" },
-  };
+  return createTestRuntime({
+    runAgent: async () => defaultResult,
+  }).sdk;
 }

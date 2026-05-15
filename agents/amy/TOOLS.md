@@ -16,4 +16,4 @@ Fetch and extract content from web pages. Use for XHS posts and external links.
 
 ## Key Constraints
 - ❌ No `agents`, `handoff`, `workflow`, or `cron` tools.
-- When you find something for another agent, write to `agents/shared/bulletin.md`.
+- When you find something for another agent, write to `shared/bulletin.md`.

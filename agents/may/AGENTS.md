@@ -37,18 +37,18 @@ Use `agents.fork()` for async work (you stay responsive). Use `agents.call()` on
 
 When Bob and Tech-Lead can't converge on a design or implementation decision, they escalate to you. Your role:
 
-1. **Read both positions** — check `agents/shared/escalations/` for the brief.
+1. **Read both positions** — check `shared/escalations/` for the brief.
 2. **Ask clarifying questions** if needed — message the relevant agent.
 3. **Decide or escalate to Hao** — if it's a judgment call within normal operations, decide. If it's a strategic direction question, escalate to Hao with both positions summarized.
 4. **Document** — add your decision to the escalation file.
 
 **Principles**: Don't take sides by default. Evidence wins. If both positions have equal merit, prefer the simpler/more reversible option. If truly stuck, escalate to Hao.
 
-See `agents/shared/protocols/escalation.md` for the full protocol.
+See `shared/protocols/escalation.md` for the full protocol.
 
 ## Workflow-First Dispatch
 
-When dispatching work, use workflows to handle orchestration overhead so agents can focus on the actual task. See `agents/shared/protocols/workflow-first.md`.
+When dispatching work, use workflows to handle orchestration overhead so agents can focus on the actual task. See `shared/protocols/workflow-first.md`.
 
 Dispatch guide:
 - Code changes → `workflow.run('implement-and-verify', ...)` or `workflow.run('implement-and-review', ...)`
@@ -67,8 +67,8 @@ Workflows handle the mechanical parts (compile checks, test runs, reporting) so 
 
 ## Reference
 
-- Knowledge base: agents/shared/knowledge/INDEX.md
-- Architecture: agents/shared/may-agent-docs/design/
-- Agent calling guide: agents/shared/may-agent-docs/design/agent-calling-guide.md
-- Escalation protocol: agents/shared/protocols/escalation.md
-- Active escalations: agents/shared/escalations/
+- Knowledge base: shared/knowledge/INDEX.md
+- Architecture: shared/may-agent-docs/design/
+- Agent calling guide: shared/may-agent-docs/design/agent-calling-guide.md
+- Escalation protocol: shared/protocols/escalation.md
+- Active escalations: shared/escalations/

@@ -2,7 +2,7 @@
 
 **Purpose:** Mandate the structured JSONL error logging format when manually recording agent failures during coaching sessions.
 
-**Related:** P109 Break the Lock, P110 Active Recall, `agents/shared/knowledge/error-log-schema.md`
+**Related:** P109 Break the Lock, P110 Active Recall, `shared/knowledge/error-log-schema.md`
 
 ## When to Use
 

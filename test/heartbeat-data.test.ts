@@ -493,10 +493,10 @@ describe("genericHeartbeat", () => {
   it("calls runAgent and returns done", async () => {
     const tmpDir = mkdtempSync(join(tmpdir(), "hb-gen-"));
     mkdirSync(join(tmpDir, "bob"), { recursive: true });
-    mkdirSync(join(tmpDir, "shared"), { recursive: true });
+    mkdirSync(join(tmpDir, ".state"), { recursive: true });
     writeFileSync(join(tmpDir, "bob", "heartbeat.md"), "Be bob");
-    // Need circuit-breaker state file in shared/
-    writeFileSync(join(tmpDir, "shared", "circuit-breaker-state.json"), JSON.stringify({ agents: {} }));
+    // Need circuit-breaker state file in .state/
+    writeFileSync(join(tmpDir, ".state", "circuit-breaker-state.json"), JSON.stringify({ agents: {} }));
 
     const ctx = makeMockCtx({
       agentsRoot: tmpDir,

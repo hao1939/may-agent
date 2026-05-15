@@ -1,41 +1,14 @@
-# May Agents
+# May Agent App
 
-Agent configurations for the [may-agent](https://github.com/hao1939/may-agent) system.
+This repository is the app-owned configuration and project workspace for the may-agent system.
 
-## Structure
+## Layout
 
-Each agent has its own directory:
-- `knowledge/domain.md` — role, responsibilities, instructions
-- `knowledge/lessons.md` — accumulated lessons from evaluations (auto-managed)
-- `knowledge/codebase.md` — project-specific code knowledge (coder, optimizer)
-- `tools/INDEX.md` — available tools documentation
-- `workflows/` — workflow definitions (May, optimizer)
-- `workspace/` — working directory for scratch files
+- `agents/` — agent identities, prompts, tools, workflows, and per-agent workspaces.
+- `shared/` — shared knowledge, skills, guards, workflows, docs, and compatibility SDK surface used by agents.
+- `projects/` — project context maps, journals, discussions, outputs, and project-local tools.
+- `gym/` — behavior/evaluation scenarios for agent quality work.
+- `test/` — app-level tests and fixtures.
+- `.state/` — runtime state only; not a source namespace.
 
-Shared knowledge lives in `shared/`:
-- `shared/team.md` — concrete team roster (who, what tools, models, runner design, automation)
-
-## Agents
-
-### Feature Team
-
-| Agent | Role | Model |
-|-------|------|-------|
-| **may** | Supervisor — delegates, reviews, commits | opus |
-| **coder** | Implementation — reads, writes, tests | opus |
-| **qa** | Code review — independent quality check | gpt-5.2 |
-
-### Meta Team
-
-| Agent | Role | Model |
-|-------|------|-------|
-| **evaluator** | Scores agent behavior per task tree | gpt-5.4 |
-| **optimizer** | Finds patterns, implements fixes | opus |
-
-## Why a Separate Repo?
-
-Agent configs evolve independently from the library code:
-- The optimizer edits domain.md, lessons.md, tools, and workflows
-- The evaluator writes lessons from evaluation data
-- Config changes shouldn't create noise in the library's git history
-- Knowledge hot-reload: changes take effect on next agent session without restart
+Legacy top-level material from older layouts is archived under `projects/_archive/legacy-root/` or under the relevant shared archive.

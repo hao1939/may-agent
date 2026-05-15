@@ -41,6 +41,7 @@ export const DEFAULT_RUNNING_LEASE_MS = 10 * 60 * 1000;
 function getDbPath(): string {
   const cwd = process.cwd();
   const stateDir = process.env.STATE_DIR
+    ?? (existsSync("/app/.state") ? "/app/.state" : undefined)
     ?? (existsSync(join(cwd, "app", ".state")) ? join(cwd, "app", ".state") : join(cwd, ".state"));
   return join(stateDir, DEDUP_FILE);
 }

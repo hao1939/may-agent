@@ -3,15 +3,15 @@
 ## Resources
 - Session logs: `query_db("SELECT * FROM sessions WHERE status='error' ORDER BY startedAt DESC LIMIT 10")`
 - Handler events: `query_db("SELECT * FROM events WHERE event_type='handler.failed' ORDER BY timestamp DESC LIMIT 10")`
-- Workflows: `agents/shared/workflows/`
+- Workflows: `shared/workflows/`
 - Handlers: `agents/may/handlers/`
-- Skills: `agents/shared/skills/`
-- Guards: `agents/shared/guards/`
-- Design docs: `agents/shared/may-agent-docs/design/`
-- Common sense: `agents/shared/common-sense.md`
-- Knowledge base: `agents/shared/knowledge/entries/`
+- Skills: `shared/skills/`
+- Guards: `shared/guards/`
+- Design docs: `shared/may-agent-docs/design/`
+- Common sense: `shared/common-sense.md`
+- Knowledge base: `shared/knowledge/entries/`
 
-- Metrics design: `agents/shared/may-agent-docs/design/agent-metrics.md`
+- Metrics design: `shared/may-agent-docs/design/agent-metrics.md`
 - Metrics snapshot handler: `agents/may/handlers/metrics-snapshot.ts`
 - Metrics table schema: id, name, owner, source_query, source_command, target, threshold, alert_op, current, type, status, speed, unit
 
@@ -41,12 +41,12 @@ For each investigation, create a file in `agents/dev/workspace/investigations/`:
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
 
 ## Work Queue (your primary work source)
-Read `agents/shared/work-queue.md` — section "## Approved" has items ready for implementation.
+Read `shared/work-queue.md` — section "## Approved" has items ready for implementation.
 - Only work on APPROVED items (proposed items need human/may review first)
 - After implementing, check the item off: `- [x]` and add done date
 - Read the linked proposal file for full details, evidence, and verification steps

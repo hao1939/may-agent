@@ -116,7 +116,7 @@ That's the whole migration. No big rewrite.
 
 ### Phase 6: Documentation + acceptance run
 
-**Files**: `agents/shared/may-agent-docs/sdk.md`, runtime docs
+**Files**: `shared/may-agent-docs/sdk.md`, runtime docs
 
 **What**:
 - Update SDK docs to call `runAgent()` the canonical entry.

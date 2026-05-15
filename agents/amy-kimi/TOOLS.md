@@ -40,4 +40,4 @@ node agents/amy-kimi/tools/xhs-browse.mjs scroll             # Scroll feed for m
 
 ## Key Constraints
 - ❌ No `agents`, `handoff`, `workflow`, or `cron` tools.
-- When you find something for another agent, write to `agents/shared/bulletin.md`.
+- When you find something for another agent, write to `shared/bulletin.md`.

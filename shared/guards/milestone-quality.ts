@@ -1,4 +1,4 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
+import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
 
 /**
  * milestone-quality — Validates milestone specificity when projects start.

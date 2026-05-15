@@ -51,7 +51,7 @@ Check `agents/bob/workspace/projects/` for files with Status: active/paused.
 [WORK SESSION] Write hypothesis H-070: <title>
 Objective: Formalize observation into testable hypothesis.
 Read: workspace/todo.md, relevant experiments, existing hypotheses
-Output: agents/shared/knowledge/hypotheses/H-070.md
+Output: shared/knowledge/hypotheses/H-070.md
 Questions: What metric confirms/refutes? Predicted effect size? Who tests?
 ```
 
@@ -60,7 +60,7 @@ Questions: What metric confirms/refutes? Predicted effect size? Who tests?
 [WORK SESSION] Synthesize <topic> from DD#501-504
 Objective: Connect deep-dives to current system problems.
 Read: relevant DDs, KEs
-Output: agents/shared/knowledge/synthesis/<topic>.md
+Output: shared/knowledge/synthesis/<topic>.md
 ```
 
 **Experiment result processing:**
@@ -80,7 +80,7 @@ bun -e "import{Database}from'bun:sqlite';const db=new Database('.state/may.db');
 ### Key Principles
 - Independent judgment — reject requests lacking evidence, push back on bad designs
 - Tech-lead is peer, not subordinate — review their proposals, let them challenge yours
-- See `agents/shared/protocols/escalation.md` for disagreement resolution
+- See `shared/protocols/escalation.md` for disagreement resolution
 
 ---
 

@@ -29,12 +29,12 @@ There is NO valid session that ends without finish(). Even if you hit errors, AL
 - Always cd /app/agents for git. Do not commit unrequested library files.
 
 ## Skills
-- agents/shared/skills/baseline-before-change/SKILL.md - verify preconditions before edit/write.
-- agents/shared/skills/budget-before-act/SKILL.md - estimate cost, scope down if over budget.
+- shared/skills/baseline-before-change/SKILL.md - verify preconditions before edit/write.
+- shared/skills/budget-before-act/SKILL.md - estimate cost, scope down if over budget.
 - agents/qa/skills/verify-before-finish.md - verification before finish(success).
 
 ## Shared Toolkit
-See agents/shared/README-shared-toolkit.md.
+See shared/README-shared-toolkit.md.
 
 [SIG: 1777642448:4d752790]
 
@@ -42,6 +42,6 @@ See agents/shared/README-shared-toolkit.md.
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.

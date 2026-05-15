@@ -1,4 +1,3 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
 import { describe, it, expect } from "vitest";
 
 // online-quality is not in the guards list output... let me check the actual filename

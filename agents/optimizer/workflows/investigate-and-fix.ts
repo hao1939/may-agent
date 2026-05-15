@@ -1,6 +1,5 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
-
 import { existsSync, readFileSync, statSync } from "node:fs";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 /**
  * investigate-and-fix — Analysis that forces action

@@ -19,18 +19,18 @@ import { checkHealth } from "../shared/workflows/health-check.js";
 import { ProjectCache } from "../shared/workflows/project-cache.js";
 
 describe("Workflow Integration (no mocks)", () => {
-  const projectRoot = "/app/agents/shared";
+  const projectRoot = "/app";
 
   describe("Full pipeline: config → validate → health-check → summary", () => {
     it("runs a valid task through all stages and produces a coherent result", async () => {
       // 1. Build config
       const config = mergeWorkflowConfig({
         projectRoot,
-        task: "projects/outputs: write a report",
+        task: "project: projects/closed-loop-reliability",
         maxIterations: 3,
         healthCheckEnabled: true,
         healthCheckThreshold: 0.0, // low threshold so it always proceeds
-        satelliteDirs: [`${projectRoot}/projects/outputs`],
+        satelliteDirs: [`${projectRoot}/projects/closed-loop-reliability`],
       });
 
       // 2. Validate config
@@ -95,7 +95,7 @@ describe("Workflow Integration (no mocks)", () => {
 
   describe("Dispatch validator with real filesystem", () => {
     it("validates a real task string against actual project root", () => {
-      const result = validateDispatch("projects/outputs: create docs", projectRoot);
+      const result = validateDispatch("project: projects/closed-loop-reliability", projectRoot);
       expect(result).toHaveProperty("valid");
       expect(result).toHaveProperty("errors");
       expect(result).toHaveProperty("warnings");

@@ -13,7 +13,7 @@ import { Database } from "bun:sqlite";
 
 export const PROJECT_ROOT = resolve(join(import.meta.dirname ?? ".", "../../.."));
 export const AGENTS_ROOT = resolve(process.env["AGENTS_ROOT"] || join(PROJECT_ROOT, "agents"));
-export const SCENARIOS_DIR = join(PROJECT_ROOT, "agents/gym/scenarios");
+export const SCENARIOS_DIR = join(PROJECT_ROOT, "gym/scenarios");
 export const LAB_DIR = join(AGENTS_ROOT, ".lab");
 
 export interface GymResult {

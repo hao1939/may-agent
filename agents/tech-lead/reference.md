@@ -54,7 +54,7 @@ On every other heartbeat, prioritize feature delivery over infra/exploration:
 - Before every `edit()`: `read()` the file first.
 - Do NOT edit source files in heartbeats — fork work sessions.
 - Delegate to coder when appropriate: `agents.call("coder", task)` with file scope boundaries.
-- If Bob sends a design you think is wrong, push back. See `agents/shared/protocols/escalation.md`.
+- If Bob sends a design you think is wrong, push back. See `shared/protocols/escalation.md`.
 
 ### Anti-patterns
 - Running `tsc`, `vitest`, or multi-file `grep src/` inline to "scope" a dispatch (observed: 16-25 ops). Let the fork scope itself.

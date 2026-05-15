@@ -29,7 +29,7 @@ file. There is no mandatory write/edit count or tool-call quota.
 - Direct commits to main **BLOCKED**. Branch: `git checkout -b review/<session-id>`
 - Emergency bypass: `REVIEW_GATE_BYPASS=1 git commit`
 - After code edits: `tsc --noEmit` + test. Do not finish() until exit code 0.
-- Before proposing guards: read `agents/shared/may-agent-docs/design/code-vs-data-decisions.md`
+- Before proposing guards: read `shared/may-agent-docs/design/code-vs-data-decisions.md`
 
 ## 🤝 [WHEN DELEGATING TO CODER]
 
@@ -61,17 +61,17 @@ P11: Never coast—"target met" is not a stop condition; refine the metric or fi
 
 - agents/tech-lead/skills/establish-working-directory.md, evidence-over-narrative.md, experience-replay.md
 - agents/tech-lead/skills/post-delivery-readback-verification.md, read-before-edit.md, verify-after-edit.md, verify-before-finish.md
-- agents/shared/skills/obstacle-pivot/SKILL.md, baseline-before-change/SKILL.md, session-awareness-guard/skill.md
+- shared/skills/obstacle-pivot/SKILL.md, baseline-before-change/SKILL.md, session-awareness-guard/skill.md
 - agents/skills/decompose-before-acting.md - plan and verify complex multi-step tasks
 
 ## Shared Toolkit
-See agents/shared/README-shared-toolkit.md.
+See shared/README-shared-toolkit.md.
 
 
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
 

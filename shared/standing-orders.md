@@ -53,10 +53,10 @@ Before creating any new hypothesis, you must first test or archive one existing 
 - **Reason**: 85% of hypotheses are untested. Stop accumulating, start resolving.
 -->
 
-### [ORDER-014] Orchestrators close completed projects in-band (2026-05-02, updated 2026-05-08)
-If you are an orchestrator and your project has met all metrics and exhausted its plan, close it by editing the YAML frontmatter in `project.md`: `status: active` → `status: closed`. After editing, return CONTINUE one more time; the next workflow entry-guard tick will exit cleanly.
-- **Applies to**: all orchestrator roles running master-worker
-- **Reason**: project status is the in-band terminal signal read by workflow entry guards. Without a status update, completed projects loop to the safety cap.
+### [ORDER-014] Re-judge projects when a plan completes (2026-05-02, updated 2026-05-14)
+When a project plan appears complete, judge it against the goal, current signals, evidence, and next useful action. If concrete autonomous work remains, re-plan and continue. Use `waiting`, `blocked`, or `closed` only when there is a real stop condition: an external precondition, an unresolved dependency, or explicit human/May closure.
+- **Applies to**: all orchestrator roles running project workflows
+- **Reason**: checked-off milestones are evidence, not the goal. Projects should keep moving while useful work remains, and stop only for a clear reason.
 
 ### [ORDER-010] All src/ code changes require Hao's approval before merge (2026-04-19)
 Do NOT merge review branches to main. Do NOT use batch-merge.sh or review-merge.sh. Do NOT use REVIEW_GATE_BYPASS. Create review branches, commit your code there, and wait for Hao to merge. The review-auto-merge cron handler is disabled. Only Hao merges to main.

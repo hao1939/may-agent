@@ -430,7 +430,7 @@ Status: implemented and verified in the running daemon.
 
 Scope:
 
-- Review `agents/shared/workflows/heartbeat-data.ts`.
+- Review `shared/workflows/heartbeat-data.ts`.
 - Classify each direct `ctx.getDb()` read:
   - mechanical/history measurement,
   - live context for agent judgment,
@@ -777,11 +777,11 @@ First slice, 2026-05-11:
   old metadata; a later slice removed that live-tree exception.
 - Validation:
   - grep found no non-terminal shared project still selecting `master-worker`.
-  - `bun test agents/shared/tests/project-health-coverage.test.ts
-    agents/shared/tests/project-health.test.ts`
-  - `bun test agents/shared/tests/project-execute.test.ts
-    agents/shared/tests/config-validator.test.ts
-    agents/shared/lib/__tests__/config-validator.test.ts`
+  - `bun test shared/tests/project-health-coverage.test.ts
+    shared/tests/project-health.test.ts`
+  - `bun test shared/tests/project-execute.test.ts
+    shared/tests/config-validator.test.ts
+    shared/lib/__tests__/config-validator.test.ts`
 
 Second slice, 2026-05-11:
 
@@ -799,8 +799,8 @@ Second slice, 2026-05-11:
 - Test fixture for normal project scanning now uses `workflow: project` so tests
   do not keep teaching the legacy workflow as the normal active case.
 - Validation:
-  - `bun test agents/shared/tests/project-health-coverage.test.ts
-    agents/shared/tests/project-health.test.ts`
+  - `bun test shared/tests/project-health-coverage.test.ts
+    shared/tests/project-health.test.ts`
 
 Third slice, 2026-05-11:
 

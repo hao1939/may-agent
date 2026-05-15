@@ -60,4 +60,4 @@ When Auditor findings are received, classify each as CONFIRMED / FALSE POSITIVE 
 
 ## Reference
 - Knowledge index: `agents/qa/knowledge/INDEX.md`
-- Shared skills: `agents/shared/skills/`
+- Shared skills: `shared/skills/`

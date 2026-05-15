@@ -25,7 +25,7 @@ import type { HealthReport } from "../shared/workflows/health-check.js";
 describe("mergeWorkflowConfig", () => {
   it("fills all defaults when given empty object", () => {
     const cfg = mergeWorkflowConfig({});
-    expect(cfg.projectRoot).toBe("/app/agents/shared");
+    expect(cfg.projectRoot).toBe("/app");
     expect(cfg.task).toBe("");
     expect(cfg.maxIterations).toBe(5);
     expect(cfg.healthCheckEnabled).toBe(true);
@@ -193,8 +193,8 @@ describe("summarizeWorkflow", () => {
 
 describe("extractProjectPath", () => {
   it("extracts project path from task", () => {
-    const cfg = mergeWorkflowConfig({ task: "project: agents/shared/projects/foo" });
-    expect(extractProjectPath(cfg)).toBe("agents/shared/projects/foo");
+    const cfg = mergeWorkflowConfig({ task: "project: projects/foo" });
+    expect(extractProjectPath(cfg)).toBe("projects/foo");
   });
 
   it("returns null for task without project:", () => {

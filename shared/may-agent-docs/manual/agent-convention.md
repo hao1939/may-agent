@@ -23,7 +23,7 @@ agents/<name>/
   workflows/              # Workflow definitions.
   last-session.md         # Generated runtime memory, not system prompt.
 
-agents/shared/
+shared/
   common-sense.md         # Shared always-loaded behavioral fundamentals.
   knowledge/              # Shared references, read on demand.
   skills/                 # Shared skill library, read on demand.
@@ -36,7 +36,7 @@ Only two authored files are always loaded into the v2 system prompt:
 
 | File | Purpose | Loaded |
 |------|---------|--------|
-| `agents/shared/common-sense.md` | Shared behavioral fundamentals and repo conventions | Every agent session |
+| `shared/common-sense.md` | Shared behavioral fundamentals and repo conventions | Every agent session |
 | `agents/<name>/AGENTS.md` | Agent identity, responsibility, constraints, escalation posture | That agent's sessions |
 
 Everything else is discoverable context. `DOMAIN.md`, `TOOLS.md`, `LESSONS.md`,
@@ -94,7 +94,7 @@ needing a May-specific identity filename.
 
 `resolveSystemPrompt()` in `src/lib/manager.ts` builds:
 
-1. `agents/shared/common-sense.md`
+1. `shared/common-sense.md`
 2. `agents/<name>/AGENTS.md`
 3. generated runtime facts: project root, agent directory, workspace, knowledge path, available tools
 

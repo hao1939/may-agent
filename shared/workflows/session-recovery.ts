@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "session-recovery";
 export const description = "Recover or escalate a failed session from a session.failed event.";

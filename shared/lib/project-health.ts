@@ -21,7 +21,7 @@ const COMMENT_RESUME_STATUSES = new Set(["waiting", "blocked", "pending-review",
 // ── Types ────────────────────────────────────────────────────────────────
 
 export interface ProjectInfo {
-  /** Relative path from agentsRoot, e.g. "bob/workspace/projects/my-project" */
+  /** Relative project path, e.g. "projects/my-project" or legacy "shared/projects/my-project" */
   relPath: string;
   /** Absolute path to project.md */
   projectFile: string;
@@ -37,6 +37,13 @@ export interface ProjectInfo {
   workflow: string;
   /** Project file format violations. Empty means current convention. */
   formatErrors?: string[];
+}
+
+export interface ProjectScanRoots {
+  /** Canonical first-class projects directory. */
+  projectsRoot: string;
+  /** Optional legacy fallback directory, normally shared/projects. */
+  legacyProjectsRoot?: string;
 }
 
 export interface HealthAction {
@@ -172,34 +179,48 @@ export function appendComment(content: string, comment: string): string {
 
 // ── Scanning ─────────────────────────────────────────────────────────────
 
-/** Scan all projects across all agents under agentsRoot */
-export function scanAllProjects(agentsRoot: string): ProjectInfo[] {
+function scanProjectDir(projectsDir: string, relPrefix: string, seen: Set<string>): ProjectInfo[] {
   const projects: ProjectInfo[] = [];
+  if (!existsSync(projectsDir)) return projects;
 
-  // Scan shared projects (canonical location)
-  const sharedProjDir = join(agentsRoot, "shared", "projects");
-  if (existsSync(sharedProjDir)) {
-    try {
-      const projectDirs = readdirSync(sharedProjDir).filter(d =>
-        d !== "_archive" && statSync(join(sharedProjDir, d)).isDirectory()
-      );
-      for (const projDir of projectDirs) {
-        const projectFile = join(sharedProjDir, projDir, "project.md");
-        if (!existsSync(projectFile)) continue;
-        let content: string;
-        try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
-        const meta = parseProjectMeta(content);
-        const formatErrors = validateProjectFormat(content, projDir);
-        const status = meta.status?.toLowerCase() || "active";
-        const owner = meta.owner || "unknown";
-        const blockerReason = meta.stop_reason || meta.resume_condition || "";
-        const workflow = meta.workflow || "project";
-        projects.push({ relPath: `shared/projects/${projDir}`, projectFile, content, status, owner, blockerReason, workflow, formatErrors });
-      }
-    } catch { /* ignore */ }
-  }
+  try {
+    const projectDirs = readdirSync(projectsDir).filter(d =>
+      d !== "_archive" && statSync(join(projectsDir, d)).isDirectory()
+    );
+    for (const projDir of projectDirs) {
+      if (seen.has(projDir)) continue;
+      const projectFile = join(projectsDir, projDir, "project.md");
+      if (!existsSync(projectFile)) continue;
+      let content: string;
+      try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
+      const meta = parseProjectMeta(content);
+      const formatErrors = validateProjectFormat(content, projDir);
+      const status = meta.status?.toLowerCase() || "active";
+      const owner = meta.owner || "unknown";
+      const blockerReason = meta.stop_reason || meta.resume_condition || "";
+      const workflow = meta.workflow || "project";
+      seen.add(projDir);
+      projects.push({ relPath: `${relPrefix}/${projDir}`, projectFile, content, status, owner, blockerReason, workflow, formatErrors });
+    }
+  } catch { /* ignore */ }
 
   return projects;
+}
+
+/** Scan all projects. Prefer /projects and fall back to legacy shared/projects. */
+export function scanAllProjects(root: string | ProjectScanRoots): ProjectInfo[] {
+  const seen = new Set<string>();
+  if (typeof root === "string") {
+    return [
+      ...scanProjectDir(join(root, "projects"), "projects", seen),
+      ...scanProjectDir(join(root, "shared", "projects"), "shared/projects", seen),
+    ];
+  }
+
+  return [
+    ...scanProjectDir(root.projectsRoot, "projects", seen),
+    ...(root.legacyProjectsRoot ? scanProjectDir(root.legacyProjectsRoot, "shared/projects", seen) : []),
+  ];
 }
 
 // ── Diagnosis ────────────────────────────────────────────────────────────

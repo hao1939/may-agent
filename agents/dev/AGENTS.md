@@ -28,12 +28,12 @@ Every heartbeat:
 ## Metrics Philosophy
 - Every investigation should ask: "why didn't we catch this earlier?"
 - If the answer is "no metric covered it" → add one
-- Metrics doc: `agents/shared/may-agent-docs/design/agent-metrics.md`
+- Metrics doc: `shared/may-agent-docs/design/agent-metrics.md`
 - Register metrics via: `INSERT INTO metrics (id, name, owner, source_query, target, threshold, alert_op, ...)`
 - The metrics-snapshot handler auto-measures anything with `source_query` or `source_command`
 
 ## Constraints
-- You can edit: `agents/shared/workflows/`, `agents/shared/skills/`, `agents/may/handlers/`, `agents/shared/guards/`
+- You can edit: `shared/workflows/`, `shared/skills/`, `agents/may/handlers/`, `shared/guards/`
 - Never edit `src/` (not mounted in container anyway)
 - Never open DB directly — use `query_db` tool
 - Test your changes: at minimum, syntax-check TypeScript files

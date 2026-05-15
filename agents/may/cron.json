@@ -215,7 +215,7 @@
     "workflow": "verify-wrap",
     "agent": "coach",
     "intervalMs": 14400000,
-    "message": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index \u2014 it shows which items are \u274c/\u26a0\ufe0f and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings.",
+    "message": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index \u2014 it shows which items are \u274c/\u26a0\ufe0f and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings.",
     "enabled": false,
     "description": "Verify one common-sense behavioral item against real behavior (4h). Routes through verify-wrap workflow.",
     "preflight": {
@@ -227,7 +227,7 @@
       "timeoutMs": 900000,
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from agents/shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md."
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md."
     },
     "offsetMs": 300000
   },
@@ -238,14 +238,14 @@
     "workflow": "verify-wrap",
     "agent": "bob",
     "intervalMs": 86400000,
-    "message": "[cron:common-sense-infra] Review agents/shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
+    "message": "[cron:common-sense-infra] Review shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
     "enabled": false,
     "description": "Bob reviews common-sense infra gaps (daily). Routes through verify-wrap workflow.",
     "offsetMs": 1200000,
     "handlerConfig": {
       "workflow": "verify-wrap",
       "agent": "bob",
-      "task": "Review agents/shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
+      "task": "Review shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
       "timeoutMs": 1200000
     }
   },

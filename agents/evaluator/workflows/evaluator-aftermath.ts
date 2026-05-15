@@ -1,7 +1,6 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
-
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";

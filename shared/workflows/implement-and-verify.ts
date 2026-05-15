@@ -1,5 +1,3 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
-
 /**
  * implement-and-verify — Lightweight code workflow (H-070 P3 experiment)
  *
@@ -26,9 +24,7 @@
  */
 
 import { execSync } from "node:child_process";
-// NOTE: stateApproach removed — EXP-050 showed it adds 1.76-3.78x overhead
-// with zero quality improvement on well-scoped tasks. See H-085.
-// import { stateApproach } from "../../../src/lib/forced-externalization.js";
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { injectFewShot } from "./fewshot-inject-helpers.js";
 
 export const name: string = "implement-and-verify";

@@ -46,7 +46,7 @@ export interface WorkflowResult {
 
 export function mergeWorkflowConfig(partial: Partial<WorkflowConfig>): WorkflowConfig {
   return {
-    projectRoot: partial.projectRoot ?? "/app/agents/shared",
+    projectRoot: partial.projectRoot ?? "/app",
     task: partial.task ?? "",
     maxIterations: partial.maxIterations ?? 5,
     retryConfig: partial.retryConfig,

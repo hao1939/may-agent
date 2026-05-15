@@ -1,7 +1,7 @@
 # Skill: Directory-First Navigation
 
 ## Trigger
-Before ANY `read()` or `bash("cat ...")` on a path in an **unfamiliar directory** — one you haven't confirmed exists via `ls` in this session. This includes `agents/shared/knowledge/`, `environment/`, or ANY nested directory structure you're exploring for the first time.
+Before ANY `read()` or `bash("cat ...")` on a path in an **unfamiliar directory** — one you haven't confirmed exists via `ls` in this session. This includes `shared/knowledge/`, `environment/`, or ANY nested directory structure you're exploring for the first time.
 
 ## Core Rule: ZERO PATH GUESSING
 **NEVER construct a file path from memory or assumption.** Every path segment must be confirmed by a prior `ls` output in this session. If you haven't listed a directory, you cannot read files from it.
@@ -13,7 +13,7 @@ You typically have **fewer than 25 tool calls** for a task. Every wasted call on
 1. **START WITH INDEX.md** — If the directory has an INDEX.md, read it FIRST. It maps the structure and tells you where things are. This one call saves 5-10 wasted exploration calls.
 2. **LIST PARENT BEFORE READING** — Before reading any nested file, `ls` its parent directory:
    - `bash("ls environment/experiments/RX-031/")` before reading `results.md`
-   - `bash("ls agents/shared/knowledge/library/topics/")` before reading a topic file
+   - `bash("ls shared/knowledge/library/topics/")` before reading a topic file
 3. **ONE LEVEL AT A TIME** — Never construct paths 3+ segments deep from memory. Verify each directory level.
 4. **AFTER ENOENT: ls PARENT, DON'T find** — If a path fails, `ls` the parent directory (1 call). Never `find . -name '...'` (floods context with irrelevant results).
 

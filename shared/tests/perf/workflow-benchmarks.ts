@@ -142,8 +142,8 @@ function formatReport(results: BenchmarkResult[]): string {
   
   const report = formatReport(results);
   
-  // Write to outputs
-  const outputPath = resolve(__dirname, '../../projects/outputs/performance-baselines.md');
+  // Write to a concrete project output area.
+  const outputPath = resolve(__dirname, '../../../projects/system-efficiency/outputs/performance-baselines.md');
   writeFileSync(outputPath, report);
   console.log(`Report written to: ${outputPath}`);
   

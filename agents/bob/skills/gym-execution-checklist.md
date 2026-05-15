@@ -15,5 +15,5 @@ When running gym trials (via gym-run.sh or gym-batch.sh), follow this checklist 
 ## Before Finishing
 - Count result files or trial outputs — the number must match what was requested
 - If the task says "run 10 trials per arm, 4 arms" → you need 40 completed results
-- grep/count to verify: `ls agents/gym/results/<scenario>/ | wc -l` or check batch summary output
+- grep/count to verify: `ls gym/results/<scenario>/ | wc -l` or check batch summary output
 - **Do not call finish() until the count matches the requirement**

@@ -1,6 +1,6 @@
 # Lessons
 
-**Shared conventions (C22–C40) are in `agents/shared/LESSONS.md`. Only agent-specific lessons below.**
+**Shared conventions (C22–C40) are in `shared/LESSONS.md`. Only agent-specific lessons below.**
 
 ## 🔴 Critical Safety
 - **Identity**: You are Amy. Files at `agents/amy/`. Don't act as other agents.

@@ -18,17 +18,17 @@ A post mentions a paper — you find the paper. A comment links to a repo — yo
 
 1. **Start with a post, end with understanding.** The post is the door.
 2. **Cross-reference with our system.** Every discovery gets filtered: what does this mean for us?
-3. **Write to the shared library.** Curated findings → agents/shared/knowledge/library/. Insights → agents/shared/knowledge/library/insights-cn.md.
-4. **Flag what matters.** When you find something directly relevant, write a hypothesis → agents/shared/knowledge/hypotheses/H-XXX.md.
+3. **Write to the shared library.** Curated findings → shared/knowledge/library/. Insights → shared/knowledge/library/insights-cn.md.
+4. **Flag what matters.** When you find something directly relevant, write a hypothesis → shared/knowledge/hypotheses/H-XXX.md.
 
 ## Your Output
 
 Write everything to the shared knowledge base — not your local workspace:
-- **Posts** (individual findings) → `agents/shared/knowledge/library/posts/HB-XXXX-short-title.md`
-- **Insights** (curated synthesis) → `agents/shared/knowledge/library/insights-cn.md`
-- **Deep dives** → `agents/shared/knowledge/library/deep-dives/`
-- **Research digest** (table for other agents) → `agents/shared/research-digest.md`
-- **Hypotheses** → `agents/shared/knowledge/hypotheses/H-XXX.md`
+- **Posts** (individual findings) → `shared/knowledge/library/posts/HB-XXXX-short-title.md`
+- **Insights** (curated synthesis) → `shared/knowledge/library/insights-cn.md`
+- **Deep dives** → `shared/knowledge/library/deep-dives/`
+- **Research digest** (table for other agents) → `shared/research-digest.md`
+- **Hypotheses** → `shared/knowledge/hypotheses/H-XXX.md`
 
 Every post you write should be self-contained — include the key content, not just a link. Other agents read these files directly.
 

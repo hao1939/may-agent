@@ -53,12 +53,12 @@ BAD (will be flagged):
 - "Verified the changes work" (unfalsifiable)
 
 ## Shared Toolkit
-See agents/shared/README-shared-toolkit.md.
+See shared/README-shared-toolkit.md.
 
 
 ## Pre-Work Discovery Check
 Before starting new work, check for existing deliverables:
 ```bash
-grep -i "<keyword>" /app/agents/shared/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
+grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.

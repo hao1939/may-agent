@@ -121,13 +121,13 @@ From the v2 architecture target:
 
 ```bash
 # Main code
-cd /home/hao/may-agent
+cd /app
 git checkout v0.2-pre-v2-migration
 bun run build
 bun run down && bun run up
 
 # Agents repo
-cd /home/hao/may-agent/app
+cd /app
 git checkout v0.2-pre-v2-migration
 ```
 

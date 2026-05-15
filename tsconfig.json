@@ -10,7 +10,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "types": ["node"],
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@may-agent/sdk": ["projects/may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/testing": ["projects/may-agent/packages/sdk/src/testing.ts"]
+    }
   },
   "include": [
     "types/**/*.d.ts",

@@ -123,6 +123,6 @@ Total: ~195 LOC, 5 commits, each independently testable + revertable.
 
 ## Open questions for operator
 
-1. **Inbox convention** — does each agent already have an `inbox.md` or similar that the heartbeat handler reads? (I'll check `agents/shared/may-agent-docs/sessions.md` and `manual/`.)
+1. **Inbox convention** — does each agent already have an `inbox.md` or similar that the heartbeat handler reads? (I'll check `shared/may-agent-docs/sessions.md` and `manual/`.)
 2. **Knowledge search scope** — entries only, or hypotheses + experiments too? (Tree filter handles all three uniformly; no decision needed.)
 3. **Stale projects** — should `status: waiting` projects (auto-paused after no decision) appear in goal 2 by default? Currently 1 project (the one I read) is waiting. Suggest: show, but visually muted.

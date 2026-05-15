@@ -119,3 +119,36 @@ is **WRONG and must be ignored**. Evidence:
 - **First step**: `cc_worker({prompt: "ssh devbox 'kubectl get pods -n aks-rp 2>&1 | head -30 && echo --- && test/e2ev3/hack/e2ev3 dev --list-scenarios --build-version hayuaebld163822451 2>&1 | head -40'", timeout: 120})` to verify standalone health AND discover real scenario names before running anything.
 
 If you still cannot run a scenario after at least 3 honest `cc_worker` attempts, *then* write `outputs/first-e2e-run-results.md` documenting **what you tried, what each call returned, and what blocked execution** — with exact transcripts, not a hypothesis.
+
+---read @iter3---
+
+### hao - 2026-05-12
+let's refine our goal: not just learning, but actaully run the e2e cases, we so can have clearly understanding of the code qualities.
+
+---read @iter6---
+
+### hao - 2026-05-13
+there is a skill test-managedsystem-pool in the repo, let's try the skill and explore the feature of 'managedsystem pool'
+
+---read @iter17---
+
+### hao - 2026-05-13
+then you need to debug on the underlay to figure out the root cause of the failure. after fix any issue then retry
+
+---read @iter21---
+
+### hao - 2026-05-13
+'Which specific failures to debug'? you sure run related e2e test and it should pass, when it failed, it's time to investigate
+
+### hao - 2026-05-13
+'Which specific failures to debug'? you sure run related e2e test and it should pass, when it failed, it's time to investigate
+
+### hao - 2026-05-13
+Please prioritize the ManagedSystem Pool feature first. Treat it as the current highest-priority project focus. Next work should update the capability model and evidence around ManagedSystem Pool before broadening to other scenarios: clean up any leftover clusters if needed, rerun or resume Scenario_ManagedSystemPool_Enable on standalone build hayuaebld163822451, capture the final e2ev3 verdict, and update outputs/managedsystem-pool-exploration.md plus outputs/e2e-capability-model.json. The underlay MSI fix is useful context, but do not let general app-routing work displace ManagedSystem Pool as the first priority.
+
+---read @iter23---
+
+### hao - 2026-05-14
+resume, please don't repeat yourself, save useful scripts for reuse, e.g., the scripts to clean up aks cluster created in standalone (via standalone private api)
+
+---read @iter31---

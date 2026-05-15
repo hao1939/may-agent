@@ -11,7 +11,7 @@ When your heartbeat reveals a problem that needs **multiple sessions** to resolv
 ## Project Structure
 
 ```
-agents/shared/projects/<name>/
+projects/<name>/
   project.md      — source of truth
   journal.md      — iteration log
   discussion.md   — comments from agents/humans

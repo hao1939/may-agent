@@ -153,7 +153,7 @@ describe("Performance: dispatch validation", () => {
   it("validates valid dispatch < 5ms", () => {
     const elapsed = measure(() => {
       for (let i = 0; i < 100; i++) {
-        validateDispatch("project: agents/shared/projects/test", TMP);
+        validateDispatch("project: projects/test", TMP);
       }
     });
     expect(elapsed / 100).toBeLessThan(5);
@@ -171,7 +171,7 @@ describe("Performance: dispatch validation", () => {
   it("parseProjectDir < 2ms", () => {
     const elapsed = measure(() => {
       for (let i = 0; i < 1000; i++) {
-        parseProjectDir("project: agents/shared/projects/test");
+        parseProjectDir("project: projects/test");
       }
     });
     expect(elapsed / 1000).toBeLessThan(2);

@@ -1,10 +1,10 @@
-/// <reference path="../../types/workflow-defs.d.ts" />
 /**
  * Scout explore — routine discovery cron task.
  *
  * Called by cron with a source-specific task (arXiv, HN, XHS, GitHub).
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
+import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { checkCircuitBreaker, recordOutcome } from "../../shared/workflows/circuit-breaker.js";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../shared/workflows/dispatch-dedup-guard.js";
 

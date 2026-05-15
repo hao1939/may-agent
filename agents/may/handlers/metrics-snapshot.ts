@@ -1,6 +1,6 @@
 /**
  * metrics-snapshot — Measures system health metrics every 5 minutes.
- * See: agents/shared/may-agent-docs/design/agent-metrics.md
+ * See: shared/may-agent-docs/design/agent-metrics.md
  *
  * ── Built-in Metric Registry ────────────────────────────────────────────────
  * This handler owns the built-in system health metrics below. On every run it
@@ -163,14 +163,13 @@ function projectSlugFromIterationData(data: string | null): string | null {
   }
 }
 
-function countInvalidSharedProjectFormats(agentsRoot: string): number {
-  const sharedProjectsDir = join(agentsRoot, "shared", "projects");
-  if (!existsSync(sharedProjectsDir)) return 0;
+function countInvalidSharedProjectFormats(projectsRoot: string): number {
+  if (!existsSync(projectsRoot)) return 0;
 
   let invalid = 0;
-  for (const entry of readdirSync(sharedProjectsDir)) {
+  for (const entry of readdirSync(projectsRoot)) {
     if (entry === "_archive") continue;
-    const projectDir = join(sharedProjectsDir, entry);
+    const projectDir = join(projectsRoot, entry);
     try {
       if (!statSync(projectDir).isDirectory()) continue;
       const projectFile = join(projectDir, "project.md");
@@ -815,7 +814,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
 
     try {
-      record("project.invalid-format-count", countInvalidSharedProjectFormats(ctx.sdk.paths.agents));
+      record("project.invalid-format-count", countInvalidSharedProjectFormats(ctx.sdk.paths.projects ?? join(ctx.sdk.paths.root, "projects")));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring invalid-format-count: ${e}`); }
 
     // ── Measure: status honesty ─────────────────────────────────────

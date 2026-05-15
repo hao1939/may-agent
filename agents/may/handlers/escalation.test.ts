@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { create } from "../../agents/may/handlers/escalation.js";
+import { create } from "./escalation.js";
 
 function makeCtx(action?: string) {
   return {

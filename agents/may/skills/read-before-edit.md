@@ -32,7 +32,7 @@ Before calling `edit(path, ...)` — ask yourself: "Did I `read(path)` in this s
 These files ALWAYS need a read before edit:
 - `agents/may/workspace/dispatch-board.md` — changes every heartbeat
 - `agents/may/workspace/EXP-*.md` — experiment logs
-- `agents/shared/knowledge/experiments/*/design.md` — shared experiment files
+- `shared/knowledge/experiments/*/design.md` — shared experiment files
 - Any workspace file you update regularly
 
 ## Assertion

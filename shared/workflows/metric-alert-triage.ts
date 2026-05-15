@@ -1,4 +1,4 @@
-/// <reference path="../../../src/lib/workflow-defs.d.ts" />
+import type { TaskResult, WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 import { listConfiguredAgents, resolveMetricOwner } from "../lib/metric-ownership.ts";
 
@@ -133,7 +133,7 @@ function buildOwnerTask(ctx: AlertContext): string {
   return [
     `[metric-alert-triage] Judge metric alert ${ctx.metricId}.`,
     "",
-    "Follow agents/shared/may-agent-docs/manual/metric-alerts.md.",
+    "Follow shared/may-agent-docs/manual/metric-alerts.md.",
     "Metrics are signals, not judges. You are responsible for judging the alert using goal/context/facts/theory.",
     "",
     "Choose exactly one final operation:",

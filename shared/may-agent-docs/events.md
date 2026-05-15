@@ -120,4 +120,4 @@ path: normalize at the edge, persist via the bus, and let subscribers react.
 
 - **Persistence:** `src/lib/db-writer.ts` subscribes to bus, writes all events
 - **Inbox query:** `src/lib/runtime-ctx.ts` → `getInbox()`
-- **Heartbeat injection:** `agents/shared/workflows/heartbeat-data.ts` → `loadInbox()`
+- **Heartbeat injection:** `shared/workflows/heartbeat-data.ts` → `loadInbox()`

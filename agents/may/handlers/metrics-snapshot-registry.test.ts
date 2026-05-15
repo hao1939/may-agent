@@ -2,9 +2,34 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-describe("session metrics queries", () => {
+function metricsSnapshotSource(): string {
+  return readFileSync(resolve(__dirname, "./metrics-snapshot.ts"), "utf8");
+}
+
+describe("metrics-snapshot registry and queries", () => {
+  it("keeps the stale trace-completeness metric retired", () => {
+    const source = metricsSnapshotSource();
+
+    expect(source).toContain('"capability.session-trace-completeness"');
+    expect(source).not.toContain(
+      '{ id: "capability.session-trace-completeness", name: "Session trace completeness (24h)", project: "v2-conformance-and-visibility", type: "gauge", target: 1.0, threshold: 0.95, unit: "ratio", alert_op: "<", priority: "P2" }',
+    );
+  });
+
+  it("keeps retired v2 spec coverage out of active metrics", () => {
+    const source = metricsSnapshotSource();
+    const activeRegistry = source.slice(
+      source.indexOf("const ALL_METRICS"),
+      source.indexOf("const RETIRED_METRIC_IDS"),
+    );
+    const retiredRegistry = source.slice(source.indexOf("const RETIRED_METRIC_IDS"));
+
+    expect(activeRegistry).not.toContain('id: "v2.spec-coverage-rate"');
+    expect(retiredRegistry).toContain('"v2.spec-coverage-rate"');
+  });
+
   it("counts only terminal sessions in the session.error-rate-6h denominator", () => {
-    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = metricsSnapshotSource();
 
     expect(source).toContain(
       "SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')",
@@ -15,7 +40,7 @@ describe("session metrics queries", () => {
   });
 
   it("excludes Clean start (fresh) interruptions from the session.error-rate-6h numerator", () => {
-    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = metricsSnapshotSource();
 
     expect(source).toContain("status = 'error'");
     expect(source).toContain("status = 'interrupted' AND COALESCE(error, '') != 'Clean start (fresh)'");
@@ -25,7 +50,7 @@ describe("session metrics queries", () => {
   });
 
   it("excludes Clean start (fresh) interruptions from session.failed-triage-rate-3h denominator and numerator", () => {
-    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = metricsSnapshotSource();
     const failedTriageBlock = source.slice(
       source.indexOf('record("session.failed-triage-rate-3h"') - 1500,
       source.indexOf('record("session.failed-triage-rate-3h"') + 200,
@@ -37,13 +62,13 @@ describe("session metrics queries", () => {
   });
 
   it("counts skipped aftermath evaluations as acted-on failures for session.failed-triage-rate-3h", () => {
-    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = metricsSnapshotSource();
 
     expect(source).toContain("AND e.verdict IN ('needs_improvement', 'skipped')");
   });
 
   it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {
-    const source = readFileSync(resolve(__dirname, "../../agents/may/handlers/metrics-snapshot.ts"), "utf8");
+    const source = metricsSnapshotSource();
 
     expect(source).toContain('record("session.failed-triage-rate-3h", failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);');
   });

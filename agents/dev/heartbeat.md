@@ -13,7 +13,7 @@ DONE WHEN: [criteria]
 This format is required in EVERY session — heartbeats, work sessions, project iterations. No exceptions.
 
 ## Priority Order
-1. **Check work queue**: read `agents/shared/work-queue.md` section "## Approved" — pick top unchecked item and implement it
+1. **Check work queue**: read `shared/work-queue.md` section "## Approved" — pick top unchecked item and implement it
 2. **Check error metrics**: query session.error-rate-6h, handler.success-rate
 3. **Find failures**: query recent failed sessions and handler errors
 4. **Pick highest-impact**: which failure pattern affects the most sessions?

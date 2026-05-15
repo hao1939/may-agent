@@ -141,7 +141,7 @@ peek at the result, and report back.
 | `delegateDeny` | No | Block delegation to specific agents |
 
 agent.json is **purely operational** — model, tools, limits, delegation rules.
-Always-loaded prompt content lives in `agents/shared/common-sense.md` and the
+Always-loaded prompt content lives in `shared/common-sense.md` and the
 agent's `AGENTS.md`. Domain docs, tool recipes, lessons, skills, and knowledge
 indexes are read on demand.
 
