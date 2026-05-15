@@ -1,4 +1,4 @@
-import { connect, type NetConnectOpts, type Socket } from "node:net";
+import { connect, Socket, type NetConnectOpts } from "node:net";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
 
@@ -40,9 +40,32 @@ export function sendSocketCommand(
         fn();
       }
     };
-    const client = connectSocketEndpoint(socketPath);
     const timeoutMs = opts?.timeoutMs ?? 5000;
-    const timeout = setTimeout(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+
+    const onError = (err: Error) => {
+      clearTimeout(timeout);
+      settle(() => reject(err));
+    };
+
+    let client: Socket | Duplex;
+    if (typeof socketPath === "function") {
+      client = socketPath();
+      client.on("error", onError);
+    } else {
+      // Create socket and attach error handler BEFORE connecting
+      // to prevent Bun's test runner from catching ENOENT as uncaught
+      const sock = new Socket();
+      sock.on("error", onError);
+      if (typeof socketPath === "string") {
+        sock.connect(socketPath);
+      } else {
+        sock.connect(socketPath);
+      }
+      client = sock;
+    }
+
+    timeout = setTimeout(() => {
       client.destroy();
       settle(() => reject(new Error("Socket timeout")));
     }, timeoutMs);
@@ -79,11 +102,6 @@ export function sendSocketCommand(
         }
       }
       buffer = lines[lines.length - 1];
-    });
-
-    client.on("error", (err) => {
-      clearTimeout(timeout);
-      settle(() => reject(err));
     });
 
     client.on("close", () => {
