@@ -36,6 +36,8 @@ export default defineConfig({
       "**/dist/**",
       // Bun package cache contains third-party test files (e.g. zod tests)
       ".state/**",
+      "app/.state/**",
+      "app/.state.pre-app-root-migration-*/**",
       // Gym scenario environment files are standalone scripts, not vitest tests
       "agents/gym/scenarios/**/environment/**",
       "app/gym/scenarios/**/environment/**",

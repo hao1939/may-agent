@@ -22,7 +22,6 @@ services:
       - ../app:/app
       - ../packages/control:/app/packages/control
       - ../packages/webui:/app/packages/webui
-      - ../.state:/app/.state
       - /home/example-user/litellm/github_copilot:/app/.copilot:ro
     environment:
       - INSTANCE=${INSTANCE:-background}

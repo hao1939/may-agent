@@ -14,7 +14,7 @@
     "static"
   ],
   "scripts": {
-    "dev": "bun src/server.ts --state-dir ../../.state --port 8080",
+    "dev": "bun src/server.ts --state-dir ../../app/.state --port 8080",
     "check": "tsc --noEmit -p tsconfig.json"
   }
 }
