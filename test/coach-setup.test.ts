@@ -7,7 +7,7 @@ import { createWorkflowTool } from "../src/lib/workflow-tool.js";
 import { SubagentManager } from "../src/lib/manager.js";
 import type { WorkflowToolResult } from "../src/lib/workflow.js";
 
-const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
+const AGENTS_ROOT = resolve(import.meta.dirname, "..", "app", "agents");
 const COACH_DIR = resolve(AGENTS_ROOT, "coach");
 
 describe("coach: workflow discovery", () => {

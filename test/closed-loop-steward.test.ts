@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { create } from "../agents/may/handlers/closed-loop-steward.ts";
+import { create } from "../app/agents/may/handlers/closed-loop-steward.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
 import { createQueryService } from "../src/lib/query-service.js";
 

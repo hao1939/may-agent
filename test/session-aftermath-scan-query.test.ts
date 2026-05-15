@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { create } from "../agents/may/handlers/session-aftermath-scan.ts";
+import { create } from "../app/agents/may/handlers/session-aftermath-scan.ts";
 import type { HandlerContext } from "../src/lib/handler-context.js";
 import type { CronEntry } from "../src/lib/cron-tool.js";
 

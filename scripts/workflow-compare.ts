@@ -3,7 +3,7 @@
  * workflow-compare.ts — Run two workflows on the same project scenario and compare.
  *
  * Usage:
- *   bun scripts/workflow-compare.ts agents/gym/scenarios/workflow-fibonacci
+ *   bun scripts/workflow-compare.ts app/gym/scenarios/workflow-fibonacci
  *
  * Runs master-worker and worker-reviewer on copies of the scenario,
  * then scores both with success_criteria.js.
@@ -15,7 +15,8 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 const PROJECT_ROOT = resolve(import.meta.dir, "..");
-const scenarioDir = resolve(PROJECT_ROOT, process.argv[2] ?? "agents/gym/scenarios/workflow-fibonacci");
+const APP_ROOT = join(PROJECT_ROOT, "app");
+const scenarioDir = resolve(PROJECT_ROOT, process.argv[2] ?? "app/gym/scenarios/workflow-fibonacci");
 
 if (!existsSync(join(scenarioDir, "success_criteria.js"))) {
   console.error(`No success_criteria.js in ${scenarioDir}`);
@@ -67,7 +68,7 @@ async function runWorkflow(workflowName: string): Promise<{ score: any; duration
 // Run sequentially
 const results: Record<string, { score: any; duration: number }> = {};
 for (const wf of workflows) {
-  const wfPath = join(PROJECT_ROOT, "agents/shared/workflows", `${wf}.ts`);
+  const wfPath = join(APP_ROOT, "shared/workflows", `${wf}.ts`);
   if (!existsSync(wfPath)) {
     console.log(`Skipping ${wf} — ${wfPath} not found`);
     continue;

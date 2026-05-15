@@ -36,7 +36,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { learnFromSession } from "../../agents/shared/evaluation/context-learn.js";
+import { learnFromSession } from "../../app/shared/evaluation/context-learn.js";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -153,7 +153,9 @@ interface AdapterOpts {
 // ── Paths ──────────────────────────────────────────────────────────────
 
 const PROJECT_ROOT = resolve(import.meta.dirname, "../..");
-const SCENARIOS_DIR = join(PROJECT_ROOT, "agents/gym/scenarios");
+const APP_ROOT = join(PROJECT_ROOT, "app");
+const APP_AGENTS_ROOT = join(APP_ROOT, "agents");
+const SCENARIOS_DIR = join(APP_ROOT, "gym/scenarios");
 
 // ── Adapter: may-agent ─────────────────────────────────────────────────
 
@@ -172,10 +174,10 @@ function createMayAgentAdapter(): Adapter {
 
       // Resolve agents root (with optional lab fork overlay)
       if (opts.labFork) {
-        const labDir = join(projectRoot, "agents/.lab", opts.labFork);
+        const labDir = join(projectRoot, "app/agents/.lab", opts.labFork);
         if (!existsSync(labDir)) throw new Error(`Lab fork not found: ${labDir}`);
         const gymAgents = join(opts.gymRoot, "agents-lab");
-        cpSync(join(projectRoot, "agents"), gymAgents, { recursive: true });
+        cpSync(join(projectRoot, "app/agents"), gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
         rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
         // FIX (EXP-152): cpSync merges directories — it does NOT delete files
@@ -193,12 +195,12 @@ function createMayAgentAdapter(): Adapter {
         // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir.
         // Also required when overlaying a custom common-sense.md so we don't mutate the real one.
         const gymAgents = join(opts.gymRoot, "agents-sandbox");
-        cpSync(join(projectRoot, "agents"), gymAgents, { recursive: true });
+        cpSync(join(projectRoot, "app/agents"), gymAgents, { recursive: true });
         rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
         rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
         agentsRoot = gymAgents;
       } else {
-        agentsRoot = join(projectRoot, "agents");
+        agentsRoot = join(projectRoot, "app/agents");
       }
 
       // Overlay custom common-sense.md (coach Iter 7 infra)
@@ -641,9 +643,9 @@ function judgeScenario(scenarioDir: string, workDir: string, gymRoot: string, ta
     task,
     `\n## Files to read\n`,
     `- Transcript: ${transcriptPath}`,
-    `- Conventions: ${join(PROJECT_ROOT, "agents/shared/CONVENTIONS.md")}`,
-    `- Common sense: ${join(PROJECT_ROOT, "agents/shared/common-sense.md")}`,
-    `- Lessons: ${join(PROJECT_ROOT, "agents/shared/LESSONS.md")}`,
+    `- Conventions: ${join(APP_ROOT, "shared/CONVENTIONS.md")}`,
+    `- Common sense: ${join(APP_ROOT, "shared/common-sense.md")}`,
+    `- Lessons: ${join(APP_ROOT, "shared/LESSONS.md")}`,
     `\nWrite your verdict JSON to: ${verdictPath}`,
     `\nThen call finish() with status "success".`,
   ].join("\n");
@@ -652,7 +654,7 @@ function judgeScenario(scenarioDir: string, workDir: string, gymRoot: string, ta
   writeFileSync(judgeTaskFile, judgeTask);
 
   // Resolve judge agent
-  const agentsRoot = join(PROJECT_ROOT, "agents");
+  const agentsRoot = APP_AGENTS_ROOT;
   if (!existsSync(join(agentsRoot, "judge", "agent.json"))) {
     console.error("  Judge agent not found at agents/judge/ — skipping LLM judge");
     return [];
@@ -893,7 +895,7 @@ function runMultiSessionScenario(
       const durationMs = Date.now() - startMs;
       console.error(`    ABORT: agent failed to launch in ${sessionId} — skipping remaining sessions and scoring`);
 
-      const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : join(PROJECT_ROOT, "agents"));
+      const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : APP_AGENTS_ROOT);
       const frameworkSha = computeFrameworkSha();
       const model = readAgentModel(effectiveAgentsRoot, agentName);
       const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1012,7 +1014,7 @@ function runMultiSessionScenario(
   const judgeSummary =
     judgments.length > 0 ? ` | judge: ${judgments.filter((j) => j.verdict === "pass").length}/${judgments.length}` : "";
 
-  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : join(PROJECT_ROOT, "agents"));
+  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : APP_AGENTS_ROOT);
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1268,8 +1270,8 @@ function runScenario(
 
   // Compute benchmark identity
   // Derive the effective agentsRoot the same way the adapter does:
-  // lab fork → gymRoot/agents-lab, otherwise → PROJECT_ROOT/agents
-  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : join(PROJECT_ROOT, "agents"));
+  // lab fork -> gymRoot/agents-lab, otherwise -> APP_ROOT/agents
+  const effectiveAgentsRoot = labFork ? join(gymRoot, "agents-lab") : (commonSensePath ? join(gymRoot, "agents-sandbox") : APP_AGENTS_ROOT);
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = assembleEffectivePrompt(effectiveAgentsRoot, agentName);
@@ -1359,7 +1361,7 @@ function assembleEffectivePrompt(agentsRoot: string, agentName: string): { hash:
 
     // 1. common-sense.md — shared behavioral rules
     const sharedCommonSense = join(agentsRoot, "shared", "common-sense.md");
-    const sharedFallback = join(PROJECT_ROOT, "agents", "shared", "common-sense.md");
+    const sharedFallback = join(APP_ROOT, "shared", "common-sense.md");
     const commonSense = loadFile(existsSync(sharedCommonSense) ? sharedCommonSense : sharedFallback);
     if (commonSense) sections.push(commonSense);
 

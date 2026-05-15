@@ -171,7 +171,7 @@ interface SessionResult extends SessionMeta {
   tools?: ToolBreakdown;
 }
 
-const SESSIONS_DIR = join(process.cwd(), "agents", ".state", "sessions", "history");
+const SESSIONS_DIR = join(process.cwd(), ".state", "sessions", "history");
 
 function loadMeta(sessionId: string): SessionMeta | null {
   const metaPath = join(SESSIONS_DIR, sessionId, "meta.json");

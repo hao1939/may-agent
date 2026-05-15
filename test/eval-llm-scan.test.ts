@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { create, parseDeepEvaluationArtifact } from "../agents/may/handlers/eval-llm-scan.ts";
+import { create, parseDeepEvaluationArtifact } from "../app/agents/may/handlers/eval-llm-scan.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
 import { createQueryService } from "../src/lib/query-service.js";
 

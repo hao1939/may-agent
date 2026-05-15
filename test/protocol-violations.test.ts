@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const { detectProtocolViolations } = require("../agents/evaluator/skills/monitor-session.cjs");
+const { detectProtocolViolations } = require("../app/agents/evaluator/skills/monitor-session.cjs");
 
 // Helper: create an assistant message with tool calls
 function assistantWithToolCalls(calls: Array<{ name: string; args: Record<string, unknown> }>) {

@@ -126,6 +126,12 @@ case "$git_path" in
 esac
 
 case "$git_path" in
+  app/*)
+    if [ -d "$project_root/app/.git" ]; then
+      repo_dir="$project_root/app"
+      git_path="${git_path#app/}"
+    fi
+    ;;
   agents/*)
     if [ -d "$project_root/agents/.git" ]; then
       repo_dir="$project_root/agents"

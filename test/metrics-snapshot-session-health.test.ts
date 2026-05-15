@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { create } from "../agents/agents/may/handlers/metrics-snapshot.ts";
+import { create } from "../app/agents/may/handlers/metrics-snapshot.ts";
 import { closeDb, getDb } from "../src/lib/requests.js";
 import { createMetricService } from "../src/lib/metrics.js";
 

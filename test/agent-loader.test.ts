@@ -13,7 +13,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-const AGENTS_ROOT = resolve(import.meta.dirname, "..", "agents");
+const AGENTS_ROOT = resolve(import.meta.dirname, "..", "app", "agents");
 
 const fakeModels = {
   opus: { id: "opus", provider: "anthropic" },
@@ -134,6 +134,8 @@ describe("validateAgentConfig", () => {
       await loadAgents({
         agentsRoot,
         projectRoot: root,
+        sharedRoot: join(root, "shared"),
+        projectsRoot: join(root, "projects"),
         persistDir: join(root, ".state"),
         models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
         manager: manager as any,
