@@ -1,7 +1,8 @@
 node_modules/
 dist/
-agents/
-app/
+/agents/
+/agents
+/app/
 .state/
 .claude/
 .env
