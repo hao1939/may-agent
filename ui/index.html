@@ -137,6 +137,11 @@
   .tool-detail:last-child { border-bottom: 0; }
   .tool-detail summary { cursor: pointer; padding: 8px 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
   .tool-name { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
+  .tool-summary { color: var(--fg2); min-width: 160px; flex: 1 1 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-result-preview { border-top: 1px solid var(--border); background: rgba(63,185,80,.045); padding: 9px 12px; }
+  .tool-result-preview.error { background: rgba(248,81,73,.06); }
+  .tool-result-title { color: var(--fg2); font-size: 11px; margin-bottom: 6px; }
+  .tool-result-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   .tool-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
   .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
@@ -1281,18 +1286,51 @@ function renderRawBlock(label, value) {
   return `<details class="raw-details"><summary>${esc(label)}</summary><pre class="tool-code">${esc(text)}</pre></details>`;
 }
 
+function toolResultHeadline(text) {
+  const line = String(text || '').split('\n').map(x => x.trim()).find(Boolean) || '';
+  return compactText(line.replace(/^\s*[-*]\s+/, ''), 150);
+}
+
+function toolResultExcerpt(text) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  const diff = value.match(/```diff\n([\s\S]*?)```/);
+  if (diff) {
+    const before = value.slice(0, diff.index).trim().split('\n').filter(Boolean).slice(0, 3).join('\n');
+    const diffLines = diff[1].split('\n').slice(0, 80).join('\n');
+    const body = before ? before + '\n\n' + diffLines : diffLines;
+    return body.length > 5000 ? body.slice(0, 5000) + '\n...' : body;
+  }
+  const lines = value.split('\n');
+  const excerpt = lines.slice(0, 28).join('\n');
+  return value.length > excerpt.length || lines.length > 28 ? excerpt.slice(0, 3000) + '\n...' : excerpt;
+}
+
+function renderToolResultPreview(result) {
+  if (!result) return '<div class="tool-result-preview error"><div class="tool-result-title">Result preview</div><pre class="tool-result-snippet">No matching tool_result found.</pre></div>';
+  const text = String(result.content || '').trim();
+  if (!text) return '';
+  return `<div class="tool-result-preview ${result.isError ? 'error' : ''}">
+    <div class="tool-result-title">Transcript result preview</div>
+    <pre class="tool-result-snippet">${esc(toolResultExcerpt(text))}</pre>
+  </div>`;
+}
+
 function renderToolFlow(tc, result) {
   const hasError = !!result?.isError;
   const resultText = result ? String(result.content || '') : 'No matching tool_result found.';
+  const headline = result ? toolResultHeadline(resultText) : 'No matching tool_result found.';
   return `<details class="tool-detail" ${hasError ? 'open' : ''}>
     <summary>
       <span class="tool-name">${esc(tc.tool || result?.toolName || 'tool')}</span>
       ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
       ${tc.id || result?.toolCallId ? flowChip(tc.id || result.toolCallId) : ''}
+      <span class="tool-summary">${esc(headline)}</span>
     </summary>
+    ${renderToolResultPreview(result)}
     <div class="tool-grid">
       <div class="tool-pane"><label>Tool call</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
-      <div class="tool-pane"><label>Tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
+      <div class="tool-pane"><label>Full tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
     </div>
   </details>`;
 }
