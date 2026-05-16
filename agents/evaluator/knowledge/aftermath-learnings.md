@@ -88,3 +88,6 @@
 
 ## 2026-05-15 — s_1778896437235_260
 - For success-candidate heartbeat aftermath reviews, confirm material-output routing against transcript write/edit calls, commits, or landed artifacts before crediting durable output. A clean no-change heartbeat that only performs bounded health checks and coherence review can be a valid maintenance success, but it should be labeled as maintenance rather than a project/knowledge artifact win.
+
+## 2026-05-15 — s_1778898198102_270
+- In closed-loop steward aftermath reviews, do not treat a still-breaching alert as effectively closed just because a prior triage plausibly fixed the root cause. If the alert is still red, require one of: fresh validation evidence, a documented valid exception, a routed/nudged owner action, or a concrete blocker/data gap. Predicted auto-recovery alone is not closure progress.
