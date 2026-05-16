@@ -208,3 +208,21 @@ Fresh arXiv papers validate the model-heterogeneity hypothesis from KE-1264 with
 - **WARD** demonstrates guard-model co-evolution through adversarial training — relevant to our guard's 62% noise rate.
 
 **The concrete takeaway**: The cheapest intervention for our F→E gap and evaluator overhead isn't better prompts or new agents — it's routing the evaluator to a different model family. ARIS proves this works in production. See KE-1266 for full write-up.
+
+---
+
+## Agent Extinction: The F→E Gap Has a Body Count (KE-1267)
+
+**Source**: Session DB analysis — 21,080 total sessions across 12 agents
+
+**The finding nobody noticed**: 30% of all-time sessions (6,237) belonged to 4 agents that are now extinct: optimizer (2,737), coach (2,021), amy (1,147), bob (332). These were the system's *evolution agents* — the ones whose job was to improve things, train capabilities, and execute concrete tasks. They're all gone.
+
+The surviving agents are all monitoring/coordination: evaluator (46% of all sessions, still 189/day), scout, may, arc, tech-lead, dev. The system didn't just fail to cross the F→E boundary — it **killed the agents responsible for evolution** while keeping the ones responsible for monitoring.
+
+**Why this happened**: Monitoring agents justify themselves through volume (more sessions = more coverage). Evolution agents justify themselves through outcomes (did things improve?). In a system with 0 requests ever created, evolution agents couldn't demonstrate value. They were selected against.
+
+**The implication KE-1263/1264 missed**: Adding a KE→request bridge won't help if no agent exists to pick up the work. Dev has been reshaped into a monitoring agent too (132 lines of defensive checklist). The system's entire agent ecology has been pruned to monitoring-only.
+
+**Prediction**: Re-enabling optimizer/coach without changing selection pressure → re-extinction within weeks.
+
+**See**: KE-1267 for full write-up with session counts and ecological analysis.
