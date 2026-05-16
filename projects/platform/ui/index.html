@@ -107,11 +107,13 @@
   /* Transcript */
   .transcript { display: grid; gap: 10px; }
   .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; overflow-wrap: anywhere; }
-  .msg.user { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); white-space: pre-wrap; }
+  .msg.user { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); }
   .msg.assistant { background: var(--bg); border: 1px solid var(--border); }
-  .msg.assistant.turn { padding: 0; border-left: 3px solid rgba(88,166,255,.5); }
-  .turn-body { padding: 10px 12px; }
-  .turn-body .raw-details { margin-left: 0; }
+  .msg.session-message { padding: 0; }
+  .msg.assistant.session-message { border-left: 3px solid rgba(88,166,255,.5); }
+  .message-body { padding: 10px 12px; overflow-wrap: anywhere; }
+  .message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .message-body .raw-details { margin-left: 0; }
   .msg.tool_call { background: rgba(210,153,34,0.06); font-family: var(--mono); font-size: 12px; }
   .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
   .msg.tool_result.error { background: rgba(248,81,73,0.06); }
@@ -126,36 +128,63 @@
   .tool-pair-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--border); }
   .tool-pair-title { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
   .tool-pair-spacer { flex: 1 1 auto; }
-  .tool-preview-grid { display: grid; grid-template-columns: minmax(220px, .85fr) minmax(260px, 1.15fr); }
+  .tool-preview-grid { display: grid; grid-template-columns: 1fr; }
   .tool-preview-pane { padding: 9px 10px; min-width: 0; }
-  .tool-preview-pane + .tool-preview-pane { border-left: 1px solid var(--border); }
+  .tool-preview-pane + .tool-preview-pane { border-left: 0; border-top: 1px solid var(--border); }
   .tool-preview-pane.result { background: rgba(63,185,80,.045); }
   .tool-pair.error .tool-preview-pane.result { background: rgba(248,81,73,.06); }
   .tool-preview-label { color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 5px; }
   .tool-pair details { border-top: 1px solid var(--border); background: var(--bg2); }
-  .tool-pair details summary { cursor: pointer; padding: 5px 10px; color: var(--fg2); font-size: 12px; list-style: none; }
-  .tool-pair details summary::-webkit-details-marker { display: none; }
+  .tool-pair details:not([open]) { display: none; }
+  .tool-pair details summary { display: none; }
   .tool-more { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 20px; border: 1px solid var(--border); border-radius: 6px; color: var(--fg2); background: var(--bg); font-weight: 650; }
+  .tool-more-button { cursor: pointer; padding: 0; font-family: inherit; }
+  .tool-more-button:hover, .tool-more-button.active { color: var(--accent); border-color: var(--accent); background: rgba(88,166,255,.1); }
 
   /* Transcript annotations */
   .flow-chip { display: inline-flex; align-items: center; max-width: 220px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; background: var(--bg2); color: var(--fg2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .flow-chip.good { color: var(--green); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
   .flow-chip.error { color: var(--red); border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.08); }
+  .source-chip { cursor: pointer; font-family: inherit; }
+  .source-chip:hover { color: var(--accent); border-color: var(--accent); }
+  .source-chip.active { color: var(--accent); border-color: var(--accent); background: rgba(88,166,255,.12); }
+  .raw-log-viewer { display: none; margin: 0 0 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--bg); overflow: hidden; }
+  .raw-log-viewer.active { display: block; }
+  .raw-log-head { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--fg2); font-size: 12px; }
+  .raw-log-head code { color: var(--fg); }
+  .raw-log-head button { margin-left: auto; background: none; border: 0; color: var(--fg2); cursor: pointer; font-size: 14px; }
+  .raw-log-body { margin: 0; padding: 10px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
+  .audited-conversation { max-width: none; }
+  .audit-transcript { gap: 12px; }
+  .turn-audit-row { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); gap: 12px; align-items: start; }
+  .turn-cell { min-width: 0; }
+  .turn-audit-cell { min-width: 0; display: grid; gap: 8px; align-self: start; }
+  .turn-audit-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
+  .turn-audit-head b { margin-right: auto; font-size: 12px; }
+  .turn-audit-empty { border: 1px dashed var(--border); border-radius: 8px; padding: 9px; color: var(--fg2); font-size: 12px; background: rgba(255,255,255,.015); }
+  .audit-row { border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); overflow: hidden; }
+  .audit-row.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(88,166,255,.35); }
+  .session-message.active { outline: 2px solid rgba(88,166,255,.55); outline-offset: 2px; }
+  .audit-row-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border-bottom: 1px solid var(--border); }
+  .audit-comment { padding: 8px 9px; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .audit-feedback { display: grid; gap: 6px; padding: 8px 9px; border-top: 1px solid var(--border); }
+  .audit-feedback textarea { width: 100%; min-height: 54px; resize: vertical; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 7px; font: inherit; font-size: 12px; }
+  .audit-feedback button { justify-self: end; }
   .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+  @media (max-width: 1200px) { .turn-audit-row { grid-template-columns: 1fr; } }
+  .tool-grid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
-  .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
+  .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); }
   .tool-pane label { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 6px; }
   .tool-code { margin: 0; max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   .raw-details { margin: 8px 0 0; }
   .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; list-style: none; }
   .raw-details summary::-webkit-details-marker { display: none; }
-  @media (max-width: 900px) { .tool-preview-grid, .tool-grid { grid-template-columns: 1fr; } .tool-preview-pane + .tool-preview-pane, .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
 
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; }
-  .session-page-mode .chat-container { height: auto; min-height: 0; margin-top: 12px; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
+  .session-page-mode .chat-container { height: auto; min-height: 0; margin-top: 0; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
   .session-page-mode .chat-messages, .session-page-mode #session-picker, .session-page-mode #scroll-toggle, .session-page-mode #md-toggle { display: none; }
   .session-page-mode .chat-status { color: var(--fg2); font-size: 12px; }
   .chat-input-row { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
@@ -315,12 +344,8 @@
 .session-inspector .meta-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 13px; }
 .session-inspector .meta-grid dt { color: var(--fg2); }
 .session-inspector .meta-grid dd { margin: 0; }
-.session-inspector pre.task-block {
-  background: var(--bg2); padding: 12px; border-radius: 6px;
-  white-space: pre-wrap; word-break: break-word;
-  max-height: 300px; overflow-y: auto; font-size: 12px;
-  margin: 8px 0;
-}
+.session-followup-anchor { margin: 12px 0 16px; }
+.session-followup-anchor:empty { display: none; }
 .session-inspector .score-bar {
   height: 8px; border-radius: 4px; background: var(--bg2);
   position: relative; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle;
@@ -331,6 +356,12 @@
 .session-inspector .eval-card {
   background: var(--bg2); padding: 12px; border-radius: 6px; margin: 8px 0;
 }
+.session-inspector .audit-details { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.session-inspector .audit-details summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; cursor: pointer; padding: 10px 12px; color: var(--fg2); font-size: 12px; list-style: none; }
+.session-inspector .audit-details summary::-webkit-details-marker { display: none; }
+.session-inspector .audit-details summary b { color: var(--fg); margin-right: auto; }
+.session-inspector .audit-details .eval-card { margin: 0; border-top: 1px solid var(--border); border-radius: 0; }
+
 .session-inspector .section { margin: 16px 0; }
 .session-inspector .section h4 { margin: 0 0 8px 0; color: var(--fg2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
 .session-inspector .outcome-block {
@@ -411,6 +442,7 @@
   </div>
   <div id="chat" class="hidden">
     <div id="session-detail-panel"></div>
+    <div id="chat-composer-host">
     <div class="chat-container">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="chat-status" id="chat-status">Disconnected</div>
@@ -428,6 +460,7 @@
         <input id="chat-input" type="text" placeholder="Type a message... (sends to selected session)" autocomplete="off">
         <button id="chat-send">Send</button>
       </div>
+    </div>
     </div>
   </div>
 
@@ -1263,16 +1296,22 @@ function costLabel(usage) {
 function buildSessionFlow(messages) {
   const flow = [];
   let current = null;
+  let messageIndex = 0;
   const finish = () => { if (current) { flow.push(current); current = null; } };
   for (const m of messages || []) {
     if (m.role === 'user') {
       finish();
-      flow.push({ type: 'request', text: m.text || '' });
+      messageIndex += 1;
+      flow.push({ type: 'message', role: 'user', index: messageIndex, text: m.text || '', rawLine: m.rawLine, rawSource: m.rawSource });
     } else if (m.role === 'assistant') {
       finish();
-      current = { type: 'response', index: flow.filter(x => x.type === 'response').length + 1, assistant: m, toolResults: [] };
+      messageIndex += 1;
+      current = { type: 'message', role: 'assistant', index: messageIndex, assistant: m, toolResults: [] };
     } else if (m.role === 'tool_result') {
-      if (!current) current = { type: 'response', index: flow.filter(x => x.type === 'response').length + 1, assistant: { text: '', toolCalls: [] }, toolResults: [] };
+      if (!current) {
+        messageIndex += 1;
+        current = { type: 'message', role: 'assistant', index: messageIndex, assistant: { text: '', toolCalls: [] }, toolResults: [] };
+      }
       current.toolResults.push(m);
     }
   }
@@ -1284,6 +1323,26 @@ function flowChip(text, cls = '') {
   return text ? `<span class="flow-chip ${cls}">${esc(String(text))}</span>` : '';
 }
 
+function sourceChip(label, sessionId, rawLine, rawSource, cls = '') {
+  if (!rawLine || !sessionId) return flowChip(label, cls);
+  const source = rawSource || 'session.jsonl';
+  const title = `Show raw JSONL record ${source}:${rawLine}`;
+  return `<button type="button" class="flow-chip source-chip ${cls}" title="${esc(title)}" onclick="showRawLog(${jsStringAttr(sessionId)}, ${Number(rawLine)}, ${jsStringAttr(String(label))}, this)">${esc(String(label))}</button>`;
+}
+
+function sourceLineChip(sessionId, rawLine, rawSource, cls = '') {
+  if (!rawLine) return '';
+  return sourceChip(`session.jsonl:${rawLine}`, sessionId, rawLine, rawSource, cls);
+}
+
+function rawLineAttr(lines) {
+  return attrEsc([...new Set((lines || []).map(Number).filter(Boolean))].join(','));
+}
+
+function turnLinkChip(line) {
+  if (!line) return '';
+  return `<button type="button" class="flow-chip source-chip" title="Highlight matching turn" onclick="focusSessionLine(${Number(line)})">turn</button>`;
+}
 function renderRawBlock(label, value) {
   const text = typeof value === 'string' ? value : formatJson(value);
   if (!text) return '';
@@ -1324,39 +1383,111 @@ function toolResultExcerpt(text) {
   return value.length > excerpt.length || lines.length > 28 ? excerpt.slice(0, 3000) + '\n...' : excerpt;
 }
 
-function renderToolPair(tc, result) {
+function renderToolPair(tc, result, sessionId) {
   const hasError = !!result?.isError;
-  const resultText = result ? String(result.content || '') : 'No matching tool_result found.';
+  const resultText = result ? String(result.content || '') : 'No matching tool output found.';
   const requestText = toolRequestExcerpt(tc);
-  const resultPreview = result ? toolResultExcerpt(resultText) : 'No matching tool_result found.';
+  const resultPreview = result ? toolResultExcerpt(resultText) : 'No matching tool output found.';
   return `<div class="tool-pair ${hasError ? 'error' : ''}">
     <div class="tool-pair-head">
-      ${flowChip('tool')}
       <span class="tool-pair-title">${esc(tc.tool || result?.toolName || 'tool')}</span>
       ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
-      ${tc.id || result?.toolCallId ? flowChip(tc.id || result.toolCallId) : ''}
+      ${tc.id || result?.toolCallId ? sourceChip(tc.id || result.toolCallId, sessionId, tc.rawLine || result?.rawLine, tc.rawSource || result?.rawSource) : ''}
       <span class="tool-pair-spacer"></span>
+      <button type="button" class="tool-more tool-more-button" title="Full tool call and output" onclick="toggleToolDetails(this)">...</button>
     </div>
     <div class="tool-preview-grid">
-      <div class="tool-preview-pane request"><div class="tool-preview-label">request</div><pre class="tool-preview-snippet">${esc(requestText)}</pre></div>
-      <div class="tool-preview-pane result"><div class="tool-preview-label">result</div><pre class="tool-preview-snippet">${esc(resultPreview)}</pre></div>
+      <div class="tool-preview-pane request"><div class="tool-preview-label">tool call ${sourceLineChip(sessionId, tc.rawLine, tc.rawSource)}</div><pre class="tool-preview-snippet">${esc(requestText)}</pre></div>
+      <div class="tool-preview-pane result"><div class="tool-preview-label">tool output ${sourceLineChip(sessionId, result?.rawLine, result?.rawSource, hasError ? 'error' : '')}</div><pre class="tool-preview-snippet">${esc(resultPreview)}</pre></div>
     </div>
-    <details>
-      <summary title="Full call and result"><span class="tool-more">...</span></summary>
+    <details class="tool-details">
+      <summary>Full tool call and output</summary>
       <div class="tool-grid">
         <div class="tool-pane"><label>Tool call args</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
-        <div class="tool-pane"><label>Tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
+        <div class="tool-pane"><label>Tool output</label><pre class="tool-code">${esc(resultText)}</pre></div>
       </div>
     </details>
   </div>`;
 }
 
-function renderEnrichedTranscript(messages) {
+function toggleToolDetails(button) {
+  const details = button?.closest('.tool-pair')?.querySelector('.tool-details');
+  if (!details) return;
+  details.open = !details.open;
+  button.classList.toggle('active', details.open);
+}
+
+function auditRowsByLine(auditData) {
+  const byLine = new Map();
+  for (const row of auditData?.rows || []) {
+    const line = Number(row?.line || 0);
+    if (!line) continue;
+    if (!byLine.has(line)) byLine.set(line, []);
+    byLine.get(line).push(row);
+  }
+  return byLine;
+}
+
+function auditRowsForLines(byLine, lines) {
+  const rows = [];
+  const seen = new Set();
+  for (const line of [...new Set((lines || []).map(Number).filter(Boolean))]) {
+    for (const row of byLine.get(line) || []) {
+      const key = `${line}:${row.createdAt || ''}:${row.source || ''}:${row.comment || ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+    }
+  }
+  return rows.sort((a, b) => (Number(a.line || 0) - Number(b.line || 0)) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+}
+
+function renderAuditRows(rows, sessionId, idPrefix = 'audit-feedback') {
+  let html = '';
+  rows.forEach((row, idx) => {
+    const line = Number(row.line || 0);
+    const source = row.source || row.author || 'audit';
+    const scoreClass = row.score === 'issue' ? 'error' : row.score === 'ok' ? 'good' : '';
+    const feedbackId = `${idPrefix}-${line}-${idx}`;
+    html += `<div class="audit-row" id="audit-line-${esc(line)}">
+      <div class="audit-row-head">
+        ${sourceLineChip(sessionId, line, row.rawSource || row.rawContext?.source)}
+        ${flowChip(row.score || 'note', scoreClass)}
+        ${flowChip(source)}
+        ${auditIssueChips(row.issues)}
+      </div>
+      <div class="audit-comment">${esc(row.comment || row.raw || '')}</div>
+      <div class="audit-feedback">
+        <textarea id="${attrEsc(feedbackId)}" placeholder="Add human feedback for session.jsonl:${esc(line)}"></textarea>
+        <button class="ask-btn" onclick="submitAuditFeedback(${jsStringAttr(sessionId)}, ${line}, ${jsStringAttr(feedbackId)})">Save feedback</button>
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderTurnAudit(rows, sessionId, turnIndex) {
+  return `<aside class="turn-audit-cell">
+    <div class="turn-audit-head"><b>Audit</b>${flowChip('turn ' + turnIndex)}${flowChip(`${rows.length} note${rows.length === 1 ? '' : 's'}`)}</div>
+    ${rows.length ? renderAuditRows(rows, sessionId, `audit-feedback-turn-${turnIndex}`) : '<div class="turn-audit-empty">No audit yet for this turn.</div>'}
+  </aside>`;
+}
+
+function renderTurnWithAudit(messageHtml, rawLines, turnIndex, auditByLine, sessionId) {
+  if (!auditByLine) return messageHtml;
+  const rows = auditRowsForLines(auditByLine, rawLines);
+  return `<div class="turn-audit-row" data-raw-lines="${rawLineAttr(rawLines)}"><div class="turn-cell">${messageHtml}</div>${renderTurnAudit(rows, sessionId, turnIndex)}</div>`;
+}
+
+function renderEnrichedTranscript(messages, sessionId, auditData = null) {
   const flow = buildSessionFlow(messages);
-  let html = '<div class="transcript enriched-transcript">';
+  const auditByLine = auditData ? auditRowsByLine(auditData) : null;
+  let html = `<div class="transcript enriched-transcript${auditData ? ' audit-transcript' : ''}">`;
   for (const item of flow) {
-    if (item.type === 'request') {
-      html += `<div class="msg user"><div class="msg-header"><span class="msg-role">User</span>${flowChip('request')}</div>${esc(item.text || '')}</div>`;
+    if (item.role === 'user') {
+      const rawLines = [item.rawLine];
+      const msg = `<div class="msg user session-message" data-raw-lines="${rawLineAttr(rawLines)}"><div class="msg-header turn-header">${sourceChip('turn ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body"><div class="message-text">${esc(item.text || '')}</div></div></div>`;
+      html += renderTurnWithAudit(msg, rawLines, item.index, auditByLine, sessionId);
       continue;
     }
     const a = item.assistant || {};
@@ -1367,15 +1498,15 @@ function renderEnrichedTranscript(messages) {
     const errors = results.filter(r => r.isError).length;
     const usage = usageLabel(a.usage);
     const cost = costLabel(a.usage);
+    const rawLines = [a.rawLine, ...toolCalls.map(tc => tc.rawLine), ...results.map(r => r.rawLine)];
     let pairs = '';
-    for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id));
-    for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r);
+    for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id), sessionId);
+    for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {}, rawLine: r.rawLine, rawSource: r.rawSource }, r, sessionId);
     if (!a.text && !pairs) continue;
-    html += `<div class="msg assistant turn">
+    const msg = `<div class="msg assistant session-message" data-raw-lines="${rawLineAttr(rawLines)}">
       <div class="msg-header turn-header">
-        <span class="msg-role">Assistant</span>
-        ${flowChip('turn ' + item.index)}
-        ${flowChip('api response')}
+        ${sourceChip('turn ' + item.index, sessionId, a.rawLine, a.rawSource)}
+        ${flowChip('assistant')}
         ${flowChip(a.model || a.api?.model || '')}
         ${flowChip(a.provider || a.api?.provider || '')}
         ${flowChip(usage)}
@@ -1384,47 +1515,139 @@ function renderEnrichedTranscript(messages) {
         ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : '')}
         ${errors ? flowChip(`${errors} errors`, 'error') : ''}
       </div>
-      <div class="turn-body">
+      <div class="message-body">
         ${a.text ? `<div class="assistant-text">${esc(a.text)}</div>` : ''}
         ${pairs ? `<div class="tool-pairs">${pairs}</div>` : ''}
         ${renderRawBlock('Raw API response', a)}
       </div>
     </div>`;
+    html += renderTurnWithAudit(msg, rawLines, item.index, auditByLine, sessionId);
   }
   html += '</div>';
   return html;
 }
 
-function renderSessionTranscript(messages) {
-  return renderEnrichedTranscript(messages);
+function renderSessionTranscript(messages, sessionId) {
+  return renderEnrichedTranscript(messages, sessionId);
 }
 
 function sessionConversationStats(messages) {
   const flow = buildSessionFlow(messages);
-  const responses = flow.filter(x => x.type === 'response');
-  return responses.reduce((acc, item) => {
+  return flow.reduce((acc, item) => {
     const a = item.assistant || {};
-    acc.responses += 1;
+    acc.messages += 1;
+    if (item.role === 'user') acc.users += 1;
+    if (item.role === 'assistant') acc.assistants += 1;
     acc.tools += (a.toolCalls || []).length;
     acc.errors += (item.toolResults || []).filter(r => r.isError).length;
     return acc;
-  }, { responses: 0, tools: 0, errors: 0 });
+  }, { messages: 0, users: 0, assistants: 0, tools: 0, errors: 0 });
 }
 
-function renderSessionDebugTabs(transData) {
+function auditIssueChips(issues) {
+  return Array.isArray(issues) ? issues.map(issue => flowChip(issue, issue === 'tool_output_error' ? 'error' : '')).join('') : '';
+}
+
+function renderSessionConversation(transData, opts = {}) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
   const stats = sessionConversationStats(messages);
-  return `<div class="section conversation-section">
-    <div class="conversation-title">
+  const sectionClass = opts.embedded
+    ? 'conversation-section embedded-conversation'
+    : opts.auditData
+      ? 'panel conversation-section audited-conversation'
+      : 'section conversation-section';
+  const title = opts.showTitle === false ? '' : `<div class="conversation-title">
       <h4>Conversation</h4>
-      ${flowChip(`${transData.messageCount || messages.length} messages`)}
-      ${flowChip(`${stats.responses} responses`)}
+      ${flowChip(`${stats.messages} messages`)}
+      ${flowChip(`${stats.users} user msg`)}
+      ${flowChip(`${stats.assistants} assistant msg`)}
       ${flowChip(`${stats.tools} tool calls`)}
       ${stats.errors ? flowChip(`${stats.errors} tool errors`, 'error') : ''}
-    </div>
-    ${renderEnrichedTranscript(messages)}
+    </div>`;
+  const conversation = `<div class="${sectionClass}">
+    ${title}
+    <div id="raw-log-viewer" class="raw-log-viewer"></div>
+    ${renderEnrichedTranscript(messages, transData.sessionId, opts.auditData || null)}
   </div>`;
+  return conversation;
+}
+
+async function openSessionAudit(sessionId) {
+  const btn = document.getElementById('session-audit-btn');
+  if (btn) { btn.textContent = 'Auditing...'; btn.disabled = true; }
+  try {
+    let r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/audit`);
+    let data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    if (!data.exists) {
+      r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/audit`, { method: 'POST' });
+      data = await r.json();
+      if (!r.ok) throw new Error(data.error || r.statusText);
+    }
+    currentSessionAudit = data;
+    await loadSessionDetail(sessionId, { auditData: data, preserveScroll: true });
+  } catch (e) {
+    alert('Audit failed: ' + (e.message || String(e)));
+  } finally {
+    const nextBtn = document.getElementById('session-audit-btn');
+    if (nextBtn) { nextBtn.textContent = 'Audit'; nextBtn.disabled = false; }
+  }
+}
+
+async function submitAuditFeedback(sessionId, line, textareaId) {
+  const el = document.getElementById(textareaId);
+  const comment = (el?.value || '').trim();
+  if (!comment) return;
+  const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/audit/comment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ line, comment, author: 'human' })
+  });
+  const data = await r.json();
+  if (!r.ok) { alert(data.error || r.statusText); return; }
+  currentSessionAudit = { sessionId, exists: true, rows: data.rows };
+  await loadSessionDetail(sessionId, { auditData: currentSessionAudit, preserveScroll: true });
+}
+
+async function showRawLog(sessionId, line, label, sourceEl) {
+  const viewer = document.getElementById('raw-log-viewer');
+  if (!viewer || !sessionId || !line) return;
+  document.querySelectorAll('.source-chip.active').forEach(el => el.classList.remove('active'));
+  if (sourceEl) sourceEl.classList.add('active');
+  viewer.classList.add('active');
+  viewer.innerHTML = `<div class="raw-log-head"><span>Loading raw JSONL record</span><code>session.jsonl:${esc(line)}</code><button title="Close" onclick="hideRawLog()">×</button></div>`;
+  try {
+    const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/raw-log?line=${encodeURIComponent(line)}`);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    const body = data.parsed ? JSON.stringify(data.parsed, null, 2) : data.raw;
+    viewer.innerHTML = `<div class="raw-log-head"><span>Raw JSONL record</span><code>${esc(data.source || 'session.jsonl')}:${esc(data.line)}</code><button title="Close" onclick="hideRawLog()">×</button></div><pre class="raw-log-body">${esc(body)}</pre>`;
+    viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    viewer.innerHTML = `<div class="raw-log-head"><span style="color:var(--red)">Failed to load raw log</span><button title="Close" onclick="hideRawLog()">×</button></div><pre class="raw-log-body">${esc(e.message || String(e))}</pre>`;
+  }
+}
+
+function hideRawLog() {
+  const viewer = document.getElementById('raw-log-viewer');
+  document.querySelectorAll('.source-chip.active').forEach(el => el.classList.remove('active'));
+  if (viewer) { viewer.classList.remove('active'); viewer.innerHTML = ''; }
+}
+
+function focusSessionLine(line) {
+  const targetLine = Number(line);
+  if (!targetLine) return;
+  document.querySelectorAll('.audit-row.active, .session-message.active').forEach(el => el.classList.remove('active'));
+  const auditRow = document.getElementById(`audit-line-${targetLine}`);
+  if (auditRow) auditRow.classList.add('active');
+  const turn = [...document.querySelectorAll('.session-message[data-raw-lines]')].find(el =>
+    String(el.dataset.rawLines || '').split(',').map(Number).includes(targetLine)
+  );
+  if (turn) {
+    turn.classList.add('active');
+    turn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 // ── Activity Timeline ─────────────────────────────────────────────────
@@ -1546,6 +1769,7 @@ function renderRequests(data) { /* removed */ }
 
 const sessionHistory = [];
 let currentInspectedSession = null;
+let currentSessionAudit = null;
 
 function fmtTime(epoch) {
   if (!epoch) return '—';
@@ -1578,7 +1802,8 @@ function verdictColor(verdict) {
   return 'var(--fg2)';
 }
 
-async function loadSessionDetail(sessionId) {
+async function loadSessionDetail(sessionId, opts = {}) {
+  if (currentInspectedSession !== sessionId) currentSessionAudit = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
   panel.innerHTML = '<div class="panel">Loading...</div>';
@@ -1618,7 +1843,7 @@ async function loadSessionDetail(sessionId) {
         <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
-        <button class="ask-btn" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc((s.task || '').slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
+        <button class="ask-btn" id="session-audit-btn" onclick="openSessionAudit('${esc(s.sessionId)}')">Audit</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -1627,16 +1852,7 @@ async function loadSessionDetail(sessionId) {
       </div>
     </div>`;
 
-    // B. Task comes before the conversation: it is the reason this session exists.
-    html += `<div class="section session-task-section">
-      <h4>Task</h4>
-      <pre class="task-block">${esc(s.task || '')}</pre>
-    </div>`;
-
-    // C. Conversation: enriched transcript with API/tool annotations.
-    html += renderSessionDebugTabs(transData);
-
-    // D. Metadata Section
+    // B. Metadata stays near the session identity; it frames the conversation below.
     html += `<div class="section">
       <h4>Metadata</h4>
       <dl class="meta-grid">`;
@@ -1648,7 +1864,17 @@ async function loadSessionDetail(sessionId) {
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 
-    // E. Outcome Section
+    html += `<div id="session-followup-anchor" class="session-followup-anchor"></div>`;
+
+    // C. Unified enriched session chat surface; audit/review and live mode reuse it.
+    const auditData = opts.auditData || currentSessionAudit;
+    if (auditData) {
+      html += `</div>${renderSessionConversation(transData, { auditData })}<div class="panel session-inspector session-inspector-secondary">`;
+    } else {
+      html += renderSessionConversation(transData);
+    }
+
+    // D. Outcome Section
     if (s.outcome) {
       html += `<div class="section">
         <h4>Outcome</h4>`;
@@ -1663,11 +1889,14 @@ async function loadSessionDetail(sessionId) {
       html += `</div>`;
     }
 
-    // F. Evaluation Section
+    // F. Audit Evaluation Section
     if (ev) {
+      const qPct = ev.quality != null ? Math.round(ev.quality * 100) + '%' : null;
+      const ePct = ev.efficiency != null ? Math.round(ev.efficiency * 100) + '%' : null;
       html += `<div class="section">
-        <h4>Evaluation</h4>
-        <div class="eval-card">`;
+        <details class="audit-details">
+          <summary><b>Audit evaluation</b>${ev.verdict ? flowChip(ev.verdict) : ''}${qPct ? flowChip('quality ' + qPct) : ''}${ePct ? flowChip('efficiency ' + ePct) : ''}</summary>
+          <div class="eval-card">`;
       if (ev.quality != null) {
         const qColor = ev.quality >= 0.7 ? '#4caf50' : ev.quality >= 0.4 ? '#ff9800' : '#f44336';
         html += `<div style="margin-bottom:6px"><strong>Quality:</strong> ${scoreBar(ev.quality, qColor)}</div>`;
@@ -1704,7 +1933,7 @@ async function loadSessionDetail(sessionId) {
           }
         } catch(e) { /* ignore parse errors */ }
       }
-      html += `</div></div>`;
+      html += `</div></details></div>`;
     }
 
     // G. Delegation Tree
@@ -1717,6 +1946,7 @@ async function loadSessionDetail(sessionId) {
 
     html += '</div>';
     panel.innerHTML = html;
+    if (isSessionPageMode()) placeSessionComposer();
 
     // Store full outcome for expand/collapse
     if (s.outcome && s.outcome.length > 500) {
@@ -1724,7 +1954,7 @@ async function loadSessionDetail(sessionId) {
       panel._outcomeExpanded = false;
     }
 
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!opts.preserveScroll) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(e) {
     panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
   }
@@ -1822,13 +2052,6 @@ function askAboutRequest(r) {
   switchToChat(msg);
 }
 
-function askAboutSession(sessionId, taskPreview) {
-  const msg = `Review session ${sessionId} and tell me what happened.\n` +
-    `Task: "${taskPreview}"\n\n` +
-    `Read the session transcript at .state/sessions/history/${sessionId}/session.jsonl and summarize: what did the agent do, was it done well, any issues?`;
-
-  switchToChat(msg);
-}
 
 // ── Chat ──────────────────────────────────────────────────────────────
 
@@ -1836,6 +2059,7 @@ let ws = null;
 let chatInitialized = false;
 let activeSessions = [];
 let currentSessionId = null;
+let sessionRefreshTimer = null;
 let renderMd = true; // markdown rendering on by default
 let feedPaused = false;
 let chatAutoScroll = true;
@@ -1957,6 +2181,28 @@ function setSessionPageMode(enabled) {
   const input = document.getElementById('chat-input');
   if (status && enabled) status.textContent = 'Follow up on this session';
   if (input && enabled) input.placeholder = 'Send follow-up to this session...';
+  if (!enabled) restoreChatComposer();
+}
+
+function restoreChatComposer() {
+  const host = document.getElementById('chat-composer-host');
+  const composer = document.querySelector('#chat .chat-container');
+  if (host && composer && composer.parentElement !== host) host.appendChild(composer);
+}
+
+function placeSessionComposer() {
+  const anchor = document.getElementById('session-followup-anchor');
+  const composer = document.querySelector('#chat .chat-container');
+  if (anchor && composer && composer.parentElement !== anchor) anchor.appendChild(composer);
+}
+
+function scheduleSessionConversationRefresh(delay = 600) {
+  if (!isSessionPageMode() || !currentInspectedSession) return;
+  clearTimeout(sessionRefreshTimer);
+  sessionRefreshTimer = setTimeout(() => {
+    const sessionId = currentInspectedSession;
+    loadSessionDetail(sessionId, { preserveScroll: true });
+  }, delay);
 }
 
 function initChat(deepLinkSessionId) {
@@ -2463,24 +2709,10 @@ async function switchSession(sessionId) {
       if (resp.ok) {
         const data = await resp.json();
         const transcript = data.messages || data;
-        for (const msg of transcript) {
-          if (msg.role === 'user' && msg.text) {
-            const div = document.createElement('div');
-            div.className = 'msg user';
-            div.textContent = msg.text;
-            messages.appendChild(div);
-          } else if (msg.role === 'assistant' && msg.text) {
-            const div = document.createElement('div');
-            div.className = 'msg assistant';
-            renderAssistantMsg(div, msg.text);
-            messages.appendChild(div);
-          } else if (msg.role === 'tool_result' && msg.isError) {
-            const div = document.createElement('div');
-            div.className = 'msg tool_result error';
-            div.textContent = (msg.content || '').slice(0, 200);
-            messages.appendChild(div);
-          }
-        }
+        const transData = Array.isArray(transcript)
+          ? { sessionId, messageCount: transcript.length, messages: transcript }
+          : data;
+        messages.innerHTML = renderSessionConversation(transData, { embedded: true, showTitle: false });
       }
     } catch {}
     chatScrollToBottom(messages);
@@ -2537,8 +2769,15 @@ function connectWs() {
         if (all) for (const fn of all) { try { fn(event); } catch (err) { console.error('bus * sub err', err); } }
       }
 
-      // The socket server filters events via subscribe — we receive only
-      // events from our session tree + notifications. No client-side filtering needed.
+      // The session inspector is a read model. Rebuilding it for every
+      // streamed text/tool event makes the page appear to refresh constantly,
+      // especially while evaluator audit sessions are running. Only refresh
+      // the inspected session at stable lifecycle boundaries.
+      if (isSessionPageMode()
+        && event.sessionId === currentInspectedSession
+        && (eventType === 'turn_end' || eventType === 'session_end')) {
+        scheduleSessionConversationRefresh(300);
+      }
 
       switch (eventType) {
         case 'text':
@@ -2736,8 +2975,8 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function esc(s) {
-  if (!s) return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // HTML attribute-safe escape: also escapes both quote types so the value
