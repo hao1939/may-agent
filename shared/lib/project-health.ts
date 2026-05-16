@@ -105,7 +105,7 @@ export type { ProjectMeta };
 
 /** Extract the body of a ## Section (private helper) */
 function extractSection(content: string, heading: string): string {
-  const re = new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
+  const re = new RegExp(`^## ${heading}[ \\t]*\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
   const m = content.match(re);
   return m ? m[1].trim() : "";
 }
