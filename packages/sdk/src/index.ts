@@ -803,3 +803,10 @@ export {
   unreadDiscussionTail,
 } from "./project-schema.js";
 export type { ProjectMeta } from "./project-schema.js";
+
+// ── Metric ownership (which agents exist; who owns which metric) ────────────
+export {
+  listConfiguredAgents,
+  listAutonomousAgents,
+  resolveMetricOwner,
+} from "./metric-ownership.js";
