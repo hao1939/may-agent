@@ -1,7 +1,7 @@
 # Plan: Dissolve `shared/workflows/`
 
-**Date:** 2026-05-15 (review applied 2026-05-17; Phases 1+3+partial-7 complete 2026-05-17)
-**Status:** 80% complete — only project.ts migration remains
+**Date:** 2026-05-15 (review applied 2026-05-17; all phases complete 2026-05-17)
+**Status:** ✅ Complete — shared/workflows/ dissolved
 **Owner:** platform
 
 ## Principle
@@ -179,6 +179,75 @@ Dead helpers: `budget-checkpoint`, `complexity-estimator`,
 **Current state of `shared/workflows/`:** 3 files remain
 (`project.ts` 1343 LOC, `project.test.ts`, `hooks/validate-on-create.ts`)
 plus `REGISTRY.md`. These dissolve in Phases 4-6.
+
+### Phase 4 complete (2026-05-17)
+
+Resolver in `src/lib/workflow-tool.ts` extended with `projectWorkflowDir`
+parameter. Precedence: **project > agent > shared**. First-match-wins
+via `Set`-based dedup across the three directories in priority order.
+
+`sdk-impl.ts` computes the project workflow dir from `opts.projectId` +
+`deps.projectsRoot` and threads it through `runWorkflowDirect` →
+`createWorkflowTool`. Handlers that already pass `projectId` (notably
+`agents/may/handlers/project.ts`) get per-project lookup automatically.
+
+New test: `test/workflow-resolver-precedence.test.ts` covers all three
+fallback cases with real temp directories (commit `5cddcb44`).
+
+### Phase 5 complete (2026-05-17)
+
+`projects/platform/workflows/platform-iteration.ts` snapshotted from
+`shared/workflows/project.ts` (1343 LOC). Internal name: `platform-iteration`.
+project.md updated. Resolver verified to load it via projectWorkflowDir.
+Commit `e176288cf`.
+
+### Phase 5b/6 complete (2026-05-17)
+
+Migration helper: `scripts/migrate-project-workflow.mjs`. Idempotent,
+schema-drift-guarded, has --dry-run. Run against 12 remaining projects
+in a single batch. All ts-clean post-migration.
+
+Migrated projects: aks-rp-e2e, closed-loop-reliability, daily-alert-review,
+eval-llm-lane-restoration, evaluator-aftermath-null-trigger-loop,
+evaluator-low-quality-rate-calibration,
+evaluator-strategy-extractor-calibration,
+finish-blocked-hygiene-reduction, master-worker-context-sharing,
+proof-of-life-dashboard, ruflo-learning-loop, scout-second-brain-learning.
+Commit `5c4e6bdfe`.
+
+### Phase 7 finale complete (2026-05-17)
+
+`shared/workflows/` removed entirely. Surviving artifacts:
+- `shared/hooks/validate-on-create.ts` (workflow-creation hook, moved
+  out of the deleted directory)
+- `scripts/seeds/project-iteration-seed.ts` (template for the migration
+  script; never executed, has 'do not import' header)
+- `projects/platform/workflows/project-iteration.test.ts` (representative
+  copy of `applyReviewerProjectDirectives`/`stripReviewerDirectives` tests)
+
+Validator fix: `validateProjectFormat` now exact-matches the legacy
+`master-worker`/`master-worker-execute` workflow names instead of
+prefix-matching, unblocking `master-worker-context-sharing-iteration`.
+
+Commits: `5e06546c9` (/app), `c9e83842` (repos/may-agent).
+
+## Final state
+
+- `shared/workflows/`: **deleted**
+- `@may-agent/sdk` packages/sdk/src/: gained 6 promoted modules (circuit-breaker,
+  dispatch-dedup-guard, workflow-file-cache, project-schema, metric-ownership,
+  heartbeat-data) + heartbeat helpers.
+- Per-agent workflow homes:
+  - `agents/may/workflows/`: closed-loop-steward, verify-wrap,
+    metric-alert-triage (+test), session-recovery (+test), may-heartbeat
+  - `agents/evaluator/workflows/`: evaluator-deep-eval (+ existing aftermath, heartbeat)
+  - 12 other agents: unchanged heartbeats (all import via shared/agent-sdk.ts)
+- Per-project workflow homes: 13 `projects/<id>/workflows/<id>-iteration.ts`
+- Resolver: project > agent > shared precedence (with shared being empty now)
+- Tests: 1454 (repo) + 364 (/app) = 1818 passing
+- Live verified: heartbeats, evaluator-aftermath, metric-alert-triage,
+  scout-explore, evaluator-deep-eval all completed cleanly from their new
+  homes across multiple reload cycles.
 
 ## Resolver change
 
