@@ -154,18 +154,24 @@
   .raw-log-head code { color: var(--fg); }
   .raw-log-head button { margin-left: auto; background: none; border: 0; color: var(--fg2); cursor: pointer; font-size: 14px; }
   .raw-log-body { margin: 0; padding: 10px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  .session-audit-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 12px; align-items: start; }
-  .session-audit-lane { position: sticky; top: 12px; display: grid; gap: 8px; max-height: calc(100vh - 48px); overflow: auto; }
-  .audit-lane-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
-  .audit-lane-head b { margin-right: auto; }
+  .audited-conversation { max-width: none; }
+  .audit-transcript { gap: 12px; }
+  .turn-audit-row { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); gap: 12px; align-items: start; }
+  .turn-cell { min-width: 0; }
+  .turn-audit-cell { min-width: 0; display: grid; gap: 8px; align-self: start; }
+  .turn-audit-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
+  .turn-audit-head b { margin-right: auto; font-size: 12px; }
+  .turn-audit-empty { border: 1px dashed var(--border); border-radius: 8px; padding: 9px; color: var(--fg2); font-size: 12px; background: rgba(255,255,255,.015); }
   .audit-row { border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); overflow: hidden; }
+  .audit-row.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(88,166,255,.35); }
+  .session-message.active { outline: 2px solid rgba(88,166,255,.55); outline-offset: 2px; }
   .audit-row-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border-bottom: 1px solid var(--border); }
   .audit-comment { padding: 8px 9px; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
   .audit-feedback { display: grid; gap: 6px; padding: 8px 9px; border-top: 1px solid var(--border); }
   .audit-feedback textarea { width: 100%; min-height: 54px; resize: vertical; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 7px; font: inherit; font-size: 12px; }
   .audit-feedback button { justify-self: end; }
   .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  @media (max-width: 1100px) { .session-audit-layout { grid-template-columns: 1fr; } .session-audit-lane { position: static; max-height: none; } }
+  @media (max-width: 1200px) { .turn-audit-row { grid-template-columns: 1fr; } }
   .tool-grid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
   .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); }
@@ -1328,6 +1334,15 @@ function sourceLineChip(sessionId, rawLine, rawSource, cls = '') {
   if (!rawLine) return '';
   return sourceChip(`session.jsonl:${rawLine}`, sessionId, rawLine, rawSource, cls);
 }
+
+function rawLineAttr(lines) {
+  return attrEsc([...new Set((lines || []).map(Number).filter(Boolean))].join(','));
+}
+
+function turnLinkChip(line) {
+  if (!line) return '';
+  return `<button type="button" class="flow-chip source-chip" title="Highlight matching turn" onclick="focusSessionLine(${Number(line)})">turn</button>`;
+}
 function renderRawBlock(label, value) {
   const text = typeof value === 'string' ? value : formatJson(value);
   if (!text) return '';
@@ -1402,12 +1417,77 @@ function toggleToolDetails(button) {
   button.classList.toggle('active', details.open);
 }
 
-function renderEnrichedTranscript(messages, sessionId) {
+function auditRowsByLine(auditData) {
+  const byLine = new Map();
+  for (const row of auditData?.rows || []) {
+    const line = Number(row?.line || 0);
+    if (!line) continue;
+    if (!byLine.has(line)) byLine.set(line, []);
+    byLine.get(line).push(row);
+  }
+  return byLine;
+}
+
+function auditRowsForLines(byLine, lines) {
+  const rows = [];
+  const seen = new Set();
+  for (const line of [...new Set((lines || []).map(Number).filter(Boolean))]) {
+    for (const row of byLine.get(line) || []) {
+      const key = `${line}:${row.createdAt || ''}:${row.source || ''}:${row.comment || ''}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+    }
+  }
+  return rows.sort((a, b) => (Number(a.line || 0) - Number(b.line || 0)) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+}
+
+function renderAuditRows(rows, sessionId, idPrefix = 'audit-feedback') {
+  let html = '';
+  rows.forEach((row, idx) => {
+    const line = Number(row.line || 0);
+    const source = row.source || row.author || 'audit';
+    const scoreClass = row.score === 'issue' ? 'error' : row.score === 'ok' ? 'good' : '';
+    const feedbackId = `${idPrefix}-${line}-${idx}`;
+    html += `<div class="audit-row" id="audit-line-${esc(line)}">
+      <div class="audit-row-head">
+        ${sourceLineChip(sessionId, line, row.rawSource || row.rawContext?.source)}
+        ${flowChip(row.score || 'note', scoreClass)}
+        ${flowChip(source)}
+        ${auditIssueChips(row.issues)}
+      </div>
+      <div class="audit-comment">${esc(row.comment || row.raw || '')}</div>
+      <div class="audit-feedback">
+        <textarea id="${attrEsc(feedbackId)}" placeholder="Add human feedback for session.jsonl:${esc(line)}"></textarea>
+        <button class="ask-btn" onclick="submitAuditFeedback(${jsStringAttr(sessionId)}, ${line}, ${jsStringAttr(feedbackId)})">Save feedback</button>
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+function renderTurnAudit(rows, sessionId, turnIndex) {
+  return `<aside class="turn-audit-cell">
+    <div class="turn-audit-head"><b>Audit</b>${flowChip('turn ' + turnIndex)}${flowChip(`${rows.length} note${rows.length === 1 ? '' : 's'}`)}</div>
+    ${rows.length ? renderAuditRows(rows, sessionId, `audit-feedback-turn-${turnIndex}`) : '<div class="turn-audit-empty">No audit yet for this turn.</div>'}
+  </aside>`;
+}
+
+function renderTurnWithAudit(messageHtml, rawLines, turnIndex, auditByLine, sessionId) {
+  if (!auditByLine) return messageHtml;
+  const rows = auditRowsForLines(auditByLine, rawLines);
+  return `<div class="turn-audit-row" data-raw-lines="${rawLineAttr(rawLines)}"><div class="turn-cell">${messageHtml}</div>${renderTurnAudit(rows, sessionId, turnIndex)}</div>`;
+}
+
+function renderEnrichedTranscript(messages, sessionId, auditData = null) {
   const flow = buildSessionFlow(messages);
-  let html = '<div class="transcript enriched-transcript">';
+  const auditByLine = auditData ? auditRowsByLine(auditData) : null;
+  let html = `<div class="transcript enriched-transcript${auditData ? ' audit-transcript' : ''}">`;
   for (const item of flow) {
     if (item.role === 'user') {
-      html += `<div class="msg user session-message"><div class="msg-header turn-header">${sourceChip('turn ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body"><div class="message-text">${esc(item.text || '')}</div></div></div>`;
+      const rawLines = [item.rawLine];
+      const msg = `<div class="msg user session-message" data-raw-lines="${rawLineAttr(rawLines)}"><div class="msg-header turn-header">${sourceChip('turn ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body"><div class="message-text">${esc(item.text || '')}</div></div></div>`;
+      html += renderTurnWithAudit(msg, rawLines, item.index, auditByLine, sessionId);
       continue;
     }
     const a = item.assistant || {};
@@ -1418,11 +1498,12 @@ function renderEnrichedTranscript(messages, sessionId) {
     const errors = results.filter(r => r.isError).length;
     const usage = usageLabel(a.usage);
     const cost = costLabel(a.usage);
+    const rawLines = [a.rawLine, ...toolCalls.map(tc => tc.rawLine), ...results.map(r => r.rawLine)];
     let pairs = '';
     for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id), sessionId);
     for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {}, rawLine: r.rawLine, rawSource: r.rawSource }, r, sessionId);
     if (!a.text && !pairs) continue;
-    html += `<div class="msg assistant session-message">
+    const msg = `<div class="msg assistant session-message" data-raw-lines="${rawLineAttr(rawLines)}">
       <div class="msg-header turn-header">
         ${sourceChip('turn ' + item.index, sessionId, a.rawLine, a.rawSource)}
         ${flowChip('assistant')}
@@ -1440,6 +1521,7 @@ function renderEnrichedTranscript(messages, sessionId) {
         ${renderRawBlock('Raw API response', a)}
       </div>
     </div>`;
+    html += renderTurnWithAudit(msg, rawLines, item.index, auditByLine, sessionId);
   }
   html += '</div>';
   return html;
@@ -1466,46 +1548,15 @@ function auditIssueChips(issues) {
   return Array.isArray(issues) ? issues.map(issue => flowChip(issue, issue === 'tool_output_error' ? 'error' : '')).join('') : '';
 }
 
-function renderAuditLane(auditData, sessionId) {
-  const rows = (auditData?.rows || []).filter(Boolean);
-  const generated = auditData?.generated ? flowChip('generated') : '';
-  const evaluator = auditData?.evaluatorRequested ? flowChip('evaluator requested') : '';
-  let html = `<aside class="session-audit-lane">
-    <div class="audit-lane-head"><b>Audit</b>${flowChip(`${rows.length} comments`)}${generated}${evaluator}</div>`;
-  if (!rows.length) {
-    html += `<div class="audit-row"><div class="audit-comment">No audit comments yet.</div></div></aside>`;
-    return html;
-  }
-  rows
-    .slice()
-    .sort((a, b) => (Number(a.line || 0) - Number(b.line || 0)) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
-    .forEach((row, idx) => {
-      const line = Number(row.line || 0);
-      const source = row.source || row.author || 'audit';
-      const scoreClass = row.score === 'issue' ? 'error' : row.score === 'ok' ? 'good' : '';
-      html += `<div class="audit-row" id="audit-line-${esc(line)}">
-        <div class="audit-row-head">
-          ${sourceLineChip(sessionId, line, row.rawSource || row.rawContext?.source)}
-          ${flowChip(row.score || 'note', scoreClass)}
-          ${flowChip(source)}
-          ${auditIssueChips(row.issues)}
-        </div>
-        <div class="audit-comment">${esc(row.comment || row.raw || '')}</div>
-        <div class="audit-feedback">
-          <textarea id="audit-feedback-${idx}" placeholder="Add human feedback for session.jsonl:${esc(line)}"></textarea>
-          <button class="ask-btn" onclick="submitAuditFeedback(${jsStringAttr(sessionId)}, ${line}, 'audit-feedback-${idx}')">Save feedback</button>
-        </div>
-      </div>`;
-    });
-  html += `</aside>`;
-  return html;
-}
-
 function renderSessionConversation(transData, opts = {}) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
   const stats = sessionConversationStats(messages);
-  const sectionClass = opts.embedded ? 'conversation-section embedded-conversation' : 'section conversation-section';
+  const sectionClass = opts.embedded
+    ? 'conversation-section embedded-conversation'
+    : opts.auditData
+      ? 'panel conversation-section audited-conversation'
+      : 'section conversation-section';
   const title = opts.showTitle === false ? '' : `<div class="conversation-title">
       <h4>Conversation</h4>
       ${flowChip(`${stats.messages} messages`)}
@@ -1517,10 +1568,9 @@ function renderSessionConversation(transData, opts = {}) {
   const conversation = `<div class="${sectionClass}">
     ${title}
     <div id="raw-log-viewer" class="raw-log-viewer"></div>
-    ${renderEnrichedTranscript(messages, transData.sessionId)}
+    ${renderEnrichedTranscript(messages, transData.sessionId, opts.auditData || null)}
   </div>`;
-  if (!opts.auditData) return conversation;
-  return `<div class="session-audit-layout">${conversation}${renderAuditLane(opts.auditData, transData.sessionId)}</div>`;
+  return conversation;
 }
 
 async function openSessionAudit(sessionId) {
@@ -1583,6 +1633,21 @@ function hideRawLog() {
   const viewer = document.getElementById('raw-log-viewer');
   document.querySelectorAll('.source-chip.active').forEach(el => el.classList.remove('active'));
   if (viewer) { viewer.classList.remove('active'); viewer.innerHTML = ''; }
+}
+
+function focusSessionLine(line) {
+  const targetLine = Number(line);
+  if (!targetLine) return;
+  document.querySelectorAll('.audit-row.active, .session-message.active').forEach(el => el.classList.remove('active'));
+  const auditRow = document.getElementById(`audit-line-${targetLine}`);
+  if (auditRow) auditRow.classList.add('active');
+  const turn = [...document.querySelectorAll('.session-message[data-raw-lines]')].find(el =>
+    String(el.dataset.rawLines || '').split(',').map(Number).includes(targetLine)
+  );
+  if (turn) {
+    turn.classList.add('active');
+    turn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 // ── Activity Timeline ─────────────────────────────────────────────────
@@ -1803,7 +1868,11 @@ async function loadSessionDetail(sessionId, opts = {}) {
 
     // C. Unified enriched session chat surface; audit/review and live mode reuse it.
     const auditData = opts.auditData || currentSessionAudit;
-    html += renderSessionConversation(transData, { auditData });
+    if (auditData) {
+      html += `</div>${renderSessionConversation(transData, { auditData })}<div class="panel session-inspector session-inspector-secondary">`;
+    } else {
+      html += renderSessionConversation(transData);
+    }
 
     // D. Outcome Section
     if (s.outcome) {
