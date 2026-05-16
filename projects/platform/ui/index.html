@@ -115,7 +115,6 @@
   .msg-header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; color: var(--fg2); font-size: 12px; }
   .msg-role { color: var(--fg); font-weight: 650; margin-right: auto; }
   .assistant-text { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .assistant-text.empty { color: var(--fg2); font-style: italic; }
   .conversation-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .conversation-title h4 { margin: 0; margin-right: auto; }
   .tool-pairs { display: grid; gap: 8px; margin-top: 10px; }
@@ -127,7 +126,9 @@
   .tool-pair-preview { padding: 9px 10px; background: rgba(63,185,80,.045); }
   .tool-pair.error .tool-pair-preview { background: rgba(248,81,73,.06); }
   .tool-pair details { border-top: 1px solid var(--border); background: var(--bg2); }
-  .tool-pair details summary { cursor: pointer; padding: 7px 10px; color: var(--fg2); font-size: 12px; }
+  .tool-pair details summary { cursor: pointer; padding: 5px 10px; color: var(--fg2); font-size: 12px; list-style: none; }
+  .tool-pair details summary::-webkit-details-marker { display: none; }
+  .tool-more { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 20px; border: 1px solid var(--border); border-radius: 6px; color: var(--fg2); background: var(--bg); font-weight: 650; }
 
   /* Transcript annotations */
   .flow-chip { display: inline-flex; align-items: center; max-width: 220px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; background: var(--bg2); color: var(--fg2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -135,15 +136,15 @@
   .flow-chip.error { color: var(--red); border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.08); }
   .tool-result-preview { border-top: 1px solid var(--border); background: rgba(63,185,80,.045); padding: 9px 12px; }
   .tool-result-preview.error { background: rgba(248,81,73,.06); }
-  .tool-result-title { color: var(--fg2); font-size: 11px; margin-bottom: 6px; }
   .tool-result-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   .tool-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
   .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
   .tool-pane label { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 6px; }
   .tool-code { margin: 0; max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  .raw-details { margin: 10px 0 0; }
-  .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; }
+  .raw-details { margin: 8px 0 0; }
+  .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; list-style: none; }
+  .raw-details summary::-webkit-details-marker { display: none; }
   @media (max-width: 900px) { .tool-grid { grid-template-columns: 1fr; } .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
 
   /* Chat */
@@ -1281,7 +1282,7 @@ function flowChip(text, cls = '') {
 function renderRawBlock(label, value) {
   const text = typeof value === 'string' ? value : formatJson(value);
   if (!text) return '';
-  return `<details class="raw-details"><summary>${esc(label)}</summary><pre class="tool-code">${esc(text)}</pre></details>`;
+  return `<details class="raw-details"><summary title="${esc(label)}"><span class="tool-more">...</span></summary><pre class="tool-code">${esc(text)}</pre></details>`;
 }
 
 function toolResultHeadline(text) {
@@ -1305,13 +1306,10 @@ function toolResultExcerpt(text) {
 }
 
 function renderToolResultPreview(result) {
-  if (!result) return '<div class="tool-result-preview error"><div class="tool-result-title">Result preview</div><pre class="tool-result-snippet">No matching tool_result found.</pre></div>';
+  if (!result) return '<div class="tool-result-preview error"><pre class="tool-result-snippet">No matching tool_result found.</pre></div>';
   const text = String(result.content || '').trim();
   if (!text) return '';
-  return `<div class="tool-result-preview ${result.isError ? 'error' : ''}">
-    <div class="tool-result-title">Transcript result preview</div>
-    <pre class="tool-result-snippet">${esc(toolResultExcerpt(text))}</pre>
-  </div>`;
+  return `<div class="tool-result-preview ${result.isError ? 'error' : ''}"><pre class="tool-result-snippet">${esc(toolResultExcerpt(text))}</pre></div>`;
 }
 
 
@@ -1321,7 +1319,7 @@ function renderToolPair(tc, result) {
   const headline = result ? toolResultHeadline(resultText) : 'No matching tool_result found.';
   return `<div class="tool-pair ${hasError ? 'error' : ''}">
     <div class="tool-pair-head">
-      ${flowChip('tool_call')}
+      ${flowChip('tool')}
       <span class="tool-pair-title">${esc(tc.tool || result?.toolName || 'tool')}</span>
       ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
       ${tc.id || result?.toolCallId ? flowChip(tc.id || result.toolCallId) : ''}
@@ -1329,7 +1327,7 @@ function renderToolPair(tc, result) {
     </div>
     ${renderToolResultPreview(result)}
     <details>
-      <summary>Full call and result</summary>
+      <summary title="Full call and result"><span class="tool-more">...</span></summary>
       <div class="tool-grid">
         <div class="tool-pane"><label>Tool call args</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
         <div class="tool-pane"><label>Tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
@@ -1357,12 +1355,13 @@ function renderEnrichedTranscript(messages) {
     let pairs = '';
     for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id));
     for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r);
+    if (!a.text && !pairs) continue;
     html += `<div class="msg assistant">
       <div class="msg-header">
         <span class="msg-role">Assistant</span>
         ${flowChip('api')}
         ${flowChip(`response #${item.index}`)}
-        ${flowChip(a.model || a.api?.model || 'model unavailable')}
+        ${flowChip(a.model || a.api?.model || '')}
         ${flowChip(a.provider || a.api?.provider || '')}
         ${flowChip(usage)}
         ${flowChip(cost)}
@@ -1370,7 +1369,7 @@ function renderEnrichedTranscript(messages) {
         ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : '')}
         ${errors ? flowChip(`${errors} errors`, 'error') : ''}
       </div>
-      <div class="assistant-text ${a.text ? '' : 'empty'}">${esc(a.text || (toolCalls.length ? 'No assistant text. Tool calls are attached below.' : 'No assistant text recorded.'))}</div>
+      ${a.text ? `<div class="assistant-text">${esc(a.text)}</div>` : ''}
       ${pairs ? `<div class="tool-pairs">${pairs}</div>` : ''}
       ${renderRawBlock('Raw API response', a)}
     </div>`;
