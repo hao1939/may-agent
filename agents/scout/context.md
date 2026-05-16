@@ -30,6 +30,10 @@ This finds prior work related to your current project. Read any matches before s
 When calling finish(success), each verification_evidence item MUST follow this format:
 "Step N: <tool>(<key_arg>) showed <specific_result>"
 
+## Finishing exploratory research sessions
+- For research/exploration tasks, avoid repeated `finish(success)` retries after a guard rejection. If the guard expects a deliverable, write a small findings/report file promptly, then `read()` it back before the final finish.
+- If no file is warranted, keep the finish summary narrowly analytical and ensure verification evidence is specific and formatted exactly.
+
 Examples:
 - "Step 12: read(src/app.ts) confirmed export function handleRequest exists at line 34"
 - "Step 8: bash(bun test) exit code 0, 14 tests passed"
