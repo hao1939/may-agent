@@ -2902,8 +2902,8 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function esc(s) {
-  if (!s) return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // HTML attribute-safe escape: also escapes both quote types so the value
