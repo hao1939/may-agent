@@ -11,10 +11,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Ensure bun
-for _bun_dir in "$PROJECT_ROOT/.state/.bun/bin" "$HOME/.bun/bin"; do
-  [ -x "$_bun_dir/bun" ] && { export PATH="$_bun_dir:$PATH"; break; }
-done
+# Ensure bun on PATH (host dev runs only; in the container image bun is
+# already at /usr/local/bin/bun and on PATH for free).
+if [ -x "$HOME/.bun/bin/bun" ]; then
+  export PATH="$HOME/.bun/bin:$PATH"
+fi
 
 AGENT="coder"
 SCENARIOS=()

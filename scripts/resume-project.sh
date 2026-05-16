@@ -7,7 +7,6 @@ OWNER=$(grep '^\*\*Owner' "$(dirname $0)/../$PROJECT/project.md" 2>/dev/null | s
 
 echo "Triggering persistent-task for $PROJECT (owner: $OWNER)..."
 podman exec may-agent sh -c "
-export PATH=\".state/.bun/bin:\$PATH\"
 may-agent --task 'workflow.run(\"persistent-task\", \"project: $PROJECT\nagent: $OWNER\ngoal: see project file\")' --agent $OWNER
 " &
 echo "Launched. PID: $!"
