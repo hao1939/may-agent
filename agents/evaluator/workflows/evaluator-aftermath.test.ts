@@ -3,10 +3,12 @@ import {
   HEURISTIC_VERSION,
   artifactVerdict,
   buildReviewTask,
+  buildSessionEvalTrailRows,
   classifyEvaluationLane,
   classifyVerdict,
   evaluationHeuristicVersion,
   falseGoodEventPayload,
+  sessionEvalTrailPath,
   shouldSkipAftermathAmplification,
   shouldRefreshEvaluation,
   transcriptOutputSignals,
@@ -690,13 +692,14 @@ describe("evaluator aftermath transcript checks", () => {
     expect(verdict.issues).toContain("workflow live signal injection unavailable");
   });
 
-  it("refreshes stale good heuristic evaluations", () => {
+  it("refreshes stale heuristic evaluations regardless of verdict", () => {
     const heuristic = { verdict: "needs_improvement", issues: ["schema/query error in transcript"] };
 
     expect(evaluationHeuristicVersion({ overall: JSON.stringify({ heuristicVersion: HEURISTIC_VERSION }) })).toBe(HEURISTIC_VERSION);
     expect(shouldRefreshEvaluation({ verdict: "good", overall: "{}" }, heuristic)).toBe(true);
+    expect(shouldRefreshEvaluation({ verdict: "needs_improvement", overall: "{}" }, heuristic)).toBe(true);
     expect(shouldRefreshEvaluation({ verdict: "good", overall: JSON.stringify({ heuristicVersion: HEURISTIC_VERSION }) }, heuristic)).toBe(false);
-    expect(shouldRefreshEvaluation({ verdict: "needs_improvement", overall: "{}" }, heuristic)).toBe(false);
+    expect(shouldRefreshEvaluation({ verdict: "needs_improvement", overall: JSON.stringify({ heuristicVersion: HEURISTIC_VERSION }) }, heuristic)).toBe(false);
   });
 
   it("routes failed or issue-bearing sessions to triage", () => {
@@ -842,6 +845,228 @@ describe("evaluator aftermath transcript checks", () => {
     expect(artifactVerdict("## Verdict\nNeeds Improvement\n")).toBe("needs_improvement");
     expect(artifactVerdict("## Verdict\ngood\n")).toBe("good");
     expect(artifactVerdict("## Evidence\nnone\n")).toBeNull();
+  });
+
+  it("builds session.eval.jsonl summary and line rows", () => {
+    const transcript = [
+      JSON.stringify({ role: "user", content: "Fix the UI" }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "b1", name: "bash", arguments: { command: "cat missing" } },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        isError: true,
+        content: [{ type: "text", text: "cat: missing: No such file or directory" }],
+      }),
+    ].join("\n");
+
+    const rows = buildSessionEvalTrailRows({
+      sessionId: "s_1",
+      session: { agent: "dev", status: "done", opCount: 3 },
+      transcript,
+      transcriptSource: ".state/sessions/history/s_1/session.jsonl",
+      heuristic: { verdict: "needs_improvement", quality: 0.55, efficiency: 0.8, issues: ["tool_output_error"] },
+      route: { lane: "needs_triage", reason: "tool output failed", signals: [] },
+      createdAt: 123,
+    });
+
+    expect(rows[0]).toMatchObject({
+      type: "summary",
+      target: "session",
+      sessionId: "s_1",
+      verdict: "needs_improvement",
+      lane: "needs_triage",
+      transcriptSource: ".state/sessions/history/s_1/session.jsonl",
+      targetBreakdown: {
+        request: "check",
+        execution: "ok",
+        result: "check",
+        verification: "unknown",
+      },
+      repairDecision: {
+        action: "repair_execution",
+      },
+    });
+    expect(rows.find((row) => row.type === "line" && row.line === 1)).toMatchObject({
+      rawRole: "user",
+      target: "request",
+      purpose: "work_request_or_context",
+    });
+    expect(rows.find((row) => row.type === "line" && row.line === 2)).toMatchObject({
+      rawRole: "assistant",
+      target: "execution",
+      score: "ok",
+      tools: ["bash"],
+      toolTargets: ["execution"],
+    });
+    expect(rows.find((row) => row.type === "line" && row.line === 3)).toMatchObject({
+      rawRole: "toolResult",
+      target: "result",
+      score: "check",
+      issues: ["tool_output_failure_or_mismatch"],
+      toolCallId: "b1",
+    });
+  });
+
+  it("classifies verification tool calls and repair decisions", () => {
+    const transcript = [
+      JSON.stringify({ role: "user", content: "Update the platform UI and verify it in the browser." }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "b1", name: "bash", arguments: { command: "bun run check" } },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [{ type: "text", text: "ok" }],
+      }),
+    ].join("\n");
+
+    const rows = buildSessionEvalTrailRows({
+      sessionId: "s_2",
+      session: { agent: "dev", status: "done", opCount: 3, projectId: "platform" },
+      transcript,
+      transcriptSource: ".state/sessions/history/s_2/session.jsonl",
+      heuristic: { verdict: "good", quality: 0.85, efficiency: 0.8, issues: [] },
+      route: { lane: "success_candidate", reason: "material verified output", signals: ["file write/edit", "verification command"] },
+      createdAt: 123,
+    });
+
+    expect(rows.find((row) => row.type === "line" && row.line === 2)).toMatchObject({
+      target: "verification",
+      toolTargets: ["verification"],
+    });
+    expect(rows.find((row) => row.type === "line" && row.line === 3)).toMatchObject({
+      target: "verification",
+      purpose: "verification_output",
+    });
+    expect(rows[0]).toMatchObject({
+      targetBreakdown: { verification: "ok" },
+      repairDecision: { action: "extract_evolution_candidate" },
+    });
+  });
+
+  it("does not create owner findings for routine verification-only sessions", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "You are working on iteration 6 of a persistent task. Verify the platform state using the existing tests and report whether there is any concrete follow-up.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "b1", name: "bash", arguments: { command: "bun test" } },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [{ type: "text", text: "893 pass 0 fail" }],
+      }),
+    ].join("\n");
+
+    const rows = buildSessionEvalTrailRows({
+      sessionId: "s_routine",
+      session: { agent: "tech-lead", status: "done", opCount: 0, projectId: "platform" },
+      transcript,
+      transcriptSource: ".state/sessions/history/s_routine/session.jsonl",
+      heuristic: { verdict: "good", quality: 0.85, efficiency: 0.8, issues: [] },
+      route: { lane: "routine_ok", reason: "good session; no material output signal", signals: ["verification command", "project-linked session", "workflow-linked session"] },
+      createdAt: 123,
+    });
+
+    expect(rows[0]).toMatchObject({
+      repairDecision: {
+        action: "none",
+        ownerFindings: [],
+        notificationDecision: { notifyNow: false },
+      },
+    });
+    expect(JSON.stringify(rows[0])).not.toContain("weak-verification");
+  });
+
+  it("routes blocked-loop findings to the concrete owner without choosing the fix", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content:
+          "Project iteration 45. Current State: blocked; standalone RP dead for 12 consecutive checks. Resume when curl returns non-zero. Next Action: retry Scenario_PAFThrottling.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "s1",
+            name: "ssh_exec",
+            arguments: { host: "devbox", command: "curl -sk -o /dev/null -w 'HTTP_CODE:%{http_code}' https://localhost:8443 --max-time 5" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "s1",
+        toolName: "ssh_exec",
+        content: [{ type: "text", text: "HTTP_CODE:000" }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          { type: "toolCall", id: "f1", name: "finish", arguments: { status: "blocked", summary: "Still dead, 13th consecutive check." } },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "f1",
+        toolName: "finish",
+        content: [{ type: "text", text: "BLOCKED: Standalone RP still dead. No e2e tests can run until a new standalone build is deployed." }],
+      }),
+    ].join("\n");
+
+    const rows = buildSessionEvalTrailRows({
+      sessionId: "s_blocked",
+      session: { agent: "tech-lead", status: "blocked", opCount: 5, projectId: "aks-rp-e2e" },
+      transcript,
+      transcriptSource: ".state/sessions/history/s_blocked/session.jsonl",
+      heuristic: { verdict: "needs_improvement", quality: 0.45, efficiency: 0.4, issues: ["repeated blocker check"] },
+      route: { lane: "needs_triage", reason: "blocked project repeated liveness check", signals: ["project-linked session"] },
+      createdAt: 123,
+    });
+
+    expect(rows[0]).toMatchObject({
+      repairDecision: {
+        ownerChoosesAction: true,
+        ownerFindings: expect.arrayContaining([
+          expect.objectContaining({
+            id: "stale-blocker-loop",
+            scope: "project_context",
+            owner: "agent:tech-lead",
+            severity: "high",
+          }),
+        ]),
+        notificationDecision: {
+          notifyNow: true,
+          immediateFindingIds: expect.arrayContaining(["stale-blocker-loop"]),
+        },
+      },
+    });
+    expect(JSON.stringify(rows[0])).toContain("Convert repeated liveness polling into a cheap metric/watch");
+    expect(JSON.stringify(rows[0])).not.toContain("nextWorkRequest");
+  });
+
+  it("places eval trail beside the raw session log", () => {
+    expect(sessionEvalTrailPath("/app/.state/sessions/history/s_1/session.jsonl")).toBe(
+      "/app/.state/sessions/history/s_1/session.eval.jsonl",
+    );
   });
 
   it("emits false-good events with generic and review-specific verdict fields", () => {

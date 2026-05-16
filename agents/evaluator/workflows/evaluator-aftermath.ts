@@ -1,10 +1,10 @@
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 6;
+export const HEURISTIC_VERSION = 8;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -26,6 +26,17 @@ type EvaluationRoute = {
   lane: EvaluationLane;
   reason: string;
   signals: string[];
+};
+
+type SessionEvalTrailParams = {
+  sessionId: string;
+  session: any;
+  transcript: string;
+  transcriptSource: string;
+  heuristic: HeuristicVerdict;
+  route: EvaluationRoute;
+  createdAt?: number;
+  source?: string;
 };
 
 function extractTrigger(task: string): any {
@@ -511,9 +522,7 @@ export function shouldSkipAftermathAmplification(session: any, transcript: strin
 
 export function shouldRefreshEvaluation(evaluation: any, heuristic: { verdict: string; issues: string[] }): boolean {
   if (!evaluation) return true;
-  if (String(evaluation.verdict) !== "good") return false;
-  if (evaluationHeuristicVersion(evaluation) >= HEURISTIC_VERSION) return false;
-  return true;
+  return evaluationHeuristicVersion(evaluation) < HEURISTIC_VERSION;
 }
 
 function getSessionIdFromTrigger(trigger: any): string | undefined {
@@ -548,6 +557,605 @@ function readArtifact(path: string): string {
   } catch {
     return "";
   }
+}
+
+export function sessionEvalTrailPath(transcriptPath: string): string {
+  return transcriptPath.replace(/session\.jsonl$/, "session.eval.jsonl");
+}
+
+function displayPath(projectRoot: string, path: string): string {
+  const rel = relative(projectRoot, path);
+  return rel && !rel.startsWith("..") ? rel : path;
+}
+
+function compactEvalText(value: unknown, max = 260): string {
+  const text = (typeof value === "string" ? value : JSON.stringify(value ?? ""))
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length <= max) return text;
+  const head = text.slice(0, Math.max(0, max - 3)).replace(/\s+\S*$/, "");
+  return `${head || text.slice(0, Math.max(0, max - 3))}...`;
+}
+
+function lineContentText(content: any): string {
+  if (Array.isArray(content)) return content.map((part) => String(part?.text ?? "")).filter(Boolean).join("\n");
+  return typeof content === "string" ? content : "";
+}
+
+type EvalCheck = {
+  name: string;
+  rating: "good" | "mixed" | "weak" | "risk" | "not_applicable";
+  note: string;
+};
+
+function makeCheck(name: string, rating: EvalCheck["rating"], note: string): EvalCheck {
+  return { name, rating, note };
+}
+
+function hasAny(text: string, patterns: RegExp[]): boolean {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function looksTruncated(text: string): boolean {
+  const trimmed = text.trim();
+  return /\btruncated\b|\[\.\.\.\]|<\.\.\.>|…/i.test(text) || /^\.\.\./.test(trimmed) || /\.\.\.$/.test(trimmed);
+}
+
+function evalScoreFromChecks(checks: EvalCheck[]): "ok" | "check" | "issue" | "context" {
+  if (checks.some((check) => check.rating === "weak" || check.rating === "risk")) return "issue";
+  if (checks.some((check) => check.rating === "mixed")) return "check";
+  return "ok";
+}
+
+function evalIssuesFromChecks(checks: EvalCheck[]): string[] {
+  return checks
+    .filter((check) => check.rating === "weak" || check.rating === "risk")
+    .map((check) => check.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""));
+}
+
+type EvalTarget = "request" | "execution" | "result" | "verification" | "evolution" | "session";
+type TargetQuality = "ok" | "check" | "issue" | "unknown";
+type RepairAction = "none" | "clarify_request" | "ask_human_or_owner" | "repair_execution" | "repair_verification" | "extract_evolution_candidate";
+type FindingScope = "request_quality" | "agent_behavior" | "project_context" | "workflow" | "tooling" | "verification";
+type FindingSeverity = "low" | "medium" | "high";
+
+type OwnerFinding = {
+  id: string;
+  scope: FindingScope;
+  owner: string;
+  ownerReason: string;
+  severity: FindingSeverity;
+  finding: string;
+  impact: string;
+  evidence: Array<Record<string, unknown>>;
+  suggestedActions: string[];
+};
+
+function isVerificationToolCall(call: any): boolean {
+  const name = String(call?.name ?? "");
+  const command = String(call?.arguments?.command ?? call?.input?.command ?? "");
+  if (name === "finish") return true;
+  if (name === "workflow") return /verify|check|test|review/i.test(String(call?.arguments?.name ?? call?.arguments?.task ?? ""));
+  if (name !== "bash") return false;
+  return /\b(bun\s+(test|run\s+(check|test|build|typecheck|lint|verify))|npm\s+(test|run\s+(check|test|build|typecheck|lint|verify))|pnpm\s+(test|run\s+(check|test|build|typecheck|lint|verify))|yarn\s+(test|run\s+(check|test|build|typecheck|lint|verify))|tsc\b|vitest\b|jest\b|pytest\b|cargo\s+test\b|go\s+test\b|playwright\b|curl\b|docker\b)/i.test(command);
+}
+
+function classifyToolCallTarget(call: any): EvalTarget {
+  return isVerificationToolCall(call) ? "verification" : "execution";
+}
+
+function scoreQuality(score: unknown): TargetQuality {
+  if (score === "issue") return "issue";
+  if (score === "check") return "check";
+  if (score === "ok" || score === "context") return "ok";
+  return "unknown";
+}
+
+function worseQuality(a: TargetQuality, b: TargetQuality): TargetQuality {
+  const rank: Record<TargetQuality, number> = { unknown: 0, ok: 1, check: 2, issue: 3 };
+  return rank[b] > rank[a] ? b : a;
+}
+
+function summarizeTargetQuality(rows: Record<string, unknown>[], target: EvalTarget): TargetQuality {
+  const targetRows = rows.filter((row) => row.target === target);
+  if (targetRows.length === 0) return "unknown";
+  return targetRows.reduce<TargetQuality>((quality, row) => worseQuality(quality, scoreQuality(row.score)), "ok");
+}
+
+function rowIssues(row: Record<string, unknown>): string[] {
+  return Array.isArray(row.issues) ? row.issues.map(String) : [];
+}
+
+function hasIssue(rows: Record<string, unknown>[], target: EvalTarget, issue: string): boolean {
+  return rows.some((row) => row.target === target && rowIssues(row).includes(issue));
+}
+
+function hasMaterialOutputSignal(signals: string[]): boolean {
+  return signals.some((signal) => /file write\/edit|git commit|project artifact|knowledge update/i.test(signal));
+}
+
+function issueEvidence(lineRows: Record<string, unknown>[], target?: EvalTarget): Array<Record<string, unknown>> {
+  return lineRows
+    .filter((row) => ["issue", "check"].includes(String(row.score ?? "")) && (!target || row.target === target))
+    .slice(0, 6)
+    .map((row) => ({
+      source: row.rawSource,
+      line: row.line,
+      target: row.target,
+      issues: row.issues ?? [],
+      comment: row.comment ?? row.judgment ?? row.rawPreview ?? "",
+    }));
+}
+
+function agentOwner(params: SessionEvalTrailParams): string {
+  const agent = String(params.session?.agent ?? "").trim();
+  return `agent:${agent || "may"}`;
+}
+
+function humanOwner(): string {
+  return "human:requester";
+}
+
+function isBlockedOrWaitingStatus(status: unknown): boolean {
+  return /^(blocked|waiting)$/i.test(String(status ?? ""));
+}
+
+function hasBlockedLoopSignal(text: string): boolean {
+  return (
+    /HTTP_CODE:000/i.test(text) ||
+    /\b(?:\d+\s+)?consecutive checks?\b/i.test(text) ||
+    /\bblocked for \d+\b/i.test(text) ||
+    /\bNo e2e tests can run until\b/i.test(text) ||
+    /\bstandalone RP\b[\s\S]{0,180}\b(?:dead|down|unavailable|not reachable)\b/i.test(text) ||
+    /\b(?:retry|recheck|check)\b[\s\S]{0,120}\b(?:same|known|stale)\s+blocker\b/i.test(text)
+  );
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function buildOwnerFindings(
+  params: SessionEvalTrailParams,
+  lineRows: Record<string, unknown>[],
+  targetBreakdown: Record<string, TargetQuality>,
+): OwnerFinding[] {
+  const findings: OwnerFinding[] = [];
+  const materialOutput = hasMaterialOutputSignal(params.route.signals);
+  const requestHasStaleRisk = hasIssue(lineRows, "request", "misleading_or_stale_risk");
+  const requestHasIntegrityRisk = hasIssue(lineRows, "request", "information_integrity");
+  const requestHasPurposeIssue = hasIssue(lineRows, "request", "purpose_clarity");
+  const blockedOrWaiting = isBlockedOrWaitingStatus(params.session?.status);
+  const joinedEvidence = `${params.transcript}\n${params.heuristic.issues.join("\n")}\n${params.route.reason}`;
+
+  if (hasBlockedLoopSignal(joinedEvidence)) {
+    findings.push({
+      id: "stale-blocker-loop",
+      scope: "project_context",
+      owner: agentOwner(params),
+      ownerReason: "The project owner agent is the concrete actor that can update project context, add a resume condition, or ask the human for a decision.",
+      severity: "high",
+      finding: "The session appears to be in a stale blocker loop rather than moving the project toward an unblock decision.",
+      impact: "Repeated full sessions can spend turns rechecking a known dead condition without changing project state, owner decision, or monitoring strategy.",
+      evidence: issueEvidence(lineRows).length ? issueEvidence(lineRows) : [{ source: params.transcriptSource, line: null, target: "session", comment: "Blocked-loop signal found in transcript or heuristic evidence." }],
+      suggestedActions: [
+        "Update project context with the latest blocker evidence and a concrete resume condition.",
+        "Ask the human/owner to choose redeploy, wait, re-scope, or close if that decision is required.",
+        "Convert repeated liveness polling into a cheap metric/watch instead of full project iterations.",
+      ],
+    });
+  }
+
+  const requestFindingIsActionable =
+    params.route.lane !== "routine_ok" ||
+    params.heuristic.verdict !== "good" ||
+    blockedOrWaiting;
+
+  if (requestFindingIsActionable && (requestHasIntegrityRisk || requestHasPurposeIssue || requestHasStaleRisk || targetBreakdown.request === "issue")) {
+    findings.push({
+      id: "request-quality",
+      scope: "request_quality",
+      owner: requestHasIntegrityRisk ? humanOwner() : agentOwner(params),
+      ownerReason: requestHasIntegrityRisk
+        ? "The requester or human owner must clarify missing/corrupted intent before agents can safely continue."
+        : "The owner agent can rewrite stale or overloaded project instructions into a cleaner next WorkRequest.",
+      severity: requestHasIntegrityRisk || blockedOrWaiting ? "high" : "medium",
+      finding: "The work request may be unclear, stale, overloaded, or missing critical information.",
+      impact: "Bad input can make a reasonable agent repeat the wrong action or optimize for stale context.",
+      evidence: issueEvidence(lineRows, "request"),
+      suggestedActions: [
+        "Rewrite the next request with purpose, current evidence, expected output, constraints, and verification.",
+        "Remove stale references and separate durable project context from the immediate ask.",
+        "Ask the human for a missing decision when the agent cannot infer it safely.",
+      ],
+    });
+  }
+
+  if (materialOutput && ["unknown", "check", "issue"].includes(String(targetBreakdown.verification))) {
+    findings.push({
+      id: "weak-verification",
+      scope: "verification",
+      owner: agentOwner(params),
+      ownerReason: "The session agent is responsible for proving its claimed output before handoff.",
+      severity: blockedOrWaiting ? "high" : "medium",
+      finding: "The session appears to produce material output without strong verification evidence.",
+      impact: "The project may accept a change or conclusion before the changed artifact, served behavior, or test result was actually proven.",
+      evidence: issueEvidence(lineRows, "verification"),
+      suggestedActions: [
+        "Run the relevant build/test/API/browser check and attach the evidence.",
+        "State remaining uncertainty explicitly if verification cannot be completed.",
+        "Do not report completion from file edits or self-claims alone.",
+      ],
+    });
+  }
+
+  if (params.heuristic.verdict !== "good" || targetBreakdown.execution === "issue" || targetBreakdown.result === "issue") {
+    findings.push({
+      id: "execution-quality",
+      scope: "agent_behavior",
+      owner: agentOwner(params),
+      ownerReason: "The acting agent can repair its approach, ask for help, or capture a learning item for its own workflow.",
+      severity: blockedOrWaiting ? "high" : "medium",
+      finding: "Execution/result quality needs owner review; the session did not clearly turn the request into useful progress.",
+      impact: "Without owner review, the same agent may repeat weak tool choices, shallow recovery, or unsupported conclusions.",
+      evidence: issueEvidence(lineRows).length ? issueEvidence(lineRows) : [{ source: params.transcriptSource, line: null, target: "session", issues: params.heuristic.issues }],
+      suggestedActions: [
+        "Decide whether to rerun a narrow repair session, update agent guidance, or ask a human for missing context.",
+        "If the issue repeats across sessions, fork or update the owning agent workflow with evidence.",
+        "If the issue is project-specific, update the project context instead of changing global agent behavior.",
+      ],
+    });
+  }
+
+  return findings.filter((finding, index, all) => index === all.findIndex((other) => other.id === finding.id));
+}
+
+function buildNotificationDecision(params: SessionEvalTrailParams, findings: OwnerFinding[]): Record<string, unknown> {
+  const blockedOrWaiting = isBlockedOrWaitingStatus(params.session?.status);
+  const immediate = findings.filter((finding) => finding.severity === "high" || blockedOrWaiting);
+  return {
+    policy: "persist_all_notify_actionable",
+    notifyNow: immediate.length > 0,
+    reason: immediate.length > 0
+      ? "High-severity or blocked/waiting finding should be sent to the concrete owner now."
+      : "No immediate owner notification; keep findings in the eval trail for digest/review.",
+    immediateFindingIds: immediate.map((finding) => finding.id),
+    batchedFindingIds: findings.filter((finding) => !immediate.includes(finding)).map((finding) => finding.id),
+  };
+}
+
+function ownerEventTarget(owner: unknown): string {
+  const text = String(owner ?? "");
+  if (text.startsWith("agent:")) return text.slice("agent:".length) || "may";
+  if (text.startsWith("human:")) return "human";
+  return text || "may";
+}
+
+function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<string, unknown>[]): Record<string, unknown> {
+  const targetBreakdown = {
+    request: summarizeTargetQuality(lineRows, "request"),
+    execution: summarizeTargetQuality(lineRows, "execution"),
+    result: summarizeTargetQuality(lineRows, "result"),
+    verification: summarizeTargetQuality(lineRows, "verification"),
+  };
+  const materialOutput = hasMaterialOutputSignal(params.route.signals);
+  const requestHasStaleRisk = hasIssue(lineRows, "request", "misleading_or_stale_risk");
+  const requestHasIntegrityRisk = hasIssue(lineRows, "request", "information_integrity");
+  const requestHasPurposeIssue = hasIssue(lineRows, "request", "purpose_clarity");
+  const ownerFindings = buildOwnerFindings(params, lineRows, targetBreakdown);
+  const notificationDecision = buildNotificationDecision(params, ownerFindings);
+  let action: RepairAction = "none";
+  let reason = "No immediate repair is required from the seeded evaluation.";
+
+  if (targetBreakdown.request === "issue" && requestHasIntegrityRisk) {
+    action = "ask_human_or_owner";
+    reason = "The work request appears incomplete or corrupted; route the finding to the requester/human owner before continuing.";
+  } else if (requestHasPurposeIssue || requestHasStaleRisk || (targetBreakdown.request === "issue" && params.heuristic.verdict !== "good")) {
+    action = "clarify_request";
+    reason = "The work request is a likely root cause or contributor; route it to the owner for clarification or rewrite.";
+  } else if (materialOutput && ["unknown", "check", "issue"].includes(targetBreakdown.verification)) {
+    action = "repair_verification";
+    reason = "The session appears to produce material output but lacks strong verification evidence; route verification critique to the owner.";
+  } else if (params.heuristic.verdict !== "good" || targetBreakdown.execution === "issue" || targetBreakdown.result === "issue") {
+    action = "repair_execution";
+    reason = "The request is usable, but execution or result evidence needs owner review.";
+  } else if (params.route.lane === "success_candidate") {
+    action = "extract_evolution_candidate";
+    reason = "The session looks useful enough to mine for reusable learning after review.";
+  }
+
+  return {
+    action,
+    reason,
+    targetBreakdown,
+    ownerChoosesAction: true,
+    ownerFindings,
+    notificationDecision,
+    suggestedActions: uniqueStrings(ownerFindings.flatMap((finding) => finding.suggestedActions)),
+  };
+}
+
+function buildUserTurnEvaluation(text: string): { score: "ok" | "check" | "issue" | "context"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  const length = normalized.length;
+  const hasPurpose = hasAny(normalized, [/\bgoal\b/i, /\btask\b/i, /\brequest\b/i, /\bimplement\b/i, /\bfix\b/i, /\bbuild\b/i, /\breview\b/i, /\bmaintain\b/i, /\bupdate\b/i, /\bimprove\b/i, /\bchange\b/i]);
+  const hasContext = hasAny(normalized, [/\bcontext\b/i, /\bproject\b/i, /\biteration\b/i, /\bcurrent state\b/i, /\bconstraint/i, /\bgoal\b/i]);
+  const hasAction = hasAny(normalized, [/\bdo\b/i, /\bmake\b/i, /\bimplement\b/i, /\bfix\b/i, /\breview\b/i, /\bupdate\b/i, /\bverify\b/i, /\bcontinue\b/i]);
+  const staleRisk = hasAny(normalized, [/\b(current|latest|today|yesterday|now)\b/i, /comments\.md/i, /shared\/projects/i]);
+  const noisy = length > 1200 || /\bstanding platform project\b/i.test(normalized);
+
+  const checks: EvalCheck[] = [
+    makeCheck("purpose_clarity", hasPurpose && hasAction ? "good" : hasPurpose ? "mixed" : "weak", hasPurpose && hasAction ? "The request exposes a purpose and an expected action." : "The immediate action is not explicit enough."),
+    makeCheck("necessary_context", hasContext ? "good" : "mixed", hasContext ? "The message carries relevant project/task context." : "The message has limited context, so the agent may need to infer intent."),
+    makeCheck("information_integrity", looksTruncated(normalized) ? "risk" : "good", looksTruncated(normalized) ? "The message appears truncated or abbreviated." : "No obvious truncation marker is present."),
+    makeCheck("simplicity", length > 1800 ? "weak" : length > 700 ? "mixed" : "good", length > 1800 ? "The request is overloaded and hard to scan." : length > 700 ? "The request is understandable but mixes durable context with the immediate ask." : "The request is compact enough for the agent to act on."),
+    makeCheck("misleading_or_stale_risk", staleRisk ? "mixed" : "good", staleRisk ? "The message contains relative/current or legacy-looking references that should be verified against files/state." : "No obvious stale-reference risk is visible from the text alone."),
+  ];
+
+  const score = evalScoreFromChecks(checks);
+  const issues = evalIssuesFromChecks(checks);
+  const improvement = noisy || length > 700
+    ? "Separate stable project context from the immediate request; keep the turn to the concrete ask, acceptance criteria, and changed constraints."
+    : "Keep the request as a short ask plus only the context required for the next action.";
+  const comment = score === "ok"
+    ? "User request is clear, sufficiently contextual, and concise enough to guide the next agent turn."
+    : score === "check"
+      ? "User request is actionable but could be cleaner; it mixes useful context with extra or potentially stale detail."
+      : "User request needs cleanup before it is a strong work instruction; clarify the immediate ask and remove misleading or overloaded context.";
+
+  return { score: score === "ok" ? "context" : score, issues, checks, comment, improvement };
+}
+
+function buildAssistantTurnEvaluation(text: string, calls: any[]): { score: "ok" | "check" | "issue"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
+  const toolNames = calls.map((call) => String(call?.name ?? "")).filter(Boolean);
+  const callCount = calls.length;
+  const hasText = text.trim().length > 0;
+  const hasConcreteTools = toolNames.length === callCount;
+  const broadShell = calls.some((call) => String(call?.name ?? "") === "bash" && /\b(find|grep|rg)\b[\s\S]{0,80}\b\/app\b/.test(String(call?.arguments?.command ?? call?.input?.command ?? "")));
+
+  const checks: EvalCheck[] = [
+    makeCheck("purpose_clarity", callCount > 0 || hasText ? "good" : "weak", callCount > 0 ? "The assistant chose concrete actions for the turn." : hasText ? "The assistant responded in text without tool work." : "No visible response or action is present."),
+    makeCheck("tool_necessity", callCount === 0 ? "not_applicable" : callCount <= 3 ? "good" : callCount <= 6 ? "mixed" : "weak", callCount === 0 ? "No tool calls to judge." : callCount <= 3 ? "Tool call count is modest for one turn." : "Tool call count is high; inspect whether the calls should have been split or narrowed."),
+    makeCheck("grounding", hasConcreteTools ? "good" : callCount ? "mixed" : "not_applicable", hasConcreteTools ? "Tool requests name concrete tools and arguments." : callCount ? "Some tool request metadata is incomplete." : "No tool grounding needed for this turn."),
+    makeCheck("simplicity", broadShell ? "mixed" : "good", broadShell ? "The command looks broad; a narrower repository/file target would be cleaner if known." : "The turn is not obviously over-broad from the request alone."),
+    makeCheck("misleading_or_stale_risk", "good", "No misleading claim is visible in the assistant request itself; verify against tool output."),
+  ];
+  const score = evalScoreFromChecks(checks) === "context" ? "check" : evalScoreFromChecks(checks) as "ok" | "check" | "issue";
+  const issues = evalIssuesFromChecks(checks);
+  const improvement = callCount > 3
+    ? "Batch only tightly related tool calls and explain the purpose if the next step is not obvious from the call."
+    : "Keep each tool request tied to the next needed evidence or change.";
+  const comment = score === "ok"
+    ? "Assistant turn is purposeful and reasonably scoped; judge final value against the following tool output."
+    : score === "check"
+      ? "Assistant turn is plausible but should be checked for scope and necessity against the surrounding context."
+      : "Assistant turn is weakly formed or over-broad; it needs clearer purpose and tighter evidence gathering.";
+  return { score, issues, checks, comment, improvement };
+}
+
+function buildToolOutputEvaluation(output: string, isError: boolean): { score: "ok" | "check" | "issue"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
+  const empty = output.trim().length === 0;
+  const failureText = isError || /\b(?:error|failed|not found|no such file|permission denied)\b/i.test(output);
+  const checks: EvalCheck[] = [
+    makeCheck("evidence_value", empty ? "weak" : failureText ? "mixed" : "good", empty ? "The tool returned no usable evidence." : failureText ? "The output is useful mainly as failure evidence." : "The output provides usable evidence for the next step."),
+    makeCheck("integrity", /\.\.\.|truncated/i.test(output) ? "mixed" : "good", /\.\.\.|truncated/i.test(output) ? "Output may be truncated; inspect raw line if exact content matters." : "No obvious truncation marker is visible."),
+    makeCheck("actionability", failureText ? "mixed" : "good", failureText ? "The next turn should recover from or explain this failure." : "The next turn can use this output directly."),
+  ];
+  const score = failureText || empty ? (empty ? "issue" : "check") : "ok";
+  const issues = failureText ? ["tool_output_failure_or_mismatch"] : empty ? ["empty_tool_output"] : [];
+  const improvement = failureText
+    ? "Use the failure as evidence, adjust the path/query/assumption, and avoid claiming success from this output alone."
+    : "Cite the relevant part of the output in the next judgment or action.";
+  const comment = failureText
+    ? "Tool output shows a failure or mismatch; the agent should recover before relying on this step."
+    : empty
+      ? "Tool output is empty, so it provides weak evidence unless emptiness was expected."
+      : "Tool output provides usable evidence for the session.";
+  return { score, issues, checks, comment, improvement };
+}
+
+export function buildSessionEvalTrailRows(params: SessionEvalTrailParams): Record<string, unknown>[] {
+  const createdAt = params.createdAt ?? Date.now();
+  const source = params.source ?? "evaluator-heuristic";
+  const opCount = Number(params.session?.opCount ?? 0);
+  const rows: Record<string, unknown>[] = [
+    {
+      type: "summary",
+      target: "session",
+      schemaVersion: 1,
+      sessionId: params.sessionId,
+      source,
+      author: "evaluator",
+      createdAt,
+      transcriptSource: params.transcriptSource,
+      verdict: params.heuristic.verdict,
+      quality: params.heuristic.quality,
+      efficiency: params.heuristic.efficiency,
+      productiveCalls: Math.max(0, opCount - params.heuristic.issues.length),
+      wastedCalls: params.heuristic.issues.length,
+      issues: params.heuristic.issues,
+      lane: params.route.lane,
+      routeReason: params.route.reason,
+      signals: params.route.signals,
+      heuristicVersion: HEURISTIC_VERSION,
+      summary: {
+        status: params.session?.status ?? "unknown",
+        agent: params.session?.agent ?? "unknown",
+        projectId: params.session?.projectId ?? null,
+        workflowRunId: params.session?.workflowRunId ?? null,
+        opCount,
+      },
+      comment: params.heuristic.issues.length
+        ? `Session ${params.heuristic.verdict}: ${params.heuristic.issues.join("; ")}`
+        : `Session ${params.heuristic.verdict}; route=${params.route.lane}.`,
+    },
+  ];
+
+  const rawLines = params.transcript.split(/\n/);
+  const toolCallTargets = new Map<string, EvalTarget>();
+  for (let idx = 0; idx < rawLines.length; idx += 1) {
+    const raw = rawLines[idx];
+    if (!raw.trim()) continue;
+    const line = idx + 1;
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      rows.push({
+        type: "line",
+        schemaVersion: 1,
+        sessionId: params.sessionId,
+        line,
+        source,
+        author: "evaluator",
+        createdAt,
+        rawSource: params.transcriptSource,
+        rawRole: "unparsed",
+        target: "execution",
+        score: "issue",
+        issues: ["unparsed_jsonl"],
+        purpose: "unknown",
+        rawPreview: compactEvalText(raw),
+        comment: "Raw session record is not valid JSONL; inspect manually.",
+      });
+      continue;
+    }
+
+    const rawRole = String(parsed?.role ?? "unknown");
+    const role = rawRole.toLowerCase();
+    const base = {
+      type: "line",
+      schemaVersion: 1,
+      sessionId: params.sessionId,
+      line,
+      source,
+      author: "evaluator",
+      createdAt,
+      rawSource: params.transcriptSource,
+      rawRole,
+      rawPreview: compactEvalText(raw),
+    };
+
+    if (role === "user") {
+      const userText = lineContentText(parsed.content);
+      const evaluation = buildUserTurnEvaluation(userText);
+      rows.push({
+        ...base,
+        target: "request",
+        score: evaluation.score,
+        issues: evaluation.issues,
+        purpose: "work_request_or_context",
+        actor: "user",
+        contentPreview: compactEvalText(userText),
+        checks: evaluation.checks,
+        improvement: evaluation.improvement,
+        comment: evaluation.comment,
+      });
+      continue;
+    }
+
+    if (role === "assistant") {
+      const blocks = Array.isArray(parsed.content) ? parsed.content : [];
+      const textBlocks = blocks.filter((block: any) => block?.type === "text").map((block: any) => block.text || "").join(" ");
+      const calls = blocks.filter((block: any) => block?.type === "tool_use" || block?.type === "toolCall");
+      const toolTargets = calls.map(classifyToolCallTarget);
+      calls.forEach((call: any, idx: number) => {
+        if (call?.id) toolCallTargets.set(String(call.id), toolTargets[idx] ?? "execution");
+      });
+      const rowTarget: EvalTarget = calls.length > 0 && toolTargets.every((target) => target === "verification") ? "verification" : "execution";
+      const evaluation = buildAssistantTurnEvaluation(textBlocks, calls);
+      rows.push({
+        ...base,
+        target: rowTarget,
+        score: evaluation.score,
+        issues: evaluation.issues,
+        purpose: calls.length ? "assistant_tool_planning" : "assistant_response",
+        actor: "assistant",
+        toolCallIds: calls.map((call: any) => call.id).filter(Boolean),
+        tools: calls.map((call: any) => call.name).filter(Boolean),
+        toolTargets,
+        model: parsed.model ?? parsed.api?.model ?? null,
+        provider: parsed.provider ?? parsed.api?.provider ?? null,
+        usage: parsed.usage ?? null,
+        stopReason: parsed.stopReason ?? null,
+        contentPreview: compactEvalText(textBlocks),
+        checks: evaluation.checks,
+        improvement: evaluation.improvement,
+        comment: evaluation.comment,
+      });
+      continue;
+    }
+
+    if (role === "toolresult" || role === "tool_result") {
+      const output = lineContentText(parsed.content);
+      const isError = Boolean(parsed.isError) || /\b(?:error|failed|not found|no such file|permission denied)\b/i.test(output);
+      const evaluation = buildToolOutputEvaluation(output, isError);
+      const callTarget = toolCallTargets.get(String(parsed.toolCallId ?? ""));
+      const target: EvalTarget = callTarget === "verification" || parsed.toolName === "finish" ? "verification" : "result";
+      rows.push({
+        ...base,
+        target,
+        score: evaluation.score,
+        issues: evaluation.issues,
+        purpose: target === "verification" ? "verification_output" : "tool_output",
+        actor: "tool",
+        toolCallId: parsed.toolCallId ?? null,
+        toolName: parsed.toolName ?? null,
+        outputPreview: compactEvalText(output),
+        checks: evaluation.checks,
+        improvement: evaluation.improvement,
+        comment: evaluation.comment,
+      });
+      continue;
+    }
+
+    rows.push({
+      ...base,
+      target: "execution",
+      score: "unknown",
+      issues: [],
+      purpose: "unknown_record",
+      comment: "Unrecognized session record role; inspect manually.",
+    });
+  }
+
+  const lineRows = rows.filter((row) => row.type === "line");
+  const repairDecision = buildRepairDecision(params, lineRows);
+  Object.assign(rows[0], {
+    targetBreakdown: repairDecision.targetBreakdown,
+    repairDecision,
+    workRequest: {
+      source: params.session?.source ?? null,
+      projectId: params.session?.projectId ?? null,
+      parentSessionId: params.session?.parentSessionId ?? null,
+    },
+  });
+  return rows;
+}
+
+export function appendSessionEvalTrail(evalPath: string, rows: Record<string, unknown>[]): void {
+  if (rows.length === 0) return;
+  mkdirSync(dirname(evalPath), { recursive: true });
+  appendFileSync(evalPath, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
+}
+
+function writeSessionEvalTrail(transcriptPath: string, params: SessionEvalTrailParams): { evalPath: string; rows: Record<string, unknown>[] } {
+  const evalPath = sessionEvalTrailPath(transcriptPath);
+  const rows = buildSessionEvalTrailRows(params);
+  appendSessionEvalTrail(evalPath, rows);
+  return { evalPath, rows };
+}
+
+function summaryOwnerFindings(rows: Record<string, unknown>[]): OwnerFinding[] {
+  const summary = rows.find((row) => row.type === "summary") as any;
+  const findings = summary?.repairDecision?.ownerFindings;
+  return Array.isArray(findings) ? findings as OwnerFinding[] : [];
+}
+
+function summaryImmediateFindingIds(rows: Record<string, unknown>[]): string[] {
+  const summary = rows.find((row) => row.type === "summary") as any;
+  const ids = summary?.repairDecision?.notificationDecision?.immediateFindingIds;
+  return Array.isArray(ids) ? ids.map(String) : [];
 }
 
 export function artifactVerdict(artifactText: string): string | null {
@@ -601,10 +1209,11 @@ export function buildReviewTask(params: {
   artifactPath: string;
   workflowCollectedFacts: string;
   route: EvaluationRoute;
+  evalTrailPath?: string;
 }): string {
-  const { sessionId, session, transcriptPath, artifactPath, workflowCollectedFacts, route } = params;
+  const { sessionId, session, transcriptPath, artifactPath, workflowCollectedFacts, route, evalTrailPath } = params;
   const lanePurpose = route.lane === "needs_triage"
-    ? "Find the root cause, fix it if obvious and low-risk, otherwise escalate with evidence."
+    ? "Find the root cause, classify scope, assign a concrete agent/human owner, and route evidence-backed findings."
     : "Judge why this good session produced real value, inspect the actual output, and extract reusable learning if present.";
 
   return [
@@ -612,6 +1221,7 @@ export function buildReviewTask(params: {
     ``,
     `Session: ${JSON.stringify(session, null, 2)}`,
     `Transcript path: ${transcriptPath}`,
+    ...(evalTrailPath ? [`Session eval trail: ${evalTrailPath}`] : []),
     `Evaluation lane: ${route.lane}`,
     `Routing reason: ${route.reason}`,
     `Output signals: ${route.signals.length ? route.signals.join(", ") : "none"}`,
@@ -623,17 +1233,23 @@ export function buildReviewTask(params: {
     ``,
     `Lane purpose: ${lanePurpose}`,
     `Write your concise review to: ${artifactPath}`,
+    ...(evalTrailPath ? [
+      `Also append JSONL evidence rows to ${evalTrailPath} when your review finds session-level or line-level judgments beyond the heuristic seed.`,
+      `Think hard and write actual critique, not transcript captions: judge user request quality, assistant decisions, tool-call necessity, evidence quality, recovery, verification, finish honesty, and what should be done better.`,
+      `Use free-form JSON fields when useful. Keep only minimal mapping fields stable: type, sessionId, source, author, createdAt, and line/rawSource/rawRole for line-level rows. Do not rewrite existing rows.`,
+    ] : []),
     ``,
     `Do exactly this loop:`,
     `1. Evaluate outcome quality: did this session produce real value for its task/project goal?`,
     `2. Check the actual output artifacts/diffs/files when the route signals material output.`,
     `3. Write the concise review to the artifact path above.`,
     `4. Immediately call read() on that same artifact path and confirm the file contains the required sections.`,
-    `5. For needs_triage: if root cause is obvious and low-risk, fix it now and verify; if blocked/high-risk, escalate with a real agent recipient (may, arc, dev, scout, coach) or an escalation note in the artifact. NEVER use "functions.message" as the 'to' field.`,
-    `6. For success_candidate: extract why it worked. If there is reusable learning, update the right agent context/knowledge file.`,
-    `7. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
+    `5. For needs_triage: do not silently fix the project as evaluator. Classify each important issue by scope, assign owner as agent:<name> or human:<role>, and suggest possible actions for that owner.`,
+    `6. Notify immediately only for high-severity or blocked/waiting findings; routine critique belongs in the eval trail or digest.`,
+    `7. For success_candidate: extract why it worked. If there is reusable learning, record the candidate with evidence instead of promoting a global rule from one session.`,
+    `8. Only then call finish(success) or finish(partial); the verify-after-write guard rejects success if the artifact was written but not read back.`,
     ``,
-    `Keep the artifact short with sections: Verdict, Evidence, Output Quality, Root Cause, Action Taken, Learning, Learning Created: yes|no.`,
+    `Keep the artifact short with sections: Verdict, Evidence, Output Quality, Root Cause, Owner Findings, Learning, Learning Created: yes|no.`,
   ].join("\n");
 }
 
@@ -684,8 +1300,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
   const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
   const transcript = readSessionTranscript(transcriptPath);
+  const transcriptSource = displayPath(projectRoot, transcriptPath);
   const skipAftermath = shouldSkipAftermathAmplification(session, transcript);
   if (skipAftermath.skip) {
+    if (String(evaluation?.verdict ?? "") === "skipped" && evaluationHeuristicVersion(evaluation) >= HEURISTIC_VERSION) {
+      return ctx.done(`Session ${sessionId} already skipped (${skipAftermath.reason}).`);
+    }
+
+    const skippedHeuristic: HeuristicVerdict = {
+      quality: 0,
+      efficiency: 0,
+      verdict: "skipped",
+      issues: [skipAftermath.reason],
+    };
+    const skippedRoute: EvaluationRoute = { lane: "routine_ok", reason: skipAftermath.reason, signals: [] };
+    const skippedTrail = writeSessionEvalTrail(transcriptPath, {
+      sessionId,
+      session,
+      transcript,
+      transcriptSource,
+      heuristic: skippedHeuristic,
+      route: skippedRoute,
+      source: "evaluator-skipped",
+    });
+    const evalTrailDisplayPath = displayPath(projectRoot, skippedTrail.evalPath);
     await (ctx as any).runFunction("record-skipped-evaluation", async () => {
       const db = ctx.getDb() as any;
       db.run(
@@ -709,6 +1347,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
             aftermathWorkflow: true,
             heuristicVersion: HEURISTIC_VERSION,
             skipReason: skipAftermath.reason,
+            evalTrailPath: evalTrailDisplayPath,
             opCount: Number(session.opCount ?? 0),
           }),
           null,
@@ -745,6 +1384,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
   }
 
+  const evalTrail = writeSessionEvalTrail(transcriptPath, {
+    sessionId,
+    session,
+    transcript,
+    transcriptSource,
+    heuristic,
+    route,
+  });
+  const evalTrailDisplayPath = displayPath(projectRoot, evalTrail.evalPath);
+
   await (ctx as any).runFunction("record-evaluation", async () => {
     const db = ctx.getDb() as any;
     db.run(
@@ -770,6 +1419,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           lane: route.lane,
           routeReason: route.reason,
           outputSignals: route.signals,
+          evalTrailPath: evalTrailDisplayPath,
           ...(evaluation ? { refreshedFrom: evaluation.verdict } : {}),
           ...(route.lane === "routine_ok" ? {} : { artifactPath }),
         }),
@@ -798,13 +1448,37 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     heuristicVersion: HEURISTIC_VERSION,
   } as any);
 
+  const immediateFindingIds = new Set(summaryImmediateFindingIds(evalTrail.rows));
+  for (const finding of summaryOwnerFindings(evalTrail.rows)) {
+    if (!immediateFindingIds.has(finding.id)) continue;
+    ctx.emit({
+      type: "evaluation.owner_finding",
+      source: "evaluator-aftermath",
+      owner: ownerEventTarget(finding.owner),
+      sessionId,
+      agent: session.agent,
+      projectId: session.projectId ?? null,
+      workflowRunId: session.workflowRunId ?? null,
+      evalTrailPath: evalTrailDisplayPath,
+      finding,
+    } as any);
+  }
+
   if (route.lane === "routine_ok") {
     return ctx.done(`Evaluated ${sessionId}: good (${route.lane}). No review needed.`);
   }
 
   mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
 
-  const reviewTask = buildReviewTask({ sessionId, session, transcriptPath, artifactPath, workflowCollectedFacts, route });
+  const reviewTask = buildReviewTask({
+    sessionId,
+    session,
+    transcriptPath,
+    artifactPath,
+    workflowCollectedFacts,
+    route,
+    evalTrailPath: evalTrailDisplayPath,
+  });
 
   const review = await ctx.runAgent("evaluator", reviewTask);
 
