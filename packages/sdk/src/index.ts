@@ -771,3 +771,15 @@ export {
   recordOutcome as recordCircuitOutcome,
   resetCircuitBreaker,
 } from "./circuit-breaker.js";
+
+export {
+  DEFAULT_RUNNING_LEASE_MS,
+  shouldDispatch,
+  recordDispatch,
+  recordOutcome as recordDedupOutcome,
+  unblock as unblockDispatch,
+  getBlockedTasks,
+  withDedupGuard,
+  cleanup as cleanupDispatchRecords,
+} from "./dispatch-dedup-guard.js";
+export type { DispatchRecord } from "./dispatch-dedup-guard.js";
