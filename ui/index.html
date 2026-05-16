@@ -339,6 +339,12 @@
 .session-inspector .eval-card {
   background: var(--bg2); padding: 12px; border-radius: 6px; margin: 8px 0;
 }
+.session-inspector .audit-details { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.session-inspector .audit-details summary { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; cursor: pointer; padding: 10px 12px; color: var(--fg2); font-size: 12px; list-style: none; }
+.session-inspector .audit-details summary::-webkit-details-marker { display: none; }
+.session-inspector .audit-details summary b { color: var(--fg); margin-right: auto; }
+.session-inspector .audit-details .eval-card { margin: 0; border-top: 1px solid var(--border); border-radius: 0; }
+
 .session-inspector .section { margin: 16px 0; }
 .session-inspector .section h4 { margin: 0 0 8px 0; color: var(--fg2); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
 .session-inspector .outcome-block {
@@ -1721,11 +1727,14 @@ async function loadSessionDetail(sessionId, opts = {}) {
       html += `</div>`;
     }
 
-    // F. Evaluation Section
+    // F. Audit Evaluation Section
     if (ev) {
+      const qPct = ev.quality != null ? Math.round(ev.quality * 100) + '%' : null;
+      const ePct = ev.efficiency != null ? Math.round(ev.efficiency * 100) + '%' : null;
       html += `<div class="section">
-        <h4>Evaluation</h4>
-        <div class="eval-card">`;
+        <details class="audit-details">
+          <summary><b>Audit evaluation</b>${ev.verdict ? flowChip(ev.verdict) : ''}${qPct ? flowChip('quality ' + qPct) : ''}${ePct ? flowChip('efficiency ' + ePct) : ''}</summary>
+          <div class="eval-card">`;
       if (ev.quality != null) {
         const qColor = ev.quality >= 0.7 ? '#4caf50' : ev.quality >= 0.4 ? '#ff9800' : '#f44336';
         html += `<div style="margin-bottom:6px"><strong>Quality:</strong> ${scoreBar(ev.quality, qColor)}</div>`;
@@ -1762,7 +1771,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
           }
         } catch(e) { /* ignore parse errors */ }
       }
-      html += `</div></div>`;
+      html += `</div></details></div>`;
     }
 
     // G. Delegation Tree
