@@ -292,3 +292,9 @@ No new external signal since last session. Correct action per own analysis (even
 ## Session ~07:30Z: Event-Driven No-Op Confirmed
 
 Reviewed full digest. No new external signal. No new KE. This is the system working as prescribed.
+
+---
+
+## No-Op: Event-Triggered Discipline Applied (2026-05-16 late)
+
+No new external signal since last creative session. Per the digest's own recommendation (event-triggered not clock-triggered), this session submitted three implementation requests via `finish(new_items)` rather than producing more analysis. The requests target: (1) dev heartbeat refactor, (2) KE→requests bridge in arc heartbeat, (3) event-triggered creative sessions.
