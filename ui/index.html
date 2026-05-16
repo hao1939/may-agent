@@ -2769,10 +2769,14 @@ function connectWs() {
         if (all) for (const fn of all) { try { fn(event); } catch (err) { console.error('bus * sub err', err); } }
       }
 
-      // The socket server filters events via subscribe — we receive only
-      // events from our session tree + notifications. No client-side filtering needed.
-      if (isSessionPageMode() && ['text', 'tool_call', 'tool_result', 'turn_end', 'session_end'].includes(eventType)) {
-        scheduleSessionConversationRefresh(eventType === 'turn_end' || eventType === 'session_end' ? 200 : 600);
+      // The session inspector is a read model. Rebuilding it for every
+      // streamed text/tool event makes the page appear to refresh constantly,
+      // especially while evaluator audit sessions are running. Only refresh
+      // the inspected session at stable lifecycle boundaries.
+      if (isSessionPageMode()
+        && event.sessionId === currentInspectedSession
+        && (eventType === 'turn_end' || eventType === 'session_end')) {
+        scheduleSessionConversationRefresh(300);
       }
 
       switch (eventType) {
