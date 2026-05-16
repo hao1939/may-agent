@@ -67,7 +67,7 @@ Live calls/wk computed from `workflow_runs` table, last 7 days.
 | `verify-wrap.ts` (26) | 0 | **Move** (still in cron.json) | `agents/may/workflows/` |
 | `implement-and-verify.ts` (216) | 0 | **Delete** | — |
 | `heartbeat-data.ts` (575, 12 importers) | n/a (lib) | **Promote** | `@may-agent/sdk` |
-| `types.ts` (23, 11 importers) | n/a | **Promote** | `@may-agent/sdk` |
+| `types.ts` (23, **0 live importers** — corrected from audit) | n/a | **Delete** (SDK already has the canonical `WorkflowContext`/`WorkflowResult`) | — |
 | `project-cache.ts` (228) | n/a (lib) | **Promote** as `WorkflowFileCache` | `@may-agent/sdk` |
 | `circuit-breaker.ts` (182, 4 importers) | n/a | **Promote** | `@may-agent/sdk` |
 | `dispatch-dedup-guard.ts` (280, 3 importers) | n/a | **Promote** | `@may-agent/sdk` |
@@ -94,6 +94,35 @@ Live calls/wk computed from `workflow_runs` table, last 7 days.
 
 **Net effect:** 31 files dissolved → 6 SDK additions + 5 agent moves + N project
 copies + ~20 deletions.
+
+## Critical runtime constraint (discovered during Phase 1 execution)
+
+**Bare `@may-agent/sdk` value imports do not resolve at runtime from dynamically-loaded
+files** (workflows, handlers under `agents/` or `shared/`).
+
+- Type-only imports (`import type { ... } from "@may-agent/sdk"`) work because
+  they are erased at compile time.
+- Value imports (`import { fn } from "@may-agent/sdk"`) fail with:
+  `ResolveMessage: Cannot find module '@may-agent/sdk' from '/app/<file>'`
+- Reason: the compiled `may-agent` binary doesn't walk `/app/node_modules` for
+  bare specifiers in dynamically-imported modules (same root cause as the
+  prior `shared/agent-sdk.ts` fix).
+
+**Workaround in use:** import via the local re-export bridge
+`shared/agent-sdk.ts` (which uses a relative path to the SDK source):
+
+```ts
+import { fn } from "../../../shared/agent-sdk.ts";  // from agents/<a>/workflows/
+import { fn } from "../agent-sdk.ts";                // from shared/workflows/
+```
+
+This is mechanical — the import statement just routes through `agent-sdk.ts`,
+which `export *`s from the relative SDK path. No semantic change.
+
+When project-scoped workflows are created later (Phase 5+), they will use:
+```ts
+import { fn } from "../../../shared/agent-sdk.ts";   // from projects/<id>/workflows/
+```
 
 ## Resolver change
 

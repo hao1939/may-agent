@@ -824,11 +824,50 @@ function buildNotificationDecision(params: SessionEvalTrailParams, findings: Own
   };
 }
 
-function ownerEventTarget(owner: unknown): string {
+export function ownerEventTarget(owner: unknown): string {
   const text = String(owner ?? "");
   if (text.startsWith("agent:")) return text.slice("agent:".length) || "may";
-  if (text.startsWith("human:")) return "human";
+  if (text.startsWith("human:")) return "may";
   return text || "may";
+}
+
+function findingNeedsHuman(owner: unknown): boolean {
+  return String(owner ?? "").startsWith("human:");
+}
+
+function learningFeedbackSummary(finding: OwnerFinding): string {
+  const severity = String(finding.severity || "medium");
+  const scope = String(finding.scope || "unknown");
+  const id = String(finding.id || "finding");
+  const text = String(finding.finding || "").replace(/\s+/g, " ").trim();
+  const action = Array.isArray(finding.suggestedActions) && finding.suggestedActions.length
+    ? ` -> ${String(finding.suggestedActions[0]).replace(/\s+/g, " ").trim()}`
+    : "";
+  return `[${severity}] ${scope}/${id}: ${text}${action}`.slice(0, 500);
+}
+
+export function learningFeedbackEventPayload(params: {
+  sessionId: string;
+  agent: unknown;
+  projectId?: unknown;
+  workflowRunId?: unknown;
+  evalTrailPath: string;
+  finding: OwnerFinding;
+}): Record<string, unknown> {
+  return {
+    type: "learning.feedback",
+    source: "evaluator-aftermath",
+    owner: ownerEventTarget(params.finding.owner),
+    kind: "owner_finding",
+    needsHuman: findingNeedsHuman(params.finding.owner),
+    sessionId: params.sessionId,
+    agent: params.agent,
+    projectId: params.projectId ?? null,
+    workflowRunId: params.workflowRunId ?? null,
+    evalTrailPath: params.evalTrailPath,
+    summary: learningFeedbackSummary(params.finding),
+    finding: params.finding,
+  };
 }
 
 function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<string, unknown>[]): Record<string, unknown> {
@@ -1451,17 +1490,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const immediateFindingIds = new Set(summaryImmediateFindingIds(evalTrail.rows));
   for (const finding of summaryOwnerFindings(evalTrail.rows)) {
     if (!immediateFindingIds.has(finding.id)) continue;
-    ctx.emit({
-      type: "evaluation.owner_finding",
-      source: "evaluator-aftermath",
-      owner: ownerEventTarget(finding.owner),
+    ctx.emit(learningFeedbackEventPayload({
       sessionId,
       agent: session.agent,
       projectId: session.projectId ?? null,
       workflowRunId: session.workflowRunId ?? null,
       evalTrailPath: evalTrailDisplayPath,
       finding,
-    } as any);
+    }) as any);
   }
 
   if (route.lane === "routine_ok") {

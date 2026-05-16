@@ -10,8 +10,8 @@
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { checkCircuitBreaker, recordOutcome } from "./circuit-breaker.js";
+import type { WorkflowContext, WorkflowResult } from "../agent-sdk.ts";
+import { checkCircuitBreaker, recordCircuitOutcome } from "../agent-sdk.ts";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "./dispatch-dedup-guard.js";
 import { listConfiguredAgents, resolveMetricOwner } from "../lib/metric-ownership.ts";
 import { parseProjectMeta } from "../lib/project-health.ts";
@@ -555,12 +555,12 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
     result = await ctx.runAgent(agent, prompt);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    recordOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
+    recordCircuitOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
     dedupRecordOutcome(agent, "heartbeat", "error");
     throw err;
   }
   ctx.emit({ type: "agent.decision", agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) });
-  recordOutcome(agentsRoot, agent, result.status === "error",
+  recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
   dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 

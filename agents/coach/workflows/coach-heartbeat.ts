@@ -9,7 +9,7 @@ import {
   formatMetricsBlock,
   runRedMetricCommands,
 } from "../../../shared/workflows/heartbeat-data.js";
-import { checkCircuitBreaker, recordOutcome } from "../../../shared/workflows/circuit-breaker.js";
+import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
 
 export const name = "coach-heartbeat";
 export const description = "coach's 2-phase heartbeat: plan first, then execute.";
@@ -131,7 +131,7 @@ ${contextBlock}
 - If a step fails, note it and continue with the next step.`;
 
   const execResult = await ctx.runAgent(agent, execPrompt);
-  recordOutcome(agentsRoot, agent, execResult.status === "error",
+  recordCircuitOutcome(agentsRoot, agent, execResult.status === "error",
     execResult.status === "error" ? "heartbeat session error" : undefined);
 
   return ctx.done(ctx.summarize(execResult, { maxLength: 500 }));

@@ -8,6 +8,8 @@ import {
   classifyVerdict,
   evaluationHeuristicVersion,
   falseGoodEventPayload,
+  learningFeedbackEventPayload,
+  ownerEventTarget,
   sessionEvalTrailPath,
   shouldSkipAftermathAmplification,
   shouldRefreshEvaluation,
@@ -1061,6 +1063,46 @@ describe("evaluator aftermath transcript checks", () => {
     });
     expect(JSON.stringify(rows[0])).toContain("Convert repeated liveness polling into a cheap metric/watch");
     expect(JSON.stringify(rows[0])).not.toContain("nextWorkRequest");
+  });
+
+  it("builds owner-targeted learning feedback events", () => {
+    const finding = {
+      id: "request-quality",
+      scope: "request_quality",
+      owner: "human:requester",
+      severity: "high",
+      finding: "The request lacked the project state needed to choose the next action.",
+      suggestedActions: ["Ask the requester to provide the missing blocker evidence."],
+    } as any;
+
+    expect(ownerEventTarget("agent:tech-lead")).toBe("tech-lead");
+    expect(ownerEventTarget("human:requester")).toBe("may");
+    expect(learningFeedbackEventPayload({
+      sessionId: "s_1",
+      agent: "dev",
+      projectId: "platform",
+      workflowRunId: "wr_1",
+      evalTrailPath: ".state/sessions/history/s_1/session.eval.jsonl",
+      finding,
+    })).toMatchObject({
+      type: "learning.feedback",
+      source: "evaluator-aftermath",
+      owner: "may",
+      kind: "owner_finding",
+      needsHuman: true,
+      sessionId: "s_1",
+      agent: "dev",
+      projectId: "platform",
+      workflowRunId: "wr_1",
+      evalTrailPath: ".state/sessions/history/s_1/session.eval.jsonl",
+      finding,
+    });
+    expect(String(learningFeedbackEventPayload({
+      sessionId: "s_1",
+      agent: "dev",
+      evalTrailPath: ".state/sessions/history/s_1/session.eval.jsonl",
+      finding,
+    }).summary)).toContain("[high] request_quality/request-quality");
   });
 
   it("places eval trail beside the raw session log", () => {
