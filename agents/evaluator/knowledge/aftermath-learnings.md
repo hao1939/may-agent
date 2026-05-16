@@ -85,3 +85,6 @@
 
 ## 2026-05-14 — s_1778791768331_224
 - In scout heartbeat aftermath reviews, separate operationally sound restraint from lane-fit success: a bounded saturation check can be the right session choice, but if transcript evidence shows only `read` + listing existing KEs and `session_digests.files_modified = []`, it should not be credited as a material knowledge-update success. Rolling `digest/today.md` content is especially prone to false-positive routing because it already carries earlier same-day outputs.
+
+## 2026-05-15 — s_1778896437235_260
+- For success-candidate heartbeat aftermath reviews, confirm material-output routing against transcript write/edit calls, commits, or landed artifacts before crediting durable output. A clean no-change heartbeat that only performs bounded health checks and coherence review can be a valid maintenance success, but it should be labeled as maintenance rather than a project/knowledge artifact win.
