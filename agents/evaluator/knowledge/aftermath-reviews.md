@@ -93,6 +93,10 @@
 - Symptom: a transcript or artifact references `agents/may/...` while the actual tracked file lives at `may/...` within the agents repo, leading reviewers to infer the handler/config is missing.
 - Fix: confirm the active repo root and normalize path prefixes before treating ENOENT as evidence of a missing implementation. Re-check with the repo-relative path actually used by tracked files.
 
+## Pattern: working-directory-relative file checks can create fake "missing doc" audits
+- Symptom: a session `cd`s into `/app/agents` (or another sub-repo root), probes `shared/...`, gets `not found`, and concludes the repo-root file is absent or stale even though `/app/shared/...` exists and is tracked.
+- Fix: when judging file-existence or staleness claims, verify the command's current working directory and re-check from the actual repo root. Treat `ENOENT` from the wrong CWD as a path-resolution mistake, not evidence that the document is missing.
+
 ## Pattern: guard read-back checks can be path-string sensitive even when the file is the same
 - Symptom: a session really does read the edited file back, but `finish()` still rejects success until the agent repeats `read()` using the exact absolute/relative path form associated with the prior write/edit call.
 - Fix: when reviewing these sessions, verify the landed artifact and final successful read-back before downgrading the outcome. As operator guidance, after `write()`/`edit()`, prefer re-reading with the exact same path string used in the mutating call (or the canonical absolute path if the first call used one) to avoid avoidable guard churn.
