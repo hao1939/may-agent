@@ -154,7 +154,18 @@
   .raw-log-head code { color: var(--fg); }
   .raw-log-head button { margin-left: auto; background: none; border: 0; color: var(--fg2); cursor: pointer; font-size: 14px; }
   .raw-log-body { margin: 0; padding: 10px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
+  .session-audit-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 12px; align-items: start; }
+  .session-audit-lane { position: sticky; top: 12px; display: grid; gap: 8px; max-height: calc(100vh - 48px); overflow: auto; }
+  .audit-lane-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
+  .audit-lane-head b { margin-right: auto; }
+  .audit-row { border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); overflow: hidden; }
+  .audit-row-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 9px; border-bottom: 1px solid var(--border); }
+  .audit-comment { padding: 8px 9px; font-size: 12px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .audit-feedback { display: grid; gap: 6px; padding: 8px 9px; border-top: 1px solid var(--border); }
+  .audit-feedback textarea { width: 100%; min-height: 54px; resize: vertical; box-sizing: border-box; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 7px; font: inherit; font-size: 12px; }
+  .audit-feedback button { justify-self: end; }
   .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
+  @media (max-width: 1100px) { .session-audit-layout { grid-template-columns: 1fr; } .session-audit-lane { position: static; max-height: none; } }
   .tool-grid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
   .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); }
@@ -1451,6 +1462,45 @@ function sessionConversationStats(messages) {
   }, { messages: 0, users: 0, assistants: 0, tools: 0, errors: 0 });
 }
 
+function auditIssueChips(issues) {
+  return Array.isArray(issues) ? issues.map(issue => flowChip(issue, issue === 'tool_output_error' ? 'error' : '')).join('') : '';
+}
+
+function renderAuditLane(auditData, sessionId) {
+  const rows = (auditData?.rows || []).filter(Boolean);
+  const generated = auditData?.generated ? flowChip('generated') : '';
+  const evaluator = auditData?.evaluatorRequested ? flowChip('evaluator requested') : '';
+  let html = `<aside class="session-audit-lane">
+    <div class="audit-lane-head"><b>Audit</b>${flowChip(`${rows.length} comments`)}${generated}${evaluator}</div>`;
+  if (!rows.length) {
+    html += `<div class="audit-row"><div class="audit-comment">No audit comments yet.</div></div></aside>`;
+    return html;
+  }
+  rows
+    .slice()
+    .sort((a, b) => (Number(a.line || 0) - Number(b.line || 0)) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+    .forEach((row, idx) => {
+      const line = Number(row.line || 0);
+      const source = row.source || row.author || 'audit';
+      const scoreClass = row.score === 'issue' ? 'error' : row.score === 'ok' ? 'good' : '';
+      html += `<div class="audit-row" id="audit-line-${esc(line)}">
+        <div class="audit-row-head">
+          ${sourceLineChip(sessionId, line, row.rawSource || row.rawContext?.source)}
+          ${flowChip(row.score || 'note', scoreClass)}
+          ${flowChip(source)}
+          ${auditIssueChips(row.issues)}
+        </div>
+        <div class="audit-comment">${esc(row.comment || row.raw || '')}</div>
+        <div class="audit-feedback">
+          <textarea id="audit-feedback-${idx}" placeholder="Add human feedback for session.jsonl:${esc(line)}"></textarea>
+          <button class="ask-btn" onclick="submitAuditFeedback(${jsStringAttr(sessionId)}, ${line}, 'audit-feedback-${idx}')">Save feedback</button>
+        </div>
+      </div>`;
+    });
+  html += `</aside>`;
+  return html;
+}
+
 function renderSessionConversation(transData, opts = {}) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
@@ -1464,11 +1514,50 @@ function renderSessionConversation(transData, opts = {}) {
       ${flowChip(`${stats.tools} tool calls`)}
       ${stats.errors ? flowChip(`${stats.errors} tool errors`, 'error') : ''}
     </div>`;
-  return `<div class="${sectionClass}">
+  const conversation = `<div class="${sectionClass}">
     ${title}
     <div id="raw-log-viewer" class="raw-log-viewer"></div>
     ${renderEnrichedTranscript(messages, transData.sessionId)}
   </div>`;
+  if (!opts.auditData) return conversation;
+  return `<div class="session-audit-layout">${conversation}${renderAuditLane(opts.auditData, transData.sessionId)}</div>`;
+}
+
+async function openSessionAudit(sessionId) {
+  const btn = document.getElementById('session-audit-btn');
+  if (btn) { btn.textContent = 'Auditing...'; btn.disabled = true; }
+  try {
+    let r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/audit`);
+    let data = await r.json();
+    if (!r.ok) throw new Error(data.error || r.statusText);
+    if (!data.exists) {
+      r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/audit`, { method: 'POST' });
+      data = await r.json();
+      if (!r.ok) throw new Error(data.error || r.statusText);
+    }
+    currentSessionAudit = data;
+    await loadSessionDetail(sessionId, { auditData: data, preserveScroll: true });
+  } catch (e) {
+    alert('Audit failed: ' + (e.message || String(e)));
+  } finally {
+    const nextBtn = document.getElementById('session-audit-btn');
+    if (nextBtn) { nextBtn.textContent = 'Audit'; nextBtn.disabled = false; }
+  }
+}
+
+async function submitAuditFeedback(sessionId, line, textareaId) {
+  const el = document.getElementById(textareaId);
+  const comment = (el?.value || '').trim();
+  if (!comment) return;
+  const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/audit/comment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ line, comment, author: 'human' })
+  });
+  const data = await r.json();
+  if (!r.ok) { alert(data.error || r.statusText); return; }
+  currentSessionAudit = { sessionId, exists: true, rows: data.rows };
+  await loadSessionDetail(sessionId, { auditData: currentSessionAudit, preserveScroll: true });
 }
 
 async function showRawLog(sessionId, line, label, sourceEl) {
@@ -1615,6 +1704,7 @@ function renderRequests(data) { /* removed */ }
 
 const sessionHistory = [];
 let currentInspectedSession = null;
+let currentSessionAudit = null;
 
 function fmtTime(epoch) {
   if (!epoch) return '—';
@@ -1648,6 +1738,7 @@ function verdictColor(verdict) {
 }
 
 async function loadSessionDetail(sessionId, opts = {}) {
+  if (currentInspectedSession !== sessionId) currentSessionAudit = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
   panel.innerHTML = '<div class="panel">Loading...</div>';
@@ -1687,6 +1778,7 @@ async function loadSessionDetail(sessionId, opts = {}) {
         <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
+        <button class="ask-btn" id="session-audit-btn" onclick="openSessionAudit('${esc(s.sessionId)}')">Audit</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -1710,7 +1802,8 @@ async function loadSessionDetail(sessionId, opts = {}) {
     html += `<div id="session-followup-anchor" class="session-followup-anchor"></div>`;
 
     // C. Unified enriched session chat surface; audit/review and live mode reuse it.
-    html += renderSessionConversation(transData);
+    const auditData = opts.auditData || currentSessionAudit;
+    html += renderSessionConversation(transData, { auditData });
 
     // D. Outcome Section
     if (s.outcome) {

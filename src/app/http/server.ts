@@ -16,7 +16,7 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { appendFileSync, readFileSync, existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
@@ -462,6 +462,151 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const historyPath = join(STATE_DIR, "sessions", "history", sessionId, "session.jsonl");
     if (existsSync(historyPath)) return { path: historyPath, source: ".state/sessions/history/" + sessionId + "/session.jsonl" };
     return null;
+  }
+
+  function resolveSessionAudit(sessionId: string): { path: string; source: string; session: { path: string; source: string } } | null {
+    const session = resolveSessionJsonl(sessionId);
+    if (!session) return null;
+    return {
+      path: session.path.replace(/session\.jsonl$/, "session.audit.jsonl"),
+      source: session.source.replace(/session\.jsonl$/, "session.audit.jsonl"),
+      session,
+    };
+  }
+
+  function readAuditRows(auditPath: string): unknown[] {
+    if (!existsSync(auditPath)) return [];
+    return readFileSync(auditPath, "utf-8")
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => {
+        try { return JSON.parse(line); } catch { return { parseError: true, raw: line }; }
+      });
+  }
+
+  function compactAuditText(value: unknown, max = 220): string {
+    const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
+    return text.replace(/\s+/g, " ").trim().slice(0, max);
+  }
+
+  function buildInitialAuditRows(sessionId: string, resolved: { path: string; source: string }): Record<string, unknown>[] {
+    const now = Date.now();
+    return readFileSync(resolved.path, "utf-8")
+      .split("\n")
+      .map((line, idx) => ({ line, lineNo: idx + 1 }))
+      .filter(({ line }) => line.trim())
+      .map(({ line, lineNo }) => {
+        let parsed: any = null;
+        try { parsed = JSON.parse(line); } catch {}
+        const role = String(parsed?.role || "unknown");
+        const lowerRole = role.toLowerCase();
+        const base = {
+          sessionId,
+          line: lineNo,
+          source: "webui-initial-audit",
+          author: "evaluator-seed",
+          createdAt: now,
+          rawRole: role,
+          rawPreview: compactAuditText(line),
+        };
+        if (!parsed) {
+          return { ...base, score: "unknown", issues: ["unparsed_jsonl"], comment: "Could not parse this JSONL record." };
+        }
+        if (lowerRole === "user") {
+          return { ...base, score: "context", issues: [], comment: "User input or steering context. Audit whether the following agent turn addresses this request." };
+        }
+        if (lowerRole === "assistant") {
+          const blocks = Array.isArray(parsed.content) ? parsed.content : [];
+          const toolCalls = blocks.filter((b: any) => b?.type === "tool_use" || b?.type === "toolCall");
+          const text = compactAuditText(blocks.filter((b: any) => b?.type === "text").map((b: any) => b.text || "").join(" "));
+          return {
+            ...base,
+            score: toolCalls.length ? "check" : "ok",
+            issues: [],
+            comment: toolCalls.length
+              ? `Assistant requested ${toolCalls.length} tool call(s). Check whether the calls were necessary and grounded.`
+              : (text ? `Assistant response: ${text}` : "Assistant response with no visible text; inspect adjacent tool calls/results."),
+          };
+        }
+        if (lowerRole === "toolresult" || lowerRole === "tool_result") {
+          const content = compactAuditText(parsed.content || "");
+          const isError = Boolean(parsed.isError) || /no such file|not found|permission denied|error|failed/i.test(content);
+          return {
+            ...base,
+            score: isError ? "issue" : "ok",
+            issues: isError ? ["tool_output_error"] : [],
+            toolCallId: parsed.toolCallId,
+            comment: isError
+              ? `Tool output indicates a failure or invalid assumption: ${content}`
+              : `Tool output returned usable evidence: ${content}`,
+          };
+        }
+        return { ...base, score: "unknown", issues: [], comment: "Unrecognized session record; inspect manually." };
+      });
+  }
+
+  function handleSessionAudit(sessionId: string): Response {
+    const resolved = resolveSessionAudit(sessionId);
+    if (!resolved) return json({ error: "Session not found" }, 404);
+    return json({
+      sessionId,
+      source: resolved.source,
+      exists: existsSync(resolved.path),
+      rows: readAuditRows(resolved.path),
+    });
+  }
+
+  async function handleSessionAuditGenerate(sessionId: string): Promise<Response> {
+    const resolved = resolveSessionAudit(sessionId);
+    if (!resolved) return json({ error: "Session not found" }, 404);
+    if (existsSync(resolved.path)) {
+      return json({ sessionId, source: resolved.source, exists: true, generated: false, rows: readAuditRows(resolved.path) });
+    }
+
+    const rows = buildInitialAuditRows(sessionId, resolved.session);
+    writeFileSync(resolved.path, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
+
+    const task = `Generate a step-by-step audit for session ${sessionId}.\n\n` +
+      `Raw session log: ${resolved.session.source}\n` +
+      `Audit file to update: ${resolved.source}\n\n` +
+      `Read the raw session.jsonl. For each important raw line, write or refine JSONL audit records in ${resolved.source}. ` +
+      `Each record must include: sessionId, line, source, author, createdAt, score, issues, comment, and rawRole. ` +
+      `Keep comments concise and evidence-based. Preserve human feedback rows if present. The UI maps rows by the line field.`;
+    const evaluator = await sendDaemonFrame({ type: "fork", agent: "evaluator", task, opts: { kind: "job", source: "session-audit" } });
+
+    return json({
+      sessionId,
+      source: resolved.source,
+      exists: true,
+      generated: true,
+      evaluatorRequested: evaluator.ok,
+      evaluatorError: evaluator.error,
+      rows,
+    });
+  }
+
+  async function handleSessionAuditComment(req: Request, sessionId: string): Promise<Response> {
+    const resolved = resolveSessionAudit(sessionId);
+    if (!resolved) return json({ error: "Session not found" }, 404);
+    let body: { line?: number; comment?: string; author?: string; originalAudit?: unknown };
+    try { body = await req.json() as typeof body; } catch { return json({ error: "invalid json" }, 400); }
+    const line = Number(body.line || 0);
+    const comment = String(body.comment || "").trim();
+    if (!Number.isInteger(line) || line < 1) return json({ error: "line must be a positive integer" }, 400);
+    if (!comment) return json({ error: "comment required" }, 400);
+    const raw = readFileSync(resolved.session.path, "utf-8").split("\n")[line - 1] || "";
+    const row = {
+      sessionId,
+      line,
+      source: "human-feedback",
+      author: body.author || "human",
+      createdAt: Date.now(),
+      comment,
+      originalAudit: body.originalAudit || null,
+      rawContext: { source: resolved.session.source, line, raw },
+    };
+    appendFileSync(resolved.path, JSON.stringify(row) + "\n");
+    return json({ ok: true, row, rows: readAuditRows(resolved.path) });
   }
 
   function handleTranscript(sessionId: string): Response {
@@ -2275,11 +2420,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (transcriptMatch) return handleTranscript(transcriptMatch[1]);
       const rawLogMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/raw-log$/);
       if (rawLogMatch) return handleRawLog(rawLogMatch[1], url);
+      const auditMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/audit$/);
+      if (auditMatch && req.method === "GET") return handleSessionAudit(auditMatch[1]);
 
       // ── Steering verbs (POST) ───────────────────────────────────────
       if (req.method === "POST") {
         const sessionCancelMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/cancel$/);
         if (sessionCancelMatch) return handleSessionCancel(sessionCancelMatch[1]);
+        const sessionAuditGenerateMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/audit$/);
+        if (sessionAuditGenerateMatch) return handleSessionAuditGenerate(sessionAuditGenerateMatch[1]);
+        const sessionAuditCommentMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/audit\/comment$/);
+        if (sessionAuditCommentMatch) return handleSessionAuditComment(req, sessionAuditCommentMatch[1]);
         const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
         const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
