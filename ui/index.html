@@ -108,12 +108,11 @@
   .transcript { display: grid; gap: 10px; }
   .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; overflow-wrap: anywhere; }
   .msg.user { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); }
-  .msg.user.request { padding: 0; }
   .msg.assistant { background: var(--bg); border: 1px solid var(--border); }
-  .msg.assistant.turn { padding: 0; border-left: 3px solid rgba(88,166,255,.5); }
-  .request-body, .turn-body { padding: 10px 12px; }
-  .request-body { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .turn-body .raw-details { margin-left: 0; }
+  .msg.session-message { padding: 0; }
+  .msg.assistant.session-message { border-left: 3px solid rgba(88,166,255,.5); }
+  .message-body { padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .message-body .raw-details { margin-left: 0; }
   .msg.tool_call { background: rgba(210,153,34,0.06); font-family: var(--mono); font-size: 12px; }
   .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
   .msg.tool_result.error { background: rgba(248,81,73,0.06); }
@@ -1273,22 +1272,21 @@ function costLabel(usage) {
 function buildSessionFlow(messages) {
   const flow = [];
   let current = null;
-  let requestIndex = 0;
-  let responseIndex = 0;
+  let messageIndex = 0;
   const finish = () => { if (current) { flow.push(current); current = null; } };
   for (const m of messages || []) {
     if (m.role === 'user') {
       finish();
-      requestIndex += 1;
-      flow.push({ type: 'request', index: requestIndex, text: m.text || '', rawLine: m.rawLine, rawSource: m.rawSource });
+      messageIndex += 1;
+      flow.push({ type: 'message', role: 'user', index: messageIndex, text: m.text || '', rawLine: m.rawLine, rawSource: m.rawSource });
     } else if (m.role === 'assistant') {
       finish();
-      responseIndex += 1;
-      current = { type: 'response', index: responseIndex, assistant: m, toolResults: [] };
+      messageIndex += 1;
+      current = { type: 'message', role: 'assistant', index: messageIndex, assistant: m, toolResults: [] };
     } else if (m.role === 'tool_result') {
       if (!current) {
-        responseIndex += 1;
-        current = { type: 'response', index: responseIndex, assistant: { text: '', toolCalls: [] }, toolResults: [] };
+        messageIndex += 1;
+        current = { type: 'message', role: 'assistant', index: messageIndex, assistant: { text: '', toolCalls: [] }, toolResults: [] };
       }
       current.toolResults.push(m);
     }
@@ -1390,8 +1388,8 @@ function renderEnrichedTranscript(messages, sessionId) {
   const flow = buildSessionFlow(messages);
   let html = '<div class="transcript enriched-transcript">';
   for (const item of flow) {
-    if (item.type === 'request') {
-      html += `<div class="msg user request"><div class="msg-header turn-header">${sourceChip('request ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="request-body">${esc(item.text || '')}</div></div>`;
+    if (item.role === 'user') {
+      html += `<div class="msg user session-message"><div class="msg-header turn-header">${sourceChip('message ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body">${esc(item.text || '')}</div></div>`;
       continue;
     }
     const a = item.assistant || {};
@@ -1406,10 +1404,10 @@ function renderEnrichedTranscript(messages, sessionId) {
     for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id), sessionId);
     for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {}, rawLine: r.rawLine, rawSource: r.rawSource }, r, sessionId);
     if (!a.text && !pairs) continue;
-    html += `<div class="msg assistant turn">
+    html += `<div class="msg assistant session-message">
       <div class="msg-header turn-header">
-        ${sourceChip('turn ' + item.index, sessionId, a.rawLine, a.rawSource)}
-        ${flowChip('response')}
+        ${sourceChip('message ' + item.index, sessionId, a.rawLine, a.rawSource)}
+        ${flowChip('assistant')}
         ${flowChip(a.model || a.api?.model || '')}
         ${flowChip(a.provider || a.api?.provider || '')}
         ${flowChip(usage)}
@@ -1418,7 +1416,7 @@ function renderEnrichedTranscript(messages, sessionId) {
         ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : '')}
         ${errors ? flowChip(`${errors} errors`, 'error') : ''}
       </div>
-      <div class="turn-body">
+      <div class="message-body">
         ${a.text ? `<div class="assistant-text">${esc(a.text)}</div>` : ''}
         ${pairs ? `<div class="tool-pairs">${pairs}</div>` : ''}
         ${renderRawBlock('Raw API response', a)}
@@ -1435,14 +1433,15 @@ function renderSessionTranscript(messages, sessionId) {
 
 function sessionConversationStats(messages) {
   const flow = buildSessionFlow(messages);
-  const responses = flow.filter(x => x.type === 'response');
-  return responses.reduce((acc, item) => {
+  return flow.reduce((acc, item) => {
     const a = item.assistant || {};
-    acc.responses += 1;
+    acc.messages += 1;
+    if (item.role === 'user') acc.users += 1;
+    if (item.role === 'assistant') acc.assistants += 1;
     acc.tools += (a.toolCalls || []).length;
     acc.errors += (item.toolResults || []).filter(r => r.isError).length;
     return acc;
-  }, { responses: 0, tools: 0, errors: 0 });
+  }, { messages: 0, users: 0, assistants: 0, tools: 0, errors: 0 });
 }
 
 function renderSessionConversation(transData, opts = {}) {
@@ -1452,8 +1451,9 @@ function renderSessionConversation(transData, opts = {}) {
   const sectionClass = opts.embedded ? 'conversation-section embedded-conversation' : 'section conversation-section';
   const title = opts.showTitle === false ? '' : `<div class="conversation-title">
       <h4>Conversation</h4>
-      ${flowChip(`${transData.messageCount || messages.length} messages`)}
-      ${flowChip(`${stats.responses} responses`)}
+      ${flowChip(`${stats.messages} messages`)}
+      ${flowChip(`${stats.users} user msg`)}
+      ${flowChip(`${stats.assistants} assistant msg`)}
       ${flowChip(`${stats.tools} tool calls`)}
       ${stats.errors ? flowChip(`${stats.errors} tool errors`, 'error') : ''}
     </div>`;
