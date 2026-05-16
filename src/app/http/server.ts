@@ -465,7 +465,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     for (const line of lines) {
       try {
         const entry = JSON.parse(line);
-        if (entry.role === "user") {
+        const role = String(entry.role || "").toLowerCase();
+        if (role === "user") {
           const text = Array.isArray(entry.content)
             ? entry.content.map((b: any) => b.text || "").join("")
             : typeof entry.content === "string"
@@ -473,15 +474,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
               : "";
           // Skip session context injection (buildSessionContext output)
           if (text && !text.startsWith("# Session Context")) messages.push({ role: "user", text });
-        } else if (entry.role === "assistant") {
+        } else if (role === "assistant") {
           const blocks = Array.isArray(entry.content) ? entry.content : [];
           const text = blocks
             .filter((b: any) => b.type === "text")
-            .map((b: any) => b.text)
+            .map((b: any) => b.text || "")
             .join("");
           const toolCalls = blocks
-            .filter((b: any) => b.type === "tool_use")
-            .map((b: any) => ({ id: b.id, tool: b.name, args: b.input }));
+            .filter((b: any) => b.type === "tool_use" || b.type === "toolCall")
+            .map((b: any) => ({ id: b.id, tool: b.name, args: b.input ?? b.arguments ?? {} }));
           if (text || toolCalls.length) {
             const msg: Record<string, unknown> = { role: "assistant", text, toolCalls };
             if (entry.api) msg.api = entry.api;
@@ -489,9 +490,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             if (entry.provider) msg.provider = entry.provider;
             if (entry.usage) msg.usage = entry.usage;
             if (entry.stopReason) msg.stopReason = entry.stopReason;
+            if (entry.timestamp) msg.timestamp = entry.timestamp;
+            if (entry.responseId) msg.responseId = entry.responseId;
             messages.push(msg);
           }
-        } else if (entry.role === "tool_result") {
+        } else if (role === "tool_result" || role === "toolresult") {
           const content = Array.isArray(entry.content)
             ? entry.content
                 .map((b: any) => b.text || "")
@@ -500,7 +503,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             : typeof entry.content === "string"
               ? entry.content.slice(0, 2000)
               : "";
-          messages.push({ role: "tool_result", toolCallId: entry.toolCallId, content, isError: entry.isError });
+          messages.push({
+            role: "tool_result",
+            toolCallId: entry.toolCallId,
+            toolName: entry.toolName,
+            content,
+            isError: entry.isError,
+            timestamp: entry.timestamp,
+          });
         }
       } catch {}
     }
