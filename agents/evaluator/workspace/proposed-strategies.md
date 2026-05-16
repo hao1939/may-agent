@@ -1,3 +1,49 @@
+# Proposed Strategies — 2026-05-16 09:54Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
+- `.state/sessions/history/s_1778923437488_413/session.jsonl` (scout)
+- `.state/sessions/history/s_1778921636853_402/session.jsonl` (may)
+- `.state/sessions/history/s_1778921637104_404/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted positive `strategy` lessons: 1
+- Total extracted strategy lessons: 3
+
+## Lessons
+
+### 1. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh scout sample `s_1778923437488_413` and May sample `s_1778921636853_402` both emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
+
+### 2. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh May sample `s_1778921636853_402` emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic across successful coordination and diagnosis sessions.
+
+## Calibration Notes
+- This batch recovered from the prior zero-output regression: two of the three freshest verified-`good` sessions now produced positive `strategy` lessons again.
+- The remaining gap is still concentrated in compact scout-style success transcripts: `s_1778921637104_404` still emitted only an optimization warning (`Ignored tool outputs`) despite a canonical `good` evaluation row and multiple success-language matches.
+- Positive extraction is therefore live on fresh May + scout data, but compact-success coverage is still inconsistent rather than solved.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778923437488_413/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson with `scanned_lines: 16`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778921636853_402/session.jsonl --type strategy` returned 2 `type: "strategy"` lessons plus optimization output, with `scanned_lines: 36`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1778921637104_404/session.jsonl --type strategy` returned only one `optimization` lesson (`Ignored tool outputs (3 instances)`) and no `type: "strategy"` entries, with `scanned_lines: 20`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `3`, `6`, and `5` respectively.
+- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`, `efficiency=0.8`).
+
+---
+
 # Proposed Strategies — 2026-05-15 13:53Z
 
 ## Scope
