@@ -169,6 +169,10 @@
 - Symptom: a heartbeat reads an existing metric-analysis KE, writes a one-line workspace note like "dismissing per KE-...", and finishes without fresh metric checks, follow-through, or any substantive downstream work.
 - Fix: when reviewing alert-handling sessions, separate the diagnosis from the session's own contribution. Credit the reused KE for the diagnosis, but require fresh evidence or a real operational action before treating the session itself as materially successful.
 
+## Pattern: finish-guard pressure can manufacture low-value rolling-digest output
+- Symptom: a no-signal heartbeat initially does the right thing (confirming there is no new input), but after `finish()` guard failures it appends a trivial "no-op" note to a rolling digest or workspace file solely to create a deliverable, then commits that note and finishes `success`.
+- Fix: judge the pre-guard operational decision separately from the manufactured artifact. The correct closeout is usually a no-output `partial`/`blocked`/accurate `success` summary grounded in analysis performed, not a synthetic digest entry. Treat the appended note as low-value or negative-noise output unless it records a concrete new request, escalation, or durable decision that the system will act on.
+
 ## Pattern: prior KE context is not enough for a complete metric-alert judgment
 - Symptom: a session cites a relevant prior KE and may even reach the right general conclusion, but it never checks the live metric row, recent snapshots, or related events, and it does not record a concrete final operation from the metric-alert manual.
 - Fix: treat prior KEs as context, not closure. For a good metric-triage outcome, require current evidence from `metrics` plus `metric_snapshots` (and related events when relevant), then look for an explicit operation such as downgrade, exception, resolve stale state, or escalation.
