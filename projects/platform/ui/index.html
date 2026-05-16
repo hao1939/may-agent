@@ -116,6 +116,8 @@
   .msg-role { color: var(--fg); font-weight: 650; margin-right: auto; }
   .assistant-text { white-space: pre-wrap; overflow-wrap: anywhere; }
   .assistant-text.empty { color: var(--fg2); font-style: italic; }
+  .conversation-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .conversation-title h4 { margin: 0; margin-right: auto; }
   .tool-pairs { display: grid; gap: 8px; margin-top: 10px; }
   .tool-pair { border: 1px solid rgba(210,153,34,.35); border-radius: 8px; overflow: hidden; background: rgba(210,153,34,.055); }
   .tool-pair.error { border-color: rgba(248,81,73,.55); background: rgba(248,81,73,.055); }
@@ -147,6 +149,9 @@
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; }
+  .session-page-mode .chat-container { height: auto; min-height: 0; margin-top: 12px; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
+  .session-page-mode .chat-messages, .session-page-mode #session-picker, .session-page-mode #scroll-toggle, .session-page-mode #md-toggle { display: none; }
+  .session-page-mode .chat-status { color: var(--fg2); font-size: 12px; }
   .chat-input-row { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
   .chat-input-row input { flex: 1; background: var(--bg2); color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 14px; }
   .chat-input-row input:focus { outline: none; border-color: var(--accent); }
@@ -1378,11 +1383,30 @@ function renderSessionTranscript(messages) {
   return renderEnrichedTranscript(messages);
 }
 
+function sessionConversationStats(messages) {
+  const flow = buildSessionFlow(messages);
+  const responses = flow.filter(x => x.type === 'response');
+  return responses.reduce((acc, item) => {
+    const a = item.assistant || {};
+    acc.responses += 1;
+    acc.tools += (a.toolCalls || []).length;
+    acc.errors += (item.toolResults || []).filter(r => r.isError).length;
+    return acc;
+  }, { responses: 0, tools: 0, errors: 0 });
+}
+
 function renderSessionDebugTabs(transData) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
-  return `<div class="section">
-    <h4>Transcript (${transData.messageCount || messages.length} messages)</h4>
+  const stats = sessionConversationStats(messages);
+  return `<div class="section conversation-section">
+    <div class="conversation-title">
+      <h4>Conversation</h4>
+      ${flowChip(`${transData.messageCount || messages.length} messages`)}
+      ${flowChip(`${stats.responses} responses`)}
+      ${flowChip(`${stats.tools} tool calls`)}
+      ${stats.errors ? flowChip(`${stats.errors} tool errors`, 'error') : ''}
+    </div>
     ${renderEnrichedTranscript(messages)}
   </div>`;
 }
@@ -1910,20 +1934,30 @@ function addFeedItem(agent, text, type) {
   }
 }
 
+function setSessionPageMode(enabled) {
+  const chat = document.getElementById('chat');
+  if (chat) chat.classList.toggle('session-page-mode', !!enabled);
+  const status = document.getElementById('chat-status');
+  if (status && enabled) status.textContent = 'Send follow-up to this session';
+}
+
 function initChat(deepLinkSessionId) {
   if (!chatInitialized) {
     chatInitialized = true;
     // WS is now connected on page load; no need to call connectWs() here
   }
+  setSessionPageMode(!!deepLinkSessionId);
   // Hide the agent-chat banner when entering plain sessions mode.
   const banner = document.getElementById('chat-agent-banner');
   if (banner) banner.style.display = 'none';
-  // Honor deep-link first.
+  // Honor deep-link first. The inspector is the visible conversation stream;
+  // switchSession only binds input/subscription and its message list is hidden in session-page mode.
   if (deepLinkSessionId && deepLinkSessionId !== currentSessionId) {
     switchSession(deepLinkSessionId);
     loadSessionDetail(deepLinkSessionId);
     return;
   } else if (deepLinkSessionId) {
+    renderSessionPicker();
     loadSessionDetail(deepLinkSessionId);
     return;
   } else {
@@ -1986,6 +2020,7 @@ async function initAgentChat(name) {
   if (!chatInitialized) {
     chatInitialized = true;
   }
+  setSessionPageMode(false);
   currentAgentChat = name;
   // Update the chat header to show the agent name.
   const header = document.getElementById('chat-agent-banner');
