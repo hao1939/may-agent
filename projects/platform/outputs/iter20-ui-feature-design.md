@@ -1,151 +1,288 @@
-# Web UI Feature Design — Session Investigation UX
+# Web UI Feature Design - Session Investigation UX
 
 **Date:** 2026-05-15  
-**Context:** 5 features requested by hao to improve session investigation.
+**Updated:** 2026-05-16  
+**Context:** Session investigation features requested by hao for understanding what agents do, what it costs, where work gets stuck, and how local symptoms roll up to system patterns.
+
+---
+
+## Product Goal
+
+The UI should help an operator answer five questions quickly:
+
+1. **Why did this session happen?** Trigger, project, metric, workflow, parent session, or human action.
+2. **What did it do?** Turns, tool calls, tool results, files touched, messages, and produced artifacts.
+3. **What did it cost?** API calls, model/provider, tokens, cache use, cost, duration, and repeated work.
+4. **Where did it fail or waste effort?** Errors, retries, cycling, idle turns, guard friction, missing context.
+5. **Where else is this pattern happening?** Same error, same agent, same workflow, same project, same tool loop.
+
+The design center is not a single session page. It is an investigation graph that supports both top-down and bottom-up movement.
+
+---
+
+## Investigation Model
+
+### Top-Down Path
+
+Start from a broad signal and drill down:
+
+`Project / Agent / Metric / Event -> Workflow run -> Session tree -> Session -> Turn -> API call + tool calls + result`
+
+Top-down is used when the operator asks: "What is this project/agent/system doing, and which sessions explain the state?"
+
+### Bottom-Up Path
+
+Start from a local symptom and roll up:
+
+`Tool error / expensive API call / repeated turn -> Session turn -> Parent session -> Workflow -> Project / trigger / metric -> repeated pattern`
+
+Bottom-up is used when the operator asks: "I found something suspicious in this session; what caused it and is it recurring?"
+
+### Core Objects
+
+| Object | Purpose | Current Sources |
+|--------|---------|-----------------|
+| Project | Work context and human goal | `projects/*/project.md`, project detail API |
+| Event | Trigger or signal | events table, loop trace |
+| Workflow run | Orchestration unit | `workflow_runs`, workflow run files |
+| Session | Agent execution unit | `sessions` table, `session.jsonl` |
+| Turn / API call | LLM response boundary | assistant entries in `session.jsonl` |
+| Tool call/result | Action and evidence | transcript content blocks |
+| Evaluation / digest | Judgment and summary | `evaluations`, session digests |
 
 ---
 
 ## Current Architecture Summary
 
 ### Data Layer
-- **SQLite DB** with tables: `sessions` (sessionId, agent, task, status, kind, parentSessionId, projectId, startedAt, endedAt, opCount, outcome, error), `evaluations` (quality, efficiency, productiveCalls, wastedCalls, verdict, issues, usage)
-- **session.jsonl** files on disk: full conversation transcripts (user/assistant/tool_result messages)
-- No dedicated `api_calls` or `llm_calls` table — API usage is only in evaluations.usage (JSON blob)
 
-### HTTP API (relevant endpoints)
-| Endpoint | Returns |
-|----------|---------|
-| `GET /api/sessions/:id` | Session row + recursive children tree + evaluation |
-| `GET /api/sessions/:id/transcript` | Parsed JSONL → `{role, text, toolCalls, content}[]` |
-| `GET /api/agents/:name/detail` | Agent sessions list, stats |
-| `GET /api/loop-trace?...` | Full causal trace: event→workflow→sessions |
-| `GET /api/projects/sessions` | Sessions filtered by projectId |
+- **SQLite DB** has `sessions`, `workflow_runs`, `events`, `evaluations`, metrics, alerts, and project cache tables.
+- **session.jsonl** stores the full conversation transcript. Assistant entries are the practical API-call boundary.
+- **Transcript API** already exposes assistant `api`, `provider`, `model`, and `usage` when present.
+- **No normalized `session_api_calls` table yet.** Per-call metadata exists in raw transcript entries, but is not indexed/queryable as first-class data. Latency is still not consistently stored per call.
 
-### UI (single-page `ui/index.html`, ~4.5K lines vanilla JS)
-- **Tabs:** Dashboard, Agents (with deep-dive), Projects, Knowledge, Benchmarks
-- **Agent deep-dive** has sub-tabs: Overview, Sessions (table), Evaluations
-- **Session inspector** shows metadata grid, task block, child tree, score bar, transcript viewer
-- Transcript renders user/assistant/tool_result messages with tool call expansion
+### HTTP API
+
+| Endpoint | Role in Investigation |
+|----------|-----------------------|
+| `GET /api/sessions/:id` | Session metadata, child session tree, evaluation |
+| `GET /api/sessions/:id/transcript` | Turns, tool calls/results, API metadata from session.jsonl |
+| `GET /api/projects/detail?path=...` | Project roll-up and recent sessions |
+| `GET /api/projects/lineage?path=...` | Top-down project session lineage from tagged/workflow/file-read/child/mention signals |
+| `GET /api/loop-trace?...` | Causal trace from event/metric/workflow/session to related executions |
+| `GET /api/projects/sessions` | Project session list, useful but less complete than lineage |
+
+### UI
+
+- The project detail page already has project sessions and lineage surfaces.
+- The system loop trace already links events/workflows/sessions.
+- The session route/inspector is the right central workspace for turn-level investigation.
+- First Logs + API implementation slice is present in:
+  - `/app/projects/platform/ui/index.html` commit `4307cbf38`
+  - `repos/may-agent/src/app/http/server.ts` commit `c241e46a`
+
+---
+
+## Target UX Shape
+
+### 1. Investigation Overview
+
+Entry surfaces should prioritize "what needs attention" rather than raw lists.
+
+Top-down entry points:
+
+- Project page: active work, current state, lineage, recent sessions, errors, cost, stalled work.
+- Agent page: recent sessions, active sessions, low-efficiency sessions, repeated error clusters.
+- Metrics/events page: alert -> workflow -> session trace.
+- Dashboard: red projects/agents/metrics with direct links into the causal trace.
+
+Each row should provide: status, owner/agent, project, trigger, duration, cost if known, and one-click open to session inspector.
+
+### 2. Session Inspector as the Central Workspace
+
+The session inspector should be optimized around one selected session.
+
+Required panels:
+
+- Header: session id, agent, status, kind, project, workflow, parent session, started/ended, duration, op count.
+- Breadcrumb: project/event/metric -> workflow -> parent session -> current session.
+- Child sessions: compact tree with status and open links.
+- Logs + API: grouped turn view showing API call metadata and related tool activity.
+- Transcript: raw chronological conversation for fallback inspection.
+- Evaluation/digest: quality, efficiency, verdict, issues, and summary if available.
+
+The Logs + API panel is the main turn-level investigation view. Transcript remains the source-of-truth fallback.
+
+### 3. Bottom-Up Pattern View
+
+From a suspicious turn, the operator should be able to ask: "Where else did this happen?"
+
+Pattern anchors:
+
+- Same tool name and similar error.
+- Same guard failure category.
+- Same model/provider with high cost or empty response.
+- Same project and repeated worker/reviewer loop.
+- Same workflow handler producing repeated blocked/waiting outcomes.
+
+This does not need LLM summarization first. Start with deterministic grouping and links.
 
 ---
 
 ## Feature Designs
 
-### 1. Session → API Call Mapping
+### 1. Logs + API Session Inspector View
 
-**Goal:** Show which LLM API calls a session made, their cost/tokens, and how they map to conversation turns.
+**Goal:** Show the original session log and the related API response boundary together.
 
-**Current data:** `session.jsonl` implicitly encodes API calls — each assistant message IS one API response. The `evaluations.usage` field has aggregate token counts. No per-call timing/cost breakdown exists today.
+**Current status:** First focused slice is implemented. It adds a Logs + API tab and exposes API metadata from transcript assistant entries.
 
-**Design:**
-- **Phase 1 (UI-only, no backend change):** In the transcript viewer, annotate each assistant message as "API Call #N" with a turn counter. Show opCount from session metadata.
-- **Phase 2 (backend instrumentation):** Add a `session_api_calls` table or append API metadata (latency_ms, input_tokens, output_tokens, cache_read_tokens, cost_usd) to each assistant entry in session.jsonl. The SDK's `callModel()` already has this data in the response.
-- **Phase 2 UI:** Show a collapsible "API Calls" panel per session with a table: call#, latency, tokens in/out, cost. Click a row to highlight the corresponding transcript turn.
+**Data model:**
 
-**Effort:** Phase 1 = S (1-2h), Phase 2 = M (needs SDK change + migration)
+- Each assistant message with `api`, `provider`, `model`, or `usage` is an API turn.
+- The assistant message's `toolCalls[]` are the planned actions for that turn.
+- Following `tool_result` messages with matching ids are the observed results.
+- User messages between turns are context inputs.
 
----
+**UI behavior:**
 
-### 2. Session Tab: Logs + API Calls (Side-by-Side)
+- Render turn groups: `API Call #N -> assistant text -> tool calls -> tool results`.
+- Show model/provider/API type and token/cost fields when available.
+- Highlight errors in tool results.
+- Allow collapse/expand per turn.
+- Link each turn back to raw transcript position.
 
-**Goal:** Unified view showing session logs alongside the corresponding API call details.
+**Next refinements:**
 
-**Design:**
-- Add a new sub-tab "Logs + API" in the session inspector (alongside existing Transcript view).
-- **Left pane:** Chronological log entries (tool calls made, results received, errors).
-- **Right pane:** The API call that produced each group of tool calls (tokens, latency, model used).
-- Clicking a log entry highlights its parent API call; clicking an API call scrolls to its tool_use blocks.
-- Implementation: The transcript data already has this structure (`assistant` messages contain `toolCalls[]`, followed by `tool_result` entries). Group them into "turns" in the UI.
+- Add selected-turn state instead of only collapsible blocks.
+- Add a compact right-side metadata panel for the selected turn.
+- Add quick filters: errors only, expensive calls, tool calls only, empty responses.
+- Add anchors so loop trace and future pattern views can deep-link to a turn.
 
-**Data needed:** Already available from `/api/sessions/:id/transcript`. Per-call cost/latency needs Phase 2 of Feature 1.
+### 2. Session -> API Call Mapping
 
-**Effort:** M (UI work, no backend change for basic version)
+**Goal:** Make LLM call boundaries visible and navigable.
 
----
+**Current data:** Per-call API metadata is partially available in assistant entries and is exposed by the transcript endpoint. The missing part is normalization and consistent latency.
 
-### 3. LLM-Powered Session Summarization
+**Phase 1:** Use transcript assistant entries as the API call list. This is enough for UI investigation.
 
-**Goal:** One-click summary of a session's activity for quick investigation.
+**Phase 2:** Add a normalized `session_api_calls` read model or table with:
 
-**Design:**
-- **API endpoint:** `POST /api/sessions/:id/summarize` — takes the transcript, truncates to fit context, sends to an LLM with a prompt like: "Summarize what this agent session accomplished, key decisions, errors encountered, and whether it was efficient."
-- **Caching:** Store summaries in a new `session_summaries` table (sessionId PK, summary TEXT, model TEXT, createdAt INTEGER). Return cached if exists.
-- **UI:** Add a "✨ Summarize" button in the session inspector header. Shows a loading state, then renders the markdown summary in a highlighted box.
-- **Cost control:** Only allow summarization of completed sessions. Use a cheap/fast model (e.g., haiku). Truncate transcript to last 50 turns if too long.
+- sessionId
+- turn index
+- response id if available
+- provider/model/api
+- input/output/cache tokens
+- cost
+- latency
+- stop reason
+- error/empty-response markers
 
-**Effort:** M (new endpoint + LLM call + small table + UI button)
+**Do not block the UI on Phase 2.** The raw transcript has enough signal for the first useful experience.
 
----
+### 3. Top-Down Lineage and Breadcrumbs
 
-### 4. Session Scoring
+**Goal:** Make it obvious why a session exists and where it fits.
 
-**Goal:** Multi-dimensional scoring to quickly identify wasteful or stuck sessions.
+**Use existing surfaces first:**
 
-**Current data:** `evaluations` table already has `quality`, `efficiency`, `productiveCalls`, `wastedCalls`, `verdict`. This is partially implemented.
+- Extend project lineage instead of creating a separate project-session concept.
+- Reuse loop trace for event/workflow/session causality.
+- Use `parentSessionId`, `workflowRunId`, and `projectId` for session breadcrumbs.
 
-**Proposed scoring dimensions:**
+**Session breadcrumb target:**
+
+`Project platform -> trigger.project / project.comment -> workflow wr_... -> parent session -> current session`
+
+**Next API work:**
+
+- Extend `GET /api/sessions/:id` with a `lineage` object that includes project, workflow run, parent chain, and likely triggering event when available.
+- Add direct links from lineage rows and loop trace executions into the session inspector.
+
+### 4. Deterministic Suspicion Signals
+
+**Goal:** Surface likely waste before adding subjective scoring.
+
+Start with cheap deterministic markers:
+
+- Repeated identical tool call with same args.
+- Repeated failed tool call or guard failure.
+- High cost call relative to session median.
+- Empty assistant response.
+- Long session with no file edits/deliverables.
+- Worker/reviewer loop with repeated WAITING/BLOCKED guidance.
+
+These should appear as badges and filters. They are more actionable than an opaque score.
+
+### 5. Session Scoring
+
+**Goal:** Rank sessions after the inspection and suspicion model exists.
+
+Scoring dimensions:
+
 | Dimension | Signal | Source |
 |-----------|--------|--------|
-| **Efficiency** | productive vs wasted tool calls | evaluations.efficiency |
-| **Cost** | total tokens / cost_usd relative to task complexity | evaluations.usage |
-| **Cycling** | repeated identical tool calls or error→retry loops | transcript analysis |
-| **Progress** | did it produce deliverables / advance the goal? | outcome + finish status |
-| **Speed** | wall-clock time relative to opCount | sessions.startedAt/endedAt/opCount |
-| **Error rate** | fraction of tool_results with isError=true | transcript |
+| Efficiency | productive vs wasted tool calls | evaluations + transcript heuristics |
+| Cost | tokens/cost relative to task and peers | transcript usage + evaluations.usage |
+| Cycling | repeated calls, same errors, repeated reviewer guidance | transcript + journal/session metadata |
+| Progress | deliverables, commits, project state movement | outcome, file edits, git evidence, project journal |
+| Speed | duration vs op count and task complexity | sessions table |
+| Error rate | failed tool results / total tool results | transcript |
 
-**Design:**
-- **Backend:** Extend the heuristic evaluator to compute all dimensions and store in evaluations table (add columns: `cycling_score`, `cost_score`, `speed_score`, `error_rate`). Or store as JSON in a `scores` column.
-- **UI:** Replace the single score bar with a radar/spider chart or multi-bar showing all dimensions. Color-code: green (>0.7), yellow (0.4-0.7), red (<0.4). Add sortable columns in the sessions table for each score.
-- **Aggregate views:** Per-agent average scores over time (sparklines in agent overview).
+UI should show bars/badges and sortable columns. Avoid radar charts unless the data proves they help; dense bars and filters are easier to scan.
 
-**Effort:** M-L (scoring logic + schema extension + UI visualization)
+### 6. LLM-Powered Summarization
 
----
+**Goal:** Help operators avoid reading hundreds of lines when deterministic navigation is not enough.
 
-### 5. Top-Down & Bottom-Up Investigation UX
+Design:
 
-**Goal:** Help users investigate from either direction — overview→drill-down or detail→roll-up.
+- `POST /api/sessions/:id/summarize`
+- Cache summaries by session id + transcript hash + prompt version.
+- Restrict to completed sessions by default.
+- Include: accomplishments, decisions, errors, cost/waste notes, open questions, links to suspicious turns.
 
-**Top-down (already partially exists via loop-trace):**
-- Entry points: Dashboard → Agent → Sessions → Transcript
-- **Enhance:** Add a "Session Tree" visualization showing the full call hierarchy (parent→children) with color-coded status. Already have `parentSessionId` and recursive CTE in the API.
-- Add filtering: "Show me all sessions that scored < 0.5 efficiency" or "all sessions with cycling detected."
-
-**Bottom-up (new):**
-- From any session, show: "Part of workflow X, triggered by event Y, parent session Z"
-- Add a **breadcrumb trail** at top of session inspector: `Event #123 → Workflow abc → Parent Session → This Session`
-- **Pattern detection:** "This agent had 5 sessions in the last hour with the same error" — surface as an alert/badge in the agent overview.
-- **Roll-up view:** Given a workflowRunId or projectId, show aggregate stats: total sessions, total cost, success rate, time spent.
-
-**Design:**
-- **Breadcrumb API:** Extend `/api/sessions/:id` to include `lineage: {event?, workflow?, parentChain[]}` by joining events/workflows tables.
-- **Filter endpoint:** `GET /api/sessions?minEfficiency=0.5&verdict=wasteful&agent=X` — add query params to existing sessions list.
-- **Pattern detection:** Cron job or on-demand query: group recent sessions by (agent, error) and flag clusters.
-
-**Effort:** L (multiple UI components + backend queries + pattern detection)
+Summarization should use the structured turn groups once available, not raw transcript text only.
 
 ---
 
-## Priority Matrix
+## Implementation Order
 
-| # | Feature | Impact | Effort | Priority | Dependencies |
-|---|---------|--------|--------|----------|--------------|
-| 4 | Session Scoring | High (identifies waste) | M | **P1** | Evaluations table exists |
-| 2 | Logs + API tab | High (daily use) | M | **P1** | Transcript API exists |
-| 5 | Investigation UX | High (usability) | L | **P2** | Breadcrumbs need lineage data |
-| 1 | Session→API mapping | Medium | S→M | **P2** | Phase 1 trivial; Phase 2 needs SDK |
-| 3 | LLM Summarization | Medium (nice-to-have) | M | **P3** | Needs LLM call infra in server |
+| Phase | Slice | Why First |
+|-------|-------|-----------|
+| 1 | Logs + API session inspector | Immediate turn-level visibility; uses existing transcript data |
+| 2 | Session breadcrumb and lineage links | Connects local session detail to top-down project/workflow context |
+| 3 | Turn filters and deterministic suspicion badges | Makes waste/errors discoverable without opaque scoring |
+| 4 | Normalized API-call read model | Enables sorting/filtering across sessions and reliable cost analysis |
+| 5 | Cross-session pattern view | Bottom-up roll-up from one symptom to recurring system issue |
+| 6 | Session scoring | Useful once base signals and navigation are trustworthy |
+| 7 | LLM summaries | Helpful layer after structured evidence exists |
 
-**Recommended implementation order:** 4 → 2 → 1 (phase 1) → 5 (breadcrumbs) → 3 → 1 (phase 2) → 5 (patterns)
+The original feature list remains valid, but scoring should not lead the implementation. Investigation needs navigation and evidence first.
 
 ---
 
 ## Data Gaps Summary
 
-| Need | Status | Action |
-|------|--------|--------|
-| Per-API-call tokens/latency/cost | ❌ Not stored per-call | Instrument SDK `callModel()` to append metadata |
-| Session lineage (event→workflow→session chain) | ✅ Available via loop-trace | Expose in session detail API |
-| Cycling detection | ❌ No automated detection | Add transcript analysis in evaluator |
-| Session summaries (LLM) | ❌ No table | Add `session_summaries` table + endpoint |
-| Multi-dimensional scores | 🟡 Partial (quality/efficiency exist) | Extend evaluator + schema |
+| Need | Current Status | Action |
+|------|----------------|--------|
+| Per-turn API metadata | Partially available in assistant transcript entries | Keep exposing through transcript; later normalize |
+| Per-call latency | Not consistently stored | Capture in model call wrapper or session API-call read model |
+| Session lineage | Partially available through loop trace, project lineage, parentSessionId, workflowRunId | Add compact `lineage` object to session detail API |
+| Turn-level anchors | Not first-class yet | Add stable turn ids in transcript response/UI |
+| Cross-session pattern search | Not implemented | Start with deterministic grouping by tool/error/model/project |
+| Session summaries | Not implemented | Add cached endpoint after turn groups exist |
+| Multi-dimensional scores | Partial evaluations exist | Extend after deterministic suspicion badges prove useful |
+
+---
+
+## Success Criteria
+
+A successful investigation UI lets an operator:
+
+- Start at a project and find the sessions that explain its current state.
+- Open a session and see API calls, tool calls, tool results, errors, and cost in one view.
+- Move from a session back to its trigger, workflow, parent, children, and project.
+- Start from an error or expensive turn and find similar occurrences elsewhere.
+- Distinguish evidence from summaries: raw transcript remains available, summaries are cached helpers.
