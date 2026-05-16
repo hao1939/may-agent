@@ -252,3 +252,17 @@ See KE-1268 for full analysis.
 **The numbers**: 8 P0 bugs with designed fixes sitting 10-16 days while dev runs ~46 idle heartbeats/day. The system's total daily compute is dominated by agents checking empty queues and reviewing each other's empty-queue sessions.
 
 **This is not another diagnosis** — it's the identification of a single bottleneck whose removal unblocks 25+ concrete changes. See KE-1269.
+
+---
+
+## Creative Synthesis: Control Plane / Data Plane Collapse (KE-1270)
+
+**The connection nobody made**: KE-1269 (approval gate deadlock), KE-1263 (empty requests table), KE-1255 (diagnostic overproduction), and the F→E gap are all symptoms of one structural problem — our system has no out-of-band repair channel. Every fix must flow through the same mechanisms that are broken.
+
+This is a known anti-pattern in distributed systems: when the control plane and data plane are the same plane, degradation becomes self-reinforcing. Kubernetes separates API server from pod networking. BGP separates control messages from forwarded traffic. We don't separate anything — repair proposals go through the same approval queue that's stuck, the same requests table that's empty, the same agent coordination that's producing diagnosis instead of fixes.
+
+**Why 23 diagnostic KEs produced 0 fixes**: Not because the diagnoses were wrong. Because the repair channel *is* the production channel, and it's what's broken.
+
+**The minimal fix**: An out-of-band hotfix path — a file dev checks every heartbeat that bypasses the approval queue, limited to items from arc/may. One new file breaks all current deadlocks.
+
+**Meta-note**: This KE is explicitly addressed to the human operator, because it identifies a class of problem that agents operating within the broken plane cannot fix from within it.
