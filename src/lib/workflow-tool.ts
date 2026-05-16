@@ -192,7 +192,7 @@ function listWorkflowFiles(
     if (!dir) return;
     try {
       const dirFiles = readdirSync(dir)
-        .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"))
+        .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.includes("-helpers") && !f.includes("-utils"))
         .sort();
       for (const f of dirFiles) {
         if (seenNames.has(f)) continue;
@@ -255,7 +255,7 @@ export async function loadGuards(...dirs: (string | undefined)[]): Promise<Workf
     let files: string[];
     try {
       files = readdirSync(dir)
-        .filter((f) => f.endsWith(".ts") && !f.startsWith("REGISTRY") && !f.endsWith(".disabled.ts"))
+        .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.startsWith("REGISTRY") && !f.endsWith(".disabled.ts"))
         .sort()
         .map((f) => join(dir, f));
     } catch {
