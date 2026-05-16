@@ -810,3 +810,17 @@ export {
   listAutonomousAgents,
   resolveMetricOwner,
 } from "./metric-ownership.js";
+
+// ── Heartbeat data loaders (used by per-agent heartbeat workflows) ────────
+export {
+  findRelatedKEs,
+  loadMetrics,
+  loadProjects,
+  loadAlerts,
+  loadHeartbeatMd,
+  loadInbox,
+  runRedMetricCommands,
+  formatMetricsBlock,
+  shouldSkipHeartbeat,
+  genericHeartbeat,
+} from "./heartbeat-data.js";
