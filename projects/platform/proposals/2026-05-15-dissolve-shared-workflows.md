@@ -1,7 +1,7 @@
 # Plan: Dissolve `shared/workflows/`
 
-**Date:** 2026-05-15 (review applied 2026-05-17)
-**Status:** Approved — executing
+**Date:** 2026-05-15 (review applied 2026-05-17; Phase 1 complete 2026-05-17)
+**Status:** Phase 1 complete — SDK promotion live
 **Owner:** platform
 
 ## Principle
@@ -123,6 +123,34 @@ When project-scoped workflows are created later (Phase 5+), they will use:
 ```ts
 import { fn } from "../../../shared/agent-sdk.ts";   // from projects/<id>/workflows/
 ```
+
+## Execution log
+
+### Phase 1 complete (2026-05-17)
+
+All SDK primitives promoted. `shared/workflows/` reduced from 31 to 15 files
+(plus 3 test files and REGISTRY.md). `shared/lib/metric-ownership.ts` and
+`shared/lib/project-health.ts` thinned to back-compat shims.
+
+**SDK additions** (in `packages/sdk/src/`):
+- `circuit-breaker.ts` (+test) — commit `c0156847`
+- `dispatch-dedup-guard.ts` (+test) — commit `8f1c29e03`/`583ed02e`
+- `workflow-file-cache.ts` (+test, renamed from ProjectCache) — commit `c615adfcc`
+- `project-schema.ts` (carved from project-health) — commit `17229f9b`/`1bc47f019`
+- `metric-ownership.ts` — commit `8ee37f0c`/`f8a322647`
+- `heartbeat-data.ts` (575 LOC, 12 importers) — commit `26061e80`/`d073d143a`
+
+**Importer changes:**
+- 12 per-agent heartbeat workflows route through `shared/agent-sdk.ts`
+- `shared/workflows/project.ts` and `shared/lib/project-health.ts` route through `shared/agent-sdk.ts`
+- 3 scout/coach workflows route through `shared/agent-sdk.ts`
+
+**Files deleted from shared/workflows/**: `circuit-breaker.ts`,
+`dispatch-dedup-guard.ts`, `project-cache.ts`, `heartbeat-data.ts`.
+
+**Live verification:** all 12 heartbeats fired post-reload, `project`
+workflow completed, `evaluator-aftermath` running normally (zero workflow
+load errors in container logs). 1451/1451 tests pass.
 
 ## Resolver change
 
