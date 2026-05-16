@@ -6,7 +6,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 AGENT="${1:-}"
-export PATH=".state/.bun/bin:$PATH"
 
 bun -e "
 import {Database} from 'bun:sqlite';

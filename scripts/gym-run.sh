@@ -24,10 +24,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Ensure bun is discoverable even when not in system PATH (e.g., container deploys)
-for _bun_dir in "$PROJECT_ROOT/.state/.bun/bin" "$HOME/.bun/bin"; do
-  [ -x "$_bun_dir/bun" ] && { export PATH="$_bun_dir:$PATH"; break; }
-done
+# Ensure bun on PATH for host dev runs (the container image already has
+# /usr/local/bin/bun on PATH).
+if [ -x "$HOME/.bun/bin/bun" ]; then
+  export PATH="$HOME/.bun/bin:$PATH"
+fi
 
 # ── Mode detection ──────────────────────────────────────────────────────
 _is_list=0
