@@ -1,7 +1,7 @@
 # Plan: Dissolve `shared/workflows/`
 
-**Date:** 2026-05-15 (review applied 2026-05-17; Phase 1 complete 2026-05-17)
-**Status:** Phase 1 complete — SDK promotion live
+**Date:** 2026-05-15 (review applied 2026-05-17; Phases 1+3+partial-7 complete 2026-05-17)
+**Status:** 80% complete — only project.ts migration remains
 **Owner:** platform
 
 ## Principle
@@ -151,6 +151,34 @@ All SDK primitives promoted. `shared/workflows/` reduced from 31 to 15 files
 **Live verification:** all 12 heartbeats fired post-reload, `project`
 workflow completed, `evaluator-aftermath` running normally (zero workflow
 load errors in container logs). 1451/1451 tests pass.
+
+### Phase 3 complete (2026-05-17)
+
+Five single-owner workflows moved out of shared:
+- `closed-loop-steward.ts` → `agents/may/workflows/` (commit `3d64f585a`)
+- `verify-wrap.ts` → `agents/may/workflows/` (commit `3d64f585a`)
+- `evaluator-deep-eval.ts` → `agents/evaluator/workflows/` (commit `3d64f585a`)
+- `metric-alert-triage.ts` (+ test) → `agents/may/workflows/` (commit `fcfe9cb04` + import fix `d66997e1b`)
+- `session-recovery.ts` (+ test) → `agents/may/workflows/` (commit `fcfe9cb04`)
+
+**Live verification:** `evaluator-deep-eval` completed from its new home;
+12 heartbeats completed; no module resolution errors.
+
+### Phase 7 partial complete (2026-05-17)
+
+18 dead files and 16 orphan tests deleted in one commit — 5274 LOC removed.
+All were verified zero-importer outside their own test files.
+
+Dead helpers: `budget-checkpoint`, `complexity-estimator`,
+`dispatch-validator`, `fewshot-inject-helpers`, `health-check`,
+`implement-and-verify`, `incremental-checkpoint`, `index.ts`,
+`iteration-budget`, `iteration-timer`, `metrics-collector`,
+`output-validator`, `project-helpers`, `provider-retry`, `retry-wrapper`,
+`types.ts`, `worker-retry`, `workflow-runner`.
+
+**Current state of `shared/workflows/`:** 3 files remain
+(`project.ts` 1343 LOC, `project.test.ts`, `hooks/validate-on-create.ts`)
+plus `REGISTRY.md`. These dissolve in Phases 4-6.
 
 ## Resolver change
 
