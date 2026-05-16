@@ -95,6 +95,18 @@ The research shows CoT amplifies this effect. Our creative sessions are explicit
 
 ---
 
+## Creative Insight: Prompt Scar Tissue as Compounding Idle Tax (KE-1265)
+
+**Source**: DB analysis of recent sessions + dev heartbeat.md inspection
+
+**The finding**: Agent instruction prompts grow monotonically as postmortems append "do not X" rules. Dev's prompt is 10.8KB (132 lines, 9 explicit prohibitions). Dev runs 37 sessions in the recent window; 34 are idle (92%). Each idle session still processes the full 10.8KB prompt. By contrast, scout's prompt is 2.5KB — 4x smaller — and scout produces the system's only novel synthesis.
+
+**The new connection**: KE-1259 identified KB context poisoning. KE-1260 identified exploration collapse into no-ops. This is the third layer: **instruction-level debt** where the prompt itself biases toward caution. The three layers compound: (1) the KB tells agents "everything is broken," (2) the prompt tells agents "don't do anything risky," (3) the agent learns to do nothing. It's a three-layer paralysis stack.
+
+**Intervention**: Refactor agent prompts from prohibition-heavy (132 lines) to positive-guidance-short (~30 lines). Move structural prohibitions into guard rules or code. Add rule sunset dates.
+
+---
+
 ## Creative Insight: The Heartbeat Is Clock-Driven When It Should Be Event-Driven
 
 **Observation**: KEs 1245–1262 (18 entries) were produced in ~2 weeks — a 3x acceleration over the prior rate. This acceleration coincides precisely with creative heartbeat mode being introduced. The heartbeat is a fixed-interval stimulus that demands output regardless of whether new external signal exists.
