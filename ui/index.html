@@ -1303,8 +1303,14 @@ function flowChip(text, cls = '') {
 
 function sourceChip(label, sessionId, rawLine, rawSource, cls = '') {
   if (!rawLine || !sessionId) return flowChip(label, cls);
-  const title = rawSource ? rawSource + ':' + rawLine : 'raw log line ' + rawLine;
+  const source = rawSource || 'session.jsonl';
+  const title = `Show raw JSONL record ${source}:${rawLine}`;
   return `<button type="button" class="flow-chip source-chip ${cls}" title="${esc(title)}" onclick="showRawLog(${jsStringAttr(sessionId)}, ${Number(rawLine)}, ${jsStringAttr(String(label))}, this)">${esc(String(label))}</button>`;
+}
+
+function sourceLineChip(sessionId, rawLine, rawSource, cls = '') {
+  if (!rawLine) return '';
+  return sourceChip(`session.jsonl:${rawLine}`, sessionId, rawLine, rawSource, cls);
 }
 function renderRawBlock(label, value) {
   const text = typeof value === 'string' ? value : formatJson(value);
@@ -1360,8 +1366,8 @@ function renderToolPair(tc, result, sessionId) {
       <button type="button" class="tool-more tool-more-button" title="Full tool call and output" onclick="toggleToolDetails(this)">...</button>
     </div>
     <div class="tool-preview-grid">
-      <div class="tool-preview-pane request"><div class="tool-preview-label">tool call ${tc.rawLine ? sourceChip('line ' + tc.rawLine, sessionId, tc.rawLine, tc.rawSource) : ''}</div><pre class="tool-preview-snippet">${esc(requestText)}</pre></div>
-      <div class="tool-preview-pane result"><div class="tool-preview-label">tool output ${result?.rawLine ? sourceChip('line ' + result.rawLine, sessionId, result.rawLine, result.rawSource, hasError ? 'error' : '') : ''}</div><pre class="tool-preview-snippet">${esc(resultPreview)}</pre></div>
+      <div class="tool-preview-pane request"><div class="tool-preview-label">tool call ${sourceLineChip(sessionId, tc.rawLine, tc.rawSource)}</div><pre class="tool-preview-snippet">${esc(requestText)}</pre></div>
+      <div class="tool-preview-pane result"><div class="tool-preview-label">tool output ${sourceLineChip(sessionId, result?.rawLine, result?.rawSource, hasError ? 'error' : '')}</div><pre class="tool-preview-snippet">${esc(resultPreview)}</pre></div>
     </div>
     <details class="tool-details">
       <summary>Full tool call and output</summary>
@@ -1464,13 +1470,13 @@ async function showRawLog(sessionId, line, label, sourceEl) {
   document.querySelectorAll('.source-chip.active').forEach(el => el.classList.remove('active'));
   if (sourceEl) sourceEl.classList.add('active');
   viewer.classList.add('active');
-  viewer.innerHTML = `<div class="raw-log-head"><span>Loading raw log</span><code>line ${esc(line)}</code><button title="Close" onclick="hideRawLog()">×</button></div>`;
+  viewer.innerHTML = `<div class="raw-log-head"><span>Loading raw JSONL record</span><code>session.jsonl:${esc(line)}</code><button title="Close" onclick="hideRawLog()">×</button></div>`;
   try {
     const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/raw-log?line=${encodeURIComponent(line)}`);
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || r.statusText);
     const body = data.parsed ? JSON.stringify(data.parsed, null, 2) : data.raw;
-    viewer.innerHTML = `<div class="raw-log-head"><span>${esc(label || 'raw log')}</span><code>${esc(data.source || '')}:${esc(data.line)}</code><button title="Close" onclick="hideRawLog()">×</button></div><pre class="raw-log-body">${esc(body)}</pre>`;
+    viewer.innerHTML = `<div class="raw-log-head"><span>Raw JSONL record</span><code>${esc(data.source || 'session.jsonl')}:${esc(data.line)}</code><button title="Close" onclick="hideRawLog()">×</button></div><pre class="raw-log-body">${esc(body)}</pre>`;
     viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (e) {
     viewer.innerHTML = `<div class="raw-log-head"><span style="color:var(--red)">Failed to load raw log</span><button title="Close" onclick="hideRawLog()">×</button></div><pre class="raw-log-body">${esc(e.message || String(e))}</pre>`;
