@@ -456,13 +456,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ session, children, evaluation });
   }
 
+  function resolveSessionJsonl(sessionId: string): { path: string; source: string } | null {
+    const livePath = join(STATE_DIR, "sessions", sessionId, "session.jsonl");
+    if (existsSync(livePath)) return { path: livePath, source: ".state/sessions/" + sessionId + "/session.jsonl" };
+    const historyPath = join(STATE_DIR, "sessions", "history", sessionId, "session.jsonl");
+    if (existsSync(historyPath)) return { path: historyPath, source: ".state/sessions/history/" + sessionId + "/session.jsonl" };
+    return null;
+  }
+
   function handleTranscript(sessionId: string): Response {
-    let jsonlPath = join(STATE_DIR, "sessions", sessionId, "session.jsonl");
-    if (!existsSync(jsonlPath)) jsonlPath = join(STATE_DIR, "sessions", "history", sessionId, "session.jsonl");
-    if (!existsSync(jsonlPath)) return json({ error: "Transcript not found" }, 404);
-    const lines = readFileSync(jsonlPath, "utf-8").split("\n").filter(Boolean);
+    const resolved = resolveSessionJsonl(sessionId);
+    if (!resolved) return json({ error: "Transcript not found" }, 404);
+    const rawLines = readFileSync(resolved.path, "utf-8").split("\n");
     const messages: unknown[] = [];
-    for (const line of lines) {
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      if (!line) continue;
+      const rawLine = i + 1;
       try {
         const entry = JSON.parse(line);
         const role = String(entry.role || "").toLowerCase();
@@ -473,7 +483,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
               ? entry.content
               : "";
           // Skip session context injection (buildSessionContext output)
-          if (text && !text.startsWith("# Session Context")) messages.push({ role: "user", text });
+          if (text && !text.startsWith("# Session Context")) messages.push({ role: "user", text, rawLine, rawSource: resolved.source });
         } else if (role === "assistant") {
           const blocks = Array.isArray(entry.content) ? entry.content : [];
           const text = blocks
@@ -481,10 +491,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             .map((b: any) => b.text || "")
             .join("");
           const toolCalls = blocks
-            .filter((b: any) => b.type === "tool_use" || b.type === "toolCall")
-            .map((b: any) => ({ id: b.id, tool: b.name, args: b.input ?? b.arguments ?? {} }));
+            .map((b: any, blockIndex: number) => ({ block: b, blockIndex }))
+            .filter(({ block }: any) => block.type === "tool_use" || block.type === "toolCall")
+            .map(({ block, blockIndex }: any) => ({
+              id: block.id,
+              tool: block.name,
+              args: block.input ?? block.arguments ?? {},
+              rawLine,
+              rawSource: resolved.source,
+              rawBlockIndex: blockIndex,
+            }));
           if (text || toolCalls.length) {
-            const msg: Record<string, unknown> = { role: "assistant", text, toolCalls };
+            const msg: Record<string, unknown> = { role: "assistant", text, toolCalls, rawLine, rawSource: resolved.source };
             if (entry.api) msg.api = entry.api;
             if (entry.model) msg.model = entry.model;
             if (entry.provider) msg.provider = entry.provider;
@@ -510,11 +528,26 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
             content,
             isError: entry.isError,
             timestamp: entry.timestamp,
+            rawLine,
+            rawSource: resolved.source,
           });
         }
       } catch {}
     }
-    return json({ sessionId, messageCount: messages.length, messages });
+    return json({ sessionId, source: resolved.source, messageCount: messages.length, messages });
+  }
+
+  function handleRawLog(sessionId: string, url: URL): Response {
+    const resolved = resolveSessionJsonl(sessionId);
+    if (!resolved) return json({ error: "Transcript not found" }, 404);
+    const lineNo = Number(url.searchParams.get("line") || "");
+    if (!Number.isInteger(lineNo) || lineNo < 1) return json({ error: "line must be a positive integer" }, 400);
+    const rawLines = readFileSync(resolved.path, "utf-8").split("\n");
+    const raw = rawLines[lineNo - 1];
+    if (!raw) return json({ error: "line not found" }, 404);
+    let parsed: unknown = null;
+    try { parsed = JSON.parse(raw); } catch {}
+    return json({ sessionId, source: resolved.source, line: lineNo, raw, parsed });
   }
 
   function handleDigest(url: URL): Response {
@@ -2240,6 +2273,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);
       if (transcriptMatch) return handleTranscript(transcriptMatch[1]);
+      const rawLogMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/raw-log$/);
+      if (rawLogMatch) return handleRawLog(rawLogMatch[1], url);
 
       // ── Steering verbs (POST) ───────────────────────────────────────
       if (req.method === "POST") {
