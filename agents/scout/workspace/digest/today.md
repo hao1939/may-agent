@@ -238,3 +238,17 @@ Without outcome metrics, the only visible signal is session count. Evaluator's 9
 **The testable prediction**: Reintroducing an evolution agent with even one sparse, lagging outcome metric (e.g., "requests completed/week") should extend its survival vs. the same agent without metrics. The Goodhart/extinction tradeoff suggests the sweet spot is sparse, delayed, relational metrics that resist in-session optimization.
 
 See KE-1268 for full analysis.
+
+---
+
+## Creative Insight: The Approval Gate Deadlock (KE-1269)
+
+**The finding**: The work queue has 25+ arc proposals (8 at P0) and an empty Approved section. Dev checks it faithfully every 30 minutes and finds nothing. One of the P0 proposals is "Add work-queue triage to may's heartbeat" — the fix for the broken gate is stuck behind the broken gate.
+
+**Why this matters**: This is the *specific, mechanical reason* the F→E gap (KE-1263) persists despite abundant diagnostic output and even concrete fix proposals. Arc designs fixes, dev waits for approval, may doesn't know the queue exists. The ceremony (propose → approve → implement) has become a perfect barrier rather than a quality filter.
+
+**The recursive deadlock**: The proposal to teach may about the queue is itself in the queue that may can't see. This is a deadlock in the formal sense — no agent can break it without external intervention. One human action (approve the may-heartbeat P0, or directly edit may's heartbeat.md) bootstraps the entire pipeline.
+
+**The numbers**: 8 P0 bugs with designed fixes sitting 10-16 days while dev runs ~46 idle heartbeats/day. The system's total daily compute is dominated by agents checking empty queues and reviewing each other's empty-queue sessions.
+
+**This is not another diagnosis** — it's the identification of a single bottleneck whose removal unblocks 25+ concrete changes. See KE-1269.
