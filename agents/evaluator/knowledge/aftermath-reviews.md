@@ -117,6 +117,10 @@
 - Symptom: a heartbeat/session-review route arrives as `success_candidate` because the prompt or pending-event context mentions an earlier commit, project artifact, or verification command, but the reviewed session itself only performs live checks and finishes `partial`/`done` with no new writes.
 - Fix: separate prior-session context from current-session contribution. For aftermath review, require current-session `write`/`edit`/commit evidence or a durable operational action in the reviewed session before calling it material output; otherwise grade it as lightweight maintenance/false-good routing.
 
+## Pattern: low-signal blocked heartbeats can still be acceptable without material output
+- Symptom: a dev/ops heartbeat finds an empty approved queue and healthy live metrics, then correctly ends `blocked` only because `git status` shows unrelated dirty paths that it should not stage or clean. Routing still labels it as a material-output success candidate because of ambient project-artifact/workflow signals.
+- Fix: judge the session on the real operational checks: approved queue disposition, live metric validation, project trigger checks, and explicit refusal to touch unrelated worktree dirt. Credit it as acceptable low-signal maintenance if those checks are evidence-backed, but do not treat the route's material-output hint as proof that a new artifact was delivered.
+
 ## Pattern: rolling digest sections can pre-exist the reviewed session and later acquire content
 - Symptom: a scout heartbeat reads `workspace/digest/today.md`, sees a heading for the nominal current creative session already present, then finishes without any write/edit calls. By review time the digest section has body text, making it look like the session produced a digest update even though later runs likely filled it in.
 - Fix: for rolling digest files, attribute output from session-local `write`/`edit`/commit evidence or explicit read-back captured after the write. Do not treat the current digest state alone as proof of the reviewed session's material output.
