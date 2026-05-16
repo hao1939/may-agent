@@ -70,8 +70,8 @@ export function validateProjectFormat(content: string, expectedId?: string): str
   if (expectedId && meta.id && meta.id !== expectedId) {
     errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
   }
-  if (meta.workflow?.startsWith("master-worker")) {
-    errors.push("projects should use workflow: project; master-worker is legacy/archived only");
+  if (meta.workflow === "master-worker" || meta.workflow === "master-worker-execute") {
+    errors.push("projects should not use legacy master-worker workflow; pick a per-project or shared workflow");
   }
   if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
     errors.push("metadata duplicated as bold body field");
