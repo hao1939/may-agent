@@ -166,7 +166,7 @@
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; }
-  .session-page-mode .chat-container { height: auto; min-height: 0; margin-top: 12px; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
+  .session-page-mode .chat-container { height: auto; min-height: 0; margin-top: 0; padding: 10px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; }
   .session-page-mode .chat-messages, .session-page-mode #session-picker, .session-page-mode #scroll-toggle, .session-page-mode #md-toggle { display: none; }
   .session-page-mode .chat-status { color: var(--fg2); font-size: 12px; }
   .chat-input-row { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); }
@@ -326,12 +326,8 @@
 .session-inspector .meta-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 13px; }
 .session-inspector .meta-grid dt { color: var(--fg2); }
 .session-inspector .meta-grid dd { margin: 0; }
-.session-inspector pre.task-block {
-  background: var(--bg2); padding: 12px; border-radius: 6px;
-  white-space: pre-wrap; word-break: break-word;
-  max-height: 300px; overflow-y: auto; font-size: 12px;
-  margin: 8px 0;
-}
+.session-followup-anchor { margin: 12px 0 16px; }
+.session-followup-anchor:empty { display: none; }
 .session-inspector .score-bar {
   height: 8px; border-radius: 4px; background: var(--bg2);
   position: relative; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle;
@@ -422,6 +418,7 @@
   </div>
   <div id="chat" class="hidden">
     <div id="session-detail-panel"></div>
+    <div id="chat-composer-host">
     <div class="chat-container">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="chat-status" id="chat-status">Disconnected</div>
@@ -439,6 +436,7 @@
         <input id="chat-input" type="text" placeholder="Type a message... (sends to selected session)" autocomplete="off">
         <button id="chat-send">Send</button>
       </div>
+    </div>
     </div>
   </div>
 
@@ -1432,18 +1430,20 @@ function sessionConversationStats(messages) {
   }, { responses: 0, tools: 0, errors: 0 });
 }
 
-function renderSessionDebugTabs(transData) {
+function renderSessionConversation(transData, opts = {}) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
   const stats = sessionConversationStats(messages);
-  return `<div class="section conversation-section">
-    <div class="conversation-title">
+  const sectionClass = opts.embedded ? 'conversation-section embedded-conversation' : 'section conversation-section';
+  const title = opts.showTitle === false ? '' : `<div class="conversation-title">
       <h4>Conversation</h4>
       ${flowChip(`${transData.messageCount || messages.length} messages`)}
       ${flowChip(`${stats.responses} responses`)}
       ${flowChip(`${stats.tools} tool calls`)}
       ${stats.errors ? flowChip(`${stats.errors} tool errors`, 'error') : ''}
-    </div>
+    </div>`;
+  return `<div class="${sectionClass}">
+    ${title}
     <div id="raw-log-viewer" class="raw-log-viewer"></div>
     ${renderEnrichedTranscript(messages, transData.sessionId)}
   </div>`;
@@ -1625,7 +1625,7 @@ function verdictColor(verdict) {
   return 'var(--fg2)';
 }
 
-async function loadSessionDetail(sessionId) {
+async function loadSessionDetail(sessionId, opts = {}) {
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
   panel.innerHTML = '<div class="panel">Loading...</div>';
@@ -1665,7 +1665,6 @@ async function loadSessionDetail(sessionId) {
         <span style="font-size:14px"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();loadAgentDeepDive('${esc(s.agent)}')">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
-        <button class="ask-btn" onclick="askAboutSession('${s.sessionId}', ${JSON.stringify(esc((s.task || '').slice(0,200))).replace(/'/g,'\\&#39;')})">💬 Ask about this</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -1674,16 +1673,7 @@ async function loadSessionDetail(sessionId) {
       </div>
     </div>`;
 
-    // B. Task comes before the conversation: it is the reason this session exists.
-    html += `<div class="section session-task-section">
-      <h4>Task</h4>
-      <pre class="task-block">${esc(s.task || '')}</pre>
-    </div>`;
-
-    // C. Conversation: enriched transcript with API/tool annotations.
-    html += renderSessionDebugTabs(transData);
-
-    // D. Metadata Section
+    // B. Metadata stays near the session identity; it frames the conversation below.
     html += `<div class="section">
       <h4>Metadata</h4>
       <dl class="meta-grid">`;
@@ -1695,7 +1685,12 @@ async function loadSessionDetail(sessionId) {
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 
-    // E. Outcome Section
+    html += `<div id="session-followup-anchor" class="session-followup-anchor"></div>`;
+
+    // C. Unified enriched session chat surface; audit/review and live mode reuse it.
+    html += renderSessionConversation(transData);
+
+    // D. Outcome Section
     if (s.outcome) {
       html += `<div class="section">
         <h4>Outcome</h4>`;
@@ -1764,6 +1759,7 @@ async function loadSessionDetail(sessionId) {
 
     html += '</div>';
     panel.innerHTML = html;
+    if (isSessionPageMode()) placeSessionComposer();
 
     // Store full outcome for expand/collapse
     if (s.outcome && s.outcome.length > 500) {
@@ -1771,7 +1767,7 @@ async function loadSessionDetail(sessionId) {
       panel._outcomeExpanded = false;
     }
 
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!opts.preserveScroll) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch(e) {
     panel.innerHTML = `<div class="panel">Error loading session: ${e.message}</div>`;
   }
@@ -1869,13 +1865,6 @@ function askAboutRequest(r) {
   switchToChat(msg);
 }
 
-function askAboutSession(sessionId, taskPreview) {
-  const msg = `Review session ${sessionId} and tell me what happened.\n` +
-    `Task: "${taskPreview}"\n\n` +
-    `Read the session transcript at .state/sessions/history/${sessionId}/session.jsonl and summarize: what did the agent do, was it done well, any issues?`;
-
-  switchToChat(msg);
-}
 
 // ── Chat ──────────────────────────────────────────────────────────────
 
@@ -1883,6 +1872,7 @@ let ws = null;
 let chatInitialized = false;
 let activeSessions = [];
 let currentSessionId = null;
+let sessionRefreshTimer = null;
 let renderMd = true; // markdown rendering on by default
 let feedPaused = false;
 let chatAutoScroll = true;
@@ -2004,6 +1994,28 @@ function setSessionPageMode(enabled) {
   const input = document.getElementById('chat-input');
   if (status && enabled) status.textContent = 'Follow up on this session';
   if (input && enabled) input.placeholder = 'Send follow-up to this session...';
+  if (!enabled) restoreChatComposer();
+}
+
+function restoreChatComposer() {
+  const host = document.getElementById('chat-composer-host');
+  const composer = document.querySelector('#chat .chat-container');
+  if (host && composer && composer.parentElement !== host) host.appendChild(composer);
+}
+
+function placeSessionComposer() {
+  const anchor = document.getElementById('session-followup-anchor');
+  const composer = document.querySelector('#chat .chat-container');
+  if (anchor && composer && composer.parentElement !== anchor) anchor.appendChild(composer);
+}
+
+function scheduleSessionConversationRefresh(delay = 600) {
+  if (!isSessionPageMode() || !currentInspectedSession) return;
+  clearTimeout(sessionRefreshTimer);
+  sessionRefreshTimer = setTimeout(() => {
+    const sessionId = currentInspectedSession;
+    loadSessionDetail(sessionId, { preserveScroll: true });
+  }, delay);
 }
 
 function initChat(deepLinkSessionId) {
@@ -2510,24 +2522,10 @@ async function switchSession(sessionId) {
       if (resp.ok) {
         const data = await resp.json();
         const transcript = data.messages || data;
-        for (const msg of transcript) {
-          if (msg.role === 'user' && msg.text) {
-            const div = document.createElement('div');
-            div.className = 'msg user';
-            div.textContent = msg.text;
-            messages.appendChild(div);
-          } else if (msg.role === 'assistant' && msg.text) {
-            const div = document.createElement('div');
-            div.className = 'msg assistant';
-            renderAssistantMsg(div, msg.text);
-            messages.appendChild(div);
-          } else if (msg.role === 'tool_result' && msg.isError) {
-            const div = document.createElement('div');
-            div.className = 'msg tool_result error';
-            div.textContent = (msg.content || '').slice(0, 200);
-            messages.appendChild(div);
-          }
-        }
+        const transData = Array.isArray(transcript)
+          ? { sessionId, messageCount: transcript.length, messages: transcript }
+          : data;
+        messages.innerHTML = renderSessionConversation(transData, { embedded: true, showTitle: false });
       }
     } catch {}
     chatScrollToBottom(messages);
@@ -2586,6 +2584,9 @@ function connectWs() {
 
       // The socket server filters events via subscribe — we receive only
       // events from our session tree + notifications. No client-side filtering needed.
+      if (isSessionPageMode() && ['text', 'tool_call', 'tool_result', 'turn_end', 'session_end'].includes(eventType)) {
+        scheduleSessionConversationRefresh(eventType === 'turn_end' || eventType === 'session_end' ? 200 : 600);
+      }
 
       switch (eventType) {
         case 'text':
