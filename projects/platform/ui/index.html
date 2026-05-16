@@ -105,39 +105,32 @@
   .tree-node .outcome-preview { color: var(--fg2); font-size: 12px; font-style: italic; }
 
   /* Transcript */
-  .transcript { max-height: 600px; overflow-y: auto; }
-  .msg { padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; font-size: 13px; }
-  .msg.user { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); }
-  .msg.assistant { background: var(--bg); }
+  .transcript { display: grid; gap: 10px; }
+  .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; overflow-wrap: anywhere; }
+  .msg.user { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); white-space: pre-wrap; }
+  .msg.assistant { background: var(--bg); border: 1px solid var(--border); }
   .msg.tool_call { background: rgba(210,153,34,0.06); font-family: var(--mono); font-size: 12px; }
-  .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+  .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
   .msg.tool_result.error { background: rgba(248,81,73,0.06); }
+  .msg-header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; color: var(--fg2); font-size: 12px; }
+  .msg-role { color: var(--fg); font-weight: 650; margin-right: auto; }
+  .assistant-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .assistant-text.empty { color: var(--fg2); font-style: italic; }
+  .tool-pairs { display: grid; gap: 8px; margin-top: 10px; }
+  .tool-pair { border: 1px solid rgba(210,153,34,.35); border-radius: 8px; overflow: hidden; background: rgba(210,153,34,.055); }
+  .tool-pair.error { border-color: rgba(248,81,73,.55); background: rgba(248,81,73,.055); }
+  .tool-pair-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .tool-pair-title { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
+  .tool-pair-summary { color: var(--fg2); flex: 1 1 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-pair-preview { padding: 9px 10px; background: rgba(63,185,80,.045); }
+  .tool-pair.error .tool-pair-preview { background: rgba(248,81,73,.06); }
+  .tool-pair details { border-top: 1px solid var(--border); background: var(--bg2); }
+  .tool-pair details summary { cursor: pointer; padding: 7px 10px; color: var(--fg2); font-size: 12px; }
 
-  /* Logs + API chat flow */
-  .session-tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
-  .session-tab-bar .stab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--fg2); padding: 8px 14px; cursor: pointer; font-size: 13px; }
-  .session-tab-bar .stab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .api-flow { display: grid; gap: 12px; }
-  .api-flow-summary { display: flex; gap: 8px; flex-wrap: wrap; color: var(--fg2); font-size: 12px; }
+  /* Transcript annotations */
   .flow-chip { display: inline-flex; align-items: center; max-width: 220px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; background: var(--bg2); color: var(--fg2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .flow-chip.good { color: var(--green); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
   .flow-chip.error { color: var(--red); border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.08); }
-  .flow-message { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; align-items: start; }
-  .flow-role { color: var(--fg2); font-size: 12px; line-height: 1.35; padding-top: 9px; text-align: right; }
-  .flow-role strong { display: block; color: var(--fg); font-size: 13px; font-weight: 650; }
-  .flow-index { display: block; font-family: var(--mono); font-size: 11px; }
-  .flow-bubble { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; min-width: 0; }
-  .flow-bubble-user { background: rgba(88,166,255,.07); border-color: rgba(88,166,255,.25); }
-  .flow-request summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 600; padding: 10px 12px; overflow-wrap: anywhere; }
-  .flow-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 9px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); }
-  .flow-text { padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
-  .flow-text.empty { color: var(--fg2); font-style: italic; }
-  .tool-stack { border-top: 1px solid var(--border); display: grid; gap: 0; }
-  .tool-detail { background: var(--bg2); border-bottom: 1px solid var(--border); }
-  .tool-detail:last-child { border-bottom: 0; }
-  .tool-detail summary { cursor: pointer; padding: 8px 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
-  .tool-name { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
-  .tool-summary { color: var(--fg2); min-width: 160px; flex: 1 1 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tool-result-preview { border-top: 1px solid var(--border); background: rgba(63,185,80,.045); padding: 9px 12px; }
   .tool-result-preview.error { background: rgba(248,81,73,.06); }
   .tool-result-title { color: var(--fg2); font-size: 11px; margin-bottom: 6px; }
@@ -147,9 +140,9 @@
   .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
   .tool-pane label { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 6px; }
   .tool-code { margin: 0; max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  .raw-details { margin: 0 12px 12px; }
+  .raw-details { margin: 10px 0 0; }
   .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; }
-  @media (max-width: 900px) { .flow-message { grid-template-columns: 1fr; gap: 4px; } .flow-role { text-align: left; padding-top: 0; } .flow-role strong, .flow-index { display: inline; margin-right: 6px; } .tool-grid { grid-template-columns: 1fr; } .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
+  @media (max-width: 900px) { .tool-grid { grid-template-columns: 1fr; } .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
 
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
@@ -1316,130 +1309,84 @@ function renderToolResultPreview(result) {
   </div>`;
 }
 
-function renderToolFlow(tc, result) {
+
+function renderToolPair(tc, result) {
   const hasError = !!result?.isError;
   const resultText = result ? String(result.content || '') : 'No matching tool_result found.';
   const headline = result ? toolResultHeadline(resultText) : 'No matching tool_result found.';
-  return `<details class="tool-detail" ${hasError ? 'open' : ''}>
-    <summary>
-      <span class="tool-name">${esc(tc.tool || result?.toolName || 'tool')}</span>
+  return `<div class="tool-pair ${hasError ? 'error' : ''}">
+    <div class="tool-pair-head">
+      ${flowChip('tool_call')}
+      <span class="tool-pair-title">${esc(tc.tool || result?.toolName || 'tool')}</span>
       ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
       ${tc.id || result?.toolCallId ? flowChip(tc.id || result.toolCallId) : ''}
-      <span class="tool-summary">${esc(headline)}</span>
-    </summary>
-    ${renderToolResultPreview(result)}
-    <div class="tool-grid">
-      <div class="tool-pane"><label>Tool call</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
-      <div class="tool-pane"><label>Full tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
+      <span class="tool-pair-summary">${esc(headline)}</span>
     </div>
-  </details>`;
-}
-
-function renderRequestFlow(item, index) {
-  const label = index === 0 ? 'Initial request / context' : 'User request';
-  const preview = compactText(item.text || '', 120) || 'No request text recorded.';
-  return `<div class="flow-message">
-    <div class="flow-role"><strong>User</strong><span class="flow-index">${esc(label)}</span></div>
-    <details class="flow-bubble flow-bubble-user flow-request" open>
-      <summary>${esc(preview)}</summary>
-      <div class="flow-text">${esc(item.text || '')}</div>
+    ${renderToolResultPreview(result)}
+    <details>
+      <summary>Full call and result</summary>
+      <div class="tool-grid">
+        <div class="tool-pane"><label>Tool call args</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
+        <div class="tool-pane"><label>Tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
+      </div>
     </details>
   </div>`;
 }
 
-function renderResponseFlow(item) {
-  const a = item.assistant || {};
-  const toolCalls = a.toolCalls || [];
-  const results = item.toolResults || [];
-  const resultById = new Map(results.map(r => [r.toolCallId, r]));
-  const unmatched = results.filter(r => !toolCalls.some(tc => tc.id === r.toolCallId));
-  const errors = results.filter(r => r.isError).length;
-  const usage = usageLabel(a.usage);
-  const cost = costLabel(a.usage);
-  let tools = '';
-  for (const tc of toolCalls) tools += renderToolFlow(tc, resultById.get(tc.id));
-  for (const r of unmatched) tools += renderToolFlow({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r);
-  return `<div class="flow-message">
-    <div class="flow-role"><strong>Assistant</strong><span class="flow-index">Response #${item.index}</span></div>
-    <article class="flow-bubble">
-      <div class="flow-meta">
+function renderEnrichedTranscript(messages) {
+  const flow = buildSessionFlow(messages);
+  let html = '<div class="transcript enriched-transcript">';
+  for (const item of flow) {
+    if (item.type === 'request') {
+      html += `<div class="msg user"><div class="msg-header"><span class="msg-role">User</span>${flowChip('request')}</div>${esc(item.text || '')}</div>`;
+      continue;
+    }
+    const a = item.assistant || {};
+    const toolCalls = a.toolCalls || [];
+    const results = item.toolResults || [];
+    const resultById = new Map(results.map(r => [r.toolCallId, r]));
+    const unmatched = results.filter(r => !toolCalls.some(tc => tc.id === r.toolCallId));
+    const errors = results.filter(r => r.isError).length;
+    const usage = usageLabel(a.usage);
+    const cost = costLabel(a.usage);
+    let pairs = '';
+    for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id));
+    for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r);
+    html += `<div class="msg assistant">
+      <div class="msg-header">
+        <span class="msg-role">Assistant</span>
+        ${flowChip('api')}
+        ${flowChip(`response #${item.index}`)}
         ${flowChip(a.model || a.api?.model || 'model unavailable')}
         ${flowChip(a.provider || a.api?.provider || '')}
         ${flowChip(usage)}
         ${flowChip(cost)}
         ${flowChip(a.stopReason ? `stop: ${a.stopReason}` : '')}
-        ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : 'no tools')}
+        ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : '')}
         ${errors ? flowChip(`${errors} errors`, 'error') : ''}
       </div>
-      <div class="flow-text ${a.text ? '' : 'empty'}">${esc(a.text || 'No assistant text. This response only produced tool calls.')}</div>
-      ${tools ? `<div class="tool-stack">${tools}</div>` : ''}
+      <div class="assistant-text ${a.text ? '' : 'empty'}">${esc(a.text || (toolCalls.length ? 'No assistant text. Tool calls are attached below.' : 'No assistant text recorded.'))}</div>
+      ${pairs ? `<div class="tool-pairs">${pairs}</div>` : ''}
       ${renderRawBlock('Raw API response', a)}
-    </article>
-  </div>`;
-}
-
-function renderLogsApiView(messages) {
-  const flow = buildSessionFlow(messages);
-  const responses = flow.filter(x => x.type === 'response');
-  const totals = responses.reduce((acc, item) => {
-    const a = item.assistant || {};
-    const u = normalizeUsage(a.usage);
-    acc.tools += (a.toolCalls || []).length;
-    acc.errors += (item.toolResults || []).filter(r => r.isError).length;
-    acc.tokens += Number(u.total || 0);
-    acc.cost += Number(u.cost || 0);
-    return acc;
-  }, { tools: 0, errors: 0, tokens: 0, cost: 0 });
-  let html = `<div class="api-flow">
-    <div class="api-flow-summary">
-      ${flowChip(`${responses.length} responses`)}
-      ${flowChip(`${totals.tools} tool calls`)}
-      ${flowChip(`${totals.errors} tool errors`, totals.errors ? 'error' : 'good')}
-      ${flowChip(totals.tokens ? `${totals.tokens.toLocaleString()} tokens` : 'tokens unavailable')}
-      ${flowChip(totals.cost ? `$${totals.cost.toFixed(4)}` : '')}
     </div>`;
-  flow.forEach((item, index) => {
-    html += item.type === 'request' ? renderRequestFlow(item, index) : renderResponseFlow(item);
-  });
+  }
   html += '</div>';
   return html;
 }
 
 function renderSessionTranscript(messages) {
-  let html = '<div class="transcript">';
-  for (const m of messages || []) {
-    if (m.role === 'user') html += `<div class="msg user">${esc(m.text)}</div>`;
-    else if (m.role === 'assistant') {
-      if (m.text) html += `<div class="msg assistant">${esc(m.text)}</div>`;
-      if (m.toolCalls) for (const tc of m.toolCalls) html += `<div class="msg tool_call">${esc(tc.tool)}(${esc(JSON.stringify(tc.args)).slice(0,200)})</div>`;
-    } else if (m.role === 'tool_result') html += `<div class="msg tool_result ${m.isError?'error':''}">${esc(String(m.content || '').slice(0,500))}</div>`;
-  }
-  html += '</div>';
-  return html;
+  return renderEnrichedTranscript(messages);
 }
 
 function renderSessionDebugTabs(transData) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
   return `<div class="section">
-    <div class="session-tab-bar">
-      <button class="stab active" onclick="switchSessionTab(this,'stab-logs-api')">Logs + API</button>
-      <button class="stab" onclick="switchSessionTab(this,'stab-transcript')">Transcript (${transData.messageCount || messages.length})</button>
-    </div>
-    <div id="stab-logs-api" class="session-tab-content">${renderLogsApiView(messages)}</div>
-    <div id="stab-transcript" class="session-tab-content" style="display:none">${renderSessionTranscript(messages)}</div>
+    <h4>Transcript (${transData.messageCount || messages.length} messages)</h4>
+    ${renderEnrichedTranscript(messages)}
   </div>`;
 }
 
-function switchSessionTab(btn, tabId) {
-  const bar = btn.parentElement;
-  bar.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const parent = bar.parentElement;
-  parent.querySelectorAll('.session-tab-content').forEach(c => c.style.display = 'none');
-  const target = document.getElementById(tabId);
-  if (target) target.style.display = '';
-}
 // ── Activity Timeline ─────────────────────────────────────────────────
 
 let timelineTooltip = null;
