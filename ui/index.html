@@ -109,6 +109,9 @@
   .msg { padding: 10px 12px; border-radius: 8px; font-size: 13px; overflow-wrap: anywhere; }
   .msg.user { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); white-space: pre-wrap; }
   .msg.assistant { background: var(--bg); border: 1px solid var(--border); }
+  .msg.assistant.turn { padding: 0; border-left: 3px solid rgba(88,166,255,.5); }
+  .turn-body { padding: 10px 12px; }
+  .turn-body .raw-details { margin-left: 0; }
   .msg.tool_call { background: rgba(210,153,34,0.06); font-family: var(--mono); font-size: 12px; }
   .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
   .msg.tool_result.error { background: rgba(248,81,73,0.06); }
@@ -122,9 +125,13 @@
   .tool-pair.error { border-color: rgba(248,81,73,.55); background: rgba(248,81,73,.055); }
   .tool-pair-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--border); }
   .tool-pair-title { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
-  .tool-pair-summary { color: var(--fg2); flex: 1 1 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tool-pair-preview { padding: 9px 10px; background: rgba(63,185,80,.045); }
-  .tool-pair.error .tool-pair-preview { background: rgba(248,81,73,.06); }
+  .tool-pair-spacer { flex: 1 1 auto; }
+  .tool-preview-grid { display: grid; grid-template-columns: minmax(220px, .85fr) minmax(260px, 1.15fr); }
+  .tool-preview-pane { padding: 9px 10px; min-width: 0; }
+  .tool-preview-pane + .tool-preview-pane { border-left: 1px solid var(--border); }
+  .tool-preview-pane.result { background: rgba(63,185,80,.045); }
+  .tool-pair.error .tool-preview-pane.result { background: rgba(248,81,73,.06); }
+  .tool-preview-label { color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 5px; }
   .tool-pair details { border-top: 1px solid var(--border); background: var(--bg2); }
   .tool-pair details summary { cursor: pointer; padding: 5px 10px; color: var(--fg2); font-size: 12px; list-style: none; }
   .tool-pair details summary::-webkit-details-marker { display: none; }
@@ -134,9 +141,7 @@
   .flow-chip { display: inline-flex; align-items: center; max-width: 220px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; background: var(--bg2); color: var(--fg2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .flow-chip.good { color: var(--green); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
   .flow-chip.error { color: var(--red); border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.08); }
-  .tool-result-preview { border-top: 1px solid var(--border); background: rgba(63,185,80,.045); padding: 9px 12px; }
-  .tool-result-preview.error { background: rgba(248,81,73,.06); }
-  .tool-result-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
+  .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   .tool-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
   .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
@@ -145,7 +150,7 @@
   .raw-details { margin: 8px 0 0; }
   .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; list-style: none; }
   .raw-details summary::-webkit-details-marker { display: none; }
-  @media (max-width: 900px) { .tool-grid { grid-template-columns: 1fr; } .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
+  @media (max-width: 900px) { .tool-preview-grid, .tool-grid { grid-template-columns: 1fr; } .tool-preview-pane + .tool-preview-pane, .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
 
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
@@ -1285,9 +1290,23 @@ function renderRawBlock(label, value) {
   return `<details class="raw-details"><summary title="${esc(label)}"><span class="tool-more">...</span></summary><pre class="tool-code">${esc(text)}</pre></details>`;
 }
 
-function toolResultHeadline(text) {
-  const line = String(text || '').split('\n').map(x => x.trim()).find(Boolean) || '';
-  return compactText(line.replace(/^\s*[-*]\s+/, ''), 150);
+function toolRequestExcerpt(tc) {
+  const args = tc?.args ?? {};
+  if (args && typeof args === 'object') {
+    if (typeof args.command === 'string') return args.command.trim();
+    if (typeof args.cmd === 'string') return args.cmd.trim();
+    if (typeof args.path === 'string') {
+      const parts = [args.path];
+      if (typeof args.offset === 'number') parts.push('offset ' + args.offset);
+      if (typeof args.limit === 'number') parts.push('limit ' + args.limit);
+      const rest = { ...args };
+      delete rest.path;
+      delete rest.offset;
+      delete rest.limit;
+      return parts.join(' | ') + (Object.keys(rest).length ? '\n' + formatJson(rest) : '');
+    }
+  }
+  return formatJson(args);
 }
 
 function toolResultExcerpt(text) {
@@ -1305,27 +1324,23 @@ function toolResultExcerpt(text) {
   return value.length > excerpt.length || lines.length > 28 ? excerpt.slice(0, 3000) + '\n...' : excerpt;
 }
 
-function renderToolResultPreview(result) {
-  if (!result) return '<div class="tool-result-preview error"><pre class="tool-result-snippet">No matching tool_result found.</pre></div>';
-  const text = String(result.content || '').trim();
-  if (!text) return '';
-  return `<div class="tool-result-preview ${result.isError ? 'error' : ''}"><pre class="tool-result-snippet">${esc(toolResultExcerpt(text))}</pre></div>`;
-}
-
-
 function renderToolPair(tc, result) {
   const hasError = !!result?.isError;
   const resultText = result ? String(result.content || '') : 'No matching tool_result found.';
-  const headline = result ? toolResultHeadline(resultText) : 'No matching tool_result found.';
+  const requestText = toolRequestExcerpt(tc);
+  const resultPreview = result ? toolResultExcerpt(resultText) : 'No matching tool_result found.';
   return `<div class="tool-pair ${hasError ? 'error' : ''}">
     <div class="tool-pair-head">
       ${flowChip('tool')}
       <span class="tool-pair-title">${esc(tc.tool || result?.toolName || 'tool')}</span>
       ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
       ${tc.id || result?.toolCallId ? flowChip(tc.id || result.toolCallId) : ''}
-      <span class="tool-pair-summary">${esc(headline)}</span>
+      <span class="tool-pair-spacer"></span>
     </div>
-    ${renderToolResultPreview(result)}
+    <div class="tool-preview-grid">
+      <div class="tool-preview-pane request"><div class="tool-preview-label">request</div><pre class="tool-preview-snippet">${esc(requestText)}</pre></div>
+      <div class="tool-preview-pane result"><div class="tool-preview-label">result</div><pre class="tool-preview-snippet">${esc(resultPreview)}</pre></div>
+    </div>
     <details>
       <summary title="Full call and result"><span class="tool-more">...</span></summary>
       <div class="tool-grid">
@@ -1356,11 +1371,11 @@ function renderEnrichedTranscript(messages) {
     for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id));
     for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r);
     if (!a.text && !pairs) continue;
-    html += `<div class="msg assistant">
-      <div class="msg-header">
+    html += `<div class="msg assistant turn">
+      <div class="msg-header turn-header">
         <span class="msg-role">Assistant</span>
-        ${flowChip('api')}
-        ${flowChip(`response #${item.index}`)}
+        ${flowChip('turn ' + item.index)}
+        ${flowChip('api response')}
         ${flowChip(a.model || a.api?.model || '')}
         ${flowChip(a.provider || a.api?.provider || '')}
         ${flowChip(usage)}
@@ -1369,9 +1384,11 @@ function renderEnrichedTranscript(messages) {
         ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : '')}
         ${errors ? flowChip(`${errors} errors`, 'error') : ''}
       </div>
-      ${a.text ? `<div class="assistant-text">${esc(a.text)}</div>` : ''}
-      ${pairs ? `<div class="tool-pairs">${pairs}</div>` : ''}
-      ${renderRawBlock('Raw API response', a)}
+      <div class="turn-body">
+        ${a.text ? `<div class="assistant-text">${esc(a.text)}</div>` : ''}
+        ${pairs ? `<div class="tool-pairs">${pairs}</div>` : ''}
+        ${renderRawBlock('Raw API response', a)}
+      </div>
     </div>`;
   }
   html += '</div>';
