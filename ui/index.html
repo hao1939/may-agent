@@ -128,9 +128,9 @@
   .tool-pair-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px 10px; border-bottom: 1px solid var(--border); }
   .tool-pair-title { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
   .tool-pair-spacer { flex: 1 1 auto; }
-  .tool-preview-grid { display: grid; grid-template-columns: minmax(220px, .85fr) minmax(260px, 1.15fr); }
+  .tool-preview-grid { display: grid; grid-template-columns: 1fr; }
   .tool-preview-pane { padding: 9px 10px; min-width: 0; }
-  .tool-preview-pane + .tool-preview-pane { border-left: 1px solid var(--border); }
+  .tool-preview-pane + .tool-preview-pane { border-left: 0; border-top: 1px solid var(--border); }
   .tool-preview-pane.result { background: rgba(63,185,80,.045); }
   .tool-pair.error .tool-preview-pane.result { background: rgba(248,81,73,.06); }
   .tool-preview-label { color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 5px; }
@@ -153,15 +153,14 @@
   .raw-log-head button { margin-left: auto; background: none; border: 0; color: var(--fg2); cursor: pointer; font-size: 14px; }
   .raw-log-body { margin: 0; padding: 10px; max-height: 360px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   .tool-preview-snippet { margin: 0; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
-  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+  .tool-grid { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--border); }
   .tool-pane { padding: 10px 12px; min-width: 0; }
-  .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
+  .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); }
   .tool-pane label { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 6px; }
   .tool-code { margin: 0; max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
   .raw-details { margin: 8px 0 0; }
   .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; list-style: none; }
   .raw-details summary::-webkit-details-marker { display: none; }
-  @media (max-width: 900px) { .tool-preview-grid, .tool-grid { grid-template-columns: 1fr; } .tool-preview-pane + .tool-preview-pane, .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
 
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
