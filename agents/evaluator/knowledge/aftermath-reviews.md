@@ -193,6 +193,10 @@
 - Symptom: a triage session first tries to mutate runtime state with the wrong mechanism (for example `query_db` UPDATE or `sqlite3` from bash), then pivots to the documented `bun:sqlite` update and lands the calibration safely.
 - Fix: judge the session from the recovered end state, not only the false starts. Keep an efficiency penalty for the avoidable wrong-tool calls, but if live DB reads show the metric definition changed as intended and the alert row was resolved with corroborating evidence, credit the session as real value rather than marking it as a failure.
 
+## Pattern: runtime-state heartbeat unblocks can be valid fix_root_cause outcomes
+- Symptom: a metric-alert triage session makes no repo edits, but it proves heartbeat `workflow_runs` are firing while the corresponding agent sessions are absent because a runtime dispatch-dedup or breaker state blocked dispatch before session creation.
+- Fix: do not downgrade the session just because the repair lives in `.state/` and leaves no source diff. Verify the transcript shows the blocked runtime state before the fix, the unblock/reset action, and—most importantly—a post-fix live metric recovery or fresh snapshot/workflow evidence confirming the alert actually cleared.
+
 ## Pattern: empty-signal heartbeats can be real work even with no file output
 - Symptom: a heartbeat session ships no file diff, commit, or message, but it explicitly verifies empty inbox/owned-signal state, checks recent session context, and consciously avoids producing filler artifacts that a guard would otherwise incentivize.
 - Fix: do not force-fit these into `knowledge update` or `ghost deliverable` narratives. Judge them as lightweight operational maintenance: credit the no-op decision when transcript evidence shows the agent checked the relevant signals and avoided log-padding, while still penalizing any guard-churn retries as efficiency loss.
