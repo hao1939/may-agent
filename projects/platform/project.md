@@ -1,13 +1,11 @@
 ---
 id: platform
 owner: tech-lead
-status: waiting
+status: paused
 type: milestone
 priority: P0
 workflow: platform-iteration
 iteration: 37
-stop_reason: — No active work signals. All plan items complete, no new comments or failures. Resume when: a non-automated comment appears in discussion.md, a platform test fails, or a human/May directive arrives.
-resume_condition: a non-automated comment appears in discussion.md, a platform test fails, or a human/May directive arrives.
 ---
 
 # Project: platform

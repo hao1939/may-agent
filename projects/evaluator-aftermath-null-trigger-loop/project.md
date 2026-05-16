@@ -1,10 +1,10 @@
 ---
 id: evaluator-aftermath-null-trigger-loop
 owner: evaluator
-status: active
+status: paused
 type: milestone
 priority: P1
-workflow: evaluator-aftermath-null-trigger-loop-iteration
+workflow: project
 iteration: 0
 ---
 
