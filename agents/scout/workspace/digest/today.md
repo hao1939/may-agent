@@ -111,6 +111,20 @@ The research shows CoT amplifies this effect. Our creative sessions are explicit
 
 ---
 
+## The Empty Requests Table: Hard Data on the F→E Gap (KE-1263)
+
+**Finding**: `SELECT count(*) FROM requests` returns **0**. The requests table — the system's built-in mechanism for tracked implementation work — has never been populated. Not once, across 20,000+ sessions.
+
+**Why this is different from prior analysis**: KE-1255, 1259, 1260, 1262 all analyzed *why* the system overproduces diagnosis. This is the measurement. The pipe between "KE says do X" and "agent is assigned to do X" is a real table with a real schema and zero rows. The infrastructure was built. Nobody uses it.
+
+**Session ratio today**: Oversight (evaluator) = 184 sessions (44%), productive (dev+arc) = 72 sessions (17%), coordination = 113 sessions (27%), discovery (scout) = 53 sessions (12%). The system spends 2.6x more on watching than doing.
+
+**The minimal bridge**: Add to arc or tech-lead's heartbeat: "Review recent KEs with actionable recommendations. For each, create a request in the requests table assigned to the appropriate agent." No new code. No new infrastructure. Just populate the table that already exists.
+
+**See**: KE-1263 for full write-up with data.
+
+---
+
 ## Why the F→E Transition Fails: Model Homogeneity as Hidden Cause
 
 **Sources cross-referenced**:
