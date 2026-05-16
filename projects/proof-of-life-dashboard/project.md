@@ -4,7 +4,7 @@ owner: tech-lead
 status: waiting
 type: milestone
 priority: P1
-workflow: project
+workflow: proof-of-life-dashboard-iteration
 iteration: 4
 stop_reason: WAITING_ON_HUMAN
 resume_condition: Hao confirms the top-five metric selection or requests a specific dashboard/digest change.

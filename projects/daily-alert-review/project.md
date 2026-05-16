@@ -4,7 +4,7 @@ owner: may
 status: waiting
 type: recurring
 priority: P1
-workflow: project
+workflow: daily-alert-review-iteration
 iteration: 3
 stop_reason: Daily alert reviews are being produced successfully and sent via Telegram. The worker completed reviews for 2026-05-09 (56 alerts) and 2026-05-10 (39 alerts, ↓30%). The project goal is truncated but t
 resume_condition: next daily review cycle or human provides the full project goal/additional requirements.

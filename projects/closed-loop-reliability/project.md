@@ -4,7 +4,7 @@ owner: may
 status: waiting
 type: continuous
 priority: P1
-workflow: project
+workflow: closed-loop-reliability-iteration
 iteration: 3
 stop_reason: Current P0/P1 runtime reliability vitals are green and remaining alerts have owners or human-governance dependencies. No concrete autonomous push remains right now.
 resume_condition: Reactivate when a P0/P1 runtime reliability vital breaches, a closed-loop alert lacks owner/judgment/action/validation, or an owning dependency such as evaluator-low-quality-rate-calibration leaves waiting/blocked and needs verification.

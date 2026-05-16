@@ -4,7 +4,7 @@ owner: may
 status: blocked
 type: milestone
 priority: P1
-workflow: project
+workflow: aks-rp-e2e-iteration
 iteration: 33
 stop_reason: The standalone RP environment on devbox has been recycled — both builds are dead (DNS gone, blob containers deleted, no RP pods running). No e2e tests can execute until a new standalone environment is
 resume_condition: A new standalone RP build is deployed on devbox and confirmed healthy (curl to localhost:8443 returns a response).

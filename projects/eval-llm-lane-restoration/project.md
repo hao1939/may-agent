@@ -4,7 +4,7 @@ owner: dev
 status: waiting
 type: milestone
 priority: P0
-workflow: project
+workflow: eval-llm-lane-restoration-iteration
 iteration: 3
 stop_reason: all planned restoration/hardening milestones are complete and the project is awaiting May/human review. Resume when: `eval.llm-coverage-lag-h` breaches 4h again, `evaluation.deep_dispatched` repeats w
 resume_condition: `eval.llm-coverage-lag-h` breaches 4h again, `evaluation.deep_dispatched` repeats without a later `evaluation.deep_recorded`/`evaluation.deep_failed`, or the reviewer requests a specific follow-up.

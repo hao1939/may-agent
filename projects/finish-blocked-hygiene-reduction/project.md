@@ -4,7 +4,7 @@ owner: dev
 status: paused
 type: milestone
 priority: P1
-workflow: project
+workflow: finish-blocked-hygiene-reduction-iteration
 iteration: 6
 stop_reason: Split metrics are registered and calibrated; the strict unresolved metric is healthy and the prior P1 alert recovered.
 resume_condition: Resume if `session.finish-blocked-unresolved-count-24h` breaches again, or if raw finish-block friction rises with a new unresolved source pattern.

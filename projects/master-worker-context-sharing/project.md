@@ -4,7 +4,7 @@ owner: master
 status: waiting
 type: continuous
 priority: P1
-workflow: project
+workflow: master-worker-context-sharing-iteration
 iteration: 1
 stop_reason: The core delegation wiring is complete. Master (an LLM agent) calls cc_worker/codex_worker tools, which now spawn CLI subagents and return structured envelopes with status, tool outputs, files touched
 resume_condition: Human/May reviews the commit and confirms the delegation behavior meets expectations, or identifies gaps.

@@ -4,7 +4,7 @@ owner: evaluator
 status: waiting
 type: milestone
 priority: P2
-workflow: project
+workflow: evaluator-strategy-extractor-calibration-iteration
 iteration: 2
 stop_reason: Iteration-2 close-the-loop work is complete and ready for human/May review. Resume when: review requests a follow-up on the remaining compact-scout gap, optimization-lesson ranking/noise, or criteria/
 resume_condition: review requests a follow-up on the remaining compact-scout gap, optimization-lesson ranking/noise, or criteria/doc interpretation changes.

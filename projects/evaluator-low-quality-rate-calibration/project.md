@@ -4,7 +4,7 @@ owner: evaluator
 status: waiting
 type: milestone
 priority: P1
-workflow: project
+workflow: evaluator-low-quality-rate-calibration-iteration
 iteration: 6
 stop_reason: Governance decision required. Further worker iterations are producing artifacts instead of changing runtime behavior.
 resume_condition: May or the metric owner chooses one path: make evaluator.substantive-low-quality-rate-24h the alert-driving metric, or keep broad low-quality-rate alerting and tune the heuristic.

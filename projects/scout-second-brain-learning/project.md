@@ -4,7 +4,7 @@ owner: scout
 status: waiting
 type: milestone
 priority: P2
-workflow: project
+workflow: scout-second-brain-learning-iteration
 iteration: 8
 stop_reason: "Behavior installed and validated in a real Scout heartbeat; remaining work is gradual adoption, not an active push."
 resume_condition: "Resume if Scout creates ceremonial metric-dismissal work again, knowledge-practice-loaded drops below 1, or knowledge-preamble-coverage stops improving after real Scout knowledge sessions."
