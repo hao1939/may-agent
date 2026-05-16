@@ -133,6 +133,10 @@
 - Symptom: a reviewed session spends much of its effort proving that a router/guard/classifier made the wrong call, so the work can look meta or circular if the reviewer checks only whether the original route was false.
 - Fix: inspect whether the session verified the real classifier source, connected the incident to prior evidence, and converted the diagnosis into durable follow-up artifacts such as a KE, proposal, queue entry, or implementation request. If those artifacts land and are actionable, credit the session as real system improvement even when part of the transcript is spent on guard/finish recovery.
 
+## Pattern: low-signal heartbeats can still create real value by converting closeout friction into a durable follow-up artifact
+- Symptom: a heartbeat correctly finds no approved work and healthy metrics, then hits a finish/guard conflict that would otherwise look like mere hygiene churn.
+- Fix: if the session turns that friction into a committed, read-backed artifact that states the falsifiable instruction/guard mismatch and a concrete follow-up path, credit the session for system-improvement value while noting the modest efficiency cost of the failed closeout attempt.
+
 ## Pattern: apparent knowledge updates can be net-destructive if they overwrite existing KEs
 - Symptom: a research session lands a real commit and read-back evidence for new `KE-xxx.md` files, but the committed diff shows those paths already existed and the session replaced canonical knowledge entries with unrelated content.
 - Fix: for claimed knowledge updates, inspect the parent-vs-commit diff (or prior blob) for each KE path, not just the final file contents. If the path pre-existed, verify the change is an intentional revision rather than an ID collision/overwrite. Credit any safe side artifact like a digest append separately, but downgrade the session overall and escalate restoration to the owner.
