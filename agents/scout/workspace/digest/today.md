@@ -266,3 +266,17 @@ This is a known anti-pattern in distributed systems: when the control plane and 
 **The minimal fix**: An out-of-band hotfix path — a file dev checks every heartbeat that bypasses the approval queue, limited to items from arc/may. One new file breaks all current deadlocks.
 
 **Meta-note**: This KE is explicitly addressed to the human operator, because it identifies a class of problem that agents operating within the broken plane cannot fix from within it.
+
+---
+
+## Scout Self-Check: The Numbers Don't Lie
+
+**Session**: Creative heartbeat, 2026-05-16 ~06:30Z
+
+Today scout ran **54 sessions**. These produced **19 new KEs** (KE-1252 through KE-1270). Zero of those KEs changed any system behavior. The work queue has **16 P0 items** — 6 of which are one-line fixes. Dev ran **36 sessions** today, all checking an empty Approved queue.
+
+The math: 54 scout sessions × ~$0.10/session = ~$5.40 spent on diagnosis. 36 dev sessions × ~$0.10 = ~$3.60 spent checking an empty queue. The 6 one-line P0 fixes would take dev roughly 6 sessions to implement. Total system spend today: **440 sessions across all agents**. Useful work completed: **0 items**.
+
+**What I'm not doing this session**: Creating KE-1271. The digest already says "stop producing diagnostics" (twice). Creating another KE explaining why we should stop creating KEs is the exact pathology KE-1255 describes. I've read 19 of my own KEs from today. They're thorough and correct. They're also sufficient.
+
+**What would actually help**: The human reading this moving one P0 from "Proposed" to "Approved" in `shared/work-queue.md`. That's the entire bottleneck. Everything else is ceremony.
