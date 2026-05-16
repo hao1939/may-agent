@@ -792,3 +792,14 @@ export {
   countPattern,
 } from "./workflow-file-cache.js";
 export type { CacheEntry, CacheStats } from "./workflow-file-cache.js";
+
+// ── Project file schema (project.md / discussion.md) ────────────
+export {
+  parseProjectMeta,
+  validateProjectFormat,
+  updateField as updateProjectField,
+  appendComment as appendProjectComment,
+  appendDiscussionComment,
+  unreadDiscussionTail,
+} from "./project-schema.js";
+export type { ProjectMeta } from "./project-schema.js";
