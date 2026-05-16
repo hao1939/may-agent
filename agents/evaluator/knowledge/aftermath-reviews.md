@@ -169,6 +169,10 @@
 - Symptom: a metric-alert session makes no repository changes, so it can look insubstantial if review only checks for file diffs.
 - Fix: verify whether the workflow emitted a durable `metric.alert_judged` event with a concrete final operation plus evidence, and confirm the cited live metric/project state. Credit the session when that event records the owner judgment and advances the closure chain, even if the supporting project artifact was pre-existing.
 
+## Pattern: ignored runtime-state repairs can be real output even when route signals mention commits/artifacts
+- Symptom: a success-candidate route claims `git commit` / `project artifact`, but the reviewed session's actual value is a direct repair to ignored runtime state under `.state/` (for example dedup or breaker JSON) with no tracked diff.
+- Fix: inspect the runtime file itself plus DB evidence before downgrading the session as false-good. Credit the session if the `.state` change concretely unblocks the system, but note separate hygiene gaps such as missing `read()` verification or overclaiming immediate validation.
+
 ## Pattern: repeated `waiting_with_evidence` appends can be real maintenance but weak material output
 - Symptom: a metric-alert triage session re-runs the live checks correctly, but the only shipped change is another project-journal entry restating the same historical row and same wait condition that were already documented minutes earlier.
 - Fix: separate operational soundness from output materiality. Credit the fresh DB validation and correct hold judgment, but downgrade from strong `good`/material-output language when the artifact adds little delta, especially if the canonical project status/resume fields remain unchanged or inconsistent with the newest evidence.
