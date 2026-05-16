@@ -111,7 +111,8 @@
   .msg.assistant { background: var(--bg); border: 1px solid var(--border); }
   .msg.session-message { padding: 0; }
   .msg.assistant.session-message { border-left: 3px solid rgba(88,166,255,.5); }
-  .message-body { padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .message-body { padding: 10px 12px; overflow-wrap: anywhere; }
+  .message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
   .message-body .raw-details { margin-left: 0; }
   .msg.tool_call { background: rgba(210,153,34,0.06); font-family: var(--mono); font-size: 12px; }
   .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-word; }
@@ -1389,7 +1390,7 @@ function renderEnrichedTranscript(messages, sessionId) {
   let html = '<div class="transcript enriched-transcript">';
   for (const item of flow) {
     if (item.role === 'user') {
-      html += `<div class="msg user session-message"><div class="msg-header turn-header">${sourceChip('message ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body">${esc(item.text || '')}</div></div>`;
+      html += `<div class="msg user session-message"><div class="msg-header turn-header">${sourceChip('turn ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body"><div class="message-text">${esc(item.text || '')}</div></div></div>`;
       continue;
     }
     const a = item.assistant || {};
@@ -1406,7 +1407,7 @@ function renderEnrichedTranscript(messages, sessionId) {
     if (!a.text && !pairs) continue;
     html += `<div class="msg assistant session-message">
       <div class="msg-header turn-header">
-        ${sourceChip('message ' + item.index, sessionId, a.rawLine, a.rawSource)}
+        ${sourceChip('turn ' + item.index, sessionId, a.rawLine, a.rawSource)}
         ${flowChip('assistant')}
         ${flowChip(a.model || a.api?.model || '')}
         ${flowChip(a.provider || a.api?.provider || '')}
