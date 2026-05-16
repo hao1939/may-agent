@@ -113,6 +113,39 @@
   .msg.tool_result { background: rgba(63,185,80,0.06); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
   .msg.tool_result.error { background: rgba(248,81,73,0.06); }
 
+  /* Logs + API chat flow */
+  .session-tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .session-tab-bar .stab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--fg2); padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  .session-tab-bar .stab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .api-flow { display: grid; gap: 12px; }
+  .api-flow-summary { display: flex; gap: 8px; flex-wrap: wrap; color: var(--fg2); font-size: 12px; }
+  .flow-chip { display: inline-flex; align-items: center; max-width: 220px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; background: var(--bg2); color: var(--fg2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flow-chip.good { color: var(--green); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
+  .flow-chip.error { color: var(--red); border-color: rgba(248,81,73,.5); background: rgba(248,81,73,.08); }
+  .flow-message { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; align-items: start; }
+  .flow-role { color: var(--fg2); font-size: 12px; line-height: 1.35; padding-top: 9px; text-align: right; }
+  .flow-role strong { display: block; color: var(--fg); font-size: 13px; font-weight: 650; }
+  .flow-index { display: block; font-family: var(--mono); font-size: 11px; }
+  .flow-bubble { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; min-width: 0; }
+  .flow-bubble-user { background: rgba(88,166,255,.07); border-color: rgba(88,166,255,.25); }
+  .flow-request summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 600; padding: 10px 12px; overflow-wrap: anywhere; }
+  .flow-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 9px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+  .flow-text { padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+  .flow-text.empty { color: var(--fg2); font-style: italic; }
+  .tool-stack { border-top: 1px solid var(--border); display: grid; gap: 0; }
+  .tool-detail { background: var(--bg2); border-bottom: 1px solid var(--border); }
+  .tool-detail:last-child { border-bottom: 0; }
+  .tool-detail summary { cursor: pointer; padding: 8px 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+  .tool-name { color: var(--yellow); font-family: var(--mono); font-weight: 650; }
+  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--border); }
+  .tool-pane { padding: 10px 12px; min-width: 0; }
+  .tool-pane + .tool-pane { border-left: 1px solid var(--border); }
+  .tool-pane label { display: block; color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 6px; }
+  .tool-code { margin: 0; max-height: 280px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 11px; line-height: 1.45; }
+  .raw-details { margin: 0 12px 12px; }
+  .raw-details summary { cursor: pointer; color: var(--fg2); font-size: 11px; }
+  @media (max-width: 900px) { .flow-message { grid-template-columns: 1fr; gap: 4px; } .flow-role { text-align: left; padding-top: 0; } .flow-role strong, .flow-index { display: inline; margin-right: 6px; } .tool-grid { grid-template-columns: 1fr; } .tool-pane + .tool-pane { border-left: 0; border-top: 1px solid var(--border); } }
+
   /* Chat */
   .chat-container { display: flex; flex-direction: column; height: calc(100vh - 280px); min-height: 300px; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; }
@@ -1182,44 +1215,193 @@ function switchDeepDiveTab(btn, tabId) {
   document.getElementById(tabId).classList.add('active');
 }
 
-function compactText(text, max = 140) { const value = String(text || '').replace(/\s+/g, ' ').trim(); return value.length > max ? value.slice(0, max - 1) + '…' : value; }
 
-function formatJson(value) { if (value == null || value === '') return ''; try { return JSON.stringify(value, null, 2); } catch { return String(value); } }
+function compactText(text, max = 140) {
+  const value = String(text || '').replace(/\s+/g, ' ').trim();
+  return value.length > max ? value.slice(0, max - 1) + '...' : value;
+}
 
-function normalizeUsage(usage) { const u = usage || {}; const input = u.input ?? u.inputTokens ?? u.promptTokens ?? u.prompt_tokens ?? null; const output = u.output ?? u.outputTokens ?? u.completionTokens ?? u.completion_tokens ?? null; const cacheRead = u.cacheRead ?? u.cache_read ?? u.cacheReadTokens ?? null; const total = u.totalTokens ?? u.total_tokens ?? ((input != null || output != null) ? Number(input || 0) + Number(output || 0) : null); const cost = u.cost?.total ?? u.costTotal ?? u.cost_usd ?? u.totalCost ?? null; return { input, output, cacheRead, total, cost }; }
+function formatJson(value) {
+  if (value == null || value === '') return '';
+  try { return JSON.stringify(value, null, 2); } catch { return String(value); }
+}
 
-function usageLabel(usage) { const u = normalizeUsage(usage); if (u.input == null && u.output == null && u.total == null) return 'usage unavailable'; const parts = []; if (u.input != null || u.output != null) parts.push(`${u.input || 0} in / ${u.output || 0} out`); if (u.cacheRead) parts.push(`${u.cacheRead} cached`); if (u.total != null) parts.push(`${u.total} total`); return parts.join(' · '); }
+function normalizeUsage(usage) {
+  const u = usage || {};
+  const input = u.input ?? u.inputTokens ?? u.promptTokens ?? u.prompt_tokens ?? null;
+  const output = u.output ?? u.outputTokens ?? u.completionTokens ?? u.completion_tokens ?? null;
+  const cacheRead = u.cacheRead ?? u.cache_read ?? u.cacheReadTokens ?? null;
+  const total = u.totalTokens ?? u.total_tokens ?? ((input != null || output != null) ? Number(input || 0) + Number(output || 0) : null);
+  const cost = u.cost?.total ?? u.costTotal ?? u.cost_usd ?? u.totalCost ?? null;
+  return { input, output, cacheRead, total, cost };
+}
 
-function costLabel(usage) { const cost = normalizeUsage(usage).cost; return cost != null ? `$${Number(cost).toFixed(4)}` : null; }
+function usageLabel(usage) {
+  const u = normalizeUsage(usage);
+  if (u.input == null && u.output == null && u.total == null) return '';
+  const parts = [];
+  if (u.input != null || u.output != null) parts.push(`${u.input || 0} in / ${u.output || 0} out`);
+  if (u.cacheRead) parts.push(`${u.cacheRead} cached`);
+  if (u.total != null) parts.push(`${u.total} total`);
+  return parts.join(' | ');
+}
 
-function buildSessionTurns(messages) { const turns = []; let pendingInput = []; let current = null; const finish = () => { if (current) { turns.push(current); current = null; } }; for (const m of messages || []) { if (m.role === 'user') { finish(); if (m.text) pendingInput.push(m.text); continue; } if (m.role === 'assistant') { finish(); current = { index: turns.length + 1, sent: pendingInput.join('\n\n'), assistant: m, toolResults: [] }; pendingInput = []; continue; } if (m.role === 'tool_result') { if (current) current.toolResults.push(m); else turns.push({ index: turns.length + 1, sent: pendingInput.join('\n\n'), assistant: null, toolResults: [m] }); } } finish(); return turns.map((t, i) => ({ ...t, index: i + 1 })); }
+function costLabel(usage) {
+  const cost = normalizeUsage(usage).cost;
+  return cost != null ? `$${Number(cost).toFixed(4)}` : '';
+}
 
-function turnModel(turn) { const assistant = turn.assistant || {}; const toolCalls = assistant.toolCalls || []; const results = turn.toolResults || []; const resultById = new Map(results.map(r => [r.toolCallId, r])); const errors = results.filter(r => r.isError).length; const unmatched = results.filter(r => !toolCalls.some(tc => tc.id === r.toolCallId)); const title = compactText(assistant.text || toolCalls[0]?.tool || turn.sent || 'tool result', 110); const model = assistant.model || assistant.api?.model || ''; const provider = assistant.provider || assistant.api?.provider || ''; const stop = assistant.stopReason || assistant.stop_reason || ''; return { assistant, toolCalls, results, resultById, errors, unmatched, title, model, provider, stop, usage: normalizeUsage(assistant.usage), cost: costLabel(assistant.usage) }; }
+function buildSessionFlow(messages) {
+  const flow = [];
+  let current = null;
+  const finish = () => { if (current) { flow.push(current); current = null; } };
+  for (const m of messages || []) {
+    if (m.role === 'user') {
+      finish();
+      flow.push({ type: 'request', text: m.text || '' });
+    } else if (m.role === 'assistant') {
+      finish();
+      current = { type: 'response', index: flow.filter(x => x.type === 'response').length + 1, assistant: m, toolResults: [] };
+    } else if (m.role === 'tool_result') {
+      if (!current) current = { type: 'response', index: flow.filter(x => x.type === 'response').length + 1, assistant: { text: '', toolCalls: [] }, toolResults: [] };
+      current.toolResults.push(m);
+    }
+  }
+  finish();
+  return flow;
+}
 
-function renderTurnChip(text, cls = '') { return text ? `<span class="turn-chip ${cls}">${esc(String(text))}</span>` : ''; }
+function flowChip(text, cls = '') {
+  return text ? `<span class="flow-chip ${cls}">${esc(String(text))}</span>` : '';
+}
 
-function renderTurnRow(debuggerId, turn, active) { const m = turnModel(turn); const classes = ['turn-row']; if (active) classes.push('active'); if (m.errors) classes.push('has-error'); const toolCount = m.toolCalls.length; return `<button class="${classes.join(' ')}" data-turn-index="${turn.index}" onclick="selectSessionTurn('${debuggerId}', ${turn.index})"><span class="turn-index">#${turn.index}</span><span><span class="turn-title">${esc(m.title)}</span><span class="turn-meta">${renderTurnChip(m.model || 'model unavailable')}${renderTurnChip(toolCount ? `${toolCount} tools` : 'no tools')}${renderTurnChip(m.usage.total != null ? `${m.usage.total} tok` : 'tokens unavailable')}${m.cost ? renderTurnChip(m.cost) : ''}${m.stop ? renderTurnChip(m.stop) : ''}${m.errors ? renderTurnChip(`${m.errors} errors`, 'error') : ''}</span></span></button>`; }
+function renderRawBlock(label, value) {
+  const text = typeof value === 'string' ? value : formatJson(value);
+  if (!text) return '';
+  return `<details class="raw-details"><summary>${esc(label)}</summary><pre class="tool-code">${esc(text)}</pre></details>`;
+}
 
-function renderRawBlock(label, value) { const text = typeof value === 'string' ? value : formatJson(value); return text ? `<details class="raw-details"><summary>${esc(label)}</summary><pre class="tool-code">${esc(text)}</pre></details>` : ''; }
+function renderToolFlow(tc, result) {
+  const hasError = !!result?.isError;
+  const resultText = result ? String(result.content || '') : 'No matching tool_result found.';
+  return `<details class="tool-detail" ${hasError ? 'open' : ''}>
+    <summary>
+      <span class="tool-name">${esc(tc.tool || result?.toolName || 'tool')}</span>
+      ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
+      ${tc.id || result?.toolCallId ? flowChip(tc.id || result.toolCallId) : ''}
+    </summary>
+    <div class="tool-grid">
+      <div class="tool-pane"><label>Tool call</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
+      <div class="tool-pane"><label>Tool result</label><pre class="tool-code">${esc(resultText)}</pre></div>
+    </div>
+  </details>`;
+}
 
-function renderToolCard(tc, result) { const hasError = !!result?.isError; const args = formatJson(tc.args ?? {}); const output = result ? String(result.content || '') : 'No matching tool_result found.'; return `<div class="tool-card ${hasError ? 'error' : ''}"><div class="tool-head"><span class="tool-name">${esc(tc.tool || 'tool')}</span>${hasError ? '<span class="turn-chip error">error</span>' : '<span class="turn-chip">ok</span>'}${tc.id ? `<span class="tool-id">${esc(tc.id)}</span>` : ''}</div><div class="tool-grid"><div class="tool-pane"><label>Call Args</label><pre class="tool-code">${esc(args)}</pre></div><div class="tool-pane"><label>Result</label><pre class="tool-code">${esc(output)}</pre></div></div></div>`; }
+function renderRequestFlow(item, index) {
+  const label = index === 0 ? 'Initial request / context' : 'User request';
+  const preview = compactText(item.text || '', 120) || 'No request text recorded.';
+  return `<div class="flow-message">
+    <div class="flow-role"><strong>User</strong><span class="flow-index">${esc(label)}</span></div>
+    <details class="flow-bubble flow-bubble-user flow-request" open>
+      <summary>${esc(preview)}</summary>
+      <div class="flow-text">${esc(item.text || '')}</div>
+    </details>
+  </div>`;
+}
 
-function renderTurnDetail(debuggerId, turnIndex) { const state = window.__sessionDebuggers?.[debuggerId]; if (!state) return ''; const turn = state.filtered.find(t => t.index === turnIndex) || state.filtered[0] || state.turns[0]; if (!turn) return '<div class="empty-debugger">No turn selected.</div>'; const m = turnModel(turn); const sent = turn.sent || 'No user/context message was recorded immediately before this API turn.'; const received = m.assistant.text || 'No assistant text. This turn may have only produced tool calls.'; let actions = ''; for (const tc of m.toolCalls) actions += renderToolCard(tc, m.resultById.get(tc.id)); for (const r of m.unmatched) actions += renderToolCard({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r); if (!actions) actions = '<div class="empty-debugger">No tool calls or tool results recorded for this turn.</div>'; const meta = [m.model || 'model unavailable', m.provider || 'provider unavailable', usageLabel(m.assistant.usage), m.cost || 'cost unavailable', m.stop ? `stop: ${m.stop}` : 'stop unavailable']; return `<div class="turn-detail"><div class="turn-detail-header"><div class="turn-detail-title">Turn #${turn.index}: ${esc(m.title)}</div>${meta.map(x => renderTurnChip(x)).join('')}${m.errors ? renderTurnChip(`${m.errors} tool result errors`, 'error') : ''}</div><div class="turn-section"><h5>Sent to Model</h5><div class="turn-text turn-sent">${esc(sent)}</div>${renderRawBlock('Raw sent text', sent)}</div><div class="turn-section"><h5>Received From Model</h5><div class="turn-text turn-received">${esc(received)}</div>${renderRawBlock('Raw assistant message', m.assistant)}</div><div class="turn-section"><h5>Actions and Results</h5>${actions}</div></div>`; }
+function renderResponseFlow(item) {
+  const a = item.assistant || {};
+  const toolCalls = a.toolCalls || [];
+  const results = item.toolResults || [];
+  const resultById = new Map(results.map(r => [r.toolCallId, r]));
+  const unmatched = results.filter(r => !toolCalls.some(tc => tc.id === r.toolCallId));
+  const errors = results.filter(r => r.isError).length;
+  const usage = usageLabel(a.usage);
+  const cost = costLabel(a.usage);
+  let tools = '';
+  for (const tc of toolCalls) tools += renderToolFlow(tc, resultById.get(tc.id));
+  for (const r of unmatched) tools += renderToolFlow({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {} }, r);
+  return `<div class="flow-message">
+    <div class="flow-role"><strong>Assistant</strong><span class="flow-index">Response #${item.index}</span></div>
+    <article class="flow-bubble">
+      <div class="flow-meta">
+        ${flowChip(a.model || a.api?.model || 'model unavailable')}
+        ${flowChip(a.provider || a.api?.provider || '')}
+        ${flowChip(usage)}
+        ${flowChip(cost)}
+        ${flowChip(a.stopReason ? `stop: ${a.stopReason}` : '')}
+        ${flowChip(toolCalls.length ? `${toolCalls.length} tools` : 'no tools')}
+        ${errors ? flowChip(`${errors} errors`, 'error') : ''}
+      </div>
+      <div class="flow-text ${a.text ? '' : 'empty'}">${esc(a.text || 'No assistant text. This response only produced tool calls.')}</div>
+      ${tools ? `<div class="tool-stack">${tools}</div>` : ''}
+      ${renderRawBlock('Raw API response', a)}
+    </article>
+  </div>`;
+}
 
-function turnMatchesFilter(turn, filter, query) { const m = turnModel(turn); const haystack = [turn.sent, m.assistant.text, m.model, m.provider, m.stop, ...m.toolCalls.map(tc => `${tc.tool} ${formatJson(tc.args)}`), ...m.results.map(r => r.content)].join('\n').toLowerCase(); if (query && !haystack.includes(query.toLowerCase())) return false; if (filter === 'tools' && !m.toolCalls.length) return false; if (filter === 'errors' && !m.errors) return false; if (filter === 'no-tools' && m.toolCalls.length) return false; if (filter === 'missing-usage' && (m.usage.input != null || m.usage.output != null || m.usage.total != null)) return false; return true; }
+function renderLogsApiView(messages) {
+  const flow = buildSessionFlow(messages);
+  const responses = flow.filter(x => x.type === 'response');
+  const totals = responses.reduce((acc, item) => {
+    const a = item.assistant || {};
+    const u = normalizeUsage(a.usage);
+    acc.tools += (a.toolCalls || []).length;
+    acc.errors += (item.toolResults || []).filter(r => r.isError).length;
+    acc.tokens += Number(u.total || 0);
+    acc.cost += Number(u.cost || 0);
+    return acc;
+  }, { tools: 0, errors: 0, tokens: 0, cost: 0 });
+  let html = `<div class="api-flow">
+    <div class="api-flow-summary">
+      ${flowChip(`${responses.length} responses`)}
+      ${flowChip(`${totals.tools} tool calls`)}
+      ${flowChip(`${totals.errors} tool errors`, totals.errors ? 'error' : 'good')}
+      ${flowChip(totals.tokens ? `${totals.tokens.toLocaleString()} tokens` : 'tokens unavailable')}
+      ${flowChip(totals.cost ? `$${totals.cost.toFixed(4)}` : '')}
+    </div>`;
+  flow.forEach((item, index) => {
+    html += item.type === 'request' ? renderRequestFlow(item, index) : renderResponseFlow(item);
+  });
+  html += '</div>';
+  return html;
+}
 
-function renderDebuggerShell(debuggerId) { const state = window.__sessionDebuggers[debuggerId]; const turns = state.filtered; const selected = turns.some(t => t.index === state.selected) ? state.selected : turns[0]?.index; state.selected = selected; const totals = state.turns.reduce((acc, t) => { const m = turnModel(t); acc.tools += m.toolCalls.length; acc.errors += m.errors; acc.tokens += Number(m.usage.total || 0); acc.cost += Number(m.usage.cost || 0); if (m.usage.total == null) acc.missingUsage += 1; return acc; }, { tools: 0, errors: 0, tokens: 0, cost: 0, missingUsage: 0 }); return `<div class="session-debugger" data-debugger-id="${debuggerId}"><div class="debugger-summary"><div class="debugger-stat"><div class="label">Turns</div><div class="value">${state.turns.length}</div></div><div class="debugger-stat"><div class="label">Tool Calls</div><div class="value">${totals.tools}</div></div><div class="debugger-stat"><div class="label">Tool Errors</div><div class="value" style="color:${totals.errors ? 'var(--red)' : 'var(--green)'}">${totals.errors}</div></div><div class="debugger-stat"><div class="label">Tokens</div><div class="value">${totals.tokens ? totals.tokens.toLocaleString() : '—'}</div></div><div class="debugger-stat"><div class="label">Cost</div><div class="value">${totals.cost ? '$' + totals.cost.toFixed(4) : '—'}</div></div></div>${totals.missingUsage ? `<div style="color:var(--fg2);font-size:12px">${totals.missingUsage} turns do not have recorded token/cost metadata yet. The debugger shows exact logs and tools where available.</div>` : ''}<div class="debugger-toolbar"><input id="${debuggerId}-query" type="search" placeholder="Search sent text, assistant text, tool args/results" oninput="filterSessionTurns('${debuggerId}')"><select id="${debuggerId}-filter" onchange="filterSessionTurns('${debuggerId}')"><option value="all">All turns</option><option value="tools">With tools</option><option value="errors">Tool errors</option><option value="no-tools">No tools</option><option value="missing-usage">Missing usage</option></select></div><div class="debugger-layout"><div class="turn-list" id="${debuggerId}-turn-list">${turns.length ? turns.map(t => renderTurnRow(debuggerId, t, t.index === selected)).join('') : '<div class="empty-debugger">No turns match the current filter.</div>'}</div><div id="${debuggerId}-turn-detail">${renderTurnDetail(debuggerId, selected)}</div></div></div>`; }
+function renderSessionTranscript(messages) {
+  let html = '<div class="transcript">';
+  for (const m of messages || []) {
+    if (m.role === 'user') html += `<div class="msg user">${esc(m.text)}</div>`;
+    else if (m.role === 'assistant') {
+      if (m.text) html += `<div class="msg assistant">${esc(m.text)}</div>`;
+      if (m.toolCalls) for (const tc of m.toolCalls) html += `<div class="msg tool_call">${esc(tc.tool)}(${esc(JSON.stringify(tc.args)).slice(0,200)})</div>`;
+    } else if (m.role === 'tool_result') html += `<div class="msg tool_result ${m.isError?'error':''}">${esc(String(m.content || '').slice(0,500))}</div>`;
+  }
+  html += '</div>';
+  return html;
+}
 
-function renderLogsApiView(messages) { window.__sessionDebuggers = window.__sessionDebuggers || {}; const turns = buildSessionTurns(messages); const debuggerId = 'session-debugger-' + Math.random().toString(36).slice(2, 9); window.__sessionDebuggers[debuggerId] = { turns, filtered: turns, selected: turns[0]?.index || 1 }; if (!turns.length) return '<div class="empty-debugger">No assistant/API turns found in this transcript.</div>'; return renderDebuggerShell(debuggerId); }
+function renderSessionDebugTabs(transData) {
+  const messages = transData.messages || [];
+  if (!messages.length) return '';
+  return `<div class="section">
+    <div class="session-tab-bar">
+      <button class="stab active" onclick="switchSessionTab(this,'stab-logs-api')">Logs + API</button>
+      <button class="stab" onclick="switchSessionTab(this,'stab-transcript')">Transcript (${transData.messageCount || messages.length})</button>
+    </div>
+    <div id="stab-logs-api" class="session-tab-content">${renderLogsApiView(messages)}</div>
+    <div id="stab-transcript" class="session-tab-content" style="display:none">${renderSessionTranscript(messages)}</div>
+  </div>`;
+}
 
-function renderSessionTranscript(messages) { let html = '<div class="transcript">'; for (const m of messages || []) { if (m.role === 'user') html += `<div class="msg user">${esc(m.text)}</div>`; else if (m.role === 'assistant') { if (m.text) html += `<div class="msg assistant">${esc(m.text)}</div>`; if (m.toolCalls) for (const tc of m.toolCalls) html += `<div class="msg tool_call">${esc(tc.tool)}(${esc(JSON.stringify(tc.args)).slice(0,200)})</div>`; } else if (m.role === 'tool_result') html += `<div class="msg tool_result ${m.isError?'error':''}">${esc(String(m.content || '').slice(0,500))}</div>`; } html += '</div>'; return html; }
-
-function renderSessionDebugTabs(transData) { const messages = transData.messages || []; if (!messages.length) return ''; return `<div class="section"><div class="session-tab-bar"><button class="stab active" onclick="switchSessionTab(this,'stab-logs-api')">Logs + API</button><button class="stab" onclick="switchSessionTab(this,'stab-transcript')">Transcript (${transData.messageCount || messages.length})</button></div><div id="stab-logs-api" class="session-tab-content">${renderLogsApiView(messages)}</div><div id="stab-transcript" class="session-tab-content" style="display:none">${renderSessionTranscript(messages)}</div></div>`; }
-
-function selectSessionTurn(debuggerId, turnIndex) { const state = window.__sessionDebuggers?.[debuggerId]; if (!state) return; state.selected = turnIndex; const root = document.querySelector(`[data-debugger-id="${debuggerId}"]`); if (!root) return; root.querySelectorAll('.turn-row').forEach(row => row.classList.toggle('active', Number(row.dataset.turnIndex) === turnIndex)); const detail = document.getElementById(`${debuggerId}-turn-detail`); if (detail) detail.innerHTML = renderTurnDetail(debuggerId, turnIndex); }
-
-function filterSessionTurns(debuggerId) { const state = window.__sessionDebuggers?.[debuggerId]; if (!state) return; const query = document.getElementById(`${debuggerId}-query`)?.value || ''; const filter = document.getElementById(`${debuggerId}-filter`)?.value || 'all'; state.filtered = state.turns.filter(t => turnMatchesFilter(t, filter, query)); if (!state.filtered.some(t => t.index === state.selected)) state.selected = state.filtered[0]?.index || state.turns[0]?.index; const list = document.getElementById(`${debuggerId}-turn-list`); if (list) list.innerHTML = state.filtered.length ? state.filtered.map(t => renderTurnRow(debuggerId, t, t.index === state.selected)).join('') : '<div class="empty-debugger">No turns match the current filter.</div>'; const detail = document.getElementById(`${debuggerId}-turn-detail`); if (detail) detail.innerHTML = renderTurnDetail(debuggerId, state.selected); }
-
+function switchSessionTab(btn, tabId) {
+  const bar = btn.parentElement;
+  bar.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const parent = bar.parentElement;
+  parent.querySelectorAll('.session-tab-content').forEach(c => c.style.display = 'none');
+  const target = document.getElementById(tabId);
+  if (target) target.style.display = '';
+}
 // ── Activity Timeline ─────────────────────────────────────────────────
 
 let timelineTooltip = null;
