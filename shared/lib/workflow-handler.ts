@@ -24,6 +24,28 @@ async function resolveValue<T>(
   return value;
 }
 
+function triggerEventType(event: unknown): string | null {
+  if (!event || typeof event !== "object") return null;
+  const value = (event as { type?: unknown }).type;
+  return typeof value === "string" ? value : null;
+}
+
+function emitSkipped(
+  ctx: HandlerContext,
+  entry: CronEntry,
+  workflow: string | null,
+  reason: string,
+  event: unknown,
+): void {
+  ctx.sdk.log("info", `[workflow-handler:${entry.name}] skipped: ${reason}`);
+  ctx.sdk.emit("handler.skipped", {
+    handler: entry.name,
+    workflow,
+    reason,
+    eventType: triggerEventType(event),
+  });
+}
+
 function appendEvent(task: string, event: unknown): string {
   if (!event) return task;
   return `${task}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
@@ -31,13 +53,15 @@ function appendEvent(task: string, event: unknown): string {
 
 export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerModule["create"] {
   return (ctx: HandlerContext, entry: CronEntry) => async (event?: unknown) => {
+    const configuredWorkflow = typeof options.workflow === "string" ? options.workflow : null;
+
+    if (options.includeEvent && !event) {
+      emitSkipped(ctx, entry, configuredWorkflow, "includeEvent requested but no event payload received", event);
+      return;
+    }
+
     if (options.shouldRun && !(await options.shouldRun(ctx, event, entry))) {
-      ctx.sdk.log("info", `[workflow-handler:${entry.name}] skipped`);
-      ctx.sdk.emit("handler.skipped", {
-        handler: entry.name,
-        workflow: typeof options.workflow === "string" ? options.workflow : null,
-        reason: "shouldRun returned false",
-      });
+      emitSkipped(ctx, entry, configuredWorkflow, "shouldRun returned false", event);
       return;
     }
 
