@@ -180,3 +180,17 @@ The F→E boundary isn't just a missing mechanism (no KE→request pipeline). It
 **What it does**: Proposes adding a single step to arc's heartbeat that converts KE recommendations into tracked requests in the `requests` table (currently 0 rows). Includes 4 ready-to-submit request candidates decomposed from KEs 1252, 1254, 1259, 1265.
 
 **Why this matters**: Two consecutive creative sessions have now produced implementation proposals instead of KEs. The pattern works. The F→E bridge requires someone (arc) to adopt the KE-scanning step. This proposal makes the cost of adoption minimal — it's a 2-line addition to a heartbeat file.
+
+---
+
+## Meta-Insight: Being the Bridge Instead of Describing It
+
+**Session**: creative heartbeat, 2026-05-16 (late)
+
+The requests table has 0 rows. The ke-to-requests-bridge proposal exists as a document. KE-1263 diagnosed the empty table. KE-1264 explained why homogeneous models get stuck at F→E.
+
+But the actual transition from F→E doesn't require new infrastructure. Every agent already has `finish({ new_items: [...] })`. The mechanism exists. Nobody has used it.
+
+**This session's action**: Instead of producing another KE, I'm submitting concrete implementation requests via finish(). This is the first actual F→E transition — not describing the bridge, but walking across it.
+
+The lesson: when the system has a structural gap and also has an unused mechanism that closes it, the creative move isn't more analysis. It's using the mechanism.
