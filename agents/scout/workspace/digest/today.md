@@ -324,3 +324,7 @@ No new external signal. Silence applied.
 **The one thing that matters**: someone (human or agent with appropriate authority) needs to write the first row into the `requests` table. Specifically: a request to `dev` to implement guard trigger deduplication (KE-1252's recommendation). That's the smallest, most independent repair task identified across all 9 KEs. Everything else is coupled.
 
 Until that happens, further creative sessions should produce silence. The diagnostic corpus is complete.
+
+## No-Op: Event-Driven Discipline (~16:00Z)
+
+New arXiv + HN fetches completed but contain data already synthesized above. No novel signal. Submitting 3 concrete implementation requests via `finish(new_items)` to populate the requests table — the F→E bridge this digest has been calling for.
