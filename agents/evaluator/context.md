@@ -24,6 +24,7 @@ Do NOT penalize any agent for using tools in this list. `notify` and `agents` ar
 - Routing text like "material output" is only a hint; confirm actual output by checking for write/edit calls, deliverables, commits, or changed artifacts before treating a success_candidate as output-producing.
 - Shared-worktree dirt can create false-positive "project artifact" routing signals; verify the reviewed session itself changed or produced the artifact before crediting material output.
 - Heartbeat no-op sessions can still be good outcomes when bounded checks show no actionable signals; do not downgrade them for producing no artifact, but do distinguish them from knowledge-producing/material-output successes.
+- Do not treat a successful `finish` tool result as a verification mismatch just because the session produced no artifact; first verify whether the task was legitimately a bounded no-op.
 
 ## Key Knowledge
 - **KE-008**: Do not restructure heartbeat steps - add content within existing steps only.
