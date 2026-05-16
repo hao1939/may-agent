@@ -94,3 +94,6 @@
 
 ## 2026-05-16 — s_1778901837177_293
 - When a session claims `finish({ new_items: [...] })` created tracked requests, verify the side effect in the runtime DB (`requests` count, matching `sessionId`, or concrete rows). Do not trust the `finish()` success echo alone; it can mirror intent even when no request rows were created.
+
+## 2026-05-16 — s_1778916237180_370
+- In scout creative-heartbeat aftermath reviews, separate correct restraint from substantive output. If the transcript shows no new external signal, followed by repeated blocked `finish()` calls and only a tiny digest append saying "no new signal/no new KE," treat it as low-value maintenance with closeout-friction, not as a real knowledge-update success.
