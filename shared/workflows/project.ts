@@ -11,8 +11,8 @@
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { ProjectCache } from "./project-cache.js";
-import { shouldBudgetCheckpoint, buildBudgetCheckpointEntry, estimateTurnsUsed, resetBudgetState } from "./budget-checkpoint.js";
+import { WorkflowFileCache } from "../agent-sdk.ts";
+// budget-checkpoint removed per human request (iteration 51)
 import { onProjectCreate } from "./hooks/validate-on-create.js";
 import { unreadDiscussionTail } from "../lib/project-health.js";
 
@@ -100,7 +100,7 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
 // Module-level cache instance — lives for the duration of one workflow run.
 // Each run of the project workflow creates a fresh import context, so stale data
 // doesn't leak across runs. The cache is also flushed at the start of each run().
-const _cache = new ProjectCache();
+const _cache = new WorkflowFileCache();
 
 function readFile(path: string): string | null {
   return _cache.read(path);
@@ -1232,25 +1232,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }
     cachedWrite(config.projectPath, projectContent);
 
-    // ── Budget checkpoint: auto-save before hitting turn limit ──
-    if (shouldBudgetCheckpoint(config.projectDir, iteration, config.reviewEvery)) {
-      const turnsEst = estimateTurnsUsed(iteration, iteration % config.reviewEvery === 0);
-      const cpEntry = buildBudgetCheckpointEntry(iteration, turnsEst);
-      if (config.isLegacy) {
-        projectContent = appendToSection(projectContent, "Progress Log", cpEntry);
-        cachedWrite(config.projectPath, projectContent);
-      } else {
-        cachedAppend(config.journalPath, cpEntry);
-      }
-      ctx.emit({ type: "budget_checkpoint", iteration, turnsEstimate: turnsEst });
-      ctx.log(`[project] Budget checkpoint at iteration ${iteration} (~${turnsEst} turns)`);
-      // Update status so if workflow is killed, the state reflects progress
-      projectContent = updateField(projectContent, "Status", "paused");
-      projectContent = updateSection(projectContent, "Current State",
-        `Paused: budget checkpoint at iteration ${iteration}. ~${turnsEst}/${60} turns used. Resume to continue.`);
-      cachedWrite(config.projectPath, projectContent);
-      return ctx.done(`Budget checkpoint at iteration ${iteration} — saved progress before turn limit.`);
-    }
+    // ── Budget checkpoint: REMOVED ──
+    // Previously auto-paused workflow at ~48/60 turns. Removed per human request
+    // (iteration 51 comment) — the early stop was counterproductive.
 
     // ── Reviewer phase ───────────────────────────────────────────
     if (iteration % config.reviewEvery === 0) {
