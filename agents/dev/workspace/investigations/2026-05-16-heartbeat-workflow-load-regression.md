@@ -26,3 +26,9 @@ bun test agents/test/eval-llm-scan-smoke.test.ts
 ```
 
 If no dedicated workflow-loader smoke exists, add one: this failure class is import/load-time and can pass normal runtime metrics until cron fires.
+
+## 2026-05-16 follow-up heartbeat check
+
+A later heartbeat found no continuing failure storm: `handler.failed` events after timestamp `1778953500000` returned `0`, `node_modules/@may-agent/sdk` exists, `bun -e 'import("@may-agent/sdk")'` succeeds, and `bun -e 'import("./shared/workflows/heartbeat-data.ts")'` succeeds with `genericHeartbeat` exported. Current aggregate metrics are also healthy (`handler.success-rate=0.9829`, `session.error-rate-6h=0.0208`, unresolved metric alerts `0`).
+
+Judgment: do not keep looping on the stale blocker as an active incident unless new `handler.failed` rows recur. The remaining durable improvement is still the recommended workflow-loader smoke after the in-progress migration is owned/committed, but the immediate signal is watch-only rather than patch-now.
