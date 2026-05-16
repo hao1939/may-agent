@@ -5,8 +5,7 @@
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
-import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../../shared/workflows/dispatch-dedup-guard.js";
+import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "../../../shared/agent-sdk.ts";
 
 export const name = "scout-explore";
 export const description = "Routine discovery — fetch and process a specific source.";
@@ -25,7 +24,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Dedup blocked: ${dedupCheck.reason}`);
   }
   recordDispatch(agent, "explore");
-  dedupCleanup();
+  cleanupDispatchRecords();
 
   // The task comes from cron handlerConfig.task — source-specific instructions
   const task = ctx.task || "Explore sources and update shared knowledge base.";
@@ -36,13 +35,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordCircuitOutcome(agentsRoot, agent, true, `explore threw: ${message.slice(0, 200)}`);
-    dedupRecordOutcome(agent, "explore", "error");
+    recordDedupOutcome(agent, "explore", "error");
     throw err;
   }
 
   recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "explore error" : undefined);
-  dedupRecordOutcome(agent, "explore", result.status === "error" ? "error" : "success");
+  recordDedupOutcome(agent, "explore", result.status === "error" ? "error" : "success");
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }

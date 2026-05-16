@@ -13,8 +13,7 @@ import {
   formatMetricsBlock,
   runRedMetricCommands,
 } from "../../../shared/workflows/heartbeat-data.js";
-import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
-import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../../shared/workflows/dispatch-dedup-guard.js";
+import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "../../../shared/agent-sdk.ts";
 
 export const name = "scout-heartbeat";
 export const description = "Scout's creative heartbeat — synthesize, connect, discover.";
@@ -34,7 +33,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Dedup blocked: ${dedupCheck.reason}`);
   }
   recordDispatch(agent, "heartbeat");
-  dedupCleanup();
+  cleanupDispatchRecords();
 
   // Load context
   const metricsBlock = formatMetricsBlock(ctx, agent);
@@ -81,13 +80,13 @@ Think freely. Go deep on something interesting. The value is in connections and 
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordCircuitOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
-    dedupRecordOutcome(agent, "heartbeat", "error");
+    recordDedupOutcome(agent, "heartbeat", "error");
     throw err;
   }
 
   recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
-  dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
+  recordDedupOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
   return ctx.done(ctx.summarize(result, { maxLength: 500 }));
 }

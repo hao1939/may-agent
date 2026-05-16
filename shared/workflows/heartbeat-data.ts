@@ -11,8 +11,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "../agent-sdk.ts";
-import { checkCircuitBreaker, recordCircuitOutcome } from "../agent-sdk.ts";
-import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "./dispatch-dedup-guard.js";
+import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "../agent-sdk.ts";
 import { listConfiguredAgents, resolveMetricOwner } from "../lib/metric-ownership.ts";
 import { parseProjectMeta } from "../lib/project-health.ts";
 
@@ -466,7 +465,7 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   recordDispatch(agent, "heartbeat");
 
   // Periodic cleanup of stale dedup entries
-  dedupCleanup();
+  cleanupDispatchRecords();
 
   // ── RED METRIC DIAGNOSTICS (JS — no LLM cost) ───────────────
   const hasRedMetrics = metrics.includes("⚠️ BELOW TARGET");
@@ -556,13 +555,13 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordCircuitOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
-    dedupRecordOutcome(agent, "heartbeat", "error");
+    recordDedupOutcome(agent, "heartbeat", "error");
     throw err;
   }
   ctx.emit({ type: "agent.decision", agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) });
   recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
-  dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
+  recordDedupOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
   if (result.status === "error") {
     return ctx.escalate(`Heartbeat agent session failed for ${agent}`, {
