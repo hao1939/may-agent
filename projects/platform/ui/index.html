@@ -1611,16 +1611,16 @@ async function loadSessionDetail(sessionId) {
       </div>
     </div>`;
 
-    // B. Turn debugger. Keep this before long context blocks so session investigation starts with behavior.
-    html += renderSessionDebugTabs(transData);
-
-    // B. Task Section
-    html += `<div class="section">
+    // B. Task comes before the conversation: it is the reason this session exists.
+    html += `<div class="section session-task-section">
       <h4>Task</h4>
       <pre class="task-block">${esc(s.task || '')}</pre>
     </div>`;
 
-    // C. Metadata Section
+    // C. Conversation: enriched transcript with API/tool annotations.
+    html += renderSessionDebugTabs(transData);
+
+    // D. Metadata Section
     html += `<div class="section">
       <h4>Metadata</h4>
       <dl class="meta-grid">`;
@@ -1632,7 +1632,7 @@ async function loadSessionDetail(sessionId) {
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 
-    // D. Outcome Section
+    // E. Outcome Section
     if (s.outcome) {
       html += `<div class="section">
         <h4>Outcome</h4>`;
@@ -1647,7 +1647,7 @@ async function loadSessionDetail(sessionId) {
       html += `</div>`;
     }
 
-    // E. Evaluation Section
+    // F. Evaluation Section
     if (ev) {
       html += `<div class="section">
         <h4>Evaluation</h4>
@@ -1691,7 +1691,7 @@ async function loadSessionDetail(sessionId) {
       html += `</div></div>`;
     }
 
-    // F. Delegation Tree
+    // G. Delegation Tree
     if (sessData.children.length) {
       html += `<div class="section">
         <h4>Delegation Tree</h4>`;
@@ -1938,7 +1938,9 @@ function setSessionPageMode(enabled) {
   const chat = document.getElementById('chat');
   if (chat) chat.classList.toggle('session-page-mode', !!enabled);
   const status = document.getElementById('chat-status');
-  if (status && enabled) status.textContent = 'Send follow-up to this session';
+  const input = document.getElementById('chat-input');
+  if (status && enabled) status.textContent = 'Follow up on this session';
+  if (input && enabled) input.placeholder = 'Send follow-up to this session...';
 }
 
 function initChat(deepLinkSessionId) {
@@ -2388,9 +2390,17 @@ function renderAssistantMsg(el, text) {
   }
 }
 
+function isSessionPageMode() {
+  return !!document.getElementById('chat')?.classList.contains('session-page-mode');
+}
+
 function renderSessionPicker() {
   const picker = document.getElementById('session-picker');
   if (!picker) return;
+  if (isSessionPageMode()) {
+    picker.innerHTML = '';
+    return;
+  }
   const seen = new Set();
   // Show running AND idle chat sessions (idle = waiting for next message)
   const visible = activeSessions.filter(s => {
@@ -2428,8 +2438,10 @@ async function switchSession(sessionId) {
   const messages = document.getElementById('chat-messages');
   messages.innerHTML = '';
 
-  if (sessionId) {
-    // Load transcript history
+  if (sessionId && !isSessionPageMode()) {
+    // Load transcript history for chat/agent-chat mode. On #/sessions/:id, the
+    // inspector Conversation section is the visible stream, so this duplicate
+    // message list stays empty and hidden.
     try {
       const resp = await fetch(`/api/sessions/${sessionId}/transcript`);
       if (resp.ok) {
