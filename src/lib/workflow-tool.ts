@@ -181,31 +181,33 @@ async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
   };
 }
 
-function listWorkflowFiles(workflowDir: string, sharedDir?: string): string[] {
+function listWorkflowFiles(
+  workflowDir: string,
+  sharedDir?: string,
+  projectWorkflowDir?: string,
+): string[] {
   const files: string[] = [];
-  // Agent-specific workflows first
-  try {
-    const agentFiles = readdirSync(workflowDir)
-      .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"))
-      .sort()
-      .map((f) => join(workflowDir, f));
-    files.push(...agentFiles);
-  } catch {
-    // workflowDir may not exist
-  }
-  // Shared workflows (shared/workflows/) — only add if not already present by name
-  if (sharedDir) {
+  const seenNames = new Set<string>();
+  const pushDir = (dir: string | undefined) => {
+    if (!dir) return;
     try {
-      const agentNames = new Set(files.map((f) => f.split("/").pop()));
-      const sharedFiles = readdirSync(sharedDir)
-        .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils") && !agentNames.has(f))
-        .sort()
-        .map((f) => join(sharedDir, f));
-      files.push(...sharedFiles);
+      const dirFiles = readdirSync(dir)
+        .filter((f) => f.endsWith(".ts") && !f.includes("-helpers") && !f.includes("-utils"))
+        .sort();
+      for (const f of dirFiles) {
+        if (seenNames.has(f)) continue;
+        seenNames.add(f);
+        files.push(join(dir, f));
+      }
     } catch {
-      // sharedDir may not exist
+      // dir may not exist
     }
-  }
+  };
+  // Precedence: project > agent > shared.
+  // First in wins because findWorkflow scans in order and returns the first match.
+  pushDir(projectWorkflowDir);
+  pushDir(workflowDir);
+  pushDir(sharedDir);
   return files;
 }
 
@@ -213,8 +215,9 @@ async function findWorkflow(
   workflowDir: string,
   name: string,
   sharedDir?: string,
+  projectWorkflowDir?: string,
 ): Promise<{ workflow: WorkflowModule | null; error: string | null }> {
-  const files = listWorkflowFiles(workflowDir, sharedDir);
+  const files = listWorkflowFiles(workflowDir, sharedDir, projectWorkflowDir);
   const loadErrors: string[] = [];
 
   for (const filePath of files) {
@@ -443,6 +446,7 @@ export interface RunWorkflowDirectOpts {
   persistDir: string;
   workflowDir?: string;
   sharedWorkflowDir?: string;
+  projectWorkflowDir?: string;
   guardsDir?: string;
   sharedGuardsDir?: string;
   parentSessionId?: string;
@@ -464,6 +468,7 @@ export async function runWorkflowDirect(
     manager: opts.manager,
     workflowDir: opts.workflowDir ?? "",
     sharedWorkflowDir: opts.sharedWorkflowDir,
+    projectWorkflowDir: opts.projectWorkflowDir,
     guardsDir: opts.guardsDir,
     sharedGuardsDir: opts.sharedGuardsDir,
     persistDir: opts.persistDir,
@@ -512,6 +517,10 @@ export interface WorkflowToolOptions {
    *  are available to all agents, but agent-specific workflows take priority
    *  if they share the same filename. */
   sharedWorkflowDir?: string;
+  /** Per-project workflows directory (projects/<id>/workflows/). Highest
+   *  precedence: matches here win over agent and shared. Set per-call by
+   *  runWorkflowDirect when a projectId is known. */
+  projectWorkflowDir?: string;
   /** Agent-specific guards directory. */
   guardsDir?: string;
   /** Shared guards directory (shared/guards/). */
@@ -538,7 +547,7 @@ export interface WorkflowToolOptions {
 }
 
 export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
-  const { manager, workflowDir, sharedWorkflowDir, persistDir, onEvent } = opts;
+  const { manager, workflowDir, sharedWorkflowDir, projectWorkflowDir, persistDir, onEvent } = opts;
   const maxDepth = opts.maxDepth ?? 3;
 
   const resolveCallerSessionId = (): string | undefined => {
@@ -957,7 +966,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           return { type: "escalate", reason: `Maximum workflow nesting depth (${maxDepth}) exceeded` };
         }
 
-        const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName, sharedWorkflowDir);
+        const { workflow: subWf, error: subErr } = await findWorkflow(workflowDir, wfName, sharedWorkflowDir, projectWorkflowDir);
         if (!subWf) {
           return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
         }
@@ -1234,7 +1243,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       const params = _params as WorkflowInput;
       switch (params.action) {
         case "list": {
-          const files = listWorkflowFiles(workflowDir, sharedWorkflowDir);
+          const files = listWorkflowFiles(workflowDir, sharedWorkflowDir, projectWorkflowDir);
           const workflows: Array<{ name: string; description: string }> = [];
 
           for (const filePath of files) {
@@ -1256,7 +1265,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             return textResult(JSON.stringify({ type: "error", error: "action 'run' requires 'name' and 'task'" }));
           }
 
-          const { workflow, error: findError } = await findWorkflow(workflowDir, params.name, sharedWorkflowDir);
+          const { workflow, error: findError } = await findWorkflow(workflowDir, params.name, sharedWorkflowDir, projectWorkflowDir);
           if (!workflow) {
             return textResult(JSON.stringify({ type: "error", workflow: params.name, error: findError }));
           }
@@ -1365,6 +1374,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             workflowDir,
             prevRun.workflow,
             sharedWorkflowDir,
+            projectWorkflowDir,
           );
           if (!resumeWf) {
             return workflowResumeError({
