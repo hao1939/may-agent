@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { applyReviewerProjectDirectives, stripReviewerDirectives } from "./project.js";
+import { applyReviewerProjectDirectives, stripReviewerDirectives } from "./platform-iteration.ts";
 
 describe("project reviewer directives", () => {
   it("applies reviewer-owned project state updates", () => {

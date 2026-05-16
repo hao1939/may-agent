@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { onProjectCreate, requireValidProject } from '../workflows/hooks/validate-on-create.js';
+import { onProjectCreate, requireValidProject } from '../hooks/validate-on-create.ts';
 
 const validProject = `---
 id: test-project

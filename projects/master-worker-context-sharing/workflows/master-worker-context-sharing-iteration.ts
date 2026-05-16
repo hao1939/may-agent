@@ -13,7 +13,7 @@ import { basename, dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { WorkflowFileCache } from "../../../shared/agent-sdk.ts";
 // budget-checkpoint removed per human request (iteration 51)
-import { onProjectCreate } from "../../../shared/workflows/hooks/validate-on-create.js";
+import { onProjectCreate } from "../../../shared/hooks/validate-on-create.ts";
 import { unreadDiscussionTail } from "../../../shared/lib/project-health.js";
 
 export const name: string = "master-worker-context-sharing-iteration";

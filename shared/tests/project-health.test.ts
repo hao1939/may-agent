@@ -62,11 +62,18 @@ describe('project-health', () => {
       const closed = '---\nid: test-proj\nowner: bob\nstatus: closed\nworkflow: master-worker\n---\n\n# Test\n';
 
       expect(validateProjectFormat(active, 'test-proj')).toContain(
-        'projects should use workflow: project; master-worker is legacy/archived only'
+        'projects should not use legacy master-worker workflow; pick a per-project or shared workflow'
       );
       expect(validateProjectFormat(closed, 'test-proj')).toContain(
-        'projects should use workflow: project; master-worker is legacy/archived only'
+        'projects should not use legacy master-worker workflow; pick a per-project or shared workflow'
       );
+    });
+
+    it('does NOT flag per-project workflows that happen to start with master-worker', () => {
+      // E.g. project id 'master-worker-context-sharing' → workflow 'master-worker-context-sharing-iteration'.
+      const content = '---\nid: master-worker-context-sharing\nowner: bob\nstatus: active\nworkflow: master-worker-context-sharing-iteration\n---\n\n# Test\n';
+      const errors = validateProjectFormat(content, 'master-worker-context-sharing');
+      expect(errors.find(e => e.includes('master-worker'))).toBeUndefined();
     });
   });
 

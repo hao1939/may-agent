@@ -21,7 +21,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, statS
 import { join, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const SHARED_SEED = join(REPO_ROOT, "shared/workflows/project.ts");
+const SHARED_SEED = join(REPO_ROOT, "scripts/seeds/project-iteration-seed.ts");
 
 function fail(msg) {
   console.error(`migrate-project-workflow: ${msg}`);
@@ -61,9 +61,10 @@ if (existsSync(workflowFile)) {
 let src = readFileSync(SHARED_SEED, "utf8");
 
 // Imports relative to shared/workflows/ -> rewrite for projects/<id>/workflows/
+// Note: validate-on-create lives at shared/hooks/ and the seed already encodes
+// the projects/<id>/workflows/-relative path; no rewrite needed for it.
 const importRewrites = [
   ['from "../agent-sdk.ts"', 'from "../../../shared/agent-sdk.ts"'],
-  ['from "./hooks/validate-on-create.js"', 'from "../../../shared/workflows/hooks/validate-on-create.js"'],
   ['from "../lib/project-health.js"', 'from "../../../shared/lib/project-health.js"'],
 ];
 

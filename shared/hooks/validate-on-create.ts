@@ -1,4 +1,4 @@
-import { validateProjectConfig } from '../../lib/index.js';
+import { validateProjectConfig } from '../lib/index.js';
 
 export interface ValidationResult {
   valid: boolean;

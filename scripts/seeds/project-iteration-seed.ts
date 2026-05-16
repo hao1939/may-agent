@@ -1,4 +1,12 @@
 /**
+ * SEED — do not import this file directly.
+ *
+ * This is the template consumed by scripts/migrate-project-workflow.mjs to
+ * generate per-project workflow forks. The relative imports below are
+ * placeholders that the script rewrites for the target path
+ * projects/<id>/workflows/<id>-iteration.ts. They will NOT resolve from
+ * this file's own location — that's by design (this file is text, not code).
+ *
  * persistent-task — Run a task in a loop until done, blocked, or owner intervenes.
  *
  * File structure (directory per project):
@@ -13,7 +21,7 @@ import { basename, dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { WorkflowFileCache } from "../agent-sdk.ts";
 // budget-checkpoint removed per human request (iteration 51)
-import { onProjectCreate } from "./hooks/validate-on-create.js";
+import { onProjectCreate } from "../../../shared/hooks/validate-on-create.ts";
 import { unreadDiscussionTail } from "../lib/project-health.js";
 
 export const name: string = "project";
