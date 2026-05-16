@@ -1,13 +1,11 @@
 ---
 id: platform
 owner: tech-lead
-status: active
+status: paused
 type: milestone
 priority: P0
 workflow: project
-iteration: 3
-stop_reason: 
-resume_condition: 
+iteration: 34
 ---
 
 # Project: platform
@@ -35,22 +33,16 @@ discussion live here.
 - Build / test failures in `repos/may-agent/` (`bun test`, `bun run check`)
 
 ## Current State
-Active: human/May comment processed at iteration 3. Continuing with reviewer direction.
-1. **I believe**: There's a new unread comment in comments.md ("smoke test: comment from curl after fix") that needs to be acknowledged/acted on.
-2. **I'm uncertain about**: Whether this comment requires any code changes or is just a verification ping.
-3. **I'd change my mind if**: The comment contained an actual bug report or feature request.
-
-**(a) Concrete output:** Mark the comment as read in `projects/platform/comments.md` by removing its `<!-- unread -->` marker. No code changes needed — this is a smoke-test comment confirming the comment system works.
-
-**(b) What's different:** Previous iterations had no comments to process. Now there's a concrete signal (unread comment) but it's informational only.
-
-**(c) First step:** Read `projects/platform/comments.md`, remove the `<!-- unread -->` marker from the "hao - 2026-05-15" comment, then finish.
-
+Paused: budget checkpoint at iteration 34. ~69/60 turns used. Resume to continue.
 ## Plan
-
 - [x] Fix failing `sendSocketCommand` test (commit `6d577a42`)
+- [x] Verify projectIdOf/projectPathOf refactor (iter9)
+- [x] Verify synchronous status flip (iter11)
+- [x] Verify browser e2e test (iter13, iter30)
+- [x] Review sock/api documentation and features (iter17 — `outputs/iter14-sock-api-review.md`)
+- [x] Design UI features: session→API mapping, logs+API tab, LLM summarization, session scoring, investigation UX (iter20)
+- [x] Implement Logs + API session inspector view (iter25-26)
 - [ ] Wait for signal — failing platform metric, unread comment, or owner push
-- [ ] When activated: scope the slice, work in `repos/may-agent/`, journal here
 
 ## Validation
 
@@ -72,3 +64,11 @@ See `journal.md`.
 
 
 ## Comments
+
+## Artifacts
+- outputs/iter14-sock-api-review.md
+- outputs/iter20-ui-feature-design.md
+- outputs/iter12-browser-e2e-verification.md
+- outputs/iter10-sync-status-flip-verification.md
+- outputs/iter8-refactor-verification.md
+- outputs/iter6-verification.md
