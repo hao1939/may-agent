@@ -242,6 +242,7 @@ const REVIEWER_DIRECTIVES = [
   "PLAN_UPDATE",
   "CONTEXT_UPDATE",
   "LINKED_CONTEXT_UPDATE",
+  "NEXT_ACTION_UPDATE",
 ];
 
 function extractDirectiveBlock(text: string, name: string): string | null {
@@ -259,6 +260,7 @@ export function applyReviewerProjectDirectives(projectContent: string, reviewerT
     ["Plan", "PLAN_UPDATE"],
     ["Context", "CONTEXT_UPDATE"],
     ["Linked Context", "LINKED_CONTEXT_UPDATE"],
+    ["Next Action", "NEXT_ACTION_UPDATE"],
   ];
 
   let next = projectContent;
@@ -485,7 +487,11 @@ function getLastGuidance(journalContent: string, iteration: number): string | nu
   if (!match) return null;
   const guidance = match[1].trim();
   if (/^(WAITING|BLOCKED)\b/i.test(guidance)) return null;
-  return guidance.replace(/^(CONTINUE|PIVOT)[:\s]*/i, "").trim() || null;
+  return normalizeProjectPromptHistory(guidance.replace(/^(CONTINUE|PIVOT)[:\s]*/i, "").trim()) || null;
+}
+
+function normalizeProjectPromptHistory(text: string): string {
+  return text.replace(/\bcomments\.md\b/g, "discussion.md");
 }
 
 function getRecentJournalEntries(journalContent: string, iteration: number, count: number): string {
@@ -495,7 +501,7 @@ function getRecentJournalEntries(journalContent: string, iteration: number, coun
     const match = journalContent.match(regex);
     if (match) entries.push(match[0].trim());
   }
-  return entries.join("\n\n");
+  return normalizeProjectPromptHistory(entries.join("\n\n"));
 }
 
 // ── Prompt builders ────────────────────────────────────────────────────
@@ -581,7 +587,8 @@ function getAllReviewerGuidance(journalContent: string, iteration: number): stri
     const match = journalContent.match(regex);
     if (match) {
       const guidance = match[1].trim();
-      entries.push(`- **Iteration ${i}**: ${guidance.slice(0, 300)}${guidance.length > 300 ? '...' : ''}`);
+      const normalized = normalizeProjectPromptHistory(guidance);
+      entries.push(`- **Iteration ${i}**: ${normalized.slice(0, 300)}${normalized.length > 300 ? '...' : ''}`);
     }
   }
   return entries.length > 0 ? entries.join('\n') : '(No previous guidance — this is the first review)';
@@ -643,10 +650,13 @@ function buildReviewPrompt(
   prompt += `## How This System Works (reference)\n`;
   prompt += `- **Milestone check-off**: When you mention a completed milestone by name, the system matches the first 30 characters (case-insensitive) against your response. Include the exact milestone name to check it off.\n`;
   prompt += `- **Project state authority**: If the human changed the goal, scope, signals, plan, current state, or linked context, update the project with explicit directives. Use \`GOAL_UPDATE:\`, \`SIGNALS_UPDATE:\`, \`PLAN_UPDATE:\`, \`CURRENT_STATE_UPDATE:\`, and/or \`LINKED_CONTEXT_UPDATE:\`. The workflow will apply these to project.md after your review.\n`;
+  prompt += `- **Project comments**: Human/May project comments are in the project's \`discussion.md\`; use that file name in reviewer guidance and resume conditions.\n`;
   prompt += `- **Context maintenance**: You maintain the ## Context section of project.md as current operating facts, not history. Remove stale or conflicting facts. Keep it concise — facts only, not narrative.\n`;
   prompt += `  Format your context update as: CONTEXT_UPDATE: <full replacement ## Context content>. This replaces the whole section; it is not appended.\n`;
   prompt += `- **Linked Context maintenance**: Keep ## Linked Context as the index of linked evidence and deeper reading: artifact paths, source paths, remote paths, sessions, or runbooks. Do not copy long evidence into Context when a link is enough.\n`;
   prompt += `  Format linked-context changes as: LINKED_CONTEXT_UPDATE: <full replacement ## Linked Context content>.\n`;
+  prompt += `- **Next Action maintenance**: The ## Next Action section is the single most prominent instruction the worker sees. When you say BLOCKED or WAITING, update it to reflect the blocked state. When a comment changes direction, update it to reflect the new direction. Stale Next Action is the #1 cause of wasted iterations.\n`;
+  prompt += `  Format: NEXT_ACTION_UPDATE: <full replacement ## Next Action content>. Always update this when circumstances change.\n`;
   prompt += `- **Agent cannot mark done**: Only human/May can mark a project done. If you say DONE, it's auto-converted to WAITING with "awaiting review".\n`;
   prompt += `- **Worker capabilities**: The worker can read/write files, run local bash commands, call sub-agents, and use any local tools exposed by the runtime (including exact remote command tools such as \`ssh_exec\` and delegation tools such as \`cc_worker\` when present). Output goes to the project's outputs/ directory. It CANNOT edit project.md or journal.md directly.\n`;
   prompt += `- **Remote work convention**: For remote hosts or remote absolute paths (for example \`ssh devbox\`, \`devbox:/...\`, or \`/home/...\` on a remote machine), tell the worker to use the available remote tool first. Prefer exact command tools such as \`ssh_exec\` when exact stdout/stderr matters; use delegation tools such as \`cc_worker\` when the worker should reason or inspect. Do not declare remote access blocked from a local bash path-guard warning alone; that warning usually means the command was routed through the wrong local tool.\n`;
@@ -1112,7 +1122,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       }
 
       // Non-done comments: run LLM reviewer to decide how to handle
-      const commentWorkerSummary = `[COMMENT ITERATION] Comments to address:\n${pendingComments}`;
+      const commentWorkerSummary = `[COMMENT ITERATION] discussion.md comments to address:\n${pendingComments}`;
 
       const commentReviewPrompt = buildReviewPrompt(
         currentGoal(projectContent, config.goal), iteration,
