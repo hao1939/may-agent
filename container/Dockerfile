@@ -7,9 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Bun
-RUN curl -fsSL https://bun.sh/install | bash && \
-    cp /root/.bun/bin/bun /usr/local/bin/bun
+# Install Bun (pinned)
+ARG BUN_VERSION=bun-v1.3.14
+RUN curl -fsSL https://bun.sh/install | bash -s "$BUN_VERSION" && \
+    cp /root/.bun/bin/bun /usr/local/bin/bun && \
+    /usr/local/bin/bun --version
 
 WORKDIR /build
 
@@ -117,7 +119,7 @@ ENV AGENTS_ROOT=/app/agents
 ENV SHARED_ROOT=/app/shared
 ENV PROJECTS_ROOT=/app/projects
 ENV STATE_DIR=/app/.state
-ENV PATH=/app/.state/.bun/bin:/usr/local/bin:$PATH
+ENV PATH=/usr/local/bin:$PATH
 
 # noVNC web interface
 EXPOSE 6080
