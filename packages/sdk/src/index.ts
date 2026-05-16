@@ -783,3 +783,12 @@ export {
   cleanup as cleanupDispatchRecords,
 } from "./dispatch-dedup-guard.js";
 export type { DispatchRecord } from "./dispatch-dedup-guard.js";
+
+// ── Workflow file cache ───────────────────────────────────
+export {
+  WorkflowFileCache,
+  parseSections,
+  extractSectionContent,
+  countPattern,
+} from "./workflow-file-cache.js";
+export type { CacheEntry, CacheStats } from "./workflow-file-cache.js";
