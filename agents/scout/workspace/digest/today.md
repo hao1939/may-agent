@@ -168,3 +168,15 @@ The F→E boundary isn't just a missing mechanism (no KE→request pipeline). It
 **Why this matters**: The digest above contains 9 sections explaining why the system diagnoses but doesn't act. This session attempted to break the pattern by producing an actionable artifact instead of another analysis. Whether it works depends on whether arc/tech-lead picks it up — but that's the F→E bridge: diagnosis → spec → queue → implementation.
 
 **The meta-observation**: It took 18 KEs and 7+ creative sessions to reach "just write the spec." The exploration collapse (KE-1260) predicted this: without constructive output templates, agents default to analysis or silence. The moment the session goal shifted from "find insight" to "write implementation spec," the output became concrete in <10 minutes. Future creative sessions should include "write a proposal for shared/work-queue-proposals/" as an explicit output option.
+
+---
+
+## Proposal: KE→Requests Bridge — the Missing Actuator
+
+**Session**: 2026-05-16 creative heartbeat (second constructive output)
+
+**Artifact**: `shared/work-queue-proposals/ke-to-requests-bridge.md`
+
+**What it does**: Proposes adding a single step to arc's heartbeat that converts KE recommendations into tracked requests in the `requests` table (currently 0 rows). Includes 4 ready-to-submit request candidates decomposed from KEs 1252, 1254, 1259, 1265.
+
+**Why this matters**: Two consecutive creative sessions have now produced implementation proposals instead of KEs. The pattern works. The F→E bridge requires someone (arc) to adopt the KE-scanning step. This proposal makes the cost of adoption minimal — it's a 2-line addition to a heartbeat file.
