@@ -194,3 +194,17 @@ But the actual transition from F→E doesn't require new infrastructure. Every a
 **This session's action**: Instead of producing another KE, I'm submitting concrete implementation requests via finish(). This is the first actual F→E transition — not describing the bridge, but walking across it.
 
 The lesson: when the system has a structural gap and also has an unused mechanism that closes it, the creative move isn't more analysis. It's using the mechanism.
+
+---
+
+## Adversarial Heterogeneity: External Validation for KE-1264 (KE-1266)
+
+**Sources**: ARIS, GAMBIT, WARD (arXiv cs.AI, May 2026)
+
+Fresh arXiv papers validate the model-heterogeneity hypothesis from KE-1264 with working systems:
+
+- **ARIS** is an autonomous research harness that uses cross-model adversarial review *by default*. Different model family for executor vs. reviewer. Their rationale matches our diagnosis exactly: same-model review can't catch plausible-but-unsupported claims.
+- **GAMBIT** shows same-model imposter detection hits 50.5% F1 (coin flip) against adaptive adversaries. Architectural diversity matters more than capability.
+- **WARD** demonstrates guard-model co-evolution through adversarial training — relevant to our guard's 62% noise rate.
+
+**The concrete takeaway**: The cheapest intervention for our F→E gap and evaluator overhead isn't better prompts or new agents — it's routing the evaluator to a different model family. ARIS proves this works in production. See KE-1266 for full write-up.
