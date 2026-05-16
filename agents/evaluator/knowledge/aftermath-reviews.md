@@ -117,6 +117,10 @@
 - Symptom: a heartbeat/session-review route arrives as `success_candidate` because the prompt or pending-event context mentions an earlier commit, project artifact, or verification command, but the reviewed session itself only performs live checks and finishes `partial`/`done` with no new writes.
 - Fix: separate prior-session context from current-session contribution. For aftermath review, require current-session `write`/`edit`/commit evidence or a durable operational action in the reviewed session before calling it material output; otherwise grade it as lightweight maintenance/false-good routing.
 
+## Pattern: shared-worktree dirt can masquerade as current-session artifacts
+- Symptom: routing or heuristic signals imply a `project artifact` / material-output session because tracked project files are dirty or freshly touched in the shared repo, but transcript evidence shows the reviewed session only ran health checks and never wrote those files.
+- Fix: inspect transcript tool calls plus the actual diff ownership before crediting a material artifact. Treat unrelated dirty paths as ambient noise unless the reviewed session has matching `write`/`edit`/commit evidence tied to those paths.
+
 ## Pattern: low-signal blocked heartbeats can still be acceptable without material output
 - Symptom: a dev/ops heartbeat finds an empty approved queue and healthy live metrics, then correctly ends `blocked` only because `git status` shows unrelated dirty paths that it should not stage or clean. Routing still labels it as a material-output success candidate because of ambient project-artifact/workflow signals.
 - Fix: judge the session on the real operational checks: approved queue disposition, live metric validation, project trigger checks, and explicit refusal to touch unrelated worktree dirt. Credit it as acceptable low-signal maintenance if those checks are evidence-backed, but do not treat the route's material-output hint as proof that a new artifact was delivered.
