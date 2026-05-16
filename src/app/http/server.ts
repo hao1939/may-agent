@@ -482,7 +482,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           const toolCalls = blocks
             .filter((b: any) => b.type === "tool_use")
             .map((b: any) => ({ id: b.id, tool: b.name, args: b.input }));
-          if (text || toolCalls.length) messages.push({ role: "assistant", text, toolCalls });
+          if (text || toolCalls.length) {
+            const msg: Record<string, unknown> = { role: "assistant", text, toolCalls };
+            if (entry.api) msg.api = entry.api;
+            if (entry.model) msg.model = entry.model;
+            if (entry.provider) msg.provider = entry.provider;
+            if (entry.usage) msg.usage = entry.usage;
+            if (entry.stopReason) msg.stopReason = entry.stopReason;
+            messages.push(msg);
+          }
         } else if (entry.role === "tool_result") {
           const content = Array.isArray(entry.content)
             ? entry.content
