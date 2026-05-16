@@ -145,7 +145,7 @@ async function findWorkflowPath(agentsRoot: string, sharedRoot: string, workflow
   for (const dir of searchDirs) {
     try {
       for (const file of readdirSync(dir)) {
-        if (!file.endsWith(".ts")) continue;
+        if (!file.endsWith(".ts") || file.endsWith(".test.ts")) continue;
         try {
           const path = join(dir, file);
           const mod = await import(path + "?t=" + Date.now());
