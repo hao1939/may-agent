@@ -91,3 +91,6 @@
 
 ## 2026-05-15 — s_1778898198102_270
 - In closed-loop steward aftermath reviews, do not treat a still-breaching alert as effectively closed just because a prior triage plausibly fixed the root cause. If the alert is still red, require one of: fresh validation evidence, a documented valid exception, a routed/nudged owner action, or a concrete blocker/data gap. Predicted auto-recovery alone is not closure progress.
+
+## 2026-05-16 — s_1778901837177_293
+- When a session claims `finish({ new_items: [...] })` created tracked requests, verify the side effect in the runtime DB (`requests` count, matching `sessionId`, or concrete rows). Do not trust the `finish()` success echo alone; it can mirror intent even when no request rows were created.
