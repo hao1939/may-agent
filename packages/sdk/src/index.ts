@@ -764,3 +764,10 @@ export interface WorkflowModule {
   description: string;
   execute: (ctx: WorkflowContext) => Promise<WorkflowResult>;
 }
+
+// ── Resilience primitives ──────────────────────────────────────
+export {
+  checkCircuitBreaker,
+  recordOutcome as recordCircuitOutcome,
+  resetCircuitBreaker,
+} from "./circuit-breaker.js";
