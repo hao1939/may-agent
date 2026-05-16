@@ -105,6 +105,10 @@
 - Symptom: a project iteration prompt asks for concrete artifacts that were already produced in earlier commits, and the session simply observes those existing files/commits then finishes `success` as if it delivered them.
 - Fix: separate project state from session contribution. Credit the underlying artifacts only to the sessions that created or verified them. For the reviewed session, require either fresh verification/action (for example read the actual artifacts, update plan state, send a routing message) or classify it as a no-op/partial rather than a material success.
 
+## Pattern: syncing pre-existing dirty files can be real value but not fresh implementation credit
+- Symptom: a builder session discovers that the requested feature already landed in an inner repo or earlier iteration, then commits matching dirty files in the outer/app worktree to bring the served copy into sync. The sync commit can be operationally useful, but `finish()` guards reject summaries that market it as writing or implementing the feature during the current session.
+- Fix: judge the sync on its own terms. Credit the session when the committed diff materially advances the shipped/served artifact, but describe the contribution precisely as synchronization or packaging, not as fresh feature implementation. Expect modest efficiency penalties if the agent burns turns fighting ghost-deliverable/overclaiming guards.
+
 ## Pattern: cited knowledge is not a knowledge update
 - Symptom: routing labels a session as a `knowledge update`, but the transcript only reads an existing KE/article and then calls `finish()` with no written deliverables.
 - Fix: verify authorship and actual file changes before crediting material output. Reading a pre-existing knowledge file can justify a diagnosis, but it is not itself a new artifact or knowledge update.
