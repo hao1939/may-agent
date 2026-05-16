@@ -5,7 +5,7 @@
  * No gates, no heartbeat context loading — just runs the agent with the task.
  */
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { checkCircuitBreaker, recordOutcome } from "../../../shared/workflows/circuit-breaker.js";
+import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../../shared/workflows/dispatch-dedup-guard.js";
 
 export const name = "scout-explore";
@@ -35,12 +35,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     result = await ctx.runAgent(agent, task);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    recordOutcome(agentsRoot, agent, true, `explore threw: ${message.slice(0, 200)}`);
+    recordCircuitOutcome(agentsRoot, agent, true, `explore threw: ${message.slice(0, 200)}`);
     dedupRecordOutcome(agent, "explore", "error");
     throw err;
   }
 
-  recordOutcome(agentsRoot, agent, result.status === "error",
+  recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "explore error" : undefined);
   dedupRecordOutcome(agent, "explore", result.status === "error" ? "error" : "success");
 

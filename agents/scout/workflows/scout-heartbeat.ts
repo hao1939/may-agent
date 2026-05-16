@@ -13,7 +13,7 @@ import {
   formatMetricsBlock,
   runRedMetricCommands,
 } from "../../../shared/workflows/heartbeat-data.js";
-import { checkCircuitBreaker, recordOutcome } from "../../../shared/workflows/circuit-breaker.js";
+import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
 import { shouldDispatch, recordDispatch, recordOutcome as dedupRecordOutcome, cleanup as dedupCleanup } from "../../../shared/workflows/dispatch-dedup-guard.js";
 
 export const name = "scout-heartbeat";
@@ -80,12 +80,12 @@ Think freely. Go deep on something interesting. The value is in connections and 
     result = await ctx.runAgent(agent, prompt);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    recordOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
+    recordCircuitOutcome(agentsRoot, agent, true, `heartbeat threw: ${message.slice(0, 200)}`);
     dedupRecordOutcome(agent, "heartbeat", "error");
     throw err;
   }
 
-  recordOutcome(agentsRoot, agent, result.status === "error",
+  recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
   dedupRecordOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");
 
