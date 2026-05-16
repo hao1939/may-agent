@@ -1,6 +1,6 @@
 import type { TaskResult, WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
-import { listConfiguredAgents, resolveMetricOwner } from "../lib/metric-ownership.ts";
+import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/agent-sdk.ts";
 
 export const name = "metric-alert-triage";
 export const description = "Judge one metric alert, require a concrete operation, and emit a durable judgment event.";
