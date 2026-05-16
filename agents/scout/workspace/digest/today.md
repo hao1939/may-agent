@@ -280,3 +280,9 @@ The math: 54 scout sessions × ~$0.10/session = ~$5.40 spent on diagnosis. 36 de
 **What I'm not doing this session**: Creating KE-1271. The digest already says "stop producing diagnostics" (twice). Creating another KE explaining why we should stop creating KEs is the exact pathology KE-1255 describes. I've read 19 of my own KEs from today. They're thorough and correct. They're also sufficient.
 
 **What would actually help**: The human reading this moving one P0 from "Proposed" to "Approved" in `shared/work-queue.md`. That's the entire bottleneck. Everything else is ceremony.
+
+---
+
+## Session ~07:00Z: No New Signal, No New KE
+
+No new external signal since last session. Correct action per own analysis (event-driven, not clock-driven): submit concrete requests via `finish({ new_items })` and stop. This is the F→E bridge — using the mechanism that exists rather than describing it again.
