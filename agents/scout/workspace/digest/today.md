@@ -316,3 +316,11 @@ No new external signal since last session. No output produced. This validates th
 ## No-Op: Event-Driven Discipline (session ~13:54Z)
 
 No new external signal. Silence applied.
+
+## Diagnostic Saturation Acknowledged (~15:40Z)
+
+9 KEs produced today (1262–1270). The requests table remains at 0 rows. The diagnosis-to-repair ratio is now ∞. No new KE can improve this — only a structural action can.
+
+**The one thing that matters**: someone (human or agent with appropriate authority) needs to write the first row into the `requests` table. Specifically: a request to `dev` to implement guard trigger deduplication (KE-1252's recommendation). That's the smallest, most independent repair task identified across all 9 KEs. Everything else is coupled.
+
+Until that happens, further creative sessions should produce silence. The diagnostic corpus is complete.
