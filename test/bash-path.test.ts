@@ -11,26 +11,22 @@ describe("bash tool PATH env", () => {
 		expect(text.trim()).toMatch(/^\d+\.\d+/);
 	});
 
-	it("should make bun available even when PATH is minimal", async () => {
-		// Save and restore PATH to prove the tool adds .state/.bun/bin
+	it("inherits the parent's PATH unchanged (no state-dir shadow prepend)", async () => {
+		// Earlier versions of getShellEnv prepended $STATE_DIR/.bun/bin to PATH.
+		// That shadow has been removed; bun ships in the container image at
+		// /usr/local/bin/bun and is on the inherited PATH for free. This test
+		// pins that contract: the tool must not synthesise PATH entries that
+		// the parent process did not already have.
 		const originalPath = process.env.PATH;
 		try {
-			// Set PATH to just /usr/bin (no bun)
-			process.env.PATH = "/usr/bin:/bin";
+			const sentinel = "/tmp/path-sentinel-" + Math.random().toString(36).slice(2);
+			process.env.PATH = sentinel;
 			const tool = createBashTool(process.cwd());
-			const result = await tool.execute("test-2", { command: "bun --version" });
+			const result = await tool.execute("test-2", { command: "echo $PATH" });
 			const text = (result as { content: { text: string }[] }).content[0].text;
-			expect(text.trim()).toMatch(/^\d+\.\d+/);
+			expect(text.trim()).toBe(sentinel);
 		} finally {
 			process.env.PATH = originalPath;
 		}
-	});
-
-	it("should not duplicate bun path if already present", async () => {
-		const tool = createBashTool(process.cwd());
-		// Run a command that prints PATH and check .state/.bun/bin appears
-		const result = await tool.execute("test-3", { command: "echo $PATH" });
-		const text = (result as { content: { text: string }[] }).content[0].text;
-		expect(text).toContain(".state/.bun/bin");
 	});
 });

@@ -12,20 +12,12 @@ function getShellConfig(): { shell: string; args: string[] } {
 }
 
 function getShellEnv(): NodeJS.ProcessEnv {
-	const env = { ...process.env };
-	// Prepend the runtime state's bun install to PATH so agents can run `bun` without
-	// manually exporting PATH every time. This eliminates ~8% of all bash
-	// calls that were pure boilerplate `export PATH=".state/.bun/bin:$PATH"`.
-	const stateDir = process.env.STATE_DIR
-		?? (existsSync("/app/.state") ? "/app/.state" : undefined)
-		?? (existsSync(join(process.cwd(), "app", ".state"))
-			? join(process.cwd(), "app", ".state")
-			: join(process.cwd(), ".state"));
-	const bunDir = join(stateDir, ".bun", "bin");
-	if (existsSync(bunDir)) {
-		env.PATH = `${bunDir}:${env.PATH ?? ""}`;
-	}
-	return env;
+	// The container image installs bun at /usr/local/bin/bun, which is already
+	// on PATH for every process the daemon spawns. Earlier versions of this
+	// file also prepended `$STATE_DIR/.bun/bin` as a hot-swap override, but
+	// that shadow drifted silently against the image's bun and has been
+	// removed in favour of a single source of truth — the pinned image bun.
+	return { ...process.env };
 }
 
 function killProcessTree(pid: number): void {
@@ -192,7 +184,7 @@ export const DEFAULT_ERROR_NUDGES: ErrorNudge[] = [
 	},
 	{
 		pattern: /bun:\s*command not found/i,
-		hint: "\n\n💡 Hint: bun should be on PATH automatically from the runtime state directory. If not found, check STATE_DIR or app/.state/.bun/bin/bun.",
+		hint: "\n\n💡 Hint: bun ships in the container image at /usr/local/bin/bun and is on PATH for every bash call. If 'bun: command not found' appears, the image is broken — do not work around it with manual PATH exports.",
 	},
 	{
 		pattern: /npx:\s*command not found/i,

@@ -338,7 +338,6 @@ else
   fi
   ok "TypeScript check passed"
 
-  export PATH=".state/.bun/bin:$PATH"
   info "Running bun test..."
   if ! bun test 2>&1; then
     echo ""

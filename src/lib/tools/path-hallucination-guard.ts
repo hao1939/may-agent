@@ -179,8 +179,7 @@ export function createPathHallucinationGuard(): (
       // Detect bun-path-specific hallucination (the #1 pattern)
       const isBunPath = found.fullMatch.includes("bun") || command.includes(".bun/bin");
       const bunHint = isBunPath
-        ? `\n\nFor bun: it should already be on PATH (.state/.bun/bin is auto-prepended).\n` +
-          `  Just use: bun -e "..."`
+        ? `\n\nFor bun: it is on PATH at /usr/local/bin/bun. Just use: bun -e "..."`
         : "";
 
       return {
