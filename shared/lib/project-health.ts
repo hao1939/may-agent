@@ -6,7 +6,7 @@
  * 2. Diagnose what action each project needs
  * 3. Persist health state and inflight tracking
  */
-import { existsSync, readFileSync, writeFileSync, appendFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -83,140 +83,31 @@ function launchRateLimitReason(entry: ProjectHealthEntry | undefined, now: numbe
 }
 
 // ── Markdown helpers ─────────────────────────────────────────────────────
+//
+// Project-md schema parsers and editors were promoted to @may-agent/sdk.
+// We re-export here for back-compat with handlers/handlers tests that still
+// import from shared/lib/project-health.
+//
+// New code should import these from `@may-agent/sdk` (or via shared/agent-sdk.ts).
 
-type ProjectMeta = Record<string, string>;
+import {
+  parseProjectMeta,
+  validateProjectFormat,
+  updateProjectField as updateField,
+  appendProjectComment as appendComment,
+  appendDiscussionComment,
+  unreadDiscussionTail,
+  type ProjectMeta,
+} from "../agent-sdk.ts";
 
-const FIELD_TO_META_KEY: Record<string, string> = {
-  "Project": "name",
-  "Name": "name",
-  "Owner": "owner",
-  "Status": "status",
-  "Type": "type",
-  "Priority": "priority",
-  "Workflow": "workflow",
-  "Iteration": "iteration",
-  "Stop Reason": "stop_reason",
-  "Resume Condition": "resume_condition",
-};
+export { parseProjectMeta, validateProjectFormat, updateField, appendComment, appendDiscussionComment, unreadDiscussionTail };
+export type { ProjectMeta };
 
-export function parseProjectMeta(content: string): ProjectMeta {
-  const m = content.match(/^---\s*\n([\s\S]*?)\n---\s*(?:\n|$)/);
-  if (!m) return {};
-  const meta: ProjectMeta = {};
-  for (const line of m[1].split("\n")) {
-    const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
-    if (!field) continue;
-    meta[field[1].toLowerCase()] = field[2].trim().replace(/^["']|["']$/g, "");
-  }
-  return meta;
-}
-
-export function validateProjectFormat(content: string, expectedId?: string): string[] {
-  const errors: string[] = [];
-  const hasFrontmatter = /^---\s*\n[\s\S]*?\n---\s*(?:\n|$)/.test(content);
-  const meta = parseProjectMeta(content);
-
-  if (!hasFrontmatter) {
-    errors.push("missing YAML frontmatter");
-  }
-  for (const key of ["id", "owner", "status"]) {
-    if (!meta[key]) errors.push(`missing frontmatter field: ${key}`);
-  }
-  if (expectedId && meta.id && meta.id !== expectedId) {
-    errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
-  }
-  const status = meta.status?.toLowerCase() || "active";
-  if (meta.workflow?.startsWith("master-worker")) {
-    errors.push("projects should use workflow: project; master-worker is legacy/archived only");
-  }
-  if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
-    errors.push("metadata duplicated as bold body field");
-  }
-
-  return errors;
-}
-
-function stripProjectMeta(content: string): string {
-  return content.replace(/^---\s*\n[\s\S]*?\n---\s*(?:\n|$)/, "");
-}
-
-function formatProjectMeta(meta: ProjectMeta): string {
-  const preferred = ["id", "owner", "status", "type", "priority", "workflow", "iteration", "stop_reason", "resume_condition", "resume_after"];
-  const keys = [
-    ...preferred.filter(key => meta[key] !== undefined && meta[key] !== ""),
-    ...Object.keys(meta).filter(key => !preferred.includes(key) && meta[key] !== undefined && meta[key] !== "").sort(),
-  ];
-  return ["---", ...keys.map(key => `${key}: ${meta[key]}`), "---", "", ""].join("\n");
-}
-
-/** Extract the body of a ## Section */
+/** Extract the body of a ## Section (private helper) */
 function extractSection(content: string, heading: string): string {
   const re = new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
   const m = content.match(re);
   return m ? m[1].trim() : "";
-}
-
-/** Update a project metadata field in YAML frontmatter. */
-export function updateField(content: string, field: string, value: string): string {
-  const metaKey = FIELD_TO_META_KEY[field] ?? field.toLowerCase().replace(/\s+/g, "_");
-  const meta = parseProjectMeta(content);
-  meta[metaKey] = value;
-  return formatProjectMeta(meta) + stripProjectMeta(content).replace(/^\n+/, "");
-}
-
-/** Append a comment to the ## Comments section */
-export function appendComment(content: string, comment: string): string {
-  const now = new Date().toISOString().slice(0, 10);
-  const entry = `- [${now}] ${comment}`;
-
-  if (content.includes("## Comments")) {
-    return content.replace(/(## Comments\s*\n)/, `$1${entry}\n`);
-  }
-  return content + `\n## Comments\n${entry}\n`;
-}
-
-/**
- * Append a comment to the project's discussion.md in the canonical format:
- *
- *     ### <author> - YYYY-MM-DD
- *     <body>
- *
- * Creates the file with a `# Discussion` header if missing. This is the
- * canonical write path; the legacy `appendComment()` writer above still
- * exists for back-compat with project.md `## Comments` sections.
- */
-export function appendDiscussionComment(
-  projectDir: string,
-  comment: string,
-  author = "system",
-): void {
-  const date = new Date().toISOString().slice(0, 10);
-  const entry = `\n### ${author.trim() || "system"} - ${date}\n${comment.trim()}\n`;
-  const discPath = `${projectDir}/discussion.md`;
-  if (existsSync(discPath)) appendFileSync(discPath, entry, "utf-8");
-  // Seed with `---read @iter0---` so the no-marker code path (which would
-  // treat the entire body as unread) never fires on a freshly created file.
-  else writeFileSync(discPath, `# Discussion\n\n---read @iter0---\n${entry}`, "utf-8");
-}
-
-/**
- * Extract the unread tail of a discussion.md file.
- *
- * Convention: a `---read @iter<N>---` marker line is appended by the project
- * workflow after each iteration; anything after the *last* such marker is
- * unread. If there is no marker yet, everything after the H1 header is unread.
- * The H1 may be `# Discussion`, `# <project> — Discussion`, etc.
- */
-export function unreadDiscussionTail(disc: string): string {
-  const lastMarker = disc.lastIndexOf("---read @");
-  if (lastMarker >= 0) {
-    const afterMarker = disc.indexOf("\n", lastMarker);
-    return afterMarker === -1 ? "" : disc.slice(afterMarker + 1).trim();
-  }
-  const h1 = disc.match(/^#\s+.*$/m);
-  if (!h1) return disc.trim();
-  const headerEnd = disc.indexOf("\n", (h1.index ?? 0) + h1[0].length - 1);
-  return headerEnd === -1 ? "" : disc.slice(headerEnd + 1).trim();
 }
 
 // ── Scanning ─────────────────────────────────────────────────────────────
