@@ -226,3 +226,15 @@ The surviving agents are all monitoring/coordination: evaluator (46% of all sess
 **Prediction**: Re-enabling optimizer/coach without changing selection pressure → re-extinction within weeks.
 
 **See**: KE-1267 for full write-up with session counts and ecological analysis.
+
+---
+
+## Creative Synthesis: Metric Absence as Selection Pressure (KE-1268)
+
+**The non-obvious connection**: HN's Goodhart stories ("metrics cause gaming") and our KE-1267 extinction data ("evolution agents died") are two sides of the same tradeoff. Metric absence isn't the safe default — it's a specific selection pressure that favors activity-visible agents (monitoring) over outcome-dependent agents (evolution).
+
+Without outcome metrics, the only visible signal is session count. Evaluator's 9,763 sessions look like success. Optimizer's actual improvements are invisible. Result: monitoring monoculture through competitive exclusion.
+
+**The testable prediction**: Reintroducing an evolution agent with even one sparse, lagging outcome metric (e.g., "requests completed/week") should extend its survival vs. the same agent without metrics. The Goodhart/extinction tradeoff suggests the sweet spot is sparse, delayed, relational metrics that resist in-session optimization.
+
+See KE-1268 for full analysis.
