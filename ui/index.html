@@ -135,9 +135,11 @@
   .tool-pair.error .tool-preview-pane.result { background: rgba(248,81,73,.06); }
   .tool-preview-label { color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: 0; margin-bottom: 5px; }
   .tool-pair details { border-top: 1px solid var(--border); background: var(--bg2); }
-  .tool-pair details summary { cursor: pointer; padding: 5px 10px; color: var(--fg2); font-size: 12px; list-style: none; }
-  .tool-pair details summary::-webkit-details-marker { display: none; }
+  .tool-pair details:not([open]) { display: none; }
+  .tool-pair details summary { display: none; }
   .tool-more { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 20px; border: 1px solid var(--border); border-radius: 6px; color: var(--fg2); background: var(--bg); font-weight: 650; }
+  .tool-more-button { cursor: pointer; padding: 0; font-family: inherit; }
+  .tool-more-button:hover, .tool-more-button.active { color: var(--accent); border-color: var(--accent); background: rgba(88,166,255,.1); }
 
   /* Transcript annotations */
   .flow-chip { display: inline-flex; align-items: center; max-width: 220px; border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; background: var(--bg2); color: var(--fg2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1355,19 +1357,27 @@ function renderToolPair(tc, result, sessionId) {
       ${flowChip(hasError ? 'error' : 'ok', hasError ? 'error' : 'good')}
       ${tc.id || result?.toolCallId ? sourceChip(tc.id || result.toolCallId, sessionId, tc.rawLine || result?.rawLine, tc.rawSource || result?.rawSource) : ''}
       <span class="tool-pair-spacer"></span>
+      <button type="button" class="tool-more tool-more-button" title="Full tool call and output" onclick="toggleToolDetails(this)">...</button>
     </div>
     <div class="tool-preview-grid">
       <div class="tool-preview-pane request"><div class="tool-preview-label">tool call ${tc.rawLine ? sourceChip('line ' + tc.rawLine, sessionId, tc.rawLine, tc.rawSource) : ''}</div><pre class="tool-preview-snippet">${esc(requestText)}</pre></div>
       <div class="tool-preview-pane result"><div class="tool-preview-label">tool output ${result?.rawLine ? sourceChip('line ' + result.rawLine, sessionId, result.rawLine, result.rawSource, hasError ? 'error' : '') : ''}</div><pre class="tool-preview-snippet">${esc(resultPreview)}</pre></div>
     </div>
-    <details>
-      <summary title="Full tool call and output"><span class="tool-more">...</span></summary>
+    <details class="tool-details">
+      <summary>Full tool call and output</summary>
       <div class="tool-grid">
         <div class="tool-pane"><label>Tool call args</label><pre class="tool-code">${esc(formatJson(tc.args ?? {}))}</pre></div>
         <div class="tool-pane"><label>Tool output</label><pre class="tool-code">${esc(resultText)}</pre></div>
       </div>
     </details>
   </div>`;
+}
+
+function toggleToolDetails(button) {
+  const details = button?.closest('.tool-pair')?.querySelector('.tool-details');
+  if (!details) return;
+  details.open = !details.open;
+  button.classList.toggle('active', details.open);
 }
 
 function renderEnrichedTranscript(messages, sessionId) {
