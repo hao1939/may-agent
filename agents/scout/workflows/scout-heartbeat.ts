@@ -12,7 +12,7 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-} from "../../../shared/workflows/heartbeat-data.js";
+} from "../../../shared/agent-sdk.ts";
 import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "../../../shared/agent-sdk.ts";
 
 export const name = "scout-heartbeat";

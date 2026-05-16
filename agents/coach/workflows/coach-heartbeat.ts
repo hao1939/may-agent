@@ -8,7 +8,7 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-} from "../../../shared/workflows/heartbeat-data.js";
+} from "../../../shared/agent-sdk.ts";
 import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
 
 export const name = "coach-heartbeat";
