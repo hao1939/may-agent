@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>may-agent</title>
+<link rel="stylesheet" href="styles.css">
+
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+<script>if (window.marked) marked.setOptions({ breaks: true });</script>
+</head>
+<body>
+<div id="global-error" style="display:none;background:var(--red);color:white;padding:8px 16px;font-size:12px;position:fixed;top:0;left:0;right:0;z-index:999"></div>
+<div class="header">
+  <h1>may-agent</h1>
+  <div class="tabs">
+    <div class="tab active" data-tab="live" data-route="/">Live</div>
+    <div class="tab" data-tab="agents" data-route="/agents">Agents</div>
+    <div class="tab" data-tab="projects" data-route="/projects">Projects</div>
+    <div class="tab" data-tab="metrics" data-route="/metrics">Metrics</div>
+    <div class="tab" data-tab="learning" data-route="/learning">Learning</div>
+    <div class="tab" data-tab="knowledge" data-route="/knowledge">Knowledge</div>
+    <div class="tab" data-tab="system" data-route="/system">System</div>
+    <!-- Sessions are reachable through deep-links (#/sessions/:id) and parent surfaces. -->
+  </div>
+</div>
+
+<div class="main">
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <div id="liveness-panel" class="liveness"></div>
+    <details id="legacy-dashboard" style="margin-top:24px">
+      <summary style="cursor:pointer;color:var(--fg2);font-size:12px;padding:8px 0">
+        ▸ Legacy panels (health summary, agent grid, activity timeline, live feed)
+      </summary>
+    <div id="health-summary" class="health-summary"></div>
+    <div id="health-graphs" style="margin:16px 0;display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px"></div>
+    <div id="agent-grid" class="agent-grid"></div>
+    <div id="agent-deep-dive" class="agent-deep-dive" style="display:none"></div>
+    <div id="activity-timeline" class="timeline-section" style="display:none">
+      <h3>
+        Activity Timeline
+        <select id="timeline-hours" onchange="loadTimeline()">
+          <option value="6">Last 6h</option>
+          <option value="12">Last 12h</option>
+          <option value="24" selected>Last 24h</option>
+          <option value="48">Last 48h</option>
+        </select>
+      </h3>
+      <div id="timeline-body"></div>
+      <div id="timeline-axis" class="timeline-axis"></div>
+    </div>
+    <div id="activity-feed" class="activity-feed-section">
+      <h3>
+        Live Activity Feed
+        <span style="display:flex;gap:4px">
+          <button id="feed-scroll-toggle" onclick="toggleFeedScroll()" title="Auto-scroll to bottom on new messages">⬇ Auto-scroll</button>
+          <button id="feed-pause-btn" onclick="toggleFeedPause()">⏸ Pause</button>
+        </span>
+      </h3>
+      <div id="feed-list" class="feed-list"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="detail-panel"></div>
+    </details>
+  </div>
+  <div id="agents" class="hidden">
+    <div id="agents-content"></div>
+  </div>
+  <div id="chat" class="hidden">
+    <div id="session-detail-panel"></div>
+    <div id="chat-composer-host">
+    <div class="chat-container">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="chat-status" id="chat-status">Disconnected</div>
+        <button id="scroll-toggle" onclick="toggleChatScroll()" title="Auto-scroll to bottom on new messages">⬇ Auto-scroll</button>
+        <button class="ask-btn" id="md-toggle" onclick="toggleMarkdown()" style="margin-left:auto;font-size:11px">Raw</button>
+      </div>
+      <div id="chat-agent-banner" style="display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--accent);border-radius:8px;margin:4px 0;font-size:13px">
+        <span style="color:var(--fg2)">Chatting with</span>
+        <b class="banner-name" style="color:var(--accent)"></b>
+        <span class="banner-session" style="color:var(--fg2);font-size:11px;margin-left:auto;font-family:monospace">session: —</span>
+      </div>
+      <div id="session-picker" style="display:flex;gap:4px;flex-wrap:wrap;padding:4px 0;font-size:12px"></div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" type="text" placeholder="Type a message... (sends to selected session)" autocomplete="off">
+        <button id="chat-send">Send</button>
+      </div>
+    </div>
+    </div>
+  </div>
+
+
+  <!-- Knowledge -->
+  <div id="knowledge" class="hidden">
+    <!-- Breadcrumb -->
+    <div id="kb-breadcrumb" style="margin-bottom: 12px; font-size: 13px; color: var(--fg2);"></div>
+    <!-- Split: file tree left, content right -->
+    <div style="display: flex; gap: 16px; align-items: flex-start;">
+      <div id="kb-tree" style="min-width: 280px; max-width: 350px;"></div>
+      <div id="kb-content" style="flex: 1; min-width: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; max-height: 85vh; overflow-y: auto;">
+        <span style="color:var(--fg2)">Select a file to view</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div id="metrics" class="hidden">
+    <div id="metrics-alerts" style="margin-bottom:16px"></div>
+    <div id="metrics-by-owner"></div>
+    <div id="metrics-recent" style="margin-top:20px"></div>
+  </div>
+
+  <div id="learning" class="hidden">
+    <div id="learning-content"></div>
+  </div>
+
+  <div id="projects" class="hidden">
+    <div id="projects-content"></div>
+  </div>
+
+  <div id="events" class="hidden">
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
+      <select id="events-owner" onchange="loadEvents()"><option value="">All owners</option></select>
+      <select id="events-type" onchange="loadEvents()"><option value="">All types</option></select>
+      <span id="events-count" style="font-size:12px;color:var(--fg2)"></span>
+    </div>
+    <div id="loop-trace-content" style="margin-bottom:12px"></div>
+    <div id="events-content"></div>
+  </div>
+</div>
+
+<script src="pages/charts.js"></script>
+<script src="pages/metrics.js"></script>
+<script src="pages/live.js"></script>
+<script src="pages/sessions.js"></script>
+<script src="pages/agents.js"></script>
+<script src="pages/learning.js"></script>
+<script src="pages/knowledge.js"></script>
+<script src="pages/projects.js"></script>
+<script src="pages/system.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
