@@ -1,3 +1,41 @@
+# Proposed Strategies — 2026-05-17 13:44Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
+- `.state/sessions/history/s_1779025311150_347/session.jsonl` (scout)
+- `.state/sessions/history/s_1779023420244_342/session.jsonl` (arc)
+- `.state/sessions/history/s_1779021458235_332/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 1
+- Sessions with zero extracted positive `strategy` lessons: 2
+- Total extracted strategy lessons: 1
+
+## Lessons
+
+### 1. Turn evidence gathering into one concrete action before finishing
+**Evidence:** The fresh scout sample `s_1779021458235_332` emitted `Turns evidence gathering into one concrete action before finishing`.
+
+**Strategy:**
+- After collecting enough signal, convert the scan into one concrete outward action (`message`, `edit`, or `write`) before ending the session.
+- Preserve the evidence-to-action transition as a reusable completion tactic for coordination and alert-triage work.
+- Distinguish this from optimization noise: the positive signal is the concrete outward action after evidence gathering, not merely high tool activity.
+
+## Calibration Notes
+- Positive extraction is still live, but this freshest batch regressed from the prior 2/3 coverage to 1/3.
+- The remaining gap is no longer just compact scout transcripts: the fresh compact arc sample `s_1779023420244_342` also returned `{"lessons":[]}` despite a canonical heuristic `good` row and six success-language matches.
+- Optimization noise still dominates some successful transcripts: the only positive sample also emitted three `optimization` lessons before surfacing the single reusable tactic.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779025311150_347/session.jsonl --type strategy` returned `{"lessons":[],...}` with `scanned_lines: 13`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779023420244_342/session.jsonl --type strategy` returned `{"lessons":[],...}` with `scanned_lines: 11`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779021458235_332/session.jsonl --type strategy` returned one `type: "strategy"` lesson (`Turns evidence gathering into one concrete action before finishing`) plus three `optimization` lessons, with `scanned_lines: 29`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `3`, `6`, and `8` respectively.
+- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`, `efficiency=0.8`).
+
+---
+
 # Proposed Strategies — 2026-05-16 09:54Z
 
 ## Scope
