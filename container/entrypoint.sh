@@ -20,7 +20,7 @@ mkdir -p "${STATE_DIR}/chrome-profile"
 
 # may-agent args for supervisord. Web runs in a separate process so workflow
 # or LLM work cannot block the dashboard event loop.
-export MAY_ARGS="--chat --cron --telegram --console --socket"
+export MAY_ARGS="${MAY_ARGS:---chat --cron --telegram --console --socket}"
 
 # SSH config
 mkdir -p "${HOME}/.ssh"

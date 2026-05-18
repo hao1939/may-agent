@@ -96,5 +96,5 @@ function parseInterfaceAgent(argv: string[], env: NodeJS.ProcessEnv): string {
   const idx = argv.indexOf("--agent");
   if (idx !== -1 && argv[idx + 1]) return argv[idx + 1];
 
-  return env.AGENT || "may";
+  return env.AGENT || env.DAEMON_AGENT || "may";
 }
