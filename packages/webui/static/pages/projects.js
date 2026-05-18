@@ -67,14 +67,14 @@ async function loadProjects() {
     const statusOrder = {active:0, blocked:1, paused:2, waiting:3, done:4, complete:5, closed:6};
     projects.sort((a,b) => (statusOrder[a.status]??9) - (statusOrder[b.status]??9) || b.updatedAt - a.updatedAt);
 
-    // Hidden-by-default statuses: terminal (done/complete/closed) + stalled (waiting/blocked).
-    // Operator can toggle to see them — may want to revive a waiting project.
-    const HIDDEN_STATUSES = new Set(['done', 'complete', 'closed', 'waiting', 'blocked']);
+    // Hide only terminal projects by default. Waiting/blocked projects still need
+    // operator attention, so keep them visible in the main project list.
+    const HIDDEN_STATUSES = new Set(['done', 'complete', 'closed']);
     const hiddenCount = projects.filter(p => HIDDEN_STATUSES.has(p.status)).length;
     const showHidden = document.getElementById('show-hidden-toggle')?.checked ?? false;
     const visible = showHidden ? projects : projects.filter(p => !HIDDEN_STATUSES.has(p.status));
 
-    let html = `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:var(--fg2);cursor:pointer"><input type="checkbox" id="show-hidden-toggle" onchange="loadProjects()" ${showHidden ? 'checked' : ''}> Show inactive (${hiddenCount} done / closed / waiting / blocked)</label></div>`;
+    let html = `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:var(--fg2);cursor:pointer"><input type="checkbox" id="show-hidden-toggle" onchange="loadProjects()" ${showHidden ? 'checked' : ''}> Show closed (${hiddenCount} done / complete / closed)</label></div>`;
     html += `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
     html += `<tr style="border-bottom:2px solid var(--border);text-align:left">`;
     html += `<th style="padding:8px">Project</th><th>Owner</th><th>Status</th><th>Health</th><th>Milestones</th><th>Metrics</th><th>Iter</th><th>Updated</th>`;
