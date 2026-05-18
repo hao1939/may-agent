@@ -5,7 +5,7 @@ import type { SubagentManager } from "../../lib/index.js";
 import type { Cron } from "../cron.js";
 import type { EventBus } from "../event-bus.js";
 import { loadAgentConfig, validateAgentConfig, type ValidationError } from "./agent-config.js";
-import { listAgentDirectories } from "./agent-discovery.js";
+import { agentProjectRoot, agentRelativeDir, agentsRootForAgentDir, listRuntimeAgentDirectories } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {
@@ -41,25 +41,38 @@ export async function loadAgents(
   opts: AgentLoaderOptions,
   runtime: AgentRegistryRuntime,
 ): Promise<LoadResult> {
-  const { agentsRoot, projectRoot, models, manager } = opts;
+  const { agentsRoot, projectRoot, projectsRoot, models, manager } = opts;
   const added: string[] = [];
   const updated: string[] = [];
   const allErrors: ValidationError[] = [];
 
-  for (const { dir: agentDir } of listAgentDirectories(agentsRoot)) {
+  const seen = new Map<string, string>();
+
+  for (const agentSource of listRuntimeAgentDirectories(agentsRoot, projectsRoot)) {
+    const agentDir = agentSource.dir;
     const config = loadAgentConfig(agentDir, opts.bus);
     if (!config) continue;
 
     const errors = validateAgentConfig(config, models, agentsRoot);
+    const priorDir = seen.get(config.name);
+    if (priorDir) {
+      errors.push({
+        agent: config.name,
+        field: "name",
+        message: `Duplicate agent name. Already loaded from ${priorDir}; duplicate at ${agentRelativeDir(agentSource)}`,
+      });
+    }
     if (errors.length > 0) {
       allErrors.push(...errors);
       continue;
     }
+    seen.set(config.name, agentRelativeDir(agentSource));
 
     const isUpdate = manager.hasAgent(config.name);
     const model = models[config.model];
     const knowledgeDir = resolve(agentDir, "knowledge");
     const workspace = resolve(agentDir, "workspace");
+    const effectiveProjectRoot = agentProjectRoot(agentSource, projectRoot);
 
     manager.register({
       name: config.name,
@@ -68,6 +81,9 @@ export async function loadAgents(
       model,
       tools: await buildTools(config, {
         ...opts,
+        projectRoot: effectiveProjectRoot,
+        agentsRoot: agentsRootForAgentDir(agentSource),
+        agentDir,
         getAgentSessionId: runtime.getAgentSessionId,
         getAgentCrons: runtime.getAgentCrons,
         setAgentCron: runtime.setAgentCron,
@@ -76,7 +92,7 @@ export async function loadAgents(
       agentDir,
       knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
       workspace: existsSync(workspace) ? workspace : undefined,
-      projectRoot,
+      projectRoot: effectiveProjectRoot,
       apiKey: model.apiKey,
       memoryLimit: config.memoryLimit,
       compaction: config.compaction,
