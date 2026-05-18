@@ -4,7 +4,7 @@ owner: may
 status: paused
 type: milestone
 priority: P1
-workflow: project
+workflow: aks-rp-e2e-iteration
 iteration: 33
 ---
 
