@@ -10,7 +10,7 @@ import {
   parseProjectMeta,
   updateField,
   validateProjectFormat,
-} from "./project-schema.ts";
+} from "./project-schema.js";
 
 function wrap(frontmatter: string): string {
   return `---\n${frontmatter}\n---\n\n# Body\n\nbody text\n`;
