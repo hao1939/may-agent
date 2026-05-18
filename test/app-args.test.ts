@@ -29,6 +29,12 @@ describe("app args", () => {
     expect(args.webOnlyMode).toBe(true);
   });
 
+  it("uses DAEMON_AGENT as the interface agent when AGENT is unset", () => {
+    const args = parseAppArgs(["may-agent", "--web"], { DAEMON_AGENT: "aks-explorer" });
+
+    expect(args.interfaceAgent).toBe("aks-explorer");
+  });
+
   it("throws a clear error when task-file is missing", () => {
     expect(() => parseAppArgs(["may-agent", "--task-file", "/tmp/no-such-task-file"], {}))
       .toThrow("Task file not found: /tmp/no-such-task-file");
