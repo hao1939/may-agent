@@ -798,7 +798,6 @@ export {
   parseProjectMeta,
   validateProjectFormat,
   updateField as updateProjectField,
-  appendComment as appendProjectComment,
   appendDiscussionComment,
   unreadDiscussionTail,
 } from "./project-schema.js";
