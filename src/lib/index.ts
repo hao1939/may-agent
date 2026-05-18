@@ -111,8 +111,8 @@ export type {
   AlertQuery,
   ProjectQuery,
 } from "./query-service.js";
-export { createWorkflowHandler } from "./workflow-handler.js";
-export type { WorkflowHandlerOptions } from "./workflow-handler.js";
+export { createWorkflowHandler } from "@may-agent/sdk";
+export type { WorkflowHandlerOptions } from "@may-agent/sdk";
 export {
   getExecutionResult,
   getExecutionResultFromDb,

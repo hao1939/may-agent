@@ -34,6 +34,17 @@ describe("createWorkflowHandler", () => {
     timestamp: 123,
   };
 
+  function triggerFromTask(task: string): unknown {
+    const fence = "```";
+    const marker = `## Trigger Event\n${fence}json\n`;
+    const start = task.indexOf(marker);
+    if (start < 0) throw new Error("Trigger Event block missing");
+    const jsonStart = start + marker.length;
+    const jsonEnd = task.indexOf(`\n${fence}`, jsonStart);
+    if (jsonEnd < 0) throw new Error("Trigger Event block unterminated");
+    return JSON.parse(task.slice(jsonStart, jsonEnd));
+  }
+
   it("dispatches a workflow with source, project, and trigger context", async () => {
     const { ctx, calls, emitted } = context();
     const handler = createWorkflowHandler({
@@ -61,6 +72,40 @@ describe("createWorkflowHandler", () => {
         workflow: "goal-driver",
         source: "scout",
         projectId: "p1",
+        workflowRunId: "wr_1",
+        status: "done",
+      },
+    });
+  });
+
+  it("passes session.completed event data through in trigger context", async () => {
+    const { ctx, calls, emitted } = context();
+    const completedEvent: TriggerEvent = {
+      type: "session.completed",
+      source: "event",
+      entry: "evaluator-aftermath",
+      data: { sessionId: "s_done", agent: "dev", status: "done" },
+      timestamp: 456,
+    };
+    const handler = createWorkflowHandler({
+      workflow: "evaluator-aftermath",
+      source: "evaluator",
+      task: "Evaluate the completed session",
+      includeEvent: true,
+    })(ctx, { name: "evaluator-aftermath", enabled: true, handler: "run-workflow" });
+
+    await handler(completedEvent);
+
+    expect(calls).toHaveLength(1);
+    expect(triggerFromTask(calls[0].task)).toEqual(completedEvent);
+    expect(triggerFromTask(calls[0].task)).not.toHaveProperty("sessionId");
+    expect(emitted).toContainEqual({
+      type: "handler.workflow_dispatched",
+      data: {
+        handler: "evaluator-aftermath",
+        workflow: "evaluator-aftermath",
+        source: "evaluator",
+        projectId: null,
         workflowRunId: "wr_1",
         status: "done",
       },
