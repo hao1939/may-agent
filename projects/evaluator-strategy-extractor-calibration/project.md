@@ -6,8 +6,8 @@ type: milestone
 priority: P2
 workflow: evaluator-strategy-extractor-calibration-iteration
 iteration: 2
-stop_reason: Iteration-2 close-the-loop work is complete and ready for human/May review. Resume when: review requests a follow-up on the remaining compact-scout gap, optimization-lesson ranking/noise, or criteria/
-resume_condition: review requests a follow-up on the remaining compact-scout gap, optimization-lesson ranking/noise, or criteria/doc interpretation changes.
+stop_reason: Cleanup review complete: the extractor improvement is regression-tested and propagated, with remaining work limited to optional calibration follow-up on compact-success coverage and optimization-noise ranking.
+resume_condition: review requests another calibration pass on compact-success coverage, optimization-noise ranking, or evaluator criteria/doc interpretation.
 ---
 
 # Evaluator Strategy Extractor Calibration
@@ -16,19 +16,20 @@ resume_condition: review requests a follow-up on the remaining compact-scout gap
 Improve `agents/evaluator/skills/extract-strategy.cjs` so periodic task #7 can extract at least one reusable positive tactic from fresh, verified-success session samples instead of only surfacing recovery/error-cleanup lessons.
 
 ## Signals
-- Fresh post-fix validation now shows non-zero positive strategy extraction on 2 of the 3 newest verified-`good` non-evaluator history sessions: `.state/sessions/history/s_1778701694150_268/session.jsonl` and `.state/sessions/history/s_1778701694563_272/session.jsonl` both emit reusable `type: "strategy"` lessons, while `.state/sessions/history/s_1778701694460_271/session.jsonl` still returns zero.
-- The main remaining gap is durability and propagation, not basic extraction: there is no automated regression harness yet, and `agents/evaluator/workspace/proposed-strategies.md` plus `agents/evaluator/periodic-tasks.md` still record the stale pre-fix all-zero result.
-- Current output quality issue: optimization lessons can still appear alongside stronger positive tactics, so consumer docs should distinguish “positive extraction now works” from “ranking/noise is still imperfect.”
+- The original all-zero failure is fixed: the extractor now parses modern assistant `content[].toolCall` records and emits reusable positive `type: "strategy"` lessons on representative verified-good sessions.
+- Durability is now covered by `agents/evaluator/skills/extract-strategy.test.cjs` plus a fixed fixture under `projects/evaluator-strategy-extractor-calibration/outputs/fixtures/strategy-positive-modern-session/session.jsonl`; the harness passes from `/app` after the path cleanup.
+- Consumer artifacts are refreshed: `agents/evaluator/workspace/proposed-strategies.md` and `agents/evaluator/periodic-tasks.md` now show the latest 2026-05-18 sample with 2/3 positive-session coverage and 3 total strategy lessons.
+- Remaining calibration issue: compact/coordination success sessions can still produce only recovery or optimization output, and optimization lessons can still appear alongside stronger positive tactics.
 
 ## Current State
-Waiting: Iteration-2 close-the-loop work is complete and ready for human/May review. Resume when: review requests a follow-up on the remaining compact-scout gap, optimization-lesson ranking/noise, or criteria/doc interpretation changes.
+Waiting: cleanup review is complete. The immediate milestone is satisfied: positive strategy extraction is implemented, regression-tested, and visible in the downstream strategy artifacts. Resume only for a targeted follow-up on compact-success coverage, optimization-noise ranking, or evaluator criteria/docs.
 
-- **I believe**: the project’s immediate goal is now met operationally, not just in code — positive strategy extraction is both regression-tested and propagated into the consumer-facing artifacts.
-- **I'm uncertain about**: whether the remaining compact scout miss (`s_1778701694460_271`) is important enough to justify another iteration now, versus treating it as a smaller follow-up after review.
-- **I'd change my mind if**: the refreshed files are not actually saved in the working tree, or a fresh rerun of the regression harness/live sample checks fails and shows the 2/3 positive result was not stable.
+- **I believe**: the project’s immediate goal is met operationally; periodic task #7 is no longer stuck on all-zero positive extraction.
+- **I'm uncertain about**: whether compact/coordination success misses are important enough to tune now, or whether they should stay as periodic calibration observations until a stronger pattern emerges.
+- **I'd change my mind if**: a fresh harness run fails again, or the next periodic samples repeatedly fall back to 0/3 positive strategy coverage.
 
 ### 1) Is the goal closer?
-Yes — materially. The project moved from “manual 2/3 improvement with stale downstream docs” to “durable regression harness plus refreshed downstream artifacts.” The outcome metric is now locked in better: `extract-strategy.test.cjs` passes with `Passed: 8 / Failed: 0`, and the latest `proposed-strategies.md` and periodic task #7 entry both reflect the post-fix non-zero behavior.
+Yes — materially. The project moved from “manual 2/3 improvement with stale downstream docs” to “durable regression harness plus refreshed downstream artifacts.” The outcome metric is now locked in better: `extract-strategy.test.cjs` passes with `Passed: 8 / Failed: 0`, and the latest `proposed-strategies.md` plus periodic task #7 entry both reflect the 2026-05-18 non-zero behavior.
 
 ### 2) What did we learn?
 What worked:
@@ -75,10 +76,9 @@ These should now be checked off:
 ### Evidence I used
 - `read(agents/evaluator/skills/extract-strategy.test.cjs)` shows a real harness asserting at least one `type: "strategy"` lesson on the fixed fixture and both positive live samples.
 - `bash(node agents/evaluator/skills/extract-strategy.test.cjs)` returned `Passed: 8` and `Failed: 0`.
-- `read(agents/evaluator/workspace/proposed-strategies.md)` shows the new top section at `2026-05-13 21:05Z` with 2/3 positive-session extraction and regression snapshot.
+- `read(agents/evaluator/workspace/proposed-strategies.md)` shows the new top section at `2026-05-18 00:50Z` with 2/3 positive-session extraction and 3 total strategy lessons.
 - `read(agents/evaluator/periodic-tasks.md)` shows the updated periodic task #7 note stating the refreshed post-fix calibration is no longer all-zero and references the passing harness.
 
-LINKED_
 ## Plan
 - [x] Confirm the failure persists on a fresh verified-success sample and record the evidence.
 - [x] Inspect `extract-strategy.cjs` heuristics to identify why successful sessions without explicit tool errors produce zero lessons.
@@ -105,19 +105,17 @@ Created the project after another fresh calibration run on `s_1778701694460_271`
 - outputs/iteration-2-regression.md
 
 ## Context
-## Context
 - Modern session transcripts encode assistant tool calls under `assistant.content[].toolCall`; supporting that shape was the key fix for the original zero-lesson false negatives.
 - Positive strategy extraction on fresh verified-good modern sessions is now durably locked in with a fixed fixture and automated regression harness.
 - Consumer-facing artifacts have been refreshed: `proposed-strategies.md` and periodic task #7 notes now reflect the post-fix 2/3 positive result rather than the stale all-zero state.
 - One compact scout sample still returns zero, so coverage is improved but not universal.
 
 ## Linked Context
-## Linked Context
 - `agents/evaluator/skills/extract-strategy.cjs` — current extractor implementation
 - `agents/evaluator/skills/extract-strategy.test.cjs` — regression harness for modern positive strategy extraction
-- `agents/shared/projects/evaluator-strategy-extractor-calibration/outputs/fixtures/strategy-positive-modern-session/session.jsonl` — fixed modern-session positive fixture
-- `agents/shared/projects/evaluator-strategy-extractor-calibration/outputs/iteration-1-validation.md` — manual post-fix validation showing 2/3 positive extraction
-- `agents/shared/projects/evaluator-strategy-extractor-calibration/outputs/iteration-2-regression.md` — regression harness design and passing verification notes
+- `projects/evaluator-strategy-extractor-calibration/outputs/fixtures/strategy-positive-modern-session/session.jsonl` — fixed modern-session positive fixture
+- `projects/evaluator-strategy-extractor-calibration/outputs/iteration-1-validation.md` — manual post-fix validation showing 2/3 positive extraction
+- `projects/evaluator-strategy-extractor-calibration/outputs/iteration-2-regression.md` — regression harness design and passing verification notes
 - `agents/evaluator/workspace/proposed-strategies.md` — refreshed strategy artifact with post-fix non-zero extraction summary
 - `agents/evaluator/periodic-tasks.md` — refreshed periodic task #7 note citing the successful extraction and harness
 - `.state/sessions/history/s_1778701694150_268/session.jsonl` — fresh verified-good positive sample

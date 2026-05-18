@@ -18,8 +18,8 @@ function assert(condition, label, details = '') {
   }
 }
 
-function repoPath(...parts) {
-  return path.resolve(__dirname, '..', '..', '..', '..', ...parts);
+function appPath(...parts) {
+  return path.resolve(__dirname, '..', '..', '..', ...parts);
 }
 
 async function runCase(label, logPath) {
@@ -37,8 +37,7 @@ async function runCase(label, logPath) {
 }
 
 (async () => {
-  const fixturePath = repoPath(
-    'app',
+  const fixturePath = appPath(
     'projects',
     'evaluator-strategy-extractor-calibration',
     'outputs',
@@ -46,9 +45,9 @@ async function runCase(label, logPath) {
     'strategy-positive-modern-session',
     'session.jsonl'
   );
-  const mayLivePath = repoPath('.state', 'sessions', 'history', 's_1778701694150_268', 'session.jsonl');
-  const devLivePath = repoPath('.state', 'sessions', 'history', 's_1778701694563_272', 'session.jsonl');
-  const compactScoutPath = repoPath('.state', 'sessions', 'history', 's_1778701694460_271', 'session.jsonl');
+  const mayLivePath = appPath('.state', 'sessions', 'history', 's_1778701694150_268', 'session.jsonl');
+  const devLivePath = appPath('.state', 'sessions', 'history', 's_1778701694563_272', 'session.jsonl');
+  const compactScoutPath = appPath('.state', 'sessions', 'history', 's_1778701694460_271', 'session.jsonl');
 
   console.log('Modern-session strategy extraction regression harness\n');
 
