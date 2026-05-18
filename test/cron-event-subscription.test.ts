@@ -114,25 +114,36 @@ describe("Cron event subscriptions", () => {
 
     const bus = new EventBus();
     let handled = 0;
+    let handledEvent: any;
     const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
     const entries = cron.load();
-    cron.registerHandler("evaluator-aftermath", async () => {
+    cron.registerHandler("evaluator-aftermath", async (event) => {
       handled++;
+      handledEvent = event;
     });
     cron.start();
     cron.subscribeToBus(bus);
 
-    bus.emit({
+    const completedEvent = {
       type: "session.completed",
       sessionId: "s_done",
       agent: "dev",
       parentSessionId: "s_parent",
-    } as any);
+    };
+    bus.emit(completedEvent as any);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(entries.map((entry) => entry.name)).toContain("evaluator-aftermath");
     expect(handled).toBe(1);
+    expect(handledEvent).toEqual({
+      type: "session.completed",
+      source: "event",
+      entry: "evaluator-aftermath",
+      data: completedEvent,
+      timestamp: expect.any(Number),
+    });
+    expect(handledEvent).not.toHaveProperty("sessionId");
     cron.stop();
   });
 });
