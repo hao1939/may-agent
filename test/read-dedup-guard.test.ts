@@ -34,18 +34,18 @@ describe("read-dedup-guard", () => {
     expect(result!.reason).toContain("signals.md");
   });
 
-  it("blocks after BLOCK_THRESHOLD reads", async () => {
+  it("signals after threshold reads", async () => {
     const guard = createReadDedupGuard();
     // Exhaust all allowed reads (warn + block thresholds)
     for (let i = 0; i < READ_BLOCK_THRESHOLD; i++) {
       await guard(makeCtx("read", { path: "signals.md" }));
     }
-    // Next read should be blocked
+    // Next read should be signaled
     const result = await guard(makeCtx("read", { path: "signals.md" }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("READ_DEDUP");
-    expect(result!.reason).toContain("blocked");
+    expect(result!.reason).toContain("likely wasteful");
   });
 
   it("tracks different paths independently", async () => {
@@ -54,9 +54,9 @@ describe("read-dedup-guard", () => {
     for (let i = 0; i < READ_BLOCK_THRESHOLD; i++) {
       await guard(makeCtx("read", { path: "a.md" }));
     }
-    // File A should be blocked
+    // File A should be signaled
     const resultA = await guard(makeCtx("read", { path: "a.md" }));
-    expect(resultA!.block).toBe(true);
+    expect(resultA!.block).toBe(false);
 
     // File B should still be allowed
     const resultB = await guard(makeCtx("read", { path: "b.md" }));
@@ -94,7 +94,7 @@ describe("read-dedup-guard", () => {
     for (let i = 0; i < READ_BLOCK_THRESHOLD; i++) {
       await guard1(makeCtx("read", { path: "shared.md" }));
     }
-    expect((await guard1(makeCtx("read", { path: "shared.md" })))!.block).toBe(true);
+    expect((await guard1(makeCtx("read", { path: "shared.md" })))!.block).toBe(false);
     // guard2 should be fresh
     expect(await guard2(makeCtx("read", { path: "shared.md" }))).toBeUndefined();
   });

@@ -3,7 +3,7 @@
  *
  * Intercepts `finish()` calls (any status) and checks for uncommitted changes
  * matching this session's deliverables or direct write/edit tool calls. If found,
- * blocks finish and tells the agent to commit only those files first.
+ * emits a guard signal and tells the agent which files still need commit/revert review.
  *
  * This is L5 structural enforcement to fix the 74% auto-commit problem.
  * Agents must commit their own work with descriptive messages instead of
@@ -182,7 +182,7 @@ function runGit(args: string[], cwd: string, timeoutMs: number): Promise<string>
  * `agents/<agentName>/`, `shared/`, `projects/`, `.lab/`, and `gym/`. The
  * legacy `<projectRoot>/agents` repo layout is still accepted during migration.
  * If uncommitted changes
- * exist, blocks the finish() call with instructions to commit.
+ * exist, emits a signal with instructions to commit or restore them.
  *
  * @param agentName - The agent's name (e.g., "bob", "coach"). Empty = skip guard.
  * @param projectRoot - Absolute path to app root, or a legacy root containing agents/.
@@ -205,7 +205,7 @@ export function createCommitGuard(
     try {
       // Check broad candidate paths, then narrow to this session's claimed or
       // direct write/edit paths. Shared project files are a common write target,
-      // but blocking on all dirty shared/ files pressures agents into committing
+      // but warning on all dirty shared/ files pressures agents into committing
       // unrelated work.
       const pathsToCheck = [
         `${agentPathPrefix}/`,
@@ -234,7 +234,7 @@ export function createCommitGuard(
         !isGeneratedRuntimePath(normalizeStatusPath(line), agentName, repo.layout),
       );
 
-      if (fileLines.length === 0) return undefined; // Runtime handoff/log churn should not block finish.
+      if (fileLines.length === 0) return undefined; // Runtime handoff/log churn should not warn on finish.
 
       const args = ctx.args as {
         deliverables?: Array<{ path?: string }>;
@@ -279,22 +279,22 @@ export function createCommitGuard(
       const addCmd = `${needsForce ? "git add -f" : "git add"} -- ${addPaths.map(shellQuote).join(" ")}`;
 
       return {
-        block: true,
+        block: false, // signal-only: guard emits metric but does not block
         reason:
-          `finish() blocked [uncommitted changes]: You have ${fileCount} uncommitted file(s) in the ${repo.label}:\n` +
+          `finish() guard signal [uncommitted changes]: You have ${fileCount} uncommitted file(s) in the ${repo.label}:\n` +
           `${fileList}\n\n` +
           `For each listed file: commit it if it is intentional, or restore it if it was accidental. Do not commit accidental changes just to satisfy finish().\n\n` +
           (ignoredFileLines.length > 0
             ? `Ignored generated runtime file(s):\n${ignoredFileLines.map((line) => `  ${line}`).join("\n")}\n\n`
             : "") +
           (ownedFileLines.length < fileLines.length
-            ? `Not blocking on unrelated dirty file(s):\n${fileLines.filter((line) => !ownedFileLines.includes(line)).map((line) => `  ${line}`).join("\n")}\n\n`
+            ? `Unrelated dirty file(s), not part of this signal:\n${fileLines.filter((line) => !ownedFileLines.includes(line)).map((line) => `  ${line}`).join("\n")}\n\n`
             : "") +
-          `Commit them with a descriptive message before calling finish():\n` +
+          `If these changes are intentional, commit them with a descriptive message:\n` +
           `  cd ${repo.dir} && ${addCmd} && git commit -m "${agentName}: <describe what you did>"\n\n` +
           `Good messages: "${agentName}: H-045 Decision Topology hypothesis", "${agentName}: new skill for evidence-first debugging"\n` +
           `Bad messages: "update files", "changes"\n\n` +
-          `Then call finish() again.`,
+          `Finish may continue, but this signal should be reviewed.`,
       };
     } catch {
       // Fail-open: guard errors are non-fatal (existing pattern)

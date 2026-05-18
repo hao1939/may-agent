@@ -5,7 +5,7 @@
  * 1. Write evidence: the session transcript contains write/edit evidence when
  *    deliverables are claimed. (Original guard — 8 FM-3.1/FM-2.2 failures.)
  * 2. Post-write verification is handled by verification-depth-guard.ts.
- *    Keeping it there avoids duplicate or conflicting finish() blocks.
+ *    Keeping it there avoids duplicate or conflicting finish() signals.
  *
  * Policy: Common Sense 7.1 (Don't lie), 7.2 (Don't fabricate), 2.3 (Verify after acting)
  * Source: exp-056 via Coach → Optimizer → Tech Lead; FM-3.3 analysis via Bob → Optimizer
@@ -75,7 +75,7 @@ function hasBashWriteEvidence(messages: BeforeToolCallContext["context"]["messag
 /**
  * Keywords in a finish() summary that imply code/file changes were made.
  * If these appear in the summary but no write/edit/bash-write evidence exists
- * in the transcript, the ghost deliverable guard blocks the call.
+ * in the transcript, the ghost deliverable guard emits a signal.
  */
 const GHOST_KEYWORDS =
   /\b(?:fix(?:ed)?|implement(?:ed)?|refactor(?:ed)?|rewrote|rewrite|updat(?:ed?)|deploy(?:ed)?|patch(?:ed)?|modif(?:ied|y)|delet(?:ed?)|migrat(?:ed?)|rewir(?:ed?)|wrote)\b/i;
@@ -84,16 +84,16 @@ const GHOST_KEYWORDS =
  * Create a beforeToolCall hook that guards finish(status: "success") calls.
  *
  * Three gates:
- * 1. Ghost Deliverable Guard (FM-3.1 preventive): blocks when summary implies
+ * 1. Ghost Deliverable Guard (FM-3.1 preventive): signals when summary implies
  *    code changes ("Fixed", "Implemented", etc.) but no write/edit evidence
  *    exists in the transcript AND no deliverables are listed. This catches the
  *    #1 behavioral failure: agents claiming work without doing it.
- * 2. Write Evidence Guard: blocks when deliverables are listed but no write/edit
+ * 2. Write Evidence Guard: signals when deliverables are listed but no write/edit
  *    evidence exists in the transcript.
- * 3. Verification Guard (FM-3.3): blocks when writes exist but no verification
+ * 3. Verification Guard (FM-3.3): signals when writes exist but no verification
  *    (read-back, test, type-check) occurs after the last write.
  *
- * Exceptions (not blocked):
+ * Exceptions (no signal):
  * - `finish()` with status other than "success"
  * - Summaries that don't match ghost keywords (e.g., "Analyzed logs", "No new work")
  * - Sessions where write, edit, or file-producing bash commands were used
@@ -151,9 +151,9 @@ export function createFinishGuard(): (
     const hasDeliverables = args.deliverables && args.deliverables.length > 0;
     if (!hasWriteEvidence && !hasDeliverables && GHOST_KEYWORDS.test(summary)) {
       return {
-        block: true,
+        block: false, // signal-only: guard emits metric but does not block
         reason:
-          `finish(status: "success") blocked [FM-3.1 Ghost Deliverable]: Your summary implies ` +
+          `finish(status: "success") guard signal [FM-3.1 Ghost Deliverable]: Your summary implies ` +
           `code changes ("${summary.slice(0, 80)}") but your session contains no write, edit, or ` +
           `file-producing bash commands, and no deliverables are listed. Either:\n` +
           `1. Actually write/edit the files, list them as deliverables, then call finish()\n` +
@@ -165,13 +165,13 @@ export function createFinishGuard(): (
     // If no deliverables listed and no ghost keywords, allow (analysis-only sessions)
     if (!hasDeliverables) return undefined;
 
-    // ── Gate 1: No write evidence at all — block (original FM-3.1/FM-2.2 guard) ──
+    // ── Gate 1: No write evidence at all — signal (original FM-3.1/FM-2.2 guard) ──
     if (!hasWriteEvidence) {
       const deliverablePaths = args.deliverables!.map((d) => d.path).join(", ");
       return {
-        block: true,
+        block: false, // signal-only: guard emits metric but does not block
         reason:
-          `finish(status: "success") blocked: You claimed ${args.deliverables!.length} deliverable(s) ` +
+          `finish(status: "success") guard signal: You claimed ${args.deliverables!.length} deliverable(s) ` +
           `(${deliverablePaths}) but your session transcript contains no write, edit, or file-producing ` +
           `bash commands. Either:\n` +
           `1. Actually write/edit the files before calling finish()\n` +
@@ -182,7 +182,7 @@ export function createFinishGuard(): (
 
     // Gate 2 (FM-3.3 post-write verification) removed — deduplicated.
     // verification-depth-guard.ts T2 covers this with better per-call-index tracking.
-    // Keeping both caused double-blocking: agents saw two error messages for one issue.
+    // Keeping both caused duplicate signals: agents saw two messages for one issue.
 
     // All gates passed — allow
     return undefined;

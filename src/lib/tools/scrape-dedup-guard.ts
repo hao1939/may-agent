@@ -6,14 +6,14 @@
  * producing 400KB+ duplicate content in context (1.7MB sessions).
  *
  * After 1 scrape of a URL, warns the agent to use existing content.
- * After 2 scrapes of the same URL, blocks further scrapes.
+ * After 2 scrapes of the same URL, emits a stronger signal.
  *
  * Source: Optimizer cost finding 2026-03-19.
  */
 
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guards.js";
 
-/** After this many scrapes of the same URL, block further scrapes. */
+/** After this many scrapes of the same URL, emit a stronger signal. */
 export const SCRAPE_BLOCK_THRESHOLD = 2;
 
 /**
@@ -34,7 +34,7 @@ function normalizeUrl(url: string): string {
 }
 
 /**
- * Create a beforeToolCall hook that detects and blocks excessive scrapes of
+ * Create a beforeToolCall hook that detects and signals excessive scrapes of
  * the same URL within a single session.
  *
  * Returns a stateful closure — one instance per agent session.
@@ -71,12 +71,12 @@ export function createScrapeDedupGuard(): (
       };
     }
 
-    // Third+ scrape — block
+    // Third+ scrape — stronger signal
     return {
-      block: true,
+      block: false, // signal-only
       reason:
-        `🚫 SCRAPE_DEDUP: You have already scraped "${args.url}" ${count - 1} times this session. ` +
-        `Further scrapes of this URL are blocked. ` +
+        `SCRAPE_DEDUP signal: You have already scraped "${args.url}" ${count - 1} times this session. ` +
+        `Further scrapes of this URL are likely wasteful. ` +
         `The page content hasn't changed — use the information from your earlier scrape. ` +
         `If you need a different section, try a more specific URL or extract what you need from existing content.`,
     };
