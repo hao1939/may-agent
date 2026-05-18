@@ -98,13 +98,26 @@ describe("command router", () => {
     const projectPath = "projects/demo";
     const projectDir = join(projectRoot, projectPath);
     mkdirp(projectDir);
-    writeFileSync(join(projectDir, "project.md"), "**Status**: blocked\n", "utf-8");
+    writeFileSync(
+      join(projectDir, "project.md"),
+      [
+        "---",
+        "id: demo",
+        "owner: tech-lead",
+        "status: active",
+        "---",
+        "",
+        "# Demo",
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
     const h = createHarness({}, projectRoot);
 
     h.bus.emit({ type: "project.comment.created", projectPath, comment: "please continue", source: "test", author: "hao" });
 
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please continue");
-    expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("**Status**: active");
+    expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("status: active");
     expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true, commentText: "please continue" });
     h.router.close();
   });
