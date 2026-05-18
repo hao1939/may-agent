@@ -3,8 +3,7 @@
  *
  * Project files have a YAML frontmatter block followed by a Markdown body.
  * These helpers parse and edit the frontmatter without touching the body,
- * and provide convenience operations for the canonical sections (Comments,
- * Discussion) that the project workflow uses.
+ * and provide convenience operations for canonical discussion.md files.
  *
  * Promoted to @may-agent/sdk so project-scoped workflows can edit their own
  * project.md without importing from shared/lib.
@@ -47,10 +46,8 @@ export function parseProjectMeta(content: string): ProjectMeta {
 /**
  * Decode a YAML-frontmatter scalar value.
  *
- * Supports two forms:
- *   - bare: trimmed, with surrounding single-quotes stripped (legacy).
- *   - double-quoted: JS-style escapes (\n, \t, \\, \"). Used by
- *     formatProjectMeta when values contain newlines or special chars.
+ * Supports bare scalars and double-quoted values with JS-style escapes
+ * (\n, \t, \\, \").
  */
 function decodeScalar(raw: string): string {
   const trimmed = raw.trim();
@@ -68,8 +65,7 @@ function decodeScalar(raw: string): string {
       }
     });
   }
-  // Legacy bare: strip surrounding single-quotes if present.
-  return trimmed.replace(/^'|'$/g, "");
+  return trimmed;
 }
 
 /**
@@ -125,7 +121,7 @@ export function validateProjectFormat(content: string, expectedId?: string): str
     errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
   }
   if (meta.workflow === "master-worker" || meta.workflow === "master-worker-execute") {
-    errors.push("projects should not use legacy master-worker workflow; pick a per-project or shared workflow");
+    errors.push("projects should not use unsupported master-worker workflow; pick a per-project or shared workflow");
   }
   if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
     errors.push("metadata duplicated as bold body field");
@@ -142,17 +138,6 @@ export function updateField(content: string, field: string, value: string): stri
   const meta = parseProjectMeta(content);
   meta[metaKey] = value;
   return formatProjectMeta(meta) + stripProjectMeta(content).replace(/^\n+/, "");
-}
-
-/** Append a comment to the ## Comments section (legacy single-file format). */
-export function appendComment(content: string, comment: string): string {
-  const now = new Date().toISOString().slice(0, 10);
-  const entry = `- [${now}] ${comment}`;
-
-  if (content.includes("## Comments")) {
-    return content.replace(/(## Comments\s*\n)/, `$1${entry}\n`);
-  }
-  return content + `\n## Comments\n${entry}\n`;
 }
 
 /**

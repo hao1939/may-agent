@@ -55,18 +55,11 @@ describe("project-schema scalar round-trip (Bug E regression)", () => {
     expect(meta.failed).toBeUndefined();
   });
 
-  it("emits bare scalars for ordinary single-line values (back-compat)", () => {
+  it("emits bare scalars for ordinary single-line values", () => {
     const content = wrap("id: p\nowner: may\nstatus: blocked");
     const updated = updateField(content, "Status", "active");
     expect(updated).toContain("status: active\n");
     expect(updated).not.toContain('status: "active"');
-  });
-
-  it("decodes legacy bare values with surrounding single-quotes", () => {
-    // Some older project.md files have 'value' with single-quotes.
-    const content = wrap("id: p\nowner: may\nstatus: blocked\nstop_reason: 'legacy reason'");
-    const meta = parseProjectMeta(content);
-    expect(meta.stop_reason).toBe("legacy reason");
   });
 
   it("round-trips an empty stop_reason via empty-string clearing", () => {
