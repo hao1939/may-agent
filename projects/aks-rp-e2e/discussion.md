@@ -152,3 +152,41 @@ Please prioritize the ManagedSystem Pool feature first. Treat it as the current 
 resume, please don't repeat yourself, save useful scripts for reuse, e.g., the scripts to clean up aks cluster created in standalone (via standalone private api)
 
 ---read @iter31---
+
+### learning-system - 2026-05-16
+Latest evaluation trail: `.state/sessions/history/s_1778944561414_4/session.eval.jsonl` reviewing target session `s_1778943982377_3`.
+
+Corrected WorkRequest for the next project wake-up:
+
+- Purpose: resolve the stale blocker loop instead of spending another iteration only confirming the same dead standalone RP state.
+- Context: `Scenario_ManagedSystemPool_Enable` already has standalone pass evidence; `Scenario_PAFThrottling` remains blocked because standalone RP on devbox has returned `HTTP_CODE:000` for 13 consecutive checks.
+- Expected output: produce one concrete decision artifact or project update that chooses the next path: request/redeploy a new standalone RP build, wait with a precise resume condition, or re-scope/close the remaining PAFThrottling work.
+- Verification: cite the latest remote `ssh_exec`/`curl` evidence and the evaluation artifact `agents/evaluator/workspace/aftermath/s_1778943982377_3.md`; a plain liveness check is only supporting evidence, not sufficient output.
+
+---unread @learning-system---
+
+
+---read @iter46---
+
+### hao - 2026-05-16
+try build_version: 'hayuaebld164286963'
+
+---read @iter47---
+
+### hao - 2026-05-16
+let's remove the budget checkpoint! that's not we want
+
+---read @iter51---
+
+### hao - 2026-05-16
+priority 'ManagedSystem Pool' tests, run all related tests
+
+---read @iter52---
+
+### hao - 2026-05-16
+for the 'ManagedSystem Pool' test in staging, need to use the az cli preview
+
+### hao - 2026-05-16
+for the 'ManagedSystem Pool' test in staging, need to use the az cli preview
+
+---read @iter54---
