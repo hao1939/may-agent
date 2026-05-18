@@ -1,42 +1,51 @@
 ---
 id: evaluator-aftermath-null-trigger-loop
 owner: evaluator
-status: paused
+status: done
 type: milestone
 priority: P1
 workflow: evaluator-aftermath-null-trigger-loop-iteration
-iteration: 0
+iteration: 2
 ---
 
 # Evaluator Aftermath Null-Trigger Loop
 
 ## Goal
 
-Stop the recurring `evaluator-aftermath requires a sessionId` escalation loop so event-driven aftermath reviews either receive a concrete `session.completed` trigger or do not dispatch.
+Stop the recurring `evaluator-aftermath requires a sessionId` escalation loop by preserving the original event payload for event-triggered handlers and having `evaluator-aftermath` read the session id from `trigger.data.sessionId`.
 
 ## Signals
 
-- Repeated runtime `escalation.created` events with reason `evaluator-aftermath requires a sessionId`.
-- Repeated `handler.workflow_dispatched` rows for source `evaluator` with workflow `evaluator-aftermath` and `status='escalated'`.
-- Dev investigation `agents/dev/workspace/investigations/2026-05-15-evaluator-aftermath-null-trigger.md` already documents the likely bridge failure mode.
+- Historical runtime `escalation.created` events had reason `evaluator-aftermath requires a sessionId`.
+- Historical `handler.workflow_dispatched` rows for workflow `evaluator-aftermath` ended with `status='escalated'`.
+- The root cause was an event-trigger path that did not preserve the `session.completed` event payload through the handler trigger.
 
 ## Current State
 
-Active: the problem is durable, evaluator-owned at the process level, and still happening.
+Completed.
 
-Fresh heartbeat evidence:
-- `events` shows `237` evaluator-owned escalations in the last 24h with reason `evaluator-aftermath requires a sessionId`.
-- The newest escalation happened at `1778932481366` and matching `handler.workflow_dispatched` rows still show `workflow='evaluator-aftermath'` with `status='escalated'`.
-- Canonical evaluation coverage is still healthy because the fallback `session-aftermath-scan` path continues to populate `evaluations`, so this is primarily liveness/noise/waste rather than an immediate coverage outage.
+The clean model is now implemented and documented:
+
+- Cron passes the original event payload through `TriggerEvent.data`.
+- Framework code does not promote domain fields such as `sessionId` onto the trigger object.
+- `evaluator-aftermath` reads the session id from `trigger.data.sessionId`.
+- `createWorkflowHandler` is owned by `@may-agent/sdk`; shadow workflow-handler implementations were removed.
+- Project discussion handling now uses `discussion.md` and canonical YAML frontmatter only.
+
+Runtime validation on 2026-05-18 shows the loop is no longer active:
+
+- `0` evaluator-owned `escalation.created` rows with reason `evaluator-aftermath requires a sessionId` in the last hour.
+- `0` matching rows in the last 24 hours.
+- Recent `handler.workflow_dispatched` rows for `workflow='evaluator-aftermath'` show `status='done'`.
 
 ## Plan
 
-1. Confirm the failing path continues to be the event-driven `run-workflow` bridge rather than the fallback scan.
-2. Hand off implementation evidence to May for routing to the workflow owner/dev, pointing at the existing dev investigation and the fresh escalation count.
-3. Track until one of these is true:
-   - the bridge always includes a concrete trigger event with `data.sessionId`, or
-   - the event-driven dispatch is skipped when no event payload exists.
-4. Validate by rechecking 24h escalation count and recent `handler.workflow_dispatched` rows for `evaluator-aftermath`.
+- [x] Confirm the failing path was the event-driven aftermath bridge.
+- [x] Fix event trigger payload preservation so subscribers receive the original event data.
+- [x] Update `evaluator-aftermath` to read `sessionId` from `trigger.data.sessionId`.
+- [x] Remove duplicate workflow-handler surfaces and document SDK ownership.
+- [x] Remove stale project-comment legacy support from the active runtime path.
+- [x] Validate runtime events show no fresh missing-session escalation loop.
 
 ## Validation
 
@@ -55,15 +64,21 @@ WHERE event_type='escalation.created'
 SELECT timestamp, source, substr(data,1,240) AS data_snippet
 FROM events
 WHERE event_type='handler.workflow_dispatched'
-  AND source='evaluator'
+  AND data LIKE '%evaluator-aftermath%'
 ORDER BY timestamp DESC
 LIMIT 10;
 ```
 
-Success condition: the escalation count trends to zero and recent evaluator-aftermath dispatches stop ending in `status='escalated'` for missing `sessionId`.
+Success condition met: the escalation count is zero for the recent window and fresh `evaluator-aftermath` dispatches complete with `status='done'`.
 
 ## Journal
 
 ### 2026-05-16
 
-Opened from evaluator heartbeat after fresh DB triage showed the null-trigger loop is still live even with green coverage metrics. Count query found `237` evaluator-owned `escalation.created` rows in the last 24h with reason `evaluator-aftermath requires a sessionId`, and the newest matching `handler.workflow_dispatched` rows still report `workflow='evaluator-aftermath'` and `status='escalated'`. Existing dev investigation already points to the likely cause: the generic `run-workflow` event bridge sometimes invokes the workflow without the `session.completed` payload, so `extractTrigger()` returns null and the workflow escalates instead of evaluating.
+Opened from evaluator heartbeat after fresh DB triage showed the null-trigger loop was live even with green coverage metrics. Count query found `237` evaluator-owned `escalation.created` rows in the last 24h with reason `evaluator-aftermath requires a sessionId`, and the newest matching `handler.workflow_dispatched` rows reported `workflow='evaluator-aftermath'` and `status='escalated'`. Existing dev investigation pointed to the generic event bridge losing the `session.completed` payload, so `extractTrigger()` returned null and the workflow escalated instead of evaluating.
+
+### 2026-05-18
+
+Closed after implementing the clean event model. The framework now passes the original event payload as `TriggerEvent.data`; handlers and workflows interpret their own domain fields from that payload. The fix removed the need for `sessionId` promotion or workflow-specific framework patches. Follow-up cleanup removed shadow workflow-handler implementations, documented the clean trigger model, and removed active legacy project-comment status handling.
+
+Validation: runtime DB checks show `0` missing-session escalations in the last hour and last 24 hours, and recent `evaluator-aftermath` workflow dispatches have `status='done'`.
