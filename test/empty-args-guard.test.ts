@@ -20,28 +20,28 @@ describe("empty-args-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks read with no args", async () => {
+  it("signals read with no args", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("read", {}));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("EMPTY_ARGS");
     expect(result!.reason).toContain("path");
   });
 
-  it("blocks read with empty path", async () => {
+  it("signals read with empty path", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("read", { path: "" }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("path");
   });
 
-  it("blocks read with null path", async () => {
+  it("signals read with null path", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("read", { path: null }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   // ── bash tool ──────────────────────────────────────────
@@ -52,20 +52,20 @@ describe("empty-args-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks bash with no args", async () => {
+  it("signals bash with no args", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("bash", {}));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("EMPTY_ARGS");
     expect(result!.reason).toContain("command");
   });
 
-  it("blocks bash with empty command", async () => {
+  it("signals bash with empty command", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("bash", { command: "" }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   // ── edit tool ──────────────────────────────────────────
@@ -76,11 +76,11 @@ describe("empty-args-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks edit with missing oldText", async () => {
+  it("signals edit with missing oldText", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("edit", { path: "f.ts", newText: "b" }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("oldText");
   });
 
@@ -99,11 +99,11 @@ describe("empty-args-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks write with missing content", async () => {
+  it("signals write with missing content", async () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("write", { path: "f.md" }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("content");
   });
 
@@ -127,7 +127,7 @@ describe("empty-args-guard", () => {
     const guard = createEmptyArgsGuard();
     const result = await guard(makeCtx("edit", {}));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("path");
     expect(result!.reason).toContain("oldText");
     // newText is not required (empty string = deletion)
@@ -137,14 +137,14 @@ describe("empty-args-guard", () => {
 
   it("is stateless - same guard instance works for multiple calls", async () => {
     const guard = createEmptyArgsGuard();
-    // First call: blocked
+    // First call: signaled
     const r1 = await guard(makeCtx("read", {}));
-    expect(r1!.block).toBe(true);
+    expect(r1!.block).toBe(false);
     // Second call: allowed
     const r2 = await guard(makeCtx("read", { path: "foo.md" }));
     expect(r2).toBeUndefined();
-    // Third call: blocked again
+    // Third call: signaled again
     const r3 = await guard(makeCtx("bash", {}));
-    expect(r3!.block).toBe(true);
+    expect(r3!.block).toBe(false);
   });
 });

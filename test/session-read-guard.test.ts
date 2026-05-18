@@ -16,7 +16,7 @@ describe("session-read-guard", () => {
   // Guard 1: read() tool
   // ──────────────────────────────────────────────────────────────
 
-  it("blocks reading session.jsonl from history", async () => {
+  it("signals reading session.jsonl from history", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("read", {
@@ -24,12 +24,12 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("SESSION_READ");
     expect(result!.reason).toContain("grep");
   });
 
-  it("blocks reading session.jsonl from active sessions", async () => {
+  it("signals reading session.jsonl from active sessions", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("read", {
@@ -37,10 +37,10 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
-  it("blocks with leading ./", async () => {
+  it("signals with leading ./", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("read", {
@@ -48,7 +48,7 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("allows reading meta.json (not session.jsonl)", async () => {
@@ -101,7 +101,7 @@ describe("session-read-guard", () => {
   // Guard 2: bash tool — cat/less/more
   // ──────────────────────────────────────────────────────────────
 
-  it("blocks bash cat of session.jsonl", async () => {
+  it("signals bash cat of session.jsonl", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -109,11 +109,11 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("SESSION_BASH_CAT");
   });
 
-  it("blocks bash less of session.jsonl", async () => {
+  it("signals bash less of session.jsonl", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -121,11 +121,11 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("SESSION_BASH_CAT");
   });
 
-  it("blocks cat even with flags", async () => {
+  it("signals cat even with flags", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -133,14 +133,14 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   // ──────────────────────────────────────────────────────────────
   // Guard 2: bash tool — unbounded grep
   // ──────────────────────────────────────────────────────────────
 
-  it("blocks unbounded grep of session.jsonl", async () => {
+  it("signals unbounded grep of session.jsonl", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -148,11 +148,11 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("SESSION_BASH_GREP");
   });
 
-  it("blocks unbounded grep with wildcards", async () => {
+  it("signals unbounded grep with wildcards", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -160,10 +160,10 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
-  it("blocks unbounded rg of session.jsonl", async () => {
+  it("signals unbounded rg of session.jsonl", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -171,7 +171,7 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   // ──────────────────────────────────────────────────────────────
@@ -311,7 +311,7 @@ describe("session-read-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks grep with inline glob of session.jsonl (no limiter)", async () => {
+  it("signals grep with inline glob of session.jsonl (no limiter)", async () => {
     const guard = createSessionReadGuard();
     const result = await guard(
       makeCtx("bash", {
@@ -319,7 +319,7 @@ describe("session-read-guard", () => {
       }),
     );
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("allows jq on session.jsonl (not grep/cat pattern)", async () => {

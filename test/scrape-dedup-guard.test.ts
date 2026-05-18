@@ -26,14 +26,14 @@ describe("scrape-dedup-guard", () => {
     expect(result!.reason).toContain("SCRAPE_DEDUP");
   });
 
-  it("blocks third scrape of same URL", async () => {
+  it("signals third scrape of same URL", async () => {
     const guard = createScrapeDedupGuard();
     await guard(makeCtx("scrape_webpage", { url: "https://arxiv.org/abs/1234" }));
     await guard(makeCtx("scrape_webpage", { url: "https://arxiv.org/abs/1234" }));
     const result = await guard(makeCtx("scrape_webpage", { url: "https://arxiv.org/abs/1234" }));
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
-    expect(result!.reason).toContain("blocked");
+    expect(result!.block).toBe(false);
+    expect(result!.reason).toContain("likely wasteful");
   });
 
   it("tracks URLs independently", async () => {

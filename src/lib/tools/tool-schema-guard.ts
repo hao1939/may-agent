@@ -185,8 +185,8 @@ export function createToolSchemaGuard(): (
         const errorMsg = detector.detect(args);
         if (errorMsg) {
           return {
-            block: true,
-            reason: `🚫 SCHEMA [${detector.id}]: ${errorMsg}`,
+            block: false, // signal-only
+            reason: `SCHEMA signal [${detector.id}]: ${errorMsg}`,
           };
         }
       } catch {

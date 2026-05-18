@@ -2,9 +2,9 @@
  * Session Read Guard — beforeToolCall hook.
  *
  * Prevents agents from reading raw session.jsonl files via:
- *   1. read() tool — always blocked (30-300KB+ files)
- *   2. bash tool — blocks `cat` of session.jsonl (dumps entire file)
- *                — blocks unbounded `grep` without `| head` / `| tail` / `-c` / `-l` / `-m`
+ *   1. read() tool — always signaled (30-300KB+ files)
+ *   2. bash tool — signals `cat` of session.jsonl (dumps entire file)
+ *                — signals unbounded `grep` without `| head` / `| tail` / `-c` / `-l` / `-m`
  *
  * Motivation: Coach common-sense-verify sessions read full session.jsonl files
  * (188KB+) costing $2-5/session in wasted tokens. The original read()-only guard
@@ -37,7 +37,7 @@ const BASH_GREP_PATTERN = /\b(grep|rg|ripgrep|egrep|fgrep)\b[^|]*session\.jsonl/
 const OUTPUT_LIMITER_PATTERN = /\|\s*(head|tail)\b|\s-[^\s]*[clm]\b|\s--count\b|\s--files-with-matches\b|\s-l\b/;
 
 /**
- * Create a beforeToolCall hook that blocks wasteful access to session.jsonl files.
+ * Create a beforeToolCall hook that signals wasteful access to session.jsonl files.
  *
  * Blocks:
  *   - read() of session.jsonl (always)
@@ -58,7 +58,7 @@ export function createSessionReadGuard(): (
   return async (ctx: BeforeToolCallContext): Promise<BeforeToolCallResult | undefined> => {
     const toolName = ctx.toolCall.name;
 
-    // --- Guard 1: Block read() of session.jsonl ---
+    // --- Guard 1: Signal read() of session.jsonl ---
     if (toolName === "read") {
       const args = ctx.args as { path?: string };
       if (!args.path) return undefined;
@@ -67,9 +67,9 @@ export function createSessionReadGuard(): (
       if (!SESSION_JSONL_PATTERN.test(normalizedPath)) return undefined;
 
       return {
-        block: true,
+        block: false, // signal-only
         reason:
-          `🚫 SESSION_READ: Reading session.jsonl files directly is blocked — they are 30-300KB+ ` +
+          `SESSION_READ signal: Reading session.jsonl files directly is wasteful — they are 30-300KB+ ` +
           `and will waste your token budget. Instead, use bash with grep/jq to extract what you need:\n` +
           `  • Find sessions: grep -l 'keyword' .state/sessions/*/session.jsonl\n` +
           `  • Extract data: grep 'pattern' <file> | head -20\n` +
@@ -78,7 +78,7 @@ export function createSessionReadGuard(): (
       };
     }
 
-    // --- Guard 2: Block bash commands that dump/grep session.jsonl unbounded ---
+    // --- Guard 2: Signal bash commands that dump/grep session.jsonl unbounded ---
     if (toolName === "bash") {
       const args = ctx.args as { command?: string };
       if (!args.command) return undefined;
@@ -88,12 +88,12 @@ export function createSessionReadGuard(): (
       // Check if the command references session.jsonl at all
       if (!cmd.includes("session.jsonl")) return undefined;
 
-      // Block: cat/less/more of session.jsonl (always dumps full file)
+      // Signal: cat/less/more of session.jsonl (always dumps full file)
       if (BASH_CAT_PATTERN.test(cmd)) {
         return {
-          block: true,
+          block: false, // signal-only
           reason:
-            `🚫 SESSION_BASH_CAT: Dumping session.jsonl via cat/less/more is blocked — these files ` +
+            `SESSION_BASH_CAT signal: Dumping session.jsonl via cat/less/more is wasteful — these files ` +
             `are 30-300KB+ and will waste your token budget. Use targeted extraction instead:\n` +
             `  • grep 'pattern' <file> | head -20\n` +
             `  • jq 'select(.role=="assistant") | .content' <file> | head -50\n` +
@@ -102,12 +102,12 @@ export function createSessionReadGuard(): (
         };
       }
 
-      // Check: grep/rg of session.jsonl without output limiter
+      // Signal: grep/rg of session.jsonl without output limiter
       if (BASH_GREP_PATTERN.test(cmd) && !OUTPUT_LIMITER_PATTERN.test(cmd)) {
         return {
-          block: true,
+          block: false, // signal-only
           reason:
-            `🚫 SESSION_BASH_GREP: Unbounded grep of session.jsonl is blocked — these files are ` +
+            `SESSION_BASH_GREP signal: Unbounded grep of session.jsonl is wasteful — these files are ` +
             `30-300KB+ and grep without a limiter can produce 50-100KB+ of output. Add a limiter:\n` +
             `  • grep 'pattern' <file> | head -20     (pipe to head)\n` +
             `  • grep -c 'pattern' <file>              (count only)\n` +

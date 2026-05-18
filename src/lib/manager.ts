@@ -49,7 +49,6 @@ import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
-import { createVerificationDepthGuard } from "./tools/verification-depth-guard.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -1236,7 +1235,6 @@ export class SubagentManager {
       createCompletenessGuard(def.name),
       createFinishGuard(),
       createCommitGuard(def.name, this.projectRoot),
-      createVerificationDepthGuard(def.name, {}),
       createReadDedupGuard(),
       createSessionReadGuard(),
       createScrapeDedupGuard(),

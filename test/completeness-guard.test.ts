@@ -3,7 +3,7 @@
  *
  * Covers:
  * - Only blocks optimizer agent by default
- * - Only blocks finish(status: "success")
+ * - Only signals finish(status: "success")
  * - Detects write() evidence for DELIVERABLES_CHECKLIST
  * - Detects edit() evidence for DELIVERABLES_CHECKLIST
  * - Detects bash() write evidence for DELIVERABLES_CHECKLIST
@@ -65,11 +65,11 @@ function finishSuccess(
 // ─── Agent Targeting ────────────────────────────────────────────────
 
 describe("createCompletenessGuard — agent targeting", () => {
-  it("blocks optimizer by default", async () => {
+  it("signals optimizer by default", async () => {
     const guard = createCompletenessGuard("optimizer");
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("COMPLETENESS");
   });
 
@@ -89,14 +89,14 @@ describe("createCompletenessGuard — agent targeting", () => {
     const guard = createCompletenessGuard("coach", { agents: "coach" });
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("respects custom agent list (array)", async () => {
     const guard = createCompletenessGuard("coach", { agents: ["coach", "coder"] });
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("custom agent list excludes non-listed agents", async () => {
@@ -109,11 +109,11 @@ describe("createCompletenessGuard — agent targeting", () => {
 // ─── Finish Status Filtering ────────────────────────────────────────
 
 describe("createCompletenessGuard — finish status filtering", () => {
-  it("only blocks finish(status: success)", async () => {
+  it("only signals finish(status: success)", async () => {
     const guard = createCompletenessGuard("optimizer");
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("does NOT block finish(status: partial)", async () => {
@@ -180,7 +180,7 @@ describe("createCompletenessGuard — write() detection", () => {
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 });
 
@@ -234,7 +234,7 @@ describe("createCompletenessGuard — bash() detection", () => {
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("does NOT allow bash that greps DELIVERABLES_CHECKLIST", async () => {
@@ -244,7 +244,7 @@ describe("createCompletenessGuard — bash() detection", () => {
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 });
 
@@ -264,7 +264,7 @@ describe("createCompletenessGuard — configuration", () => {
     // Without checklist — blocks
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("MY_CHECKLIST");
 
     // With custom checklist — allows
@@ -288,7 +288,7 @@ describe("createCompletenessGuard — configuration", () => {
     const result = await guard(finishSuccess());
     // Guard still blocks despite callback error
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(onBlock).toHaveBeenCalled();
   });
 });
@@ -313,7 +313,7 @@ describe("createCompletenessGuard — fail-open", () => {
     // Will block because no checklist found (malformed messages don't contain evidence)
     // But the point is it doesn't throw
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 });
 
@@ -334,7 +334,7 @@ describe("createCompletenessGuard — edge cases", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks when many tool calls but no checklist", async () => {
+  it("signals when many tool calls but no checklist", async () => {
     const guard = createCompletenessGuard("optimizer");
     const ctx = finishSuccess([
       { name: "read", arguments: { path: "workspace/brief.md" } },
@@ -345,7 +345,7 @@ describe("createCompletenessGuard — edge cases", () => {
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("message contains helpful instructions", async () => {
