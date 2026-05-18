@@ -54,6 +54,9 @@ projects/*/outputs/**
 !projects/*/outputs/README.md
 !projects/aks-rp-e2e/outputs/e2e-capability-model.json
 
+# Project-local repositories mounted under the shared runtime.
+/projects/aks-rp-e2e/
+
 # UI build artifacts synced from a project's repo (e.g. `ui:sync` in repos/may-agent).
 projects/*/ui/
 
