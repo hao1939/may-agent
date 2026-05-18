@@ -16,8 +16,8 @@ import { log as globalLog } from "./log.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
-import { appendFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { appendFileSync, existsSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
 
 // ── Dependencies (injected, not imported directly) ────────────────────
 
@@ -35,6 +35,25 @@ export interface SDKDeps {
   callAgent: (agent: string, task: string, opts?: { source?: string; projectId?: string; timeout?: number }) => Promise<TaskResult>;
   /** Cron triggerNow — fire a handler on next tick. */
   triggerNow?: (handlerName: string) => boolean;
+}
+
+// ── Workflow path helpers ──────────────────────────────────────────────
+
+export function projectWorkflowDirFor(projectsRoot: string, projectId: string | undefined): string | undefined {
+  if (!projectId) return undefined;
+
+  const clean = projectId
+    .trim()
+    .replace(/^projects\//, "")
+    .replace(/\/project\.md$/, "")
+    .replace(/\/$/, "");
+  if (!clean) return undefined;
+
+  const candidates = [join(projectsRoot, clean, "workflows")];
+  const shortName = basename(clean);
+  if (shortName && shortName !== clean) candidates.push(join(projectsRoot, shortName, "workflows"));
+
+  return candidates.find((dir) => existsSync(dir)) ?? candidates[candidates.length - 1];
 }
 
 // ── Build AgentSDK ────────────────────────────────────────────────────
@@ -62,9 +81,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentName: deps.agentName,
       });
       const agentForWorkflow = opts?.source ?? deps.agentName;
-      const projectWorkflowDir = opts?.projectId
-        ? join(deps.projectsRoot, opts.projectId, "workflows")
-        : undefined;
+      const projectWorkflowDir = projectWorkflowDirFor(deps.projectsRoot, opts?.projectId);
       const { result, runId } = await runWorkflowDirect({
         workflowName: name,
         task,
