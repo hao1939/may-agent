@@ -103,15 +103,15 @@ describe("closed-loop-steward handler", () => {
     expect(task).toContain("none");
   });
 
-  it("skips the may audit when routing fully covers the remaining actionable work", async () => {
+  it("runs may-owned triage even when routing an alert for another metric owner", async () => {
     const stewardContext = makeStewardContext([
       {
         id: 123,
-        metric_id: "handler.failed-count",
-        message: "Handler failures above threshold",
+        metric_id: "evaluator.false-good-rate-sample",
+        message: "Evaluator false good sample above threshold",
         created_at: Date.now() - 60_000,
-        metricName: "Handler failures",
-        explicitOwner: "may",
+        metricName: "Evaluator false good sample",
+        explicitOwner: "evaluator",
         projectOwner: null,
         current: 5,
         threshold: 3,
