@@ -52,7 +52,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  function appendProjectComment(projectPath: string, comment: string, source?: string, author?: string): boolean {
+  function appendProjectDiscussionEntry(projectPath: string, comment: string, source?: string, author?: string): boolean {
     const normalized = normalizeProjectPath(projectPath);
     const trimmed = comment.trim();
     if (!normalized || !trimmed) {
@@ -79,16 +79,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     // pushable immediately, not on the next handler tick.
     let resumed = false;
     let content = readFileSync(projectFile, "utf-8");
-
-    // Legacy bold-field form: `**Status**: waiting`
-    const legacyMatch = content.match(/^\*\*Status\*\*:\s*(.+)$/m);
-    if (legacyMatch && ["blocked", "waiting", "paused", "pending-review"].includes(legacyMatch[1].trim().toLowerCase())) {
-      content = content.replace(/^\*\*Status\*\*:\s*.+$/m, "**Status**: active");
-      writeFileSync(projectFile, content, "utf-8");
-      resumed = true;
-    }
-
-    // YAML frontmatter form: `status: waiting` (inside the leading `---` block)
     const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
     if (fmMatch) {
       const statusLine = fmMatch[1].match(/^status:\s*(.+)$/m);
@@ -200,7 +190,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         handleInput("cancel all");
         break;
       case "project.comment.created":
-        appendProjectComment(event.projectPath, event.comment, event.source, event.author);
+        appendProjectDiscussionEntry(event.projectPath, event.comment, event.source, event.author);
         break;
       case "fork":
         if ("agent" in event && "task" in event) {
