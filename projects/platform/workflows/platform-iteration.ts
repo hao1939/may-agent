@@ -202,6 +202,28 @@ function updateSection(content: string, heading: string, newContent: string): st
   return content.slice(0, idx + marker.length) + newContent + content.slice(end);
 }
 
+/**
+ * Set or replace a `**Status:** ...` footer line inside a section, preserving
+ * any existing narrative body. If the section is missing it is created with
+ * the footer line as its only content.
+ *
+ * Used by terminal decisions (waiting/blocked/paused/done) to record the
+ * machine-readable stop state in Current State without overwriting the
+ * agent's narrative. Fixes Bug F: previously the workflow replaced the
+ * entire Current State body with a single sentence on every stop, losing
+ * all reviewer-authored context.
+ */
+export function setStatusFooter(content: string, heading: string, footerLine: string): string {
+  const existing = extractSection(content, heading);
+  // Strip any existing leading `**Status:** ...` line (single line or until
+  // first blank/non-Status line). Preserves the rest of the narrative below.
+  const stripped = existing.replace(/^\*\*Status:\*\*[^\n]*\n?/, "").trimStart();
+  const newBody = stripped
+    ? `**Status:** ${footerLine}\n\n${stripped}`
+    : `**Status:** ${footerLine}`;
+  return updateSection(content, heading, newBody);
+}
+
 function currentGoal(projectContent: string, fallback: string): string {
   return extractSection(projectContent, "Goal") || fallback;
 }
@@ -853,8 +875,8 @@ async function handleWaitingDecision(
     ls.projectContent = updateField(ls.projectContent, "Status", "active");
     ls.projectContent = updateField(ls.projectContent, "Stop Reason", "");
     ls.projectContent = updateField(ls.projectContent, "Resume Condition", "");
-    ls.projectContent = updateSection(ls.projectContent, "Current State",
-      `Active: reviewer proposed waiting, but explicit Next Action or unresolved Plan work remains. Continue by resolving or replacing that work.\n`);
+    ls.projectContent = setStatusFooter(ls.projectContent, "Current State",
+      `Active: reviewer proposed waiting, but explicit Next Action or unresolved Plan work remains. Continue by resolving or replacing that work.`);
     cachedWrite(config.projectPath, ls.projectContent);
     emitProjectEvent(ctx, config, "project.waiting_overridden", { iteration, reason: cleanDetail.slice(0, 100) });
     return { outcome: "continue" };
@@ -907,7 +929,7 @@ async function handleWaitingDecision(
   ls.projectContent = updateField(ls.projectContent, "Status", "waiting");
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", cleanDetail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Human/May review needed");
-  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Waiting", cleanDetail));
+  ls.projectContent = setStatusFooter(ls.projectContent, "Current State", currentStateLine("Waiting", cleanDetail));
   cachedWrite(config.projectPath, ls.projectContent);
   emitProjectEvent(ctx, config, "project.waiting", { iteration, reason: cleanDetail.slice(0, 100) });
   const msg = isCommentIteration
@@ -931,7 +953,7 @@ async function handleBlockedDecision(
   ls.projectContent = updateField(ls.projectContent, "Status", "blocked");
   ls.projectContent = updateField(ls.projectContent, "Stop Reason", cleanDetail.slice(0, 200));
   ls.projectContent = updateField(ls.projectContent, "Resume Condition", decision.resumeCondition || "Blocker resolved");
-  ls.projectContent = updateSection(ls.projectContent, "Current State", currentStateLine("Blocked", cleanDetail));
+  ls.projectContent = setStatusFooter(ls.projectContent, "Current State", currentStateLine("Blocked", cleanDetail));
   cachedWrite(config.projectPath, ls.projectContent);
   emitProjectEvent(ctx, config, "project.blocked", { iteration, reason: cleanDetail.slice(0, 100) });
   const msg = isCommentIteration
@@ -1173,9 +1195,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectContent = updateField(projectContent, "Stop Reason", "");
       projectContent = updateField(projectContent, "Resume Condition", "");
       if (!extractDirectiveBlock(reviewerText, "CURRENT_STATE_UPDATE") && !reviewerEditedProject) {
-        projectContent = updateSection(projectContent, "Current State",
-          `Active: human/May comment processed at iteration ${iteration}. Continuing with reviewer direction.\n` +
-          `${decision.detail}\n`);
+        projectContent = setStatusFooter(projectContent, "Current State",
+          `Active: human/May comment processed at iteration ${iteration}. Continuing with reviewer direction.`);
       }
       cachedWrite(config.projectPath, projectContent);
       iteration++;
@@ -1196,7 +1217,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       consecutiveFailures++;
       if (consecutiveFailures >= 2) {
         projectContent = updateField(projectContent, "Status", `blocked`);
-        projectContent = updateSection(projectContent, "Current State",
+        projectContent = setStatusFooter(projectContent, "Current State",
           `Blocked: Worker failed ${consecutiveFailures} consecutive times.`);
         cachedWrite(config.projectPath, projectContent);
         return ctx.escalate(`Worker failed ${consecutiveFailures}x at iteration ${iteration}.`);
@@ -1306,7 +1327,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Auto-escalate after 5 iterations without milestone progress
       if (continueWithoutProgress >= 5) {
         projectContent = updateField(projectContent, "Status", "blocked");
-        projectContent = updateSection(projectContent, "Current State",
+        projectContent = setStatusFooter(projectContent, "Current State",
           `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
         emitProjectEvent(ctx, config, "project.blocked", { iteration, health: 0, reason: decision.detail.slice(0, 100) });
         cachedWrite(config.projectPath, projectContent);
@@ -1319,11 +1340,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const reviewerStateUpdate = extractDirectiveBlock(reviewerText, "CURRENT_STATE_UPDATE");
 
       if (reviewerStateUpdate || !reviewerEditedProject) {
-        projectContent = updateSection(projectContent, "Current State",
-          reviewerStateUpdate
-            ? `${reviewerStateUpdate}\n`
-            : `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
-              (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
+        // When the reviewer explicitly provides a CURRENT_STATE_UPDATE, overwrite
+        // the section (that's the directive's purpose). Otherwise just refresh
+        // the status footer line and keep the existing narrative body.
+        if (reviewerStateUpdate) {
+          projectContent = updateSection(projectContent, "Current State", `${reviewerStateUpdate}\n`);
+        } else {
+          const footer = `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.` +
+            (reviewerInsight ? ` Reviewer: ${reviewerInsight}` : "");
+          projectContent = setStatusFooter(projectContent, "Current State", footer);
+        }
 
         cachedWrite(config.projectPath, projectContent);
       }
@@ -1335,7 +1361,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // Max iterations reached
   projectContent = updateField(projectContent, "Status", "paused");
-  projectContent = updateSection(projectContent, "Current State",
+  projectContent = setStatusFooter(projectContent, "Current State",
     `Paused: reached ${config.maxIterations} iteration cap.`);
   cachedWrite(config.projectPath, projectContent);
 

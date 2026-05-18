@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { applyReviewerProjectDirectives, stripReviewerDirectives } from "./platform-iteration.ts";
+import { applyReviewerProjectDirectives, stripReviewerDirectives, setStatusFooter } from "./platform-iteration.ts";
 
 describe("project reviewer directives", () => {
   it("applies reviewer-owned project state updates", () => {
@@ -65,5 +65,72 @@ describe("project reviewer directives", () => {
     ].join("\n"));
 
     expect(clean).toBe("The standalone RP has 0 underlays registered.\n\nResume when: underlay is registered.");
+  });
+});
+
+describe("setStatusFooter (Bug F regression)", () => {
+  const projectWithNarrative = [
+    "---",
+    "id: p",
+    "owner: may",
+    "status: active",
+    "---",
+    "",
+    "# Project",
+    "",
+    "## Current State",
+    "Rich multi-paragraph narrative that the agent maintained.",
+    "",
+    "Second paragraph with more context.",
+    "",
+    "- Bullet 1",
+    "- Bullet 2",
+    "",
+    "## Plan",
+    "- [ ] step 1",
+    "",
+  ].join("\n");
+
+  it("prepends a **Status:** footer without losing existing narrative", () => {
+    const updated = setStatusFooter(projectWithNarrative, "Current State", "Blocked: worker failed 2x.");
+
+    // New status line is present.
+    expect(updated).toContain("**Status:** Blocked: worker failed 2x.");
+    // Original narrative preserved verbatim.
+    expect(updated).toContain("Rich multi-paragraph narrative that the agent maintained.");
+    expect(updated).toContain("Second paragraph with more context.");
+    expect(updated).toContain("- Bullet 1");
+    expect(updated).toContain("- Bullet 2");
+    // Sibling sections untouched.
+    expect(updated).toContain("## Plan\n- [ ] step 1");
+  });
+
+  it("replaces a prior **Status:** line rather than stacking them", () => {
+    const first = setStatusFooter(projectWithNarrative, "Current State", "Waiting: previous status.");
+    const second = setStatusFooter(first, "Current State", "Blocked: new status.");
+
+    expect(second).toContain("**Status:** Blocked: new status.");
+    expect(second).not.toContain("**Status:** Waiting: previous status.");
+    // Narrative still preserved through two updates.
+    expect(second).toContain("Rich multi-paragraph narrative that the agent maintained.");
+  });
+
+  it("creates Current State section if missing", () => {
+    const noCurrentState = [
+      "---",
+      "id: p",
+      "owner: may",
+      "status: active",
+      "---",
+      "",
+      "# Project",
+      "",
+      "## Plan",
+      "- [ ] step 1",
+      "",
+    ].join("\n");
+
+    const updated = setStatusFooter(noCurrentState, "Current State", "Active: starting up.");
+    expect(updated).toContain("## Current State\n**Status:** Active: starting up.");
   });
 });
