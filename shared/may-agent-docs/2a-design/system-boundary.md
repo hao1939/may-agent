@@ -657,7 +657,8 @@ Existing pieces already align with this direction:
 | Agent loading | `src/app/agent-loader.ts`, `src/app/loader/*` |
 | Telegram adapter | `src/app/transport/telegram.ts` |
 | Telegram transport/reply/outbound helpers | `src/app/transport/telegram-client.ts`, `src/app/transport/telegram-reply-router.ts`, `src/app/transport/telegram-outbound.ts` |
-| Web UI projection reader | `packages/webui/src/server.ts` |
+| HTTP/Web API adapter | `src/app/http/server.ts` |
+| WebUI source assets | `packages/webui/static/*` generated into project `ui/` directories |
 | Agent patterns | `shared/workflows/*`, project docs, heartbeat docs |
 
 The main gap is not a missing grand architecture. The remaining work is keeping

@@ -20,7 +20,7 @@ Those are infra adapter responsibilities. Project UIs should remain first-class 
 
 ## Decision
 
-Move the HTTP adapter into the May Agent root application under `src/app/http`. Move browser UI files into project-owned `ui/` directories under `PROJECTS_ROOT`.
+Move the HTTP adapter into the May Agent root application under `src/app/http`. Keep browser UI source in the private `@may-agent/webui` package, then generate/sync project-owned static `ui/` directories under `PROJECTS_ROOT`.
 
 The HTTP adapter is the Web-facing control/read interface for May Agent. It should align with the infra SDK and control-plane vocabulary, with extra read-model endpoints that make the WebUI efficient and understandable.
 
@@ -36,7 +36,8 @@ Static project resources are visible under `/projects/*`, backed directly by `PR
 | Static file serving | `src/app/http` | Serves files from `PROJECTS_ROOT`; `/api/*` and `/ws` stay reserved |
 | Daemon socket bridge | `src/app/http` + `packages/control` | HTTP adapter sends events through control package |
 | DB/file read models | `src/app/http/read-model` | Projections for UI and diagnostics |
-| Project UI assets | `PROJECTS_ROOT/<project>/ui` | HTML/CSS/JS owned by each project |
+| WebUI source package | `packages/webui/static` | Source of truth for the default May Agent browser UI; no HTTP adapter code |
+| Generated project UI assets | `PROJECTS_ROOT/<project>/ui` | Static HTML/CSS/JS generated or synced from the owning project/package |
 | Agent/workflow SDK | `packages/sdk` | In-process capability surface for agents/workflows |
 | Socket protocol | `packages/control` | Transport protocol and daemon socket client/server |
 
@@ -97,10 +98,17 @@ src/app/http/
     loop-trace.ts
     project-sections.ts
 
+packages/
+  webui/
+    package.json       # @may-agent/webui
+    static/            # source browser assets; no HTTP server
+      index.html
+      app.js
+      styles.css
+
 projects/
-  may-agent/
-    project.md
-    ui/
+  platform/
+    ui/                # generated/synced static copy served by HTTP
       index.html
   <project>/
     project.md
@@ -109,7 +117,7 @@ projects/
       assets/...
 ```
 
-Boundary rule: project UIs are static resources and call the infra API through `/api/*`. The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are handled before static routes. Development and deployment run `may-agent --web`.
+Boundary rule: browser UI source is edited in its owning package/project, then copied into the served project `ui/` directory by the build/sync step. Do not hand-edit generated `PROJECTS_ROOT/<project>/ui` files as the primary source. Project UIs are static resources and call the infra API through `/api/*`. The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are handled before static routes. Development and deployment run `may-agent --web`.
 
 ## Migration Plan
 
@@ -117,10 +125,10 @@ Boundary rule: project UIs are static resources and call the infra API through `
 2. Move DB/read-model helpers to `src/app/http/read-model`.
 3. Remove compatibility wrappers from `packages/webui/src`; the private WebUI package should not export the HTTP adapter.
 4. Update runtime imports, bundle scripts, and Docker build so WebUI runs through `may-agent --web` from the single compiled `may-agent` binary.
-5. Move the default UI to `projects/platform/ui/index.html` and serve it from `/`.
+5. Keep the default UI source in `packages/webui/static` and sync it to `projects/platform/ui` for serving.
 6. Extract the large route table into focused route modules.
 7. Rename and reshape endpoints toward infra-aligned API plus `/api/views/*` read models.
-8. Remove the obsolete `packages/webui` package once the UI is fully project-scoped.
+8. Keep `packages/webui` static-only unless a specific project grows its own UI package/source.
 
 ## Non-Goals
 

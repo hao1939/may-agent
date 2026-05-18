@@ -33,6 +33,8 @@ System architecture and subsystem designs.
 | [sdk.md](2a-design/sdk.md) | AgentSDK + WorkflowSDK: the canonical capability surface |
 | [events.md](2a-design/events.md) | Event-native architecture: immutable events, inbox, event types |
 | [sessions.md](2a-design/sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
+| [session-eval-trail.md](2a-design/session-eval-trail.md) | Session evaluation trail: summary projection plus append-only line evidence beside raw session logs |
+| [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Practice learning loop: sessions become eval trails, human feedback, evolution candidates, and project changes |
 | [runtime.md](2a-design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
 | [metrics.md](2a-design/metrics.md) | Metrics: schema, pipeline, alerts, registry, balanced pairs, blind spots |
 | [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |

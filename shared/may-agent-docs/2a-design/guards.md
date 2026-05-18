@@ -7,18 +7,25 @@ Guards are detection signals first. Blocking is only one intervention mode.
 Default meaning:
 
 ```
-mechanical detector fired -> emit event/signal -> optional intervention
+mechanical detector fired -> emit unreviewed signal -> optional intervention -> later review
 ```
 
 Not:
 
 ```
-regex matched -> hard block
+regex matched -> proof the agent was wrong -> hard block
 ```
 
 Every guard trigger should be observable. The important event is that the
-system detected a weakness, risk, missing context, misleading workflow prompt,
-tool-surface confusion, or near-miss.
+system detected a possible weakness, risk, missing context, misleading workflow
+prompt, tool-surface confusion, or near-miss. A guard trigger is not solid
+evidence by itself. It may be a true positive, false positive, noisy detector,
+useful intervention, or harmful interruption.
+
+Guard output therefore enters the learning system as an unreviewed signal. The
+evaluator or owner must compare the guard event with the raw session log, tool
+request/output, project context, and final result before assigning blame or
+changing behavior.
 
 ## Modes
 
@@ -90,6 +97,24 @@ Default owner resolution:
 3. triggering agent,
 4. guard id prefix if it matches an agent,
 5. `may` fallback.
+
+## Review Outcome
+
+When a guard signal is reviewed, record the judgment in the session eval trail
+or a guard review artifact. Keep the raw guard event linked. Useful outcomes:
+
+| Outcome | Meaning | Learning action |
+|---|---|---|
+| `true_positive` | The guard caught a real issue or near-miss. | Route normal owner finding if actionable. |
+| `false_positive` | The guard fired on valid behavior. | Route to the guard/workflow owner to calibrate. |
+| `noisy` | The signal is too weak or repetitive to act on directly. | Keep aggregate metric; avoid owner spam. |
+| `useful_intervention` | The guard helped the agent recover. | Consider moving the lesson into workflow/context. |
+| `harmful_intervention` | The guard blocked or distracted useful work. | Downgrade mode, narrow detector, or retire. |
+| `unknown` | Not enough context to judge. | Preserve evidence; do not train from it yet. |
+
+Only reviewed, actionable guard outcomes should become `learning.feedback`. Raw
+`guard.triggered` rows and raw guard metrics can request review, but they
+should not directly train agents or accuse owners.
 
 ## Metrics
 

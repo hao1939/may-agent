@@ -77,6 +77,33 @@ escalation.created { id, agent, reason, level }
 agent.decision     { agent, sessionId, decision, evidence? }
 ```
 
+### Learning feedback
+```
+learning.feedback {
+  kind: "owner_finding",
+  owner,
+  summary,
+  needsHuman,
+  sessionId,
+  agent,
+  projectId?,
+  workflowRunId?,
+  evalTrailPath,
+  finding
+}
+```
+
+`learning.feedback` is emitted by the evaluator for actionable session findings. It is owner-targeted inbox input, not the canonical evaluation record. The canonical record remains the sibling `session.eval.jsonl` trail beside the raw `session.jsonl`.
+
+Routing rule:
+
+| `finding.owner` | event `owner` |
+|-------------------|---------------|
+| `agent:<name>` | `<name>` |
+| `human:<role>` | `may` |
+
+For human-owned findings, payload keeps `finding.owner` and sets `needsHuman: true`; May decides whether to contact the human, update context, defer, or dismiss.
+
 ### Project, adapter, and guard events
 ```
 project.comment.created { projectId, author, text }
@@ -86,6 +113,11 @@ telegram.reply          { chatId?, messageId?, target?, text }
 guard.triggered         { owner, source, guard, action, reason, sessionId?, workflowRunId?, projectId? }
 tool.executed           { agent, sessionId, tool, args? }
 ```
+
+`guard.triggered` is an unreviewed detector signal. It is useful evidence for
+triage, metrics, and evaluator review, but it is not proof of agent fault. A
+reviewed guard outcome may later produce `learning.feedback`; raw guard events
+should not be routed as blame by themselves.
 
 Some of these are currently dynamic event-store names rather than variants in
 `SystemEvent`. The design direction is to type the stable core names while still
@@ -190,6 +222,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
 | `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
 | `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
+| `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings |
 
 Note: `session.failed` and `session.completed` are translated from `session.end`
 in `src/app/may.ts`. `project.status_changed` still has no emitter.
