@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'bun:test';
 import {
   updateField,
-  appendComment,
   scanAllProjects,
   diagnoseProject,
   newProjectHealthEntry,
@@ -46,7 +45,7 @@ describe('project-health', () => {
       expect(validateProjectFormat(content, 'test-proj')).toEqual([]);
     });
 
-    it('rejects legacy bold metadata in projects', () => {
+    it('rejects bold metadata in project bodies', () => {
       const content = '# Test\n\n**Owner:** bob\n**Status:** active\n';
       expect(validateProjectFormat(content, 'test-proj')).toEqual(expect.arrayContaining([
         'missing YAML frontmatter',
@@ -62,10 +61,10 @@ describe('project-health', () => {
       const closed = '---\nid: test-proj\nowner: bob\nstatus: closed\nworkflow: master-worker\n---\n\n# Test\n';
 
       expect(validateProjectFormat(active, 'test-proj')).toContain(
-        'projects should not use legacy master-worker workflow; pick a per-project or shared workflow'
+        'projects should not use unsupported master-worker workflow; pick a per-project or shared workflow'
       );
       expect(validateProjectFormat(closed, 'test-proj')).toContain(
-        'projects should not use legacy master-worker workflow; pick a per-project or shared workflow'
+        'projects should not use unsupported master-worker workflow; pick a per-project or shared workflow'
       );
     });
 
@@ -74,22 +73,6 @@ describe('project-health', () => {
       const content = '---\nid: master-worker-context-sharing\nowner: bob\nstatus: active\nworkflow: master-worker-context-sharing-iteration\n---\n\n# Test\n';
       const errors = validateProjectFormat(content, 'master-worker-context-sharing');
       expect(errors.find(e => e.includes('master-worker'))).toBeUndefined();
-    });
-  });
-
-  describe('appendComment', () => {
-    it('appends to existing Comments section', () => {
-      const content = '# Project\n## Comments\n- old comment\n';
-      const result = appendComment(content, 'new comment');
-      expect(result).toContain('new comment');
-      expect(result).toContain('old comment');
-    });
-
-    it('creates Comments section if missing', () => {
-      const content = '# Project\nContent here';
-      const result = appendComment(content, 'first comment');
-      expect(result).toContain('## Comments');
-      expect(result).toContain('first comment');
     });
   });
 
@@ -156,15 +139,22 @@ describe('project-health', () => {
       expect(result.reason).toContain('manual project trigger');
     });
 
-    it('launches paused project only when explicit comments are pending', () => {
+    it('launches paused project when discussion has unread comments', () => {
+      const tmpDir = path.join(tmpdir(), `paused-unread-${Date.now()}`);
+      fs.mkdirSync(tmpDir, { recursive: true });
+      const projectFile = path.join(tmpDir, 'project.md');
+      fs.writeFileSync(projectFile, '# Test\n');
+      fs.writeFileSync(path.join(tmpDir, 'discussion.md'), '# Discussion\nPlease resume with new evidence\n');
       const proj = {
         ...baseProject,
         status: 'paused',
-        content: '# Test\n## Comments\n- resume with new evidence\n',
+        projectFile,
+        content: '# Test\n',
       };
       const result = diagnoseProject(proj, emptyState, new Set(), new Set(), Date.now(), []);
       expect(result.type).toBe('launch-workflow');
       expect(result.reason).toContain('paused with unread comments');
+      fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
     it('keeps waiting project stopped until resume_after is due', () => {

@@ -84,31 +84,20 @@ function launchRateLimitReason(entry: ProjectHealthEntry | undefined, now: numbe
 
 // ── Markdown helpers ─────────────────────────────────────────────────────
 //
-// Project-md schema parsers and editors were promoted to @may-agent/sdk.
-// We re-export here for back-compat with handlers/handlers tests that still
-// import from shared/lib/project-health.
+// Project-md schema parsers and editors are owned by @may-agent/sdk.
 //
-// New code should import these from `@may-agent/sdk` (or via shared/agent-sdk.ts).
 
 import {
   parseProjectMeta,
   validateProjectFormat,
   updateProjectField as updateField,
-  appendProjectComment as appendComment,
   appendDiscussionComment,
   unreadDiscussionTail,
   type ProjectMeta,
 } from "../agent-sdk.ts";
 
-export { parseProjectMeta, validateProjectFormat, updateField, appendComment, appendDiscussionComment, unreadDiscussionTail };
+export { parseProjectMeta, validateProjectFormat, updateField, appendDiscussionComment, unreadDiscussionTail };
 export type { ProjectMeta };
-
-/** Extract the body of a ## Section (private helper) */
-function extractSection(content: string, heading: string): string {
-  const re = new RegExp(`^## ${heading}[ \\t]*\\n([\\s\\S]*?)(?=\\n## |$)`, "m");
-  const m = content.match(re);
-  return m ? m[1].trim() : "";
-}
 
 // ── Scanning ─────────────────────────────────────────────────────────────
 
@@ -151,12 +140,6 @@ export function scanAllProjects(root: string | ProjectScanRoots): ProjectInfo[] 
 }
 
 // ── Diagnosis ────────────────────────────────────────────────────────────
-
-/** Check if project.md has pending comments */
-function hasPendingComments(content: string): boolean {
-  const comments = extractSection(content, "Comments");
-  return comments.length > 0;
-}
 
 function parseResumeAfter(content: string): number | null {
   const value = parseProjectMeta(content).resume_after;
@@ -222,8 +205,6 @@ export function diagnoseProject(
         hasUnread = !!unreadDiscussionTail(disc);
       }
     } catch {}
-    // Also check legacy ## Comments in project.md
-    if (!hasUnread) hasUnread = hasPendingComments(project.content);
     if (hasUnread) {
       const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
