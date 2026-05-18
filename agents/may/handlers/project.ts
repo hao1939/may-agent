@@ -7,7 +7,7 @@
  *   - reactivate/add-comment for blocked projects
  *   - escalate persistent blockers
  */
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../../shared/agent-sdk.ts";
@@ -33,6 +33,17 @@ function matchesProjectTarget(project: ProjectInfo, target: string | null): bool
 
 function projectIdFor(project: ProjectInfo): string {
   return `${project.owner}/${project.relPath.split("/").pop()}`;
+}
+
+export function resolveWorkflowName(project: ProjectInfo): string | null {
+  const configured = project.workflow || "project";
+  if (configured !== "project") return configured;
+
+  const slug = project.relPath.split("/").pop();
+  if (!slug) return null;
+
+  const projectWorkflow = resolve(dirname(project.projectFile), "workflows", `${slug}-iteration.ts`);
+  return existsSync(projectWorkflow) ? `${slug}-iteration` : null;
 }
 
 function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unknown> = {}): void {
@@ -227,7 +238,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         continue;
       }
 
-      const workflowName = project.workflow || "project";
+      const workflowName = resolveWorkflowName(project);
+      if (!workflowName) {
+        emitSkip(ctx, `Skip ${project.relPath} — workflow: project has no ${project.relPath.split("/").pop()}-iteration.ts implementation`, {
+          eventType: event?.type ?? "timer.tick",
+          projectId,
+          projectPath: project.relPath,
+        });
+        continue;
+      }
       const projectDir = dirname(project.projectFile);
       const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
 
