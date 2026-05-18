@@ -140,6 +140,37 @@ LIMIT 20
 
 Events naturally expire via TTL or time window. Agents act or they don't.
 
+## Trigger Payloads
+
+Reactive cron handlers receive the original event payload as trigger data:
+
+```typescript
+type TriggerEvent = {
+  type: string;
+  source: "timer" | "event" | "manual";
+  entry: string;
+  data?: Record<string, unknown>;
+  timestamp: number;
+};
+```
+
+The framework does not promote domain fields such as `sessionId`, `projectId`,
+or `metricId` onto `TriggerEvent`. The event producer owns the payload shape;
+the handler or workflow that subscribes to the event owns interpretation.
+
+Example:
+
+```typescript
+// Emits event row data: { sessionId: "s_123", outcome: "done" }
+sdk.emit("session.completed", { sessionId: "s_123", outcome: "done" });
+
+// Subscriber reads the domain field from trigger data.
+const sessionId = event?.data?.sessionId;
+```
+
+This keeps the event model simple: event type routes work, event data carries
+the facts, and handlers decide what fields matter.
+
 ## Deriving State
 
 Events support queryable state alongside mutable tables:

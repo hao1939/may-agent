@@ -67,6 +67,30 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 | `escalate(target, reason)` | SOS. Enters escalation chain, may trigger immediate wake. |
 | `paths` | `{ persist, root, agents, shared, projects }` — system directories. |
 
+## Workflow Handler Helper
+
+`@may-agent/sdk` also exports `createWorkflowHandler(options)`, the canonical
+helper for simple cron/event-to-workflow bridges. Keep the implementation in the
+SDK package; runtime/shared code should import it rather than carrying local
+copies.
+
+```typescript
+import { createWorkflowHandler } from "@may-agent/sdk";
+
+export const create = createWorkflowHandler({
+  workflow: "evaluator-aftermath",
+  task: (_ctx, event) => {
+    const sessionId = event?.data?.sessionId;
+    return `Review completed session ${sessionId}`;
+  },
+  includeEvent: true,
+  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
+});
+```
+
+`includeEvent: true` appends the exact trigger object under `## Trigger Event`.
+The trigger object is generic: event-specific fields stay inside `event.data`.
+
 ## WorkflowSDK
 
 Workflows get an extended interface:

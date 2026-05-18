@@ -29,10 +29,14 @@ projection, but judgment and repair work should live in workflows.
 
 ## Rules
 
-- New handlers should use `createWorkflowHandler` unless they are pure projection,
-  cleanup, or lifecycle plumbing.
+- New event-to-workflow bridge handlers should use `createWorkflowHandler` from
+  `@may-agent/sdk` unless they are pure projection, cleanup, or lifecycle
+  plumbing. Do not add local or shared shadow copies of the helper.
 - Judgment handlers may read small deterministic facts, then dispatch a workflow
   with the trigger event and preflight evidence.
+- Event subscribers read domain fields from `event.data`. The framework should
+  not promote fields such as `sessionId` onto the trigger object for a specific
+  workflow.
 - Direct `getDb()` is acceptable for metric projection, DB cleanup, and schema-aware
   infra repair. It is a compatibility escape hatch elsewhere.
 - `sdk.query` is the default read surface for handler preflight.
@@ -53,6 +57,12 @@ projection, but judgment and repair work should live in workflows.
 
 - Existing helper coverage: `run-workflow` uses `createWorkflowHandler`, which
   now emits `handler.skipped` and `handler.workflow_dispatched`.
+- Helper ownership: `createWorkflowHandler` lives in `@may-agent/sdk`; runtime
+  and shared code import the SDK helper instead of maintaining duplicate
+  implementations.
+- Event payload contract: event-triggered handlers receive `{ type, source,
+  entry, data, timestamp }`; `data` is the original event payload and remains
+  the only place for event-specific fields.
 - Existing query-surface coverage: `session-aftermath-scan` uses `sdk.query`.
 - First alert-reactor traceability slice: `metric-alert-reactor` records
   `handler.skipped` and `handler.workflow_dispatched` evidence.

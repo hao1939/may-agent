@@ -53,6 +53,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 };
 ```
 
+When a cron entry subscribes with `on`, the handler receives a trigger object:
+
+```typescript
+{
+  type: "session.completed",
+  source: "event",
+  entry: "evaluator-aftermath",
+  data: { "sessionId": "s_123", "outcome": "done" },
+  timestamp: 1778932481366
+}
+```
+
+`data` is the original event object/payload. Cron does not special-case or lift
+fields out of it. A handler that needs a session id reads
+`event?.data?.sessionId`; a metric handler reads metric fields; a project
+handler reads project fields.
+
 Direct handler logic is acceptable for mechanical infra work such as metric
 snapshots, projections, cleanup/recovery state repair, reload/restart/shutdown,
 and dispatch dedup. Direct `sdk.runAgent(...)` from a handler should be
@@ -100,3 +117,4 @@ Agents with heartbeat workflows get auto-generated cron entries:
 - **Cron class:** `src/app/cron.ts`
 - **Handler loading:** `src/app/loader/handler-loader.ts` via the `src/app/agent-loader.ts` compatibility surface
 - **Auto-heartbeat:** `generateAutoHeartbeats()` in `src/app/loader/heartbeat-loader.ts`
+- **Workflow bridge helper:** `createWorkflowHandler()` from `@may-agent/sdk`

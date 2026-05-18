@@ -63,6 +63,33 @@ Via `ctx` (handler-specific):
 - `ctx.agentName` — the agent that owns this handler
 - `ctx.triggerNow(name)` — fire another handler immediately
 
+## Trigger Events
+
+Timer handlers may receive no event or a manual/timer trigger. Event-subscribed
+handlers receive:
+
+```typescript
+type TriggerEvent = {
+  type: string;
+  source: "timer" | "event" | "manual";
+  entry: string;
+  data?: Record<string, unknown>;
+  timestamp: number;
+};
+```
+
+`event.data` is the original event payload. Read domain fields from there:
+
+```typescript
+const sessionId = typeof event?.data?.sessionId === "string"
+  ? event.data.sessionId
+  : null;
+```
+
+Do not expect cron to add shortcut fields to `event` for a specific subscriber.
+If the handler needs a field, the event emitter should include it in the event
+payload and the handler should validate it from `event.data`.
+
 ## Hot Reload
 
 Handlers are hot-reloaded on every tick. Edit the file → next fire picks up changes. No restart needed.
@@ -123,6 +150,29 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
 Use this shape for any handler that needs judgment, project context,
 investigation, or agent action.
+
+## Example: SDK Workflow Bridge Helper
+
+For straightforward event-to-workflow bridges, use the SDK helper instead of
+writing boilerplate:
+
+```typescript
+import { createWorkflowHandler } from "@may-agent/sdk";
+
+export const create = createWorkflowHandler({
+  workflow: "evaluator-aftermath",
+  includeEvent: true,
+  task: (_ctx, event) => {
+    const sessionId = event?.data?.sessionId;
+    return `Review completed session ${sessionId}`;
+  },
+  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
+});
+```
+
+With `includeEvent: true`, the helper appends the exact trigger object under
+`## Trigger Event` in the workflow task. If no event payload is present, it
+skips dispatch and emits `handler.skipped`.
 
 ## Testing
 
