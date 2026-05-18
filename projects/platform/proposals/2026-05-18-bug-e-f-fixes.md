@@ -98,3 +98,19 @@ diff projects/platform/workflows/platform-iteration.ts \
 
 and cherry-pick the `setStatusFooter` helper plus the call-site
 conversions.
+
+### Divergence observability
+
+`scripts/workflow-divergence.mjs` (added 2026-05-18) reports per-fork
+diffs against `platform-iteration.ts` and flags known platform fixes
+that haven't been picked up. Run:
+
+```
+bun scripts/workflow-divergence.mjs         # summary
+bun scripts/workflow-divergence.mjs --json  # for tools
+bun scripts/workflow-divergence.mjs --diff  # full unified diffs
+```
+
+The `MARKERS` array in that script is the registry of tracked
+platform-iteration fixes — add an entry whenever a fix lands in
+platform that other forks should pick up.
