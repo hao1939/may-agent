@@ -38,9 +38,63 @@ export function parseProjectMeta(content: string): ProjectMeta {
   for (const line of m[1].split("\n")) {
     const field = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
     if (!field) continue;
-    meta[field[1].toLowerCase()] = field[2].trim().replace(/^["']|["']$/g, "");
+    const rawValue = field[2];
+    meta[field[1].toLowerCase()] = decodeScalar(rawValue);
   }
   return meta;
+}
+
+/**
+ * Decode a YAML-frontmatter scalar value.
+ *
+ * Supports two forms:
+ *   - bare: trimmed, with surrounding single-quotes stripped (legacy).
+ *   - double-quoted: JS-style escapes (\n, \t, \\, \"). Used by
+ *     formatProjectMeta when values contain newlines or special chars.
+ */
+function decodeScalar(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) {
+    // Double-quoted: decode escapes.
+    const inner = trimmed.slice(1, -1);
+    return inner.replace(/\\([\\"nrt])/g, (_, ch) => {
+      switch (ch) {
+        case "n": return "\n";
+        case "r": return "\r";
+        case "t": return "\t";
+        case "\\": return "\\";
+        case '"': return '"';
+        default: return ch;
+      }
+    });
+  }
+  // Legacy bare: strip surrounding single-quotes if present.
+  return trimmed.replace(/^'|'$/g, "");
+}
+
+/**
+ * Encode a value for YAML frontmatter.
+ *
+ * Bare scalar if value is safe; double-quoted with JS-style escapes
+ * otherwise. "Safe" means: no newlines, tabs, leading/trailing whitespace,
+ * no surrounding quotes, no `#` (comment), no leading `[{|>&*!%@`` or `'"`,
+ * no `: ` (which would split into another field).
+ */
+function encodeScalar(value: string): string {
+  if (value === "") return "";
+  const needsQuoting =
+    /[\n\r\t"\\]/.test(value) ||
+    /^\s|\s$/.test(value) ||
+    /^[#&*!%@`>|'"\[\{]/.test(value) ||
+    /:\s/.test(value);
+  if (!needsQuoting) return value;
+  const escaped = value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")
+    .replace(/\r/g, "\\r")
+    .replace(/\t/g, "\\t");
+  return `"${escaped}"`;
 }
 
 function stripProjectMeta(content: string): string {
@@ -53,7 +107,7 @@ function formatProjectMeta(meta: ProjectMeta): string {
     ...preferred.filter(key => meta[key] !== undefined && meta[key] !== ""),
     ...Object.keys(meta).filter(key => !preferred.includes(key) && meta[key] !== undefined && meta[key] !== "").sort(),
   ];
-  return ["---", ...keys.map(key => `${key}: ${meta[key]}`), "---", "", ""].join("\n");
+  return ["---", ...keys.map(key => `${key}: ${encodeScalar(meta[key])}`), "---", "", ""].join("\n");
 }
 
 export function validateProjectFormat(content: string, expectedId?: string): string[] {
