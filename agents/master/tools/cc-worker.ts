@@ -13,10 +13,31 @@ import { join } from "node:path";
 import { parseCCStream, formatEnvelope } from "./cc-stream-parser";
 
 const TIMEOUT_DEFAULT = 300;
+const TIMEOUT_MIN = 60;
 const SESSION_FILE = "cc-session-id";
 
 function textResult(text: string) {
   return { content: [{ type: "text" as const, text }], details: undefined };
+}
+
+function normalizeTimeout(timeout: unknown): { seconds: number; notice: string | null } {
+  const requested = typeof timeout === "number" && Number.isFinite(timeout) ? timeout : TIMEOUT_DEFAULT;
+  if (requested >= TIMEOUT_MIN) return { seconds: requested, notice: null };
+  return {
+    seconds: TIMEOUT_MIN,
+    notice: `Requested timeout ${requested}s is below the ${TIMEOUT_MIN}s minimum; using ${TIMEOUT_MIN}s.`,
+  };
+}
+
+function exitCodeFromClose(code: number | null, signal: string | null): number {
+  if (code !== null) return code;
+  if (signal === "SIGTERM") return 143;
+  if (signal === "SIGKILL") return 137;
+  return 1;
+}
+
+function appendWrapperNotice(text: string, notice: string | null): string {
+  return notice ? `${text}\n\n## Worker wrapper notice\n${notice}` : text;
 }
 
 function loadSessionId(dir: string): string | null {
@@ -51,7 +72,7 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
     },
     async execute(_toolCallId: string, params: any) {
       const { prompt, timeout, cwd, model, new_session, max_turns } = params;
-      const timeoutSec = timeout ?? TIMEOUT_DEFAULT;
+      const { seconds: timeoutSec, notice: timeoutNotice } = normalizeTimeout(timeout);
       const workDir = cwd ?? _opts.projectRoot;
 
       const existingSession = new_session ? null : loadSessionId(stateDir);
@@ -91,19 +112,20 @@ export default function factory(_opts: { projectRoot: string; agentRoot: string;
           stderrChunks.push(data.toString());
         });
 
-        child.on("close", (code) => {
+        child.on("close", (code, signal) => {
           const stdoutStr = stdoutChunks.join("");
           const stderrStr = stderrChunks.join("");
-          const envelope = parseCCStream(stdoutStr, stderrStr, code ?? 1);
+          const exitCode = exitCodeFromClose(code, signal);
+          const envelope = parseCCStream(stdoutStr, stderrStr, exitCode);
 
           // Persist session ID for next call
           if (envelope.session_id) saveSessionId(stateDir, envelope.session_id);
 
-          resolve(textResult(formatEnvelope(envelope)));
+          resolve(textResult(appendWrapperNotice(formatEnvelope(envelope), timeoutNotice)));
         });
 
         child.on("error", (err) => {
-          resolve(textResult(`[error] ${err.message}`));
+          resolve(textResult(appendWrapperNotice(`[error] ${err.message}`, timeoutNotice)));
         });
       });
     },

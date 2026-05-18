@@ -6,8 +6,8 @@ type: continuous
 priority: P1
 workflow: master-worker-context-sharing-iteration
 iteration: 1
-stop_reason: The core delegation wiring is complete. Master (an LLM agent) calls cc_worker/codex_worker tools, which now spawn CLI subagents and return structured envelopes with status, tool outputs, files touched
-resume_condition: Human/May reviews the commit and confirms the delegation behavior meets expectations, or identifies gaps.
+stop_reason: Phase 1 transport is hardened but still awaiting live validation across real master delegation sessions.
+resume_condition: Resume when 5 real master delegation sessions are available to audit, or when user/May requests the next delegation-protocol phase.
 ---
 
 # Project: Master ⇄ cc_worker ⇄ codex_worker Context Sharing
@@ -52,23 +52,24 @@ Provenance signals (qualitative, watched in journal):
 - Did master cite worker findings in its reply, or paraphrase them away?
 
 ## Current State
-Waiting: The core delegation wiring is complete. Master (an LLM agent) calls cc_worker/codex_worker tools, which now spawn CLI subagents and return structured envelopes with status, tool outputs, files touched, and usage stats. Parser tests exist. Commit `08e44231d`. Resume when: human/May reviews the commit and confirms the delegation behavior meets expectations, or identifies gaps.
+Waiting after Phase 1 hardening: parser wiring is live for master worker tools, and the wrappers now enforce `timeout >= 60` plus map process timeout signals to `status=timed_out` envelopes. Parser tests pass. The project is not ready to close because Phase 1 still needs evidence from the next 5 real master delegation sessions.
+
 ## Plan
 
 Incremental and reversible. Each step lands one thing, then we watch
 real master sessions before deciding the next move.
 
 ### Phase 1 — Transport (highest evidence, lowest risk)
-- [ ] Wire `cc-stream-parser.ts` into `agents/master/tools/cc-worker.ts`. Use
+- [x] Wire `cc-stream-parser.ts` into `agents/master/tools/cc-worker.ts`. Use
       `formatEnvelope()` for the returned text. Keep the parser as a pure
       function so it stays testable.
-- [ ] Wire `codex-stream-parser.ts` into `agents/master/tools/codex-worker.ts`
+- [x] Wire `codex-stream-parser.ts` into `agents/master/tools/codex-worker.ts`
       the same way.
-- [ ] Enforce `timeout >= 60` at the tool boundary; if caller passes lower,
+- [x] Enforce `timeout >= 60` at the tool boundary; if caller passes lower,
       bump to 60 and log a warning in the envelope.
-- [ ] Verify offline: re-run `scripts/spike-cc-parser-verdict.ts`; both
-      parser test suites must stay green.
-- [ ] Land. Watch the next 5 real master sessions for `worker.transport.
+- [x] Verify offline: parser test suites stay green and both worker
+      wrappers build successfully.
+- [ ] Watch the next 5 real master sessions for `worker.transport.
       opaque-returns` rate.
 
 ### Phase 2 — Investigate codex production failure
@@ -164,6 +165,12 @@ Honest scope notes:
 - Layer 2 (transport) is the only layer with strong empirical backing right
   now. Other layers are theoretically grounded but should be considered
   hypotheses until session data confirms.
+
+### 2026-05-18 — Phase 1 hardening review
+
+Project-level review found the project should remain waiting, not close: Phase 1 transport is shipped but lacks the required live 5-session validation window. Hardened the master worker wrappers so caller-supplied short timeouts are raised to 60s and surfaced in the returned envelope, and so Node close signals such as SIGTERM map to the parser's `timed_out` status instead of a generic error. Also updated `agents/master/AGENTS.md` so master no longer treats this waiting project as active implementation work.
+
+Remaining Phase 1 exit criterion: audit the next 5 real master sessions that use `cc_worker` or `codex_worker` and confirm returns are structured envelopes rather than `[exit N]` raw noise. Do not start Phase 2/3 until that evidence exists.
 
 ## References
 

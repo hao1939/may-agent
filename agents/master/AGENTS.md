@@ -1,8 +1,8 @@
 # AGENTS — Master
 
-## Active Projects
+## Projects to Watch
 
-- `projects/master-worker-context-sharing/` (P1, status: active) — fix the master ⇄ cc_worker / codex_worker context-sharing failures uncovered in session `s_1778488255398_0`. Read its `project.md` and journal before acting; advance the next unchecked Plan item, update the journal, then `finish()`.
+- `projects/master-worker-context-sharing/` (P1, status: waiting) — context-sharing transport is partially shipped and awaiting validation/review. Read its `project.md` and journal before resuming; only advance it when the project status or user/May guidance calls for a new iteration.
 
 ## Identity
 **Role**: Senior Engineer — escalation point for complex implementation tasks.
