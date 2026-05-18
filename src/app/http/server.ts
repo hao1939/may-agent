@@ -16,7 +16,7 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
-import { appendFileSync, readFileSync, existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
@@ -464,19 +464,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return null;
   }
 
-  function resolveSessionAudit(sessionId: string): { path: string; source: string; session: { path: string; source: string } } | null {
+  function resolveSessionEval(sessionId: string): { path: string; source: string; session: { path: string; source: string } } | null {
     const session = resolveSessionJsonl(sessionId);
     if (!session) return null;
     return {
-      path: session.path.replace(/session\.jsonl$/, "session.audit.jsonl"),
-      source: session.source.replace(/session\.jsonl$/, "session.audit.jsonl"),
+      path: session.path.replace(/session\.jsonl$/, "session.eval.jsonl"),
+      source: session.source.replace(/session\.jsonl$/, "session.eval.jsonl"),
       session,
     };
   }
 
-  function readAuditRows(auditPath: string): unknown[] {
-    if (!existsSync(auditPath)) return [];
-    return readFileSync(auditPath, "utf-8")
+  function readEvalRows(evalPath: string): unknown[] {
+    if (!existsSync(evalPath)) return [];
+    return readFileSync(evalPath, "utf-8")
       .split("\n")
       .filter(Boolean)
       .map((line) => {
@@ -484,111 +484,339 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       });
   }
 
-  function compactAuditText(value: unknown, max = 220): string {
-    const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
-    return text.replace(/\s+/g, " ").trim().slice(0, max);
-  }
-
-  function buildInitialAuditRows(sessionId: string, resolved: { path: string; source: string }): Record<string, unknown>[] {
-    const now = Date.now();
-    return readFileSync(resolved.path, "utf-8")
-      .split("\n")
-      .map((line, idx) => ({ line, lineNo: idx + 1 }))
-      .filter(({ line }) => line.trim())
-      .map(({ line, lineNo }) => {
-        let parsed: any = null;
-        try { parsed = JSON.parse(line); } catch {}
-        const role = String(parsed?.role || "unknown");
-        const lowerRole = role.toLowerCase();
-        const base = {
-          sessionId,
-          line: lineNo,
-          source: "webui-initial-audit",
-          author: "evaluator-seed",
-          createdAt: now,
-          rawRole: role,
-          rawPreview: compactAuditText(line),
-        };
-        if (!parsed) {
-          return { ...base, score: "unknown", issues: ["unparsed_jsonl"], comment: "Could not parse this JSONL record." };
-        }
-        if (lowerRole === "user") {
-          return { ...base, score: "context", issues: [], comment: "User input or steering context. Audit whether the following agent turn addresses this request." };
-        }
-        if (lowerRole === "assistant") {
-          const blocks = Array.isArray(parsed.content) ? parsed.content : [];
-          const toolCalls = blocks.filter((b: any) => b?.type === "tool_use" || b?.type === "toolCall");
-          const text = compactAuditText(blocks.filter((b: any) => b?.type === "text").map((b: any) => b.text || "").join(" "));
-          return {
-            ...base,
-            score: toolCalls.length ? "check" : "ok",
-            issues: [],
-            comment: toolCalls.length
-              ? `Assistant requested ${toolCalls.length} tool call(s). Check whether the calls were necessary and grounded.`
-              : (text ? `Assistant response: ${text}` : "Assistant response with no visible text; inspect adjacent tool calls/results."),
-          };
-        }
-        if (lowerRole === "toolresult" || lowerRole === "tool_result") {
-          const content = compactAuditText(parsed.content || "");
-          const isError = Boolean(parsed.isError) || /no such file|not found|permission denied|error|failed/i.test(content);
-          return {
-            ...base,
-            score: isError ? "issue" : "ok",
-            issues: isError ? ["tool_output_error"] : [],
-            toolCallId: parsed.toolCallId,
-            comment: isError
-              ? `Tool output indicates a failure or invalid assumption: ${content}`
-              : `Tool output returned usable evidence: ${content}`,
-          };
-        }
-        return { ...base, score: "unknown", issues: [], comment: "Unrecognized session record; inspect manually." };
-      });
-  }
-
-  function handleSessionAudit(sessionId: string): Response {
-    const resolved = resolveSessionAudit(sessionId);
+  function handleSessionEval(sessionId: string): Response {
+    const resolved = resolveSessionEval(sessionId);
     if (!resolved) return json({ error: "Session not found" }, 404);
     return json({
       sessionId,
       source: resolved.source,
       exists: existsSync(resolved.path),
-      rows: readAuditRows(resolved.path),
+      rows: readEvalRows(resolved.path),
     });
   }
 
-  async function handleSessionAuditGenerate(sessionId: string): Promise<Response> {
-    const resolved = resolveSessionAudit(sessionId);
-    if (!resolved) return json({ error: "Session not found" }, 404);
-    if (existsSync(resolved.path)) {
-      return json({ sessionId, source: resolved.source, exists: true, generated: false, rows: readAuditRows(resolved.path) });
+
+  function firstSummaryRow(rows: unknown[]): Record<string, any> | null {
+    for (let i = rows.length - 1; i >= 0; i--) {
+      const row = rows[i] as Record<string, any>;
+      if (row && row.type === "summary") return row;
+    }
+    return null;
+  }
+
+  function readSessionEvalSummary(sessionId: string): { source: string | null; rows: unknown[]; summary: Record<string, any> | null } {
+    const resolved = resolveSessionEval(sessionId);
+    if (!resolved || !existsSync(resolved.path)) return { source: resolved?.source ?? null, rows: [], summary: null };
+    const rows = readEvalRows(resolved.path);
+    return { source: resolved.source, rows, summary: firstSummaryRow(rows) };
+  }
+
+  function incrementCount(map: Record<string, number>, key: unknown): void {
+    const name = String(key || "unknown");
+    map[name] = (map[name] || 0) + 1;
+  }
+
+  function handleLearning(url: URL): Response {
+    const db = _db();
+    const days = Math.max(1, Math.min(90, parseInt(url.searchParams.get("days") || "7", 10) || 7));
+    const limit = Math.max(20, Math.min(500, parseInt(url.searchParams.get("limit") || "200", 10) || 200));
+    const projectId = url.searchParams.get("projectId") || "";
+    const ownerFilter = url.searchParams.get("owner") || "";
+    const scopeFilter = url.searchParams.get("scope") || "";
+    const severityFilter = url.searchParams.get("severity") || "";
+    const now = Date.now();
+    const since = now - days * 86400000;
+
+    const sessionWhere = ["status IN ('done','error','interrupted')", "agent NOT IN ('evaluator','judge')", "COALESCE(endedAt, startedAt) >= ?"];
+    const sessionParams: unknown[] = [since];
+    if (projectId) {
+      sessionWhere.push("projectId = ?");
+      sessionParams.push(projectId);
     }
 
-    const rows = buildInitialAuditRows(sessionId, resolved.session);
-    writeFileSync(resolved.path, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
+    let sessions: Array<Record<string, any>> = [];
+    try {
+      sessions = db.prepare(
+        `SELECT sessionId, agent, status, source, projectId, workflowRunId, startedAt, endedAt, opCount, substr(task, 1, 220) AS task
+         FROM sessions
+         WHERE ${sessionWhere.join(" AND ")}
+         ORDER BY COALESCE(endedAt, startedAt) DESC
+         LIMIT 1200`,
+      ).all(...sessionParams) as Array<Record<string, any>>;
+    } catch {
+      sessions = [];
+    }
 
-    const task = `Generate a step-by-step audit for session ${sessionId}.\n\n` +
-      `Raw session log: ${resolved.session.source}\n` +
-      `Audit file to update: ${resolved.source}\n\n` +
-      `Read the raw session.jsonl. For each important raw line, write or refine JSONL audit records in ${resolved.source}. ` +
-      `Each record must include: sessionId, line, source, author, createdAt, score, issues, comment, and rawRole. ` +
-      `Keep comments concise and evidence-based. Preserve human feedback rows if present. The UI maps rows by the line field.`;
-    const evaluator = await sendDaemonFrame({ type: "fork", agent: "evaluator", task, opts: { kind: "job", source: "session-audit" } });
+    const evaluatedIds = new Set<string>();
+    const verdicts: Record<string, number> = {};
+    try {
+      const rows = db.prepare("SELECT sessionId, verdict FROM evaluations").all() as Array<{ sessionId?: string; verdict?: string }>;
+      for (const row of rows) {
+        if (!row.sessionId) continue;
+        evaluatedIds.add(row.sessionId);
+        incrementCount(verdicts, row.verdict || "unknown");
+      }
+    } catch { /* tolerate missing table */ }
+
+    const notifiedKeys = new Set<string>();
+    let immediateEventCount = 0;
+    try {
+      const eventRows = db.prepare(
+        `SELECT data FROM events WHERE event_type = 'learning.feedback' AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1000`,
+      ).all(since) as Array<{ data?: string }>;
+      for (const event of eventRows) {
+        const data = parseEventData(event.data);
+        const finding = (data.finding || {}) as Record<string, unknown>;
+        const sid = String(data.sessionId || "");
+        const fid = String(finding.id || "");
+        if (sid && fid) notifiedKeys.add(`${sid}:${fid}`);
+        if (!projectId || data.projectId === projectId) immediateEventCount += 1;
+      }
+    } catch { /* events are best-effort */ }
+
+    const findings: Array<Record<string, any>> = [];
+    const recentEvaluations: Array<Record<string, any>> = [];
+    const byScope: Record<string, number> = {};
+    const byOwner: Record<string, number> = {};
+    const bySeverity: Record<string, number> = {};
+    const byAgent: Record<string, number> = {};
+    const buckets: Record<string, { sessions: number; evaluated: number; findings: number; high: number; guards: number; guardBlocks: number }> = {};
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now - i * 86400000).toISOString().slice(0, 10);
+      buckets[d] = { sessions: 0, evaluated: 0, findings: 0, high: 0, guards: 0, guardBlocks: 0 };
+    }
+
+    const guardSignals: Array<Record<string, any>> = [];
+    const byGuard: Record<string, number> = {};
+    const byGuardAction: Record<string, number> = {};
+    let guardBlockCount = 0;
+    try {
+      const guardRows = db.prepare(
+        `SELECT owner, data, timestamp FROM events WHERE event_type = 'guard.triggered' AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1000`,
+      ).all(since) as Array<{ owner?: string; data?: string; timestamp?: number }>;
+      for (const event of guardRows) {
+        const data = parseEventData(event.data);
+        if (projectId && data.projectId !== projectId) continue;
+        const action = String(data.action || data.demandType || "triggered");
+        const demandType = String(data.demandType || "");
+        const guard = String(data.guard || data.name || "unknown");
+        const owner = String(data.owner || event.owner || "unknown");
+        const createdAt = Number(event.timestamp || now);
+        const blocked = action === "blocked" || demandType === "block";
+        incrementCount(byGuard, guard);
+        incrementCount(byGuardAction, action);
+        if (blocked) guardBlockCount += 1;
+        const day = new Date(createdAt).toISOString().slice(0, 10);
+        if (buckets[day]) {
+          buckets[day].guards += 1;
+          if (blocked) buckets[day].guardBlocks += 1;
+        }
+        guardSignals.push({
+          guard,
+          action,
+          demandType: demandType || null,
+          owner,
+          sessionId: data.sessionId || null,
+          workflowRunId: data.workflowRunId || null,
+          projectId: data.projectId || null,
+          reason: data.reason || "",
+          sourceEventType: data.sourceEventType || null,
+          reviewStatus: "unreviewed",
+          learningRole: "signal",
+          createdAt,
+        });
+      }
+    } catch { /* guard events are best-effort */ }
+
+    const backlogSessions: Array<Record<string, any>> = [];
+    for (const session of sessions) {
+      const sid = String(session.sessionId || "");
+      const day = new Date(Number(session.endedAt || session.startedAt || now)).toISOString().slice(0, 10);
+      if (buckets[day]) buckets[day].sessions += 1;
+      const evalData = readSessionEvalSummary(sid);
+      const hasEvalFile = evalData.rows.length > 0;
+      if (hasEvalFile) evaluatedIds.add(sid);
+      const evaluated = evaluatedIds.has(sid);
+      if (evaluated && buckets[day]) buckets[day].evaluated += 1;
+      if (!evaluated) {
+        backlogSessions.push(session);
+        continue;
+      }
+
+      const summary = evalData.summary;
+      if (summary) {
+        recentEvaluations.push({
+          sessionId: sid,
+          agent: session.agent,
+          projectId: session.projectId || null,
+          status: session.status,
+          verdict: summary.verdict || "unknown",
+          lane: summary.lane || null,
+          quality: summary.quality ?? null,
+          efficiency: summary.efficiency ?? null,
+          createdAt: summary.createdAt || session.endedAt || session.startedAt,
+          source: evalData.source,
+          comment: summary.comment || "",
+        });
+        incrementCount(verdicts, summary.verdict || "unknown");
+      }
+
+      const ownerFindings = summary?.repairDecision?.ownerFindings;
+      const immediateIds = new Set((summary?.repairDecision?.notificationDecision?.immediateFindingIds || []).map(String));
+      if (!Array.isArray(ownerFindings)) continue;
+      for (const finding of ownerFindings) {
+        const fid = String(finding?.id || "finding");
+        const owner = String(finding?.owner || "unknown");
+        const scope = String(finding?.scope || "unknown");
+        const severity = String(finding?.severity || "medium");
+        if (ownerFilter && owner !== ownerFilter) continue;
+        if (scopeFilter && scope !== scopeFilter) continue;
+        if (severityFilter && severity !== severityFilter) continue;
+        const notified = immediateIds.has(fid) || notifiedKeys.has(`${sid}:${fid}`);
+        const createdAt = Number(summary?.createdAt || session.endedAt || session.startedAt || now);
+        const item = {
+          key: `${sid}:${fid}`,
+          id: fid,
+          repeatKey: `${owner}:${scope}:${fid}`,
+          sessionId: sid,
+          agent: session.agent,
+          projectId: session.projectId || null,
+          workflowRunId: session.workflowRunId || null,
+          owner,
+          scope,
+          severity,
+          finding: finding.finding || "",
+          impact: finding.impact || "",
+          ownerReason: finding.ownerReason || "",
+          suggestedActions: Array.isArray(finding.suggestedActions) ? finding.suggestedActions : [],
+          evidence: Array.isArray(finding.evidence) ? finding.evidence : [],
+          notified,
+          createdAt,
+          evalTrailPath: evalData.source,
+          sessionStatus: session.status,
+          task: session.task || "",
+        };
+        findings.push(item);
+        incrementCount(byScope, scope);
+        incrementCount(byOwner, owner);
+        incrementCount(bySeverity, severity);
+        incrementCount(byAgent, session.agent || "unknown");
+        if (buckets[day]) {
+          buckets[day].findings += 1;
+          if (severity === "high") buckets[day].high += 1;
+        }
+      }
+    }
+
+    findings.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    recentEvaluations.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+
+    let evaluatorFailures: Array<Record<string, any>> = [];
+    let evaluatorReviewCount = 0;
+    try {
+      const evalRows = db.prepare(
+        `SELECT sessionId, agent, status, source, startedAt, endedAt, error, substr(task, 1, 180) AS task
+         FROM sessions
+         WHERE agent = 'evaluator'
+           AND COALESCE(endedAt, startedAt) >= ?
+           AND (source LIKE 'workflow:evaluator-aftermath%' OR source = 'cli' OR task LIKE 'Review session aftermath%')
+         ORDER BY COALESCE(endedAt, startedAt) DESC
+         LIMIT 500`,
+      ).all(since) as Array<Record<string, any>>;
+      evaluatorReviewCount = evalRows.length;
+      evaluatorFailures = evalRows.filter((row) => row.status === "error").slice(0, 50);
+    } catch { /* ignore */ }
+
+    const terminalSessions = sessions.length;
+    const evaluatedSessions = sessions.filter((s) => evaluatedIds.has(String(s.sessionId || ""))).length;
+    const highFindings = findings.filter((f) => f.severity === "high").length;
+    const immediateFindings = findings.filter((f) => f.notified).length || immediateEventCount;
+    const staleBlockerLoops = findings.filter((f) => f.id === "stale-blocker-loop").length;
+    const repeatCounts: Record<string, number> = {};
+    for (const finding of findings) incrementCount(repeatCounts, finding.repeatKey);
+    const recurring = Object.entries(repeatCounts)
+      .filter(([, count]) => count > 1)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([key, count]) => ({ key, count }));
+
+    return json({
+      window: { days, since, now, projectId: projectId || null },
+      summary: {
+        terminalSessions,
+        evaluatedSessions,
+        coveragePct: terminalSessions ? Math.round((evaluatedSessions / terminalSessions) * 100) : 0,
+        backlog: Math.max(0, terminalSessions - evaluatedSessions),
+        findings: findings.length,
+        highFindings,
+        immediateFindings,
+        staleBlockerLoops,
+        evaluatorReviewCount,
+        evaluatorFailures: evaluatorFailures.length,
+        evaluatorFailureRatePct: evaluatorReviewCount ? Math.round((evaluatorFailures.length / evaluatorReviewCount) * 100) : 0,
+        guardSignals: guardSignals.length,
+        guardBlocks: guardBlockCount,
+        guardSignalsReviewed: 0,
+        guardSignalNote: "Guard signals are unreviewed detector output, not proof of agent fault.",
+      },
+      breakdowns: { byScope, byOwner, bySeverity, byAgent, byVerdict: verdicts, byGuard, byGuardAction },
+      timeline: Object.entries(buckets).map(([date, value]) => ({ date, ...value })),
+      findings: findings.slice(0, limit),
+      recentEvaluations: recentEvaluations.slice(0, 50),
+      backlogSessions: backlogSessions.slice(0, 50),
+      evaluatorFailures,
+      guardSignals: guardSignals.slice(0, 50),
+      recurring,
+    });
+  }
+
+  async function handleSessionEvalGenerate(req: Request, sessionId: string): Promise<Response> {
+    const resolved = resolveSessionEval(sessionId);
+    if (!resolved) return json({ error: "Session not found" }, 404);
+
+    let body: { line?: number } = {};
+    try { body = await req.json() as typeof body; } catch {}
+    const focusLine = Number(body.line || 0);
+    const hasFocusLine = Number.isInteger(focusLine) && focusLine > 0;
+    const rows = readEvalRows(resolved.path);
+
+    if (existsSync(resolved.path) && !hasFocusLine) {
+      return json({ sessionId, source: resolved.source, exists: true, requested: false, rows });
+    }
+
+    const rawLines = readFileSync(resolved.session.path, "utf-8").split("\n");
+    const focusRaw = hasFocusLine ? rawLines[focusLine - 1] || "" : "";
+    const task = [
+      `Generate the session evaluation trail for ${sessionId}.`,
+      ``,
+      `Raw session log: ${resolved.session.source}`,
+      `Session eval trail to append: ${resolved.source}`,
+      hasFocusLine ? `Focus line: session.jsonl:${focusLine}` : `Focus: whole session`,
+      hasFocusLine ? `Raw focus record: ${focusRaw}` : ``,
+      ``,
+      `Append JSONL rows to session.eval.jsonl. Do not rewrite existing rows.`,
+      `Think deeply. Do not merely summarize the transcript. Judge whether each actor did well: user request quality, assistant reasoning/action quality, tool-call necessity, evidence quality, recovery, verification, and finish honesty.`,
+      `Use free-form JSON fields when useful. The only required mapping fields are: type, sessionId, source, author, createdAt, and line/rawSource/rawRole for line-level rows.`,
+      `For user lines, critique whether the request clearly expressed purpose, provided necessary context, stayed clean/integral, could be simpler, or contained misleading/stale information.`,
+      `For assistant/tool lines, explain what was good or bad, why it mattered, and how the agent should do better next time.`,
+      `Use existing human-feedback rows in the eval trail as correction signal when present.`,
+    ].filter(Boolean).join("\n");
+    const evaluator = await sendDaemonFrame({ type: "fork", agent: "evaluator", task, opts: { kind: "job", source: "session-eval" } });
 
     return json({
       sessionId,
       source: resolved.source,
-      exists: true,
-      generated: true,
-      evaluatorRequested: evaluator.ok,
+      exists: existsSync(resolved.path),
+      requested: evaluator.ok,
       evaluatorError: evaluator.error,
       rows,
     });
   }
 
-  async function handleSessionAuditComment(req: Request, sessionId: string): Promise<Response> {
-    const resolved = resolveSessionAudit(sessionId);
+  async function handleSessionEvalComment(req: Request, sessionId: string): Promise<Response> {
+    const resolved = resolveSessionEval(sessionId);
     if (!resolved) return json({ error: "Session not found" }, 404);
-    let body: { line?: number; comment?: string; author?: string; originalAudit?: unknown };
+    let body: { line?: number; comment?: string; author?: string; originalEval?: unknown };
     try { body = await req.json() as typeof body; } catch { return json({ error: "invalid json" }, 400); }
     const line = Number(body.line || 0);
     const comment = String(body.comment || "").trim();
@@ -596,17 +824,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!comment) return json({ error: "comment required" }, 400);
     const raw = readFileSync(resolved.session.path, "utf-8").split("\n")[line - 1] || "";
     const row = {
+      type: "line",
       sessionId,
       line,
       source: "human-feedback",
       author: body.author || "human",
       createdAt: Date.now(),
       comment,
-      originalAudit: body.originalAudit || null,
+      originalEval: body.originalEval || null,
+      rawRole: "human-feedback",
+      rawSource: resolved.session.source,
       rawContext: { source: resolved.session.source, line, raw },
     };
     appendFileSync(resolved.path, JSON.stringify(row) + "\n");
-    return json({ ok: true, row, rows: readAuditRows(resolved.path) });
+    return json({ ok: true, row, rows: readEvalRows(resolved.path) });
   }
 
   function handleTranscript(sessionId: string): Response {
@@ -2401,6 +2632,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       if (url.pathname === "/api/events") return handleEvents(url);
+      if (url.pathname === "/api/learning") return handleLearning(url);
       if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);
       const metricHistoryMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/history$/);
       if (metricHistoryMatch) {
@@ -2420,17 +2652,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (transcriptMatch) return handleTranscript(transcriptMatch[1]);
       const rawLogMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/raw-log$/);
       if (rawLogMatch) return handleRawLog(rawLogMatch[1], url);
-      const auditMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/audit$/);
-      if (auditMatch && req.method === "GET") return handleSessionAudit(auditMatch[1]);
+      const evalMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/eval$/);
+      if (evalMatch && req.method === "GET") return handleSessionEval(evalMatch[1]);
 
       // ── Steering verbs (POST) ───────────────────────────────────────
       if (req.method === "POST") {
         const sessionCancelMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/cancel$/);
         if (sessionCancelMatch) return handleSessionCancel(sessionCancelMatch[1]);
-        const sessionAuditGenerateMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/audit$/);
-        if (sessionAuditGenerateMatch) return handleSessionAuditGenerate(sessionAuditGenerateMatch[1]);
-        const sessionAuditCommentMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/audit\/comment$/);
-        if (sessionAuditCommentMatch) return handleSessionAuditComment(req, sessionAuditCommentMatch[1]);
+        const sessionEvalGenerateMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/eval$/);
+        if (sessionEvalGenerateMatch) return handleSessionEvalGenerate(req, sessionEvalGenerateMatch[1]);
+        const sessionEvalCommentMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/eval\/comment$/);
+        if (sessionEvalCommentMatch) return handleSessionEvalComment(req, sessionEvalCommentMatch[1]);
         const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
         const heartbeatNowMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat-now$/);
