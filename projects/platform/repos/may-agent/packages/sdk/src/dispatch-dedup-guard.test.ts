@@ -3,8 +3,8 @@
  * Validates dedup logic without hitting real filesystem by testing exported functions.
  */
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { existsSync, unlinkSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "fs";
-import { join } from "path";
+import { existsSync, unlinkSync, readFileSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import {
   shouldDispatch,
   recordDispatch,

@@ -186,7 +186,7 @@ export function createToolSchemaGuard(): (
         if (errorMsg) {
           return {
             block: false, // signal-only
-            reason: `🚫 SCHEMA [${detector.id}]: ${errorMsg}`,
+            reason: `SCHEMA signal [${detector.id}]: ${errorMsg}`,
           };
         }
       } catch {

@@ -3,7 +3,7 @@
  *
  * Covers:
  * - Only blocks optimizer agent by default
- * - Only blocks finish(status: "success")
+ * - Only signals finish(status: "success")
  * - Detects write() evidence for DELIVERABLES_CHECKLIST
  * - Detects edit() evidence for DELIVERABLES_CHECKLIST
  * - Detects bash() write evidence for DELIVERABLES_CHECKLIST
@@ -65,7 +65,7 @@ function finishSuccess(
 // ─── Agent Targeting ────────────────────────────────────────────────
 
 describe("createCompletenessGuard — agent targeting", () => {
-  it("blocks optimizer by default", async () => {
+  it("signals optimizer by default", async () => {
     const guard = createCompletenessGuard("optimizer");
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
@@ -109,7 +109,7 @@ describe("createCompletenessGuard — agent targeting", () => {
 // ─── Finish Status Filtering ────────────────────────────────────────
 
 describe("createCompletenessGuard — finish status filtering", () => {
-  it("only blocks finish(status: success)", async () => {
+  it("only signals finish(status: success)", async () => {
     const guard = createCompletenessGuard("optimizer");
     const result = await guard(finishSuccess());
     expect(result).toBeDefined();
@@ -334,7 +334,7 @@ describe("createCompletenessGuard — edge cases", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks when many tool calls but no checklist", async () => {
+  it("signals when many tool calls but no checklist", async () => {
     const guard = createCompletenessGuard("optimizer");
     const ctx = finishSuccess([
       { name: "read", arguments: { path: "workspace/brief.md" } },

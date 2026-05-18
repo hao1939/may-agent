@@ -90,7 +90,7 @@ describe("path-hallucination-guard", () => {
     });
   });
 
-  describe("hallucinated /home/ paths — should block", () => {
+  describe("hallucinated /home/ paths — should signal", () => {
     test("cd /home/hao/may-agent", async () => {
       const result = await guard(bashCtx("cd /home/hao/may-agent && git status"));
       expect(result).toBeDefined();
@@ -119,7 +119,7 @@ describe("path-hallucination-guard", () => {
     });
   });
 
-  describe("hallucinated /Users/ paths — should block", () => {
+  describe("hallucinated /Users/ paths — should signal", () => {
     test("cd /Users/hao/c0", async () => {
       const result = await guard(bashCtx("cd /Users/hao/c0 && ls"));
       expect(result).toBeDefined();
@@ -134,7 +134,7 @@ describe("path-hallucination-guard", () => {
     });
   });
 
-  describe("hallucinated /root/ paths — should block", () => {
+  describe("hallucinated /root/ paths — should signal", () => {
     test("cd /root/may-agent", async () => {
       const result = await guard(bashCtx("cd /root/may-agent && ls"));
       expect(result).toBeDefined();
@@ -149,7 +149,7 @@ describe("path-hallucination-guard", () => {
     });
   });
 
-  describe("hallucinated ~/ paths — should block", () => {
+  describe("hallucinated ~/ paths — should signal", () => {
     test("cd ~/may-agent", async () => {
       const result = await guard(bashCtx("cd ~/may-agent && git status"));
       expect(result).toBeDefined();

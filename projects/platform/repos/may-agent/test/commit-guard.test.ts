@@ -196,7 +196,7 @@ describe("commit-guard", () => {
       git(agentsDir, ["checkout", "--", "may/last-session.md"]);
     });
 
-    it("blocks finish when agent has uncommitted changes (new file)", async () => {
+    it("signals finish when agent has uncommitted changes (new file)", async () => {
       // Create a new file in bob's workspace
       const bobDir = join(agentsDir, "bob", "workspace");
       mkdirSync(bobDir, { recursive: true });
@@ -215,7 +215,7 @@ describe("commit-guard", () => {
       rmSync(join(agentsDir, "bob"), { recursive: true, force: true });
     });
 
-    it("blocks finish when agent has modified tracked file", async () => {
+    it("signals finish when agent has modified tracked file", async () => {
       // Create and commit a file, then modify it
       const coachDir = join(agentsDir, "coach");
       mkdirSync(coachDir, { recursive: true });
@@ -238,7 +238,7 @@ describe("commit-guard", () => {
       git(agentsDir, ["checkout", "--", "coach/"]);
     });
 
-    it("blocks finish with any status (not just success)", async () => {
+    it("signals finish with any status (not just success)", async () => {
       const bobDir = join(agentsDir, "bob");
       mkdirSync(bobDir, { recursive: true });
       writeFileSync(join(bobDir, "notes.md"), "some notes");
@@ -269,7 +269,7 @@ describe("commit-guard", () => {
       rmSync(aliceDir, { recursive: true, force: true });
     });
 
-    it("blocks finish when agent has uncommitted changes in shared/", async () => {
+    it("signals finish when agent has uncommitted changes in shared/", async () => {
       // Create a new file in shared/
       const sharedDir = join(agentsDir, "shared");
       mkdirSync(sharedDir, { recursive: true });
@@ -290,7 +290,7 @@ describe("commit-guard", () => {
       rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
     });
 
-    it("blocks shell-written files even when they are not listed as deliverables", async () => {
+    it("signals shell-written files even when they are not listed as deliverables", async () => {
       const scoutToolsDir = join(agentsDir, "scout", "tools");
       mkdirSync(scoutToolsDir, { recursive: true });
       writeFileSync(join(scoutToolsDir, "next-ke-id.sh"), "original\n");
@@ -313,12 +313,12 @@ describe("commit-guard", () => {
       expect(result!.block).toBe(false);
       expect(result!.reason).toContain("scout/tools/next-ke-id.sh");
       expect(result!.reason).toContain("restore it if it was accidental");
-      expect(result!.reason).not.toContain("Not blocking on unrelated dirty file(s):\n  M scout/tools/next-ke-id.sh");
+      expect(result!.reason).not.toContain("Unrelated dirty file(s), not part of this signal:\n  M scout/tools/next-ke-id.sh");
 
       git(agentsDir, ["checkout", "--", "scout/tools/next-ke-id.sh"]);
     });
 
-    it("blocks tracked files appended by shell redirection", async () => {
+    it("signals tracked files appended by shell redirection", async () => {
       const digestDir = join(agentsDir, "scout", "workspace", "digest");
       mkdirSync(digestDir, { recursive: true });
       writeFileSync(join(digestDir, "today.md"), "original\n");
@@ -339,7 +339,7 @@ describe("commit-guard", () => {
       expect(result).toBeDefined();
       expect(result!.block).toBe(false);
       expect(result!.reason).toContain("scout/workspace/digest/today.md");
-      expect(result!.reason).not.toContain("Not blocking on unrelated dirty file(s):\n  M scout/workspace/digest/today.md");
+      expect(result!.reason).not.toContain("Unrelated dirty file(s), not part of this signal:\n  M scout/workspace/digest/today.md");
 
       git(agentsDir, ["checkout", "--", "scout/workspace/digest/today.md"]);
     });
@@ -371,7 +371,7 @@ describe("commit-guard", () => {
       rmSync(join(agentsDir, "shared", "protocol.md"), { force: true });
     });
 
-    it("blocks finish when agent has uncommitted changes in .lab/", async () => {
+    it("signals finish when agent has uncommitted changes in .lab/", async () => {
       const labDir = join(agentsDir, ".lab");
       mkdirSync(labDir, { recursive: true });
       writeFileSync(join(labDir, "experiment.md"), "# Experiment");
@@ -387,7 +387,7 @@ describe("commit-guard", () => {
       rmSync(labDir, { recursive: true, force: true });
     });
 
-    it("blocks finish when agent has uncommitted changes in gym/", async () => {
+    it("signals finish when agent has uncommitted changes in gym/", async () => {
       const gymDir = join(agentsDir, "gym", "scenarios");
       mkdirSync(gymDir, { recursive: true });
       writeFileSync(join(gymDir, "scenario.md"), "# Scenario");
@@ -432,7 +432,7 @@ describe("commit-guard", () => {
       rmSync(join(agentsDir, "shared"), { recursive: true, force: true });
     });
 
-    it("includes file count and commit instructions in block message", async () => {
+    it("includes file count and commit instructions in signal message", async () => {
       const bobDir = join(agentsDir, "bob", "workspace");
       mkdirSync(bobDir, { recursive: true });
       writeFileSync(join(bobDir, "file1.md"), "content1");
@@ -460,7 +460,7 @@ describe("commit-guard", () => {
       mkdirSync(bobDir, { recursive: true });
       writeFileSync(join(bobDir, "work.md"), "my work");
 
-      // First verify it blocks
+      // First verify it signals
       const guard = createCommitGuard("bob", tmpDir);
       const blocked = await guard(makeFinishCtx({ status: "success", summary: "done" }));
       expect(blocked).toBeDefined();
@@ -582,7 +582,7 @@ describe("commit-guard deliverable scoping", () => {
     tmpRoots = [];
   });
 
-  it("blocks only files matching deliverables or direct writes", async () => {
+  it("signals only files matching deliverables or direct writes", async () => {
     const root = setupRepo();
     writeFileSync(join(root, "agents/shared/owned.md"), "owned");
     writeFileSync(join(root, "agents/shared/unrelated.md"), "unrelated");
@@ -592,7 +592,7 @@ describe("commit-guard deliverable scoping", () => {
 
     expect(result?.block).toBe(false);
     expect(result?.reason).toContain("shared/owned.md");
-    expect(result?.reason).toContain("Not blocking on unrelated dirty file");
+    expect(result?.reason).toContain("Unrelated dirty file(s), not part of this signal");
     expect(result?.reason).toContain("shared/unrelated.md");
     expect(result?.reason).toContain("git add -- 'shared/owned.md'");
     expect(result?.reason).not.toContain("git add shared/");
@@ -619,7 +619,7 @@ describe("commit-guard deliverable scoping", () => {
 
     expect(result?.block).toBe(false);
     expect(result?.reason).toContain("may/note.md");
-    expect(result?.reason).toContain("Not blocking on unrelated dirty file");
+    expect(result?.reason).toContain("Unrelated dirty file(s), not part of this signal");
     expect(result?.reason).toContain("shared/unrelated.md");
     expect(result?.reason).toContain("git add -- 'may/note.md'");
   });
