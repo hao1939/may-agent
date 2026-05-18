@@ -113,6 +113,15 @@ facts, and most recent reasoning.
 | `tools` | Which tools available (mapped to presets) |
 | `contextFiles` | Deprecated; volatile context should be session context, not system prompt |
 
+## Agent Discovery
+
+The runtime discovers agents from two normal roots:
+
+- global agents at `AGENTS_ROOT/<agent>/agent.json`
+- project-local agents at `PROJECTS_ROOT/<project>/agents/<agent>/agent.json`
+
+Project-local agents are not a separate runtime mode. They are registered in the same manager and must use globally unique names. Their coding tools are scoped to the containing project directory, which makes a container with only `/projects/aks-rp-e2e` mounted behave the same as a full runtime with many projects mounted.
+
 ## Implementation
 
 - **Binary entry:** `src/app/may.ts`

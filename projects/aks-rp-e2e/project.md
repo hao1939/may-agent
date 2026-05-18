@@ -1,6 +1,6 @@
 ---
 id: aks-rp-e2e
-owner: may
+owner: aks-explorer
 status: paused
 type: milestone
 priority: P1

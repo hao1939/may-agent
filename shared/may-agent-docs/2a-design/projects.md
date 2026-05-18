@@ -16,7 +16,7 @@ journal.
 All projects live at: `projects/<name>/project.md` under the app root
 (`/app/projects/<name>/project.md` in the container).
 
-Shared across agents — any agent can own/advance a project.
+Shared across agents — any agent can own/advance a project. A project may also carry its own local agents under `projects/<name>/agents/<agent>/`. Project-local agents are discovered like global agents but their coding/read/write root is the project directory, so the same runtime works whether `PROJECTS_ROOT` contains one project or many.
 
 ## Project File Format
 
@@ -94,6 +94,29 @@ heartbeat context.
 | active | pending-review | Agent needs owner/human judgment |
 | active | done/closed | Goal complete; no current ownership loop needed |
 | waiting/blocked/pending-review/paused | active | Comment, `resume_after`, event, metric signal, or owner judgment makes work actionable |
+
+## Project-Local Agents
+
+A project-local agent lives inside the project it owns:
+
+```text
+projects/aks-rp-e2e/
+  project.md
+  agents/
+    aks-explorer/
+      agent.json
+      AGENTS.md
+      heartbeat.md
+      workspace/
+```
+
+The agent name must still be globally unique after discovery. If a project is mounted alone at `/projects/<name>` in a container, the same discovery path works: the runtime scans `PROJECTS_ROOT/*/agents/*` and registers the local agent. No separate single-project mode is required.
+
+For project-local agents:
+
+- `agentDir`, workspace, knowledge, tools, and workflows resolve inside the project-local agent directory.
+- Coding tools use the containing project directory as their root.
+- Shared infra remains available through the runtime image, but project work should stay in the mounted project.
 
 ## Project Handler
 

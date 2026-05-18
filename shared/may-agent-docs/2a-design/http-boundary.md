@@ -39,6 +39,7 @@ Static project resources are visible under `/projects/*`, backed directly by `PR
 | WebUI source package | `packages/webui/static` | Source of truth for the default May Agent browser UI; no HTTP adapter code |
 | Generated project UI assets | `PROJECTS_ROOT/<project>/ui` | Static HTML/CSS/JS generated or synced from the owning project/package |
 | Agent/workflow SDK | `packages/sdk` | In-process capability surface for agents/workflows |
+| Project-local agents | `PROJECTS_ROOT/<project>/agents` | Optional agents shipped with a project; loaded by normal runtime discovery |
 | Socket protocol | `packages/control` | Transport protocol and daemon socket client/server |
 
 ## API Shape
@@ -112,10 +113,16 @@ projects/
       index.html
   <project>/
     project.md
+    agents/            # optional project-local agents
+      <agent>/
+        agent.json
+        AGENTS.md
     ui/
       index.html      # optional project-specific UI
       assets/...
 ```
+
+Container rule: mount one project at the same shape used for many projects, e.g. `/projects/aks-rp-e2e`, not a special `/project` path. The runtime scans `PROJECTS_ROOT/*`; one discovered project is just the one-project case of the same model.
 
 Boundary rule: browser UI source is edited in its owning package/project, then copied into the served project `ui/` directory by the build/sync step. Do not hand-edit generated `PROJECTS_ROOT/<project>/ui` files as the primary source. Project UIs are static resources and call the infra API through `/api/*`. The HTTP adapter serves `/projects/*` from `PROJECTS_ROOT`, but API routes are handled before static routes. Development and deployment run `may-agent --web`.
 
