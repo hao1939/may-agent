@@ -1,13 +1,11 @@
 ---
 id: master-worker-context-sharing
 owner: master
-status: waiting
+status: active
 type: continuous
 priority: P1
 workflow: master-worker-context-sharing-iteration
 iteration: 1
-stop_reason: Phase 1 transport is hardened but still awaiting live validation across real master delegation sessions.
-resume_condition: Resume when 5 real master delegation sessions are available to audit, or when user/May requests the next delegation-protocol phase.
 ---
 
 # Project: Master ⇄ cc_worker ⇄ codex_worker Context Sharing
@@ -52,7 +50,7 @@ Provenance signals (qualitative, watched in journal):
 - Did master cite worker findings in its reply, or paraphrase them away?
 
 ## Current State
-Waiting after Phase 1 hardening: parser wiring is live for master worker tools, and the wrappers now enforce `timeout >= 60` plus map process timeout signals to `status=timed_out` envelopes. Parser tests pass. The project is not ready to close because Phase 1 still needs evidence from the next 5 real master delegation sessions.
+Active for live validation: Phase 1 transport hardening is shipped, but the project still needs evidence from real master delegation sessions. The next iteration should run one deliberate master task that uses `cc_worker` or `codex_worker`, then audit whether the worker returned a structured envelope, whether master preserved the user's intent in the worker prompt, and whether master used the worker findings in its answer. Do not start Phase 2/3 until the live transport evidence is reviewed.
 
 ## Plan
 
@@ -69,6 +67,8 @@ real master sessions before deciding the next move.
       bump to 60 and log a warning in the envelope.
 - [x] Verify offline: parser test suites stay green and both worker
       wrappers build successfully.
+- [ ] Run one deliberate master delegation smoke session, then audit its raw
+      session log for structured worker envelopes and intent preservation.
 - [ ] Watch the next 5 real master sessions for `worker.transport.
       opaque-returns` rate.
 
@@ -171,6 +171,12 @@ Honest scope notes:
 Project-level review found the project should remain waiting, not close: Phase 1 transport is shipped but lacks the required live 5-session validation window. Hardened the master worker wrappers so caller-supplied short timeouts are raised to 60s and surfaced in the returned envelope, and so Node close signals such as SIGTERM map to the parser's `timed_out` status instead of a generic error. Also updated `agents/master/AGENTS.md` so master no longer treats this waiting project as active implementation work.
 
 Remaining Phase 1 exit criterion: audit the next 5 real master sessions that use `cc_worker` or `codex_worker` and confirm returns are structured envelopes rather than `[exit N]` raw noise. Do not start Phase 2/3 until that evidence exists.
+
+### 2026-05-18 — Activated for live validation
+
+Hao approved moving the project forward. Status changed from `waiting` to `active` so the owner can run a real validation iteration. The next iteration should not redesign the protocol yet; it should create or select one real master delegation session, inspect the raw session log, and record whether Phase 1 transport returns structured worker envelopes with no `[exit N]` raw-noise fallback.
+
+Success for the next iteration: one audited master session with explicit evidence for worker prompt quality, timeout behavior, envelope status, tool-output visibility, and whether master used the worker findings.
 
 ## References
 

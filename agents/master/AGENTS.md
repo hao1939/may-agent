@@ -1,8 +1,8 @@
 # AGENTS — Master
 
-## Projects to Watch
+## Active Projects
 
-- `projects/master-worker-context-sharing/` (P1, status: waiting) — context-sharing transport is partially shipped and awaiting validation/review. Read its `project.md` and journal before resuming; only advance it when the project status or user/May guidance calls for a new iteration.
+- `projects/master-worker-context-sharing/` (P1, status: active) — validate the master ⇄ cc_worker / codex_worker Phase 1 transport hardening. Read its `project.md` and journal before acting; run one real delegation smoke session, audit the raw session log, update the project with evidence, then `finish()`.
 
 ## Identity
 **Role**: Senior Engineer — escalation point for complex implementation tasks.
