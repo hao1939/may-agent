@@ -90,7 +90,7 @@ COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 
 # Copy the default May Agent project UI for image-only runs. Local compose
 # mounts /app from the host, so the host project tree is the source of truth.
-COPY ui/ /app/projects/platform/ui/
+COPY packages/webui/static/ /app/projects/platform/ui/
 
 # CLI agent configs (codex needs config.toml to route through litellm)
 COPY container/codex-config.toml /etc/codex/config.toml
