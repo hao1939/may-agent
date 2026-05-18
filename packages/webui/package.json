@@ -1,0 +1,13 @@
+{
+  "name": "@may-agent/webui",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "files": [
+    "static"
+  ],
+  "scripts": {
+    "build": "bun ../../scripts/build-webui.ts",
+    "dev": "WEB_PORT=8080 bun ../../src/app/may.ts --web"
+  }
+}
