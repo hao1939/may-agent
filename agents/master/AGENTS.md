@@ -22,20 +22,41 @@ Every prompt to a CLI agent MUST include:
 
 ### Originator Fields
 
-Every delegation prompt SHOULD begin with these structured fields so the worker knows who is asking and why:
+Every delegation prompt MUST begin with these structured fields so the worker knows who is asking and why:
 
 ```
-originator_kind: <"user" | "project" | "review">
-originator_task: <one-line summary of the specific ask>
+originator_kind: <"human" | "agent" | "workflow">
+originator_task: <one-line plain-English statement of what the user actually wants>
 project_ref: <project slug, if applicable>
 ```
 
-- `originator_kind=user` — direct human request being forwarded
-- `originator_kind=project` — automated project iteration work
-- `originator_kind=review` — follow-up from a reviewer correction
-- `originator_task` — the concrete deliverable expected from this call
+- `originator_kind=human` — direct human request being forwarded verbatim
+- `originator_kind=agent` — another agent (e.g. coach, evaluator) is requesting work
+- `originator_kind=workflow` — automated project/CI pipeline iteration
+- `originator_task` — the concrete deliverable in the user's own words, not a technical restatement
 
-Workers use these to calibrate scope, tone, and safety level.
+Workers use these to calibrate scope, tone, and safety level. `human` requests get the highest confirmation threshold for destructive ops.
+
+### Delegation Prompt Template
+
+```
+originator_kind: {human|agent|workflow}
+originator_task: "{what the user actually wants, one line}"
+project_ref: {slug or "none"}
+
+## Context
+{relevant files, current state, constraints}
+
+## Ask
+{specific deliverable for this worker call}
+
+## Verification
+{commands to run, expected output}
+
+## Safety
+- DO NOT delete or overwrite without explicit user confirmation
+- If unsure, ask — do not guess
+```
 
 ## Destructive-Request Safety Rules
 
