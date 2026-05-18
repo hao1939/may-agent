@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   generateAutoHeartbeats,
   listConfiguredAgentNames,
+  listProjectAgentDirectories,
   loadAgentConfig,
   loadHandlersForAgentCrons,
   loadAgents,
@@ -185,6 +186,75 @@ describe("agent loader boundaries", () => {
     }
   });
 
+
+  it("discovers project-local agent names", () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-project-discovery-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const projectsRoot = join(root, "projects");
+      const projectDir = join(projectsRoot, "alpha-project");
+      const projectAgentDir = join(projectDir, "agents", "aks-explorer");
+      mkdirSync(agentsRoot, { recursive: true });
+      mkdirSync(projectAgentDir, { recursive: true });
+      writeFileSync(join(projectDir, "project.md"), "---\nid: alpha-project\n---\n");
+      writeFileSync(join(projectAgentDir, "agent.json"), JSON.stringify({ name: "aks-explorer" }));
+
+      expect(listConfiguredAgentNames(agentsRoot, projectsRoot)).toEqual(["aks-explorer"]);
+      expect(listProjectAgentDirectories(projectsRoot).map((agent) => agent.name)).toEqual(["aks-explorer"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("loads project-local agents with the project directory as projectRoot", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-project-agent-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const sharedRoot = join(root, "shared");
+      const projectsRoot = join(root, "projects");
+      const projectDir = join(projectsRoot, "alpha-project");
+      const projectAgentDir = join(projectDir, "agents", "aks-explorer");
+      mkdirSync(agentsRoot, { recursive: true });
+      mkdirSync(sharedRoot, { recursive: true });
+      mkdirSync(join(projectAgentDir, "workspace"), { recursive: true });
+      writeFileSync(join(projectDir, "project.md"), "---\nid: alpha-project\nowner: aks-explorer\n---\n");
+      writeFileSync(
+        join(projectAgentDir, "agent.json"),
+        JSON.stringify({
+          name: "aks-explorer",
+          description: "Project-local AKS explorer",
+          domain: "AKS e2e",
+          model: "opus",
+          tools: ["query_db"],
+        }),
+      );
+
+      const registered: any[] = [];
+      const manager = {
+        hasAgent: () => false,
+        register: (def: any) => registered.push(def),
+      };
+
+      const result = await loadAgents({
+        agentsRoot,
+        projectRoot: root,
+        sharedRoot,
+        projectsRoot,
+        persistDir: join(root, ".state"),
+        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        manager: manager as any,
+        bus: { emit: () => undefined } as any,
+        cronEnabled: false,
+      });
+
+      expect(result.added).toEqual(["aks-explorer"]);
+      expect(registered[0].agentDir).toBe(projectAgentDir);
+      expect(registered[0].workspace).toBe(join(projectAgentDir, "workspace"));
+      expect(registered[0].projectRoot).toBe(projectDir);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
   it("generates conventional heartbeat entries only when no explicit heartbeat exists", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-heartbeat-"));
     try {

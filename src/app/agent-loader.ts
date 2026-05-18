@@ -27,7 +27,7 @@ import {
 import { loadHandlersForAgentCrons } from "./loader/handler-loader.js";
 
 export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
-export { listAgentDirectories, listConfiguredAgentNames } from "./loader/agent-discovery.js";
+export { listAgentDirectories, listConfiguredAgentNames, listProjectAgentDirectories, listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
 export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
 export { generateAutoHeartbeats } from "./loader/heartbeat-loader.js";
 export { loadHandlersForAgentCrons } from "./loader/handler-loader.js";

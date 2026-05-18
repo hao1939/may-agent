@@ -34,11 +34,12 @@ export interface ToolsetLoaderOptions {
   getAgentCrons: () => Map<string, Cron>;
   setAgentCron: (agentName: string, cron: Cron) => void;
   addCleanup: (agentName: string, fn: () => void) => void;
+  agentDir?: string;
 }
 
 export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions): Promise<AgentTool[]> {
   const { projectRoot, persistDir, manager, bus } = opts;
-  const agentDir = resolve(opts.agentsRoot, config.name);
+  const agentDir = opts.agentDir ?? resolve(opts.agentsRoot, config.name);
   const tools: AgentTool[] = [createQueryDbTool(persistDir)];
 
   const triggerHeartbeat = (agentName: string): boolean => {
@@ -85,7 +86,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             agentName: config.name,
             agentsRoot: opts.agentsRoot,
             persistDir,
-            allowedTargets: listConfiguredAgentNames(opts.agentsRoot),
+            allowedTargets: listConfiguredAgentNames(opts.agentsRoot, opts.projectsRoot),
             emit: (event) => bus.emit(event as any),
             getCallerSessionId: () => opts.getAgentSessionId(config.name),
             triggerHeartbeat,

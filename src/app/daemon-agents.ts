@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
@@ -37,7 +38,10 @@ export async function prepareDaemonAgents(opts: {
   console.log(`[agents] Loaded ${loadResult.added.length}: ${loadResult.added.join(", ")}`);
   opts.bus.emit({ type: "info", message: `Loaded ${loadResult.added.length} agent(s): ${loadResult.added.join(", ")}` });
 
-  const autoHeartbeats = generateAutoHeartbeats(opts.agentsRoot);
+  const agentSources = listRuntimeAgentDirectories(opts.agentsRoot, opts.projectsRoot);
+  const heartbeatRoots = [...new Set(agentSources.map((agent) => agent.agentsRoot))];
+  const agentRootByName = new Map(agentSources.map((agent) => [agent.name, agent.agentsRoot]));
+  const autoHeartbeats = heartbeatRoots.flatMap((root) => generateAutoHeartbeats(root));
   if (autoHeartbeats.length > 0) {
     const mayCron = getAgentCrons().get("may");
     if (mayCron) {
@@ -54,7 +58,8 @@ export async function prepareDaemonAgents(opts: {
 
   let failures = 0;
   const heartbeatFiles = autoHeartbeats.map((entry) => {
-    const agentWfDir = join(opts.agentsRoot, entry.agent!, "workflows");
+    const agentRoot = agentRootByName.get(entry.agent!) ?? opts.agentsRoot;
+    const agentWfDir = join(agentRoot, entry.agent!, "workflows");
     return join(agentWfDir, `${entry.agent}-heartbeat.ts`);
   }).filter((file) => existsSync(file));
 
