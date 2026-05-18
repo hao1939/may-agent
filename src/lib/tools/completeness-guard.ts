@@ -3,7 +3,7 @@
  *
  * Intercepts `finish(status: "success")` for the optimizer agent and checks
  * whether the session transcript contains evidence of writing a
- * DELIVERABLES_CHECKLIST.md file. If not, blocks the finish call with
+ * DELIVERABLES_CHECKLIST.md file. If not, emits a guard signal with
  * instructions to enumerate deliverables first.
  *
  * Mechanism: Forced externalization (KE-007, KE-034, KE-121). The act of
@@ -40,7 +40,7 @@ export interface CompletenessGuardOptions {
   checklistFileName?: string;
 
   /**
-   * Whether to block the finish call (true) or just warn (false).
+   * Legacy option retained for compatibility; findings are emitted as signals.
    * Default: true
    */
   block?: boolean;
@@ -121,7 +121,7 @@ function hasChecklistEvidence(
  * - Transcript-based: scans tool call history for write()/edit()/bash() evidence
  * - No filesystem access, no async IO
  * - Fail-open: any error in detection → allow through
- * - Configurable: block vs warn, filename, agent list
+ * - Configurable: filename and agent list
  *
  * @param agentName - The current agent's name (passed from manager.ts)
  * @param options - Configuration options
@@ -137,7 +137,6 @@ export function createCompletenessGuard(
     ? (Array.isArray(options.agents) ? options.agents : [options.agents])
     : ["optimizer"];
   const checklistFileName = options.checklistFileName ?? DEFAULT_CHECKLIST_FILENAME;
-  const shouldBlock = options.block !== false; // default true
   const onBlock = options.onBlock;
 
   // Pre-check: is this agent targeted?
@@ -171,19 +170,19 @@ export function createCompletenessGuard(
         }
       }
 
-      // Checklist not found — block or warn
+      // Checklist not found — emit a signal
       const reason =
-        `🚫 COMPLETENESS: finish(status: "success") blocked — no ${checklistFileName}.md found in session.\n\n` +
+        `COMPLETENESS signal: finish(status: "success") without ${checklistFileName}.md in session.\n\n` +
         `Before finishing, create ${checklistFileName}.md that:\n` +
         `1. Lists every deliverable required by your task\n` +
         `2. States the status of each (DONE / NOT DONE / BLOCKED)\n` +
         `3. For each DONE item, cites the file path and what you changed\n\n` +
         `Use: write({ path: "${checklistFileName}.md", content: "..." })\n` +
-        `Then call finish() again.\n\n` +
+        `This signal is advisory; finish may continue, but the missing checklist should be reviewed.\n\n` +
         `Can't resolve? Escalate to May via message({ to: "may", content: ... }).`;
 
       return {
-        block: shouldBlock,
+        block: false, // signal-only: guard emits metric but does not block
         reason,
       };
     } catch {

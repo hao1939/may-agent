@@ -44,7 +44,7 @@ const PARAM_HINTS: Record<string, string> = {
 };
 
 /**
- * Create a beforeToolCall hook that blocks tool calls with missing required parameters.
+ * Create a beforeToolCall hook that signals tool calls with missing required parameters.
  *
  * This is a stateless guard — no per-session state needed.
  */
@@ -82,9 +82,9 @@ export function createEmptyArgsGuard(): (
       .join("\n");
 
     return {
-      block: true,
+      block: false, // signal-only
       reason:
-        `🚫 EMPTY_ARGS: ${toolName}() called with missing required parameter(s): ${missing.join(", ")}.\n` +
+        `EMPTY_ARGS signal: ${toolName}() called with missing required parameter(s): ${missing.join(", ")}.\n` +
         `Fix:\n${hints}\n` +
         `Do NOT call ${toolName}({}) — you must provide the required arguments.`,
     };

@@ -90,11 +90,11 @@ describe("path-hallucination-guard", () => {
     });
   });
 
-  describe("hallucinated /home/ paths — should block", () => {
+  describe("hallucinated /home/ paths — should signal", () => {
     test("cd /home/example-user/may-agent", async () => {
       const result = await guard(bashCtx("cd /home/example-user/may-agent && git status"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
       expect(result!.reason).toContain("PATH_HALLUCINATION");
       expect(result!.reason).toContain("/home/example-user/may-agent");
     });
@@ -102,77 +102,77 @@ describe("path-hallucination-guard", () => {
     test("cat /home/user/file.ts", async () => {
       const result = await guard(bashCtx("cat /home/user/file.ts"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
       expect(result!.reason).toContain("/home/user/file.ts");
     });
 
     test("ls /home/ubuntu/project", async () => {
       const result = await guard(bashCtx("ls /home/ubuntu/project"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
 
     test("inline path reference in complex command", async () => {
       const result = await guard(bashCtx("export PATH=$PATH:/home/user/bin && echo $PATH"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
   });
 
-  describe("hallucinated /Users/ paths — should block", () => {
+  describe("hallucinated /Users/ paths — should signal", () => {
     test("cd /Users/example-user/c0", async () => {
       const result = await guard(bashCtx("cd /Users/example-user/c0 && ls"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
       expect(result!.reason).toContain("/Users/example-user/c0");
     });
 
     test("cat /Users/dev/project/file.ts", async () => {
       const result = await guard(bashCtx("cat /Users/dev/project/file.ts"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
   });
 
-  describe("hallucinated /root/ paths — should block", () => {
+  describe("hallucinated /root/ paths — should signal", () => {
     test("cd /root/may-agent", async () => {
       const result = await guard(bashCtx("cd /root/may-agent && ls"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
       expect(result!.reason).toContain("/root/may-agent");
     });
 
     test("ls /root/project/src", async () => {
       const result = await guard(bashCtx("ls /root/project/src"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
   });
 
-  describe("hallucinated ~/ paths — should block", () => {
+  describe("hallucinated ~/ paths — should signal", () => {
     test("cd ~/may-agent", async () => {
       const result = await guard(bashCtx("cd ~/may-agent && git status"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
       expect(result!.reason).toContain("~/may-agent");
     });
 
     test("cat ~/file.ts", async () => {
       const result = await guard(bashCtx("cat ~/file.ts"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
 
     test("ls ~/project", async () => {
       const result = await guard(bashCtx("ls ~/project"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
 
     test("tilde at start of command", async () => {
       const result = await guard(bashCtx("~/bin/script.sh"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
   });
 
@@ -288,13 +288,13 @@ cd /home/example-user/project
 git status`;
       const result = await guard(bashCtx(cmd));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
 
     test("path in middle of complex pipeline", async () => {
       const result = await guard(bashCtx("find /home/user -name '*.ts' | xargs wc -l"));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
 
     test("heredoc with hallucinated path", async () => {
@@ -304,7 +304,7 @@ echo hello
 EOF`;
       const result = await guard(bashCtx(cmd));
       expect(result).toBeDefined();
-      expect(result!.block).toBe(true);
+      expect(result!.block).toBe(false);
     });
   });
 });

@@ -134,7 +134,7 @@ function findHallucinatedPath(command: string): { prefix: string; fullMatch: str
 // ─── Guard Factory ──────────────────────────────────────────────────
 
 /**
- * Create a beforeToolCall hook that blocks bash() calls containing
+ * Create a beforeToolCall hook that signals bash() calls containing
  * hallucinated filesystem paths.
  *
  * Detection:
@@ -183,9 +183,9 @@ export function createPathHallucinationGuard(): (
         : "";
 
       return {
-        block: true,
+        block: false, // signal-only: guard emits metric but does not block
         reason:
-          `🚫 PATH_HALLUCINATION: This command references a path that doesn't exist in this environment:\n` +
+          `PATH_HALLUCINATION signal: This command references a path that does not exist in this environment:\n` +
           `  Detected: ${found.fullMatch}\n\n` +
           `The project root is /app. There are no /home/, /Users/, or /root/ directories.\n` +
           `Rewrite your command using /app as the base path.\n` +

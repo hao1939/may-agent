@@ -82,32 +82,32 @@ describe("finish-guard", () => {
 
   // === Ghost Deliverable Guard (FM-3.1 preventive) Tests ===
 
-  it("blocks finish(success) with 'Fixed bug' summary but no file changes", async () => {
+  it("signals finish(success) with 'Fixed bug' summary but no file changes", async () => {
     const ctx = makeCtx({ status: "success", summary: "Fixed the authentication bug in login handler" }, [
       assistantWithToolCall("read", { path: "src/auth.ts" }),
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
     expect(result!.reason).toContain("Fixed the authentication bug");
   });
 
-  it("blocks finish(success) with 'Implemented' summary but no file changes", async () => {
+  it("signals finish(success) with 'Implemented' summary but no file changes", async () => {
     const ctx = makeCtx({ status: "success", summary: "Implemented the new caching layer" }, [
       assistantWithToolCall("read", { path: "src/cache.ts" }),
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
   });
 
-  it("blocks finish(success) with 'Refactored' summary but no file changes", async () => {
+  it("signals finish(success) with 'Refactored' summary but no file changes", async () => {
     const ctx = makeCtx({ status: "success", summary: "Refactored the database module for clarity" }, []);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
   });
 
@@ -140,13 +140,13 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks 'Deleted old module' summary but no file changes", async () => {
+  it("signals 'Deleted old module' summary but no file changes", async () => {
     const ctx = makeCtx({ status: "success", summary: "Deleted the deprecated logging module" }, [
       assistantWithToolCall("read", { path: "src/old-logger.ts" }),
     ]);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
   });
 
@@ -183,11 +183,11 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks 'wrote' summary with no file changes", async () => {
+  it("signals 'wrote' summary with no file changes", async () => {
     const ctx = makeCtx({ status: "success", summary: "Wrote the new caching module" }, []);
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("FM-3.1 Ghost Deliverable");
   });
 
@@ -255,13 +255,13 @@ describe("finish-guard", () => {
     );
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     // Should be Gate 1 (write evidence), not Gate 0 (ghost)
     expect(result!.reason).not.toContain("Ghost Deliverable");
     expect(result!.reason).toContain("no write, edit");
   });
 
-  it("blocks finish(success) with deliverables but no write evidence", async () => {
+  it("signals finish(success) with deliverables but no write evidence", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -272,7 +272,7 @@ describe("finish-guard", () => {
     );
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
     expect(result!.reason).toContain("src/foo.ts");
     expect(result!.reason).toContain("no write, edit");
   });
@@ -325,7 +325,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks when bash was used but no write patterns detected", async () => {
+  it("signals when bash was used but no write patterns detected", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -336,7 +336,7 @@ describe("finish-guard", () => {
     );
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("allows when bash uses git commit with verification", async () => {
@@ -356,7 +356,7 @@ describe("finish-guard", () => {
     expect(result).toBeUndefined();
   });
 
-  it("blocks finish(success) with deliverables when transcript is empty", async () => {
+  it("signals finish(success) with deliverables when transcript is empty", async () => {
     const ctx = makeCtx(
       {
         status: "success",
@@ -367,7 +367,7 @@ describe("finish-guard", () => {
     );
     const result = await guard(ctx);
     expect(result).toBeDefined();
-    expect(result!.block).toBe(true);
+    expect(result!.block).toBe(false);
   });
 
   it("allows finish(blocked) with deliverables (non-success)", async () => {

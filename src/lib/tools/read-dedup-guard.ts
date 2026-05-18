@@ -4,7 +4,7 @@
  * Prevents agents from entering infinite read loops by tracking how many times
  * each file path is read within a session. After WARN_THRESHOLD reads of the
  * same file, a warning is injected. After BLOCK_THRESHOLD reads, the call is
- * blocked entirely.
+ * emitted as a stronger signal.
  *
  * Motivation: Amy sessions reading signals.md (76KB) and insights.md (31KB)
  * 75× each in a loop — 152 reads/session costing ~$71. This guard prevents
@@ -18,7 +18,7 @@ import type { BeforeToolCallContext, BeforeToolCallResult } from "./compose-guar
 /** After this many reads of the same path, inject a warning into the response. */
 export const READ_WARN_THRESHOLD = 3;
 
-/** After this many reads of the same path, block the read entirely. */
+/** After this many reads of the same path, emit a stronger signal. */
 export const READ_BLOCK_THRESHOLD = 5;
 
 /**
@@ -32,7 +32,7 @@ function normalizePath(p: string): string {
 }
 
 /**
- * Create a beforeToolCall hook that detects and blocks excessive reads of
+ * Create a beforeToolCall hook that detects and signals excessive reads of
  * the same file path within a single session.
  *
  * Returns a stateful closure — one instance per agent session.
@@ -58,19 +58,19 @@ export function createReadDedupGuard(): (
     // Below warn threshold — allow silently
     if (count <= READ_WARN_THRESHOLD) return undefined;
 
-    // At block threshold — hard block
+    // At threshold — stronger signal
     if (count > READ_BLOCK_THRESHOLD) {
       return {
-        block: true,
+        block: false, // signal-only
         reason:
-          `🚫 READ_DEDUP: You have already read "${args.path}" ${count - 1} times this session. ` +
-          `Further reads of this file are blocked to prevent infinite read loops. ` +
+          `READ_DEDUP signal: You have already read "${args.path}" ${count - 1} times this session. ` +
+          `Further reads of this file are likely wasteful and may indicate an infinite read loop. ` +
           `The file content has not changed since your last read. ` +
           `Use the information you already have, or read a different file.`,
       };
     }
 
-    // Between warn and block — allow with warning
+    // Between thresholds — allow with warning
     return {
       block: false,
       reason:
