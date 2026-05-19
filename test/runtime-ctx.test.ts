@@ -50,6 +50,17 @@ describe("buildRuntimeCtx", () => {
     rtx.notify("something happened");
 
     expect(opts.bus.emit).toHaveBeenCalledWith({
+      type: "message.created",
+      source: "agent:test-agent",
+      owner: "human:operator",
+      data: {
+        from: "test-agent",
+        to: "human",
+        content: "something happened",
+        priority: "P2",
+      },
+    });
+    expect(opts.bus.emit).toHaveBeenCalledWith({
       type: "notification",
       agent: "test-agent",
       text: "something happened",

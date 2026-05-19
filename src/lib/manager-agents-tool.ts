@@ -320,7 +320,14 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
 
             // Emit message.created for traceability (v2 convergence)
             if (bus) {
-              bus.emit({ type: "message.created", from: callerAgentRun || "unknown", to: params.agent, content: forkTask, intent: "fork", priority: "P0" });
+              const caller = callerAgentRun || "unknown";
+              bus.emit({
+                type: "message.created",
+                source: `agent:${caller}`,
+                owner: `agent:${params.agent}`,
+                urgency: "immediate",
+                data: { from: caller, to: params.agent, content: forkTask, intent: "fork", priority: "P0" },
+              });
             }
 
             // Fire-and-forget: start agent immediately, don't wait.

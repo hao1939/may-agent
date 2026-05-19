@@ -46,6 +46,29 @@ describe("telegram outbound routing", () => {
     outbound.close();
   });
 
+  it("forwards canonical may-to-human messages", () => {
+    const bus = new EventBus();
+    const sent: string[] = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/tmp/project",
+      pendingChatId: "12345",
+      getSessionId: () => "",
+      sendToUser: (text) => sent.push(text),
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: { from: "may", to: "human", content: "please review", priority: "P2" },
+    } as any);
+
+    expect(sent).toEqual(["📋 please review"]);
+    outbound.close();
+  });
+
   it("stops forwarding after close", () => {
     const bus = new EventBus();
     const sent: string[] = [];

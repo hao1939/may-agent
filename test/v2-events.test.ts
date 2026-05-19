@@ -32,15 +32,19 @@ describe("v2 SystemEvent variants", () => {
     expect(end.type).toBe("session.end");
   });
 
-  it("supports message.created with priority", () => {
+  it("supports canonical message.created with priority", () => {
     const m: AgentEvent = {
       type: "message.created",
-      from: "arc",
-      to: "dev",
-      content: "please implement",
-      priority: "P0",
+      source: "agent:arc",
+      owner: "agent:dev",
+      data: {
+        from: "arc",
+        to: "dev",
+        content: "please implement",
+        priority: "P0",
+      },
     };
-    expect(m.priority).toBe("P0");
+    expect(m.data.priority).toBe("P0");
   });
 
   it("legacy session_start / session_end still work", () => {

@@ -545,9 +545,13 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
   ctx.emit({ type: "step_start", step: "heartbeat" });
   ctx.emit({
     type: "context.read",
-    agent,
-    contextSource: "query.heartbeatContext",
-    sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts },
+    source: `agent:${agent}`,
+    owner: `agent:${agent}`,
+    data: {
+      agent,
+      contextSource: "query.heartbeatContext",
+      sections: { metrics: !!metrics, projects: !!projects, inbox: !!inbox, alerts: !!alerts },
+    },
   });
 
   let result: any;
@@ -559,7 +563,12 @@ ${FINISH_HYGIENE_INSTRUCTIONS}`;
     recordDedupOutcome(agent, "heartbeat", "error");
     throw err;
   }
-  ctx.emit({ type: "agent.decision", agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) });
+  ctx.emit({
+    type: "agent.decision",
+    source: `agent:${agent}`,
+    owner: `agent:${agent}`,
+    data: { agent, status: result.status, hasDeliverables: !!(result.deliverables?.length) },
+  });
   recordCircuitOutcome(agentsRoot, agent, result.status === "error",
     result.status === "error" ? "heartbeat session error" : undefined);
   recordDedupOutcome(agent, "heartbeat", result.status === "error" ? "error" : "success");

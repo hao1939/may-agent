@@ -15,6 +15,13 @@ import { addLogSubscriber, type LogLevel } from "../../lib/log.js";
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";
 
+function messageData(event: unknown): Record<string, unknown> {
+  const record = event && typeof event === "object" && !Array.isArray(event) ? event as Record<string, unknown> : {};
+  return record.data && typeof record.data === "object" && !Array.isArray(record.data)
+    ? record.data as Record<string, unknown>
+    : record;
+}
+
 export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => string | null, chatMode?: boolean): void {
   // ── Log channel (from log.ts — lib/infra messages) ────────────────────
   addLogSubscriber((level: LogLevel, message: string) => {
@@ -33,8 +40,9 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
 
     // Chat mode: only show primary session + human-directed messages
     if (chatMode) {
-      if (event.type === "message.created" && (event as any).to === "human") {
-        console.log(`\n📋 ${(event as any).from}: ${(event as any).content}`);
+      if (event.type === "message.created" && messageData(event).to === "human") {
+        const message = messageData(event);
+        console.log(`\n📋 ${message.from}: ${message.content}`);
         return;
       }
       if (!primarySid) return; // no session yet, suppress all
@@ -83,8 +91,11 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
         if (isSessionEvent(event)) console.log(`${DIM}[${event.agent}] ${event.status}${RESET}`);
         break;
       case "message.created":
-        if ((event as any).to === "human") {
-          console.log(`📋 ${(event as any).from}: ${(event as any).content}`);
+        {
+          const message = messageData(event);
+          if (message.to === "human") {
+            console.log(`📋 ${message.from}: ${message.content}`);
+          }
         }
         break;
       case "info":

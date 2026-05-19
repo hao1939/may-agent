@@ -24,6 +24,12 @@ export interface TelegramOutbound {
   sendAlert: (text: string) => void;
 }
 
+function messageData(event: any): Record<string, unknown> {
+  return event && typeof event.data === "object" && event.data !== null && !Array.isArray(event.data)
+    ? event.data
+    : event;
+}
+
 export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramOutbound {
   const { bus, getSessionId, pendingChatId, sendToUser } = opts;
 
@@ -99,11 +105,13 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       outboundBySession.delete(event.sessionId);
     }
 
-    if (event.type === "message.created" && event.to === "human" && event.from === opts.interfaceAgent) {
+    if (event.type === "message.created") {
+      const message = messageData(event);
+      if (message.to !== "human" || message.from !== opts.interfaceAgent) return;
       if (pendingChatId) {
-        const content = String(event.content ?? "").slice(0, 4000);
-        const projectId = normalizeProjectPath(event.projectPath ?? event.projectId, opts.projectRoot) ?? extractProjectPath(content, opts.projectRoot) ?? undefined;
-        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String(event.from ?? ""), sessionId: "sessionId" in event ? String(event.sessionId) : undefined, projectId, summary: content.slice(0, 200) });
+        const content = String(message.content ?? "").slice(0, 4000);
+        const projectId = normalizeProjectPath(message.projectPath ?? message.projectId, opts.projectRoot) ?? extractProjectPath(content, opts.projectRoot) ?? undefined;
+        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String(message.from ?? ""), sessionId: "sessionId" in message ? String(message.sessionId) : undefined, projectId, summary: content.slice(0, 200) });
       }
     }
   });

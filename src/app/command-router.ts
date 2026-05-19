@@ -236,11 +236,16 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         if ("agent" in event && "task" in event) {
           bus.emit({
             type: "message.created",
-            from: (event as any).opts?.source || "socket",
-            to: (event as any).agent,
-            content: (event as any).task,
-            intent: "fork",
-            priority: "P0",
+            source: (event as any).opts?.source || "socket",
+            owner: canonicalOwner((event as any).agent),
+            urgency: "immediate",
+            data: {
+              from: (event as any).opts?.source || "socket",
+              to: (event as any).agent,
+              content: (event as any).task,
+              intent: "fork",
+              priority: "P0",
+            },
           } as any);
           const chatSession = options.getChatSession();
           if (chatSession && event.agent === "may") {
@@ -262,10 +267,14 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           try {
             bus.emit({
               type: "message.created",
-              from: (event as any).from ?? "human",
-              to: (event as any).to,
-              content: (event as any).task,
-              priority: (event as any).priority,
+              source: canonicalOwner((event as any).from ?? "human"),
+              owner: canonicalOwner((event as any).to),
+              data: {
+                from: (event as any).from ?? "human",
+                to: (event as any).to,
+                content: (event as any).task,
+                priority: (event as any).priority,
+              },
             } as any);
             log("info", `[message] ${(event as any).from ?? "human"} -> ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}`);
           } catch (err) {

@@ -64,6 +64,10 @@ function normalizeOwner(owner: string | undefined): string {
   return `agent:${value}`;
 }
 
+function messageOwner(target: string): string {
+  return normalizeOwner(target);
+}
+
 function urgencyForSeverity(severity: EscalationOptions["severity"]): "low" | "normal" | "high" | "immediate" {
   if (severity === "P0") return "immediate";
   if (severity === "P1") return "high";
@@ -156,19 +160,18 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     },
 
     message(target: string, content: string): void {
-      if (target === "human") {
-        // Human-visible: push to Telegram/web via message.created to "human"
-        deps.bus.emit({ type: "message.created", from: deps.agentName, to: "human", content } as any);
-      } else {
-        // Agent-to-agent: emit v2 message.created (lands in target's inbox).
-        deps.bus.emit({
-          type: "message.created",
+      const to = target === "hao" || target === "user" || target === "operator" ? "human" : target;
+      deps.bus.emit({
+        type: "message.created",
+        source: `agent:${deps.agentName}`,
+        owner: messageOwner(to),
+        data: {
           from: deps.agentName,
-          to: target,
+          to,
           content,
           priority: "P2",
-        } as any);
-      }
+        },
+      } as any);
     },
 
     escalate(reasonOrTarget: string, optsOrReason?: EscalationOptions | string): void {
@@ -220,9 +223,15 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       // Also push human-visible message
       deps.bus.emit({
         type: "message.created",
-        from: deps.agentName,
-        to: "human",
-        content: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${owner}: ${reason}`,
+        source: `agent:${deps.agentName}`,
+        owner: "human:operator",
+        urgency: urgencyForSeverity(severity),
+        data: {
+          from: deps.agentName,
+          to: "human",
+          content: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${owner}: ${reason}`,
+          priority: severity,
+        },
       } as any);
     },
 
@@ -259,13 +268,8 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
     },
 
     escalate(reasonOrTarget: string, optsOrReason?: EscalationOptions | string): void {
-      if (typeof optsOrReason === "string") {
-        base.escalate(reasonOrTarget, optsOrReason);
-        deps.finish({ status: "escalated", summary: optsOrReason });
-        return;
-      }
-      base.escalate(reasonOrTarget, optsOrReason);
-      deps.finish({ status: "escalated", summary: reasonOrTarget });
+      const summary = typeof optsOrReason === "string" ? optsOrReason : reasonOrTarget;
+      deps.finish({ status: "escalated", summary });
     },
   };
 }
