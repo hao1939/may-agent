@@ -315,6 +315,63 @@ from `src/lib/log.ts` (which uses `console.log` directly), and direct
 `console.log` calls in the codebase (e.g. `daemon-agents.ts` prints
 `[agents] Loaded N: ...` that way).
 
+### F8. Served platform UI is broken at the root path — assets 404
+
+**Status:** RESOLVED — `src/app/http/server.ts` now serves top-level static
+asset paths (`/styles.css`, `/app.js`, `/pages/*.js`, images) from
+`PROJECTS_ROOT/platform/ui/<path>` when they match a static-extension pattern.
+Regression test: E8 (`test/e2e/e8-project-comment-ui.test.ts`).
+
+**Surfaced when:** writing E8. The first run loaded `/#/projects`, called
+`waitForSelector("#show-hidden-toggle")`, and timed out. Console captures
+showed every script tag and the stylesheet 404'd:
+```
+[E8 reqfail] GET /styles.css
+[E8 reqfail] GET /pages/projects.js
+[E8 reqfail] GET /app.js
+... (all 11 page scripts)
+```
+The HTML loaded (it's served by `serveIndex` from
+`PROJECTS_ROOT/platform/ui/index.html`), but its `<script src="pages/...">`
+and `<link href="styles.css">` tags are root-relative, and the server had
+no route for `/styles.css` or `/pages/*` outside `/projects/...`.
+
+Verified against the live production container at `http://localhost:8080/`
+— same 404s, same broken behavior. The legacy
+`scripts/e2e-platform-comment.mjs` script (which inspired E8) also fails
+against the running prod container with the exact same selector timeout.
+Prod UI has been silently shipping broken since the
+`0ca50a7b refactor: serve project ui from projects root` commit (May 15).
+
+**Root cause:** That refactor moved the UI bundle from
+`packages/webui/static/` to `<PROJECTS_ROOT>/platform/ui/` but only added a
+`/projects/platform/ui/*` static handler. The `<script src="...">`
+references in `index.html` are relative paths; when the document is loaded
+at `/`, they resolve to `/`, not `/projects/platform/ui/`. The refactor
+appears to have been validated by visiting the URL, where modern browsers
+still render some content despite missing JS, masking the regression.
+
+**Fix:** Added a fallback handler in the Bun server's `fetch` route table
+that catches GETs matching a `\.(css|js|map|svg|png|jpg|jpeg|gif|webp|ico)$`
+extension and maps them to `<PROJECTS_ROOT>/platform/ui/<path>` with
+path-traversal containment via `relative()`. Falls through to 404 only if
+the asset doesn't exist. Other paths (`/api/...`, `/projects/...`, `/`)
+are unaffected.
+
+**Why not fix via `<base>` tag in `index.html`?** Adding `<base
+href="/projects/platform/ui/">` would break the absolute hash routes
+(`#/projects/foo` would still work, but XHR fetches to `/api/...` would
+remain absolute). The server-side route fallback is the least invasive
+fix and keeps the document portable.
+
+**Once a new container is rolled out** with this commit:
+  - `http://localhost:8080/styles.css` will 200 (was 404)
+  - `http://localhost:8080/pages/projects.js` will 200 (was 404)
+  - `addProjectComment()` etc. will be in scope at page load
+  - `scripts/e2e-platform-comment.mjs` would pass — but it's deleted in
+    favor of the in-sandbox E8 test that no longer depends on a running
+    container.
+
 ## Recommended sequencing
 
 These six findings are independent and small. Suggested order:
