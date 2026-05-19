@@ -9,13 +9,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-const CANONICAL_SOCKET_EVENTS = new Set([
-  "message.created",
-  "project.comment.created",
-  "project.nudge",
-  "heartbeat.trigger",
-]);
-
 const LEGACY_SOCKET_FRAME_TYPES = new Set([
   "emit",
   "message",
@@ -24,10 +17,18 @@ const LEGACY_SOCKET_FRAME_TYPES = new Set([
   "reload_agents",
 ]);
 
+function isSocketCommandType(type: string): boolean {
+  return type.startsWith("trigger.") || type === "session.cancel.requested";
+}
+
+function isCanonicalEventType(type: string): boolean {
+  return type.includes(".") && !isSocketCommandType(type);
+}
+
 function canonicalEventError(event: Record<string, unknown>): string | null {
   const type = event.type;
   if (typeof type !== "string") return null;
-  if (!CANONICAL_SOCKET_EVENTS.has(type)) return null;
+  if (!isCanonicalEventType(type)) return null;
   if (!isRecord(event.data)) return `Canonical event '${type}' requires object field 'data'`;
   if (typeof event.source !== "string" || !event.source.trim()) return `Canonical event '${type}' requires string field 'source'`;
   if (typeof event.owner !== "string" || !event.owner.trim()) return `Canonical event '${type}' requires string field 'owner'`;
