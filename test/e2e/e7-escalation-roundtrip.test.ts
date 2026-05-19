@@ -37,6 +37,10 @@ import {
 } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
+function eventPayload(row: { data: string | null }): Record<string, unknown> {
+  return JSON.parse(row.data ?? "{}") as Record<string, unknown>;
+}
+
 describe("E7: escalation lifecycle roundtrip", () => {
   let sb: Sandbox;
 
@@ -77,7 +81,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
       // ── 2. Wait for the event to land in the DB ──────────────────────
       const db = openSandboxDb(sb.dbPath);
       try {
-        await pollUntil(
+        const createdRows = await pollUntil(
           () => {
             const rows = queryEvents(db, { types: ["escalation.created"], since: t0, limit: 5 })
               .filter((e) => (e.data ?? "").includes(escalationId));
@@ -85,6 +89,14 @@ describe("E7: escalation lifecycle roundtrip", () => {
           },
           { timeoutMs: 5_000, intervalMs: 100, description: "escalation.created persisted" },
         );
+        expect(createdRows[0].source).toBe("e2e-test");
+        expect(createdRows[0].owner).toBe("agent:may");
+        expect(eventPayload(createdRows[0])).toEqual({
+          escalationId,
+          reason: "e2e test escalation",
+          sourceSessionId,
+          requestedAction: "test resume",
+        });
 
         // ── 3. Emit escalation.resolved ────────────────────────────────
         const resolvedResp = (await socketEmit(sb.socketPath, "escalation.resolved", {
@@ -112,28 +124,53 @@ describe("E7: escalation lifecycle roundtrip", () => {
               since: t0,
               limit: 5,
             }).filter((e) => (e.data ?? "").includes(escalationId));
-            if (attempted.length >= 1 && failed.length >= 1) return { attempted, failed };
+            const resolved = queryEvents(db, {
+              types: ["escalation.resolved"],
+              since: t0,
+              limit: 5,
+            }).filter((e) => (e.data ?? "").includes(escalationId));
+            if (resolved.length >= 1 && attempted.length >= 1 && failed.length >= 1) return { resolved, attempted, failed };
             return null;
           },
-          { timeoutMs: 5_000, intervalMs: 100, description: "resume_attempted + resume_failed" },
+          { timeoutMs: 5_000, intervalMs: 100, description: "resolved + resume_attempted + resume_failed" },
         );
 
+        const resolvedRow = result.resolved[0];
+        expect(resolvedRow.source).toBe("e2e-test");
+        expect(resolvedRow.owner).toBe("agent:may");
+        expect(eventPayload(resolvedRow)).toEqual({
+          escalationId,
+          outcome: "resolved",
+          summary: "test resolution",
+          resumeInstruction: "Test resume instruction",
+        });
+
         // Resume was attempted with the correct source session.
-        const attemptedData = JSON.parse(result.attempted[0].data ?? "{}");
-        const attInner = attemptedData.data ?? attemptedData;
-        expect(attInner.escalationId).toBe(escalationId);
-        expect(attInner.sourceSessionId).toBe(sourceSessionId);
-        expect(attInner.resumeInstruction).toContain("Test resume instruction");
+        const attemptedRow = result.attempted[0];
+        expect(attemptedRow.source).toBe("escalation-lifecycle");
+        expect(attemptedRow.owner).toBe("agent:may");
+        const attemptedData = eventPayload(attemptedRow);
+        expect(attemptedData.escalationId).toBe(escalationId);
+        expect(attemptedData.sourceKind).toBe("session");
+        expect(attemptedData.sourceRef).toBe(sourceSessionId);
+        expect(attemptedData.sourceSessionId).toBe(sourceSessionId);
+        expect(attemptedData.outcome).toBe("resolved");
+        expect(attemptedData.resumeInstruction).toContain("Test resume instruction");
 
         // Resume failed because the fake session id doesn't exist in the
         // sandbox manager.
-        const failedData = JSON.parse(result.failed[0].data ?? "{}");
-        const failInner = failedData.data ?? failedData;
-        expect(failInner.escalationId).toBe(escalationId);
+        const failedRow = result.failed[0];
+        expect(failedRow.source).toBe("escalation-lifecycle");
+        expect(failedRow.owner).toBe("agent:may");
+        const failedData = eventPayload(failedRow);
+        expect(failedData.escalationId).toBe(escalationId);
+        expect(failedData.sourceKind).toBe("session");
+        expect(failedData.sourceRef).toBe(sourceSessionId);
+        expect(failedData.sourceSessionId).toBe(sourceSessionId);
         // Category should be `resume_failed` (manager threw) — not
         // `missing_resume_target` (which would mean we didn't even find a
         // session id in escalation.created).
-        expect(failInner.category).toBe("resume_failed");
+        expect(failedData.category).toBe("resume_failed");
       } finally {
         db.close();
       }
@@ -162,7 +199,7 @@ describe("E7: escalation lifecycle roundtrip", () => {
 
       const db = openSandboxDb(sb.dbPath);
       try {
-        await pollUntil(
+        const createdRows = await pollUntil(
           () => {
             const rows = queryEvents(db, { types: ["escalation.created"], since: t0, limit: 5 })
               .filter((e) => (e.data ?? "").includes(escalationId));
@@ -170,6 +207,14 @@ describe("E7: escalation lifecycle roundtrip", () => {
           },
           { timeoutMs: 5_000, intervalMs: 100, description: "needs_human escalation.created persisted" },
         );
+        expect(createdRows[0].source).toBe("e2e-test");
+        expect(createdRows[0].owner).toBe("agent:may");
+        expect(eventPayload(createdRows[0])).toEqual({
+          escalationId,
+          reason: "needs human decision",
+          sourceSessionId,
+          requestedAction: "human input required",
+        });
 
         // Resolve with outcome=needs_human
         await socketEmit(sb.socketPath, "escalation.resolved", {
@@ -200,6 +245,13 @@ describe("E7: escalation lifecycle roundtrip", () => {
           limit: 5,
         }).filter((e) => (e.data ?? "").includes(escalationId));
         expect(resolved.length).toBeGreaterThanOrEqual(1);
+        expect(resolved[0].source).toBe("e2e-test");
+        expect(resolved[0].owner).toBe("agent:may");
+        expect(eventPayload(resolved[0])).toEqual({
+          escalationId,
+          outcome: "needs_human",
+          summary: "blocked on human",
+        });
       } finally {
         db.close();
       }
