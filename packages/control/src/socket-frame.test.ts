@@ -166,35 +166,35 @@ describe("socket frame normalization", () => {
     expect(normalizeSocketFrame({ type: "message", from: "may", to: "dev", content: "hello" })).toEqual({
       kind: "error",
       command: "message",
-      message: "Unsupported legacy socket frame type: message",
+      message: "Unsupported socket frame type: message",
     });
   });
 
-  it("rejects legacy socket wrapper and command aliases", () => {
+  it("rejects unsupported socket wrapper and command aliases", () => {
     expect(normalizeSocketFrame({ type: "emit", event: "trigger.metrics-snapshot", forced: true })).toEqual({
       kind: "error",
       command: "emit",
-      message: "Unsupported legacy socket frame type: emit",
+      message: "Unsupported socket frame type: emit",
     });
     expect(normalizeSocketFrame({ type: "message", from: "may", to: "dev", task: "hello" })).toEqual({
       kind: "error",
       command: "message",
-      message: "Unsupported legacy socket frame type: message",
+      message: "Unsupported socket frame type: message",
     });
     expect(normalizeSocketFrame({ type: "close" })).toEqual({
       kind: "error",
       command: "close",
-      message: "Unsupported legacy socket frame type: close",
+      message: "Unsupported socket frame type: close",
     });
     expect(normalizeSocketFrame({ type: "reload_agents" })).toEqual({
       kind: "error",
       command: "reload_agents",
-      message: "Unsupported legacy socket frame type: reload_agents",
+      message: "Unsupported socket frame type: reload_agents",
     });
     expect(normalizeSocketFrame({ type: "cancel_task" })).toEqual({
       kind: "error",
       command: "cancel_task",
-      message: "Unsupported legacy socket frame type: cancel_task",
+      message: "Unsupported socket frame type: cancel_task",
     });
   });
 

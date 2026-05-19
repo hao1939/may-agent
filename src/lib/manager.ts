@@ -49,6 +49,7 @@ import { createToolSchemaGuard } from "./tools/tool-schema-guard.js";
 import { createPathHallucinationGuard } from "./tools/path-hallucination-guard.js";
 import { createCommitGuard } from "./tools/commit-guard.js";
 import { createCompletenessGuard } from "./tools/completeness-guard.js";
+import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 // Re-export utilities that other modules import from manager
 export {
@@ -104,14 +105,6 @@ interface ActiveSession {
   requestId?: string;
   projectId?: string;
   resumeMessages?: AgentMessage[];
-}
-
-function eventOwner(owner: string | undefined): string {
-  const value = owner?.trim();
-  if (!value) return "agent:may";
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
 }
 
 type DispatchDedupDb = {
@@ -283,7 +276,7 @@ export class SubagentManager {
     this.bus?.emit({
       type: "session.resume_failed",
       source: "manager",
-      owner: eventOwner(meta?.agent),
+      owner: normalizeEventOwner(meta?.agent),
       timestamp: Date.now(),
       data: {
         sessionId,
@@ -1263,7 +1256,7 @@ export class SubagentManager {
         this.bus?.emit({
           type: "guard.triggered",
           source: "tool",
-          owner: `agent:${agentName}`,
+          owner: normalizeEventOwner(agentName),
           data: {
             workflowRunId: opts?.workflowRunId,
             projectId: opts?.projectId,
@@ -1338,7 +1331,7 @@ export class SubagentManager {
       this.bus.emit({
         type: "session.end",
         source: session.source ?? "runtime",
-        owner: eventOwner(agentName),
+        owner: normalizeEventOwner(agentName),
         timestamp: Date.now(),
         data: {
           sessionId,
@@ -1385,7 +1378,7 @@ export class SubagentManager {
     bus.emit({
       type: "session.start",
       source: session.source ?? "runtime",
-      owner: eventOwner(agentName),
+      owner: normalizeEventOwner(agentName),
       timestamp: session.startedAt,
       data: {
         sessionId,

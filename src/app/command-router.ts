@@ -4,6 +4,7 @@ import type { SubagentManager } from "../lib/index.js";
 import { log } from "../lib/log.js";
 import type { ChatSession } from "./chat-session.js";
 import type { EventBus } from "./event-bus.js";
+import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export interface CommandRouterOptions {
   bus: EventBus;
@@ -21,21 +22,9 @@ export interface CommandRouter {
   close: () => void;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
 function eventData(event: unknown): Record<string, unknown> {
   if (!isRecord(event)) return {};
   return isRecord(event.data) ? event.data : event;
-}
-
-function canonicalOwner(owner: unknown): string {
-  if (typeof owner !== "string" || !owner.trim()) return "agent:may";
-  const value = owner.trim();
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
 }
 
 /**
@@ -123,7 +112,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     bus.emit({
       type: "project.nudge",
       source: source ?? "command-router",
-      owner: canonicalOwner(projectOwner(normalized)),
+      owner: normalizeEventOwner(projectOwner(normalized)),
       data: {
         projectPath: normalized,
         comment: true,
@@ -238,7 +227,7 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
           bus.emit({
             type: "message.created",
             source: (event as any).opts?.source || "socket",
-            owner: canonicalOwner((event as any).agent),
+            owner: normalizeEventOwner((event as any).agent),
             urgency: "immediate",
             data: {
               from: (event as any).opts?.source || "socket",

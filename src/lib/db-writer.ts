@@ -10,6 +10,7 @@
 import type { AgentEvent } from "../app/event-bus.js";
 import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
+import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 
 const DURABLE_COMMAND_EVENTS = new Set([
   "input",
@@ -22,42 +23,29 @@ const DURABLE_COMMAND_EVENTS = new Set([
   "shutdown",
 ]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function isCanonicalEnvelope(event: Record<string, unknown>): boolean {
-  return isRecord(event.data) && (
-    "owner" in event ||
-    "source" in event ||
-    "urgency" in event ||
-    "ttl_ms" in event
-  );
-}
-
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
-  if (isCanonicalEnvelope(event)) return event.data as Record<string, unknown>;
+  if (isCanonicalEventEnvelope(event)) return event.data as Record<string, unknown>;
   const { type: _type, ...data } = event;
   return data;
 }
 
 function eventSource(event: Record<string, unknown>, fallback?: unknown): string | null {
-  const source = isCanonicalEnvelope(event) ? event.source : eventPayload(event).source;
+  const source = isCanonicalEventEnvelope(event) ? event.source : eventPayload(event).source;
   return typeof source === "string" ? source : typeof fallback === "string" ? fallback : null;
 }
 
 function eventOwner(event: Record<string, unknown>, fallback?: unknown): string | null {
-  const owner = isCanonicalEnvelope(event) ? event.owner : eventPayload(event).owner;
+  const owner = isCanonicalEventEnvelope(event) ? event.owner : eventPayload(event).owner;
   return typeof owner === "string" ? owner : typeof fallback === "string" ? fallback : null;
 }
 
 function eventUrgency(event: Record<string, unknown>): string {
-  const urgency = isCanonicalEnvelope(event) ? event.urgency : eventPayload(event).urgency;
+  const urgency = isCanonicalEventEnvelope(event) ? event.urgency : eventPayload(event).urgency;
   return typeof urgency === "string" ? urgency : "normal";
 }
 
 function eventTtlMs(event: Record<string, unknown>): number | null {
-  const ttl = isCanonicalEnvelope(event) ? event.ttl_ms : eventPayload(event).ttl_ms;
+  const ttl = isCanonicalEventEnvelope(event) ? event.ttl_ms : eventPayload(event).ttl_ms;
   return typeof ttl === "number" ? ttl : null;
 }
 
@@ -77,7 +65,7 @@ export class DbWriter {
         case "session.start":
           {
           const ev = event as any;
-          if (!isCanonicalEnvelope(ev)) break;
+          if (!isCanonicalEventEnvelope(ev)) break;
           const payload = eventPayload(ev);
           upsertSession(this.persistDir, {
             sessionId: payload.sessionId as string,
@@ -106,7 +94,7 @@ export class DbWriter {
         case "session.end":
           {
           const ev = event as any;
-          if (!isCanonicalEnvelope(ev)) break;
+          if (!isCanonicalEventEnvelope(ev)) break;
           const payload = eventPayload(ev);
           updateSessionDb(this.persistDir, payload.sessionId as string, {
             status: payload.status as any,
@@ -128,7 +116,7 @@ export class DbWriter {
         case "message.created":
           {
             const ev = event as any;
-            if (!isCanonicalEnvelope(ev)) break;
+            if (!isCanonicalEventEnvelope(ev)) break;
             const payload = eventPayload(ev);
             const priority = payload.priority ?? "P2";
             const urgency = eventUrgency(ev);
@@ -172,7 +160,7 @@ export class DbWriter {
           if (event.type.includes('.')) {
             try {
               const ev = event as any;
-              if (!isCanonicalEnvelope(ev)) break;
+              if (!isCanonicalEventEnvelope(ev)) break;
               const data = eventPayload(ev);
               this.db.run(
                 "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",

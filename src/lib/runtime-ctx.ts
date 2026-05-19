@@ -17,6 +17,7 @@ import { getLastDigest as _getLastDigest, upsertDigest as _upsertDigest, classif
 import type { PersistedSession } from "./persistence.js";
 import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
+import { buildCanonicalEventEnvelope, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 /**
  * RuntimeCtx — internal type for workflow/sdk infra.
@@ -47,58 +48,16 @@ export interface RuntimeCtxOptions {
   agentName: string;
 }
 
-function normalizeOwner(owner: string | undefined): string {
-  const value = owner?.trim();
-  if (!value) return "agent:may";
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
 function isSocketCommandType(type: string): boolean {
   return type.startsWith("trigger.") || type === "session.cancel.requested";
 }
 
-function isCanonicalEnvelope(event: Record<string, unknown>): boolean {
-  return typeof event.source === "string"
-    && event.source.trim().length > 0
-    && typeof event.owner === "string"
-    && event.owner.trim().length > 0
-    && isRecord(event.data);
-}
-
 function runtimeEventEnvelope(event: { type: string; [key: string]: unknown }, agentName: string): { type: string; [key: string]: unknown } {
   if (!event.type.includes(".") || isSocketCommandType(event.type)) return event;
-  if (isCanonicalEnvelope(event)) return {
-    ...event,
-    owner: normalizeOwner(event.owner as string),
-  };
-
-  const {
-    type,
-    source,
-    owner,
-    urgency,
-    ttl_ms,
-    timestamp,
-    data,
-    ...payload
-  } = event;
-  const eventData = isRecord(data) ? { ...data, ...payload } : payload;
-
-  return {
-    type,
-    source: typeof source === "string" && source.trim() ? source.trim() : `agent:${agentName}`,
-    owner: normalizeOwner(typeof owner === "string" ? owner : agentName),
-    ...(typeof urgency === "string" && urgency.trim() ? { urgency } : {}),
-    ...(typeof ttl_ms === "number" ? { ttl_ms } : {}),
-    ...(typeof timestamp === "number" ? { timestamp } : {}),
-    data: eventData,
-  };
+  return buildCanonicalEventEnvelope(event.type, event, {
+    source: `agent:${agentName}`,
+    owner: agentName,
+  }) as { type: string; [key: string]: unknown };
 }
 
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
@@ -107,7 +66,7 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     dispatchEvent: (eventType, data) => opts.bus.emit({
       type: eventType,
       source: `agent:${opts.agentName}`,
-      owner: normalizeOwner(opts.agentName),
+      owner: normalizeEventOwner(opts.agentName),
       data: data ?? {},
     } as any),
     getDb: () => getDb(opts.persistDir),
@@ -134,7 +93,7 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
       emit: (type, data, envelope) => opts.bus.emit({
         type,
         source: envelope?.source ?? `agent:${opts.agentName}`,
-        owner: normalizeOwner(envelope?.owner ?? opts.agentName),
+        owner: normalizeEventOwner(envelope?.owner, opts.agentName),
         ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},

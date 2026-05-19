@@ -20,6 +20,7 @@ import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from 
 import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
+import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
 
@@ -182,14 +183,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const ownerMatch = content?.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
     if (ownerMatch?.[1]) owner = ownerMatch[1].trim().replace(/^["']|["']$/g, "");
     return { owner, name, projectId: `${owner}/${name}` };
-  }
-
-  function eventOwner(owner: string): string {
-    const value = owner.trim();
-    if (!value) return "agent:may";
-    if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-    if (value.toLowerCase() === "human") return "human:operator";
-    return `agent:${value}`;
   }
 
   function projectNameFromPath(path: string): string {
@@ -2045,7 +2038,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const trigger = await sendDaemonFrame({
         type: "project.comment.created",
         source: "web-ui",
-        owner: eventOwner(owner),
+        owner: normalizeEventOwner(owner),
         data: {
           projectPath: path,
           comment,
@@ -2509,7 +2502,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const result = await sendDaemonFrame({
       type: "heartbeat.trigger",
       source: actor,
-      owner: eventOwner(agentName),
+      owner: normalizeEventOwner(agentName),
       data: { agent: agentName },
     });
     if (!result.ok) return json({ error: result.error }, 503);
@@ -2531,7 +2524,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     void sendDaemonFrame({
       type: "metric.threshold_changed",
       source: "web-ui",
-      owner: eventOwner(existing.owner ?? "may"),
+      owner: normalizeEventOwner(existing.owner ?? "may"),
       data: {
         metricId,
         from: existing.threshold,
@@ -2559,7 +2552,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     void sendDaemonFrame({
       type: "metric.alert_resolved",
       source: "web-ui",
-      owner: eventOwner(existing.owner ?? "may"),
+      owner: normalizeEventOwner(existing.owner ?? "may"),
       data: {
         metricId: existing.metric_id,
         alertId: id,

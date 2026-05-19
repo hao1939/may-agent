@@ -58,14 +58,7 @@ import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import { createUnavailableQueryService } from "./query-service.js";
-
-function eventOwner(owner: string | undefined): string {
-  const value = owner?.trim();
-  if (!value) return "agent:may";
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
-}
+import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
 
@@ -585,7 +578,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       type: "workflow.resume_failed",
       source: "workflow-tool",
       timestamp: Date.now(),
-      owner: eventOwner(opts.agentName),
+      owner: normalizeEventOwner(opts.agentName),
       data: {
         workflowRunId: data.workflowRunId,
         workflow: data.workflow,
@@ -611,7 +604,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       type: "workflow.resume_skipped",
       source: "workflow-tool",
       timestamp: Date.now(),
-      owner: eventOwner(opts.agentName),
+      owner: normalizeEventOwner(opts.agentName),
       data: {
         workflowRunId: data.workflowRunId,
         workflow: data.workflow,
