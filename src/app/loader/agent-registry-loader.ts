@@ -68,6 +68,17 @@ export async function loadAgents(
     }
     seen.set(config.name, agentRelativeDir(agentSource));
 
+    // F2: detect cron.json present but `cron` tool missing. The tool gate at
+    // toolset-loader.ts:148 silently skips cron.json when the agent's
+    // config.tools doesn't include "cron". Surface this as a warning so the
+    // agent author sees their cron entries are being ignored.
+    if (existsSync(resolve(agentDir, "cron.json")) && !(config.tools ?? []).includes("cron")) {
+      opts.bus.emit({
+        type: "info",
+        message: `[loader] ${config.name}: cron.json found at ${agentRelativeDir(agentSource)}/cron.json but "cron" is not in agent.json tools[]; entries will be IGNORED. Add "cron" to tools to enable.`,
+      });
+    }
+
     const isUpdate = manager.hasAgent(config.name);
     const model = models[config.model];
     const knowledgeDir = resolve(agentDir, "knowledge");
