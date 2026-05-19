@@ -45,6 +45,14 @@ export interface TelegramBotOptions {
   interfaceAgent: string;
 }
 
+function eventOwner(owner: unknown): string {
+  if (typeof owner !== "string" || !owner.trim()) return "agent:may";
+  const value = owner.trim();
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  return `agent:${value}`;
+}
+
 export interface TelegramBot {
   close: () => void;
   /** Send a proactive alert to the primary chat (first allowed chat ID). */
@@ -151,9 +159,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     bus.emit({
       type: "project.comment.created",
       source: "telegram",
-      projectPath: normalized,
-      comment: comment.trim(),
-      author: "hao",
+      owner: "agent:may",
+      data: {
+        projectPath: normalized,
+        comment: comment.trim(),
+        author: "hao",
+      },
     } as any);
     bus.emit({ type: "info", message: `[telegram] Project comment event emitted: ${normalized}` });
     return true;
@@ -199,7 +210,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
         if (route.kind === "notification") {
           if (route.projectPath && await emitProjectComment(route.projectPath, text)) {
-            bus.emit({ type: "telegram.reply", source: "telegram", owner: route.owner, enriched: true, projectPath: route.projectPath, delivery: "project-comment", originalMsgId: replyToMsgId } as any);
+            bus.emit({
+              type: "telegram.reply",
+              source: "telegram",
+              owner: eventOwner(route.owner),
+              data: {
+                enriched: true,
+                projectPath: route.projectPath,
+                delivery: "project-comment",
+                originalMsgId: replyToMsgId,
+              },
+            } as any);
             await sendMessage(chatIdStr, `Comment sent to ${route.projectPath}. Resuming the project now.`, undefined, {
               eventType: "project.comment",
               agent: route.owner || opts.interfaceAgent,
@@ -213,7 +234,16 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           bus.emit({ type: "info", message: route.infoMessage });
 
           // Track reply for metric
-          bus.emit({ type: "telegram.reply", source: "telegram", owner: route.owner, enriched: true, hasSessionCtx: route.hasSessionCtx, originalMsgId: replyToMsgId } as any);
+          bus.emit({
+            type: "telegram.reply",
+            source: "telegram",
+            owner: eventOwner(route.owner),
+            data: {
+              enriched: true,
+              hasSessionCtx: route.hasSessionCtx,
+              originalMsgId: replyToMsgId,
+            },
+          } as any);
           if (route.sessionId) {
             if (await handleTelegramCommand(text, chatIdStr, route.sessionId)) {
               return;
@@ -235,10 +265,29 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         } else if (route.kind === "quote") {
           enrichedText = route.enrichedText;
           bus.emit({ type: "info", message: route.infoMessage });
-          bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: true, hasDbCtx: false, fallback: "telegram-quote", originalMsgId: replyToMsgId } as any);
+          bus.emit({
+            type: "telegram.reply",
+            source: "telegram",
+            owner: eventOwner(opts.interfaceAgent),
+            data: {
+              enriched: true,
+              hasDbCtx: false,
+              fallback: "telegram-quote",
+              originalMsgId: replyToMsgId,
+            },
+          } as any);
         } else {
           bus.emit({ type: "info", message: route.infoMessage });
-          bus.emit({ type: "telegram.reply", source: "telegram", owner: opts.interfaceAgent, enriched: false, reason: "context-not-found", originalMsgId: replyToMsgId } as any);
+          bus.emit({
+            type: "telegram.reply",
+            source: "telegram",
+            owner: eventOwner(opts.interfaceAgent),
+            data: {
+              enriched: false,
+              reason: "context-not-found",
+              originalMsgId: replyToMsgId,
+            },
+          } as any);
         }
       } catch {}
     }

@@ -114,11 +114,21 @@ describe("command router", () => {
     );
     const h = createHarness({}, projectRoot);
 
-    h.bus.emit({ type: "project.comment.created", projectPath, comment: "please continue", source: "test", author: "hao" });
+    h.bus.emit({
+      type: "project.comment.created",
+      source: "test",
+      owner: "agent:tech-lead",
+      data: { projectPath, comment: "please continue", author: "hao" },
+    } as any);
 
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("status: active");
-    expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true, commentText: "please continue" });
+    expect(h.emitted).toContainEqual(expect.objectContaining({
+      type: "project.nudge",
+      source: "test",
+      owner: "agent:tech-lead",
+      data: { projectPath, comment: true, commentText: "please continue" },
+    }));
     h.router.close();
   });
 
@@ -149,7 +159,12 @@ describe("command router", () => {
     expect(projContent).toContain("status: active");
     expect(projContent).not.toContain("status: waiting");
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("wake up");
-    expect(h.emitted).toContainEqual({ type: "project.nudge", source: "test", projectPath, comment: true, commentText: "wake up" });
+    expect(h.emitted).toContainEqual(expect.objectContaining({
+      type: "project.nudge",
+      source: "test",
+      owner: "agent:tech-lead",
+      data: { projectPath, comment: true, commentText: "wake up" },
+    }));
     h.router.close();
   });
 

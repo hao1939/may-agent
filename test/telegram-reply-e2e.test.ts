@@ -323,8 +323,9 @@ describe("telegram reply e2e", () => {
 
     await waitFor(() => {
       expect(nudges).toHaveLength(1);
-      expect(nudges[0].projectPath).toBe("projects/example-project");
-      expect(nudges[0].comment).toBe(true);
+      expect(nudges[0].owner).toBe("agent:scout");
+      expect(nudges[0].data.projectPath).toBe("projects/example-project");
+      expect(nudges[0].data.comment).toBe(true);
       expect(inputs).toHaveLength(0);
       expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please revise the scoped plan");
       expect(sentMessages.some((m) => m.text.includes("Resuming the project now"))).toBe(true);
@@ -405,7 +406,7 @@ describe("telegram reply e2e", () => {
       });
       expect(String(steers[0].message)).toContain("continue with the smaller plan");
       expect(inputs).toHaveLength(0);
-      expect(replies.some((event) => event.enriched === true && event.hasSessionCtx === true)).toBe(true);
+      expect(replies.some((event) => event.data?.enriched === true && event.data?.hasSessionCtx === true)).toBe(true);
       expect(sentMessages.some((m) => m.text.includes("Reply sent to session s_reply_target"))).toBe(true);
     });
 
