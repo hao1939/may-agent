@@ -16,6 +16,7 @@ import {
 } from "../../lib/index.js";
 import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
+import { importRuntimeModule } from "../../lib/runtime-import.js";
 import type { EventBus } from "../event-bus.js";
 import { Cron } from "../cron.js";
 import type { AgentConfig } from "./agent-config.js";
@@ -250,7 +251,7 @@ export async function loadLocalTools(
   for (const file of entries) {
     const filePath = resolve(toolsDir, file);
     try {
-      const mod = await import(`${filePath}?t=${Date.now()}`);
+      const mod = await importRuntimeModule<{ default?: unknown }>(filePath);
       const factory = mod.default;
       if (typeof factory !== "function") {
         opts.bus.emit({

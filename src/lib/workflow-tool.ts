@@ -58,6 +58,7 @@ import { log } from "./log.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import { createUnavailableQueryService } from "./query-service.js";
+import { importRuntimeModule } from "./runtime-import.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 // ── Tool schema ────────────────────────────────────────────────────────
@@ -94,8 +95,6 @@ interface WorkflowInput {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
-let importCounter = 0;
 
 function textResult(text: string): AgentToolResult<string> {
   return {
@@ -169,16 +168,17 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
 }
 
 async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
-  const mod = await import(filePath + "?t=" + ++importCounter);
-  if (typeof mod.execute !== "function") {
+  const mod = await importRuntimeModule<{ name?: unknown; description?: unknown; execute?: unknown }>(filePath);
+  const execute = mod.execute;
+  if (typeof execute !== "function") {
     throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
   }
   // name: use export, or derive from filename (e.g. "scout-heartbeat.ts" → "scout-heartbeat")
   const name = typeof mod.name === "string" ? mod.name : filePath.split("/").pop()?.replace(/\.ts$/, "") ?? "unknown";
   return {
     name,
-    description: mod.description ?? "(no description)",
-    execute: mod.execute,
+    description: typeof mod.description === "string" ? mod.description : "(no description)",
+    execute: execute as WorkflowModule["execute"],
   };
 }
 
@@ -261,13 +261,14 @@ export async function loadGuards(...dirs: (string | undefined)[]): Promise<Workf
     }
     for (const filePath of files) {
       try {
-        const mod = await import(filePath + "?t=" + ++importCounter);
-        if (mod.guard && typeof mod.guard.handle === "function" && typeof mod.guard.name === "string") {
-          if (disabledNames.has(mod.guard.name)) {
-            log("info", `[guards] Skipping disabled guard "${mod.guard.name}" (DISABLED_GUARDS env)`);
+        const mod = await importRuntimeModule<{ guard?: Partial<WorkflowGuard> }>(filePath);
+        const guard = mod.guard;
+        if (guard && typeof guard.handle === "function" && typeof guard.name === "string") {
+          if (disabledNames.has(guard.name)) {
+            log("info", `[guards] Skipping disabled guard "${guard.name}" (DISABLED_GUARDS env)`);
             continue;
           }
-          guards.push(mod.guard);
+          guards.push(guard as WorkflowGuard);
         }
       } catch (err) {
         log("error", `[guards] Failed to load guard from ${filePath}: ${err instanceof Error ? err.message : String(err)}`);

@@ -5,10 +5,9 @@ import type { HandlerContext, HandlerModule, TriggerEvent } from "../../lib/hand
 import type { CronEntry } from "../../lib/cron-tool.js";
 import { buildSessionHelpers } from "../../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../../lib/sdk-impl.js";
+import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { Cron } from "../cron.js";
 import type { EventBus } from "../event-bus.js";
-
-let hotReloadImportSeq = 0;
 
 export interface AgentHandlerLoaderOptions {
   agentsRoot: string;
@@ -72,7 +71,7 @@ export async function loadHandlersForAgentCrons(
       }
 
       try {
-        const mod: HandlerModule = await import(withFreshImportToken(modulePath));
+        const mod = await importRuntimeModule<HandlerModule>(modulePath);
         if (typeof mod.create !== "function") {
           const msg = `Handler ${modulePath} does not export create()`;
           errors.push(msg);
@@ -109,7 +108,7 @@ export async function loadHandlersForAgentCrons(
       }
 
       try {
-        const mod: HandlerModule = await import(withFreshImportToken(modulePath));
+        const mod = await importRuntimeModule<HandlerModule>(modulePath);
         if (typeof mod.create !== "function") {
           bus.emit({
             type: "info",
@@ -150,16 +149,11 @@ function resolveHandlerModule(agentsRoot: string, agentName: string, handlerFile
 function createHotReloadHandler(modulePath: string, ctx: HandlerContext, entry: CronEntry) {
   const entrySnapshot = { ...entry };
   return async (event?: TriggerEvent) => {
-    const freshMod: HandlerModule = await import(withFreshImportToken(modulePath));
+    const freshMod = await importRuntimeModule<HandlerModule>(modulePath);
     if (typeof freshMod.create !== "function") {
       throw new Error(`Handler ${modulePath} no longer exports create()`);
     }
     const fn = freshMod.create(ctx, entrySnapshot);
     return fn(event);
   };
-}
-
-function withFreshImportToken(modulePath: string): string {
-  hotReloadImportSeq += 1;
-  return `${modulePath}?t=${Date.now()}-${hotReloadImportSeq}`;
 }
