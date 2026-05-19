@@ -18,6 +18,8 @@ The current capability model has 18 AKS input variables plus observation filters
 - `identity.oidcIssuer.enabled` — whether OIDC issuer is requested/enabled on the managed cluster.
 - `identity.workloadIdentity.enabled` — whether workload identity is requested/enabled.
 - `identity.operation` — identity operation shape: create-time enablement or idempotent update.
+- `identity.runtime.os` — Workload Identity runtime OS branch: Linux is now proved; Windows remains unknown.
+- `identity.kubernetesVersion.branch` — OIDC issuer version branch: Kubernetes `>=1.34` default-enabled discovery/JWKS is now proved; Kubernetes `1.33` explicit-enable runtime remains unknown.
 - `bootstrapProfile.artifactSource` — bootstrap artifacts source: `Direct`, `Cache`, or unknown.
 - `bootstrapProfile.containerRegistryId.provided` — whether a Cache backing ACR ID is supplied, auto-provisioned, absent, or unknown.
 - `bootstrapProfile.operation` — bootstrap operation shape: create, idempotent update, update-to-cache.
@@ -72,6 +74,13 @@ The current capability model has 22 expectation variables. Important behavior di
 - `nodeProvisioning.profile.persisted` — persisted NAP mode/default pools.
 - `identity.oidcIssuer.persisted` — persisted OIDC issuer enabled state and issuer URL.
 - `identity.workloadIdentity.persisted` — persisted workload identity state.
+- `identity.workloadIdentity.linuxTokenProjected` — Linux pod receives expected Workload Identity env vars and projected token.
+- `identity.workloadIdentity.windowsTokenProjected` — Windows pod token projection branch; still unknown/non-goal in iteration76.
+- `identity.workloadIdentity.disableReenablePersisted` — Workload Identity disable/re-enable lifecycle branch; still unknown/non-goal in iteration76.
+- `identity.oidc.discoveryReachable` — OIDC discovery document is reachable and has expected issuer/JWKS URI shape.
+- `identity.oidc.jwksValid` — JWKS endpoint is reachable and contains RSA signing key fields.
+- `identity.oidc.signingKeysRotated` — OIDC signing-key rotation branch; still unknown/non-goal in iteration76.
+- `identity.oidc.documentDeletedAfterClusterDelete` — post-delete issuer document cleanup branch; still unknown/non-goal in iteration76.
 - `bootstrapProfile.artifactSource.persisted` — persisted `bootstrapProfile.artifactSource`.
 - `bootstrapProfile.containerRegistryId.present` — Cache path has/persists a registry ID.
 - `agentPool.virtualmachines.profile.persisted` — persisted VirtualMachines scale profile.
@@ -114,7 +123,8 @@ The model captures error shape mostly in `judgments[].diagnosis` and artifact te
 | App Routing default-domain API/state | `appRouting.route.kind=public-api-default-domain-enable` | webAppRouting enabled; `defaultDomain.enabled=true`; generated `*.eastus2.aksapp.io` domain visible in show/defaultdomain show | `iteration68-app-routing-defaultdomain-staging.md`; iteration69/70 setup repeated same state pass | Pass | Disable-default-domain and update toggle edge; domain lifecycle after disable/re-enable |
 | App Routing default-domain HTTP traffic | `appRouting.route.kind=default-domain`; non-TLS Ingress host `test.<domain>`; `tls.secret.provided=false` | default domain configured; DNS resolves to App Routing LB; route reachable; HTTP 200 | `iteration69-app-routing-defaultdomain-traffic-staging.md` | Pass | Covers HTTP only; does not prove managed TLS certificate provisioning |
 | App Routing DefaultDomainCertificate/TLS secret | `appRouting.route.kind=default-domain`; DefaultDomainCertificate CR targeting `default/default-domain-tls`; TLS Ingress | CRD exists; TLS secret should be provisioned; HTTPS backend reachable with managed certificate | `iteration70-app-routing-defaultdomain-tls-staging.md`; older standalone `e2e-run-results-summary.md` | Fail for TLS-secret provisioning; fallback HTTPS route returned 200 with fake cert only | Owner/source investigation for controller preconditions/logs; not another blind retry |
-| OIDC issuer + workload identity | `identity.mode=msi`; OIDC/workload identity enabled at create and idempotent update | cluster succeeds; request accepted; OIDC issuer and workload identity persisted | `iteration60-workload-identity-staging.md` | Pass | Runtime pod federation/token behavior not covered; disable/update-down paths not covered |
+| OIDC issuer + workload identity API state | `identity.mode=msi`; OIDC/workload identity enabled at create and idempotent update | cluster succeeds; request accepted; OIDC issuer and workload identity persisted | `iteration60-workload-identity-staging.md` | Pass | Disable/update-down paths not covered |
+| Workload Identity Linux token projection + OIDC default discovery/JWKS | `identity.oidcIssuer.enabled=true`; `identity.workloadIdentity.enabled=true`; `identity.runtime.os=linux`; `identity.kubernetesVersion.branch=gte-1.34-default-enabled` | OIDC discovery HTTP 200; JWKS HTTP 200 with RSA signing key fields; Linux pod receives `AZURE_*` env vars and projected signed token with expected issuer/audience/subject | `iteration76-workload-identity-oidc-runtime-staging.md`; `iteration77-identity-runtime-model-consolidation.md` | Pass for Linux/default-discovery branch | Windows token projection; workload-identity disable/re-enable lifecycle; OIDC signing-key rotation; post-delete issuer cleanup; v1.33 explicit-enable runtime |
 | Workload autoscaler KEDA/VPA | Artifact-modeled inputs: `--enable-keda`; `--enable-vpa` update | `workloadAutoScalerProfile.keda.enabled=true`; VPA enabled with expected subfields; KEDA preserved | `iteration61-workload-autoscaler-staging.md` | Pass in artifact evidence; not first-class in JSON model | Add model variables/features; runtime KEDA/VPA behavior with workloads; disable paths |
 | Image Cleaner | Artifact-modeled input: `securityProfile.imageCleaner.enabled=true`, interval 48 | update accepted; `securityProfile.imageCleaner.enabled=true`; interval persisted | `iteration62-security-profile-staging.md` | Pass in artifact evidence; not first-class in JSON model | Add model variables/features; cleanup/runtime image pruning behavior; disable/update interval edges |
 | Node Restriction | Direct REST PATCH `securityProfile.nodeRestriction.enabled=true`; no exact CLI flag | expected persisted security profile state | `iteration62-security-profile-staging.md` | Fail/unpersisted in artifact evidence; no CLI surface | Determine whether API version/feature gate/hidden prereq is required; owner/spec inspection before rerun |
@@ -206,8 +216,17 @@ App Routing default-domain is now split into separate behavior paths; this preve
 
 ## 8. Next high-density probes
 
-Iteration75 converts the validated capability model into a ranked next-probe matrix in `outputs/iteration75-model-driven-probe-selection.md`. The current top three recommendations are:
+Iteration75 selected Workload Identity + OIDC as the top runtime probe. Iteration76 executed the scoped Linux/default-discovery branch, and iteration77 split the model so that the completed pass no longer hides residual identity/OIDC branches.
 
-1. **Workload Identity + OIDC runtime token/discovery probe.** Covers `workload-identity-runtime-token-projection` plus one OIDC runtime branch while strengthening the already-passing public API create/update evidence from `outputs/iteration60-workload-identity-staging.md`. First scope should be Linux token projection + OIDC discovery/JWKS; Windows, signing-key rotation, and post-delete document cleanup are stretch/non-goals.
-2. **Combined KEDA/VPA runtime probe.** Covers `workload-autoscaler-keda-runtime`, `workload-autoscaler-keda-crud`, and `workload-autoscaler-vpa-runtime`, upgrading `outputs/iteration61-workload-autoscaler-staging.md` from profile persistence to controller/workload behavior. First scope should avoid overloading the run with upgrade/HA/cert-renewal branches.
-3. **App Routing DefaultDomainCertificate TLS follow-up, source-hypothesis gated.** Covers the failing `app-routing-default-domain-tls-secret` and unknown TLS lifecycle branch, but should not be a blind retry of iteration70. Run only after source/owner investigation identifies a concrete missing precondition or fix hypothesis.
+Current identity/OIDC branch status:
+
+- **Passed:** `workload-identity-runtime-token-projection-linux` and `oidc-issuer-default-enabled-discovery-jwks-runtime`, backed by `outputs/iteration76-workload-identity-oidc-runtime-staging.md`.
+- **Still unknown but visible:** `workload-identity-runtime-token-projection-windows`, `workload-identity-disable-reenable-lifecycle`, `oidc-issuer-default-enabled-signing-key-rotation`, `oidc-issuer-default-enabled-post-delete-cleanup`, and `oidc-issuer-v133-explicit-enable-runtime`.
+
+The current top three recommendations are now:
+
+1. **Combined KEDA/VPA runtime probe.** Covers `workload-autoscaler-keda-runtime`, `workload-autoscaler-keda-crud`, and `workload-autoscaler-vpa-runtime`, upgrading `outputs/iteration61-workload-autoscaler-staging.md` from profile persistence to controller/workload behavior. First scope should avoid overloading the run with upgrade/HA/cert-renewal branches.
+2. **App Routing DefaultDomainCertificate TLS follow-up, source-hypothesis gated.** Covers the failing `app-routing-default-domain-tls-secret` and unknown TLS lifecycle branch, but should not be a blind retry of iteration70. Run only after source/owner investigation identifies a concrete missing precondition or fix hypothesis.
+3. **Node Restriction corrected full PUT/runtime-default probe.** Covers `node-restriction-disable-contract` and `node-restriction-runtime-default`, using the operation-shape correction from `outputs/iteration74-node-restriction-source-spec-resolution.md`; run only with careful full-PUT hygiene to avoid repeating the irrelevant tag-only PATCH path.
+
+Residual identity/OIDC branches remain valuable but are no longer the next best cloud run unless Windows parity, lifecycle cleanup, key rotation, or Kubernetes `1.33` explicit-enable behavior becomes the explicit priority.

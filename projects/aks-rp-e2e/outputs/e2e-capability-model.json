@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-19T20:24:00Z",
+  "updatedAt": "2026-05-19T20:40:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -2136,8 +2136,8 @@
       "description": "Handwritten/RP-validator Node Restriction contract for full ManagedCluster create-or-update: k8s >=1.24 cannot be disabled with expected error shape."
     },
     {
-      "id": "workload-identity-runtime-token-projection",
-      "label": "Workload Identity Linux/Windows Runtime Token Projection",
+      "id": "workload-identity-runtime-token-projection-linux",
+      "label": "Workload Identity Linux Runtime Token Projection",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -2149,7 +2149,7 @@
         },
         {
           "variable": "identity.runtime.os",
-          "value": "both"
+          "value": "linux"
         }
       ],
       "expectationPath": [
@@ -2164,9 +2164,63 @@
         {
           "variable": "identity.workloadIdentity.linuxTokenProjected",
           "value": "true"
+        }
+      ],
+      "description": "Iteration76-covered Linux workload identity runtime branch: OIDC discovery/JWKS plus Linux pod projected token/env behavior."
+    },
+    {
+      "id": "workload-identity-runtime-token-projection-windows",
+      "label": "Workload Identity Windows Runtime Token Projection",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "windows"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
         },
         {
           "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "true"
+        }
+      ],
+      "description": "Residual source-derived Windows workload identity token projection branch; iteration76 was Linux-only."
+    },
+    {
+      "id": "workload-identity-disable-reenable-lifecycle",
+      "label": "Workload Identity Disable/Re-enable Lifecycle",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.workloadIdentity.persisted",
           "value": "true"
         },
         {
@@ -2174,11 +2228,11 @@
           "value": "true"
         }
       ],
-      "description": "Handwritten workload identity runtime contract beyond public API persisted state."
+      "description": "Residual workload identity lifecycle branch for disable/re-enable or update-down/update-up persistence; iteration76 did not exercise lifecycle toggles."
     },
     {
-      "id": "oidc-issuer-default-enabled-runtime",
-      "label": "OIDC Issuer Default-enabled Runtime Contract",
+      "id": "oidc-issuer-default-enabled-discovery-jwks-runtime",
+      "label": "OIDC Issuer Default-enabled Discovery/JWKS Runtime",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -2201,9 +2255,51 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
+        }
+      ],
+      "description": "Iteration76-covered Kubernetes >=1.34 OIDC runtime branch: persisted issuer URL plus reachable discovery document and valid JWKS."
+    },
+    {
+      "id": "oidc-issuer-default-enabled-signing-key-rotation",
+      "label": "OIDC Issuer Default-enabled Signing-key Rotation",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
         },
         {
           "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        }
+      ],
+      "description": "Residual Kubernetes >=1.34 OIDC lifecycle branch for signing-key rotation; iteration76 did not force or observe rotation."
+    },
+    {
+      "id": "oidc-issuer-default-enabled-post-delete-cleanup",
+      "label": "OIDC Issuer Default-enabled Post-delete Issuer Cleanup",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
           "value": "true"
         },
         {
@@ -2211,11 +2307,11 @@
           "value": "true"
         }
       ],
-      "description": "Kubernetes >=1.34 OIDC default-enabled source contract."
+      "description": "Residual Kubernetes >=1.34 OIDC lifecycle branch for issuer document cleanup after cluster deletion; iteration76 initiated async cleanup but did not verify document deletion."
     },
     {
       "id": "oidc-issuer-v133-explicit-enable-runtime",
-      "label": "OIDC Issuer v1.33 Explicit-enable Runtime Contract",
+      "label": "OIDC Issuer v1.33 Explicit-enable Discovery/JWKS Runtime",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -2238,17 +2334,9 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
-        },
-        {
-          "variable": "identity.oidc.signingKeysRotated",
-          "value": "true"
-        },
-        {
-          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
-          "value": "true"
         }
       ],
-      "description": "Kubernetes 1.33 explicit-enable OIDC source contract."
+      "description": "Residual Kubernetes 1.33 explicit-enable OIDC runtime branch; not run in iteration76, which used Kubernetes 1.34."
     },
     {
       "id": "bootstrap-profile-managed-acr-lifecycle",
@@ -4842,7 +4930,7 @@
     },
     {
       "id": "Scenario_WorkloadIdentity",
-      "featureId": "workload-identity-runtime-token-projection",
+      "featureId": "workload-identity-runtime-token-projection-linux",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -4854,7 +4942,7 @@
         },
         {
           "variable": "identity.runtime.os",
-          "value": "both"
+          "value": "linux"
         }
       ],
       "expectationPath": [
@@ -4869,25 +4957,17 @@
         {
           "variable": "identity.workloadIdentity.linuxTokenProjected",
           "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.windowsTokenProjected",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
-          "value": "true"
         }
       ],
       "result": "unknown",
       "evidence": [
         "e2ev3-handwritten-coverage-inventory"
       ],
-      "notes": "Source-only runtime contract; iteration60 covers only API state."
+      "notes": "Source-derived workload identity runtime scenario now split into Linux pass plus Windows/lifecycle residual branches; this source inventory case is retained as original handwritten intent."
     },
     {
       "id": "Scenario_OIDC_Issuer",
-      "featureId": "oidc-issuer-default-enabled-runtime",
+      "featureId": "oidc-issuer-default-enabled-discovery-jwks-runtime",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -4924,7 +5004,7 @@
       "evidence": [
         "e2ev3-handwritten-coverage-inventory"
       ],
-      "notes": "Source-only default-by-version/runtime/deletion contract."
+      "notes": "Source-derived OIDC default-by-version/runtime/deletion contract now split into discovery/JWKS pass plus rotation and post-delete cleanup residual branches."
     },
     {
       "id": "Scenario_OIDC_Issuer_v133",
@@ -4951,21 +5031,13 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
-        },
-        {
-          "variable": "identity.oidc.signingKeysRotated",
-          "value": "true"
-        },
-        {
-          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
-          "value": "true"
         }
       ],
       "result": "unknown",
       "evidence": [
         "e2ev3-handwritten-coverage-inventory"
       ],
-      "notes": "Source-only explicit-enable/runtime/deletion contract; iteration60 covers approximate API state only."
+      "notes": "Source-only v1.33 explicit-enable runtime branch; iteration76 covers Kubernetes 1.34 only, so this remains unknown/not run."
     },
     {
       "id": "Scenario_NetworkIsolatedCluster_Bootstrap_Profile_Managed_ACR",
@@ -5388,7 +5460,7 @@
     },
     {
       "id": "Iteration76_WorkloadIdentity_Linux_Runtime_Staging",
-      "featureId": "workload-identity-runtime-token-projection",
+      "featureId": "workload-identity-runtime-token-projection-linux",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -5400,7 +5472,7 @@
         },
         {
           "variable": "identity.runtime.os",
-          "value": "both"
+          "value": "linux"
         }
       ],
       "expectationPath": [
@@ -5414,14 +5486,6 @@
         },
         {
           "variable": "identity.workloadIdentity.linuxTokenProjected",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.windowsTokenProjected",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
           "value": "true"
         }
       ],
@@ -5437,25 +5501,17 @@
         {
           "variable": "identity.workloadIdentity.linuxTokenProjected",
           "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.windowsTokenProjected",
-          "value": "unknown"
-        },
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
-          "value": "unknown"
         }
       ],
       "result": "pass",
       "evidence": [
         "iteration76-workload-identity-oidc-runtime-staging"
       ],
-      "notes": "Iteration76 intentionally scoped runtime OS to Linux first despite the source feature including both OS branches. OIDC discovery returned HTTP 200; JWKS had 2 RS256 keys; Linux pod with azure.workload.identity/use label and annotated service account received AZURE_* env vars plus projected token at /var/run/secrets/azure/wi/token/azure-identity-token. Windows projection and disable/re-enable lifecycle remained non-goals/unknown."
+      "notes": "Iteration76 Linux branch evidence only: OIDC discovery returned HTTP 200; JWKS had 2 RS256 keys; Linux pod with azure.workload.identity/use label and annotated service account received AZURE_* env vars plus projected token at /var/run/secrets/azure/wi/token/azure-identity-token. Windows projection and disable/re-enable lifecycle are modeled as separate unknown features."
     },
     {
       "id": "Iteration76_OIDC_DefaultEnabled_Runtime_Staging",
-      "featureId": "oidc-issuer-default-enabled-runtime",
+      "featureId": "oidc-issuer-default-enabled-discovery-jwks-runtime",
       "inputPath": [
         {
           "variable": "identity.oidcIssuer.enabled",
@@ -5478,14 +5534,6 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
-        },
-        {
-          "variable": "identity.oidc.signingKeysRotated",
-          "value": "true"
-        },
-        {
-          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
-          "value": "true"
         }
       ],
       "observedPath": [
@@ -5500,21 +5548,169 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
-        },
-        {
-          "variable": "identity.oidc.signingKeysRotated",
-          "value": "unknown"
-        },
-        {
-          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
-          "value": "unknown"
         }
       ],
       "result": "pass",
       "evidence": [
         "iteration76-workload-identity-oidc-runtime-staging"
       ],
-      "notes": "Iteration76 used create-time --enable-oidc-issuer on Kubernetes 1.34, covering the gte-1.34 runtime branch for persisted issuer/discovery/JWKS only. Discovery document returned HTTP 200 with issuer and jwks_uri; JWKS returned HTTP 200 with 2 keys. Signing-key rotation and post-delete issuer cleanup were explicit non-goals/unknown."
+      "notes": "Iteration76 Kubernetes 1.34 default-enabled discovery/JWKS branch evidence only. Signing-key rotation and post-delete issuer cleanup are modeled as separate unknown features."
+    },
+    {
+      "id": "Identity_Windows_Token_Projection_Residual_Unknown",
+      "featureId": "workload-identity-runtime-token-projection-windows",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "windows"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "unknown"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Residual branch made explicit during iteration77; iteration76 declared Windows token projection a non-goal."
+    },
+    {
+      "id": "Identity_Disable_Reenable_Lifecycle_Residual_Unknown",
+      "featureId": "workload-identity-disable-reenable-lifecycle",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "unknown"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Residual branch made explicit during iteration77; iteration76 did not run workload identity disable/re-enable lifecycle."
+    },
+    {
+      "id": "OIDC_DefaultEnabled_SigningKeyRotation_Residual_Unknown",
+      "featureId": "oidc-issuer-default-enabled-signing-key-rotation",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "unknown"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Residual branch made explicit during iteration77; iteration76 did not force or observe OIDC signing-key rotation."
+    },
+    {
+      "id": "OIDC_DefaultEnabled_PostDeleteCleanup_Residual_Unknown",
+      "featureId": "oidc-issuer-default-enabled-post-delete-cleanup",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "unknown"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Residual branch made explicit during iteration77; iteration76 initiated asynchronous cluster deletion but did not verify OIDC document deletion after cluster delete."
     }
   ],
   "judgments": [
@@ -7498,8 +7694,8 @@
       "nextAction": "Escalate/investigate App Routing DefaultDomainCertificate controller provisioning path and logs/labels; repeat only after addon/RP owner identifies why default-domain-tls is not created."
     },
     {
-      "id": "iteration76-workload-identity-runtime-token-projection-partial-pass",
-      "featureId": "workload-identity-runtime-token-projection",
+      "id": "iteration76-workload-identity-linux-runtime-token-projection-pass",
+      "featureId": "workload-identity-runtime-token-projection-linux",
       "status": "pass",
       "contextPath": [],
       "inputPath": [
@@ -7513,7 +7709,7 @@
         },
         {
           "variable": "identity.runtime.os",
-          "value": "both"
+          "value": "linux"
         }
       ],
       "expectationPath": [
@@ -7527,14 +7723,6 @@
         },
         {
           "variable": "identity.workloadIdentity.linuxTokenProjected",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.windowsTokenProjected",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
           "value": "true"
         }
       ],
@@ -7550,14 +7738,6 @@
         {
           "variable": "identity.workloadIdentity.linuxTokenProjected",
           "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.windowsTokenProjected",
-          "value": "unknown"
-        },
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
-          "value": "unknown"
         }
       ],
       "evidence": [
@@ -7566,12 +7746,12 @@
       "testCases": [
         "Iteration76_WorkloadIdentity_Linux_Runtime_Staging"
       ],
-      "summary": "Staging proved the Linux workload identity runtime trust chain: API state persisted, OIDC discovery/JWKS reachable, federated identity credential and annotated service account admitted, and a Linux pod received AZURE_* env vars plus a projected signed token with expected issuer/audience/subject. Windows token projection and disable/re-enable lifecycle were out of scope and remain unknown sub-branches.",
-      "nextAction": "If full source parity is required, run a separate Windows token projection or disable/re-enable lifecycle probe; do not re-run Linux/OIDC discovery unless the control plane changes."
+      "summary": "Staging proved the Linux workload identity runtime trust chain: API state persisted, OIDC discovery/JWKS reachable, federated identity credential and annotated service account admitted, and a Linux pod received AZURE_* env vars plus a projected signed token with expected issuer/audience/subject.",
+      "nextAction": "Do not re-run Linux/OIDC discovery unless the control plane changes; residual identity branches are separate unknown features for Windows token projection and disable/re-enable lifecycle."
     },
     {
-      "id": "iteration76-oidc-issuer-default-enabled-runtime-partial-pass",
-      "featureId": "oidc-issuer-default-enabled-runtime",
+      "id": "iteration76-oidc-issuer-default-enabled-discovery-jwks-pass",
+      "featureId": "oidc-issuer-default-enabled-discovery-jwks-runtime",
       "status": "pass",
       "contextPath": [],
       "inputPath": [
@@ -7596,14 +7776,6 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
-        },
-        {
-          "variable": "identity.oidc.signingKeysRotated",
-          "value": "true"
-        },
-        {
-          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
-          "value": "true"
         }
       ],
       "observedPath": [
@@ -7618,14 +7790,6 @@
         {
           "variable": "identity.oidc.jwksValid",
           "value": "true"
-        },
-        {
-          "variable": "identity.oidc.signingKeysRotated",
-          "value": "unknown"
-        },
-        {
-          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
-          "value": "unknown"
         }
       ],
       "evidence": [
@@ -7634,8 +7798,184 @@
       "testCases": [
         "Iteration76_OIDC_DefaultEnabled_Runtime_Staging"
       ],
-      "summary": "Kubernetes 1.34 staging cluster with OIDC issuer enabled persisted issuer URL and served a valid discovery document and JWKS. Signing-key rotation and document deletion after cluster delete were explicit non-goals and remain unknown sub-branches.",
-      "nextAction": "Only run signing-key rotation or post-delete issuer cleanup if specifically prioritizing those lifecycle branches."
+      "summary": "Kubernetes 1.34 staging cluster with OIDC issuer enabled persisted issuer URL and served a valid discovery document and JWKS.",
+      "nextAction": "Do not re-run default-enabled discovery/JWKS unless the control plane changes; residual OIDC lifecycle branches are separate unknown features for signing-key rotation and post-delete issuer cleanup."
+    },
+    {
+      "id": "iteration77-workload-identity-windows-token-projection-unknown",
+      "featureId": "workload-identity-runtime-token-projection-windows",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "windows"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "testCases": [
+        "Identity_Windows_Token_Projection_Residual_Unknown"
+      ],
+      "summary": "Windows workload identity token projection remains unknown because iteration76 explicitly scoped runtime projection to Linux.",
+      "nextAction": "Run only if Windows workload identity parity becomes higher value than KEDA/VPA or other runtime gaps."
+    },
+    {
+      "id": "iteration77-workload-identity-disable-reenable-lifecycle-unknown",
+      "featureId": "workload-identity-disable-reenable-lifecycle",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "testCases": [
+        "Identity_Disable_Reenable_Lifecycle_Residual_Unknown"
+      ],
+      "summary": "Workload identity disable/re-enable lifecycle remains unknown because iteration76 used create-time enablement only and did not toggle the feature.",
+      "nextAction": "Run only as a focused lifecycle probe if disable/update-down behavior becomes priority."
+    },
+    {
+      "id": "iteration77-oidc-default-enabled-signing-key-rotation-unknown",
+      "featureId": "oidc-issuer-default-enabled-signing-key-rotation",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "testCases": [
+        "OIDC_DefaultEnabled_SigningKeyRotation_Residual_Unknown"
+      ],
+      "summary": "OIDC signing-key rotation remains unknown because iteration76 observed current JWKS only and did not force or wait for rotation.",
+      "nextAction": "Run only if a feasible, bounded rotation trigger/observation method is identified."
+    },
+    {
+      "id": "iteration77-oidc-default-enabled-post-delete-cleanup-unknown",
+      "featureId": "oidc-issuer-default-enabled-post-delete-cleanup",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "iteration76-workload-identity-oidc-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "testCases": [
+        "OIDC_DefaultEnabled_PostDeleteCleanup_Residual_Unknown"
+      ],
+      "summary": "OIDC post-delete issuer cleanup remains unknown because iteration76 only initiated asynchronous cleanup and did not verify issuer document deletion after cluster deletion.",
+      "nextAction": "Run only as a focused cleanup/lifecycle probe with bounded polling after confirmed cluster deletion."
     }
   ],
   "evidence": [
