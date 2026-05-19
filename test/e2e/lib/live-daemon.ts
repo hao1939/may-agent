@@ -171,11 +171,5 @@ export async function socketEmit(
   return sendSocketCommand(socketPath, { type: eventType, ...data }, { timeoutMs: 5000 });
 }
 
-/**
- * True if running e2e gating requires liveness mode.
- * `bun test test/e2e/` runs the in-process tests; live-stack tests are skipped
- * unless E2E_LIVE=1.
- */
-export const E2E_LIVE = process.env.E2E_LIVE === "1";
 export const E2E_LIVE_LLM = process.env.E2E_LIVE_LLM === "1";
 export const E2E_EXTENDED = process.env.E2E_EXTENDED === "1";
