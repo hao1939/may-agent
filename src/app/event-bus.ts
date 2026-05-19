@@ -100,7 +100,6 @@ export type SystemEvent =
   | { type: "handler.workflow_dispatched"; source?: string; owner: string; data: { handler: string; workflow: string; source?: string | null; projectId?: string | null; workflowRunId?: string | null; status: string; [key: string]: unknown } }
   | { type: "session.completed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; parentSessionId?: string; outcome?: string; status?: string; source?: string; kind?: string } }
   | { type: "session.failed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; error?: string; task?: string } }
-  | { type: "session.escalated"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; finishParams: Record<string, unknown> } }
   | { type: "project.iteration"; source?: string; owner: string; data: { iteration: number; project?: string; projectId?: string; projectPath?: string } }
   | { type: "project.status_changed"; source?: string; owner: string; data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string } }
   | { type: "project.nudge"; source: string; owner: string; data: { projectPath: string; comment?: boolean; commentText?: string } }
