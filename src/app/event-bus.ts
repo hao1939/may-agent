@@ -31,7 +31,8 @@ export type AgentCommand =
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }
   | { type: "session.cancel.requested"; sessionId: string; source?: string }
-  | { type: "project.comment.created"; projectPath: string; comment: string; source?: string; author?: string };
+  | { type: "project.comment.created"; projectPath: string; comment: string; source?: string; author?: string }
+  | { type: "project.comment.created"; source?: string; owner: string; data: { projectPath: string; comment: string; author?: string } };
 
 /** Management commands (to core / supervisord) */
 export type ManagementCommand = { type: "reload" } | { type: "restart" } | { type: "shutdown" };
@@ -99,6 +100,8 @@ export type SystemEvent =
   | { type: "session.escalated"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; finishParams: Record<string, unknown> } }
   | { type: "project.iteration"; project: string; iteration: number }
   | { type: "project.status_changed"; project: string; from: string; to: string }
+  | { type: "project.nudge"; source: string; owner: string; data: { projectPath: string; comment?: boolean; commentText?: string } }
+  | { type: "telegram.reply"; source: "telegram"; owner: string; data: { enriched: boolean; originalMsgId?: number; projectPath?: string; delivery?: string; hasSessionCtx?: boolean; hasDbCtx?: boolean; fallback?: string; reason?: string } }
   | {
       type: "message.created";
       from: string;

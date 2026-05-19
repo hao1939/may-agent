@@ -21,6 +21,23 @@ export interface CommandRouter {
   close: () => void;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function eventData(event: unknown): Record<string, unknown> {
+  if (!isRecord(event)) return {};
+  return isRecord(event.data) ? event.data : event;
+}
+
+function canonicalOwner(owner: unknown): string {
+  if (typeof owner !== "string" || !owner.trim()) return "agent:may";
+  const value = owner.trim();
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  return `agent:${value}`;
+}
+
 /**
  * Routes human/control input from console, socket, Telegram, and the event bus.
  *
@@ -52,9 +69,21 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  function appendProjectDiscussionEntry(projectPath: string, comment: string, source?: string, author?: string): boolean {
+  function projectOwner(projectPath: string): string {
+    const projectFile = join(options.projectRoot, projectPath, "project.md");
+    try {
+      const content = readFileSync(projectFile, "utf-8");
+      const match = content.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
+      if (match?.[1]) return match[1].trim().replace(/^["']|["']$/g, "");
+    } catch {
+      /* best-effort owner lookup */
+    }
+    return "may";
+  }
+
+  function appendProjectDiscussionEntry(projectPath: unknown, comment: unknown, source?: string, author?: string): boolean {
     const normalized = normalizeProjectPath(projectPath);
-    const trimmed = comment.trim();
+    const trimmed = typeof comment === "string" ? comment.trim() : "";
     if (!normalized || !trimmed) {
       bus.emit({ type: "info", message: `[project.comment] Invalid project comment event from ${source ?? "unknown"}` });
       return false;
@@ -94,9 +123,12 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     bus.emit({
       type: "project.nudge",
       source: source ?? "command-router",
-      projectPath: normalized,
-      comment: true,
-      commentText: trimmed,
+      owner: canonicalOwner(projectOwner(normalized)),
+      data: {
+        projectPath: normalized,
+        comment: true,
+        commentText: trimmed,
+      },
     } as any);
     bus.emit({
       type: "info",
@@ -190,7 +222,15 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         handleInput("cancel all");
         break;
       case "project.comment.created":
-        appendProjectDiscussionEntry(event.projectPath, event.comment, event.source, event.author);
+        {
+          const data = eventData(event);
+          appendProjectDiscussionEntry(
+            data.projectPath,
+            data.comment,
+            typeof event.source === "string" ? event.source : undefined,
+            typeof data.author === "string" ? data.author : undefined,
+          );
+        }
         break;
       case "fork":
         if ("agent" in event && "task" in event) {

@@ -207,4 +207,67 @@ describe("Cron event subscriptions", () => {
     expect(handledEvent.data).not.toHaveProperty("sessionId");
     expect(handledEvent.data.data.sessionId).toBe("s_done");
   });
+
+  it("routes heartbeat.trigger only to the requested agent heartbeat", async () => {
+    const dir = join(tmpdir(), `cron-heartbeat-route-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "heartbeat-alpha",
+        enabled: true,
+        handler: "run-workflow",
+        agent: "alpha",
+        handlerConfig: { agent: "alpha", workflow: "alpha-heartbeat" },
+        on: ["heartbeat.trigger"],
+      },
+      {
+        name: "heartbeat-beta",
+        enabled: true,
+        handler: "run-workflow",
+        agent: "beta",
+        handlerConfig: { agent: "beta", workflow: "beta-heartbeat" },
+        on: ["heartbeat.trigger"],
+      },
+    ]));
+
+    const bus = new EventBus();
+    let alphaHandled = 0;
+    let betaHandled = 0;
+    let alphaEvent: any;
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    cron.load();
+    cron.registerHandler("heartbeat-alpha", async (event) => {
+      alphaHandled++;
+      alphaEvent = event;
+    });
+    cron.registerHandler("heartbeat-beta", async () => {
+      betaHandled++;
+    });
+    cron.subscribeToBus(bus);
+
+    bus.emit({
+      type: "heartbeat.trigger",
+      source: "web-ui",
+      owner: "agent:alpha",
+      data: { agent: "alpha" },
+    } as any);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(alphaHandled).toBe(1);
+    expect(betaHandled).toBe(0);
+    expect(alphaEvent).toMatchObject({
+      type: "heartbeat.trigger",
+      source: "event",
+      entry: "heartbeat-alpha",
+      data: {
+        type: "heartbeat.trigger",
+        source: "web-ui",
+        owner: "agent:alpha",
+        data: { agent: "alpha" },
+      },
+    });
+  });
 });
