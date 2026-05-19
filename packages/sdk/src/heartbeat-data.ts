@@ -451,7 +451,12 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   const agentsRoot = getAgentsRoot(ctx);
   const circuitBlock = checkCircuitBreaker(agentsRoot, agent);
   if (circuitBlock) {
-    ctx.emit({ type: "circuit_breaker_open", agent, reason: circuitBlock });
+    ctx.emit({
+      type: "heartbeat.skipped",
+      source: `agent:${agent}`,
+      owner: `agent:${agent}`,
+      data: { agent, gate: "circuit_breaker", reason: circuitBlock },
+    });
     ctx.log(`[heartbeat:${agent}] Circuit breaker open: ${circuitBlock}`);
     return ctx.done(`Circuit breaker OPEN for ${agent}: ${circuitBlock}`);
   }
@@ -459,7 +464,12 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   // ── DISPATCH DEDUP GUARD: Skip if agent heartbeat is repeatedly failing ──
   const dedupCheck = shouldDispatch(agent, "heartbeat");
   if (!dedupCheck.allowed) {
-    ctx.emit({ type: "dispatch_dedup_blocked", agent, reason: dedupCheck.reason, attempts: dedupCheck.attempts });
+    ctx.emit({
+      type: "heartbeat.skipped",
+      source: `agent:${agent}`,
+      owner: `agent:${agent}`,
+      data: { agent, gate: "dispatch_dedup", reason: dedupCheck.reason, attempts: dedupCheck.attempts },
+    });
     ctx.log(`[heartbeat:${agent}] Dispatch dedup blocked: ${dedupCheck.reason}`);
     return ctx.done(`Dispatch dedup guard blocked heartbeat for ${agent}: ${dedupCheck.reason}`);
   }
@@ -473,9 +483,23 @@ export async function genericHeartbeat(ctx: WorkflowContext, agent: string): Pro
   let redMetricDiagnostics = "";
 
   if (hasRedMetrics) {
-    ctx.emit({ type: "red_metric_diagnostics_start", step: "metrics" });
+    ctx.emit({
+      type: "heartbeat.diagnostics_started",
+      source: `agent:${agent}`,
+      owner: `agent:${agent}`,
+      data: { agent, step: "metrics" },
+    });
     redMetricDiagnostics = runRedMetricCommands(ctx, agent);
-    ctx.emit({ type: "red_metric_diagnostics_done", step: "metrics", summary: redMetricDiagnostics ? "JS diagnostics collected" : "no commands to run" });
+    ctx.emit({
+      type: "heartbeat.diagnostics_completed",
+      source: `agent:${agent}`,
+      owner: `agent:${agent}`,
+      data: {
+        agent,
+        step: "metrics",
+        summary: redMetricDiagnostics ? "JS diagnostics collected" : "no commands to run",
+      },
+    });
   }
 
   // ── MAIN HEARTBEAT ─────────────────────────────────────────
