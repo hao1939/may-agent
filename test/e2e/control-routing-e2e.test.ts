@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sendSocketCommand, type SocketEndpoint } from "../packages/control/src/client.js";
-import { createControlSocketCore, type ControlEvent, type ControlSocket } from "../packages/control/src/server.js";
-import { attachCommandRouter } from "../src/app/command-router.js";
-import { EventBus } from "../src/app/event-bus.js";
-import { DbWriter } from "../src/lib/db-writer.js";
-import { closeDb, getDb } from "../src/lib/requests.js";
+import { sendSocketCommand, type SocketEndpoint } from "../../packages/control/src/client.js";
+import { createControlSocketCore, type ControlEvent, type ControlSocket } from "../../packages/control/src/server.js";
+import { attachCommandRouter } from "../../src/app/command-router.js";
+import { EventBus } from "../../src/app/event-bus.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../src/lib/requests.js";
 
 type RunCall = {
   agent: string;
