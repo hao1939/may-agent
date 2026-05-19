@@ -168,6 +168,55 @@ export type SystemEvent =
       };
     }
   | {
+      type: "escalation.resume_attempted";
+      source: "escalation-lifecycle";
+      owner: string;
+      data: {
+        escalationId: string;
+        resolvedEscalationId?: string;
+        parentEscalationId?: string;
+        outcome: string;
+        sourceKind: "session";
+        sourceRef: string;
+        sourceSessionId: string;
+        resumeInstruction: string;
+      };
+    }
+  | {
+      type: "escalation.resume_started";
+      source: "escalation-lifecycle";
+      owner: string;
+      data: {
+        escalationId: string;
+        resolvedEscalationId?: string;
+        parentEscalationId?: string;
+        outcome: string;
+        sourceKind: "session";
+        sourceRef: string;
+        sourceSessionId: string;
+        resumedSessionId: string;
+        summary: string;
+      };
+    }
+  | {
+      type: "escalation.resume_failed";
+      source: "escalation-lifecycle";
+      owner: string;
+      data: {
+        escalationId?: string;
+        resolvedEscalationId?: string;
+        parentEscalationId?: string;
+        outcome?: string;
+        sourceKind?: "session" | "workflow" | "unknown";
+        sourceRef?: string;
+        sourceSessionId?: string;
+        workflowRunId?: string;
+        reason: string;
+        category: string;
+        recoverable: boolean;
+      };
+    }
+  | {
       type: "message.created";
       source: string;
       owner: string;

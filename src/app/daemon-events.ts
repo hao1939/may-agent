@@ -7,6 +7,7 @@ import {
   createLastSessionWriter,
   createStuckDetector,
 } from "../lib/session-subscribers.js";
+import { createEscalationLifecycleSubscriber } from "../lib/escalation-lifecycle.js";
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 
@@ -108,6 +109,7 @@ export function attachDaemonEventSubscribers(opts: {
     persistDir,
     () => manager,
   ));
+  bus.subscribe(createEscalationLifecycleSubscriber({ bus, manager, persistDir }));
 
   bus.subscribe((event) => {
     if (event.type === "session.start") {
