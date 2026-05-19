@@ -46,7 +46,7 @@ export interface AgentSDK {
     persist: string;   // .state directory (DB, logs)
     root: string;      // project root
     agents: string;    // agents/ directory
-    shared: string;    // shared conventions, workflows, guards, docs
+    shared: string;    // shared conventions, guards, docs
     projects: string;  // first-class projects directory
   };
 }
