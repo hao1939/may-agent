@@ -25,8 +25,9 @@ Socket-local commands are intentionally narrow:
 
 Everything else is normalized into a daemon event and routed through the event
 bus. Examples: `input`, `steer`, `cancel`, `resume`, `reload`, `shutdown`,
-`project.comment.created`, and `trigger.<handler-name>`. Event handlers then
-decide whether to call manager mechanics directly or dispatch a workflow.
+`project.comment.created`, and the control shortcut `trigger.<handler-name>`.
+Event handlers then decide whether to call manager mechanics directly or
+dispatch a workflow.
 
 ### Cron (--cron mode)
 

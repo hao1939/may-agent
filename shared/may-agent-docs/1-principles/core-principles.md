@@ -100,7 +100,7 @@ If an agent's output quality drops while their metric improves, the metric is be
 Agents work independently. May reviews asynchronously. Intervention is the exception.
 
 - **Agent-scope** (own workspace, own config, knowledge) — proceed freely
-- **System-scope** (shared workflows, other agents' config, cross-agent protocols) — flag for review
+- **System-scope** (shared guards/docs, other agents' config, cross-agent protocols) — flag for review
 
 Agents don't need to know they're being supervised. The gatekeeper pattern requires zero code — it's a behavioral convention that May follows during her normal observation cycle.
 
@@ -111,7 +111,7 @@ Agents don't need to know they're being supervised. The gatekeeper pattern requi
 When behavior can be derived from a naming convention, don't build configuration for it.
 
 - Metric `coach.skill-effectiveness` → coach owns it. No registry needed.
-- Event `metric.breach` with `data.owner: "coach"` → coach is accountable. No lookup needed.
+- Event `metric.breach` with `owner: "agent:coach"` → coach is accountable. No lookup needed.
 - File under `agents/bob/` (skills/, knowledge/, workspace/) → bob owns it. No mapping needed.
 - Heartbeat workflow for `scout` → scout's heartbeat. No routing table needed.
 
@@ -119,7 +119,7 @@ When behavior can be derived from a naming convention, don't build configuration
 
 Conventions are self-documenting, zero-maintenance, and enforce consistency. Configuration is a liability — it drifts, requires code to read, and creates a single point of failure.
 
-**Corollary:** Don't invent new conventions when existing ones work. File locations are fixed (see common-sense.md conventions table). Naming follows `<domain>.<action>` for events and metrics. Status fields use the same vocabulary everywhere: active/blocked/done/paused. Check if a convention already covers your need before creating anything.
+**Corollary:** Don't invent new conventions when existing ones work. File locations are fixed (see common-sense.md conventions table). Naming follows `<domain>.<action>` for events and metrics. Project status fields use the same vocabulary everywhere: `active`, `waiting`, `blocked`, `pending-review`, `paused`, `done`, `closed`. Check if a convention already covers your need before creating anything.
 
 **Elaborated in:** common-sense.md Conventions section
 

@@ -334,7 +334,7 @@ The human's verbs, complete list:
 | **Close project** | project detail | sets project status to `closed` | immediate (system) |
 | **Send message to agent** | session detail, agent context | `message.created` event | next heartbeat |
 | **Cancel session** | session detail | WebSocket command to manager | immediate |
-| **Trigger heartbeat now** | agent context | emits `heartbeat` event | immediate |
+| **Trigger heartbeat now** | agent context | emits `timer.heartbeat_due` or the control shortcut for that heartbeat entry | immediate |
 | **Adjust metric threshold** | metric detail | updates `metrics.threshold`, emits config-change event | next measure cycle |
 | **Resolve metric alert** | metric detail | updates `metric_alerts` | immediate |
 
@@ -439,7 +439,7 @@ The current `web.ts` is mostly v2-shaped on the back end. The front-end is the r
 
 1. ✅ **`/api/liveness` shipped and rendered.** Heartbeat detection fixed (was missing ~80% of heartbeats due to per-agent workflow path bypassing the `[heartbeat]` task prefix). Verified: 6/3 → 31/5 heartbeats/agents detected in 4h after the fix.
 2. ✅ **Dead surfaces unhooked.** `/api/requests` deleted; `Benchmarks` tab unhooked from header. `/api/digest`, `/api/agents/activity`, `/api/agents/timeline` are still wired to the current dashboard panels because removing them now would break visible features before their replacement panels (heartbeat timeline + decision ticker + conversation strip) are built. Defer their deletion until the panel rebuild proceeds.
-3. ✅ **Five steering POST endpoints shipped and wired to UI.** `POST /api/sessions/:id/cancel`, `POST /api/sessions/:id/message`, `POST /api/agents/:name/heartbeat-now`, `POST /api/metrics/:id/threshold`, `POST /api/alerts/:id/resolve`. Each emits one typed event with `source: "web-ui"` (or `"human"` for heartbeat-now). UI affordances: ♥ button on each agent heartbeat row, ✕ button on each session pill, `resolve` button on each open alert, ✎ pencil on each metric Target cell. One `steer()` helper + toast feedback ("queued at <time>") owns latency honesty. Verified end-to-end: alert count 4→3 after resolve, `metric.alert_resolved` event landed with reason payload.
+3. ✅ **Five steering POST endpoints shipped and wired to UI.** `POST /api/sessions/:id/cancel`, `POST /api/sessions/:id/message`, `POST /api/agents/:name/heartbeat-now`, `POST /api/metrics/:id/threshold`, `POST /api/alerts/:id/resolve`. Each emits one typed event with `source: "web-ui"` (or `"human"` for heartbeat-now). UI affordances: ♥ button on each agent heartbeat row, ✕ button on each session pill, `resolve` button on each open alert, ✎ pencil on each metric Target cell. One `steer()` helper + toast feedback ("queued at <time>") owns latency honesty. Canonical alert judgment events use `metric.alert_judged`; recovery still depends on later metric evidence, usually `metric.recovered`.
 4. ✅ **Front-end — plumbing and core panels done.**
    - ✅ Hash router shipped: `#/`, `#/projects`, `#/projects/:id`, `#/sessions`, `#/sessions/:id`, `#/knowledge`, `#/knowledge/<sub-path>`, `#/system`. Legacy hashes (`#dashboard`, `#chat`, `#metrics`, `#events`) still resolve via aliases for one release.
    - ✅ Tabs renamed `Dashboard`/`Chat`/`Metrics`/`Events` → `Live`/`Sessions`/`System`. `Benchmarks` removed from nav.

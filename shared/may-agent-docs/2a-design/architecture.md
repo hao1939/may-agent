@@ -128,26 +128,32 @@ adapters, workflows, and handlers. Treat untyped-but-documented event names as
 implementation gaps, not as permission to invent incompatible names.
 
 ```typescript
+type EventEnvelope<TData extends Record<string, unknown>> = {
+  type: string;
+  source?: string;
+  owner: string; // "agent:<name>" or "human:<role>"
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  timestamp?: number;
+  data: TData;
+};
+
 type SystemEvent =
-  | { type: "timer.heartbeat_due"; owner: string; entry: string }
-  | { type: "handler.started"; handler: string; agent: string }
-  | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
-  | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
-  | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }
-  | { type: "metric.recovered"; metricId: string; metricName: string }
-  | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }
-  | { type: "session.start"; sessionId: string; agent: string; source?: string; task: string; workflowRunId?: string; projectId?: string; parentSessionId?: string }
-  | { type: "session.end"; sessionId: string; agent: string; status: string; summary?: string; workflowRunId?: string; projectId?: string }
-  | { type: "tool.executed"; agent: string; sessionId: string; tool: string; args?: unknown }
-  | { type: "message.created"; from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }
-  | { type: "project.comment.created"; projectId: string; author: string; text: string }
-  | { type: "guard.triggered"; owner: string; source: "workflow" | "tool"; guard: string; action: string; reason: string; sessionId?: string; workflowRunId?: string; projectId?: string }
+  | EventEnvelope<{ entry: string }> & { type: "timer.heartbeat_due" }
+  | EventEnvelope<{ handler: string; agent: string; durationMs?: number; error?: string }> & { type: "handler.started" | "handler.completed" | "handler.failed" }
+  | EventEnvelope<{ metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }> & { type: "metric.breach" }
+  | EventEnvelope<{ metricId: string; metricName: string }> & { type: "metric.recovered" }
+  | EventEnvelope<{ sessionId: string; agent: string; outcome: "done" | "error" | "interrupted"; status: string; summary?: string; workflowRunId?: string; projectId?: string }> & { type: "session.completed" }
+  | EventEnvelope<{ from: string; to: string; content: string; intent?: string; artifact?: string; priority?: "P0" | "P1" | "P2" | "P3" }> & { type: "message.created" }
+  | EventEnvelope<{ projectId: string; author: string; text: string }> & { type: "project.comment.created" }
+  | EventEnvelope<{ guard: string; action: string; reason: string; sessionId?: string; workflowRunId?: string; projectId?: string }> & { type: "guard.triggered" }
 
 // Heartbeat is a workflow-backed handler. Cron, socket, or another event can
 // trigger it; the handler builds/reuses workflow context and the workflow calls
 // ctx.runAgent() for the owner.
+// agentName("agent:may") -> "may"; human owners route through May.
 bus.on("timer.heartbeat_due", (e) =>
-  runWorkflow(`${e.owner}-heartbeat`, buildHeartbeatTask(e.owner), { source: "timer.heartbeat_due" })
+  runWorkflow(`${agentName(e.owner)}-heartbeat`, buildHeartbeatTask(e.owner), { source: "timer.heartbeat_due" })
 );
 
 // Metric breach creates durable alert state. The alert reactor resolves owner,
@@ -161,7 +167,7 @@ bus.on("metric.breach", (e) =>
 bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
 // Timers are event sources — cron emits timer events on the bus.
-registerTimer("may", "*/20 * * * *");  // emits { type: "timer.heartbeat_due", owner: "may" }
+registerTimer("may", "*/20 * * * *");  // emits { type: "timer.heartbeat_due", owner: "agent:may", data: { entry: "may-heartbeat" } }
 
 // Event persistence is the first-priority subscriber.
 // Invariant:
@@ -210,21 +216,34 @@ async function measure(metric: Metric): Promise<void> {
     if (newStatus === "breach") {
       bus.emit({
         type: "metric.breach",
+        source: "metrics-snapshot",
         owner: resolveMetricOwner(metric),
-        metricId: metric.id,
-        metricName: metric.name,
-        current: value,
-        threshold: metric.threshold,
-        target: metric.target,
-        message: explainBreach(metric, value),
-        priority: metric.priority,
+        data: {
+          metricId: metric.id,
+          metricName: metric.name,
+          current: value,
+          threshold: metric.threshold,
+          target: metric.target,
+          message: explainBreach(metric, value),
+          priority: metric.priority,
+        },
       });
     }
     if (newStatus === "ok" && prevStatus !== "ok") {
-      bus.emit({ type: "metric.recovered", metricId: metric.id, metricName: metric.name });
+      bus.emit({
+        type: "metric.recovered",
+        source: "metrics-snapshot",
+        owner: resolveMetricOwner(metric),
+        data: { metricId: metric.id, metricName: metric.name },
+      });
     }
     if (newStatus === "stalled") {
-      bus.emit({ type: "metric.stalled", owner: resolveMetricOwner(metric), metricId: metric.id, metricName: metric.name, message: explainStall(metric) });
+      bus.emit({
+        type: "metric.stalled",
+        source: "metrics-snapshot",
+        owner: resolveMetricOwner(metric),
+        data: { metricId: metric.id, metricName: metric.name, message: explainStall(metric) },
+      });
     }
   }
 }
@@ -382,11 +401,15 @@ Messages carry intent + pointer, not large payloads. Shared artifacts remain sou
 ```json
 {
   "type": "message.created",
-  "from": "arc",
-  "to": "dev",
-  "intent": "implementation-request",
-  "artifact": "projects/auth-rewrite/proposal.md",
-  "content": "Proposal approved. Please implement."
+  "source": "agent:arc",
+  "owner": "agent:dev",
+  "data": {
+    "from": "arc",
+    "to": "dev",
+    "intent": "implementation-request",
+    "artifact": "projects/auth-rewrite/proposal.md",
+    "content": "Proposal approved. Please implement."
+  }
 }
 ```
 
@@ -456,7 +479,8 @@ Related docs, PRs, prior art.
 
 Projects answer: "given this signal, what goal and history make it meaningful?"
 
-Project status values: active, waiting, done. See [projects.md](projects.md) for lifecycle.
+Project status values: `active`, `waiting`, `blocked`, `pending-review`,
+`paused`, `done`, and `closed`. See [projects.md](projects.md) for lifecycle.
 
 DB has a read-only index synced from files. See [projects.md](projects.md) for the canonical schema.
 

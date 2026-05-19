@@ -24,8 +24,8 @@ projection, but judgment and repair work should live in workflows.
 | `closed-loop-steward` | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; live context collection is query-backed and dispatch is workflow-backed. |
 | `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
 | `session-eval` | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
-| `session-recovery` | Failed-session recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as event-first bridge for `session.failed`; recovery action now runs inside the `session-recovery` workflow. |
-| `escalation` | Session escalation routing | digest helpers + escalate + durable trace events | no | Keep direct while it only routes explicit escalations; it is event-first on `session.escalated`. |
+| `session-recovery` | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Converge event-first bridge on `session.completed` with `outcome: "error" | "interrupted"`. Runtime does not emit live `session.failed`. Recovery action runs inside the `session-recovery` workflow. |
+| `escalation` | Session escalation routing | digest helpers + canonical escalation events + durable trace events | no | Keep direct while it only routes explicit escalations; blocked/failure session finishes now promote to `escalation.created`. |
 
 ## Rules
 
@@ -61,8 +61,8 @@ projection, but judgment and repair work should live in workflows.
   and shared code import the SDK helper instead of maintaining duplicate
   implementations.
 - Event payload contract: event-triggered handlers receive `{ type, source,
-  entry, data, timestamp }`; `data` is the original event payload and remains
-  the only place for event-specific fields.
+  entry, data, timestamp }`; `data` is the original event envelope, and
+  event-specific fields live under `data.data`.
 - Existing query-surface coverage: `session-aftermath-scan` uses `sdk.query`.
 - First alert-reactor traceability slice: `metric-alert-reactor` records
   `handler.skipped` and `handler.workflow_dispatched` evidence.
@@ -88,9 +88,10 @@ projection, but judgment and repair work should live in workflows.
 - Eval LLM scan traceability slice: `eval-llm-scan` records
   `handler.workflow_dispatched`/`handler.failed` evidence and routes evaluator
   LLM work through `evaluator-deep-eval`.
-- Session recovery bridge slice: `session-recovery` is event-first again on
-  `session.failed`, records skipped/workflow-dispatched evidence, and no longer
-  opens recovery agent sessions directly from the handler.
-- Escalation routing slice: `escalation` is event-first again on
-  `session.escalated` and records skipped/routed evidence.
+- Session recovery bridge slice: `session-recovery` should be event-first on
+  `session.completed` terminal error/interrupted outcomes, record
+  skipped/workflow-dispatched evidence, and avoid opening recovery agent
+  sessions directly from the handler.
+- Escalation routing slice: blocked/failure session finishes promote to
+  `escalation.created` and routing records skipped/routed evidence.
 - Full test suite must stay green after each handler migration.

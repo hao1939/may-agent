@@ -69,7 +69,7 @@ Completed step 1. Next: step 2.
 signal/comment/metric/event
   -> active
   -> intensive work while a concrete next autonomous action exists
-  -> waiting | blocked | pending-review | done | closed
+  -> waiting | blocked | pending-review | paused | done | closed
   -> resume signal can make it active again
 ```
 
@@ -77,8 +77,9 @@ signal/comment/metric/event
 point, not a stop command. If `Next Action`, unresolved plan work, failed
 evidence, or new signals remain, re-plan and continue. Use `waiting` only for a
 real external precondition, `blocked` for a dependency the worker cannot resolve,
-and `closed` only after explicit human/May closure or a goal that truly no longer
-needs ownership.
+`paused` for an intentional hold, and `closed` only after explicit human/May
+closure or a goal that truly no longer needs ownership. Treat `complete` as a
+legacy alias for `done`; do not write new project files with it.
 
 Do not keep a project `active` only to monitor it. Monitoring belongs in
 `resume_condition`, `resume_after`, metrics, events, cron/steward checks, and
@@ -92,6 +93,7 @@ heartbeat context.
 | active | waiting | Agent reached a useful stop point; watch for a resume signal |
 | active | blocked | Agent found an external dependency |
 | active | pending-review | Agent needs owner/human judgment |
+| active | paused | Owner intentionally holds the work until an explicit resume signal |
 | active | done/closed | Goal complete; no current ownership loop needed |
 | waiting/blocked/pending-review/paused | active | Comment, `resume_after`, event, metric signal, or owner judgment makes work actionable |
 

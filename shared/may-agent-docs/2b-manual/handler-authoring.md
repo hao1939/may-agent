@@ -5,7 +5,7 @@
 A handler is a TypeScript file in `agents/<name>/handlers/`. It exports a `create` function:
 
 ```typescript
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
@@ -14,6 +14,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   };
 };
 ```
+
+> **Import path**: Prefer `from "@may-agent/sdk"` — the compiled binary
+> registers a Bun plugin that resolves the bare specifier for dynamically-loaded
+> handlers. The legacy relative path (`from "../../../shared/agent-sdk.ts"`)
+> still works but is deprecated.
 
 Default convention:
 
@@ -25,6 +30,17 @@ Handlers are bridges. They should normalize the trigger, do deterministic
 preflight or skip checks, and dispatch a workflow when judgment/action is
 needed. Put process, prompts, agent orchestration, and multi-step context
 collection in the workflow.
+
+## Typical Scenarios
+
+| Scenario | Handler should do | Usually avoid |
+|----------|-------------------|---------------|
+| Timer measures a fact | Read bounded state, update metrics, emit/resolve metric events if needed | Starting an agent just to count rows |
+| Event needs judgment | Validate the event payload, build a compact task, run the owning workflow | Doing multi-step reasoning inside the handler |
+| Event is missing required fields | Emit `handler.skipped` with the reason and return | Guessing fields from subscriber-specific shortcuts |
+| Owner action is needed | Route to a workflow with `sdk.runWorkflow(...)` and set `source` to the owner/entry that should appear in trace | Calling many agents directly from handler code |
+| External blocker is clear | Use `sdk.escalate(...)` with owner, evidence, and requested action | Sending an informal message and calling it escalation |
+| Operator manually fires a job | Treat `trigger.<entry-name>` as a control shortcut for that cron entry | Treating `trigger.*` as a domain lifecycle event |
 
 ## Registering (cron.json)
 
@@ -48,7 +64,7 @@ Add an entry to your agent's `cron.json`:
 ## What You Have Access To
 
 Via `ctx.sdk` (preferred):
-- `sdk.emit(type, data)` — emit events
+- `sdk.emit(type, data, envelope?)` — emit canonical events
 - `sdk.runWorkflow(name, task)` — dispatch pre-orchestrated sessions/functions
 - `sdk.runAgent(agent, task)` — exceptional from handlers; prefer workflow bridge
 - `sdk.metrics` — define, record, alert, resolve, evaluate, and list metrics
@@ -56,7 +72,7 @@ Via `ctx.sdk` (preferred):
 - `sdk.getDb()` — compatibility escape hatch; prefer `query`/`metrics`
 - `sdk.log(level, msg)` — logging
 - `sdk.message(target, content)` — human or agent messages
-- `sdk.escalate(target, reason)` — escalation
+- `sdk.escalate(reason, opts?)` — escalation; defaults to `owner: "agent:may"`
 - `sdk.paths` — system directories
 
 Via `ctx` (handler-specific):
@@ -73,22 +89,48 @@ type TriggerEvent = {
   type: string;
   source: "timer" | "event" | "manual";
   entry: string;
-  data?: Record<string, unknown>;
+  data?: EventEnvelope;
   timestamp: number;
 };
 ```
 
-`event.data` is the original event payload. Read domain fields from there:
+`EventEnvelope` is the canonical event shape from
+[events.md](../2a-design/events.md): top-level `type/source/owner/urgency` plus
+event-specific `data`.
+
+For event subscriptions, `event.data` is the original event envelope. Read
+domain fields from `event.data.data`:
 
 ```typescript
-const sessionId = typeof event?.data?.sessionId === "string"
-  ? event.data.sessionId
+const original = event?.data;
+const sessionId = typeof original?.data?.sessionId === "string"
+  ? original.data.sessionId
   : null;
 ```
 
 Do not expect cron to add shortcut fields to `event` for a specific subscriber.
-If the handler needs a field, the event emitter should include it in the event
-payload and the handler should validate it from `event.data`.
+If the handler needs a field, the event emitter should include it in the event's
+`data` payload and the handler should validate it from `event.data.data`.
+
+Example: a handler subscribed to `metric.breach` receives a trigger whose
+`event.data` is the original event envelope. The envelope `owner` is the
+routable owner, and metric details live under `event.data.data`.
+
+```typescript
+const envelope = event?.data;
+const owner = typeof envelope?.owner === "string" ? envelope.owner : null;
+const metricId = typeof envelope?.data?.metricId === "string"
+  ? envelope.data.metricId
+  : null;
+
+if (!owner || !metricId) {
+  ctx.sdk.emit("handler.skipped", {
+    handler: entry.name,
+    reason: "metric.breach missing owner or metricId",
+  });
+  return;
+}
+```
 
 ## Hot Reload
 
@@ -110,7 +152,7 @@ and record metrics directly because no agent judgment is needed. Current code
 may still use `sdk.getDb()`; the target surface is `sdk.query` + `sdk.metrics`.
 
 ```typescript
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: TriggerEvent) => {
@@ -131,14 +173,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 ## Example: Event-To-Workflow Bridge
 
 ```typescript
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
     const task = [
       `Trigger: ${event?.type ?? "timer"}`,
       `Entry: ${entry.name}`,
-      event?.data ? `Data: ${JSON.stringify(event.data)}` : "",
+      event?.data ? `Event: ${JSON.stringify(event.data)}` : "",
     ].filter(Boolean).join("\n");
 
     await ctx.sdk.runWorkflow("metric-alert-triage", task, {
@@ -163,10 +205,10 @@ export const create = createWorkflowHandler({
   workflow: "evaluator-aftermath",
   includeEvent: true,
   task: (_ctx, event) => {
-    const sessionId = event?.data?.sessionId;
+    const sessionId = event?.data?.data?.sessionId;
     return `Review completed session ${sessionId}`;
   },
-  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
+  shouldRun: (_ctx, event) => typeof event?.data?.data?.sessionId === "string",
 });
 ```
 

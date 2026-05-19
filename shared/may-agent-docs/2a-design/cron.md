@@ -33,7 +33,10 @@ Each cron entry:
 ```
 
 - `intervalMs` — how often to fire (timer)
-- `on` — event types that also trigger this handler (reactive)
+- `on` — event types that also trigger this handler (reactive). `trigger.<entry>`
+  is an operator/control shortcut for manual firing; domain lifecycle events
+  should use their canonical names such as `timer.heartbeat_due` or
+  `session.completed`.
 - `handler` — filename in `agents/<agent>/handlers/`
 - `agent` + `message` without a handler — detached agent job in a separate OS process
 - `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
@@ -60,15 +63,20 @@ When a cron entry subscribes with `on`, the handler receives a trigger object:
   type: "session.completed",
   source: "event",
   entry: "evaluator-aftermath",
-  data: { "sessionId": "s_123", "outcome": "done" },
+  data: {
+    type: "session.completed",
+    source: "runtime",
+    owner: "agent:may",
+    data: { "sessionId": "s_123", "outcome": "done" }
+  },
   timestamp: 1778932481366
 }
 ```
 
-`data` is the original event object/payload. Cron does not special-case or lift
-fields out of it. A handler that needs a session id reads
-`event?.data?.sessionId`; a metric handler reads metric fields; a project
-handler reads project fields.
+`data` is the original event envelope. Cron does not special-case or lift fields
+out of it. A handler that needs a session id reads
+`event?.data?.data?.sessionId`; a metric handler reads metric fields from
+`event.data.data`; a project handler reads project fields the same way.
 
 Direct handler logic is acceptable for mechanical infra work such as metric
 snapshots, projections, cleanup/recovery state repair, reload/restart/shutdown,

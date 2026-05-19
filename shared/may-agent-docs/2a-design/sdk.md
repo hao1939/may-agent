@@ -18,15 +18,32 @@ orchestration pattern around sessions.
 interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<TaskResult>;
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
-  emit(type: string, data?: Record<string, unknown>): void;
+  emit(type: string, data?: Record<string, unknown>, envelope?: EventEnvelopeOptions): void;
   metrics: MetricAPI;
   query: QueryAPI;
   getDb(): Database;  // compatibility escape hatch
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
-  escalate(target: string, reason: string): void;
+  escalate(reason: string, opts?: EscalationOptions): void;
   paths: { persist: string; root: string; agents: string; shared: string; projects: string };
 }
+
+type EventEnvelopeOptions = {
+  owner?: string; // "agent:<name>" or "human:<role>"
+  source?: string;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+};
+
+type EscalationOptions = EventEnvelopeOptions & {
+  requestedAction?: string;
+  evidence?: Record<string, unknown>;
+  severity?: "P0" | "P1" | "P2" | "P3";
+  projectId?: string;
+  sourceSessionId?: string;
+  resume?: Record<string, unknown>;
+  dedupKey?: string;
+};
 ```
 
 The intended surface is small: execution, events, metrics, query, messaging,
@@ -58,14 +75,20 @@ export const create = (ctx: HandlerContext, entry: CronEntry) => {
 |--------|-----------|
 | `runAgent(agent, task)` | Run one named agent session and wait for its result. |
 | `runWorkflow(name, task)` | Run a pre-orchestrated set of sessions/functions and wait for its result. Same execution shape as `runAgent`, broader internal plan. |
-| `emit(type, data)` | Emit a typed event (persisted to events table). |
+| `emit(type, data, envelope?)` | Emit a canonical event envelope. `data` carries event-specific facts; `envelope.owner` carries responsibility/routing. |
 | `metrics` | Define, record, alert, resolve, evaluate, and list metrics. |
 | `query` | Preferred bounded read surface for sessions, events, metrics, alerts, and projects. |
 | `getDb()` | Compatibility escape hatch for shared SQLite. Prefer `query`/`metrics`. |
 | `log(level, msg)` | Log a diagnostic message. |
 | `message(target, content)` | Emits `message.created` — `"human"` → Telegram/web. Agent name → agent's inbox. |
-| `escalate(target, reason)` | SOS. Enters escalation chain, may trigger immediate wake. |
+| `escalate(reason, opts?)` | Create `escalation.created`; defaults to `owner: "agent:may"` and `severity: "P2"`. |
 | `paths` | `{ persist, root, agents, shared, projects }` — system directories. |
+
+For escalations that should return to the original session after resolution,
+include `sourceSessionId` or `resume: { kind: "session", checkpointRef }`.
+Terminal `escalation.resolved` events send the resolution context into the
+active source session or cold-resume it. `workflowRunId` and project fields are
+context for that resumed task, not direct escalation resume targets.
 
 ## Workflow Handler Helper
 
@@ -80,16 +103,17 @@ import { createWorkflowHandler } from "@may-agent/sdk";
 export const create = createWorkflowHandler({
   workflow: "evaluator-aftermath",
   task: (_ctx, event) => {
-    const sessionId = event?.data?.sessionId;
+    const sessionId = event?.data?.data?.sessionId;
     return `Review completed session ${sessionId}`;
   },
   includeEvent: true,
-  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
+  shouldRun: (_ctx, event) => typeof event?.data?.data?.sessionId === "string",
 });
 ```
 
 `includeEvent: true` appends the exact trigger object under `## Trigger Event`.
-The trigger object is generic: event-specific fields stay inside `event.data`.
+For event subscriptions, `event.data` is the original event envelope and
+event-specific fields stay inside `event.data.data`.
 
 ## WorkflowSDK
 
@@ -100,9 +124,24 @@ interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
   done(summary: string, opts?: { deliverables?, contextUpdates?, nextSteps? }): WorkflowResult;
-  // escalate() is inherited from AgentSDK; workflow contexts may terminate on escalation.
+  escalate(reason: string, context?: WorkflowEscalationContext): WorkflowResult;
 }
+
+type WorkflowEscalationContext = {
+  owner?: string; // used only if a boundary promotes this result; boundary default is "agent:may"
+  requestedAction?: string;
+  evidence?: Record<string, unknown>;
+  severity?: "P0" | "P1" | "P2" | "P3";
+  [key: string]: unknown; // compact workflow-specific context is allowed
+};
 ```
+
+Workflow escalation is intentionally simpler than the general SDK helper because
+workflow execution is synchronous. `ctx.escalate(...)` returns a terminal
+`WorkflowResult` immediately. It does not automatically emit
+`escalation.created` or wake another owner. The caller/boundary decides whether
+the local escalated result should be handled locally, persisted as workflow
+trace, or promoted into an external owner-routed escalation event.
 
 `runAgent` and `runWorkflow` should share option semantics where possible:
 source, project/session parentage, timeout, request id, and trace metadata. The
@@ -154,11 +193,11 @@ The SDK and agent tools are two sides of the same coin:
 |---|---|---|
 | "Ask bob and wait for the answer" | `agents.call("bob", task)` | `await sdk.runAgent("bob", task)` |
 | "Start bob in the background" | `agents.fork("bob", task)` | — (no SDK equivalent) |
-| "Something happened" | — | `sdk.emit("metric.breach", {...})` |
+| "Something happened" | — | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
 | "Tell humans" | Telegram/human message | `sdk.message("human", msg)` |
 | "Tell bob" | `message({ to: "bob", content })` | `sdk.message("bob", msg)` |
 | "I'm done" | `finish()` | `workflow.done(summary)` |
-| "I'm stuck" | `finish({ blocked })` | `sdk.escalate("may", reason)` |
+| "I'm stuck" | `finish({ blocked })` | `sdk.escalate(reason)` |
 
 ## Implementation
 

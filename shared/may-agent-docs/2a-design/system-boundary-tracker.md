@@ -22,8 +22,8 @@ judges.
 
 - [system-boundary.md](system-boundary.md) is the north-star design.
 - This file is the implementation tracker and review plan.
-- `infra-surface-implementation-plan.md` (archived) was the earlier tracker
-  and should not be updated with new work.
+- The earlier archived tracker was removed; useful alternatives are preserved in
+  [retired-design-alternatives.md](../3-proposals/retired-design-alternatives.md).
 
 Do not create another parallel infra-surface plan. If a new gap appears, add it
 to this tracker under the smallest matching phase.
@@ -343,12 +343,14 @@ Scope:
 - [x] `eval-llm-scan` dispatches evaluator LLM work through
   `evaluator-deep-eval`; artifact ingestion remains deterministic handler
   bookkeeping.
-- [x] `session-recovery` subscribes to `session.failed` again and dispatches
-  recover/escalate actions through the `session-recovery` workflow; the handler
-  keeps only digest/classifier preflight and attempt dedup.
-- [x] `escalation` subscribes to `session.escalated` again; because it only
-  routes explicit escalations, it remains direct but now records routed/skipped
-  evidence.
+- [x] `session-recovery` dispatches recover/escalate actions through the
+  `session-recovery` workflow; the convergence target is subscription to
+  `session.completed` with `outcome: "error" | "interrupted"`. Runtime does
+  not emit live `session.failed`. The handler keeps only digest/classifier
+  preflight and attempt dedup.
+- [x] Blocked/failure session finishes promote to `escalation.created`; because
+  escalation routing only handles explicit escalations, it remains direct but
+  records routed/skipped evidence.
 - [x] Retire the stale `session-eval` handler file so agents do not copy the old
   direct `runAgent("evaluator", ...)` path.
 
@@ -430,7 +432,7 @@ Status: implemented and verified in the running daemon.
 
 Scope:
 
-- Review `shared/workflows/heartbeat-data.ts`.
+- Review `packages/sdk/src/heartbeat-data.ts`.
 - Classify each direct `ctx.getDb()` read:
   - mechanical/history measurement,
   - live context for agent judgment,
@@ -458,7 +460,7 @@ Stop criteria:
 
 Runtime proof, 2026-05-11:
 
-- Trigger event: `trigger.heartbeat` event id `558344`, source
+- Historical proof trigger event: `trigger.heartbeat` event id `558344`, source
   `codex-runtime-proof`.
 - Workflow run: `wr_1778479461744_iwqi` (`may-heartbeat`).
 - Child session: `s_1778479461886_0` (`may`).
@@ -765,7 +767,7 @@ First slice, 2026-05-11:
 - Runtime inventory found the main project-driver overlap is `project`,
   `goal-driver`, and the `master-worker*` family.
 - `REGISTRY.md` now lists the wired runtime workflows instead of implying only
-  three shared workflows are active.
+  a few runtime workflow files are active.
 - `project` is already the handler default. The project template and scanner
   fallback now also default to `workflow: project`.
 - Project format validation now flags non-terminal projects that select
@@ -787,10 +789,11 @@ Second slice, 2026-05-11:
 
 - Docs now mark `master-worker` as legacy compatibility rather than a shipped
   recommended project workflow:
-  - `INDEX.md` labels `design/master-worker.md` as `Legacy`.
-  - `design/master-worker.md` opens with the current convention: use `project`
-    for new/resumable explicit projects unless a reviewer records a specific
-    `master-worker` reason.
+  - `INDEX.md` points to the retained alternatives summary rather than keeping a
+    direct active-looking `master-worker` design doc.
+  - The retained alternatives note records persistent worker/reviewer sessions as
+    an idea to revisit only if repeated context loading becomes a measured
+    bottleneck.
   - `manual/workflow-authoring.md` lists current reusable shared patterns
     (`project`, `metric-alert-triage`, `implement-and-verify`) instead of
     advertising `master-worker`.
@@ -830,10 +833,9 @@ Fifth slice, 2026-05-11:
   projects that could otherwise resume after a new comment.
 - Tightened shared project format validation: `master-worker*` is now
   legacy/archived only for scanned shared projects, not a live-tree exception.
-- `REGISTRY.md` and `design/master-worker.md` now state the simpler convention:
-  resumable projects use `project`; `master-worker*` remains on disk only as
-  compatibility/tested legacy code until its runtime files are separately
-  retired.
+- `REGISTRY.md` states the simpler convention: resumable projects use `project`;
+  `master-worker*` remains compatibility/tested legacy code only until its
+  runtime files are separately retired.
 
 Sixth slice, 2026-05-11:
 

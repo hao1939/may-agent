@@ -387,11 +387,11 @@ For TypeScript workflows and handlers:
 ```ts
 sdk.runAgent(agent, task)
 sdk.runWorkflow(name, task)
-sdk.emit(event)
+sdk.emit(type, data, envelope?)
 sdk.metrics.*
 sdk.query.*
 sdk.message(...)
-sdk.escalate(...)
+sdk.escalate(reason, opts?)
 sdk.log(...)
 ```
 
@@ -400,7 +400,7 @@ Workflow contexts add workflow-local conveniences:
 ```ts
 ctx.runFunction(label, fn)
 ctx.done(summary)
-ctx.escalate(reason)
+ctx.escalate(reason, context?) // local terminal workflow result; no event unless a boundary promotes it
 ctx.task
 ctx.agent
 ```
@@ -473,7 +473,7 @@ interface InfraSDK {
   query: QueryAPI;
 
   message(target: string, content: string, opts?: MessageOpts): void;
-  escalate(target: string, reason: string, opts?: EscalationOpts): void;
+  escalate(reason: string, opts?: EscalationOpts): void;
 
   log(level: "info" | "warn" | "error", message: string): void;
 
@@ -561,7 +561,7 @@ Default convention:
 1. explicit event/metric owner,
 2. project owner,
 3. metric/event id prefix when it matches an agent,
-4. `may` fallback.
+4. `agent:may` fallback.
 
 Infra should not answer:
 
@@ -659,7 +659,7 @@ Existing pieces already align with this direction:
 | Telegram transport/reply/outbound helpers | `src/app/transport/telegram-client.ts`, `src/app/transport/telegram-reply-router.ts`, `src/app/transport/telegram-outbound.ts` |
 | HTTP/Web API adapter | `src/app/http/server.ts` |
 | WebUI source assets | `packages/webui/static/*` generated into project `ui/` directories |
-| Agent patterns | `shared/workflows/*`, project docs, heartbeat docs |
+| Agent patterns | agent/project workflows, project docs, heartbeat docs |
 
 The main gap is not a missing grand architecture. The remaining work is keeping
 the already-shipped boundaries boring:

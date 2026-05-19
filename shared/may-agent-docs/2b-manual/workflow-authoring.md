@@ -2,7 +2,8 @@
 
 ## Basics
 
-A workflow is a TypeScript file in `agents/<name>/workflows/` or `shared/workflows/`. It exports `name`, `description`, and an `execute` function:
+A workflow is a TypeScript file in `agents/<name>/workflows/`. It exports `name`,
+`description`, and an `execute` function:
 
 Workflows are deliberately synchronous: each step returns a result before the
 next step runs, and `runWorkflow()` resolves only when the workflow is done or
@@ -44,7 +45,7 @@ Available via `ctx`:
 | `ctx.summarize(result)` | Build rich context from a TaskResult for handoff |
 | `ctx.createSession(opts)` | Persistent multi-turn session (worker pattern) |
 | `ctx.done(summary)` | Mark workflow as successful |
-| `ctx.escalate(reason, context?)` | Workflow can't handle this — give up |
+| `ctx.escalate(reason, context?)` | End the workflow with a local escalated result after the workflow decides the blocker should bubble to its caller. It does not emit an external escalation event. |
 | `ctx.emit(event)` | Emit a typed event |
 | `ctx.dispatchEvent(type, data)` | Dispatch to handler subscribers |
 | `ctx.getDb()` | Access shared SQLite database |
@@ -58,6 +59,44 @@ Every workflow must end with either:
 - `return ctx.escalate(reason)` — failure/blocked
 
 Never return without calling one of these.
+
+`ctx.escalate(...)` is synchronous and terminal. The workflow stops immediately;
+the caller receives `{ type: "escalate", reason, context }`. This is local to the
+workflow call. The caller or handler may promote it to an external
+`escalation.created` event only when the blocker must route to another owner.
+
+Because workflow execution is synchronous, a workflow can handle a blocker
+inside the workflow before returning: run a repair step, ask another agent with
+`ctx.runAgent`, run a sub-workflow, retry, verify, or notify. Use
+`ctx.escalate(...)` only when the workflow has reached a terminal local blocker
+and wants the caller to decide whether to record it, retry another path, or
+promote it outside the workflow boundary.
+
+Do not make the workflow wait for an external human/owner response after it has
+returned `ctx.escalate(...)`. If human/owner routing is required, the caller or
+runtime boundary should promote the local result to `escalation.created`.
+
+Typical blocker paths:
+
+| Situation inside workflow | Preferred action |
+|---------------------------|------------------|
+| A step failed but the next fix is clear | Run a repair step, retry, then verify |
+| Another agent can answer synchronously | Use `ctx.runAgent(...)` and continue with its result |
+| A reusable recipe should handle the problem | Use `ctx.runWorkflow(...)` and continue or return based on its result |
+| A human/operator should see context but no response is required during this run | Use `ctx.notify(...)` and continue or finish with an honest summary |
+| The workflow cannot safely decide the next action | `return ctx.escalate(reason, context)` and let the caller/boundary decide |
+| The blocker crosses an ownership boundary after the workflow returns | Caller/boundary may emit `escalation.created`; the workflow itself should not |
+
+Use the second argument only for compact boundary context. It may become
+owner-facing context later if the caller promotes the result to an external
+escalation:
+
+```typescript
+return ctx.escalate("Missing sessionId", {
+  requestedAction: "Fix the session.completed emitter to include sessionId.",
+  evidence: { trigger: event },
+});
+```
 
 ## Patterns
 
@@ -135,12 +174,18 @@ From handler/SDK code:
 const result = await ctx.runWorkflow("implement-and-verify", task);
 ```
 
-## Shared vs Agent-Specific
+## Workflow Location
+
+Put workflows under the owning agent:
 
 | Location | Visibility | Use case |
-|----------|-----------|----------|
-| `shared/workflows/` | All agents | Reusable patterns (`project`, `metric-alert-triage`, `implement-and-verify`) |
-| `agents/<name>/workflows/` | That agent only | Agent-specific (heartbeat, domain workflows) |
+|----------|------------|----------|
+| `agents/<name>/workflows/` | That agent's workflow loader | Agent-owned workflows such as heartbeat, project iteration, metric alert triage, or domain workflows |
+
+Shared workflow loading is not supported. If more than one agent needs the same
+pattern, keep the workflow owned by the agent that operates it and have other
+callers invoke that owner through the SDK/tool boundary, or factor reusable code
+into a normal shared helper module that an agent-owned workflow imports.
 
 ## Guards (Advanced)
 
@@ -177,5 +222,5 @@ custom metric plumbing unless the guard needs behavior beyond the default.
 bun src/app/may.ts --run-workflow implement-and-verify "fix the type error"
 
 # Or invoke from a handler test
-bun test shared/workflows/__tests__/my-workflow.test.ts
+bun test agents/<name>/workflows/__tests__/my-workflow.test.ts
 ```

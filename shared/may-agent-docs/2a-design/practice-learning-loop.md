@@ -264,33 +264,32 @@ A workflow issue still belongs to the agent or human who can fix that workflow. 
 
 Every eval result is persisted. Only actionable findings are sent to owners through `learning.feedback`. The event is a convenience notification, not a second source of truth; the durable record remains `session.eval.jsonl`.
 
-Routing is deliberately simple:
+Routing is deliberately simple: the event `owner` is the responsible owner. Use
+`agent:<name>` for agent-owned findings and `human:<role>` for human-owned
+findings. Runtime may deliver human-owned findings to May because May is the
+human's deputy, but it must preserve the human owner on the event.
 
-| Finding owner | Event owner | Meaning |
-|---------------|-------------|---------|
-| `agent:<name>` | `<name>` | The agent can choose whether to repair, update context, fork/evolve itself, or ask for help. |
-| `human:<role>` | `may` | May owns human routing: ask via Telegram/UI, rewrite/defer the work request, or dismiss with rationale. |
-
-The event payload preserves the original finding owner and includes an inbox-readable `summary`:
+The event payload includes an inbox-readable `summary` and keeps detailed
+finding context under `data.finding`:
 
 ```json
 {
   "type": "learning.feedback",
   "source": "evaluator-aftermath",
-  "owner": "may",
-  "kind": "owner_finding",
-  "needsHuman": true,
-  "sessionId": "s_...",
-  "projectId": "platform",
-  "evalTrailPath": ".state/sessions/history/s_.../session.eval.jsonl",
-  "summary": "[high] request_quality/request-quality: clarify missing request context",
-  "finding": {
-    "id": "request-quality",
-    "scope": "request_quality",
-    "owner": "human:requester",
-    "severity": "high",
-    "finding": "The request missed the blocker evidence needed to choose the next action.",
-    "suggestedActions": ["Ask the requester for the missing blocker evidence."]
+  "owner": "human:requester",
+  "data": {
+    "kind": "owner_finding",
+    "sessionId": "s_...",
+    "projectId": "platform",
+    "evalTrailPath": ".state/sessions/history/s_.../session.eval.jsonl",
+    "summary": "[high] request_quality/request-quality: clarify missing request context",
+    "finding": {
+      "id": "request-quality",
+      "scope": "request_quality",
+      "severity": "high",
+      "finding": "The request missed the blocker evidence needed to choose the next action.",
+      "suggestedActions": ["Ask the requester for the missing blocker evidence."]
+    }
   }
 }
 ```
@@ -305,7 +304,7 @@ or unknown.
 |-------------------|---------|
 | High severity | Notify owner immediately. |
 | Project is `blocked` or `waiting` and finding is actionable | Notify owner immediately. |
-| Human decision is required | Notify May with needsHuman: true so May can route to the requester/human. |
+| Human decision is required | Emit with `owner: "human:<role>"`; May receives it through the human-owner routing rule. |
 | Medium/low critique | Keep in eval trail for owner digest or later review. |
 | Raw guard trigger or raw guard metric breach | Review first; do not notify as blame. |
 | Reviewed guard false positive | Notify guard/workflow owner if calibration is actionable. |
@@ -316,7 +315,6 @@ Findings should contain evidence and suggested actions, not commands:
 ```json
 {
   "scope": "project_context",
-  "owner": "agent:tech-lead",
   "severity": "high",
   "finding": "The project is repeating full sessions to check a known dead RP endpoint.",
   "evidence": [{ "source": "session.jsonl", "line": 3 }],
@@ -380,7 +378,7 @@ It should produce candidates shaped like this:
     "summary": "For web UI changes, verify source diff, served asset, and browser-visible behavior before completion."
   },
   "confidence": "medium",
-  "needsHumanReview": true
+  "reviewOwner": "human:operator"
 }
 ```
 

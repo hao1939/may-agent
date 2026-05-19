@@ -117,7 +117,7 @@ A later evaluator pass appends new rows instead of rewriting old rows. That pres
 3. Append a `type: "summary"` row to `session.eval.jsonl`.
 4. Append `type: "line"` rows for important raw log lines.
 5. Add owner findings to the summary when critique is actionable. Owners are concrete responsibility labels: `agent:<name>` or `human:<role>`.
-6. Emit `learning.feedback` only for high-severity or blocked/waiting findings; keep routine findings in the eval trail for digest/review. Agent-owned findings target that agent inbox. Human-owned findings target May, with the original `human:<role>` owner preserved in `finding.owner` and `needsHuman: true`, so May can decide whether to ask the human via Telegram/UI, rewrite context, defer, or dismiss.
+6. Emit `learning.feedback` only for high-severity or blocked/waiting findings; keep routine findings in the eval trail for digest/review. The event `owner` is the responsible owner: `agent:<name>` or `human:<role>`. Human-owned findings are delivered to May by the human-owner routing rule, so May can decide whether to ask the human via Telegram/UI, rewrite context, defer, or dismiss.
 7. If a deeper evaluator review runs, it may append additional summary or line rows with a different `source`.
 
 The Web UI and HTTP server do not own evaluation semantics. They may provide convenience endpoints to read the eval trail, append human feedback, or dispatch evaluator work, but scoring belongs to the evaluator pipeline.

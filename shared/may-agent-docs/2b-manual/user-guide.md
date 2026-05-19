@@ -219,12 +219,13 @@ socat - UNIX-CONNECT:.state/instances/default/may.sock
 echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Run a specific agent
-echo '{"type":"fork","agent":"coder","message":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+echo '{"type":"fork","agent":"coder","task":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Emit a daemon event through the convention socket path
+# Manually fire a cron entry through the control shortcut.
+# Domain lifecycle docs should use canonical event names, not trigger.*.
 may-agent --emit trigger.metrics-snapshot '{}'
 
 # Emit to the background container/runtime instance
@@ -242,6 +243,25 @@ bun src/app/may.ts --emit trigger.metrics-snapshot '{}'
 ```
 
 See [runtime.md](../2a-design/runtime.md) for socket protocol details.
+
+## Events in Practice
+
+You usually interact with events through features, not through the event schema:
+
+| Scenario | What to do |
+|----------|------------|
+| Manually rerun a cron job | Emit `trigger.<entry-name>` as an operator shortcut, for example `trigger.metrics-snapshot` |
+| React when a session ends | Subscribe a handler to `session.completed` and read session fields from the trigger payload |
+| React when a metric breaches | Subscribe a handler to `metric.breach`; the handler should route to the metric owner/workflow |
+| Send work to another agent asynchronously | Use `sdk.message(...)` or the `message` tool; this emits `message.created` |
+| Route a blocker outside current ownership | Use `sdk.escalate(...)`; for humans use `owner: "human:<role>"` |
+| Finish an escalation | Emit `escalation.resolved`; terminal outcomes resume the blocked task/session when one is linked |
+| Need human input before unblocking | Resolve the parent with `outcome: "needs_human"` and link a child escalation owned by `human:<role>` |
+
+`trigger.*` events are control shortcuts. They are useful for operators and
+tests, but they are not domain lifecycle events. Lifecycle docs and handlers
+should use canonical event names such as `session.completed`, `metric.breach`,
+`escalation.created`, and `escalation.resolved`.
 
 ## Cron System
 

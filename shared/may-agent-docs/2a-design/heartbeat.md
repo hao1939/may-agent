@@ -18,7 +18,7 @@ The heartbeat is the **temporal scaffolding of agency**.
 
 | Trigger | Source | Agent's task | Agency level |
 |---|---|---|---|
-| `heartbeat` | Cron | Agent reassesses its standing work context | **High** — the agent chooses what matters |
+| `timer.heartbeat_due` | Cron | Agent reassesses its standing work context | **High** — the agent chooses what matters |
 | `metric.breach` | Metric engine | Judge a metric signal in context | Medium for P0 |
 | `message` | Another agent or human | Judge and respond to a request/signal | Medium |
 | `order` | Human direct command | Execute the order | None |
@@ -33,7 +33,7 @@ It follows the same model as projects, metrics, and events: signals arrive, the 
 ## Data Flow
 
 ```
-Cron tick → trigger.heartbeat → heartbeat handler → heartbeat workflow
+Cron tick → timer.heartbeat_due → heartbeat handler → heartbeat workflow
   → loads work context/signals → runs agent session → agent judges/acts/records evidence
 ```
 
@@ -51,7 +51,7 @@ Heartbeat follows the same work-context convention as projects:
 
 ## What Gets Loaded
 
-The heartbeat workflow (`shared/workflows/heartbeat-data.ts`) loads:
+The heartbeat workflow helper (`packages/sdk/src/heartbeat-data.ts`) loads:
 
 1. **Metrics** — owned metrics with current values, breaches, trends
 2. **Projects** — active projects with status, milestones, last activity
@@ -120,7 +120,7 @@ Steering is *change what the agent sees when it next looks*, not "make the agent
 
 ## Implementation
 
-- **Shared loaders:** `shared/workflows/heartbeat-data.ts`
+- **Heartbeat helper:** `packages/sdk/src/heartbeat-data.ts`
 - **Auto-generation:** `src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
 - **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts`
 - **Decision event:** heartbeat workflow emits `agent.decision` partway through

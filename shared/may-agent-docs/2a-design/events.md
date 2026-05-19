@@ -10,6 +10,42 @@ Events are the primary communication mechanism. State is derived from events whe
 
 ## Schema
 
+Every event has the same two-layer shape:
+
+```typescript
+type EventEnvelope<TData extends Record<string, unknown> = Record<string, unknown>> = {
+  type: string;        // canonical event name, e.g. "metric.breach"
+  source?: string;     // emitter identity, e.g. "agent:may" or "web-ui"
+  owner: string;       // responsible owner: "agent:<name>" or "human:<role>"
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  timestamp?: number;  // assigned by infra when omitted
+  data: TData;         // event-specific facts for handlers/agents
+};
+```
+
+The envelope is for infra: persistence, routing, TTL, urgency, and correlation.
+`data` is for the event-specific context the handler or owner needs. Do not put
+domain fields such as `sessionId`, `projectId`, `metricId`, `escalationId`,
+`reason`, or long evidence in the envelope.
+
+`owner` always means the responsible owner. It is never duplicated as
+`data.owner`. Human owners use the same field: `owner: "human:<role>"`. Runtime
+may deliver human-owned events to May because May is the human's deputy, but the
+stored event keeps the original human owner.
+
+Persistent row mapping:
+
+| Event envelope field | `events` row |
+|----------------------|--------------|
+| `type` | `event_type` |
+| `source` | `source` |
+| `owner` | `owner` |
+| `urgency` | `urgency` |
+| `ttl_ms` | `ttl_ms` |
+| `timestamp` | `timestamp` |
+| `data` | `data` JSON |
+
 Effective query schema. Some columns may be added by migrations after the base
 `CREATE TABLE`; agents should rely on the event/query surfaces instead of
 assuming the original DDL is complete.
@@ -19,8 +55,8 @@ CREATE TABLE events (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   event_type TEXT NOT NULL,    -- dot-separated: "handler.completed"
   source     TEXT,             -- who emitted it
-  owner      TEXT,             -- who should see it (for inbox)
-  data       TEXT,             -- JSON payload
+  owner      TEXT,             -- responsible owner / inbox route
+  data       TEXT,             -- event-specific JSON payload
   timestamp  INTEGER NOT NULL,
   ttl_ms     INTEGER,          -- auto-expire after this duration
   urgency    TEXT DEFAULT 'normal'
@@ -35,35 +71,80 @@ event names from adapters, workflows, and handlers. When the code and this doc
 differ, treat it as an implementation gap to resolve or a design issue to
 revisit explicitly; do not silently invent a third naming scheme.
 
+The snippets below show complete canonical envelopes. New emitters must produce
+this shape before events reach the bus, socket, or event store.
+
 Key categories agents encounter:
 
 ### Timers and triggers
-```
-timer.heartbeat_due { owner, entry }
+```typescript
+{
+  type: "timer.heartbeat_due",
+  source: "cron",
+  owner: "agent:may",
+  data: { entry: "may-heartbeat" }
+}
 ```
 
-Timers are event sources. Cron/timer code should emit timer events; handlers
-then bridge them to workflows.
+Timers are event sources. Cron/timer code should emit timer events; handlers then
+bridge them to workflows. `trigger.<entry-name>` remains an operator/control
+shortcut for manually firing a cron entry; it is not the heartbeat lifecycle
+event name.
 
 ### Handler lifecycle (paired)
-```
-handler.started    { handler, agent }
-handler.completed  { handler, agent, durationMs }
-handler.failed     { handler, agent, error, durationMs }
+```typescript
+{
+  type: "handler.completed",
+  source: "cron",
+  owner: "agent:may",
+  data: { handler: "metric-alert-reactor", agent: "may", durationMs: 42 }
+}
 ```
 
 ### Session lifecycle
-```
-session.start      { sessionId, agent, task, kind, parentSessionId }
-session.end        { sessionId, agent, status, summary }
+```typescript
+{
+  type: "session.completed",
+  source: "runtime",
+  owner: "agent:tech-lead",
+  data: {
+    sessionId: "s_123",
+    agent: "tech-lead",
+    outcome: "done",
+    status: "done",
+    summary: "Implemented and verified."
+  }
+}
 ```
 
+`session.end` is the low-level runtime lifecycle event. `session.completed` is
+the canonical subscriber-facing terminal event for `outcome: "done" | "error" |
+"interrupted"`. Runtime does not emit live `session.failed`.
+
 ### Metrics
-```
-metric.breach       { owner, metricId, metricName, current, threshold, target?, message, priority? }
-metric.recovered    { metricId, metricName }
-metric.stalled      { owner, metricId, metricName, message }
-metric.alert_judged { alertId?, metricId, owner, verdict, reason, evidence? }
+```typescript
+{
+  type: "metric.breach",
+  source: "metrics-snapshot",
+  owner: "agent:may",
+  urgency: "high",
+  data: {
+    metricId: "handler.success-rate",
+    metricName: "Handler success rate",
+    current: 0.5,
+    threshold: 0.8,
+    target: 0.95,
+    message: "Handler success rate is below threshold.",
+    priority: "P1"
+  }
+}
+
+{
+  type: "metric.alert_judged",
+  source: "metric-alert-triage",
+  owner: "agent:may",
+  data: { alertId: "ma_123", metricId: "handler.success-rate", verdict: "fix_root_cause", reason: "Handler throws on missing session id.", evidence: {} }
+}
 ```
 
 Metrics are signals, not judgments. `metric.breach` wakes or informs the owner;
@@ -71,98 +152,188 @@ the owner agent judges whether to fix, calibrate, downgrade, escalate, or record
 an accepted exception.
 
 ### Agent communication
-```
-message.created    { from, to, content, intent?, priority? }
-agent.decision     { agent, sessionId, decision, evidence? }
+```typescript
+{
+  type: "message.created",
+  source: "agent:may",
+  owner: "agent:dev",
+  data: { from: "may", to: "dev", content: "Review the failing handler.", intent: "request", priority: "P2" }
+}
+
+{
+  type: "agent.decision",
+  source: "agent:dev",
+  owner: "agent:dev",
+  data: { agent: "dev", sessionId: "s_123", decision: "Fix handler input validation.", evidence: {} }
+}
 ```
 
 ### Escalation lifecycle
+
+Escalation events use the same event envelope as other events. Envelope fields
+are for common event transport: type, source, owner, urgency/TTL, and timestamp.
+`data` contains escalation-specific correlation, lifecycle state, and the
+agent-facing brief. Do not hide routing decisions inside agent prose, and do not
+put long investigation context into the envelope.
+
+When a cron subscription receives an escalation event, `TriggerEvent.data` is the
+original event envelope. Handlers use envelope fields for common routing and read
+escalation-specific fields from the envelope's `data` object.
+
 ```
-escalation.created {
-  escalationId,
-  sourceAgent,
-  sourceSessionId?,
-  targetOwner,
-  projectId?,
-  projectPath?,
-  reason,
-  requestedAction,
-  severity?,
-  blockedOn?,
-  evidence?,
-  resume?,
-  dedupKey?,
-  createdAt
+{
+  type: "escalation.created",
+  source: "agent:tech-lead",
+  owner: "agent:may",
+  urgency: "high",
+  data: {
+    escalationId: "esc_123",
+    parentEscalationId: "esc_parent",
+    sourceAgent: "tech-lead",
+    sourceSessionId: "s_123",
+    projectId: "platform",
+    projectPath: "/app/projects/platform",
+    reason: "Blocked on missing session id.",
+    requestedAction: "Find and fix the event producer.",
+    severity: "P1",
+    blockedOn: "event payload incomplete",
+    evidence: {},
+    resume: {},
+    dedupKey: "tech-lead:may:missing-session-id"
+  }
 }
 
-escalation.resolved {
-  escalationId,
-  resolverAgent,
-  outcome,
-  summary,
-  evidence?,
-  resumeInstruction?,
-  resolvedAt
+{
+  type: "escalation.routed",
+  source: "escalation-router",
+  owner: "agent:may",
+  data: { escalationId: "esc_123", route: "agent:may", reason: "owner wake queued" }
+}
+
+{
+  type: "escalation.resolved",
+  source: "agent:may",
+  owner: "agent:tech-lead",
+  data: {
+    escalationId: "esc_123",
+    resolverAgent: "may",
+    outcome: "fixed",
+    summary: "The event now includes session id.",
+    evidence: {},
+    resumeInstruction: "Retry the blocked review.",
+    childEscalationId: "esc_child"
+  }
+}
+
+{
+  type: "escalation.dismissed",
+  source: "agent:may",
+  owner: "agent:tech-lead",
+  data: { escalationId: "esc_123", dismissedBy: "may", reason: "Duplicate escalation." }
+}
+
+{
+  type: "escalation.resume_attempted",
+  source: "escalation-lifecycle",
+  owner: "agent:tech-lead",
+  data: { escalationId: "esc_123", sourceKind: "session", sourceRef: "s_123", resumeInstruction: "Continue." }
+}
+
+{
+  type: "escalation.resume_started",
+  source: "escalation-lifecycle",
+  owner: "agent:tech-lead",
+  data: { escalationId: "esc_123", sourceKind: "session", sourceRef: "s_123", resumedSessionId: "s_123", summary: "Resume started." }
+}
+
+{
+  type: "escalation.resume_failed",
+  source: "escalation-lifecycle",
+  owner: "agent:tech-lead",
+  data: { escalationId: "esc_123", sourceKind: "session", sourceRef: "s_123", category: "resume_failed", recoverable: true, reason: "Checkpoint expired." }
 }
 ```
 
 Escalation routing follows the same payload rule as every other reactive
-handler: the event type routes work and the payload carries facts. A subscriber
-must read fields from `TriggerEvent.data`; the cron framework should not promote
-domain fields onto the trigger object.
+handler: the event type and envelope route work; `data` carries the agent-facing
+facts. A subscriber must read the original event envelope from
+`TriggerEvent.data`; the cron framework should not promote domain fields onto
+the trigger object.
 
-`targetOwner` should resolve to a concrete owner:
+For escalation events, `owner` is the responsibility label:
 
-| `targetOwner` | Runtime route |
-|---------------|---------------|
+| `owner` | Runtime route |
+|---------|---------------|
 | `agent:<name>` | owner inbox / handler queue for `<name>` |
-| `human:<role>` | May-owned human routing |
+| `human:<role>` | deliver to May because May is the human's deputy; preserve the human owner |
 
-On `escalation.resolved`, infra should try to resume the original paused
-session/checkpoint first. Starting a continuation session is a fallback only
-when true resume is unavailable.
+Infra may deliver `human:<role>` escalations to May, but it must preserve the
+original `owner` field on the event.
+
+`escalation.resolved.outcome = "needs_human"` means the resolving owner created
+or linked a child escalation whose `owner` is `human:<role>`. It is not a
+terminal unblock for the original source work by itself.
+
+Allowed `escalation.resolved.outcome` values are `fixed`, `answered`,
+`rejected`, `needs_human`, and `superseded`. All are terminal for resume
+purposes except `needs_human`, which keeps the parent escalation waiting on the
+child human escalation.
+
+On terminal `escalation.resolved`, infra resumes the original source session
+when one is linked. For an active source session it sends the resolution context
+into that session; otherwise it cold-resumes the source session. `workflowRunId`
+and project fields are context for the resumed task, not separate resume
+targets.
 
 ### Learning feedback
-```
-learning.feedback {
-  kind: "owner_finding",
-  owner,
-  summary,
-  needsHuman,
-  sessionId,
-  agent,
-  projectId?,
-  workflowRunId?,
-  evalTrailPath,
-  finding
+```typescript
+{
+  type: "learning.feedback",
+  source: "evaluator-aftermath",
+  owner: "human:requester",
+  data: {
+    kind: "owner_finding",
+    summary: "[high] request_quality: clarify missing request context",
+    sessionId: "s_123",
+    agent: "dev",
+    projectId: "platform",
+    workflowRunId: "wr_123",
+    evalTrailPath: ".state/sessions/history/s_123/session.eval.jsonl",
+    finding: {
+      id: "request-quality",
+      scope: "request_quality",
+      severity: "high",
+      finding: "The request missed blocker evidence.",
+      suggestedActions: ["Ask the requester for blocker evidence."]
+    }
+  }
 }
 ```
 
 `learning.feedback` is emitted by the evaluator for actionable session findings. It is owner-targeted inbox input, not the canonical evaluation record. The canonical record remains the sibling `session.eval.jsonl` trail beside the raw `session.jsonl`.
 
-Routing rule:
-
-| `finding.owner` | event `owner` |
-|-------------------|---------------|
-| `agent:<name>` | `<name>` |
-| `human:<role>` | `may` |
-
-For human-owned findings, payload keeps `finding.owner` and sets `needsHuman: true`; May decides whether to contact the human, update context, defer, or dismiss.
+Routing rule: set event `owner` to the responsible owner, either
+`agent:<name>` or `human:<role>`. For human-owned findings, runtime delivers the
+event to May because May is the human's deputy, while preserving the original
+human owner on the event. The human owner is enough routing context; do not add
+a separate boolean for the same decision.
 
 ### Project, adapter, and guard events
-```
-project.comment.created { projectId, author, text }
-project.iteration       { project, iteration }
-project.status_changed  { project, from, to }
-telegram.reply          { chatId?, messageId?, target?, text }
-guard.triggered         { owner, source, guard, action, reason, sessionId?, workflowRunId?, projectId? }
-tool.executed           { agent, sessionId, tool, args? }
+```typescript
+{
+  type: "guard.triggered",
+  source: "workflow",
+  owner: "agent:may",
+  data: { guard: "verify-after-write", action: "warned", reason: "No verification evidence.", sessionId: "s_123", workflowRunId: "wr_123", projectId: "platform" }
+}
 ```
 
-`guard.triggered` is an unreviewed detector signal. It is useful evidence for
-triage, metrics, and evaluator review, but it is not proof of agent fault. A
-reviewed guard outcome may later produce `learning.feedback`; raw guard events
-should not be routed as blame by themselves.
+`project.comment.created`, `project.iteration`, `project.status_changed`,
+`telegram.reply`, `guard.triggered`, and `tool.executed` follow the same
+envelope rule. `guard.triggered` is an unreviewed detector signal. It is useful
+evidence for triage, metrics, and evaluator review, but it is not proof of agent
+fault. A reviewed guard outcome may later produce `learning.feedback`; raw guard
+events should not be routed as blame by themselves.
 
 Some of these are currently dynamic event-store names rather than variants in
 `SystemEvent`. The design direction is to type the stable core names while still
@@ -187,30 +358,34 @@ Events naturally expire via TTL or time window. Agents act or they don't.
 
 ## Trigger Payloads
 
-Reactive cron handlers receive the original event payload as trigger data:
+Reactive cron handlers have their own trigger wrapper. For event subscriptions,
+`TriggerEvent.data` is the original event envelope:
 
 ```typescript
 type TriggerEvent = {
   type: string;
   source: "timer" | "event" | "manual";
   entry: string;
-  data?: Record<string, unknown>;
+  data?: EventEnvelope;
   timestamp: number;
 };
 ```
 
 The framework does not promote domain fields such as `sessionId`, `projectId`,
-or `metricId` onto `TriggerEvent`. The event producer owns the payload shape;
-the handler or workflow that subscribes to the event owns interpretation.
+or `metricId` onto `TriggerEvent`. The subscribed handler reads the original
+event envelope from `trigger.data`, then reads event-specific fields from
+`trigger.data.data`.
 
 Example:
 
 ```typescript
-// Emits event row data: { sessionId: "s_123", outcome: "done" }
-sdk.emit("session.completed", { sessionId: "s_123", outcome: "done" });
+sdk.emit("session.completed",
+  { sessionId: "s_123", outcome: "done" },
+  { owner: "agent:may", source: "runtime" },
+);
 
-// Subscriber reads the domain field from trigger data.
-const sessionId = event?.data?.sessionId;
+const original = event?.data;
+const sessionId = original?.data?.sessionId;
 ```
 
 This keeps the event model simple: event type routes work, event data carries
@@ -222,7 +397,7 @@ Events support queryable state alongside mutable tables:
 
 | Question | Query |
 |----------|-------|
-| Handler last fire? | `MAX(timestamp) WHERE event_type = 'handler.started' AND handler = ?` |
+| Handler last fire? | `MAX(timestamp) WHERE event_type = 'handler.started' AND json_extract(data, '$.handler') = ?` |
 | Handler healthy? | `COUNT completed > COUNT failed` in window |
 | Agent work stats? | `sessions GROUP BY agent, status` |
 | Message dedup? | `EXISTS WHERE event_type = 'message.created' AND data LIKE ?` |
@@ -235,7 +410,7 @@ Uses `message.created` — the single async communication primitive:
 
 ```typescript
 sdk.message("bob", "Review the PR");
-// Emits: { type: "message.created", from: agent, to: "bob", content: "Review the PR" }
+// Emits: { type: "message.created", source: "agent:<sender>", owner: "agent:bob", data: { from, to, content } }
 ```
 
 Bob sees it in his inbox on next heartbeat.
@@ -244,35 +419,35 @@ Bob sees it in his inbox on next heartbeat.
 
 The Unix socket is an event transport, not a second command system.
 
-- Inbound JSON lines with a string `type` are accepted as bus events.
+- Inbound JSON lines with a string `type` are accepted as bus events when they
+  already use the event schema. Dot-named events must use the canonical
+  envelope (`type`, `source`, `owner`, `data`).
 - `subscribe` and `status` are the only socket-local protocol frames.
-- Legacy aliases are normalized at the socket boundary:
-  `emit` unwraps to its named event, `close` becomes `shutdown`,
-  `reload_agents` becomes `reload`, and `cancel_task` becomes `cancel_all`.
+- Legacy socket wrapper and command aliases are rejected instead of normalized.
 - Socket `ok` means the frame was accepted into the event transport. It does
   not mean every handler finished.
 
 This keeps socket, Telegram, web, and runtime code on the same event-first
-path: normalize at the edge, persist via the bus, and let subscribers react.
+path: validate at the edge, persist via the bus, and let subscribers react.
 
 ## Implementation
 
 - **Typed core events:** `src/app/event-bus.ts`
 - **Persistence:** `src/lib/db-writer.ts` subscribes to bus, writes all events
 - **Inbox query:** `src/lib/runtime-ctx.ts` -> `getInbox()`
-- **Heartbeat injection:** `shared/workflows/heartbeat-data.ts` -> `loadInbox()`
+- **Heartbeat helper:** `packages/sdk/src/heartbeat-data.ts` -> `loadInbox()`
 
 ## Current Gaps To Close
 
 - The typed `SystemEvent` union does not yet include every documented taxonomy
   event.
-- Heartbeat dispatch still has legacy event naming in places; converge on
-  `timer.heartbeat_due` at the boundary and keep workflow names conventional
-  (`<owner>-heartbeat`).
-- Some historical names remain in docs, tests, or old event rows. Normalize at
-  the boundary rather than teaching agents multiple names.
-- Event payload examples should use IDs and owner/context fields, not embedded
-  metric/session objects, unless the payload truly needs the full object.
+- Keep heartbeat bus events under the `heartbeat.*` namespace; workflow
+  lifecycle callback names are local to the workflow tool.
+- Some historical names remain in docs, tests, or old event rows. Do not teach
+  agents multiple names; update active producers/consumers to canonical names
+  and leave old rows as historical data.
+- Event payload examples should use the envelope shape above, not flattened
+  domain fields.
 
 ## Operational Status (appendix, refreshed 2026-05-07)
 
@@ -291,19 +466,19 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
 | `project.iteration` | `project.ts` on the default project path; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live default plus legacy compatibility shape |
-| `session.failed` | session/runtime layer on session-end with error | ⚠️ degraded since 2026-05-03 — emission collapsed ~35× (70/day → 2/day); errored sessions now arrive as `session.completed{outcome:'error'}` (~33/day). KE-1248. |
-| `session.completed` | session lifecycle translator after `session.end` for non-evaluator sessions; carries `outcome ∈ {done,error,interrupted}` | ✅ live and now the de-facto channel for errored/interrupted sessions |
+| `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event, including errored/interrupted sessions |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ⚠️ live; see consumer status below |
 | `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
 | `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
 | `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
-| `escalation.created` | `sdk.escalate` and workflow `ctx.escalate` | ⚠️ live, but current payloads are minimal/legacy and do not yet include full lifecycle correlation |
-| `escalation.resolved` | no emitter exists | ❌ aspirational |
+| `escalation.created` | `sdk.escalate`; blocked/failure session boundary promotion; boundary promotion of a workflow `ctx.escalate` result is the intended path when routing is needed | ✅ canonical event; workflow `ctx.escalate` itself is local and should not emit this event |
+| `escalation.resolved` | owner workflows/handlers may emit it when they have a disposition | ✅ persisted as a canonical event and handled by escalation lifecycle for session resume |
 | `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings |
 
-Note: `session.failed` and `session.completed` are translated from `session.end`
-in `src/app/may.ts`. `project.status_changed` still has no emitter.
+Note: `session.completed` is translated from `session.end` in daemon event
+subscribers. `session.failed` is not a live runtime event. `project.status_changed`
+still has no emitter.
 
 ### Consumer Reality
 
@@ -314,10 +489,10 @@ SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() *
 
 | Handler | Subscribes to | Status notes |
 |---|---|---|
-| `session-recovery` | `session.failed` | ⚠️ emitter migrated to `session.completed{outcome:'error'}` (KE-1248) — event path fires zero times on real traffic; 5-min timer fallback does 100% of recovery work |
+| `session-recovery` | target: `session.completed` where `outcome` is `error` or `interrupted` | Converge on `session.completed` for real-time recovery, with the 5-min timer fallback scanning missed terminal errors. |
 | `evaluator-aftermath` | `session.completed` | ✅ wired; `session-aftermath-scan` remains the 7-minute fallback |
-| `escalation` | `session.escalated` | ✅ wired as event-first routing for blocked/failure finishes |
-| (no lifecycle handler) | `escalation.created`, `escalation.resolved` | ❌ full escalation lifecycle routing/resume is not implemented yet |
+| `escalation` | `escalation.created` | ⚠️ owner routing still depends on subscribed handlers/workflows |
+| `escalation-lifecycle` | `escalation.resolved`, `escalation.dismissed` | ✅ resumes the source session for terminal outcomes; `needs_human` waits for the human child escalation |
 | `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
 | (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781 |
 | `context-learn` | `context-learn` | ❌ replaced by timer-driven `context-learn-poller` |

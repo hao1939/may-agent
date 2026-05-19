@@ -79,23 +79,16 @@ Proposals under consideration and historical docs preserved for context.
 | [v2-migration-plan.md](3-proposals/v2-migration-plan.md) | Historical | Original v2 migration plan |
 | [v2-implementation-notes.md](3-proposals/v2-implementation-notes.md) | Historical | What shipped in v0.2 migration |
 | [v2-review-2026-05-06.md](3-proposals/v2-review-2026-05-06.md) | Historical | v2 review checkpoint |
+| [retired-design-alternatives.md](3-proposals/retired-design-alternatives.md) | Thoughts / alternatives | Useful ideas preserved from deleted legacy design archive |
 
 ---
 
-## Archive
+## Removed Archive
 
-Superseded and retired docs in `2a-design/archive-legacy-shared-designs/`:
-
-- `master-worker.md` — retired persistent worker/reviewer design
-- `project-focused-architecture.md` — absorbed into `projects.md` + `architecture.md`
-- `infra-surface-implementation-plan.md` — superseded by `system-boundary-tracker.md`
-- `unified-command-interface.md` — superseded by `packages/control` event frames
-- `agent-metrics.md` — merged into `metrics.md`
-- `unified-events.md` — operational status merged into `events.md`
-- `webui-agents-metrics-tabs.md` — merged into `webui.md`
-- `webui-operator-goals.md` — merged into `webui.md`
-- `heartbeat-as-agency.md` — merged into `heartbeat.md`
-- `guard-escalation-override.md`, `guard-review-process.md` — early guard designs
+The old `2a-design/archive-legacy-shared-designs/` files were deleted because
+their direct-read statuses conflicted with active docs. Useful ideas were
+preserved in
+[retired-design-alternatives.md](3-proposals/retired-design-alternatives.md).
 
 ---
 

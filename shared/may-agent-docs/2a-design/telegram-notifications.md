@@ -150,10 +150,14 @@ The original event carries all metadata:
 ```typescript
 {
   type: "notification",
-  agent: "may",
-  text: "...",
-  sessionId: "s_123",
-  // From session, derive: projectId, workflowRunId, task, parent session
+  source: "agent:may",
+  owner: "human:operator",
+  data: {
+    agent: "may",
+    text: "...",
+    sessionId: "s_123",
+    // From session, derive: projectId, workflowRunId, task, parent session
+  }
 }
 ```
 

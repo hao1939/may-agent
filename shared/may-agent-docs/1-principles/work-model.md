@@ -48,7 +48,8 @@ needed.
 - `blocked` means an external dependency prevents progress.
 - `pending-review` means owner or human judgment is required before more work.
 - `paused` means an intentional hold; resume only from an explicit signal.
-- `done` / `complete` / `closed` means no current ownership loop is expected.
+- `done` means the goal is complete; `closed` means the goal no longer needs an
+  ownership loop. `complete` is a legacy alias for `done`, not a canonical status.
 
 Projects move like this:
 

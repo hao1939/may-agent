@@ -74,7 +74,7 @@ Workflow execution is synchronous by design. A workflow step waits for its
 agent/function/sub-workflow result before the next step runs; this keeps
 orchestration simple and auditable.
 
-**Where it lives:** `shared/workflows/<name>.ts`
+**Where it lives:** `agents/<agent>/workflows/<name>.ts` or `projects/<id>/workflows/<name>.ts`
 
 **Interface:**
 ```typescript
@@ -211,12 +211,12 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
     // Access everything via SDK
     const db = ctx.sdk.getDb();
     const result = await ctx.sdk.runWorkflow("my-workflow", task);
-    ctx.sdk.emit("handler.done", { result });
+    ctx.sdk.emit("handler.completed", { result }, { owner: "agent:may" });
   };
 };
 ```
 
-**Triggers:** Timer (intervalMs), events (on: ["metric.breach", "session.done"]), or manual.
+**Triggers:** Timer (`intervalMs`), events (`on: ["metric.breach", "session.completed"]`), or manual.
 
 ---
 
@@ -251,7 +251,7 @@ See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK int
 | "This must NEVER be violated regardless of workflow" | 4 Guard | Write guard .ts |
 | "I need a new action type that doesn't exist" | 5 Tool | Write `tools/<name>.ts` |
 | "This should happen every N minutes / on every event" | 6 Handler | Write handler .ts |
-| "I don't know how to handle this" | — Escalate | `sdk.escalate("may", reason)` |
+| "I don't know how to handle this" | — Escalate | `sdk.escalate(reason)` |
 
 ---
 
@@ -260,11 +260,11 @@ See [sdk.md](../2a-design/sdk.md) for the canonical AgentSDK and WorkflowSDK int
 **You always have a way out.** If you don't know what to do, don't guess — escalate.
 
 ```typescript
-// From a workflow
+// From a workflow: local terminal result; caller/boundary decides whether to route it.
 return ctx.escalate("Can't determine correct approach — need human guidance");
 
-// From handler/agent code
-ctx.sdk.escalate("may", "Metric breached but fix unclear — need direction");
+// From handler/agent code: external owner-routed escalation.
+ctx.sdk.escalate("Metric breached but fix unclear — need direction");
 
 // From an agent session (via finish tool)
 finish({ status: "blocked", reason: "Requirements ambiguous, need clarification" });
@@ -311,7 +311,7 @@ See [projects.md](../2a-design/projects.md) for the canonical lifecycle.
 
 ### "Implement then verify is our default flow"
 
-**Level 3 (Workflow):** `shared/workflows/implement-and-verify.ts` — any project can declare `workflow: implement-and-verify` in its YAML frontmatter.
+**Level 3 (Workflow):** `agents/dev/workflows/implement-and-verify.ts` or `projects/<id>/workflows/implement-and-verify.ts` — project-scoped workflows override agent workflows when a project supplies its own version.
 
 ### "Never commit secrets to git"
 
