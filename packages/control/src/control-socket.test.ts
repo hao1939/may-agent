@@ -116,8 +116,9 @@ describe("control socket protocol", () => {
 
     const ack = await sendSocketCommand(core.endpoint, {
       type: "project.nudge",
-      projectPath: "agents/shared/projects/x",
       source: "test",
+      owner: "agent:may",
+      data: { projectPath: "agents/shared/projects/x" },
     });
 
     expect(ack).toEqual({ type: "ok", command: "project.nudge" });

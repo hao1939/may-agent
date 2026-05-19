@@ -184,15 +184,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "message.created";
-      from: string;
-      to: string;
-      content: string;
-      intent?: string;
-      artifact?: string;
-      priority?: "P0" | "P1" | "P2" | "P3";
-    }
-  | {
       type: "message.delivery_failed";
       source: string;
       owner: string;

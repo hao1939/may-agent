@@ -9,56 +9,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-function owner(value: unknown): string {
-  if (typeof value !== "string" || !value.trim()) return "agent:may";
-  const trimmed = value.trim();
-  if (trimmed.startsWith("agent:") || trimmed.startsWith("human:")) return trimmed;
-  if (["human", "hao", "user", "operator"].includes(trimmed.toLowerCase())) return "human:operator";
-  return `agent:${trimmed}`;
-}
+const CANONICAL_SOCKET_EVENTS = new Set([
+  "message.created",
+  "project.comment.created",
+  "project.nudge",
+  "heartbeat.trigger",
+]);
 
-function withoutEnvelopeFields(event: Record<string, unknown>): Record<string, unknown> {
-  const { type: _type, source: _source, owner: _owner, urgency: _urgency, ttl_ms: _ttl, timestamp: _timestamp, ...data } = event;
-  return data;
-}
-
-function normalizeKnownDomainEvent(event: Record<string, unknown>): Record<string, unknown> {
-  if (isRecord(event.data)) return event;
+function canonicalEventError(event: Record<string, unknown>): string | null {
   const type = event.type;
-  if (typeof type !== "string") return event;
+  if (typeof type !== "string") return null;
+  if (!CANONICAL_SOCKET_EVENTS.has(type)) return null;
+  if (!isRecord(event.data)) return `Canonical event '${type}' requires object field 'data'`;
+  if (typeof event.source !== "string" || !event.source.trim()) return `Canonical event '${type}' requires string field 'source'`;
+  if (typeof event.owner !== "string" || !event.owner.trim()) return `Canonical event '${type}' requires string field 'owner'`;
+  return null;
+}
 
-  switch (type) {
-    case "message.created":
-      return {
-        type,
-        source: typeof event.source === "string" ? event.source : owner(event.from),
-        owner: owner(event.owner ?? event.to),
-        ...(typeof event.urgency === "string" ? { urgency: event.urgency } : {}),
-        ...(typeof event.ttl_ms === "number" ? { ttl_ms: event.ttl_ms } : {}),
-        ...(typeof event.timestamp === "number" ? { timestamp: event.timestamp } : {}),
-        data: withoutEnvelopeFields(event),
-      };
-
-    case "project.comment.created":
-    case "project.nudge":
-      return {
-        type,
-        source: typeof event.source === "string" ? event.source : "socket",
-        owner: owner(event.owner),
-        data: withoutEnvelopeFields(event),
-      };
-
-    case "heartbeat.trigger":
-      return {
-        type,
-        source: typeof event.source === "string" ? event.source : "socket",
-        owner: owner(event.owner ?? event.agent),
-        data: withoutEnvelopeFields(event),
-      };
-
-    default:
-      return event;
-  }
+function socketEvent(command: string, event: Record<string, unknown>): SocketFrame {
+  const message = canonicalEventError(event);
+  return message ? { kind: "error", command, message } : { kind: "event", command, event };
 }
 
 export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFrame {
@@ -77,7 +47,7 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
       return { kind: "error", command: cmdType, message: "emit frame requires string field 'event'" };
     }
     const { type: _, event: __, ...rest } = frame;
-    return { kind: "event", command: cmdType, event: normalizeKnownDomainEvent({ type: eventName, ...rest }) };
+    return socketEvent(cmdType, { type: eventName, ...rest });
   }
 
   let event: Record<string, unknown> = { ...frame };
@@ -102,5 +72,5 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
     event = { type: "reload" };
   }
 
-  return { kind: "event", command: cmdType, event: normalizeKnownDomainEvent(event) };
+  return socketEvent(cmdType, event);
 }
