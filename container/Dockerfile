@@ -17,6 +17,9 @@ WORKDIR /build
 
 # Install dependencies
 COPY package.json bun.lock ./
+COPY packages/sdk/package.json packages/sdk/package.json
+COPY packages/control/package.json packages/control/package.json
+COPY packages/webui/package.json packages/webui/package.json
 RUN bun install --frozen-lockfile
 
 # Copy source + config
