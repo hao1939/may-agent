@@ -122,7 +122,12 @@ describe("control socket protocol", () => {
 
     expect(ack).toEqual({ type: "ok", command: "project.nudge" });
     await new Promise((resolve) => setImmediate(resolve));
-    expect(core.emitted).toMatchObject([{ type: "project.nudge", projectPath: "agents/shared/projects/x" }]);
+    expect(core.emitted).toMatchObject([{
+      type: "project.nudge",
+      source: "test",
+      owner: "agent:may",
+      data: { projectPath: "agents/shared/projects/x" },
+    }]);
   });
 
   it("serves status locally without emitting a daemon event", async () => {
