@@ -77,6 +77,7 @@ export class DbWriter {
         case "session.start":
           {
           const ev = event as any;
+          if (!isCanonicalEnvelope(ev)) break;
           const payload = eventPayload(ev);
           upsertSession(this.persistDir, {
             sessionId: payload.sessionId as string,
@@ -105,6 +106,7 @@ export class DbWriter {
         case "session.end":
           {
           const ev = event as any;
+          if (!isCanonicalEnvelope(ev)) break;
           const payload = eventPayload(ev);
           updateSessionDb(this.persistDir, payload.sessionId as string, {
             status: payload.status as any,
