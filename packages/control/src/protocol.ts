@@ -17,7 +17,7 @@ const LEGACY_SOCKET_FRAME_TYPES = new Set([
   "reload_agents",
 ]);
 
-function isSocketCommandType(type: string): boolean {
+export function isSocketCommandType(type: string): boolean {
   return type.startsWith("trigger.") || type === "session.cancel.requested";
 }
 
