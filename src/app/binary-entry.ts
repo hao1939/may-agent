@@ -11,23 +11,15 @@
 
 import { plugin } from "bun";
 import { isBundled } from "./bundle-mode.js";
+import "./sdk-resolver-plugin.js";
 
-// Register SDK resolver so dynamically-imported handler/workflow files can use
-// `import { ... } from "@may-agent/sdk"` instead of fragile relative paths.
-// In the compiled binary, dynamic imports of external .ts files cannot resolve
-// bare specifiers through node_modules — this plugin bridges the gap.
-plugin({
-  name: "may-agent-sdk-resolver",
-  setup(build) {
-    const SDK_ROOT = "/app/projects/platform/repos/may-agent/packages/sdk/src";
-    build.onResolve({ filter: /^@may-agent\/sdk$/ }, () => ({
-      path: `${SDK_ROOT}/index.ts`,
-    }));
-    build.onResolve({ filter: /^@may-agent\/sdk\/testing$/ }, () => ({
-      path: `${SDK_ROOT}/testing.ts`,
-    }));
-  },
-});
+// SDK resolver plugin is registered as a side effect of the import above.
+// It bridges `@may-agent/sdk` bare specifiers from dynamically-loaded
+// handler/workflow files to the workspace SDK source. The plugin is now
+// shared with may.ts (dev mode) so both code paths resolve identically.
+//
+// `plugin` is still imported above for any future binary-only plugins.
+void plugin;
 
 async function main() {
   if (!isBundled()) {
