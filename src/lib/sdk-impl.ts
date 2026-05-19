@@ -219,20 +219,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       } catch { /* best-effort */ }
 
       deps.bus.emit(event as any);
-
-      // Also push human-visible message
-      deps.bus.emit({
-        type: "message.created",
-        source: `agent:${deps.agentName}`,
-        owner: "human:operator",
-        urgency: urgencyForSeverity(severity),
-        data: {
-          from: deps.agentName,
-          to: "human",
-          content: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${owner}: ${reason}`,
-          priority: severity,
-        },
-      } as any);
     },
 
     paths: {

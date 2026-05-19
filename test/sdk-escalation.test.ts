@@ -122,6 +122,7 @@ describe("AgentSDK escalation", () => {
     sdk.escalate("Blocked on missing API key");
 
     const escalation = events.find((event) => event.type === "escalation.created");
+    const syntheticMessages = events.filter((event) => event.type === "message.created");
     const data = escalation?.data as Record<string, unknown>;
     expect(escalation).toMatchObject({
       type: "escalation.created",
@@ -136,6 +137,7 @@ describe("AgentSDK escalation", () => {
       severity: "P2",
     });
     expect(data.resume).toBeUndefined();
+    expect(syntheticMessages).toHaveLength(0);
   });
 
   it("keeps sdk.escalate(target, reason) as a compatibility wrapper", () => {
