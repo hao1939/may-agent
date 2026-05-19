@@ -33,6 +33,7 @@ import {
   mkdirSync,
   mkdtempSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -131,11 +132,13 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
   // Daemon reads this lazily during agent session start; not at boot.
   writeFileSync(join(sharedRoot, "common-sense.md"), "# Test environment\n");
 
-  // `@may-agent/sdk` is resolved via the SDK resolver plugin registered in
-  // may.ts at process start. The sandbox does not need its own
-  // node_modules/@may-agent/sdk symlink — the daemon process is the same Bun
-  // process that registered the plugin, and dynamic imports inside that
-  // process route through the plugin regardless of cwd.
+  // Fixture handlers/workflows live under the tmp sandbox and import the public
+  // SDK package name, just like real agent-owned code. Expose the workspace SDK
+  // inside the sandbox's module tree so runtime dynamic imports resolve from
+  // the fixture file location.
+  const sdkNodeModulesDir = join(root, "node_modules", "@may-agent");
+  mkdirSync(sdkNodeModulesDir, { recursive: true });
+  symlinkSync(resolve(REPO_ROOT, "packages", "sdk"), join(sdkNodeModulesDir, "sdk"), "dir");
 
   // Copy fixture agents (each becomes agents/<name>/).
   for (const name of spec.fixtureAgents ?? []) {

@@ -42,20 +42,7 @@ function taskBlock(content: string, taskId: string): string {
   return content.slice(start, end);
 }
 
-// SKIPPED: The fixture worker workflow loads via dynamic import from outside
-// the workspace (under the sandbox at /tmp/may-e2e-<runId>/). Even with the
-// SDK resolver plugin registered in may.ts, Bun.plugin() hooks only affect
-// `Bun.build` bundling, not runtime ESM resolution — verified by minimal
-// repro. The plugin makes the compiled binary work (bundle-time) but does
-// nothing for dev-mode dynamic imports. See F6 in
-// projects/platform/proposals/2026-05-19-e2e-harness-findings.md.
-//
-// Re-enable when: the fixture workflow can be authored without value imports
-// from `@may-agent/sdk` (type-only imports already work, but the project-task
-// SDK helpers used here are values), OR the sandbox is restructured to live
-// inside the workspace so `node_modules/@may-agent/sdk` resolution finds it.
-const SKIP_REASON = "E3a depends on F6 fix (workspace-resolvable @may-agent/sdk from sandbox)";
-describe.skipIf(true)(`E3a: task-driven project loop (lite) [SKIPPED: ${SKIP_REASON}]`, () => {
+describe.skipIf(!E2E_LIVE)("E3a: task-driven project loop (lite)", () => {
   let sb: Sandbox;
   const t0 = Date.now();
 
