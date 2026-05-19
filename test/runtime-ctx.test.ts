@@ -18,6 +18,8 @@ describe("buildRuntimeCtx", () => {
     persistDir: "/tmp/test-persist",
     projectRoot: "/tmp/test-project",
     agentsRoot: "/tmp/test-agents",
+    sharedRoot: "/tmp/test-shared",
+    projectsRoot: "/tmp/test-projects",
     agentName: "test-agent",
   });
 
@@ -32,15 +34,66 @@ describe("buildRuntimeCtx", () => {
     expect(rtx.persistDir).toBe("/tmp/test-persist");
     expect(rtx.projectRoot).toBe("/tmp/test-project");
     expect(rtx.agentsRoot).toBe("/tmp/test-agents");
+    expect(rtx.sharedRoot).toBe("/tmp/test-shared");
+    expect(rtx.projectsRoot).toBe("/tmp/test-projects");
   });
 
-  it("emit routes to bus", () => {
+  it("emit wraps flat dot-named events in a canonical envelope", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
 
-    rtx.emit({ type: "test.event", data: "hello" });
+    rtx.emit({ type: "test.event", message: "hello" });
 
-    expect(opts.bus.emit).toHaveBeenCalledWith({ type: "test.event", data: "hello" });
+    expect(opts.bus.emit).toHaveBeenCalledWith({
+      type: "test.event",
+      source: "agent:test-agent",
+      owner: "agent:test-agent",
+      data: { message: "hello" },
+    });
+  });
+
+  it("emit preserves canonical dot-named event envelopes", () => {
+    const opts = baseOpts();
+    const rtx = buildRuntimeCtx(opts);
+
+    rtx.emit({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "human:operator",
+      urgency: "high",
+      data: { metricId: "system.health", message: "check" },
+    });
+
+    expect(opts.bus.emit).toHaveBeenCalledWith({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "human:operator",
+      urgency: "high",
+      data: { metricId: "system.health", message: "check" },
+    });
+  });
+
+  it("emit defaults envelope metadata without nesting an existing data payload", () => {
+    const opts = baseOpts();
+    const rtx = buildRuntimeCtx(opts);
+
+    rtx.emit({ type: "project.status_changed", data: { projectId: "p1", status: "active" } });
+
+    expect(opts.bus.emit).toHaveBeenCalledWith({
+      type: "project.status_changed",
+      source: "agent:test-agent",
+      owner: "agent:test-agent",
+      data: { projectId: "p1", status: "active" },
+    });
+  });
+
+  it("emit keeps non-domain events flat", () => {
+    const opts = baseOpts();
+    const rtx = buildRuntimeCtx(opts);
+
+    rtx.emit({ type: "notification", agent: "test-agent", text: "hello" });
+
+    expect(opts.bus.emit).toHaveBeenCalledWith({ type: "notification", agent: "test-agent", text: "hello" });
   });
 
   it("notify emits notification event on bus", () => {
@@ -121,11 +174,11 @@ describe("buildRuntimeCtx", () => {
     const handler = { ...rtx, manager: {} as any };
     const workflow = { ...rtx, task: "x", agent: "y" };
 
-    handler.emit({ type: "from.handler" });
-    workflow.emit({ type: "from.workflow" });
+    handler.emit({ type: "from.handler", value: 1 });
+    workflow.emit({ type: "from.workflow", value: 2 });
 
     expect(opts.bus.emit).toHaveBeenCalledTimes(2);
-    expect(opts.bus.events[0].type).toBe("from.handler");
-    expect(opts.bus.events[1].type).toBe("from.workflow");
+    expect(opts.bus.events[0]).toMatchObject({ type: "from.handler", data: { value: 1 } });
+    expect(opts.bus.events[1]).toMatchObject({ type: "from.workflow", data: { value: 2 } });
   });
 });

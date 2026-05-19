@@ -121,6 +121,27 @@ describe("emitDaemonEvent", () => {
     });
   });
 
+  it("defaults envelope metadata without nesting an existing data payload", async () => {
+    const writes: string[] = [];
+
+    await expect(emitDaemonEvent(captureEndpoint(writes), "project.status_changed", {
+      data: {
+        projectId: "p1",
+        status: "active",
+      },
+    })).resolves.toMatchObject({ type: "ok", command: "project.status_changed" });
+
+    expect(JSON.parse(writes[0] ?? "")).toEqual({
+      type: "project.status_changed",
+      source: "control",
+      owner: "agent:may",
+      data: {
+        projectId: "p1",
+        status: "active",
+      },
+    });
+  });
+
   it("keeps socket command shortcuts flat", async () => {
     const writes: string[] = [];
 
