@@ -16,6 +16,13 @@ const CANONICAL_SOCKET_EVENTS = new Set([
   "heartbeat.trigger",
 ]);
 
+const LEGACY_SOCKET_FRAME_TYPES = new Set([
+  "emit",
+  "close",
+  "cancel_task",
+  "reload_agents",
+]);
+
 function canonicalEventError(event: Record<string, unknown>): string | null {
   const type = event.type;
   if (typeof type !== "string") return null;
@@ -41,36 +48,9 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
     return { kind: "control", command: cmdType as "subscribe" | "status", frame };
   }
 
-  if (cmdType === "emit") {
-    const eventName = frame.event;
-    if (typeof eventName !== "string" || !eventName.trim()) {
-      return { kind: "error", command: cmdType, message: "emit frame requires string field 'event'" };
-    }
-    const { type: _, event: __, ...rest } = frame;
-    return socketEvent(cmdType, { type: eventName, ...rest });
+  if (LEGACY_SOCKET_FRAME_TYPES.has(cmdType)) {
+    return { kind: "error", command: cmdType, message: `Unsupported legacy socket frame type: ${cmdType}` };
   }
 
-  let event: Record<string, unknown> = { ...frame };
-
-  if (cmdType === "input") {
-    if (!event.source) event.source = "socket";
-    if (!event.message && event.content) event.message = event.content;
-  } else if (cmdType === "fork") {
-    event = {
-      type: "fork",
-      agent: frame.agent,
-      task: frame.task ?? frame.message,
-      opts: { ...(typeof frame.opts === "object" && frame.opts ? frame.opts : {}), source: "socket" },
-    };
-  } else if (cmdType === "message" && !event.task && event.content) {
-    event.task = event.content;
-  } else if (cmdType === "close") {
-    event = { type: "shutdown" };
-  } else if (cmdType === "cancel_task") {
-    event = { type: "cancel_all" };
-  } else if (cmdType === "reload_agents") {
-    event = { type: "reload" };
-  }
-
-  return socketEvent(cmdType, event);
+  return socketEvent(cmdType, frame);
 }
