@@ -22,6 +22,45 @@ const DURABLE_COMMAND_EVENTS = new Set([
   "shutdown",
 ]);
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function isCanonicalEnvelope(event: Record<string, unknown>): boolean {
+  return isRecord(event.data) && (
+    "owner" in event ||
+    "source" in event ||
+    "urgency" in event ||
+    "ttl_ms" in event
+  );
+}
+
+function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
+  if (isCanonicalEnvelope(event)) return event.data as Record<string, unknown>;
+  const { type: _type, ...data } = event;
+  return data;
+}
+
+function eventSource(event: Record<string, unknown>, fallback?: unknown): string | null {
+  const source = isCanonicalEnvelope(event) ? event.source : eventPayload(event).source;
+  return typeof source === "string" ? source : typeof fallback === "string" ? fallback : null;
+}
+
+function eventOwner(event: Record<string, unknown>, fallback?: unknown): string | null {
+  const owner = isCanonicalEnvelope(event) ? event.owner : eventPayload(event).owner;
+  return typeof owner === "string" ? owner : typeof fallback === "string" ? fallback : null;
+}
+
+function eventUrgency(event: Record<string, unknown>): string {
+  const urgency = isCanonicalEnvelope(event) ? event.urgency : eventPayload(event).urgency;
+  return typeof urgency === "string" ? urgency : "normal";
+}
+
+function eventTtlMs(event: Record<string, unknown>): number | null {
+  const ttl = isCanonicalEnvelope(event) ? event.ttl_ms : eventPayload(event).ttl_ms;
+  return typeof ttl === "number" ? ttl : null;
+}
+
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
@@ -36,47 +75,53 @@ export class DbWriter {
     try {
       switch (event.type) {
         case "session.start":
+          {
+          const ev = event as any;
+          const payload = eventPayload(ev);
           upsertSession(this.persistDir, {
-            sessionId: event.sessionId,
-            agent: event.agent,
-            task: event.task ?? "",
+            sessionId: payload.sessionId as string,
+            agent: payload.agent as string,
+            task: (payload.task as string | undefined) ?? "",
             status: "running",
-            kind: event.kind,
-            source: event.source,
-            parentSessionId: event.parentSessionId,
-            workflowRunId: event.workflowRunId,
-            projectId: (event as any).projectId,
-            requestId: event.requestId,
-            stepLabel: (event as any).stepLabel,
+            kind: payload.kind as string | undefined,
+            source: (payload.source as string | undefined) ?? eventSource(ev) ?? undefined,
+            parentSessionId: payload.parentSessionId as string | undefined,
+            workflowRunId: payload.workflowRunId as string | undefined,
+            projectId: payload.projectId as string | undefined,
+            requestId: payload.requestId as string | undefined,
+            stepLabel: payload.stepLabel as string | undefined,
             startedAt: Date.now(),
           });
           // Also write event row for analytics / audit
           try {
-            const { type, ...data } = event as any;
             this.db.run(
               "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
-              [type, event.agent, event.agent, JSON.stringify(data), Date.now()],
+              [event.type, eventSource(ev, payload.agent), eventOwner(ev, payload.agent), JSON.stringify(payload), Date.now()],
             );
           } catch { /* best-effort */ }
           break;
+          }
 
         case "session.end":
-          updateSessionDb(this.persistDir, event.sessionId, {
-            status: event.status as any,
-            error: event.error,
-            outcome: event.outcome,
-            opCount: event.opCount,
+          {
+          const ev = event as any;
+          const payload = eventPayload(ev);
+          updateSessionDb(this.persistDir, payload.sessionId as string, {
+            status: payload.status as any,
+            error: payload.error as string | undefined,
+            outcome: payload.outcome as string | undefined,
+            opCount: payload.opCount as number | undefined,
             endedAt: Date.now(),
           });
           // Also write event row for analytics / audit
           try {
-            const { type, ...data } = event as any;
             this.db.run(
               "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
-              [type, event.agent, event.agent, JSON.stringify(data), Date.now()],
+              [event.type, eventSource(ev, payload.agent), eventOwner(ev, payload.agent), JSON.stringify(payload), Date.now()],
             );
           } catch { /* best-effort */ }
           break;
+          }
 
         case "message.created":
           // v2 canonical inter-agent message — persist with from→source, to→owner
@@ -108,10 +153,10 @@ export class DbWriter {
           if (DURABLE_COMMAND_EVENTS.has(event.type)) {
             try {
               const ev = event as any;
-              const { type, ...data } = ev;
+              const data = eventPayload(ev);
               this.db.run(
-                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)",
-                [type, data.source ?? null, data.owner ?? null, JSON.stringify(data), Date.now(), data.urgency ?? "normal"],
+                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [event.type, eventSource(ev), eventOwner(ev), JSON.stringify(data), Date.now(), eventUrgency(ev), eventTtlMs(ev)],
               );
             } catch { /* table may not exist */ }
             break;
@@ -121,10 +166,10 @@ export class DbWriter {
           if (event.type.includes('.')) {
             try {
               const ev = event as any;
-              const { type, ...data } = ev;
+              const data = eventPayload(ev);
               this.db.run(
-                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)",
-                [type, data.source ?? null, data.owner ?? null, JSON.stringify(data), Date.now(), data.urgency ?? "normal"],
+                "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [event.type, eventSource(ev), eventOwner(ev), JSON.stringify(data), Date.now(), eventUrgency(ev), eventTtlMs(ev)],
               );
             } catch { /* table may not exist */ }
           }

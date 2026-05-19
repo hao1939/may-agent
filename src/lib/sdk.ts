@@ -21,7 +21,7 @@ export interface AgentSDK {
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<WorkflowResult>;
 
   /** Emit a typed event (persisted to events table). */
-  emit(type: string, data?: Record<string, unknown>): void;
+  emit(type: string, data?: Record<string, unknown>, envelope?: EventEnvelopeOptions): void;
 
   /** Access the shared database. */
   getDb(): SqliteDb;
@@ -38,7 +38,9 @@ export interface AgentSDK {
   /** Send an async message to a target. "human" → Telegram/web. Agent name → agent inbox. */
   message(target: string, content: string): void;
 
-  /** Escalate to a target — I'm stuck, need help. Enters escalation chain, may trigger immediate wake. */
+  /** External escalation. Defaults to owner agent:may. */
+  escalate(reason: string, opts?: EscalationOptions): void;
+  /** Legacy compatibility wrapper. */
   escalate(target: string, reason: string): void;
 
   /** System paths. */
@@ -61,8 +63,8 @@ export interface WorkflowSDK extends AgentSDK {
 
   /** Terminate the workflow successfully. */
   done(summary: string, opts?: DoneOpts): WorkflowResult;
-  // Note: escalate() inherited from AgentSDK.
-  // In workflow context, escalate(target, reason) also terminates the workflow.
+  // Note: the file-based workflow runner uses WorkflowContext.escalate(), which
+  // returns a local terminal result and does not emit escalation.created.
 }
 
 // ── Supporting types ──────────────────────────────────────────────────
@@ -71,6 +73,23 @@ export interface RunOpts {
   source?: string;
   projectId?: string;
   timeout?: number;
+}
+
+export interface EventEnvelopeOptions {
+  owner?: string;
+  source?: string;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+}
+
+export interface EscalationOptions extends EventEnvelopeOptions {
+  requestedAction?: string;
+  evidence?: Record<string, unknown>;
+  severity?: "P0" | "P1" | "P2" | "P3";
+  projectId?: string;
+  sourceSessionId?: string;
+  resume?: Record<string, unknown>;
+  dedupKey?: string;
 }
 
 export interface TaskResult {

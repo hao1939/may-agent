@@ -75,4 +75,20 @@ describe("project-schema scalar round-trip (Bug E regression)", () => {
     const content = wrap('id: p\nowner: bob\nstatus: blocked\nstop_reason: "line1\\nline2"');
     expect(validateProjectFormat(content, "p")).toEqual([]);
   });
+
+  it("validateProjectFormat accepts only canonical project statuses", () => {
+    for (const status of ["active", "waiting", "blocked", "pending-review", "paused", "done", "closed"]) {
+      const content = wrap(`id: p\nowner: may\nstatus: ${status}`);
+      expect(validateProjectFormat(content, "p")).toEqual([]);
+    }
+  });
+
+  it("validateProjectFormat rejects non-canonical project statuses and the legacy complete alias", () => {
+    expect(validateProjectFormat(wrap("id: p\nowner: may\nstatus: complete"), "p")).toContain(
+      "frontmatter status 'complete' is a legacy alias; use 'done'",
+    );
+    expect(validateProjectFormat(wrap("id: p\nowner: may\nstatus: stalled"), "p")).toContain(
+      "frontmatter status 'stalled' is not canonical",
+    );
+  });
 });

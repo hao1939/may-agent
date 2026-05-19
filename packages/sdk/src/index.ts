@@ -322,12 +322,13 @@ export interface SDKWorkflowResult {
 export interface AgentSDK {
   runAgent(agent: string, task: string, opts?: RunOpts): Promise<SDKTaskResult>;
   runWorkflow(name: string, task: string, opts?: RunOpts): Promise<SDKWorkflowResult>;
-  emit(type: string, data?: Record<string, unknown>): void;
+  emit(type: string, data?: Record<string, unknown>, envelope?: EventEnvelopeOptions): void;
   getDb(): SqliteDb;
   query: QueryAPI;
   metrics: MetricService;
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
+  escalate(reason: string, opts?: EscalationOptions): void;
   escalate(target: string, reason: string): void;
   paths: {
     persist: string;
@@ -342,6 +343,23 @@ export interface WorkflowSDK extends AgentSDK {
   task: string;
   agent: string;
   done(summary: string, opts?: DoneOpts): SDKWorkflowResult;
+}
+
+export interface EventEnvelopeOptions {
+  owner?: string;
+  source?: string;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+}
+
+export interface EscalationOptions extends EventEnvelopeOptions {
+  requestedAction?: string;
+  evidence?: Record<string, unknown>;
+  severity?: "P0" | "P1" | "P2" | "P3";
+  projectId?: string;
+  sourceSessionId?: string;
+  resume?: Record<string, unknown>;
+  dedupKey?: string;
 }
 
 // ── Handler / cron contract ───────────────────────────────────────────
