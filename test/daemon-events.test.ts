@@ -133,4 +133,56 @@ describe("daemon event subscribers", () => {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
+
+  it("emits canonical escalation.created when the circuit breaker terminates a stuck session", async () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-circuit-"));
+    const bus = new EventBus();
+    const events: any[] = [];
+    const manager = {
+      resumeInterrupted: () => false,
+    };
+
+    try {
+      attachDaemonEventSubscribers({
+        bus,
+        manager: manager as any,
+        persistDir,
+        projectRoot: persistDir,
+      });
+      bus.subscribe((event) => events.push(event));
+
+      bus.emit({ type: "session.start", sessionId: "s_stuck", agent: "builder", task: "fix build" } as any);
+      for (let i = 0; i < 6; i++) {
+        bus.emit({
+          type: "turn_end",
+          sessionId: "s_stuck",
+          agent: "builder",
+          toolCalls: 1,
+          errorCount: 1,
+        } as any);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(events).toContainEqual(expect.objectContaining({ type: "cancel", sessionId: "s_stuck" }));
+      const escalation = events.find((event) => event.type === "escalation.created");
+      expect(escalation).toMatchObject({
+        type: "escalation.created",
+        source: "runtime:circuit-breaker",
+        owner: "agent:may",
+        urgency: "high",
+        data: expect.objectContaining({
+          sourceAgent: "builder",
+          sourceSessionId: "s_stuck",
+          reason: expect.stringContaining("Stuck: 6 consecutive error-only turns"),
+          requestedAction: expect.stringContaining("Investigate the root cause"),
+          severity: "P1",
+        }),
+      });
+      expect(escalation.data).not.toHaveProperty("owner");
+      expect(events.some((event) => event.type === "message.created" && event.source === "system:circuit-breaker")).toBe(false);
+    } finally {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
 });
