@@ -2,6 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { EventBus } from "../src/app/event-bus.js";
 import { attachTelegramOutbound } from "../src/app/transport/telegram-outbound.js";
 
+function sessionStart(data: Record<string, unknown>, source = "runtime") {
+  return { type: "session.start", source, owner: `agent:${data.agent}`, data };
+}
+
+function sessionEnd(data: Record<string, unknown>, source = "runtime") {
+  return { type: "session.end", source, owner: `agent:${data.agent}`, data };
+}
+
 describe("telegram outbound routing", () => {
   it("streams root chat text and avoids duplicate end summaries", () => {
     const bus = new EventBus();
@@ -15,11 +23,11 @@ describe("telegram outbound routing", () => {
       sendToUser: (text) => sent.push(text),
     });
 
-    bus.emit({ type: "session.start", sessionId: "s_root", agent: "may", kind: "chat", source: "telegram" } as any);
+    bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
     expect(outbound.getRootChatSessionId()).toBe("s_root");
 
     bus.emit({ type: "text", sessionId: "s_root", agent: "may", text: "hello" } as any);
-    bus.emit({ type: "session.end", sessionId: "s_root", agent: "may", status: "done", summary: "hello" } as any);
+    bus.emit(sessionEnd({ sessionId: "s_root", agent: "may", status: "done", summary: "hello" }) as any);
 
     expect(sent).toEqual(["hello"]);
     expect(outbound.getRootChatSessionId()).toBeNull();
@@ -38,9 +46,9 @@ describe("telegram outbound routing", () => {
       sendToUser: (text) => sent.push(text),
     });
 
-    bus.emit({ type: "session.start", sessionId: "s_root", agent: "may", kind: "chat", source: "telegram" } as any);
-    bus.emit({ type: "session.start", sessionId: "s_child", parentSessionId: "s_root", agent: "scout" } as any);
-    bus.emit({ type: "session.end", sessionId: "s_child", agent: "scout", status: "done", finishParams: { summary: "found a path" } } as any);
+    bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
+    bus.emit(sessionStart({ sessionId: "s_child", parentSessionId: "s_root", agent: "scout" }) as any);
+    bus.emit(sessionEnd({ sessionId: "s_child", agent: "scout", status: "done", finishParams: { summary: "found a path" } }) as any);
 
     expect(sent).toEqual(["✅ scout: found a path"]);
     outbound.close();
@@ -82,7 +90,7 @@ describe("telegram outbound routing", () => {
     });
 
     outbound.close();
-    bus.emit({ type: "session.start", sessionId: "s_root", agent: "may", kind: "chat", source: "telegram" } as any);
+    bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
     bus.emit({ type: "text", sessionId: "s_root", agent: "may", text: "after close" } as any);
 
     expect(sent).toEqual([]);

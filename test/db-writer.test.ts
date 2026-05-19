@@ -20,22 +20,32 @@ describe("DbWriter", () => {
 
     writer.handler({
       type: "session.start",
-      sessionId: "s_project",
-      agent: "may",
-      task: "project worker",
-      kind: "call",
       source: "workflow:project",
-      workflowRunId: "wr_project",
-      projectId: "may/aks-rp-e2e",
+      owner: "agent:may",
+      data: {
+        sessionId: "s_project",
+        agent: "may",
+        task: "project worker",
+        kind: "call",
+        trigger: "runtime",
+        firedAt: Date.now(),
+        workflowRunId: "wr_project",
+        projectId: "may/aks-rp-e2e",
+      },
     } as any);
     writer.handler({
       type: "session.start",
-      sessionId: "s_project",
-      agent: "may",
-      task: "project worker resumed",
-      kind: "call",
       source: "workflow:project",
-      workflowRunId: "wr_project",
+      owner: "agent:may",
+      data: {
+        sessionId: "s_project",
+        agent: "may",
+        task: "project worker resumed",
+        kind: "call",
+        trigger: "runtime",
+        firedAt: Date.now(),
+        workflowRunId: "wr_project",
+      },
     } as any);
 
     const row = db.prepare("SELECT sessionId, projectId, workflowRunId FROM sessions WHERE sessionId = ?").get("s_project") as any;

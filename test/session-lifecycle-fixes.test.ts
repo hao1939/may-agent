@@ -124,23 +124,37 @@ describe("session.start metadata", () => {
       // Fake model may fail; this test only needs the start event.
     }
 
-    const start = events.find((event) => event.type === "session.start" && event.sessionId === sessionId);
+    const start = events.find((event) => event.type === "session.start" && (event as any).data?.sessionId === sessionId);
     expect(start).toMatchObject({
       type: "session.start",
       source: "metric-alert-reactor:test.metric",
-      kind: "call",
-      requestId: "req-1",
-      parentSessionId: "s_parent",
+      owner: "agent:test-agent",
+      data: {
+        sessionId,
+        agent: "test-agent",
+        kind: "call",
+        requestId: "req-1",
+        parentSessionId: "s_parent",
+      },
     });
+    expect(start).not.toHaveProperty("sessionId");
+    expect(start).not.toHaveProperty("agent");
 
-    const end = events.find((event) => event.type === "session.end" && event.sessionId === sessionId);
+    const end = events.find((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId);
     expect(end).toMatchObject({
       type: "session.end",
       source: "metric-alert-reactor:test.metric",
-      kind: "call",
-      requestId: "req-1",
-      parentSessionId: "s_parent",
+      owner: "agent:test-agent",
+      data: {
+        sessionId,
+        agent: "test-agent",
+        kind: "call",
+        requestId: "req-1",
+        parentSessionId: "s_parent",
+      },
     });
+    expect(end).not.toHaveProperty("sessionId");
+    expect(end).not.toHaveProperty("agent");
   });
 });
 
