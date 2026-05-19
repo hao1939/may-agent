@@ -2693,6 +2693,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
       if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return serveIndex();
       if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/"))) return serveProjectStatic(url.pathname);
+      // Top-level platform UI assets: index.html uses relative paths like
+      // `styles.css`, `app.js`, `pages/projects.js`. Map those to
+      // <PROJECTS_ROOT>/platform/ui/<path>. Restricted to known static
+      // extensions so /api/foo never falls through to this branch.
+      if (req.method === "GET" && /^\/([\w\-.]+\/)*[\w\-.]+\.(css|js|map|svg|png|jpg|jpeg|gif|webp|ico)$/.test(url.pathname)) {
+        const platformUiAsset = resolve(PROJECTS_ROOT, "platform", "ui", url.pathname.replace(/^\//, ""));
+        const platformUiDir = resolve(PROJECTS_ROOT, "platform", "ui");
+        const rel = relative(platformUiDir, platformUiAsset);
+        const inside = rel === "" || (!rel.startsWith("..") && !rel.startsWith("/"));
+        if (inside && existsSync(platformUiAsset) && statSync(platformUiAsset).isFile()) {
+          return serveFile(platformUiAsset);
+        }
+      }
       return new Response("Not found", { status: 404 });
     },
     websocket: {
