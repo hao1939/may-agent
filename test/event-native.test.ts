@@ -202,8 +202,37 @@ describe("event-native: events table", () => {
 
     expect(rows.map((row) => row.source)).toEqual(["agent:dev", "agent:dev"]);
     expect(rows.map((row) => row.owner)).toEqual(["agent:reviewer", "human:operator"]);
-    expect(JSON.parse(rows[0].data)).toMatchObject({ from: "dev", to: "reviewer" });
-    expect(JSON.parse(rows[1].data)).toMatchObject({ from: "dev", to: "human" });
+    expect(JSON.parse(rows[0].data)).toEqual({
+      from: "dev",
+      to: "reviewer",
+      content: "Please inspect this change.",
+      intent: null,
+      artifact: null,
+      priority: "P2",
+    });
+    expect(JSON.parse(rows[1].data)).toEqual({
+      from: "dev",
+      to: "human",
+      content: "Need operator input.",
+      intent: null,
+      artifact: null,
+      priority: "P1",
+    });
+  });
+
+  it("does not persist flat message.created events", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "message.created",
+      from: "dev",
+      to: "human",
+      content: "legacy flat message",
+    } as any);
+
+    const count = db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get("message.created") as { count: number };
+    expect(count.count).toBe(0);
   });
 
   it("does not duplicate owner/source envelope fields into canonical event data", () => {

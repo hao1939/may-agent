@@ -51,27 +51,6 @@ function eventOwner(event: Record<string, unknown>, fallback?: unknown): string 
   return typeof owner === "string" ? owner : typeof fallback === "string" ? fallback : null;
 }
 
-function messageOwner(target: unknown): string | null {
-  if (typeof target !== "string") return null;
-  const value = target.trim();
-  if (!value) return null;
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  const lower = value.toLowerCase();
-  if (lower === "human" || lower === "hao" || lower === "user" || lower === "operator") return "human:operator";
-  return `agent:${value}`;
-}
-
-function messageSource(source: unknown): string | null {
-  if (typeof source !== "string") return null;
-  const value = source.trim();
-  if (!value) return null;
-  if (value.includes(":")) return value;
-  const lower = value.toLowerCase();
-  if (lower === "human" || lower === "hao" || lower === "user" || lower === "operator") return "human:operator";
-  if (["socket", "telegram", "web-ui", "cli", "cron", "runtime", "metrics", "metrics-snapshot"].includes(lower)) return value;
-  return `agent:${value}`;
-}
-
 function eventUrgency(event: Record<string, unknown>): string {
   const urgency = isCanonicalEnvelope(event) ? event.urgency : eventPayload(event).urgency;
   return typeof urgency === "string" ? urgency : "normal";
@@ -147,20 +126,18 @@ export class DbWriter {
         case "message.created":
           {
             const ev = event as any;
+            if (!isCanonicalEnvelope(ev)) break;
             const payload = eventPayload(ev);
             const priority = payload.priority ?? "P2";
-            const urgency = isCanonicalEnvelope(ev)
-              ? eventUrgency(ev)
-              : priority === "P0" ? "high" : "normal";
+            const urgency = eventUrgency(ev);
             // v2 inter-agent message — persist with canonical source/owner so
-            // inbox queries key on the event owner. Accept both canonical
-            // envelopes and legacy flat live-bus messages.
+            // inbox queries key on the event owner.
             this.db.run(
               "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
               [
                 "message.created",
-                eventSource(ev) ?? messageSource(payload.from),
-                eventOwner(ev) ?? messageOwner(payload.to),
+                eventSource(ev),
+                eventOwner(ev),
                 JSON.stringify({
                   from: payload.from,
                   to: payload.to,
@@ -168,9 +145,6 @@ export class DbWriter {
                   intent: payload.intent ?? null,
                   artifact: payload.artifact ?? null,
                   priority,
-                  // Mirror to legacy 'task' field so prompt assembly (which reads
-                  // data.task) renders the message even before that code is updated.
-                  task: payload.content,
                 }),
                 Date.now(),
                 urgency,
