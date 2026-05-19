@@ -126,7 +126,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       deps.bus.emit({
         type,
         source: envelope?.source ?? `agent:${deps.agentName}`,
-        owner: normalizeOwner(envelope?.owner),
+        owner: normalizeOwner(envelope?.owner ?? deps.agentName),
         ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},
@@ -146,7 +146,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       emit: (type, data, envelope) => deps.bus.emit({
         type,
         source: envelope?.source ?? `agent:${deps.agentName}`,
-        owner: normalizeOwner(envelope?.owner),
+        owner: normalizeOwner(envelope?.owner ?? deps.agentName),
         ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},
