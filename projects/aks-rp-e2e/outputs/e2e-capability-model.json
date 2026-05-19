@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-19T21:12:00Z",
+  "updatedAt": "2026-05-19T22:05:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -1097,6 +1097,36 @@
         "false",
         "unknown"
       ]
+    },
+    {
+      "id": "vpa.haLeaderElection.valid",
+      "label": "VPA HA and Leader Election Valid",
+      "description": "VPA high-availability replica and leader-election behavior matches source intent where version gates apply.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.certRenewal.valid",
+      "label": "VPA Certificate Renewal Valid",
+      "description": "VPA admission webhook certificate renewal behavior matches source intent.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.survivesUpgrade",
+      "label": "VPA Survives Upgrade",
+      "description": "VPA components and recommendation/update behavior continue after cluster upgrade.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
     }
   ],
   "expectationDependencies": [
@@ -2016,8 +2046,126 @@
       "description": "Public API/CLI state persistence branch for VPA; does not include recommendations/in-place behavior."
     },
     {
+      "id": "workload-autoscaler-vpa-components-recommendations-runtime",
+      "label": "VPA Components and Recommendation Runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        }
+      ],
+      "description": "Iteration78-covered VPA runtime branch: CRDs/webhook/core deployments ready and a VPA object generates CPU/memory recommendations. This intentionally excludes Helm release metadata, in-place update, HA/leader-election, certificate renewal, upgrade survival, and OS/arch variants."
+    },
+    {
+      "id": "workload-autoscaler-vpa-inplace-update-runtime",
+      "label": "VPA In-place Update Runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived OverlayVPA branch for observing VPA in-place updates where Kubernetes/version gates support it; not run in iteration78."
+    },
+    {
+      "id": "workload-autoscaler-vpa-ha-leader-election-runtime",
+      "label": "VPA HA and Leader-election Runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haLeaderElection.valid",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived OverlayVPA branch for HA replica/leader-election behavior; not run in iteration78."
+    },
+    {
+      "id": "workload-autoscaler-vpa-cert-renewal-runtime",
+      "label": "VPA Certificate Renewal Runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.certRenewal.valid",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived OverlayVPA branch for admission webhook certificate renewal; not run in iteration78."
+    },
+    {
+      "id": "workload-autoscaler-vpa-upgrade-survival-runtime",
+      "label": "VPA Upgrade Survival Runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.survivesUpgrade",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived OverlayVPA branch for VPA behavior after cluster upgrade; not run in iteration78."
+    },
+    {
+      "id": "workload-autoscaler-vpa-helm-release-runtime",
+      "label": "VPA Helm Release Metadata Runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived OverlayVPA assertion for Helm release metadata; iteration78 did not inspect Helm release metadata."
+    },
+    {
       "id": "workload-autoscaler-vpa-runtime",
-      "label": "VPA Runtime Recommendations and In-place Behavior",
+      "label": "VPA Runtime Source Roll-up",
       "inputPath": [
         {
           "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
@@ -2046,7 +2194,7 @@
           "value": "true"
         }
       ],
-      "description": "Grouped source-derived VPA overlay contract across OS/arch/version variants."
+      "description": "Legacy grouped source-derived VPA overlay roll-up retained as an unknown aggregate only. Use split VPA branch features for pass/unknown tracking."
     },
     {
       "id": "image-cleaner-state-interval",
@@ -4751,7 +4899,207 @@
       "notes": "Partial evidence only: profile persistence, not VPA Helm/components/recommendations."
     },
     {
-      "id": "Scenario_Overlay_VPA_Runtime",
+      "id": "Scenario_Overlay_VPA_ComponentsRecommendations_Runtime",
+      "featureId": "workload-autoscaler-vpa-components-recommendations-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "notes": "Iteration78 staging evidence: VPA CRDs, vpa-webhook service, admission/recommender/updater deployments were ready, and hamster-vpa reached RecommendationProvided=True with CPU/memory targets. updateMode=Off means this does not claim in-place update.",
+      "observedPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "Scenario_Overlay_VPA_InPlaceUpdate_Runtime",
+      "featureId": "workload-autoscaler-vpa-inplace-update-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "notes": "Source-derived OverlayVPA branch; iteration78 used updateMode=Off and explicitly did not observe in-place pod updates.",
+      "observedPath": [
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "Scenario_Overlay_VPA_HA_LeaderElection_Runtime",
+      "featureId": "workload-autoscaler-vpa-ha-leader-election-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haLeaderElection.valid",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "notes": "Source-derived OverlayVPA HA/leader-election branch; iteration78 only observed deployments ready and did not verify HA or leader election semantics.",
+      "observedPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haLeaderElection.valid",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "Scenario_Overlay_VPA_CertRenewal_Runtime",
+      "featureId": "workload-autoscaler-vpa-cert-renewal-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.certRenewal.valid",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "notes": "Source-derived OverlayVPA certificate-renewal branch; not exercised by iteration78.",
+      "observedPath": [
+        {
+          "variable": "vpa.certRenewal.valid",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "Scenario_Overlay_VPA_UpgradeSurvival_Runtime",
+      "featureId": "workload-autoscaler-vpa-upgrade-survival-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.survivesUpgrade",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "notes": "Source-derived OverlayVPA upgrade-survival branch; iteration78 did not upgrade the cluster.",
+      "observedPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.survivesUpgrade",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "Scenario_Overlay_VPA_HelmRelease_Runtime",
+      "featureId": "workload-autoscaler-vpa-helm-release-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "notes": "Source-derived OverlayVPA Helm-release assertion; iteration78 did not inspect Helm release metadata.",
+      "observedPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "unknown"
+        }
+      ]
+    },
+    {
+      "id": "Scenario_Overlay_VPA_Runtime_Rollup",
       "featureId": "workload-autoscaler-vpa-runtime",
       "inputPath": [
         {
@@ -4786,7 +5134,7 @@
         "e2ev3-handwritten-coverage-inventory",
         "iteration78-workload-autoscaler-runtime-staging"
       ],
-      "notes": "Iteration78 staging evidence closes a bounded VPA component/recommendation sub-branch (CRDs, webhook service, admission/recommender/updater deployments ready; hamster-vpa generated CPU/memory recommendations), but the grouped source-derived feature remains unknown overall because Helm-release assertion, in-place update, HA/leader-election, cert renewal, upgrade, and OS/arch matrix branches were explicit non-goals.",
+      "notes": "Legacy grouped roll-up kept unknown so broad VPA runtime is not marked passed by bounded component/recommendation evidence.",
       "observedPath": [
         {
           "variable": "vpa.helmRelease.present",
@@ -8052,9 +8400,9 @@
       "nextAction": "Keep KEDA CRUD disable/re-enable, upgrade survival, and OS SKU variants separate unknown branches."
     },
     {
-      "id": "iteration78-workload-autoscaler-vpa-runtime-bounded-pass",
-      "featureId": "workload-autoscaler-vpa-runtime",
-      "status": "unknown",
+      "id": "iteration78-workload-autoscaler-vpa-components-recommendations-pass",
+      "featureId": "workload-autoscaler-vpa-components-recommendations-runtime",
+      "status": "pass",
       "contextPath": [],
       "inputPath": [
         {
@@ -8080,6 +8428,251 @@
         {
           "variable": "vpa.recommendations.generated",
           "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_ComponentsRecommendations_Runtime"
+      ],
+      "summary": "Bounded VPA runtime branch passed in staging: VPA CRDs/webhook and admission/recommender/updater deployments were ready, and hamster-vpa generated CPU/memory recommendations.",
+      "nextAction": "Use separate residual VPA branch features for in-place update, HA/leader-election, certificate renewal, upgrade survival, Helm metadata, and OS/arch/version variants."
+    },
+    {
+      "id": "iteration79-workload-autoscaler-vpa-inplace-update-unknown",
+      "featureId": "workload-autoscaler-vpa-inplace-update-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_InPlaceUpdate_Runtime"
+      ],
+      "summary": "VPA in-place update remains unknown; iteration78 intentionally used updateMode=Off and did not observe VPA-driven pod resource updates.",
+      "nextAction": "Run a focused OverlayVPA in-place update probe only if this branch outranks TLS/root-cause and other residual gaps."
+    },
+    {
+      "id": "iteration79-workload-autoscaler-vpa-ha-leader-election-unknown",
+      "featureId": "workload-autoscaler-vpa-ha-leader-election-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haLeaderElection.valid",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haLeaderElection.valid",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_HA_LeaderElection_Runtime"
+      ],
+      "summary": "VPA HA/leader-election remains unknown; iteration78 observed ready deployments but did not validate replica expectations or leader election behavior.",
+      "nextAction": "Combine with a focused full OverlayVPA residual probe if cloud execution is selected."
+    },
+    {
+      "id": "iteration79-workload-autoscaler-vpa-cert-renewal-unknown",
+      "featureId": "workload-autoscaler-vpa-cert-renewal-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.certRenewal.valid",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.certRenewal.valid",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_CertRenewal_Runtime"
+      ],
+      "summary": "VPA certificate renewal remains unknown; iteration78 did not exercise certificate lifetime/renewal behavior.",
+      "nextAction": "Source-scope renewal preconditions before any long-running cloud probe."
+    },
+    {
+      "id": "iteration79-workload-autoscaler-vpa-upgrade-survival-unknown",
+      "featureId": "workload-autoscaler-vpa-upgrade-survival-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.survivesUpgrade",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.survivesUpgrade",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_UpgradeSurvival_Runtime"
+      ],
+      "summary": "VPA upgrade survival remains unknown; iteration78 did not perform a cluster upgrade.",
+      "nextAction": "Run only as part of an upgrade-focused probe, not as a quick component/recommendation validation."
+    },
+    {
+      "id": "iteration79-workload-autoscaler-vpa-helm-release-unknown",
+      "featureId": "workload-autoscaler-vpa-helm-release-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_HelmRelease_Runtime"
+      ],
+      "summary": "VPA Helm release metadata remains unknown; iteration78 checked Kubernetes CRDs/services/deployments but not Helm release metadata.",
+      "nextAction": "Include Helm metadata inspection in the next VPA-focused local/source or cloud probe."
+    },
+    {
+      "id": "iteration79-workload-autoscaler-vpa-runtime-rollup-unknown",
+      "featureId": "workload-autoscaler-vpa-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haAndCertBehavior.valid",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "unknown"
+        },
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
         },
         {
           "variable": "vpa.inplaceUpdate.observed",
@@ -8091,13 +8684,14 @@
         }
       ],
       "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
         "iteration78-workload-autoscaler-runtime-staging"
       ],
       "testCases": [
-        "Scenario_Overlay_VPA_Runtime"
+        "Scenario_Overlay_VPA_Runtime_Rollup"
       ],
-      "summary": "Bounded VPA runtime component/recommendation evidence passed, but the grouped workload-autoscaler-vpa-runtime feature remains unknown overall because full source intent includes Helm-release assertion, in-place update, HA/leader-election, cert renewal, upgrade survival, and OS/arch matrix branches not tested in iteration78.",
-      "nextAction": "Either split the capability model into VPA component/recommendation vs in-place/HA/cert/upgrade subfeatures, or run a focused full OverlayVPA-style probe before marking the grouped feature passed."
+      "summary": "Legacy grouped VPA runtime roll-up remains unknown. The passed iteration78 evidence is represented by workload-autoscaler-vpa-components-recommendations-runtime instead of hidden inside this aggregate.",
+      "nextAction": "Prefer the split VPA branches for ranking; retire this roll-up after downstream inventory/ranking no longer references it."
     },
     {
       "id": "iteration78-workload-autoscaler-keda-crud-unknown",
