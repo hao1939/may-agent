@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-19T20:40:00Z",
+  "updatedAt": "2026-05-19T21:12:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -4673,11 +4673,22 @@
           "value": "true"
         }
       ],
-      "result": "unknown",
+      "result": "pass",
       "evidence": [
-        "e2ev3-handwritten-coverage-inventory"
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
       ],
-      "notes": "Source-derived intended contract; current staging evidence covers only profile persistence."
+      "notes": "Iteration78 staging runtime evidence: KEDA CRDs/controllers/APIService present and cron ScaledObject scaled a ready Deployment from 1 to 4 replicas and back to 1. CRUD/upgrade/OS variants remain separate unknown branches.",
+      "observedPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.workload.scaled",
+          "value": "true"
+        }
+      ]
     },
     {
       "id": "Scenario_Keda_CRUD",
@@ -4772,9 +4783,32 @@
       ],
       "result": "unknown",
       "evidence": [
-        "e2ev3-handwritten-coverage-inventory"
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging"
       ],
-      "notes": "Representative grouped test case for Scenario_Overlay_VPA_* handwritten coverage."
+      "notes": "Iteration78 staging evidence closes a bounded VPA component/recommendation sub-branch (CRDs, webhook service, admission/recommender/updater deployments ready; hamster-vpa generated CPU/memory recommendations), but the grouped source-derived feature remains unknown overall because Helm-release assertion, in-place update, HA/leader-election, cert renewal, upgrade, and OS/arch matrix branches were explicit non-goals.",
+      "observedPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "unknown"
+        },
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "unknown"
+        },
+        {
+          "variable": "vpa.haAndCertBehavior.valid",
+          "value": "unknown"
+        }
+      ]
     },
     {
       "id": "ImageCleaner_StateInterval_Staging",
@@ -7976,6 +8010,131 @@
       ],
       "summary": "OIDC post-delete issuer cleanup remains unknown because iteration76 only initiated asynchronous cleanup and did not verify issuer document deletion after cluster deletion.",
       "nextAction": "Run only as a focused cleanup/lifecycle probe with bounded polling after confirmed cluster deletion."
+    },
+    {
+      "id": "iteration78-workload-autoscaler-keda-runtime-pass",
+      "featureId": "workload-autoscaler-keda-runtime",
+      "status": "pass",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.workload.scaled",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.workload.scaled",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Keda"
+      ],
+      "summary": "KEDA runtime passed in staging: create-time --enable-keda persisted profile state, core CRDs/deployments/APIService were present/ready, and a cron ScaledObject scaled the workload up to 4 ready replicas and back down to 1 ready replica.",
+      "nextAction": "Keep KEDA CRUD disable/re-enable, upgrade survival, and OS SKU variants separate unknown branches."
+    },
+    {
+      "id": "iteration78-workload-autoscaler-vpa-runtime-bounded-pass",
+      "featureId": "workload-autoscaler-vpa-runtime",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "unknown"
+        },
+        {
+          "variable": "vpa.haAndCertBehavior.valid",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "iteration78-workload-autoscaler-runtime-staging"
+      ],
+      "testCases": [
+        "Scenario_Overlay_VPA_Runtime"
+      ],
+      "summary": "Bounded VPA runtime component/recommendation evidence passed, but the grouped workload-autoscaler-vpa-runtime feature remains unknown overall because full source intent includes Helm-release assertion, in-place update, HA/leader-election, cert renewal, upgrade survival, and OS/arch matrix branches not tested in iteration78.",
+      "nextAction": "Either split the capability model into VPA component/recommendation vs in-place/HA/cert/upgrade subfeatures, or run a focused full OverlayVPA-style probe before marking the grouped feature passed."
+    },
+    {
+      "id": "iteration78-workload-autoscaler-keda-crud-unknown",
+      "featureId": "workload-autoscaler-keda-crud",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.resources.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "keda.resources.absentAfterDisable",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "iteration78-workload-autoscaler-runtime-staging",
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "testCases": [
+        "Scenario_Keda_CRUD"
+      ],
+      "summary": "KEDA CRUD remains unknown because iteration78 intentionally did not disable/re-enable KEDA after the runtime scaling pass.",
+      "nextAction": "Run a dedicated KEDA lifecycle toggle probe only if disable/re-enable coverage outranks other gaps."
     }
   ],
   "evidence": [
@@ -8116,6 +8275,12 @@
       "kind": "artifact",
       "path": "outputs/iteration76-workload-identity-oidc-runtime-staging.md",
       "summary": "2026-05-19 staging runtime validation for AKS workload identity Linux token projection plus OIDC issuer discovery/JWKS on a Kubernetes 1.34 cluster."
+    },
+    {
+      "id": "iteration78-workload-autoscaler-runtime-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration78-workload-autoscaler-runtime-staging.md",
+      "summary": "2026-05-19 staging runtime evidence for combined workload autoscaler probe: KEDA create-time profile plus runtime controllers/CRDs/APIService and cron ScaledObject scaling; VPA create-time profile plus CRDs/webhook/deployments and recommendation generation. KEDA CRUD, KEDA upgrade, VPA in-place/HA/cert/upgrade/OS-matrix branches remain non-goals."
     }
   ]
 }
