@@ -61,4 +61,64 @@ describe("daemon event subscribers", () => {
       rmSync(persistDir, { recursive: true, force: true });
     }
   });
+
+  it("emits canonical escalation.created when auto-resume attempts are exhausted", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-resume-"));
+    const bus = new EventBus();
+    const events: any[] = [];
+    const manager = {
+      resumeInterrupted: () => false,
+    };
+    const originalSetTimeout = globalThis.setTimeout;
+
+    try {
+      (globalThis as any).setTimeout = (fn: () => void) => {
+        fn();
+        return 0;
+      };
+      attachDaemonEventSubscribers({
+        bus,
+        manager: manager as any,
+        persistDir,
+        projectRoot: persistDir,
+      });
+      bus.subscribe((event) => events.push(event));
+
+      const interrupted = {
+        type: "session.end",
+        sessionId: "s_retry",
+        agent: "scout",
+        outcome: "interrupted",
+        summary: "interrupted",
+        durationMs: 10,
+        status: "interrupted",
+        error: "network reset",
+        task: "finish investigation",
+        opCount: 1,
+        turnCount: 3,
+      } as const;
+
+      bus.emit(interrupted);
+      bus.emit(interrupted);
+      bus.emit(interrupted);
+
+      const escalation = events.find((event) => event.type === "escalation.created");
+      expect(escalation).toMatchObject({
+        type: "escalation.created",
+        source: "runtime:auto-resume",
+        owner: "agent:may",
+        urgency: "high",
+        data: expect.objectContaining({
+          sourceAgent: "scout",
+          sourceSessionId: "s_retry",
+          reason: expect.stringContaining("Interrupted 3x"),
+          severity: "P1",
+        }),
+      });
+      expect(events.some((event) => event.type === "message.created" && event.owner === "human:operator")).toBe(false);
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
 });
