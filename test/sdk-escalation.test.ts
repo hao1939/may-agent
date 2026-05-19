@@ -36,6 +36,41 @@ afterEach(() => {
 });
 
 describe("AgentSDK escalation", () => {
+  it("defaults sdk.emit owner to the emitting agent", () => {
+    const { sdk, events, root } = makeSdk();
+    roots.push(root);
+
+    sdk.emit("handler.skipped", {
+      handler: "dev-handler",
+      reason: "missing payload",
+    });
+
+    expect(events).toContainEqual({
+      type: "handler.skipped",
+      source: "agent:dev",
+      owner: "agent:dev",
+      data: {
+        handler: "dev-handler",
+        reason: "missing payload",
+      },
+    });
+  });
+
+  it("lets sdk.emit override owner explicitly", () => {
+    const { sdk, events, root } = makeSdk();
+    roots.push(root);
+
+    sdk.emit("metric.breach", { metricId: "system.health", message: "check" }, { owner: "human:operator", urgency: "high" });
+
+    expect(events).toContainEqual({
+      type: "metric.breach",
+      source: "agent:dev",
+      owner: "human:operator",
+      urgency: "high",
+      data: { metricId: "system.health", message: "check" },
+    });
+  });
+
   it("emits canonical escalation.created with envelope fields isolated from data", () => {
     const { sdk, events, root } = makeSdk();
     roots.push(root);
