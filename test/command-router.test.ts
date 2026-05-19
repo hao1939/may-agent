@@ -98,6 +98,37 @@ describe("command router", () => {
     h.router.close();
   });
 
+  it("ignores input and steer commands that do not use the canonical message field", () => {
+    const handled: Array<{ message: string; source?: string }> = [];
+    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const h = createHarness({
+      status: () => [],
+      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+        resumed.push({ sessionId, message, source: opts?.source });
+        return sessionId;
+      },
+    } as Partial<SubagentManager>);
+    h.setChatSession({
+      handleInput: (message: string, source?: string) => handled.push({ message, source }),
+    } as unknown as ChatSession);
+
+    h.bus.emit({ type: "input", text: "legacy input", source: "test" } as any);
+    h.bus.emit({ type: "steer", sessionId: "s_cold", text: "legacy steer", source: "test" } as any);
+
+    expect(handled).toEqual([]);
+    expect(resumed).toEqual([]);
+    h.router.close();
+  });
+
+  it("does not translate legacy message commands into message.created events", () => {
+    const h = createHarness();
+
+    h.bus.emit({ type: "message", from: "may", to: "dev", task: "hello", priority: "P2" } as any);
+
+    expect(h.emitted.some((event) => event.type === "message.created")).toBe(false);
+    h.router.close();
+  });
+
   it("applies project.comment.created and nudges the project", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "router-project-"));
     const projectPath = "projects/demo";

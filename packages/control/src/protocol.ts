@@ -18,6 +18,7 @@ const CANONICAL_SOCKET_EVENTS = new Set([
 
 const LEGACY_SOCKET_FRAME_TYPES = new Set([
   "emit",
+  "message",
   "close",
   "cancel_task",
   "reload_agents",

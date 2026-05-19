@@ -116,9 +116,9 @@ describe("socket frame normalization", () => {
       event: { type: "fork", agent: "dev", message: "investigate" },
     });
     expect(normalizeSocketFrame({ type: "message", from: "may", to: "dev", content: "hello" })).toEqual({
-      kind: "event",
+      kind: "error",
       command: "message",
-      event: { type: "message", from: "may", to: "dev", content: "hello" },
+      message: "Unsupported legacy socket frame type: message",
     });
   });
 
@@ -127,6 +127,11 @@ describe("socket frame normalization", () => {
       kind: "error",
       command: "emit",
       message: "Unsupported legacy socket frame type: emit",
+    });
+    expect(normalizeSocketFrame({ type: "message", from: "may", to: "dev", task: "hello" })).toEqual({
+      kind: "error",
+      command: "message",
+      message: "Unsupported legacy socket frame type: message",
     });
     expect(normalizeSocketFrame({ type: "close" })).toEqual({
       kind: "error",
