@@ -2,11 +2,35 @@ import { describe, expect, it } from "bun:test";
 import { normalizeSocketFrame } from "../packages/control/src/protocol.js";
 
 describe("socket frame normalization", () => {
-  it("passes raw bus events through by default", () => {
+  it("passes unknown raw bus events through by default", () => {
+    expect(normalizeSocketFrame({ type: "custom.event", projectId: "p1" })).toEqual({
+      kind: "event",
+      command: "custom.event",
+      event: { type: "custom.event", projectId: "p1" },
+    });
+  });
+
+  it("normalizes known domain events to canonical envelopes at the socket boundary", () => {
     expect(normalizeSocketFrame({ type: "message.created", from: "may", to: "human", content: "hi" })).toEqual({
       kind: "event",
       command: "message.created",
-      event: { type: "message.created", from: "may", to: "human", content: "hi" },
+      event: {
+        type: "message.created",
+        source: "agent:may",
+        owner: "human:operator",
+        data: { from: "may", to: "human", content: "hi" },
+      },
+    });
+
+    expect(normalizeSocketFrame({ type: "project.nudge", projectPath: "projects/x", source: "web-ui" })).toEqual({
+      kind: "event",
+      command: "project.nudge",
+      event: {
+        type: "project.nudge",
+        source: "web-ui",
+        owner: "agent:may",
+        data: { projectPath: "projects/x" },
+      },
     });
   });
 
@@ -28,6 +52,11 @@ describe("socket frame normalization", () => {
       kind: "event",
       command: "emit",
       event: { type: "trigger.metrics-snapshot", forced: true },
+    });
+    expect(normalizeSocketFrame({ type: "emit", event: "heartbeat.trigger", agent: "dev" })).toEqual({
+      kind: "event",
+      command: "emit",
+      event: { type: "heartbeat.trigger", source: "socket", owner: "agent:dev", data: { agent: "dev" } },
     });
   });
 
