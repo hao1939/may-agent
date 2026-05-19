@@ -128,6 +128,89 @@ describe("escalation lifecycle", () => {
     expect(sent[0].message).toContain("Summary: Fixed upstream");
   });
 
+  it("treats workflowRunId as task context instead of a separate resume target", () => {
+    const { persistDir, bus, resumed } = setup();
+
+    bus.emit({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
+      data: {
+        escalationId: "esc_workflow",
+        sourceAgent: "dev",
+        sourceSessionId: "s_workflow_task",
+        workflowRunId: "wr_blocked",
+        reason: "workflow blocked",
+        requestedAction: "decide",
+      },
+    } as never);
+    bus.emit({
+      type: "escalation.resolved",
+      source: "agent:may",
+      owner: "agent:dev",
+      data: {
+        escalationId: "esc_workflow",
+        outcome: "answered",
+        summary: "Continue the workflow",
+      },
+    } as never);
+
+    expect(resumed).toHaveLength(1);
+    expect(resumed[0]).toMatchObject({ sessionId: "s_workflow_task" });
+    expect(resumed[0].message).toContain("Workflow run: wr_blocked");
+
+    const started = getDb(persistDir).prepare(
+      "SELECT data FROM events WHERE event_type = 'escalation.resume_started'",
+    ).get() as { data: string };
+    expect(JSON.parse(started.data)).toMatchObject({
+      escalationId: "esc_workflow",
+      sourceKind: "session",
+      sourceRef: "s_workflow_task",
+      sourceSessionId: "s_workflow_task",
+      workflowRunId: "wr_blocked",
+    });
+  });
+
+  it("does not resume a workflow without a source task session", () => {
+    const { persistDir, bus, resumed } = setup();
+
+    bus.emit({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
+      data: {
+        escalationId: "esc_no_task",
+        sourceAgent: "dev",
+        workflowRunId: "wr_orphan",
+        reason: "workflow blocked",
+        requestedAction: "decide",
+      },
+    } as never);
+    bus.emit({
+      type: "escalation.resolved",
+      source: "agent:may",
+      owner: "agent:dev",
+      data: {
+        escalationId: "esc_no_task",
+        outcome: "answered",
+        summary: "Continue",
+      },
+    } as never);
+
+    expect(resumed).toHaveLength(0);
+
+    const failed = getDb(persistDir).prepare(
+      "SELECT data FROM events WHERE event_type = 'escalation.resume_failed'",
+    ).get() as { data: string };
+    expect(JSON.parse(failed.data)).toMatchObject({
+      escalationId: "esc_no_task",
+      workflowRunId: "wr_orphan",
+      sourceKind: "unknown",
+      category: "missing_resume_target",
+      recoverable: false,
+    });
+  });
+
   it("waits on needs_human and resumes the parent source when the human child resolves", () => {
     const { persistDir, bus, resumed } = setup();
 

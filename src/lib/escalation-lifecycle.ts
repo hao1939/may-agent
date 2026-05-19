@@ -63,7 +63,7 @@ function sourceSessionId(escalation: EscalationCreated): string | undefined {
   return nonEmptyString(data.sourceSessionId);
 }
 
-function sourceWorkflowRunId(escalation: EscalationCreated): string | undefined {
+function workflowRunIdContext(escalation: EscalationCreated): string | undefined {
   const data = escalation.data;
   const resume = data.resume && typeof data.resume === "object" && !Array.isArray(data.resume)
     ? data.resume as Record<string, unknown>
@@ -74,12 +74,13 @@ function sourceWorkflowRunId(escalation: EscalationCreated): string | undefined 
   return nonEmptyString(data.workflowRunId);
 }
 
-function resumeInstruction(event: AgentEvent, outcome: string, sourceEscalationId: string): string {
+function resumeInstruction(event: AgentEvent, outcome: string, sourceEscalationId: string, workflowRunId?: string): string {
   const data = eventData(event);
   const lines = [
     `Escalation ${sourceEscalationId} resolved.`,
     `Outcome: ${outcome}.`,
   ];
+  if (workflowRunId) lines.push(`Workflow run: ${workflowRunId}`);
   const summary = nonEmptyString(data.summary) ?? nonEmptyString(data.reason);
   if (summary) lines.push(`Summary: ${summary}`);
   const instruction = nonEmptyString(data.resumeInstruction);
@@ -166,25 +167,23 @@ export function createEscalationLifecycleSubscriber(opts: {
 
     const sourceEscalationId = nonEmptyString(sourceCreated.data.escalationId) ?? resolvedEscalationId;
     const sessionId = sourceSessionId(sourceCreated);
-    const workflowRunId = sourceWorkflowRunId(sourceCreated);
+    const workflowRunId = workflowRunIdContext(sourceCreated);
     const baseData = {
       escalationId: sourceEscalationId,
       ...(sourceEscalationId !== resolvedEscalationId ? { resolvedEscalationId } : {}),
       ...(parentEscalationId ? { parentEscalationId } : {}),
+      ...(workflowRunId ? { workflowRunId } : {}),
       outcome,
     };
-    const resumeText = resumeInstruction(event, outcome, sourceEscalationId);
+    const resumeText = resumeInstruction(event, outcome, sourceEscalationId, workflowRunId);
 
     if (!sessionId) {
       emitResumeFailed(opts.bus, owner, {
         ...baseData,
-        sourceKind: workflowRunId ? "workflow" : "unknown",
-        ...(workflowRunId ? { sourceRef: workflowRunId, workflowRunId } : {}),
-        reason: workflowRunId
-          ? "workflow resume from escalation resolution is not wired yet"
-          : "escalation has no session resume target",
-        category: workflowRunId ? "unsupported_source_kind" : "missing_resume_target",
-        recoverable: !!workflowRunId,
+        sourceKind: "unknown",
+        reason: "escalation has no source session resume target",
+        category: "missing_resume_target",
+        recoverable: false,
       });
       return;
     }
