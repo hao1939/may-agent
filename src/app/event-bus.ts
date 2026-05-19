@@ -98,6 +98,7 @@ export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
   | { type: "heartbeat.trigger"; source?: string; owner: string; data: { agent: string } }
   | { type: "heartbeat.skipped"; source?: string; owner: string; data: { agent: string; gate: string; reason?: string; attempts?: number } }
+  | { type: "heartbeat.step_started"; source?: string; owner: string; data: { agent?: string; workflow: string; step: string } }
   | { type: "heartbeat.diagnostics_started"; source?: string; owner: string; data: { agent: string; step: string } }
   | { type: "heartbeat.diagnostics_completed"; source?: string; owner: string; data: { agent: string; step: string; summary: string } }
   | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
