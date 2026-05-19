@@ -73,7 +73,7 @@ describe("QueryService", () => {
     expect(result.rows.map((row) => row.event_type)).toEqual(["example", "example", "example"]);
   });
 
-  it("matches event owners by canonical and legacy owner spelling", () => {
+  it("matches event owners by exact owner value", () => {
     const { db, query } = harness();
 
     db.run(
@@ -85,8 +85,8 @@ describe("QueryService", () => {
       ["project.nudge", "test", "may", JSON.stringify({ legacy: true }), 1],
     );
 
-    expect(query.events({ owner: "may" }).rows.map((row) => row.owner)).toEqual(["agent:may", "may"]);
-    expect(query.events({ owner: "agent:may" }).rows.map((row) => row.owner)).toEqual(["agent:may", "may"]);
+    expect(query.events({ owner: "agent:may" }).rows.map((row) => row.owner)).toEqual(["agent:may"]);
+    expect(query.events({ owner: "may" }).rows.map((row) => row.owner)).toEqual(["may"]);
   });
 
   it("rejects writes and multi-statement SQL", () => {
@@ -302,6 +302,10 @@ describe("QueryService", () => {
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      ["project.nudge", "test", "arc", JSON.stringify({ summary: "legacy bare owner" }), now - 50, "immediate", 10_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
       ["stale", "test", "arc", JSON.stringify({ summary: "expired" }), now - 20_000, "normal", 1],
     );
 
@@ -333,6 +337,7 @@ describe("QueryService", () => {
     expect(context.inbox).toMatchObject([
       { eventType: "project.nudge", urgency: "immediate" },
     ]);
+    expect(context.inbox).toHaveLength(1);
   });
 
   it("loads evaluator deep-eval scan context behind one schema-aware helper", () => {
