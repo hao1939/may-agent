@@ -40,6 +40,16 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
 `--send --message`, `--emit`, `--web`, `--socket`, or `--telegram` is required.
 
+### Environment Variables
+
+| Variable | Effect |
+|----------|--------|
+| `MAY_DAEMON_QUIET=1` | Suppresses the daemon-mode `info` log forwarder. By default, when neither `--console` nor `--chat` is enabled, the daemon forwards `bus.emit({type:"info"})` events through `log()` so operator-facing messages (reload summaries, telegram diagnostics, startup checks) are visible. Set this to `1` to opt out. |
+
+When `--console` or `--chat` IS enabled, `attachConsoleUI` handles `info`
+events (along with session text, tool calls, etc.) and the daemon-mode
+forwarder is not attached — avoiding duplicate prints.
+
 ### Local Startup
 
 ```bash

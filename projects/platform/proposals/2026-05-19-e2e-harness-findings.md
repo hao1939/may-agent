@@ -279,40 +279,41 @@ bare specifier statically."
 
 ### F7. `info` events emitted from daemon-lifecycle don't surface in `--cron --socket` mode
 
-**Status:** RESOLVED — `src/app/daemon-lifecycle.ts` now routes reload
-summaries through `log("info", ...)` in addition to `bus.emit({type:"info"})`.
+**Status:** RESOLVED — fix shipped in two parts:
+  1. `src/app/daemon-lifecycle.ts` reload summary uses `bus.emit({type:"info"})`.
+  2. New `src/app/transport/daemon-info-log.ts` forwards all `info` bus events
+     through `log()` whenever `attachConsoleUI` is NOT attached. Wired into
+     `src/app/app-runtime.ts` as the daemon-mode default; opt out with
+     `MAY_DAEMON_QUIET=1`.
+  3. Unit tests in `test/integration/daemon-info-log.test.ts` (4 cases).
 
 **Surfaced when:** writing E5. The test fired `reload` over the socket,
 the command-router received it, `handleReload` ran to completion (verified
 with a `console.log` probe), yet the daemon log showed no `[reload] ...`
 summary line. The `bus.emit({ type: "info", message: ... })` calls inside
 `handleReload` reached the bus but were silently dropped because no
-subscriber writes `info` events to stdout in `--cron --socket` mode.
+subscriber wrote `info` events to stdout in `--cron --socket` mode.
 
-`info` events are only forwarded to stdout by `attachConsoleUI`, which is
-guarded behind `--console` or `--chat` flags. The daemon process running
-in production is `--cron --socket` (no console attach). So any code that
-relies on `bus.emit({type:"info"})` for operator visibility is effectively
-invisible in production.
+**Root cause:** `info` events were only forwarded to stdout by
+`attachConsoleUI`, which is guarded behind `--console` or `--chat` flags.
+The daemon process running in production is `--cron --socket` (no console
+attach). So any code that relied on `bus.emit({type:"info"})` for operator
+visibility was effectively invisible in production. A grep across `src/`
+found ~70 such call sites — startup checks (broken workflows!), telegram
+routing diagnostics, reload summaries, web dashboard URL, etc. All
+invisible. This was the real bug; the reload symptom was just one example.
 
-Counter-examples that DO appear: anything written via `log()` from
-`src/lib/log.ts` (which uses `console.log` directly), and direct
+**Why two transports, not one:** `attachConsoleUI` does much more than
+forward info — it also prints text streams, tool calls, session lifecycle,
+etc. Forcing it on in daemon mode would re-introduce the noisy stdout
+that `--cron --socket` deliberately avoids. The new `attachDaemonInfoLog`
+is the minimum viable subscriber: forwards only `info` events, lets
+everything else fall through silently.
+
+**Counter-examples that DID always appear:** anything written via `log()`
+from `src/lib/log.ts` (which uses `console.log` directly), and direct
 `console.log` calls in the codebase (e.g. `daemon-agents.ts` prints
 `[agents] Loaded N: ...` that way).
-
-**Fix:** `handleReload` now calls both `log("info", summary)` (always
-visible in daemon log) and `bus.emit({type:"info", message: summary})`
-(for future bus subscribers — telegram echoes, chat console, etc.). The
-same pattern should be applied to other ops-facing info emits if they
-are meant to be observable in daemon mode.
-
-**Broader question (out of scope for the immediate fix):** should
-`attachConsoleUI` (or a slimmed log-only variant) auto-attach when neither
-`--console` nor `--chat` is provided? Right now daemon mode has *no*
-bus→stdout transport at all. This was probably intentional to keep cron
-stdout clean, but it means `info` events from any subsystem are invisible
-unless they also call `log()`. A `--quiet` opt-out would be cleaner than
-the current implicit gate.
 
 ## Recommended sequencing
 
