@@ -31,6 +31,10 @@ import {
 } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
+function eventPayload(row: { data: string | null }): Record<string, unknown> {
+  return JSON.parse(row.data ?? "{}") as Record<string, unknown>;
+}
+
 describe("E2: project comment roundtrip", () => {
   let sb: Sandbox;
   const projectId = "e2e-comment-sandbox";
@@ -114,13 +118,53 @@ describe("E2: project comment roundtrip", () => {
         expect(result.created.length).toBeGreaterThanOrEqual(1);
         expect(result.nudges.length).toBeGreaterThanOrEqual(1);
 
-        // Nudge carries the comment text.
-        const nudgeData = JSON.parse(result.nudges[0].data ?? "{}");
-        expect(nudgeData.data?.commentText ?? nudgeData.commentText).toBe(commentText);
+        const createdRow = result.created[0];
+        expect(createdRow.source).toBe("e2e-test");
+        expect(createdRow.owner).toBe("agent:may");
+        expect(eventPayload(createdRow)).toEqual({
+          projectPath: `projects/${projectId}`,
+          comment: commentText,
+          author: "e2e",
+        });
+
+        const nudgeRow = result.nudges[0];
+        expect(nudgeRow.source).toBe("e2e-test");
+        expect(nudgeRow.owner).toBe("agent:may");
+        expect(eventPayload(nudgeRow)).toEqual({
+          projectPath: `projects/${projectId}`,
+          comment: true,
+          commentText,
+        });
       } finally {
         db.close();
       }
     },
     30_000,
+  );
+
+  test(
+    "rejects flat dot-named socket events before persistence",
+    async () => {
+      const t0 = Date.now();
+      await expect(
+        socketEmit(sb.socketPath, "project.comment.created", {
+          source: "e2e-test",
+          owner: "agent:may",
+          projectPath: `projects/${projectId}`,
+          comment: `flat comment ${Date.now()}`,
+          author: "e2e",
+        }),
+      ).rejects.toThrow("requires object field 'data'");
+
+      const db = openSandboxDb(sb.dbPath);
+      try {
+        const flatRows = queryEvents(db, { types: ["project.comment.created"], since: t0, limit: 5 })
+          .filter((row) => (row.data ?? "").includes("flat comment"));
+        expect(flatRows).toEqual([]);
+      } finally {
+        db.close();
+      }
+    },
+    10_000,
   );
 });
