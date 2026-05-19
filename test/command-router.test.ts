@@ -124,7 +124,7 @@ describe("command router", () => {
       source: "test",
       owner: "agent:tech-lead",
       data: { projectPath, comment: "please continue", author: "hao" },
-    } as any);
+    });
 
     expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please continue");
     expect(readFileSync(join(projectDir, "project.md"), "utf-8")).toContain("status: active");
@@ -158,7 +158,12 @@ describe("command router", () => {
     );
     const h = createHarness({}, projectRoot);
 
-    h.bus.emit({ type: "project.comment.created", projectPath, comment: "wake up", source: "test", author: "hao" });
+    h.bus.emit({
+      type: "project.comment.created",
+      source: "test",
+      owner: "agent:tech-lead",
+      data: { projectPath, comment: "wake up", author: "hao" },
+    });
 
     const projContent = readFileSync(join(projectDir, "project.md"), "utf-8");
     expect(projContent).toContain("status: active");
