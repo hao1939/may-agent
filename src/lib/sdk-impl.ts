@@ -147,7 +147,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},
       } as any),
-      measuredBy: deps.agentName,
+      measuredBy: `agent:${deps.agentName}`,
       log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
     }),
 

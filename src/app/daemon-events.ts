@@ -84,23 +84,47 @@ export function attachDaemonEventSubscribers(opts: {
     const info = event as any;
 
     if (info.error && info.status === "error") {
-      bus.emit({ type: "session.failed",
-        sessionId: info.sessionId, agent: info.agent, error: info.error, task: info.task,
+      bus.emit({
+        type: "session.failed",
+        source: "runtime",
+        owner: `agent:${info.agent}`,
+        data: {
+          sessionId: info.sessionId,
+          agent: info.agent,
+          error: info.error,
+          task: info.task,
+        },
       } as any);
     }
 
     const fp = info.finishParams;
     if (fp && (fp.status === "blocked" || fp.status === "failure")) {
-      bus.emit({ type: "session.escalated",
-        sessionId: info.sessionId, agent: info.agent, finishParams: fp,
+      bus.emit({
+        type: "session.escalated",
+        source: "runtime",
+        owner: `agent:${info.agent}`,
+        data: {
+          sessionId: info.sessionId,
+          agent: info.agent,
+          finishParams: fp,
+        },
       } as any);
     }
 
     if (info.agent !== "evaluator" && info.agent !== "judge") {
-      bus.emit({ type: "session.completed",
-        sessionId: info.sessionId, agent: info.agent,
-        parentSessionId: info.parentSessionId, outcome: info.outcome,
-        status: info.status, source: info.source, kind: info.kind,
+      bus.emit({
+        type: "session.completed",
+        source: "runtime",
+        owner: `agent:${info.agent}`,
+        data: {
+          sessionId: info.sessionId,
+          agent: info.agent,
+          parentSessionId: info.parentSessionId,
+          outcome: info.outcome,
+          status: info.status,
+          source: info.source,
+          kind: info.kind,
+        },
       } as any);
     }
   });

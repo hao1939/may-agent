@@ -151,7 +151,7 @@ function renderLoopTrace(trace) {
     for (const ev of trace.failoverEvents.slice(0, 5)) {
       let data = {};
       try { data = ev.data ? JSON.parse(ev.data) : {}; } catch {}
-      const owner = ev.owner || data.owner || trace.owner || '—';
+      const owner = ev.owner || trace.owner || '—';
       const category = data.category || data.action || ev.event_type || 'failure';
       const recoverable = data.recoverable === false ? 'not recoverable' : data.recoverable === true ? 'recoverable' : '';
       const nextAction = data.nextAction || (ev.event_type === 'workflow.resume_skipped' ? 'none' : '');

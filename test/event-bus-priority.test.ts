@@ -65,10 +65,12 @@ describe("EventBus subscriber priority", () => {
     expect(events[1]).toMatchObject({
       type: "subscriber.failed",
       source: "event-bus",
-      owner: "may",
-      originalEventType: "info",
-      subscriberPriority: "normal",
-      error: "boom",
+      owner: "agent:may",
+      data: {
+        originalEventType: "info",
+        subscriberPriority: "normal",
+        error: "boom",
+      },
     });
   });
 

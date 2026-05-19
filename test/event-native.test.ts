@@ -167,6 +167,36 @@ describe("event-native: events table", () => {
     });
   });
 
+  it("persists message.created with canonical owner while keeping payload context", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "message.created",
+      from: "dev",
+      to: "reviewer",
+      content: "Please inspect this change.",
+      priority: "P2",
+    } as any);
+
+    writer.handler({
+      type: "message.created",
+      from: "dev",
+      to: "human",
+      content: "Need operator input.",
+      priority: "P1",
+    } as any);
+
+    const rows = db.prepare(
+      "SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC",
+    ).all("message.created") as Array<{ source: string; owner: string; data: string }>;
+
+    expect(rows.map((row) => row.source)).toEqual(["agent:dev", "agent:dev"]);
+    expect(rows.map((row) => row.owner)).toEqual(["agent:reviewer", "human:operator"]);
+    expect(JSON.parse(rows[0].data)).toMatchObject({ from: "dev", to: "reviewer" });
+    expect(JSON.parse(rows[1].data)).toMatchObject({ from: "dev", to: "human" });
+  });
+
   it("does not duplicate owner/source envelope fields into canonical event data", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);

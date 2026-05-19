@@ -80,11 +80,14 @@ describe("message tool", () => {
     expect(events.some((e) => e.type === "message.created" && e.to === "qa")).toBe(false);
     expect(events).toContainEqual(expect.objectContaining({
       type: "message.delivery_failed",
-      owner: "may",
-      from: "arc",
-      to: "qa",
-      reason: expect.stringContaining("qa"),
-      content: "hi",
+      source: "agent:arc",
+      owner: "agent:may",
+      data: expect.objectContaining({
+        from: "arc",
+        to: "qa",
+        reason: expect.stringContaining("qa"),
+        content: "hi",
+      }),
     }));
   });
 
@@ -115,8 +118,10 @@ describe("message tool", () => {
     expect(denied.hint).toMatch(/tool namespace/);
     expect(events).toContainEqual(expect.objectContaining({
       type: "message.delivery_failed",
-      to: "functions.message",
-      reason: expect.stringContaining("tool namespace"),
+      data: expect.objectContaining({
+        to: "functions.message",
+        reason: expect.stringContaining("tool namespace"),
+      }),
     }));
   });
 

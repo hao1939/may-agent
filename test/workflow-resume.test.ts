@@ -175,10 +175,13 @@ describe("workflow tool: resume", () => {
     }
     expect(events).toContainEqual(expect.objectContaining({
       type: "workflow.resume_failed",
-      workflowRunId: "wr_corrupt",
-      workflow: "corrupt-workflow",
-      category: "corrupt_state",
-      recoverable: false,
+      owner: "agent:may",
+      data: expect.objectContaining({
+        workflowRunId: "wr_corrupt",
+        workflow: "corrupt-workflow",
+        category: "corrupt_state",
+        recoverable: false,
+      }),
     }));
   });
 
@@ -214,9 +217,12 @@ describe("workflow tool: resume", () => {
     }
     expect(events).toContainEqual(expect.objectContaining({
       type: "workflow.resume_failed",
-      workflowRunId: "wr_stale",
-      workflow: "deleted-workflow",
-      category: "workflow_definition_missing",
+      owner: "agent:may",
+      data: expect.objectContaining({
+        workflowRunId: "wr_stale",
+        workflow: "deleted-workflow",
+        category: "workflow_definition_missing",
+      }),
     }));
   });
 
@@ -266,9 +272,12 @@ describe("workflow tool: resume", () => {
     expect(listWorkflowRunIds(persistDir)).toEqual(["wr_done"]);
     expect(events).toContainEqual(expect.objectContaining({
       type: "workflow.resume_skipped",
-      workflowRunId: "wr_done",
-      workflow: "already-done",
-      status: "done",
+      owner: "agent:may",
+      data: expect.objectContaining({
+        workflowRunId: "wr_done",
+        workflow: "already-done",
+        status: "done",
+      }),
     }));
   });
 

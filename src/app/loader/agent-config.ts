@@ -72,11 +72,15 @@ export function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | 
     bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
     bus.emit({
       type: "agent.config_invalid",
-      owner: "may",
-      agent: agentDir.split(/[\\/]/).pop() || "<unknown>",
-      count: 1,
-      message: `Failed to parse ${configPath}: ${msg}`,
-      priority: "P0",
+      source: "loader",
+      owner: "agent:may",
+      urgency: "immediate",
+      data: {
+        agent: agentDir.split(/[\\/]/).pop() || "<unknown>",
+        count: 1,
+        message: `Failed to parse ${configPath}: ${msg}`,
+        priority: "P0",
+      },
     });
     return null;
   }

@@ -111,11 +111,15 @@ export async function loadAgents(
     opts.bus.emit({ type: "info", message: `[loader] Skipped agents with config errors:\n${report}` });
     opts.bus.emit({
       type: "agent.config_invalid",
-      owner: "may",
-      count: allErrors.length,
-      errors: allErrors,
-      message: `Skipped agents with config errors:\n${report}`,
-      priority: "P0",
+      source: "loader",
+      owner: "agent:may",
+      urgency: "immediate",
+      data: {
+        count: allErrors.length,
+        errors: allErrors,
+        message: `Skipped agents with config errors:\n${report}`,
+        priority: "P0",
+      },
     });
   }
 

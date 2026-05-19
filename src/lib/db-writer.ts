@@ -51,6 +51,27 @@ function eventOwner(event: Record<string, unknown>, fallback?: unknown): string 
   return typeof owner === "string" ? owner : typeof fallback === "string" ? fallback : null;
 }
 
+function messageOwner(target: unknown): string | null {
+  if (typeof target !== "string") return null;
+  const value = target.trim();
+  if (!value) return null;
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  const lower = value.toLowerCase();
+  if (lower === "human" || lower === "hao" || lower === "user" || lower === "operator") return "human:operator";
+  return `agent:${value}`;
+}
+
+function messageSource(source: unknown): string | null {
+  if (typeof source !== "string") return null;
+  const value = source.trim();
+  if (!value) return null;
+  if (value.includes(":")) return value;
+  const lower = value.toLowerCase();
+  if (lower === "human" || lower === "hao" || lower === "user" || lower === "operator") return "human:operator";
+  if (["socket", "telegram", "web-ui", "cli", "cron", "runtime", "metrics", "metrics-snapshot"].includes(lower)) return value;
+  return `agent:${value}`;
+}
+
 function eventUrgency(event: Record<string, unknown>): string {
   const urgency = isCanonicalEnvelope(event) ? event.urgency : eventPayload(event).urgency;
   return typeof urgency === "string" ? urgency : "normal";
@@ -125,13 +146,13 @@ export class DbWriter {
 
         case "message.created":
           // v2 canonical inter-agent message — persist with from→source, to→owner
-          // mapping so existing inbox queries (which key on owner) keep working.
+          // mapping so inbox queries key on the canonical event owner.
           this.db.run(
             "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
             [
               "message.created",
-              event.from,
-              event.to,
+              messageSource(event.from),
+              messageOwner(event.to),
               JSON.stringify({
                 from: event.from,
                 to: event.to,

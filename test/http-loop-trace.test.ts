@@ -105,15 +105,15 @@ describe("buildLoopTrace", () => {
     db.prepare("INSERT INTO metric_alerts (id, metric_id, alert_type, message, created_at, resolved_at) VALUES (?, ?, ?, ?, ?, ?)")
       .run(7, "session.first-turn-error-count-1h", "threshold", "first turn errors breached", now - 10_000, null);
     db.prepare("INSERT INTO events (id, event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run(11, "metric.breach", "metrics", "may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h", owner: "may" }), now - 9_000, "normal");
+      .run(11, "metric.breach", "metrics", "agent:may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h" }), now - 9_000, "normal");
     db.prepare("INSERT INTO workflow_runs (runId, workflow, task, parentSessionId, parentWorkflowRunId, projectId, depth, status, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("wr_triage", "metric-alert-triage", "triage session.first-turn-error-count-1h", null, null, "v2-spec-coverage-buildout", 1, "done", now - 8_000);
     db.prepare("INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, projectId, startedAt, endedAt, outcome, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("s_triage", "may", "triage session.first-turn-error-count-1h", "done", "workflow:metric-alert-triage", "wr_triage", "v2-spec-coverage-buildout", now - 7_000, now - 6_000, "judged", 4);
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("guard.triggered", "workflow", "may", JSON.stringify({ workflowRunId: "wr_triage", sessionId: "s_triage", guard: "verify-after-write", demandType: "warn" }), now - 5_000, "normal");
+      .run("guard.triggered", "workflow", "agent:may", JSON.stringify({ workflowRunId: "wr_triage", sessionId: "s_triage", guard: "verify-after-write", demandType: "warn" }), now - 5_000, "normal");
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("metric.alert_judged", "workflow", "may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h", verdict: "needs_fix" }), now - 4_000, "normal");
+      .run("metric.alert_judged", "workflow", "agent:may", JSON.stringify({ alertId: 7, metricId: "session.first-turn-error-count-1h", verdict: "needs_fix" }), now - 4_000, "normal");
     db.prepare("INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)")
       .run("session.first-turn-error-count-1h", 2, 10, now - 3_000, "metrics-snapshot", null);
 
@@ -149,12 +149,12 @@ describe("buildLoopTrace", () => {
     db.prepare("INSERT INTO workflow_runs (runId, workflow, task, projectId, depth, status, startedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
       .run("wr_missing", "deleted-workflow", "resume me", "closed-loop-reliability", 1, "running", now - 10_000);
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("workflow.resume_failed", "workflow-tool", "may", JSON.stringify({ workflowRunId: "wr_missing", workflow: "deleted-workflow", projectId: "closed-loop-reliability", category: "workflow_definition_missing", recoverable: true, nextAction: "recover" }), now - 5_000, "normal");
+      .run("workflow.resume_failed", "workflow-tool", "agent:may", JSON.stringify({ workflowRunId: "wr_missing", workflow: "deleted-workflow", projectId: "closed-loop-reliability", category: "workflow_definition_missing", recoverable: true, nextAction: "recover" }), now - 5_000, "normal");
 
     const trace = buildLoopTrace(db, { workflowRunId: "wr_missing" });
 
     expect(trace.target).toEqual({ kind: "workflow", id: "wr_missing" });
-    expect(trace.owner).toBe("may");
+    expect(trace.owner).toBe("agent:may");
     expect(trace.projectId).toBe("closed-loop-reliability");
     expect(trace.failoverEvents).toHaveLength(1);
     expect(trace.failoverEvents[0]).toMatchObject({ event_type: "workflow.resume_failed" });
@@ -163,7 +163,7 @@ describe("buildLoopTrace", () => {
         id: "wr_missing",
         kind: "workflow",
         status: "interrupted",
-        owner: "may",
+        owner: "agent:may",
         summary: "workflow_definition_missing",
         evidence: expect.objectContaining({ nextAction: "recover" }),
       }),
@@ -177,17 +177,17 @@ describe("buildLoopTrace", () => {
     db.prepare("INSERT INTO workflow_runs (runId, workflow, task, projectId, depth, status, startedAt, endedAt, result_summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("wr_done", "goal-driver", "already finished", "p1", 1, "done", now - 20_000, now - 10_000, "finished");
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("workflow.resume_skipped", "workflow-tool", "may", JSON.stringify({ workflowRunId: "wr_done", workflow: "goal-driver", projectId: "p1", status: "done", reason: "workflow already reached terminal status", nextAction: "none" }), now - 5_000, "normal");
+      .run("workflow.resume_skipped", "workflow-tool", "agent:may", JSON.stringify({ workflowRunId: "wr_done", workflow: "goal-driver", projectId: "p1", status: "done", reason: "workflow already reached terminal status", nextAction: "none" }), now - 5_000, "normal");
 
     const trace = buildLoopTrace(db, { workflowRunId: "wr_done" });
 
-    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "workflow.resume_skipped", owner: "may" });
+    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "workflow.resume_skipped", owner: "agent:may" });
     expect(trace.executions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: "wr_done",
         kind: "workflow",
         status: "done",
-        owner: "may",
+        owner: "agent:may",
         summary: "workflow already reached terminal status",
         evidence: expect.objectContaining({ nextAction: "none" }),
       }),
@@ -200,23 +200,23 @@ describe("buildLoopTrace", () => {
     db.prepare("INSERT INTO sessions (sessionId, agent, task, status, source, workflowRunId, projectId, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .run("s_unreg", "missing-agent", "continue work", "interrupted", "resumeStaleSessions", "wr_parent", "closed-loop-reliability", now - 10_000, now - 9_000, "agent not registered");
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?)")
-      .run("session.resume_failed", "manager", "missing-agent", JSON.stringify({ sessionId: "s_unreg", agent: "missing-agent", workflowRunId: "wr_parent", projectId: "closed-loop-reliability", category: "agent_not_registered", recoverable: false, reason: "Process restarted (agent not registered)" }), now - 8_000, "normal");
+      .run("session.resume_failed", "manager", "agent:missing-agent", JSON.stringify({ sessionId: "s_unreg", agent: "missing-agent", workflowRunId: "wr_parent", projectId: "closed-loop-reliability", category: "agent_not_registered", recoverable: false, reason: "Process restarted (agent not registered)" }), now - 8_000, "normal");
 
     const trace = buildLoopTrace(db, { sessionId: "s_unreg" });
 
     expect(trace).toMatchObject({
       target: { kind: "session", id: "s_unreg" },
-      owner: "missing-agent",
+      owner: "agent:missing-agent",
       projectId: "closed-loop-reliability",
       evidence: { failoverCount: 1 },
     });
-    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "session.resume_failed", owner: "missing-agent" });
+    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "session.resume_failed", owner: "agent:missing-agent" });
     expect(trace.executions).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: "s_unreg",
         kind: "session",
         status: "error",
-        owner: "missing-agent",
+        owner: "agent:missing-agent",
         summary: "Process restarted (agent not registered)",
       }),
     ]));
@@ -226,16 +226,16 @@ describe("buildLoopTrace", () => {
     const db = makeDb();
     const now = Date.now();
     db.prepare("INSERT INTO events (id, event_type, source, owner, data, timestamp, urgency) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run(31, "message.delivery_failed", "evaluator", "may", JSON.stringify({ owner: "may", from: "evaluator", to: "hao", reason: "Unknown message target" }), now - 1_000, "high");
+      .run(31, "message.delivery_failed", "agent:evaluator", "agent:may", JSON.stringify({ from: "evaluator", to: "hao", reason: "Unknown message target" }), now - 1_000, "high");
 
     const trace = buildLoopTrace(db, { eventId: 31 });
 
     expect(trace).toMatchObject({
       target: { kind: "event", id: 31 },
-      owner: "may",
+      owner: "agent:may",
       handler: { reason: "Unknown message target" },
       evidence: { failoverCount: 1 },
     });
-    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "message.delivery_failed", owner: "may" });
+    expect(trace.failoverEvents[0]).toMatchObject({ event_type: "message.delivery_failed", owner: "agent:may" });
   });
 });

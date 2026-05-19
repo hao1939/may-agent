@@ -91,9 +91,12 @@ export type SessionEvent =
 /** System events */
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
-  | { type: "handler.started"; handler: string; agent: string }
-  | { type: "handler.completed"; handler: string; agent: string; durationMs: number }
-  | { type: "handler.failed"; handler: string; agent: string; error: string; durationMs: number }
+  | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
+  | { type: "handler.completed"; source: "cron"; owner: string; data: { handler: string; agent: string; durationMs: number } }
+  | { type: "handler.failed"; source: "cron"; owner: string; data: { handler: string; agent: string; error: string; durationMs: number } }
+  | { type: "session.completed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; parentSessionId?: string; outcome?: string; status?: string; source?: string; kind?: string } }
+  | { type: "session.failed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; error?: string; task?: string } }
+  | { type: "session.escalated"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; finishParams: Record<string, unknown> } }
   | { type: "project.iteration"; project: string; iteration: number }
   | { type: "project.status_changed"; project: string; from: string; to: string }
   | {
@@ -107,81 +110,97 @@ export type SystemEvent =
     }
   | {
       type: "message.delivery_failed";
-      owner: "may";
-      from: string;
-      to: string;
-      reason: string;
-      content: string;
-      priority?: "P0" | "P1" | "P2" | "P3";
+      source: string;
+      owner: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      data: {
+        from: string;
+        to: string;
+        reason: string;
+        content: string;
+        priority?: "P0" | "P1" | "P2" | "P3";
+      };
     }
   | {
       type: "agent.config_invalid";
-      owner: "may";
-      agent?: string;
-      count?: number;
-      errors?: Array<{ agent: string; field: string; message: string }>;
-      message: string;
-      priority?: "P0" | "P1" | "P2" | "P3";
+      source: "loader";
+      owner: "agent:may";
+      urgency?: "low" | "normal" | "high" | "immediate";
+      data: {
+        agent?: string;
+        count?: number;
+        errors?: Array<{ agent: string; field: string; message: string }>;
+        message: string;
+        priority?: "P0" | "P1" | "P2" | "P3";
+      };
     }
-  | { type: "metric.breach"; owner: string; metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }
-  | { type: "metric.recovered"; metricId: string; metricName: string }
-  | { type: "metric.stalled"; owner: string; metricId: string; metricName: string; message: string }
+  | { type: "metric.breach"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; current?: number | null; threshold?: number | null; target?: number | null; message: string; priority?: "P0" | "P1" | "P2" | "P3" } }
+  | { type: "metric.recovered"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; priority?: "P0" | "P1" | "P2" | "P3" } }
+  | { type: "metric.stalled"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; message: string; priority?: "P0" | "P1" | "P2" | "P3" } }
   | {
       type: "guard.triggered";
       owner: string;
       source: "workflow" | "tool";
-      workflow?: string;
-      workflowRunId?: string;
-      projectId?: string;
-      parentSessionId?: string;
-      sessionId?: string;
-      guard: string;
-      demandType: "warn" | "block" | "run_step";
-      action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
-      reason: string;
-      sourceEventType: string;
-      step?: string;
-      injectedStepLabel?: string;
-      injectedAgent?: string;
+      data: {
+        workflow?: string;
+        workflowRunId?: string;
+        projectId?: string;
+        parentSessionId?: string;
+        sessionId?: string;
+        guard: string;
+        demandType: "warn" | "block" | "run_step";
+        action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
+        reason: string;
+        sourceEventType: string;
+        step?: string;
+        injectedStepLabel?: string;
+        injectedAgent?: string;
+      };
     }
   | {
       type: "session.resume_failed";
       source: "manager";
       owner: string;
-      sessionId: string;
-      agent?: string;
-      workflowRunId?: string;
-      projectId?: string;
-      reason: string;
-      category: string;
-      recoverable: boolean;
-      nextAction?: string;
       timestamp: number;
+      data: {
+        sessionId: string;
+        agent?: string;
+        workflowRunId?: string;
+        projectId?: string;
+        reason: string;
+        category: string;
+        recoverable: boolean;
+        nextAction?: string;
+      };
     }
   | {
       type: "workflow.resume_failed";
       source: "workflow-tool";
-      owner?: string;
-      workflowRunId?: string;
-      workflow?: string;
-      projectId?: string;
-      reason: string;
-      category: string;
-      recoverable: boolean;
-      nextAction?: string;
+      owner: string;
       timestamp: number;
+      data: {
+        workflowRunId?: string;
+        workflow?: string;
+        projectId?: string;
+        reason: string;
+        category: string;
+        recoverable: boolean;
+        nextAction?: string;
+      };
     }
   | {
       type: "workflow.resume_skipped";
       source: "workflow-tool";
-      owner?: string;
-      workflowRunId: string;
-      workflow: string;
-      projectId?: string;
-      status: string;
-      reason: string;
-      nextAction?: string;
+      owner: string;
       timestamp: number;
+      data: {
+        workflowRunId: string;
+        workflow: string;
+        projectId?: string;
+        status: string;
+        reason: string;
+        nextAction?: string;
+      };
     }
   | {
       type: "workflow";
@@ -198,11 +217,13 @@ export type SystemEvent =
   | {
       type: "subscriber.failed";
       source: "event-bus";
-      owner: "may";
-      originalEventType: string;
-      subscriberPriority: "first" | "normal";
-      error: string;
+      owner: "agent:may";
       timestamp: number;
+      data: {
+        originalEventType: string;
+        subscriberPriority: "first" | "normal";
+        error: string;
+      };
     }
 
 /** All typed event types — commands + observations + system */
@@ -294,11 +315,13 @@ export class EventBus {
     this.pendingFailureEvents.push({
       type: "subscriber.failed",
       source: "event-bus",
-      owner: "may",
-      originalEventType: event.type,
-      subscriberPriority: priority,
-      error: msg,
+      owner: "agent:may",
       timestamp: Date.now(),
+      data: {
+        originalEventType: event.type,
+        subscriberPriority: priority,
+        error: msg,
+      },
     });
   }
 

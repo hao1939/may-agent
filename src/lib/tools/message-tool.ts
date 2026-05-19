@@ -15,8 +15,8 @@
  *   - The `notify` and `message-only` tool presets were removed in v0.3 cleanup;
  *     all agents use the `message` preset now.
  *   - Emits a single `message.created` event. The `events` table row carries
- *     `event_type='message.created'` and `owner=<recipient>`, which is what
- *     the inbox query (in runtime-ctx.getInbox) reads.
+ *     `event_type='message.created'` and canonical `owner='agent:<recipient>'`
+ *     or `owner='human:<role>'`, which is what inbox queries read.
  *
  * See: shared/may-agent-docs/proposals/v2-architecture.md (Messages)
  */
@@ -105,6 +105,12 @@ function preview(text: string): string {
   return text.length <= 500 ? text : `${text.slice(0, 500)}...`;
 }
 
+function urgencyForPriority(priority: unknown): "normal" | "high" | "immediate" {
+  if (priority === "P0") return "immediate";
+  if (priority === "P1") return "high";
+  return "normal";
+}
+
 function normalizeTarget(target: string): string {
   const trimmed = target.trim();
   const lower = trimmed.toLowerCase();
@@ -152,12 +158,16 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
         try {
           opts.emit?.({
             type: "message.delivery_failed",
-            owner: "may",
-            from: opts.agentName,
-            to: requestedTarget,
-            reason: `${reason}. ${hint}`,
-            content: preview(params.content),
-            priority: params.priority ?? "P2",
+            source: `agent:${opts.agentName}`,
+            owner: "agent:may",
+            urgency: urgencyForPriority(params.priority),
+            data: {
+              from: opts.agentName,
+              to: requestedTarget,
+              reason: `${reason}. ${hint}`,
+              content: preview(params.content),
+              priority: params.priority ?? "P2",
+            },
           });
         } catch {
           /* best-effort */
