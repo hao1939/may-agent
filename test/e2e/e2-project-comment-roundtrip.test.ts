@@ -16,8 +16,7 @@
  *   3. project.comment.created event lands in events table
  *   4. project.nudge event is emitted as a side effect
  *
- * The workflow-dispatch / iteration-completion portion is covered by E3a
- * because it requires LLM access and a real iteration workflow.
+ * Task dispatch and owner-judgment behavior are covered by E3a.
  *
  * Gated behind E2E_LIVE=1; does not require LLM access.
  */

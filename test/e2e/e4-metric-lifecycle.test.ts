@@ -118,6 +118,15 @@ describe.skipIf(!E2E_LIVE)("E4: metric breach to alert", () => {
           .prepare("SELECT current FROM metrics WHERE id = ?")
           .get("e2e.canary") as { current: number };
         expect(metricAfter.current).toBeGreaterThanOrEqual(0.8);
+
+        const recoveredEvents = queryEvents(db, { types: ["metric.recovered"], since: t0, limit: 5 })
+          .filter((e) => (e.data ?? "").includes("e2e.canary"));
+        expect(recoveredEvents.length).toBeGreaterThanOrEqual(1);
+
+        const resolvedAlerts = db
+          .prepare("SELECT resolved_at FROM metric_alerts WHERE metric_id = ? ORDER BY id DESC LIMIT 5")
+          .all("e2e.canary") as { resolved_at: number | null }[];
+        expect(resolvedAlerts.some((alert) => alert.resolved_at !== null)).toBe(true);
       } finally {
         db.close();
       }

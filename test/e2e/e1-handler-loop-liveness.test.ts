@@ -3,7 +3,7 @@
  *
  * Bellwether for the whole cron → handler-loader → event-persistence pipeline.
  * Spawns a sandboxed daemon with a single fixture agent ("may") owning a single
- * fixture handler ("e2e-noop") on a 1-second interval. Waits for handler.started
+ * fixture handler ("e2e-noop") on a 10-second interval. Waits for handler.started
  * + handler.completed + the handler's own emitted e2e.tick events to materialize
  * in the events table.
  *
