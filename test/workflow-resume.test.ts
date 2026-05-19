@@ -409,13 +409,13 @@ describe("workflow tool: resume", () => {
       expect(parsed.workflowRunId).not.toBe("wr_crashed_one"); // new run ID
     }
 
-    // Events should show step_done for the replayed step (not step_start — no live execution)
-    const stepDoneEvents = events.filter((e) => e.type === "step_done");
+    // Events should show workflow.step_completed for the replayed step (not workflow.step_started — no live execution)
+    const stepDoneEvents = events.filter((e) => e.type === "workflow.step_completed");
     expect(stepDoneEvents.length).toBe(1);
     expect(stepDoneEvents[0].sessionId).toBe("s_step1"); // original session ID preserved
 
-    // No step_start events — replay doesn't fire step_start
-    const stepStartEvents = events.filter((e) => e.type === "step_start");
+    // No workflow.step_started events — replay doesn't fire live step start
+    const stepStartEvents = events.filter((e) => e.type === "workflow.step_started");
     expect(stepStartEvents.length).toBe(0);
   });
 

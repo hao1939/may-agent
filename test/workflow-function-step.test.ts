@@ -5,7 +5,7 @@
  *   - get a 30s timeout
  *   - truncate output to 50KB
  *   - capture errors as { status: "error", error: msg }
- *   - emit step_start / step_done bus events with source="function"
+ *   - emit workflow.step_started / workflow.step_completed lifecycle events
  *   - participate in guard evaluation like agent steps
  *
  * This pins the v2 contract: function steps work, are observable, and

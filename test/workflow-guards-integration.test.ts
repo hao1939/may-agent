@@ -220,8 +220,8 @@ describe("Guard integration: run_step demand injection", () => {
       expect(calls[2].name).toBe("step-two");
 
       // Verify events include the injected step
-      const stepStarts = events.filter(e => e.type === "step_start");
-      const stepDones = events.filter(e => e.type === "step_done");
+      const stepStarts = events.filter(e => e.type === "workflow.step_started");
+      const stepDones = events.filter(e => e.type === "workflow.step_completed");
       expect(stepStarts.some(e => e.step === "guard:verify-step-one")).toBe(true);
       expect(stepDones.some(e => e.step === "guard:verify-step-one")).toBe(true);
       expect(emitted).toContainEqual(expect.objectContaining({
