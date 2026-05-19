@@ -1,5 +1,12 @@
-// Headless E2E for the platform project comment flow.
+// Headless E2E for the platform project comment flow against a LIVE prod container.
 // Run inside the may-agent container: `node /tmp/e2e-platform-comment.mjs`
+//
+// NOTE: The pure intake/lifecycle portion (without browser) is also covered by
+//   projects/platform/repos/may-agent/test/e2e/e2-project-comment-roundtrip.test.ts
+// (run via `E2E_LIVE=1 bun test test/e2e/e2-*` inside the repo). This script
+// stays because it also exercises the served UI (routing helpers, row clicks,
+// canonical id URLs) against a real Chrome — that surface is not yet covered
+// by any *.test.ts. Lift it when adding a dedicated UI e2e.
 import puppeteer from "/app/node_modules/puppeteer-core/lib/esm/puppeteer/puppeteer-core.js";
 import { readFileSync } from "node:fs";
 

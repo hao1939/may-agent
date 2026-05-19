@@ -61,10 +61,10 @@ describe('project-health', () => {
       const closed = '---\nid: test-proj\nowner: bob\nstatus: closed\nworkflow: master-worker\n---\n\n# Test\n';
 
       expect(validateProjectFormat(active, 'test-proj')).toContain(
-        'projects should not use unsupported master-worker workflow; pick a per-project or shared workflow'
+        'projects should not use unsupported master-worker workflow; pick a per-project or agent workflow'
       );
       expect(validateProjectFormat(closed, 'test-proj')).toContain(
-        'projects should not use unsupported master-worker workflow; pick a per-project or shared workflow'
+        'projects should not use unsupported master-worker workflow; pick a per-project or agent workflow'
       );
     });
 
