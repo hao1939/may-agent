@@ -22,11 +22,9 @@ export type AgentCommand =
       task: string;
       originSessionId?: string;
       opts?: { kind?: string; requestId?: string; source?: string };
-      /** @deprecated Use { type: "message", from, to, task, priority: "P0" } instead */
     }
-  | { type: "message"; from: string; to: string; task: string; priority?: string; source?: string }
-  | { type: "input"; sessionId?: string; text?: string; message?: string; source?: string }
-  | { type: "steer"; sessionId?: string; text?: string; message?: string; source?: string }
+  | { type: "input"; sessionId?: string; message: string; source?: string }
+  | { type: "steer"; sessionId?: string; message: string; source?: string }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }

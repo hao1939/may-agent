@@ -184,12 +184,13 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   const unsubscribe = bus.subscribe((event) => {
     switch (event.type) {
       case "input":
-        handleInput(event.message ?? event.text ?? "", event.source);
+        if (typeof event.message !== "string") break;
+        handleInput(event.message, event.source);
         break;
       case "steer": {
         const targetSid = event.sessionId;
-        const steerText = event.message ?? event.text ?? "";
-        if (!targetSid) break;
+        if (!targetSid || typeof event.message !== "string") break;
+        const steerText = event.message;
         try {
           const sessions = manager.status();
           const target = sessions.find((s) => s.sessionId === targetSid);
@@ -261,27 +262,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         break;
       case "reload":
         void options.reload();
-        break;
-      case "message":
-        if ("from" in event && "to" in event && "task" in event) {
-          try {
-            bus.emit({
-              type: "message.created",
-              source: canonicalOwner((event as any).from ?? "human"),
-              owner: canonicalOwner((event as any).to),
-              data: {
-                from: (event as any).from ?? "human",
-                to: (event as any).to,
-                content: (event as any).task,
-                priority: (event as any).priority,
-              },
-            } as any);
-            log("info", `[message] ${(event as any).from ?? "human"} -> ${(event as any).to}: ${((event as any).task as string).slice(0, 80)}`);
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            log("error", `[message] Failed: ${msg}`);
-          }
-        }
         break;
       case "resume":
         if ("sessionId" in event && event.sessionId) {
