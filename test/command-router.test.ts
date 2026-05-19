@@ -68,11 +68,16 @@ describe("command router", () => {
     expect(handled).toEqual([{ message: "please review", source: "socket" }]);
     expect(h.emitted).toContainEqual({
       type: "message.created",
-      from: "socket",
-      to: "may",
-      content: "please review",
-      intent: "fork",
-      priority: "P0",
+      source: "socket",
+      owner: "agent:may",
+      urgency: "immediate",
+      data: {
+        from: "socket",
+        to: "may",
+        content: "please review",
+        intent: "fork",
+        priority: "P0",
+      },
     });
     h.router.close();
   });

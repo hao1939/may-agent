@@ -63,8 +63,8 @@ describe("message tool", () => {
     expect(r2.triggered).toBe(true);
     expect(triggers).toEqual(["dev"]);
 
-    // P0 message.created event has priority field
-    const p0Event = events.find((e) => e.type === "message.created" && e.priority === "P0");
+    // P0 message.created event carries priority in the canonical data payload.
+    const p0Event = events.find((e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.priority === "P0");
     expect(p0Event).toBeDefined();
   });
 
@@ -77,7 +77,7 @@ describe("message tool", () => {
     const denied = await call(tool, { to: "qa", content: "hi" });
     expect(denied.error).toMatch(/Unknown message target/);
     expect(triggers).toEqual([]);
-    expect(events.some((e) => e.type === "message.created" && e.to === "qa")).toBe(false);
+    expect(events.some((e) => e.type === "message.created" && (e.data as Record<string, unknown>)?.to === "qa")).toBe(false);
     expect(events).toContainEqual(expect.objectContaining({
       type: "message.delivery_failed",
       source: "agent:arc",
@@ -106,7 +106,9 @@ describe("message tool", () => {
     expect(allowed.to).toBe("human");
     expect(events).toContainEqual(expect.objectContaining({
       type: "message.created",
-      to: "human",
+      source: "agent:arc",
+      owner: "human:operator",
+      data: expect.objectContaining({ to: "human" }),
     }));
   });
 
@@ -134,10 +136,28 @@ describe("message tool", () => {
       context_files: ["a.md", "b.md"],
     });
 
-    const ev = events.find((e) => e.type === "message.created") as { content: string; intent: string };
-    expect(ev.intent).toBe("implementation-request");
-    expect(ev.content).toContain("[implementation-request]");
-    expect(ev.content).toContain("Context files: a.md, b.md");
+    const ev = events.find((e) => e.type === "message.created") as { data: { content: string; intent: string } };
+    expect(ev.data.intent).toBe("implementation-request");
+    expect(ev.data.content).toContain("[implementation-request]");
+    expect(ev.data.content).toContain("Context files: a.md, b.md");
+  });
+
+  it("emits canonical message.created envelope", async () => {
+    const { tool, events } = setup();
+    await call(tool, { to: "dev", content: "please implement X", priority: "P1" });
+
+    expect(events).toContainEqual(expect.objectContaining({
+      type: "message.created",
+      source: "agent:arc",
+      owner: "agent:dev",
+      urgency: "high",
+      data: expect.objectContaining({
+        from: "arc",
+        to: "dev",
+        content: "[P1] please implement X",
+        priority: "P1",
+      }),
+    }));
   });
 
   it("rejects artifacts outside project root", async () => {

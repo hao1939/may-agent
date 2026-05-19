@@ -104,6 +104,20 @@ export type SystemEvent =
   | { type: "telegram.reply"; source: "telegram"; owner: string; data: { enriched: boolean; originalMsgId?: number; projectPath?: string; delivery?: string; hasSessionCtx?: boolean; hasDbCtx?: boolean; fallback?: string; reason?: string } }
   | {
       type: "message.created";
+      source: string;
+      owner: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      data: {
+        from: string;
+        to: string;
+        content: string;
+        intent?: string;
+        artifact?: string;
+        priority?: "P0" | "P1" | "P2" | "P3";
+      };
+    }
+  | {
+      type: "message.created";
       from: string;
       to: string;
       content: string;

@@ -37,11 +37,16 @@ export function attachDaemonEventSubscribers(opts: {
     (agent, sessionId, reason) => {
       bus.emit({
         type: "message.created",
-        from: "system:circuit-breaker",
-        to: "may",
-        content: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
-        intent: "investigate",
-        priority: "P1",
+        source: "system:circuit-breaker",
+        owner: "agent:may",
+        urgency: "high",
+        data: {
+          from: "system:circuit-breaker",
+          to: "may",
+          content: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
+          intent: "investigate",
+          priority: "P1",
+        },
       } as any);
     },
     persistDir,
@@ -64,7 +69,18 @@ export function attachDaemonEventSubscribers(opts: {
       } catch {
         /* best-effort */
       }
-      bus.emit({ type: "message.created", from: "may", to: "human", content: `⚠️ *Agent Blocked*\n${agent} — ${reason}` } as any);
+      bus.emit({
+        type: "message.created",
+        source: "agent:may",
+        owner: "human:operator",
+        urgency: "high",
+        data: {
+          from: "may",
+          to: "human",
+          content: `⚠️ *Agent Blocked*\n${agent} — ${reason}`,
+          priority: "P1",
+        },
+      } as any);
     },
     persistDir,
     () => manager,

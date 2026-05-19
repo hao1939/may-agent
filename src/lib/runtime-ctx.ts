@@ -70,7 +70,17 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     }),
     log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     notify: (msg) => {
-      opts.bus.emit({ type: "message.created", from: opts.agentName, to: "human", content: msg } as any);
+      opts.bus.emit({
+        type: "message.created",
+        source: `agent:${opts.agentName}`,
+        owner: "human:operator",
+        data: {
+          from: opts.agentName,
+          to: "human",
+          content: msg,
+          priority: "P2",
+        },
+      } as any);
       opts.bus.emit({ type: "notification", agent: opts.agentName, text: msg } as any);
     },
     metrics: createMetricService({

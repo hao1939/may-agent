@@ -145,30 +145,39 @@ export class DbWriter {
           }
 
         case "message.created":
-          // v2 canonical inter-agent message — persist with from→source, to→owner
-          // mapping so inbox queries key on the canonical event owner.
-          this.db.run(
-            "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
-            [
-              "message.created",
-              messageSource(event.from),
-              messageOwner(event.to),
-              JSON.stringify({
-                from: event.from,
-                to: event.to,
-                content: event.content,
-                intent: event.intent ?? null,
-                artifact: event.artifact ?? null,
-                priority: event.priority ?? "P2",
-                // Mirror to legacy 'task' field so prompt assembly (which reads
-                // data.task) renders the message even before that code is updated.
-                task: event.content,
-              }),
-              Date.now(),
-              event.priority === "P0" ? "high" : "normal",
-            ],
-          );
-          break;
+          {
+            const ev = event as any;
+            const payload = eventPayload(ev);
+            const priority = payload.priority ?? "P2";
+            const urgency = isCanonicalEnvelope(ev)
+              ? eventUrgency(ev)
+              : priority === "P0" ? "high" : "normal";
+            // v2 inter-agent message — persist with canonical source/owner so
+            // inbox queries key on the event owner. Accept both canonical
+            // envelopes and legacy flat live-bus messages.
+            this.db.run(
+              "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
+              [
+                "message.created",
+                eventSource(ev) ?? messageSource(payload.from),
+                eventOwner(ev) ?? messageOwner(payload.to),
+                JSON.stringify({
+                  from: payload.from,
+                  to: payload.to,
+                  content: payload.content,
+                  intent: payload.intent ?? null,
+                  artifact: payload.artifact ?? null,
+                  priority,
+                  // Mirror to legacy 'task' field so prompt assembly (which reads
+                  // data.task) renders the message even before that code is updated.
+                  task: payload.content,
+                }),
+                Date.now(),
+                urgency,
+              ],
+            );
+            break;
+          }
 
         default:
           if (DURABLE_COMMAND_EVENTS.has(event.type)) {

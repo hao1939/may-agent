@@ -118,6 +118,11 @@ function normalizeTarget(target: string): string {
   return trimmed;
 }
 
+function ownerForTarget(target: string): string {
+  if (target.startsWith("agent:") || target.startsWith("human:")) return target;
+  return target === "human" ? "human:operator" : `agent:${target}`;
+}
+
 function targetHint(target: string, allowedTargets: Set<string> | null): string {
   if (/^(functions?|tools?)\./i.test(target)) {
     return `"${target}" is a tool namespace, not a message receiver. To send a message, call the message tool itself with to set to an agent name such as "may", "dev", "scout", or "human".`;
@@ -213,12 +218,17 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
       try {
         opts.emit?.({
           type: "message.created",
-          from: caller,
-          to: params.to,
-          content: body,
-          intent: params.intent,
-          artifact: params.artifact,
-          priority,
+          source: `agent:${caller}`,
+          owner: ownerForTarget(params.to),
+          urgency: urgencyForPriority(priority),
+          data: {
+            from: caller,
+            to: params.to,
+            content: body,
+            intent: params.intent,
+            artifact: params.artifact,
+            priority,
+          },
         });
       } catch {
         /* best-effort */

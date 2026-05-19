@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { buildAgentSDK } from "../src/lib/sdk-impl.js";
+import { buildAgentSDK, buildWorkflowSDK } from "../src/lib/sdk-impl.js";
 import type { SDKDeps } from "../src/lib/sdk-impl.js";
 
 type EmittedEvent = { type: string; [key: string]: unknown };
@@ -141,5 +141,40 @@ describe("AgentSDK escalation", () => {
       reason: "Build cannot continue",
     });
     expect(rows[0].escalationId).toMatch(/^esc_/);
+  });
+});
+
+describe("WorkflowSDK escalation", () => {
+  it("keeps workflow escalate local and does not emit escalation.created", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-workflow-sdk-escalation-"));
+    roots.push(root);
+    const events: EmittedEvent[] = [];
+    const finished: unknown[] = [];
+    const sdk = buildWorkflowSDK({
+      bus: { emit: (event: EmittedEvent) => events.push(event) } as never,
+      persistDir: root,
+      projectRoot: root,
+      agentsRoot: join(root, "agents"),
+      sharedRoot: join(root, "shared"),
+      projectsRoot: join(root, "projects"),
+      agentName: "dev",
+      task: "ship migration",
+      callAgent: async (agent: string) => ({
+        sessionId: `s_${agent}`,
+        status: "done",
+        lastAssistantText: "ok",
+      }),
+      finish: (result) => finished.push(result),
+    });
+
+    sdk.escalate("missing approval", {
+      owner: "human:operator",
+      requestedAction: "Approve or reject the rollout",
+      evidence: { change: "database migration" },
+    });
+
+    expect(events.some((event) => event.type === "escalation.created")).toBe(false);
+    expect(events.some((event) => event.type === "message.created")).toBe(false);
+    expect(finished).toEqual([{ status: "escalated", summary: "missing approval" }]);
   });
 });
