@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { exec } from "node:child_process";
 import { resolve } from "node:path";
+import { log } from "../lib/log.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
@@ -102,16 +103,22 @@ export function createDaemonLifecycle(opts: {
 
   const handleReload = async (): Promise<void> => {
     const result = await reloadAgents(opts.loaderOpts);
+    let summary: string;
     if (result.errors.length > 0) {
-      opts.bus.emit({ type: "info", message: `[reload] Validation errors:\n${result.errors.join("\n")}` });
+      summary = `[reload] Validation errors:\n${result.errors.join("\n")}`;
     } else if (result.added.length > 0 || result.updated.length > 0) {
       const parts: string[] = [];
       if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
       if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
-      opts.bus.emit({ type: "info", message: `[reload] ${parts.join(", ")}` });
+      summary = `[reload] ${parts.join(", ")}`;
     } else {
-      opts.bus.emit({ type: "info", message: "[reload] No changes" });
+      summary = "[reload] No changes";
     }
+    // Use log() so the summary is visible in --cron / --socket daemon modes
+    // (where no bus->stdout transport is attached). Also emit on the bus so
+    // bus subscribers (chat console, telegram echo, future routes) see it.
+    log("info", summary);
+    opts.bus.emit({ type: "info", message: summary });
   };
 
   const installProcessHandlers = () => {
