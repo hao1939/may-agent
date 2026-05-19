@@ -30,6 +30,10 @@ function messageData(event: any): Record<string, unknown> {
     : event;
 }
 
+function sessionData(event: any): Record<string, unknown> {
+  return messageData(event);
+}
+
 export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramOutbound {
   const { bus, getSessionId, pendingChatId, sendToUser } = opts;
 
@@ -38,18 +42,21 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
 
   const unsubBus = bus.subscribe((event: any) => {
-    if (event.type === "session.start" && event.sessionId && isRootChatSession(event)) {
-      rootChatSessionId = event.sessionId;
+    const session = sessionData(event);
+    const sessionId = typeof session.sessionId === "string" ? session.sessionId : undefined;
+
+    if (event.type === "session.start" && sessionId && isRootChatSession(event)) {
+      rootChatSessionId = sessionId;
       watchedSessions.clear();
-      watchedSessions.add(event.sessionId);
-      outboundBySession.set(event.sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
+      watchedSessions.add(sessionId);
+      outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
     }
 
-    if (event.type === "session.start" && event.parentSessionId && watchedSessions.has(event.parentSessionId)) {
-      watchedSessions.add(event.sessionId);
+    if (event.type === "session.start" && session.parentSessionId && watchedSessions.has(String(session.parentSessionId)) && sessionId) {
+      watchedSessions.add(sessionId);
     }
 
-    if ("sessionId" in event && typeof event.sessionId === "string" && !watchedSessions.has(event.sessionId)) {
+    if (sessionId && !watchedSessions.has(sessionId)) {
       return;
     }
 
@@ -71,38 +78,38 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       }
     }
 
-    if (event.type === "session.end" && "sessionId" in event && event.sessionId !== rootSid) {
+    if (event.type === "session.end" && sessionId && sessionId !== rootSid) {
       if (pendingChatId) {
-        const fp = event.finishParams as Record<string, unknown> | undefined;
-        const summary = (fp?.summary as string) ?? (typeof event.outcome === "string" ? event.outcome.slice(0, 200) : "completed");
-        const fpStatus = (fp?.status as string) ?? event.status;
+        const fp = session.finishParams as Record<string, unknown> | undefined;
+        const summary = (fp?.summary as string) ?? (typeof session.outcome === "string" ? session.outcome.slice(0, 200) : "completed");
+        const fpStatus = (fp?.status as string) ?? session.status;
         if (fpStatus === "failure" || fpStatus === "blocked") {
-          sendToUser(`❌ ${String(event.agent)} BLOCKED: ${summary}`, { eventType: "blocked", agent: String(event.agent), sessionId: event.sessionId, summary });
+          sendToUser(`❌ ${String(session.agent)} BLOCKED: ${summary}`, { eventType: "blocked", agent: String(session.agent), sessionId, summary });
         } else {
-          sendToUser(`✅ ${String(event.agent)}: ${summary}`, { eventType: "session.end", agent: String(event.agent), sessionId: event.sessionId, summary });
+          sendToUser(`✅ ${String(session.agent)}: ${summary}`, { eventType: "session.end", agent: String(session.agent), sessionId, summary });
         }
       }
     }
 
-    if (event.type === "session.end" && "sessionId" in event && event.sessionId === rootSid && pendingChatId) {
-      const state = sessionState(event.sessionId);
-      flushPendingText(event.sessionId);
-      if (event.error) {
-        const errMsg = String(event.error).length > 200 ? String(event.error).slice(0, 200) + "…" : String(event.error);
-        sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: event.agent, sessionId: event.sessionId, summary: errMsg });
+    if (event.type === "session.end" && sessionId && sessionId === rootSid && pendingChatId) {
+      const state = sessionState(sessionId);
+      flushPendingText(sessionId);
+      if (session.error) {
+        const errMsg = String(session.error).length > 200 ? String(session.error).slice(0, 200) + "…" : String(session.error);
+        sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: String(session.agent), sessionId, summary: errMsg });
       } else {
-        const summary = String(event.summary ?? "").trim();
-        if (summary && shouldSendSummary(event.sessionId, summary)) {
-          sendToUser(summary, { eventType: "session.end", agent: event.agent, sessionId: event.sessionId, summary });
+        const summary = String(session.summary ?? "").trim();
+        if (summary && shouldSendSummary(sessionId, summary)) {
+          sendToUser(summary, { eventType: "session.end", agent: String(session.agent), sessionId, summary });
           state.sentAnyText = true;
           state.sentText += "\n" + summary;
         } else if (!state.sentAnyText) {
-          sendToUser("❌ Couldn't generate a response. Try again or rephrase.", { eventType: "error", agent: event.agent, sessionId: event.sessionId });
+          sendToUser("❌ Couldn't generate a response. Try again or rephrase.", { eventType: "error", agent: String(session.agent), sessionId });
         }
       }
       rootChatSessionId = null;
       watchedSessions.clear();
-      outboundBySession.delete(event.sessionId);
+      outboundBySession.delete(sessionId);
     }
 
     if (event.type === "message.created") {
@@ -146,10 +153,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   }
 
   function isRootChatSession(event: any): boolean {
-    if (event.parentSessionId) return false;
-    if (event.agent !== opts.interfaceAgent) return false;
-    if (event.kind && event.kind !== "chat") return false;
-    return event.source === "telegram" || event.sessionId === getSessionId();
+    const session = sessionData(event);
+    if (session.parentSessionId) return false;
+    if (session.agent !== opts.interfaceAgent) return false;
+    if (session.kind && session.kind !== "chat") return false;
+    return event.source === "telegram" || session.sessionId === getSessionId();
   }
 
   return {

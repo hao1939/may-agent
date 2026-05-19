@@ -375,6 +375,9 @@ function connectWs() {
     try {
       const event = JSON.parse(e.data);
       const eventType = typeof event.type === 'string' ? event.type.replace(/\./g, '_') : event.type;
+      const data = event && typeof event.data === 'object' && event.data !== null && !Array.isArray(event.data)
+        ? event.data
+        : event;
 
       // Live event pub-sub: panels subscribe via window.busSubscribe(type, fn)
       // and get the raw (unmangled) event. Type matches AgentEvent shape:
@@ -391,7 +394,7 @@ function connectWs() {
       // especially while evaluator sessions are running. Only refresh
       // the inspected session at stable lifecycle boundaries.
       if (isSessionPageMode()
-        && event.sessionId === currentInspectedSession
+        && data.sessionId === currentInspectedSession
         && (eventType === 'turn_end' || eventType === 'session_end')) {
         scheduleSessionConversationRefresh(300);
       }
@@ -433,21 +436,21 @@ function connectWs() {
           break;
         case 'session_start': {
           // Show delegation: "→ tech-lead: <task>"
-          if (event.parentSessionId) {
+          if (data.parentSessionId) {
             const div = document.createElement('div');
             div.className = 'msg';
             div.style.color = 'var(--purple)';
             div.style.fontSize = '12px';
-            div.textContent = `→ ${event.agent}: ${(event.task || '').slice(0, 100)}`;
+            div.textContent = `→ ${data.agent}: ${(data.task || '').slice(0, 100)}`;
             messages.appendChild(div);
             chatScrollToBottom(messages);
           }
           // Update session picker
-          if (event.sessionId && !activeSessions.find(s => s.sessionId === event.sessionId)) {
-            activeSessions.push({ agent: event.agent, sessionId: event.sessionId, status: 'running', task: event.task });
+          if (data.sessionId && !activeSessions.find(s => s.sessionId === data.sessionId)) {
+            activeSessions.push({ agent: data.agent, sessionId: data.sessionId, status: 'running', task: data.task });
             renderSessionPicker();
           }
-          addFeedItem(event.agent, 'started session: ' + (event.task || '').slice(0, 80), 'start');
+          addFeedItem(data.agent, 'started session: ' + (data.task || '').slice(0, 80), 'start');
           scheduleLivenessRefresh();
           break;
         }
@@ -456,13 +459,13 @@ function connectWs() {
           div.className = 'msg';
           div.style.color = 'var(--fg2)';
           div.style.fontSize = '12px';
-          div.textContent = `✓ ${event.agent}: ${event.status}${event.duration ? ' (' + event.duration + ')' : ''}`;
+          div.textContent = `✓ ${data.agent}: ${data.status}${data.duration ? ' (' + data.duration + ')' : ''}`;
           messages.appendChild(div);
           chatScrollToBottom(messages);
           // Update session picker
-          activeSessions = activeSessions.filter(s => s.sessionId !== event.sessionId);
+          activeSessions = activeSessions.filter(s => s.sessionId !== data.sessionId);
           renderSessionPicker();
-          addFeedItem(event.agent, 'finished (' + (event.status || '?') + (event.duration ? ', ' + event.duration : '') + ')', event.status === 'error' ? 'end-error' : 'end-good');
+          addFeedItem(data.agent, 'finished (' + (data.status || '?') + (data.duration ? ', ' + data.duration : '') + ')', data.status === 'error' ? 'end-error' : 'end-good');
           scheduleLivenessRefresh();
           break;
         }

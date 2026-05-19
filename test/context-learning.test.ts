@@ -19,8 +19,8 @@ const testModel = {
 };
 
 /**
- * Helper: emit a fake session_end event to the context updater subscriber.
- * This simulates what happens in production: the manager fires session_end
+ * Helper: emit a fake session.end event to the context updater subscriber.
+ * This simulates what happens in production: the manager fires session.end
  * on the bus, and createContextUpdater reacts to it.
  */
 function applyContextUpdates(
@@ -31,10 +31,17 @@ function applyContextUpdates(
   const subscriber = createContextUpdater(projectRoot);
   subscriber({
     type: "session.end",
-    sessionId: "s_test",
-    agent: agentName,
-    status: "done",
-    finishParams: { context_updates: updates },
+    source: "runtime",
+    owner: `agent:${agentName}`,
+    data: {
+      sessionId: "s_test",
+      agent: agentName,
+      outcome: "done",
+      summary: "done",
+      durationMs: 0,
+      status: "done",
+      finishParams: { context_updates: updates },
+    },
   } as any);
 }
 

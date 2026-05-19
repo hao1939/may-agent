@@ -45,48 +45,55 @@ export type SessionEvent =
   | { type: "turn_end"; sessionId: string; agent: string; toolCalls: number; durationMs: number; turnCount?: number; errorCount?: number }
   | {
       type: "session.start";
-      sessionId: string;
-      agent: string;
-      task: string;
-      trigger: string;
-      scheduledAt?: number;
-      firedAt: number;
-      // Optional fields previously carried only on legacy session.start:
-      parentSessionId?: string;
-      workspacePath?: string;
-      workflowRunId?: string;
-      projectId?: string;
       source?: string;
-      kind?: string;
-      requestId?: string;
+      owner: string;
+      timestamp?: number;
+      data: {
+        sessionId: string;
+        agent: string;
+        task: string;
+        trigger: string;
+        scheduledAt?: number;
+        firedAt: number;
+        parentSessionId?: string;
+        workspacePath?: string;
+        workflowRunId?: string;
+        projectId?: string;
+        kind?: string;
+        requestId?: string;
+        stepLabel?: string;
+      };
     }
   | {
       type: "session.end";
-      sessionId: string;
-      agent: string;
-      outcome: string;
-      summary: string;
-      durationMs: number;
-      // Optional fields previously carried only on legacy session.end:
-      status?: string;
-      task?: string;
-      duration?: string;
-      error?: string;
-      opCount?: number;
-      turnCount?: number;
-      /** Structured finish() data — context_updates, completed_items, new_items, etc. */
-      finishParams?: Record<string, unknown>;
-      /** Files modified during the session. */
-      filesModified?: string[];
-      /** Workspace path for agent-specific file writes. */
-      workspacePath?: string;
-      parentSessionId?: string;
-      workflowRunId?: string;
-      projectId?: string;
       source?: string;
-      kind?: string;
-      requestId?: string;
-      stepLabel?: string;
+      owner: string;
+      timestamp?: number;
+      data: {
+        sessionId: string;
+        agent: string;
+        outcome: string;
+        summary: string;
+        durationMs: number;
+        status?: string;
+        task?: string;
+        duration?: string;
+        error?: string;
+        opCount?: number;
+        turnCount?: number;
+        /** Structured finish() data — context_updates, completed_items, new_items, etc. */
+        finishParams?: Record<string, unknown>;
+        /** Files modified during the session. */
+        filesModified?: string[];
+        /** Workspace path for agent-specific file writes. */
+        workspacePath?: string;
+        parentSessionId?: string;
+        workflowRunId?: string;
+        projectId?: string;
+        kind?: string;
+        requestId?: string;
+        stepLabel?: string;
+      };
     };
 
 /** System events */
@@ -325,7 +332,15 @@ export type AgentEvent =
 
 /** Check if an event is session-scoped (has sessionId). */
 export function isSessionEvent(event: AgentEvent): event is SessionEvent {
-  return "sessionId" in event && typeof (event as SessionEvent).sessionId === "string";
+  return typeof eventData(event).sessionId === "string";
+}
+
+/** Return an event's domain payload. Canonical envelopes use data; flat stream events are their own payload. */
+export function eventData(event: unknown): Record<string, unknown> {
+  const record = event && typeof event === "object" && !Array.isArray(event) ? event as Record<string, unknown> : {};
+  return record.data && typeof record.data === "object" && !Array.isArray(record.data)
+    ? record.data as Record<string, unknown>
+    : record;
 }
 
 // ── EventBus ───────────────────────────────────────────────────────────

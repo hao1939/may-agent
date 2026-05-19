@@ -155,7 +155,10 @@ export function waitForSocketEvent(
         try {
           const event = JSON.parse(trimmed) as SocketEvent;
           if (event.type === eventType) {
-            if (opts?.sessionId && event.sessionId !== opts.sessionId) continue;
+            const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
+              ? event.data as Record<string, unknown>
+              : event;
+            if (opts?.sessionId && data.sessionId !== opts.sessionId) continue;
             clearTimeout(timeout);
             client.destroy();
             settle(() => resolve(event));

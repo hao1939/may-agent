@@ -151,7 +151,12 @@ describe("daemon event subscribers", () => {
       });
       bus.subscribe((event) => events.push(event));
 
-      bus.emit({ type: "session.start", sessionId: "s_stuck", agent: "builder", task: "fix build" } as any);
+      bus.emit({
+        type: "session.start",
+        source: "runtime",
+        owner: "agent:builder",
+        data: { sessionId: "s_stuck", agent: "builder", task: "fix build", trigger: "runtime", firedAt: Date.now() },
+      } as any);
       for (let i = 0; i < 6; i++) {
         bus.emit({
           type: "turn_end",
