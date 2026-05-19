@@ -467,7 +467,10 @@ function connectWs() {
           break;
         }
         case 'message_created':
-          addFeedItem(event.from || event.source || 'message', (event.content || event.message || '').slice(0, 120), 'notification');
+          {
+            const message = event.data || event;
+            addFeedItem(message.from || event.source || 'message', (message.content || message.message || '').slice(0, 120), 'notification');
+          }
           scheduleLivenessRefresh();
           break;
         case 'metric_breach':

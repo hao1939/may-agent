@@ -71,7 +71,10 @@ function activeStatus(status: ControlStatusItem[]): ControlStatusItem[] {
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.filter) return true;
   if (typeof event.sessionId === "string") return client.filter.has(event.sessionId);
-  if (event.type === "message.created" && event.to === "human") return false;
+  const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
+    ? event.data as Record<string, unknown>
+    : event;
+  if (event.type === "message.created" && data.to === "human") return false;
   return false;
 }
 

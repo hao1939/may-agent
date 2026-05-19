@@ -162,7 +162,12 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             (msg) => bus.emit({ type: "info", message: `[cron:${config.name}] ${msg}` }),
             opts.projectRoot,
             (msg) => {
-              bus.emit({ type: "message.created", from: config.name, to: "human", content: msg } as any);
+              bus.emit({
+                type: "message.created",
+                source: `agent:${config.name}`,
+                owner: "human:operator",
+                data: { from: config.name, to: "human", content: msg, priority: "P2" },
+              } as any);
             },
             (event) => bus.emit(event),
           );
