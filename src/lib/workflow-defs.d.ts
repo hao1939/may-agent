@@ -33,7 +33,7 @@ interface TaskResult {
   };
 }
 
-/** Workflow event types for observability. */
+/** Local workflow lifecycle callback events for observability. These are not SystemEvent bus envelopes. */
 type WorkflowEvent =
   | { type: "workflow.started"; workflow: string; task: string }
   | { type: "workflow.step_started"; step: string; sessionId?: string }
@@ -87,12 +87,12 @@ interface WorkflowContext {
   task: string;
 
   /** The name of the agent that called this workflow.
-   *  Use this instead of hardcoding agent names in shared workflows. */
+   *  Use this instead of hardcoding agent names in reusable workflow code. */
   agent: string;
 
   // ── RuntimeCtx (shared infra) ──────────────────────────────────────
 
-  /** Emit an event on the bus. All events — workflow, domain, system — go through one bus. */
+  /** Emit a runtime event on the bus. Dot-named domain events are wrapped as canonical envelopes. */
   emit(event: { type: string; [key: string]: unknown }): void;
 
   /** Dispatch an agent-level event to handlers subscribed via cron.json `on` field. */
@@ -119,7 +119,7 @@ interface WorkflowContext {
   /** Agents root directory. */
   agentsRoot: string;
 
-  /** Shared conventions, workflows, guards, docs directory. */
+  /** Shared conventions, guards, docs directory. */
   sharedRoot: string;
 
   /** First-class projects directory. */

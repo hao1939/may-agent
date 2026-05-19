@@ -136,7 +136,7 @@ export function validateProjectFormat(content: string, expectedId?: string): str
     errors.push(`frontmatter status '${meta.status}' is not canonical`);
   }
   if (meta.workflow === "master-worker" || meta.workflow === "master-worker-execute") {
-    errors.push("projects should not use unsupported master-worker workflow; pick a per-project or shared workflow");
+    errors.push("projects should not use unsupported master-worker workflow; pick a per-project or agent workflow");
   }
   if (/^\s*\*\*(Owner|Status):?\*\*:?\s*/mi.test(stripProjectMeta(content))) {
     errors.push("metadata duplicated as bold body field");

@@ -2,11 +2,11 @@
  * workflow-resolver-precedence.test.ts
  *
  * Verifies the workflow file resolver honors precedence:
- *   project > agent > shared.
+ *   project > agent.
  *
  * When the same workflow name (file) appears in more than one source
- * directory, the project-scoped one wins, then the agent-specific one,
- * then the shared one.
+ * directory, the project-scoped one wins, then the agent-specific one.
+ * shared/workflows is intentionally ignored.
  */
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
@@ -25,7 +25,7 @@ export async function execute(ctx: any) {
 `;
 }
 
-describe("workflow resolver precedence (project > agent > shared)", () => {
+describe("workflow resolver precedence (project > agent)", () => {
   let root: string;
   let projectDir: string;
   let agentDir: string;
@@ -43,7 +43,14 @@ describe("workflow resolver precedence (project > agent > shared)", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  function clearFiles() {
+    rmSync(join(projectDir, "demo.ts"), { force: true });
+    rmSync(join(agentDir, "demo.ts"), { force: true });
+    rmSync(join(sharedDir, "demo.ts"), { force: true });
+  }
+
   function makeTool(opts: { project?: boolean; agent?: boolean; shared?: boolean }) {
+    clearFiles();
     if (opts.project) writeFileSync(join(projectDir, "demo.ts"), workflowSource("project"));
     if (opts.agent) writeFileSync(join(agentDir, "demo.ts"), workflowSource("agent"));
     if (opts.shared) writeFileSync(join(sharedDir, "demo.ts"), workflowSource("shared"));
@@ -51,7 +58,6 @@ describe("workflow resolver precedence (project > agent > shared)", () => {
     return createWorkflowTool({
       manager: {} as any,
       workflowDir: agentDir,
-      sharedWorkflowDir: sharedDir,
       projectWorkflowDir: opts.project ? projectDir : undefined,
     });
   }
@@ -64,22 +70,18 @@ describe("workflow resolver precedence (project > agent > shared)", () => {
     return demo?.description;
   }
 
-  it("uses project dir when same-named workflow exists in all three", async () => {
+  it("uses project dir when same-named workflow exists in project and agent", async () => {
     const tool = makeTool({ project: true, agent: true, shared: true });
     expect(await listDemoDescription(tool)).toBe("demo from project");
   });
 
   it("falls back to agent when no project workflow is present", async () => {
-    // Clear project file
-    rmSync(join(projectDir, "demo.ts"), { force: true });
     const tool = makeTool({ project: false, agent: true, shared: true });
     expect(await listDemoDescription(tool)).toBe("demo from agent");
   });
 
-  it("falls back to shared when neither project nor agent has the workflow", async () => {
-    rmSync(join(projectDir, "demo.ts"), { force: true });
-    rmSync(join(agentDir, "demo.ts"), { force: true });
+  it("does not list shared workflows when neither project nor agent has the workflow", async () => {
     const tool = makeTool({ project: false, agent: false, shared: true });
-    expect(await listDemoDescription(tool)).toBe("demo from shared");
+    expect(await listDemoDescription(tool)).toBeUndefined();
   });
 });
