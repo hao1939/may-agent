@@ -173,19 +173,28 @@ describe("event-native: events table", () => {
 
     writer.handler({
       type: "message.created",
-      from: "dev",
-      to: "reviewer",
-      content: "Please inspect this change.",
-      priority: "P2",
-    } as any);
+      source: "agent:dev",
+      owner: "agent:reviewer",
+      data: {
+        from: "dev",
+        to: "reviewer",
+        content: "Please inspect this change.",
+        priority: "P2",
+      },
+    });
 
     writer.handler({
       type: "message.created",
-      from: "dev",
-      to: "human",
-      content: "Need operator input.",
-      priority: "P1",
-    } as any);
+      source: "agent:dev",
+      owner: "human:operator",
+      urgency: "high",
+      data: {
+        from: "dev",
+        to: "human",
+        content: "Need operator input.",
+        priority: "P1",
+      },
+    });
 
     const rows = db.prepare(
       "SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC",

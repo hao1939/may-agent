@@ -10,8 +10,13 @@ describe("socket frame normalization", () => {
     });
   });
 
-  it("normalizes known domain events to canonical envelopes at the socket boundary", () => {
-    expect(normalizeSocketFrame({ type: "message.created", from: "may", to: "human", content: "hi" })).toEqual({
+  it("accepts known domain events that already use canonical envelopes", () => {
+    expect(normalizeSocketFrame({
+      type: "message.created",
+      source: "agent:may",
+      owner: "human:operator",
+      data: { from: "may", to: "human", content: "hi" },
+    })).toEqual({
       kind: "event",
       command: "message.created",
       event: {
@@ -22,7 +27,12 @@ describe("socket frame normalization", () => {
       },
     });
 
-    expect(normalizeSocketFrame({ type: "project.nudge", projectPath: "projects/x", source: "web-ui" })).toEqual({
+    expect(normalizeSocketFrame({
+      type: "project.nudge",
+      source: "web-ui",
+      owner: "agent:may",
+      data: { projectPath: "projects/x" },
+    })).toEqual({
       kind: "event",
       command: "project.nudge",
       event: {
@@ -33,7 +43,12 @@ describe("socket frame normalization", () => {
       },
     });
 
-    expect(normalizeSocketFrame({ type: "project.comment.created", projectPath: "projects/x", comment: "go", author: "hao" })).toEqual({
+    expect(normalizeSocketFrame({
+      type: "project.comment.created",
+      source: "socket",
+      owner: "agent:may",
+      data: { projectPath: "projects/x", comment: "go", author: "hao" },
+    })).toEqual({
       kind: "event",
       command: "project.comment.created",
       event: {
@@ -42,6 +57,19 @@ describe("socket frame normalization", () => {
         owner: "agent:may",
         data: { projectPath: "projects/x", comment: "go", author: "hao" },
       },
+    });
+  });
+
+  it("rejects flat frames for known canonical events", () => {
+    expect(normalizeSocketFrame({ type: "message.created", from: "may", to: "human", content: "hi" })).toEqual({
+      kind: "error",
+      command: "message.created",
+      message: "Canonical event 'message.created' requires object field 'data'",
+    });
+    expect(normalizeSocketFrame({ type: "project.nudge", projectPath: "projects/x", source: "web-ui" })).toEqual({
+      kind: "error",
+      command: "project.nudge",
+      message: "Canonical event 'project.nudge' requires object field 'data'",
     });
   });
 
@@ -58,16 +86,27 @@ describe("socket frame normalization", () => {
     });
   });
 
-  it("normalizes legacy emit wrapper to the inner event", () => {
+  it("unwraps emit frames without reshaping domain events", () => {
     expect(normalizeSocketFrame({ type: "emit", event: "trigger.metrics-snapshot", forced: true })).toEqual({
       kind: "event",
       command: "emit",
       event: { type: "trigger.metrics-snapshot", forced: true },
     });
-    expect(normalizeSocketFrame({ type: "emit", event: "heartbeat.trigger", agent: "dev" })).toEqual({
+    expect(normalizeSocketFrame({
+      type: "emit",
+      event: "heartbeat.trigger",
+      source: "socket",
+      owner: "agent:dev",
+      data: { agent: "dev" },
+    })).toEqual({
       kind: "event",
       command: "emit",
       event: { type: "heartbeat.trigger", source: "socket", owner: "agent:dev", data: { agent: "dev" } },
+    });
+    expect(normalizeSocketFrame({ type: "emit", event: "heartbeat.trigger", agent: "dev" })).toEqual({
+      kind: "error",
+      command: "emit",
+      message: "Canonical event 'heartbeat.trigger' requires object field 'data'",
     });
   });
 
