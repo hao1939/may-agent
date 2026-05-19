@@ -1336,18 +1336,28 @@ export class SubagentManager {
     // Emit session.end
     if (this.bus) {
       this.bus.emit({
-        type: "session.end", sessionId, agent: agentName,
-        outcome: status, summary: lastText, durationMs,
-        status, task, finishParams: finishParams as any,
-        opCount: session.toolCalls,
-        turnCount: session.turnCount,
-        parentSessionId: session.parentSessionId,
-        workflowRunId: session.workflowRunId,
-        projectId: session.projectId,
-        source: session.source,
-        kind: session.kind,
-        requestId: session.requestId,
-        stepLabel: session.stepLabel,
+        type: "session.end",
+        source: session.source ?? "runtime",
+        owner: eventOwner(agentName),
+        timestamp: Date.now(),
+        data: {
+          sessionId,
+          agent: agentName,
+          outcome: status,
+          summary: lastText,
+          durationMs,
+          status,
+          task,
+          finishParams: finishParams as any,
+          opCount: session.toolCalls,
+          turnCount: session.turnCount,
+          parentSessionId: session.parentSessionId,
+          workflowRunId: session.workflowRunId,
+          projectId: session.projectId,
+          kind: session.kind,
+          requestId: session.requestId,
+          stepLabel: session.stepLabel,
+        },
       } as any);
     }
 
@@ -1373,16 +1383,23 @@ export class SubagentManager {
     const bus = this.bus;
 
     bus.emit({
-      type: "session.start", sessionId, agent: agentName, task,
-      trigger: session.kind ?? "runtime",
-      firedAt: session.startedAt,
-      parentSessionId: session.parentSessionId,
-      workflowRunId: session.workflowRunId,
-      projectId: session.projectId,
-      source: session.source,
-      kind: session.kind,
-      requestId: session.requestId,
-      stepLabel: session.stepLabel,
+      type: "session.start",
+      source: session.source ?? "runtime",
+      owner: eventOwner(agentName),
+      timestamp: session.startedAt,
+      data: {
+        sessionId,
+        agent: agentName,
+        task,
+        trigger: session.kind ?? "runtime",
+        firedAt: session.startedAt,
+        parentSessionId: session.parentSessionId,
+        workflowRunId: session.workflowRunId,
+        projectId: session.projectId,
+        kind: session.kind,
+        requestId: session.requestId,
+        stepLabel: session.stepLabel,
+      },
     } as any);
 
     agent.subscribe((event) => {

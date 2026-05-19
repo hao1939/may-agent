@@ -9,7 +9,7 @@
  * Daemon mode: show everything dimmed.
  */
 
-import { isSessionEvent, type EventBus } from "../event-bus.js";
+import { eventData, isSessionEvent, type EventBus } from "../event-bus.js";
 import { addLogSubscriber, type LogLevel } from "../../lib/log.js";
 
 const DIM = "\x1b[2m";
@@ -47,7 +47,8 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
       }
       if (!primarySid) return; // no session yet, suppress all
       if (!isSessionEvent(event)) return; // drop system events
-      if (event.sessionId !== primarySid) return; // drop other sessions
+      const session = eventData(event);
+      if (session.sessionId !== primarySid) return; // drop other sessions
 
       // Primary session — show everything
       switch (event.type) {
@@ -63,8 +64,8 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
           }
           break;
         case "session.end":
-          if (event.error) {
-            console.log(`\n⚠️ ${event.error}`);
+          if (session.error) {
+            console.log(`\n⚠️ ${session.error}`);
           }
           break;
       }
@@ -84,11 +85,17 @@ export function attachConsoleUI(bus: EventBus, getPrimarySessionId?: () => strin
         if (isSessionEvent(event) && event.isError) console.log(`${DIM}[${event.agent}:${event.tool}] ERROR${RESET}`);
         break;
       case "session.start":
-        if (isSessionEvent(event) && event.parentSessionId)
-          console.log(`${DIM}[${event.agent}] started: ${event.task.slice(0, 100)}${RESET}`);
+        if (isSessionEvent(event)) {
+          const session = eventData(event);
+          if (session.parentSessionId)
+            console.log(`${DIM}[${session.agent}] started: ${String(session.task ?? "").slice(0, 100)}${RESET}`);
+        }
         break;
       case "session.end":
-        if (isSessionEvent(event)) console.log(`${DIM}[${event.agent}] ${event.status}${RESET}`);
+        if (isSessionEvent(event)) {
+          const session = eventData(event);
+          console.log(`${DIM}[${session.agent}] ${session.status}${RESET}`);
+        }
         break;
       case "message.created":
         {

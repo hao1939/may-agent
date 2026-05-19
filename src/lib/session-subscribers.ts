@@ -9,7 +9,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { AgentEvent } from "../app/event-bus.js";
+import { eventData, type AgentEvent } from "../app/event-bus.js";
 import { log } from "./log.js";
 import { createStartDigest, createEndDigest, upsertDigest, logShadowComparison } from "./session-digest.js";
 import type { SubagentManager } from "./manager.js";
@@ -43,12 +43,14 @@ export function createStuckDetector(
 
   return (event: AgentEvent) => {
     if (event.type === "session.start") {
-      state.set(event.sessionId, { consecutiveErrorTurns: 0, warned: false });
+      const info = eventData(event) as any;
+      state.set(info.sessionId, { consecutiveErrorTurns: 0, warned: false });
       return;
     }
 
     if (event.type === "session.end") {
-      state.delete(event.sessionId);
+      const info = eventData(event) as any;
+      state.delete(info.sessionId);
       return;
     }
 
@@ -149,73 +151,74 @@ export function createAutoResume(
 
   return (event: AgentEvent) => {
     if (event.type !== "session.end") return;
-    if (event.status !== "interrupted") return;
-    const finishStatus = typeof event.finishParams?.status === "string" ? event.finishParams.status : "";
+    const info = eventData(event) as any;
+    if (info.status !== "interrupted") return;
+    const finishStatus = typeof info.finishParams?.status === "string" ? info.finishParams.status : "";
     if (finishStatus && finishStatus !== "success") return;
     // Use opCount as the work indicator — turnCount is not reliably persisted
-    const workDone = (event.opCount ?? (event as any).turnCount ?? 0) > 0;
+    const workDone = (info.opCount ?? info.turnCount ?? 0) > 0;
     if (!workDone) return; // No work done — nothing to resume
     // Deliberate close (e.g., /new command) — not a crash, don't resume
-    if (event.error === "Closed") return;
+    if (info.error === "Closed") return;
 
-    const prev = attempts.get(event.sessionId) ?? 0;
+    const prev = attempts.get(info.sessionId) ?? 0;
     if (prev >= MAX_RESUME_ATTEMPTS) {
       // Exhausted retries — escalate immediately
-      const reason = `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${event.turnCount ?? 0} turns. Error: ${event.error?.slice(0, 200) ?? "unknown"}. Task: ${(event.task ?? "").slice(0, 200)}`;
+      const reason = `Interrupted ${MAX_RESUME_ATTEMPTS + 1}x after ${info.turnCount ?? 0} turns. Error: ${info.error?.slice(0, 200) ?? "unknown"}. Task: ${(info.task ?? "").slice(0, 200)}`;
       // Digest: resume_exhausted — pass manager for LLM synthesis + classification
       if (persistDir) {
         upsertDigest(persistDir, {
-          sessionId: event.sessionId,
-          agent: event.agent,
+          sessionId: info.sessionId,
+          agent: info.agent,
           trigger: "resume_exhausted",
-          details: { attempts: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, error: event.error?.slice(0, 200), turnCount: event.turnCount },
+          details: { attempts: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, error: info.error?.slice(0, 200), turnCount: info.turnCount },
         }, getManager()).then(digest => {
           // Shadow comparison: existing system always escalates on resume_exhausted
-          logShadowComparison(event.sessionId, "resume_exhausted", "escalate", digest);
+          logShadowComparison(info.sessionId, "resume_exhausted", "escalate", digest);
         }).catch(err => log("warn", `[digest] resume_exhausted failed: ${err}`));
       }
-      attempts.delete(event.sessionId);
-      emitEscalate(event.agent, event.sessionId, reason);
+      attempts.delete(info.sessionId);
+      emitEscalate(info.agent, info.sessionId, reason);
       return;
     }
 
-    attempts.set(event.sessionId, prev + 1);
+    attempts.set(info.sessionId, prev + 1);
     const delay = 10_000 * (prev + 1); // 10s, 20s backoff
     log(
       "info",
-      `[resume] ${event.agent} (${event.sessionId}) interrupted after ${event.turnCount ?? 0} turns — evaluating via digest classifier (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
+      `[resume] ${info.agent} (${info.sessionId}) interrupted after ${info.turnCount ?? 0} turns — evaluating via digest classifier (attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS})`,
     );
 
     // Phase 4c: Use digest classifier to decide whether to resume
     const fallbackResume = () => {
-      log("info", `[resume] decision=resume source=fallback session=${event.sessionId} agent=${event.agent}`);
+      log("info", `[resume] decision=resume source=fallback session=${info.sessionId} agent=${info.agent}`);
       setTimeout(() => {
-        emitResume(event.sessionId, event.agent, prev + 1);
+        emitResume(info.sessionId, info.agent, prev + 1);
       }, delay);
     };
 
     if (persistDir) {
       upsertDigest(persistDir, {
-        sessionId: event.sessionId,
-        agent: event.agent,
+        sessionId: info.sessionId,
+        agent: info.agent,
         trigger: "auto_resume",
-        what_happened: `Auto-resume attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS} after ${delay}ms delay: ${(event.error ?? "unknown error").slice(0, 200)}`,
-        details: { attempt: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, delayMs: delay, error: event.error?.slice(0, 200), turnCount: event.turnCount },
+        what_happened: `Auto-resume attempt ${prev + 1}/${MAX_RESUME_ATTEMPTS} after ${delay}ms delay: ${(info.error ?? "unknown error").slice(0, 200)}`,
+        details: { attempt: prev + 1, maxAttempts: MAX_RESUME_ATTEMPTS, delayMs: delay, error: info.error?.slice(0, 200), turnCount: info.turnCount },
       }, getManager()).then(digest => {
         const action = digest?.action ?? "resume";
-        log("info", `[resume] decision=${action} source=digest session=${event.sessionId} agent=${event.agent} reason=${digest?.action_reason ?? "no_digest"}`);
+        log("info", `[resume] decision=${action} source=digest session=${info.sessionId} agent=${info.agent} reason=${digest?.action_reason ?? "no_digest"}`);
         if (action === "resume" || action === "requeue") {
           setTimeout(() => {
-            emitResume(event.sessionId, event.agent, prev + 1);
+            emitResume(info.sessionId, info.agent, prev + 1);
           }, delay);
         } else if (action === "escalate") {
           // Don't resume — escalate instead
-          attempts.delete(event.sessionId);
-          emitEscalate(event.agent, event.sessionId, `Digest classifier rejected resume: ${digest?.action_reason ?? "unknown"}`);
+          attempts.delete(info.sessionId);
+          emitEscalate(info.agent, info.sessionId, `Digest classifier rejected resume: ${digest?.action_reason ?? "unknown"}`);
         } else {
           // "kill" or "nothing" — skip resume, clean up attempts
-          log("info", `[resume] skipping resume: classifier says ${action} for ${event.sessionId}`);
-          attempts.delete(event.sessionId);
+          log("info", `[resume] skipping resume: classifier says ${action} for ${info.sessionId}`);
+          attempts.delete(info.sessionId);
         }
       }).catch(err => {
         log("warn", `[digest] auto_resume failed: ${err}`);
@@ -234,8 +237,9 @@ export function createAutoResume(
 export function createDigestWriter(persistDir: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
     if (event.type === "session.start") {
+      const info = eventData(event) as any;
       try {
-        createStartDigest(persistDir, event.sessionId, event.agent, event.task ?? "");
+        createStartDigest(persistDir, info.sessionId, info.agent, info.task ?? "");
       } catch (err) {
         /* best-effort — digest system shouldn't break sessions */
         try { log("warn", `[digest-subscriber] start failed: ${err}`); } catch (logErr) { console.error("[digest-subscriber] start logging failed:", logErr); }
@@ -244,11 +248,12 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
     }
 
     if (event.type === "session.end") {
+      const info = eventData(event) as any;
       try {
-        const finishParams = event.finishParams as any;
-        const summary = finishParams?.summary ?? event.outcome ?? "";
-        const status = finishParams?.status ?? event.status ?? "interrupted";
-        const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? event.filesModified ?? [];
+        const finishParams = info.finishParams as any;
+        const summary = finishParams?.summary ?? info.outcome ?? "";
+        const status = finishParams?.status ?? info.status ?? "interrupted";
+        const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? info.filesModified ?? [];
         const nextSteps = finishParams?.next_steps ?? finishParams?.blockers?.map((b: any) => b.reason).join("; ") ?? null;
 
         // Map finish status to digest outcome
@@ -263,16 +268,16 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
         };
         const outcome = outcomeMap[status] ?? "interrupted";
 
-        createEndDigest(persistDir, event.sessionId, event.agent, {
+        createEndDigest(persistDir, info.sessionId, info.agent, {
           what_happened: summary,
           outcome,
           still_open: nextSteps,
           files_modified: filesModified,
           details: {
-            duration: event.duration,
-            turnCount: event.turnCount,
-            opCount: event.opCount,
-            error: event.error,
+            duration: info.duration,
+            turnCount: info.turnCount,
+            opCount: info.opCount,
+            error: info.error,
           },
         });
       } catch (err) {
@@ -289,11 +294,12 @@ export function createDigestWriter(persistDir: string): (event: AgentEvent) => v
 export function createContextUpdater(projectRoot: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
     if (event.type !== "session.end") return;
+    const info = eventData(event) as any;
 
-    const updates = (event.finishParams as any)?.context_updates;
+    const updates = (info.finishParams as any)?.context_updates;
     if (!Array.isArray(updates) || updates.length === 0) return;
 
-    const agentDir = join(projectRoot, "agents", event.agent);
+    const agentDir = join(projectRoot, "agents", info.agent);
     const contextPath = join(agentDir, "context.md");
 
     try {
@@ -316,7 +322,7 @@ export function createContextUpdater(projectRoot: string): (event: AgentEvent) =
 
       writeFileSync(contextPath, `${lines.join("\n")}${lines.length > 0 ? "\n" : ""}`);
     } catch (err) {
-      log("warn", `[context-updater] failed for ${event.agent}: ${err}`);
+      log("warn", `[context-updater] failed for ${info.agent}: ${err}`);
     }
   };
 }
@@ -381,15 +387,16 @@ export function getFileReadStats(persistDir: string, days = 7): FileReadStat[] {
 export function createLastSessionWriter(projectRoot: string): (event: AgentEvent) => void {
   return (event: AgentEvent) => {
     if (event.type !== "session.end") return;
+    const info = eventData(event) as any;
 
-    const finishParams = event.finishParams as any;
+    const finishParams = info.finishParams as any;
     // Only write if we have meaningful session data (finish() was called or we have a summary)
-    const summary = finishParams?.summary ?? event.outcome ?? "";
+    const summary = finishParams?.summary ?? info.outcome ?? "";
     if (!summary) return;
 
-    const agentDir = join(projectRoot, "agents", event.agent);
-    const status = finishParams?.status ?? event.status ?? "interrupted";
-    const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? event.filesModified ?? [];
+    const agentDir = join(projectRoot, "agents", info.agent);
+    const status = finishParams?.status ?? info.status ?? "interrupted";
+    const filesModified = finishParams?.deliverables?.map((d: any) => d.path).filter(Boolean) ?? info.filesModified ?? [];
     const nextSteps = finishParams?.next_steps ?? null;
     const blockers = finishParams?.blockers ?? null;
     const completedItems = finishParams?.completed_items ?? null;
@@ -397,11 +404,11 @@ export function createLastSessionWriter(projectRoot: string): (event: AgentEvent
 
     try {
       writeLastSession(agentDir, {
-        sessionId: event.sessionId,
-        agent: event.agent,
+        sessionId: info.sessionId,
+        agent: info.agent,
         status,
         summary,
-        duration: event.duration ?? (event as any).runtime,
+        duration: info.duration ?? info.runtime,
         filesModified,
         nextSteps,
         blockers,
@@ -410,7 +417,7 @@ export function createLastSessionWriter(projectRoot: string): (event: AgentEvent
         timestamp: Date.now(),
       });
     } catch (err) {
-      log("warn", `[last-session-writer] failed for ${event.agent}: ${err}`);
+      log("warn", `[last-session-writer] failed for ${info.agent}: ${err}`);
     }
   };
 }

@@ -13,6 +13,14 @@ function jsonResponse(result: unknown) {
   } as Response;
 }
 
+function sessionStart(data: Record<string, unknown>, source = "runtime") {
+  return { type: "session.start", source, owner: `agent:${data.agent}`, data };
+}
+
+function sessionEnd(data: Record<string, unknown>, source = "runtime") {
+  return { type: "session.end", source, owner: `agent:${data.agent}`, data };
+}
+
 async function waitFor(assertion: () => void, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
   let lastErr: unknown;
@@ -115,18 +123,16 @@ describe("telegram reply e2e", () => {
     });
 
     activeSessionId = "s_test_reply";
-    bus.emit({
-      type: "session.start",
+    bus.emit(sessionStart({
       sessionId: activeSessionId,
       agent: "may",
       task: inputs[0],
       trigger: "chat",
       firedAt: Date.now(),
       kind: "chat",
-    });
+    }) as any);
     activeSessionId = "";
-    bus.emit({
-      type: "session.end",
+    bus.emit(sessionEnd({
       sessionId: "s_test_reply",
       agent: "may",
       outcome: "done",
@@ -134,7 +140,7 @@ describe("telegram reply e2e", () => {
       durationMs: 10,
       status: "done",
       task: inputs[0],
-    });
+    }) as any);
 
     await waitFor(() => {
       expect(sentMessages.some((m) => m.text.includes("Actual May answer"))).toBe(true);
@@ -171,16 +177,14 @@ describe("telegram reply e2e", () => {
       interfaceAgent: "may",
     });
 
-    bus.emit({
-      type: "session.start",
+    bus.emit(sessionStart({
       sessionId: activeSessionId,
       agent: "may",
       task: "live reply",
       trigger: "chat",
       firedAt: Date.now(),
       kind: "chat",
-      source: "telegram",
-    });
+    }, "telegram") as any);
     activeSessionId = "";
     bus.emit({
       type: "text",

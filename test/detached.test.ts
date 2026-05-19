@@ -218,14 +218,14 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       // After a short delay, emit the event we're waiting for
       setTimeout(() => {
-        socket.write(JSON.stringify({ type: "session.end", sessionId: "s_1", status: "done" }) + "\n");
+        socket.write(JSON.stringify({ type: "session.end", source: "runtime", owner: "agent:may", data: { sessionId: "s_1", status: "done" } }) + "\n");
       }, 100);
     });
 
     const event = await waitForSocketEvent(endpoint, "session.end", { timeoutMs: 5000 });
     expect(event.type).toBe("session.end");
-    expect(event.sessionId).toBe("s_1");
-    expect(event.status).toBe("done");
+    expect(event.data?.sessionId).toBe("s_1");
+    expect(event.data?.status).toBe("done");
   });
 
   it("filters by sessionId when provided", async () => {
@@ -233,9 +233,9 @@ describe("waitForSocketEvent", () => {
       socket.write(JSON.stringify({ type: "connected" }) + "\n");
       setTimeout(() => {
         // Wrong session
-        socket.write(JSON.stringify({ type: "session.end", sessionId: "s_other", status: "done" }) + "\n");
+        socket.write(JSON.stringify({ type: "session.end", source: "runtime", owner: "agent:may", data: { sessionId: "s_other", status: "done" } }) + "\n");
         // Right session
-        socket.write(JSON.stringify({ type: "session.end", sessionId: "s_target", status: "error" }) + "\n");
+        socket.write(JSON.stringify({ type: "session.end", source: "runtime", owner: "agent:may", data: { sessionId: "s_target", status: "error" } }) + "\n");
       }, 100);
     });
 
@@ -243,8 +243,8 @@ describe("waitForSocketEvent", () => {
       sessionId: "s_target",
       timeoutMs: 5000,
     });
-    expect(event.sessionId).toBe("s_target");
-    expect(event.status).toBe("error");
+    expect(event.data?.sessionId).toBe("s_target");
+    expect(event.data?.status).toBe("error");
   });
 
   it("times out if event never arrives", async () => {

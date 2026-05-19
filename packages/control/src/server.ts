@@ -70,12 +70,16 @@ function activeStatus(status: ControlStatusItem[]): ControlStatusItem[] {
 
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.filter) return true;
-  if (typeof event.sessionId === "string") return client.filter.has(event.sessionId);
-  const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
-    ? event.data as Record<string, unknown>
-    : event;
+  const data = eventPayload(event);
+  if (typeof data.sessionId === "string") return client.filter.has(data.sessionId);
   if (event.type === "message.created" && data.to === "human") return false;
   return false;
+}
+
+function eventPayload(event: ControlEvent): Record<string, unknown> {
+  return event.data && typeof event.data === "object" && !Array.isArray(event.data)
+    ? event.data as Record<string, unknown>
+    : event;
 }
 
 export interface ControlSocketCoreOptions {
@@ -111,9 +115,10 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       }
     }
 
-    if (event.type === "session.start" && typeof event.parentSessionId === "string" && typeof event.sessionId === "string") {
+    const data = eventPayload(event);
+    if (event.type === "session.start" && typeof data.parentSessionId === "string" && typeof data.sessionId === "string") {
       for (const client of clients.values()) {
-        if (client.filter?.has(event.parentSessionId)) client.filter.add(event.sessionId);
+        if (client.filter?.has(data.parentSessionId)) client.filter.add(data.sessionId);
       }
     }
 

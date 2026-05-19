@@ -26,6 +26,24 @@ function setupDb(persistDir: string) {
   return db;
 }
 
+function sessionStart(sessionId: string, agent: string, task: string) {
+  return {
+    type: "session.start",
+    source: "runtime",
+    owner: `agent:${agent}`,
+    data: { sessionId, agent, task, trigger: "runtime", firedAt: Date.now() },
+  };
+}
+
+function sessionEnd(sessionId: string, agent: string) {
+  return {
+    type: "session.end",
+    source: "runtime",
+    owner: `agent:${agent}`,
+    data: { sessionId, agent, outcome: "done", summary: "done", durationMs: 0 },
+  };
+}
+
 function insertTestDigest(
   persistDir: string,
   opts: {
@@ -241,7 +259,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session.start", sessionId: "s_fallback", agent: "coder", task: "test" } as any);
+    handler(sessionStart("s_fallback", "coder", "test") as any);
     for (let i = 0; i < 7; i++) {
       handler({
         type: "turn_end",
@@ -266,7 +284,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session.start", sessionId: "s_warn", agent: "coder", task: "test" } as any);
+    handler(sessionStart("s_warn", "coder", "test") as any);
     for (let i = 0; i < 4; i++) {
       handler({
         type: "turn_end",
@@ -290,7 +308,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session.start", sessionId: "s_reset", agent: "coder", task: "test" } as any);
+    handler(sessionStart("s_reset", "coder", "test") as any);
     for (let i = 0; i < 5; i++) {
       handler({
         type: "turn_end",
@@ -332,7 +350,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       undefined,
     );
 
-    handler({ type: "session.start", sessionId: "s_cleanup", agent: "coder", task: "test" } as any);
+    handler(sessionStart("s_cleanup", "coder", "test") as any);
     for (let i = 0; i < 3; i++) {
       handler({
         type: "turn_end",
@@ -343,7 +361,7 @@ describe("Circuit breaker — digest-informed decisions", () => {
       } as any);
     }
     // Session ends
-    handler({ type: "session.end", sessionId: "s_cleanup", agent: "coder" } as any);
+    handler(sessionEnd("s_cleanup", "coder") as any);
     // New errors after session_end should not accumulate
     for (let i = 0; i < 7; i++) {
       handler({

@@ -9,15 +9,19 @@ describe("createAutoResume", () => {
 
     subscriber({
       type: "session.end",
-      sessionId: "s_blocked",
-      agent: "may",
-      outcome: "interrupted",
-      summary: "blocked on external deploy",
-      durationMs: 1000,
-      status: "interrupted",
-      opCount: 5,
-      finishParams: { status: "blocked", summary: "blocked on external deploy" },
-    });
+      source: "runtime",
+      owner: "agent:may",
+      data: {
+        sessionId: "s_blocked",
+        agent: "may",
+        outcome: "interrupted",
+        summary: "blocked on external deploy",
+        durationMs: 1000,
+        status: "interrupted",
+        opCount: 5,
+        finishParams: { status: "blocked", summary: "blocked on external deploy" },
+      },
+    } as any);
 
     expect(emitResume).not.toHaveBeenCalled();
     expect(emitEscalate).not.toHaveBeenCalled();

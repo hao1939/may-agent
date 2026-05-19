@@ -1,6 +1,6 @@
 import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { EventBus } from "./event-bus.js";
+import { eventData, type EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { DbWriter } from "../lib/db-writer.js";
 import {
@@ -124,17 +124,19 @@ export function attachDaemonEventSubscribers(opts: {
   ));
 
   bus.subscribe((event) => {
-    if (event.type === "session.start" && "agent" in event && "sessionId" in event) {
-      setAgentSessionId(event.agent as string, event.sessionId as string);
+    if (event.type === "session.start") {
+      const info = eventData(event) as any;
+      if (info.agent && info.sessionId) setAgentSessionId(info.agent, info.sessionId);
     }
-    if (event.type === "session.end" && "agent" in event) {
-      runAgentCleanup(event.agent as string);
+    if (event.type === "session.end") {
+      const info = eventData(event) as any;
+      if (info.agent) runAgentCleanup(info.agent);
     }
   });
 
   bus.subscribe((event) => {
     if (event.type !== "session.end") return;
-    const info = event as any;
+    const info = eventData(event) as any;
 
     if (info.error && info.status === "error") {
       bus.emit({
@@ -183,7 +185,7 @@ export function attachDaemonEventSubscribers(opts: {
           parentSessionId: info.parentSessionId,
           outcome: info.outcome,
           status: info.status,
-          source: info.source,
+          source: typeof event.source === "string" ? event.source : undefined,
           kind: info.kind,
         },
       } as any);
