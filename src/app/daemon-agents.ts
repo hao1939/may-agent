@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { importRuntimeModule } from "../lib/runtime-import.js";
 import { listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
@@ -65,7 +66,7 @@ export async function prepareDaemonAgents(opts: {
 
   for (const file of heartbeatFiles) {
     try {
-      await import(file);
+      await importRuntimeModule(file);
     } catch (err) {
       failures++;
       const msg = err instanceof Error ? err.message : String(err);

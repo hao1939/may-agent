@@ -4,6 +4,7 @@ import type { ModelWithApiKey } from "../../lib/types.js";
 import type { SubagentManager } from "../../lib/index.js";
 import type { EventBus } from "../event-bus.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
+import { importRuntimeModule } from "../../lib/runtime-import.js";
 
 export interface RunWorkflowMode {
   name: string;
@@ -35,7 +36,7 @@ export async function runWorkflowMode(opts: {
   }
 
   console.log(`Loading workflow: ${wfPath}`);
-  const wfMod = await import(wfPath + "?t=" + Date.now());
+  const wfMod = await importRuntimeModule<any>(wfPath);
   const rtx = buildRuntimeCtx({
     bus: opts.bus,
     persistDir: opts.persistDir,
@@ -148,7 +149,7 @@ async function findWorkflowPath(agentsRoot: string, sharedRoot: string, workflow
         if (!file.endsWith(".ts") || file.endsWith(".test.ts")) continue;
         try {
           const path = join(dir, file);
-          const mod = await import(path + "?t=" + Date.now());
+          const mod = await importRuntimeModule<any>(path);
           if (mod.name === workflowName) return path;
         } catch {
           /* skip */
