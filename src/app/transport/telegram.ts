@@ -17,6 +17,7 @@
  */
 
 import { setDefaultAutoSelectFamily } from "node:net";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
@@ -51,6 +52,17 @@ function eventOwner(owner: unknown): string {
   if (value.startsWith("agent:") || value.startsWith("human:")) return value;
   if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
   return `agent:${value}`;
+}
+
+function projectOwner(projectRoot: string, projectPath: string): string {
+  try {
+    const content = readFileSync(join(projectRoot, projectPath, "project.md"), "utf-8");
+    const match = content.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
+    if (match?.[1]) return match[1].trim().replace(/^["']|["']$/g, "");
+  } catch {
+    /* best-effort owner lookup */
+  }
+  return "may";
 }
 
 export interface TelegramBot {
@@ -148,7 +160,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const normalized = normalizeProjectPath(projectPath, projectRoot);
     if (!normalized) return false;
 
-    const { existsSync } = await import("node:fs");
     const projectDir = join(projectRoot, normalized);
     const projectFile = join(projectDir, "project.md");
     if (!existsSync(projectFile)) {
@@ -159,7 +170,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     bus.emit({
       type: "project.comment.created",
       source: "telegram",
-      owner: "agent:may",
+      owner: eventOwner(projectOwner(projectRoot, normalized)),
       data: {
         projectPath: normalized,
         comment: comment.trim(),

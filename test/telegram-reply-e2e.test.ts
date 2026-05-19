@@ -289,9 +289,11 @@ describe("telegram reply e2e", () => {
     });
 
     const bus = new EventBus();
+    const comments: any[] = [];
     const nudges: any[] = [];
     const inputs: any[] = [];
     bus.subscribe((event: any) => {
+      if (event.type === "project.comment.created") comments.push(event);
       if (event.type === "project.nudge") nudges.push(event);
       if (event.type === "input") inputs.push(event);
     });
@@ -322,6 +324,9 @@ describe("telegram reply e2e", () => {
     });
 
     await waitFor(() => {
+      expect(comments).toHaveLength(1);
+      expect(comments[0].owner).toBe("agent:scout");
+      expect(comments[0].data.projectPath).toBe("projects/example-project");
       expect(nudges).toHaveLength(1);
       expect(nudges[0].owner).toBe("agent:scout");
       expect(nudges[0].data.projectPath).toBe("projects/example-project");
