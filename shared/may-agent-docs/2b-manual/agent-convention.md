@@ -7,7 +7,8 @@ agents/<name>/
   agent.json              # Required. Operational config: model, tools, limits.
   AGENTS.md               # Required. Identity and stable operating contract.
   heartbeat.md            # Optional. Heartbeat-only guidance, not system prompt.
-  cron.json               # Optional. Cron job definitions.
+  cron.json               # Optional. Cron job definitions (top-level JSON array).
+                          # Requires `"cron"` in agent.json tools[]; otherwise ignored.
 
   knowledge/              # On-demand reference material.
     INDEX.md              # Routing table for references.

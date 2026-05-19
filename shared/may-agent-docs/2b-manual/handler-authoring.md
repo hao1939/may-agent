@@ -44,22 +44,47 @@ collection in the workflow.
 
 ## Registering (cron.json)
 
-Add an entry to your agent's `cron.json`:
+Add an entry to your agent's `cron.json`. The file is a top-level JSON
+array of entries:
 
 ```json
-{
-  "name": "my-handler",
-  "handler": "my-handler",
-  "intervalMs": 300000,
-  "agent": "may",
-  "enabled": true
-}
+[
+  {
+    "name": "my-handler",
+    "handler": "my-handler",
+    "intervalMs": 300000,
+    "agent": "may",
+    "enabled": true
+  }
+]
 ```
 
 - `name` — unique identifier
 - `handler` — filename (without .ts)
-- `intervalMs` — fire interval in ms
+- `intervalMs` — fire interval in ms. **Minimum: 10000 (10 seconds).** Entries
+  below the floor are rejected at load time (an error is emitted via cron's
+  error channel) — the rest of `cron.json` continues to load. If you need
+  sub-10s reactions, use an event subscription via `on` instead.
 - `on` — (optional) event types that also trigger this handler
+
+**Gate: `agent.json` must include `"cron"` in its `tools[]` array, or the
+entire `cron.json` is silently ignored** (the loader emits an info-level
+warning at startup; check daemon logs if your handlers aren't firing).
+
+## Module-level state is wiped on every fire
+
+Each handler invocation re-imports the handler module fresh (hot-reload via
+`?t=<ts>` cache-busting). Module-level `let counter = 0` resets to 0 every
+fire — do **not** use module-scope variables for cross-fire state. Persist
+state via:
+
+- `sdk.metrics.record(...)` for counters and gauges (read back via `sdk.metrics.list()`),
+- `sdk.getDb()` raw SQL for richer state,
+- emitting events and reading them back via `sdk.query.events(...)`.
+
+This applies to handler files only — not to workflow files (which are loaded
+once per dispatch) or SDK helpers (resolved through node_modules and
+cached normally).
 
 ## What You Have Access To
 
@@ -147,9 +172,15 @@ You don't need to emit these yourself.
 
 ## Example: Simple Metric Recorder
 
-Metric snapshot handlers are a mechanical exception: they may read projections
-and record metrics directly because no agent judgment is needed. Current code
-may still use `sdk.getDb()`; the target surface is `sdk.query` + `sdk.metrics`.
+Metric snapshot handlers are a mechanical exception: they read projections
+and record metrics directly because no agent judgment is needed. Use
+`sdk.metrics.record()` followed by `sdk.metrics.evaluate(id)` so the
+breach/recovery pipeline actually runs.
+
+**Pitfall:** writing `metrics.current` via raw SQL (`db.run("UPDATE metrics ...")`)
+updates the value but **does not** trigger alert evaluation. The breach hook
+fires only inside `sdk.metrics.record()`/`evaluate()`. If you go through raw
+SQL you'll see the value change but never see `metric.breach` events.
 
 ```typescript
 import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
@@ -162,8 +193,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const count = (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status = 'error' AND startedAt > ?")
       .get(Date.now() - 3600000) as any)?.c || 0;
 
-    db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?",
-      [count, Date.now(), "session.error-count"]);
+    // Record + evaluate. record() updates current; evaluate() runs the
+    // breach/recovery pipeline and emits metric.breach / metric.recovered
+    // events with metric_alerts rows.
+    await sdk.metrics.record("session.error-count", count);
+    await sdk.metrics.evaluate("session.error-count");
 
     sdk.log("info", `Recorded ${count} errors in last hour`);
   };

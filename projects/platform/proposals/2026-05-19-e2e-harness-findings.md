@@ -18,6 +18,12 @@ yet-more-undocumented knowledge.
 
 ### F1. `cron.json` shape is undocumented and easy to get wrong
 
+**Status:** RESOLVED — `shared/may-agent-docs/2b-manual/agent-convention.md`
+and `handler-authoring.md` now state that `cron.json` is a top-level JSON
+array of entries and that the entire file is ignored unless `"cron"` is in
+`agent.json` tools[]. (Implementation only accepts the array shape — a
+leading `{ ... }` object is rejected with a clear error.)
+
 **Surfaced when:** writing E1's fixture cron.json as `{ "jobs": [...] }`.
 
 The real format is a **top-level JSON array** of entries:
@@ -42,6 +48,15 @@ log line when `cron.json` is not an array.
 
 ### F2. `cron.json` is silently ignored unless the agent has `"cron"` in tools
 
+**Status:** RESOLVED —
+`src/app/loader/agent-registry-loader.ts` now emits a startup info-level
+warning when `cron.json` is on disk but `agent.json` tools[] does not
+include `"cron"`. The message names the agent and tells the author to add
+`"cron"` to tools. Regression test:
+`test/integration/agent-loader.test.ts “warns when cron.json exists but
+agent.json tools[] omits cron”`. Documentation in `agent-convention.md`
+and `handler-authoring.md` also calls out the gate explicitly.
+
 **Surfaced when:** writing E1's fixture agent with `"tools": []`.
 
 The cron config is read inside the `cron` tool's loader
@@ -64,6 +79,11 @@ Document either way in `agent-convention.md`.
 
 ### F3. `intervalMs` has an undocumented 10s minimum
 
+**Status:** RESOLVED — `handler-authoring.md` `Registering (cron.json)`
+section now states the 10s floor explicitly and clarifies that entries
+below the floor are **rejected** (not clamped) at load time, with the rest
+of `cron.json` continuing to load.
+
 **Surfaced when:** writing E1 with `intervalMs: 1000`.
 
 The daemon logs `[cron:may] Cron job "e2e-noop" intervalMs too low (1000ms <
@@ -74,6 +94,11 @@ documentation does not mention it.
 10000 (10 seconds). Lower values are rejected at load time."
 
 ### F4. Hot-reloaded handlers cannot use module-level state
+
+**Status:** RESOLVED — `handler-authoring.md` now has a `Module-level state
+is wiped on every fire` subsection explaining the hot-reload mechanism and
+listing safe alternatives (`sdk.metrics.record`, `sdk.getDb()`, event
+emit + `sdk.query.events`).
 
 **Surfaced when:** writing E4's fixture handler with `let fireCount = 0` at
 module scope. The counter resets every fire because the handler-loader uses
@@ -102,6 +127,12 @@ but never says where preflight state should live for cross-fire continuity.
 > `dispatch-dedup-guard`, `circuit-breaker`).
 
 ### F5. `sdk.metrics.record()` alone does not trigger alerts
+
+**Status:** RESOLVED — the `Simple Metric Recorder` example in
+`handler-authoring.md` no longer writes via raw SQL. It now calls
+`sdk.metrics.record(...)` followed by `sdk.metrics.evaluate(...)` and an
+explicit pitfall callout warns that a raw `UPDATE metrics ...` will not fire
+the breach/recovery pipeline.
 
 **Surfaced when:** writing E4 expecting `record(id, breachingValue)` to emit
 `metric.breach`. It does not. Only `evaluate()` reads the snapshot and emits
