@@ -15,6 +15,16 @@ import { existsSync, appendFileSync, writeFileSync } from "node:fs";
 
 export type ProjectMeta = Record<string, string>;
 
+const CANONICAL_PROJECT_STATUSES = new Set([
+  "active",
+  "waiting",
+  "blocked",
+  "pending-review",
+  "paused",
+  "done",
+  "closed",
+]);
+
 const FIELD_TO_META_KEY: Record<string, string> = {
   "Project": "name",
   "Name": "name",
@@ -119,6 +129,11 @@ export function validateProjectFormat(content: string, expectedId?: string): str
   }
   if (expectedId && meta.id && meta.id !== expectedId) {
     errors.push(`frontmatter id '${meta.id}' does not match directory '${expectedId}'`);
+  }
+  if (meta.status === "complete") {
+    errors.push("frontmatter status 'complete' is a legacy alias; use 'done'");
+  } else if (meta.status && !CANONICAL_PROJECT_STATUSES.has(meta.status)) {
+    errors.push(`frontmatter status '${meta.status}' is not canonical`);
   }
   if (meta.workflow === "master-worker" || meta.workflow === "master-worker-execute") {
     errors.push("projects should not use unsupported master-worker workflow; pick a per-project or shared workflow");

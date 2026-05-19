@@ -7,7 +7,7 @@
  * Design: shared/may-agent-docs/sdk.md
  */
 
-import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, DoneOpts, WorkflowResult } from "./sdk.js";
+import type { AgentSDK, WorkflowSDK, RunOpts, TaskResult, DoneOpts, WorkflowResult, EscalationOptions } from "./sdk.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SqliteDb } from "./db.js";
 import type { SubagentManager } from "./manager.js";
@@ -56,6 +56,25 @@ export function projectWorkflowDirFor(projectsRoot: string, projectId: string | 
   return candidates.find((dir) => existsSync(dir)) ?? candidates[candidates.length - 1];
 }
 
+function normalizeOwner(owner: string | undefined): string {
+  const value = owner?.trim();
+  if (!value) return "agent:may";
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (value === "human") return "human:operator";
+  return `agent:${value}`;
+}
+
+function urgencyForSeverity(severity: EscalationOptions["severity"]): "low" | "normal" | "high" | "immediate" {
+  if (severity === "P0") return "immediate";
+  if (severity === "P1") return "high";
+  if (severity === "P3") return "low";
+  return "normal";
+}
+
+function createEscalationId(): string {
+  return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 // ── Build AgentSDK ────────────────────────────────────────────────────
 
 export function buildAgentSDK(deps: SDKDeps): AgentSDK {
@@ -99,8 +118,15 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated", runId };
     },
 
-    emit(type: string, data?: Record<string, unknown>): void {
-      deps.bus.emit({ type, ...(data || {}) } as any);
+    emit(type: string, data?: Record<string, unknown>, envelope?: { owner?: string; source?: string; urgency?: string; ttl_ms?: number }): void {
+      deps.bus.emit({
+        type,
+        source: envelope?.source ?? `agent:${deps.agentName}`,
+        owner: normalizeOwner(envelope?.owner),
+        ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
+        ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
+        data: data ?? {},
+      } as any);
     },
 
     getDb(): SqliteDb {
@@ -113,7 +139,14 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
 
     metrics: createMetricService({
       getDb: () => getDb(deps.persistDir),
-      emit: (type, data) => deps.bus.emit({ type, ...(data || {}) } as any),
+      emit: (type, data, envelope) => deps.bus.emit({
+        type,
+        source: envelope?.source ?? `agent:${deps.agentName}`,
+        owner: normalizeOwner(envelope?.owner),
+        ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
+        ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
+        data: data ?? {},
+      } as any),
       measuredBy: deps.agentName,
       log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
     }),
@@ -138,28 +171,58 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       }
     },
 
-    escalate(target: string, reason: string): void {
+    escalate(reasonOrTarget: string, optsOrReason?: EscalationOptions | string): void {
+      const legacy = typeof optsOrReason === "string";
+      const reason = legacy ? optsOrReason : reasonOrTarget;
+      const opts: EscalationOptions = legacy ? {
+        owner: reasonOrTarget,
+        evidence: { legacyEscalate: true },
+      } : (optsOrReason ?? {});
+      const owner = normalizeOwner(opts.owner);
+      const severity = opts.severity ?? "P2";
+      const escalationId = createEscalationId();
+      const requestedAction = opts.requestedAction ?? `Investigate and resolve or answer this blocker: ${reason}`;
+      const event = {
+        type: "escalation.created",
+        source: opts.source ?? `agent:${deps.agentName}`,
+        owner,
+        urgency: opts.urgency ?? urgencyForSeverity(severity),
+        ...(typeof opts.ttl_ms === "number" ? { ttl_ms: opts.ttl_ms } : {}),
+        data: {
+          escalationId,
+          sourceAgent: deps.agentName,
+          ...(opts.sourceSessionId ? { sourceSessionId: opts.sourceSessionId } : {}),
+          ...(opts.projectId ? { projectId: opts.projectId } : {}),
+          reason,
+          requestedAction,
+          severity,
+          ...(opts.evidence ? { evidence: opts.evidence } : {}),
+          ...(opts.resume ? { resume: opts.resume } : {}),
+          ...(opts.dedupKey ? { dedupKey: opts.dedupKey } : {}),
+        },
+      };
+
       // Persist to escalations.jsonl (survives restarts)
       try {
         const escalationPath = resolve(deps.persistDir, "escalations.jsonl");
-        const entry = JSON.stringify({ ts: new Date().toISOString(), agent: deps.agentName, target, reason });
+        const entry = JSON.stringify({
+          ts: new Date().toISOString(),
+          escalationId,
+          agent: deps.agentName,
+          owner,
+          reason,
+        });
         appendFileSync(escalationPath, entry + "\n", "utf-8");
       } catch { /* best-effort */ }
 
-      // Emit escalation event
-      deps.bus.emit({
-        type: "escalation.created",
-        owner: target,
-        source: deps.agentName,
-        reason,
-      } as any);
+      deps.bus.emit(event as any);
 
       // Also push human-visible message
       deps.bus.emit({
         type: "message.created",
         from: deps.agentName,
         to: "human",
-        content: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${target}: ${reason}`,
+        content: `\u26a0\ufe0f *Escalation*\n${deps.agentName} \u2192 ${owner}: ${reason}`,
       } as any);
     },
 
@@ -195,10 +258,14 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
       return result;
     },
 
-    // escalate inherited from base, but in workflow context also terminates
-    escalate(target: string, reason: string): void {
-      base.escalate(target, reason);
-      deps.finish({ status: "escalated", summary: reason });
+    escalate(reasonOrTarget: string, optsOrReason?: EscalationOptions | string): void {
+      if (typeof optsOrReason === "string") {
+        base.escalate(reasonOrTarget, optsOrReason);
+        deps.finish({ status: "escalated", summary: optsOrReason });
+        return;
+      }
+      base.escalate(reasonOrTarget, optsOrReason);
+      deps.finish({ status: "escalated", summary: reasonOrTarget });
     },
   };
 }

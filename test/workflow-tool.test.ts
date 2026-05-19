@@ -331,6 +331,67 @@ describe("workflow tool: run", () => {
     expect(events[1].type).toBe("workflow_escalate");
   });
 
+  it("keeps ctx.escalate local and does not emit escalation.created", async () => {
+    writeWorkflow(
+      "local-escalation.ts",
+      `
+      export const name = "local-escalation";
+      export const description = "Escalates locally";
+      export async function execute(ctx) {
+        return ctx.escalate("missing sessionId", {
+          owner: "agent:may",
+          requestedAction: "Fix the event producer",
+          evidence: { triggerType: "session.completed" },
+        });
+      }
+    `,
+    );
+
+    const lifecycleEvents: WorkflowEvent[] = [];
+    const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const tool = createWorkflowTool({
+      manager,
+      workflowDir,
+      onEvent: (e) => lifecycleEvents.push(e),
+      runtimeCtx: {
+        emit: (event: { type: string; [key: string]: unknown }) => runtimeEvents.push(event),
+        dispatchEvent: () => {},
+        getDb: () => {
+          throw new Error("getDb should not be called");
+        },
+        query: {} as never,
+        log: () => {},
+        notify: () => {},
+        metrics: {} as never,
+        persistDir: "",
+        projectRoot: "",
+        agentsRoot: "",
+        sharedRoot: "",
+        projectsRoot: "",
+      },
+    });
+
+    const result = await tool.execute("tc1", {
+      action: "run",
+      name: "local-escalation",
+      task: "task",
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("escalated");
+    if (parsed.type === "escalated") {
+      expect(parsed.reason).toBe("missing sessionId");
+      expect(parsed.context).toEqual({
+        owner: "agent:may",
+        requestedAction: "Fix the event producer",
+        evidence: { triggerType: "session.completed" },
+      });
+    }
+    expect(lifecycleEvents.map((event) => event.type)).toEqual(["workflow_start", "workflow_escalate"]);
+    expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
+  });
+
   // NOTE: hot-reload works under plain Node (cache-bust via ?t=counter)
   // but Bun test's transform pipeline normalizes query strings, so this
   // can't be tested here. Verified manually with node --input-type=module.
