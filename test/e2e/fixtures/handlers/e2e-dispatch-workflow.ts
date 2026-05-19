@@ -1,23 +1,24 @@
 /**
- * E2E fixture handler: dispatches a workflow named by env var on each fire.
+ * E2E fixture handler: dispatches a configured workflow on each fire.
  *
  * Used by e3b-workflow-discovery. The workflow name is read from the trigger
- * event payload's `data.workflow` field (or "e2e-noop-workflow" by default).
+ * event payload's `data.workflow` field, the cron entry's `handlerConfig.workflow`,
+ * or "e2e-noop-workflow" by default.
  *
  * Emits e2e.dispatch.attempt before the call and e2e.dispatch.result after,
  * so the test can correlate which workflow was attempted and the outcome.
  */
 import type { CronEntry, HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
 
-let dispatched = false;
-
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: TriggerEvent) => {
-    if (dispatched) return;
-    dispatched = true;
-
     const payload = (event?.data?.data ?? event?.data ?? {}) as Record<string, unknown>;
-    const workflowName = typeof payload.workflow === "string" ? payload.workflow : "e2e-noop-workflow";
+    const configuredWorkflow = entry.handlerConfig?.workflow;
+    const workflowName = typeof payload.workflow === "string"
+      ? payload.workflow
+      : typeof configuredWorkflow === "string"
+        ? configuredWorkflow
+        : "e2e-noop-workflow";
 
     ctx.sdk.emit("e2e.dispatch.attempt", { handler: entry.name, workflow: workflowName });
 

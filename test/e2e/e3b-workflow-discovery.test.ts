@@ -25,6 +25,11 @@ import {
 } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
+function eventPayload(row: { data: string | null }): Record<string, unknown> {
+  const parsed = JSON.parse(row.data ?? "{}");
+  return (parsed.data ?? parsed) as Record<string, unknown>;
+}
+
 describe.skipIf(!E2E_LIVE)("E3b: workflow discovery and dispatch", () => {
   let sb: Sandbox;
   const t0 = Date.now();
@@ -96,29 +101,53 @@ describe.skipIf(!E2E_LIVE)("E3b: workflow discovery and dispatch", () => {
   test(
     "missing workflow: dispatch returns error, no workflow_runs row, no exception bubbles",
     async () => {
-      // Trigger another dispatch via socket to a workflow that does not exist.
-      // We use socketEmit of a custom trigger that the handler ignores after
-      // first fire (it's idempotent on `dispatched` flag), so instead we
-      // verify the negative case by inspecting that no spurious workflow_runs
-      // rows exist beyond the one good run.
-      //
-      // For full negative-path coverage, run a separate sandbox in a follow-up.
-      // This test asserts the basic invariant: exactly one workflow_runs row
-      // (no ghost rows from import failures, etc.) in the time window so far.
-      const db = openSandboxDb(sb.dbPath);
+      let missingSb: Sandbox | undefined;
+      const missingWorkflow = "e2e-missing-workflow";
+      const missingT0 = Date.now();
+
+      missingSb = await buildSandbox({
+        fixtureAgents: ["may"],
+        fixtureHandlers: { may: ["e2e-dispatch-workflow"] },
+        cronJson: {
+          may: [
+            {
+              name: "e2e-dispatch-missing",
+              handler: "e2e-dispatch-workflow",
+              handlerConfig: { workflow: missingWorkflow },
+              intervalMs: 10000,
+              agent: "may",
+              enabled: true,
+            },
+          ],
+        },
+      });
+      await missingSb.daemonReady;
+
+      const db = openSandboxDb(missingSb.dbPath);
       try {
-        const runs = queryWorkflowRuns(db, { since: t0 });
-        // Tolerate >= 1 (handler may have ticked again before this test ran;
-        // but our handler is one-shot so only one row is expected).
-        expect(runs.length).toBeGreaterThanOrEqual(1);
-        // None of them should be in 'error' or 'failed' status.
-        for (const r of runs) {
-          expect(["done", "running"]).toContain(r.status);
-        }
+        const result = await pollUntil(
+          () => {
+            const results = queryEvents(db, { types: ["e2e.dispatch.result"], since: missingT0, limit: 5 })
+              .map(eventPayload)
+              .filter((data) => data.workflow === missingWorkflow);
+            const error = results.find((data) => data.status === "error");
+            return error ?? null;
+          },
+          { timeoutMs: 45_000, intervalMs: 500, description: "missing workflow dispatch error" },
+        );
+
+        expect(result.error).toContain(`Workflow "${missingWorkflow}" not found`);
+
+        const runs = queryWorkflowRuns(db, { workflow: missingWorkflow, since: missingT0 });
+        expect(runs).toEqual([]);
+
+        const handlerFailures = queryEvents(db, { types: ["handler.failed"], since: missingT0, limit: 5 });
+        expect(handlerFailures).toEqual([]);
       } finally {
         db.close();
+        await missingSb.close();
       }
     },
-    10_000,
+    70_000,
   );
 });

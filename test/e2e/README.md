@@ -49,13 +49,15 @@ ls /tmp/may-e2e-*/
 |---|---|---|
 | `e1-handler-loop-liveness` | Cron → handler-loader → event-persistence pipeline; `user-guide.md § Cron`, `handler-authoring.md § Lifecycle Events` | ✅ |
 | `e2-project-comment-roundtrip` | `project.comment.created` socket flow → discussion.md append + status flip + `project.nudge` event; comment intake portion of `user-guide.md § Events in Practice` | ✅ |
-| `e3a-task-driven-project-loop` | Task-driven project loop (lite); dispatch → dependency unblock → owner judgment routing. SDK project-task helpers | ⚠️ skipped — depends on F6 fix |
+| `e3a-task-driven-project-loop` | Task-driven project loop (lite); dispatch → dependency unblock → owner judgment routing. SDK project-task helpers | ✅ |
 | `e3b-workflow-discovery` | Agent-scoped workflow file resolution + dispatch + `workflow_runs` persistence; `workflow-authoring.md § Workflow Location` | ✅ |
 | `e4-metric-lifecycle` | `sdk.metrics.define`/`record`/`evaluate` → breach event → `metric_alerts` row → recovery; `metric-alerts.md`, `metrics.md § Pipeline` | ✅ |
 | `e7-escalation-roundtrip` | `escalation.created` → `escalation.resolved` → resume_attempted/resume_failed; `needs_human` short-circuit; `sdk-quickstart.md § External Escalate`, `escalation.md` | ✅ |
+| `control-routing-e2e` | In-process socket frame routing → command router → `message.created` persistence in an isolated DB | ✅ |
+| `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
 
-E5 (agent reload), E6 (agent call chain), E8 (telegram) are not yet
-implemented — see roadmap in `projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
+E5 (agent reload) and E6 (agent call chain) are not yet implemented — see
+roadmap in `projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
 
 ## Library
 
@@ -69,13 +71,12 @@ implemented — see roadmap in `projects/platform/proposals/2026-05-19-e2e-harne
 
 `fixtures/handlers/` — one-purpose handler files per test. State across fires must persist in DB (handlers are hot-reloaded every fire; module-level state is reset).
 
-`fixtures/workflows/` — fixture workflows used by E3b. Pure functions, no LLM calls.
+`fixtures/workflows/` — fixture workflows used by E3a and E3b. Pure functions, no LLM calls.
 
 `fixtures/projects/` — fixture project trees for tests that need them (E2, E3a).
 
 ## Findings during harness work
 
-Building this harness surfaced six gaps in implementation/documentation that
-are not test-specific. They are recorded in
-`projects/platform/proposals/2026-05-19-e2e-harness-findings.md`. F6 is the
-reason E3a is currently skipped.
+Building this harness surfaced implementation/documentation gaps that are not
+test-specific. They are recorded in
+`projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
