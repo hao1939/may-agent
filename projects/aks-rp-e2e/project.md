@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 75
+iteration: 77
 max_concurrent: 1
 max_task_attempts: 2
 stop_reason: 
@@ -65,7 +65,7 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Iteration 75 completed model-driven probe selection. `outputs/iteration75-model-driven-probe-selection.md` ranks 10 future probes from the validated model and recommends Workload Identity + OIDC runtime token/discovery as the highest-density next cloud probe. `outputs/input-expectation-knowledge-map.md` now points to iteration75 and records the top 3 recommendations: Workload Identity/OIDC runtime first, KEDA/VPA runtime second, App Routing TLS follow-up third but source-hypothesis gated. Capability model validation still exits 0. Next, execute only the selected identity/OIDC runtime probe in staging with narrow non-goals and update the model if evidence reaches a verdict.
+Iteration77 consolidated iteration76 Identity/OIDC runtime evidence into branch-accurate model and knowledge-map status. `workload-identity-runtime-token-projection-linux` and `oidc-issuer-default-enabled-discovery-jwks-runtime` are passed with iteration76 evidence, while Windows token projection, Workload Identity disable/re-enable, OIDC signing-key rotation, post-delete issuer cleanup, and v1.33 explicit-enable runtime remain visible unknowns. The capability-model validator exits 0. The next ranked cloud probe is Combined KEDA/VPA runtime, but it must be source-scoped first so runtime pass/fail verdicts do not hide untested autoscaler lifecycle branches.
 
 ## Review Questions
 
@@ -567,7 +567,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Execute the selected high-density probe: Workload Identity + OIDC runtime token/discovery in staging. Produce `outputs/iteration76-workload-identity-oidc-runtime-staging.md` with exact inputs, commands, OIDC discovery/JWKS evidence, Linux pod token-projection evidence, verdicts for `workload-identity-runtime-token-projection` and one OIDC runtime branch, cleanup status, and capability-model update/validator output if a clear verdict is reached. Do not combine this run with KEDA/VPA, App Routing, Windows token projection, signing-key rotation, or post-delete issuer cleanup.
+Source-scope and execute the next ranked high-density runtime probe: Combined KEDA/VPA runtime in staging. Produce `outputs/iteration78-workload-autoscaler-runtime-staging.md` with source-derived input/expectation paths, explicit non-goals, exact devbox/staging commands, KEDA runtime scaling evidence, VPA runtime recommendation/component evidence, cleanup status, and capability-model/knowledge-map updates if clear verdicts are reached. Do not combine this run with App Routing TLS, Identity/OIDC residuals, Image Cleaner, Node Restriction, upgrade/HA/cert-renewal branches, or unrelated probes.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -608,7 +608,9 @@ Execute the selected high-density probe: Workload Identity + OIDC runtime token/
 25. ✅ Update the capability model from handwritten e2ev3 source intent and existing evidence, marking partial coverage explicitly
 26. ✅ Investigate the Node Restriction source/spec contradiction before selecting another run
 27. ✅ Rank high-density future probes from the validated model, public API/docs candidates, source-derived intent, and existing evidence
-28. 🔄 Execute the selected high-density Workload Identity + OIDC runtime token/discovery probe with explicit coverage and non-goals
+28. ✅ Execute the selected high-density Workload Identity + OIDC runtime token/discovery probe with explicit coverage and non-goals
+29. ✅ Consolidate identity/OIDC runtime evidence into branch-accurate model and knowledge-map status before selecting the next cloud probe
+30. 🔄 Execute the next ranked high-density runtime probe: source-scoped KEDA/VPA runtime behavior in staging
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -684,10 +686,18 @@ Execute the selected high-density probe: Workload Identity + OIDC runtime token/
   attempts: 1
 
 - id: workload-identity-oidc-runtime-staging
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: Execute the selected high-density probe — Workload Identity + OIDC runtime token/discovery in staging. Produce `outputs/iteration76-workload-identity-oidc-runtime-staging.md` with exact inputs, commands, OIDC discovery/JWKS evidence, Linux pod token-projection evidence, verdicts for `workload-identity-runtime-token-projection` and one OIDC runtime branch, cleanup status, and capability-model update/validator output if a clear verdict is reached. Do not combine this run with KEDA/VPA, App Routing, Windows token projection, signing-key rotation, or post-delete issuer cleanup.
   depends_on: [model-driven-probe-selection]
+  attempts: 1
+
+- id: keda-vpa-runtime-staging
+  status: pending
+  assignee: aks-explorer
+  goal: Source-scope and execute the next ranked high-density runtime probe — Combined KEDA/VPA runtime in staging. Produce `outputs/iteration78-workload-autoscaler-runtime-staging.md` with source-derived input/expectation paths, explicit non-goals, exact devbox/staging commands, KEDA runtime scaling evidence, VPA runtime recommendation/component evidence, cleanup status, and capability-model/knowledge-map updates if clear verdicts are reached. Do not combine this run with App Routing TLS, Identity/OIDC residuals, Image Cleaner, Node Restriction, upgrade/HA/cert-renewal branches, or unrelated probes.
+  depends_on: [workload-identity-oidc-runtime-staging]
   attempts: 0
 
 ## References
@@ -760,8 +770,10 @@ Execute the selected high-density probe: Workload Identity + OIDC runtime token/
 - outputs/managedsystem-pool-exploration.md
 - outputs/project-status.md
 - outputs/standalone-readiness-check.sh
+- outputs/iteration76-workload-identity-oidc-runtime-staging.md
 - outputs/aks-public-api-scenario-candidates.md
 - outputs/writing-e2e-tests.md
+- outputs/iteration77-identity-runtime-model-consolidation.md
 - outputs/high-density-probe-plan.md
 - outputs/iteration60-workload-identity-staging.md
 - outputs/managedsystem-pool-feature-standard-init-tasks.md
