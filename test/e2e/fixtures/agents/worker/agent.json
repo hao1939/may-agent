@@ -1,0 +1,7 @@
+{
+  "name": "worker",
+  "description": "Fixture target agent for e2e call-chain tests",
+  "domain": "e2e",
+  "model": "opus",
+  "tools": []
+}

@@ -30,16 +30,6 @@ export interface WorkflowRunRow {
   result_reason: string | null;
 }
 
-export interface SessionRow {
-  id: string;
-  agent: string;
-  kind: string;
-  status: string;
-  task: string | null;
-  startedAt: number;
-  endedAt: number | null;
-}
-
 export function openSandboxDb(dbPath: string): Database {
   if (!existsSync(dbPath)) {
     throw new Error(`sandbox db does not exist yet: ${dbPath}`);
@@ -132,15 +122,33 @@ export function queryWorkflowRuns(
   return rows;
 }
 
+export interface SessionRow {
+  sessionId: string;
+  agent: string;
+  kind: string | null;
+  status: string;
+  source: string | null;
+  parentSessionId: string | null;
+  workflowRunId: string | null;
+  projectId: string | null;
+  task: string;
+  startedAt: number;
+  endedAt: number | null;
+}
+
 export function querySessions(
   db: Database,
-  opts: { agent?: string; status?: string; since?: number },
+  opts: { agent?: string; agents?: string[]; status?: string; since?: number; limit?: number } = {},
 ): SessionRow[] {
   const clauses: string[] = [];
   const params: unknown[] = [];
   if (opts.agent !== undefined) {
     clauses.push("agent = ?");
     params.push(opts.agent);
+  }
+  if (opts.agents !== undefined && opts.agents.length > 0) {
+    clauses.push(`agent IN (${opts.agents.map(() => "?").join(",")})`);
+    params.push(...opts.agents);
   }
   if (opts.status !== undefined) {
     clauses.push("status = ?");
@@ -151,9 +159,10 @@ export function querySessions(
     params.push(opts.since);
   }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const limit = Math.max(1, Math.min(opts.limit ?? 100, 1000));
   const rows = db
     .prepare(
-      `SELECT id, agent, kind, status, task, startedAt, endedAt FROM sessions ${where} ORDER BY startedAt DESC LIMIT 100`,
+      `SELECT sessionId, agent, kind, status, source, parentSessionId, workflowRunId, projectId, task, startedAt, endedAt FROM sessions ${where} ORDER BY startedAt DESC LIMIT ${limit}`,
     )
     .all(...params) as SessionRow[];
   return rows;
