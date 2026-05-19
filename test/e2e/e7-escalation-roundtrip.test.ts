@@ -26,11 +26,10 @@
  *   - escalation.md (lifecycle semantics)
  *   - user-guide.md § Events in Practice (escalation.resolved)
  *
- * Gated behind E2E_LIVE=1; does not require LLM access.
+ * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
-  E2E_LIVE,
   openSandboxDb,
   pollUntil,
   queryEvents,
@@ -38,7 +37,7 @@ import {
 } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
-describe.skipIf(!E2E_LIVE)("E7: escalation lifecycle roundtrip", () => {
+describe("E7: escalation lifecycle roundtrip", () => {
   let sb: Sandbox;
 
   beforeAll(async () => {

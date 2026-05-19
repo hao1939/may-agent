@@ -12,7 +12,7 @@ per test). These don't need any extra env var.
 
 Examples: `control-routing-e2e.test.ts`, `telegram-reply-e2e.test.ts`.
 
-### Live-stack e2e (new, gated)
+### Live-stack e2e
 
 Spawn a real `bun src/app/may.ts --cron --socket` subprocess pointed at a
 sandboxed state dir, then drive it through its Unix socket and observe via
@@ -25,21 +25,18 @@ own `.state/`, `agents/`, `projects/`, `shared/`. Nothing is read from or
 written to `/app/agents`, `/app/projects`, `/app/shared`, or the host's real
 `.state/`.
 
-Tests are gated behind `E2E_LIVE=1` because they spawn real daemons (~5–10s
-each). LLM-driven variants are gated behind `E2E_LIVE_LLM=1`.
+Live-stack tests run by default because they are the main behavior contract.
+LLM-driven variants are gated behind `E2E_LIVE_LLM=1`.
 
 ```bash
-# In-process only (default)
+# Full e2e suite, including live-stack daemon tests
 bun test test/e2e/
 
-# Live-stack tests
-E2E_LIVE=1 bun test test/e2e/
-
 # Single case
-E2E_LIVE=1 bun test test/e2e/e2-project-comment-roundtrip.test.ts
+bun test test/e2e/e2-project-comment-roundtrip.test.ts
 
 # Keep sandbox dirs for debugging (default: rm on close)
-E2E_LIVE=1 E2E_KEEP=1 bun test test/e2e/e1-handler-loop-liveness.test.ts
+E2E_KEEP=1 bun test test/e2e/e1-handler-loop-liveness.test.ts
 ls /tmp/may-e2e-*/
 ```
 
@@ -63,7 +60,7 @@ roadmap in `projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
 
 `lib/sandbox.ts` — `buildSandbox(spec) → { socketPath, stateDir, projectsRoot, dbPath, daemonReady, close }`. Copies fixtures from `fixtures/` into a tmp dir, spawns the daemon, returns control handles.
 
-`lib/live-daemon.ts` — `openSandboxDb`, `queryEvents`, `queryWorkflowRuns`, `querySessions`, `pollUntil`, `socketEmit`, `socketStatus`, and env-flag constants (`E2E_LIVE`, `E2E_LIVE_LLM`, `E2E_EXTENDED`).
+`lib/live-daemon.ts` — `openSandboxDb`, `queryEvents`, `queryWorkflowRuns`, `querySessions`, `pollUntil`, `socketEmit`, `socketStatus`, and env-flag constants (`E2E_LIVE_LLM`, `E2E_EXTENDED`).
 
 ## Fixtures
 

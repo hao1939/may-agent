@@ -12,13 +12,12 @@
  *   - task worker workflows persist in workflow_runs with projectId
  *   - repeated direct attempts route to owner judgment instead of another task dispatch
  *
- * Gated behind E2E_LIVE=1; does not require LLM access.
+ * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  E2E_LIVE,
   openSandboxDb,
   pollUntil,
   queryEvents,
@@ -42,7 +41,7 @@ function taskBlock(content: string, taskId: string): string {
   return content.slice(start, end);
 }
 
-describe.skipIf(!E2E_LIVE)("E3a: task-driven project loop (lite)", () => {
+describe("E3a: task-driven project loop (lite)", () => {
   let sb: Sandbox;
   const t0 = Date.now();
 

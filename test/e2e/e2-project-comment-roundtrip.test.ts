@@ -18,13 +18,12 @@
  *
  * Task dispatch and owner-judgment behavior are covered by E3a.
  *
- * Gated behind E2E_LIVE=1; does not require LLM access.
+ * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  E2E_LIVE,
   openSandboxDb,
   pollUntil,
   queryEvents,
@@ -32,7 +31,7 @@ import {
 } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
-describe.skipIf(!E2E_LIVE)("E2: project comment roundtrip", () => {
+describe("E2: project comment roundtrip", () => {
   let sb: Sandbox;
   const projectId = "e2e-comment-sandbox";
 

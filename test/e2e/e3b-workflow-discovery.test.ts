@@ -13,11 +13,10 @@
  *   - handler-authoring.md § Example: Event-To-Workflow Bridge
  *   - sdk-quickstart.md § Run an Agent / Choose the Right Primitive
  *
- * Gated behind E2E_LIVE=1; does not require LLM access.
+ * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
-  E2E_LIVE,
   openSandboxDb,
   pollUntil,
   queryEvents,
@@ -30,7 +29,7 @@ function eventPayload(row: { data: string | null }): Record<string, unknown> {
   return (parsed.data ?? parsed) as Record<string, unknown>;
 }
 
-describe.skipIf(!E2E_LIVE)("E3b: workflow discovery and dispatch", () => {
+describe("E3b: workflow discovery and dispatch", () => {
   let sb: Sandbox;
   const t0 = Date.now();
 

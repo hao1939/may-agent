@@ -11,18 +11,17 @@
  *   - user-guide.md § Cron
  *   - handler-authoring.md § Lifecycle Events
  *
- * Gated behind E2E_LIVE=1; does not require LLM access.
+ * Runs by default; does not require LLM access.
  */
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
-  E2E_LIVE,
   openSandboxDb,
   pollUntil,
   queryEvents,
 } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
-describe.skipIf(!E2E_LIVE)("E1: handler loop liveness", () => {
+describe("E1: handler loop liveness", () => {
   let sb: Sandbox;
   const t0 = Date.now();
 
