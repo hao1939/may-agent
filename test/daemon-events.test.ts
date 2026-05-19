@@ -6,7 +6,7 @@ import { EventBus } from "../src/app/event-bus.js";
 import { attachDaemonEventSubscribers } from "../src/app/daemon-events.js";
 
 describe("daemon event subscribers", () => {
-  it("translates session.end into completion and escalation events", () => {
+  it("translates blocked session.end into completion and canonical escalation events", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-"));
     const bus = new EventBus();
     const events: any[] = [];
@@ -31,19 +31,31 @@ describe("daemon event subscribers", () => {
         summary: "blocked",
         durationMs: 10,
         status: "done",
-        finishParams: { status: "blocked", summary: "need input" },
+        finishParams: {
+          status: "blocked",
+          summary: "need input",
+          blockers: [{ reason: "missing deployment approval", context: "deploy cannot continue" }],
+          next_steps: "Ask May to route the approval request.",
+        },
       });
 
-      expect(events).toContainEqual(expect.objectContaining({
-        type: "session.escalated",
-        source: "runtime",
-        owner: "agent:scout",
+      const escalation = events.find((event) => event.type === "escalation.created");
+      expect(escalation).toMatchObject({
+        type: "escalation.created",
+        source: "runtime:session-finish",
+        owner: "agent:may",
+        urgency: "normal",
         data: expect.objectContaining({
-          sessionId: "s_1",
-          agent: "scout",
-          finishParams: { status: "blocked", summary: "need input" },
+          sourceAgent: "scout",
+          sourceSessionId: "s_1",
+          reason: "need input",
+          requestedAction: "Ask May to route the approval request.",
+          severity: "P2",
+          blockedOn: "missing deployment approval",
         }),
-      }));
+      });
+      expect(escalation.data).not.toHaveProperty("owner");
+      expect(events.some((event) => event.type === "session.escalated")).toBe(false);
       const completed = events.find((event) => event.type === "session.completed");
       expect(completed).toMatchObject({
         type: "session.completed",

@@ -16,6 +16,27 @@ function createEscalationId(): string {
   return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function firstBlockerReason(finishParams: Record<string, unknown>): string | undefined {
+  const blockers = finishParams.blockers;
+  if (!Array.isArray(blockers)) return undefined;
+  const first = blockers.find((blocker) => blocker && typeof blocker === "object") as Record<string, unknown> | undefined;
+  const reason = first?.reason;
+  return typeof reason === "string" && reason.trim() ? reason.trim() : undefined;
+}
+
+function finishSummary(finishParams: Record<string, unknown>): string {
+  const summary = finishParams.summary;
+  if (typeof summary === "string" && summary.trim()) return summary.trim();
+  const blockedOn = firstBlockerReason(finishParams);
+  return blockedOn ?? "Session finished blocked";
+}
+
+function requestedAction(finishParams: Record<string, unknown>, agent: string): string {
+  const nextSteps = finishParams.next_steps;
+  if (typeof nextSteps === "string" && nextSteps.trim()) return nextSteps.trim();
+  return `Review the blocked ${agent} session and decide the next owner or action.`;
+}
+
 export function attachEventPersistence(opts: {
   bus: EventBus;
   persistDir: string;
@@ -129,14 +150,22 @@ export function attachDaemonEventSubscribers(opts: {
 
     const fp = info.finishParams;
     if (fp && (fp.status === "blocked" || fp.status === "failure")) {
+      const status = String(fp.status);
+      const blockedOn = firstBlockerReason(fp);
       bus.emit({
-        type: "session.escalated",
-        source: "runtime",
-        owner: `agent:${info.agent}`,
+        type: "escalation.created",
+        source: "runtime:session-finish",
+        owner: "agent:may",
+        urgency: status === "failure" ? "high" : "normal",
         data: {
-          sessionId: info.sessionId,
-          agent: info.agent,
-          finishParams: fp,
+          escalationId: createEscalationId(),
+          sourceAgent: info.agent,
+          sourceSessionId: info.sessionId,
+          reason: finishSummary(fp),
+          requestedAction: requestedAction(fp, info.agent),
+          severity: status === "failure" ? "P1" : "P2",
+          ...(blockedOn ? { blockedOn } : {}),
+          evidence: { finishParams: fp },
         },
       } as any);
     }
