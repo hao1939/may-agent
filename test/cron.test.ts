@@ -52,13 +52,13 @@ describe("Cron event triggers", () => {
     }
   });
 
-  it("fires an on-only handler when the matching domain event is emitted", async () => {
+  it("fires session recovery from canonical session.completed error events", async () => {
     const { root, configPath, cleanup } = tempCronConfig([
       {
         name: "session-recovery",
         enabled: true,
         handler: "session-recovery",
-        on: ["session.failed"],
+        on: ["session.completed"],
       },
     ]);
     try {
@@ -69,18 +69,27 @@ describe("Cron event triggers", () => {
       cron.registerHandler("session-recovery", handler);
       cron.subscribeToBus(bus);
 
-      bus.emit({ type: "session.failed", sessionId: "s_1", agent: "dev", error: "boom" } as any);
+      bus.emit({
+        type: "session.completed",
+        source: "runtime",
+        owner: "agent:may",
+        data: { sessionId: "s_1", agent: "dev", outcome: "error", status: "error", error: "boom" },
+      } as any);
       await nextTick();
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0]?.[0]).toMatchObject({
-        type: "session.failed",
+        type: "session.completed",
         source: "event",
         entry: "session-recovery",
         data: expect.objectContaining({
-          sessionId: "s_1",
-          agent: "dev",
-          error: "boom",
+          source: "runtime",
+          owner: "agent:may",
+          data: expect.objectContaining({
+            sessionId: "s_1",
+            agent: "dev",
+            error: "boom",
+          }),
         }),
       });
     } finally {

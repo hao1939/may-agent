@@ -72,7 +72,16 @@ export interface MetricEvaluationResult {
 
 export interface MetricServiceOptions {
   getDb: () => SqliteDb;
-  emit?: (type: string, data?: Record<string, unknown>) => void;
+  emit?: (
+    type: string,
+    data?: Record<string, unknown>,
+    envelope?: {
+      owner?: string;
+      source?: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      ttl_ms?: number;
+    },
+  ) => void;
   measuredBy?: string;
   now?: () => number;
   log?: (message: string) => void;
@@ -188,9 +197,32 @@ function latestAlertId(db: SqliteDb, metricId: string): number | undefined {
   return typeof row?.id === "number" ? row.id : undefined;
 }
 
+function urgencyForPriority(priority: unknown): "low" | "normal" | "high" | "immediate" {
+  if (priority === "P0") return "immediate";
+  if (priority === "P1") return "high";
+  if (priority === "P3") return "low";
+  return "normal";
+}
+
 export function createMetricService(options: MetricServiceOptions): MetricService {
   const now = () => options.now?.() ?? Date.now();
-  const emit = (type: string, data?: Record<string, unknown>) => options.emit?.(type, data);
+  const emit = (
+    type: string,
+    data?: Record<string, unknown>,
+    envelope?: {
+      owner?: string;
+      source?: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      ttl_ms?: number;
+    },
+  ) => options.emit?.(type, data, envelope);
+  const emitMetricEvent = (type: string, owner: string, data: Record<string, unknown>) => {
+    emit(type, data, {
+      owner,
+      source: options.measuredBy ?? "metrics",
+      urgency: urgencyForPriority(data.priority),
+    });
+  };
 
   function resolveOwner(row: { id: string; explicitOwner?: string | null; projectOwner?: string | null; project?: string | null }): string {
     if (options.resolveOwner) return options.resolveOwner(row);
@@ -351,8 +383,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
             [row.id, alertType, message, ts],
           );
           const alertId = latestAlertId(db, row.id);
-          emit("metric.breach", {
-            owner,
+          emitMetricEvent("metric.breach", owner, {
             metricId: row.id,
             metricName: row.name,
             current,
@@ -367,7 +398,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         }
       } else if (openAlert) {
         db.run("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?", [ts, openAlert.id]);
-        emit("metric.recovered", { metricId: row.id, metricName: row.name });
+        emitMetricEvent("metric.recovered", owner, { metricId: row.id, metricName: row.name, priority: row.priority ?? "P2" });
         results.push({ metricId: row.id, status: "recovered", alertId: openAlert.id });
       } else {
         results.push({ metricId: row.id, status: "ok" });
@@ -375,7 +406,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
 
       if (stallDetected) {
         const message = `${row.name ?? row.id} stalled: no change for ${Math.round((alertConfig?.stall_after_ms || 0) / 60000)}min`;
-        emit("metric.stalled", { owner, metricId: row.id, metricName: row.name, message });
+        emitMetricEvent("metric.stalled", owner, { metricId: row.id, metricName: row.name, message, priority: row.priority ?? "P2" });
         results.push({ metricId: row.id, status: "stalled", message });
       }
     }
@@ -415,8 +446,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       projectOwner: row.projectOwner,
       project: row.project,
     });
-    emit("metric.breach", {
-      owner,
+    emitMetricEvent("metric.breach", owner, {
       metricId: id,
       metricName: row.name,
       current: row.current,

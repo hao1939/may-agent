@@ -62,7 +62,14 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
     },
     metrics: createMetricService({
       getDb: () => getDb(opts.persistDir),
-      emit: (type, data) => opts.bus.emit({ type, ...(data || {}) } as any),
+      emit: (type, data, envelope) => opts.bus.emit({
+        type,
+        source: envelope?.source ?? opts.agentName,
+        owner: envelope?.owner ?? opts.agentName,
+        ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
+        ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
+        data: data ?? {},
+      } as any),
       measuredBy: opts.agentName,
       log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     }),

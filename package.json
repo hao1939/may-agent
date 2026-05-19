@@ -5,8 +5,12 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
+    "ci": "bun run check && bun run check:sdk && bun run test",
+    "verify": "bun run ci",
     "test": "bun test test/ packages/",
-    "test:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
+    "test:integration": "bun test test/*integration*.test.ts",
+    "test:e2e": "bun test test/*e2e*.test.ts",
+    "test:sdk": "bun test packages/sdk",
     "check:sdk": "tsc --noEmit -p packages/sdk/tsconfig.json",
     "ui:sync": "bun scripts/build-webui.ts",
     "bundle": "bun run ui:sync && mkdir -p bundle && bun build --compile src/app/binary-entry.ts --outfile bundle/may-agent",

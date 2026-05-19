@@ -134,4 +134,97 @@ describe("event-native: events table", () => {
     expect(rows.map((row) => row.source)).toEqual(["telegram", "telegram", "telegram"]);
     expect(JSON.parse(rows[2].data)).toMatchObject({ sessionId: "s_trace", message: "continue" });
   });
+
+  it("persists canonical event envelopes with only event.data in the data column", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "human:operator",
+      urgency: "high",
+      ttl_ms: 30_000,
+      data: {
+        metricId: "handler.success-rate",
+        reason: "below threshold",
+      },
+    } as any);
+
+    const row = db.prepare(
+      "SELECT event_type, source, owner, urgency, ttl_ms, data FROM events WHERE event_type = ?",
+    ).get("metric.breach") as { event_type: string; source: string; owner: string; urgency: string; ttl_ms: number; data: string };
+    expect(row).toMatchObject({
+      event_type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "human:operator",
+      urgency: "high",
+      ttl_ms: 30_000,
+    });
+    expect(JSON.parse(row.data)).toEqual({
+      metricId: "handler.success-rate",
+      reason: "below threshold",
+    });
+  });
+
+  it("does not duplicate owner/source envelope fields into canonical event data", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
+      urgency: "normal",
+      data: {
+        escalationId: "esc_test",
+        reason: "need help",
+      },
+    } as any);
+
+    const row = db.prepare(
+      "SELECT source, owner, data FROM events WHERE event_type = ?",
+    ).get("escalation.created") as { source: string; owner: string; data: string };
+    const data = JSON.parse(row.data);
+    expect(row).toMatchObject({ source: "agent:dev", owner: "agent:may" });
+    expect(data).toEqual({ escalationId: "esc_test", reason: "need help" });
+    expect(data).not.toHaveProperty("owner");
+    expect(data).not.toHaveProperty("source");
+  });
+
+  it("updates session rows from canonical session.end envelopes", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["s_done", "dev", "task", "running", Date.now() - 1_000],
+    );
+
+    writer.handler({
+      type: "session.end",
+      source: "runtime",
+      owner: "agent:dev",
+      data: {
+        sessionId: "s_done",
+        agent: "dev",
+        status: "error",
+        outcome: "error",
+        error: "boom",
+        opCount: 2,
+      },
+    } as any);
+
+    const session = db.prepare(
+      "SELECT status, outcome, error, opCount, endedAt FROM sessions WHERE sessionId = ?",
+    ).get("s_done") as { status: string; outcome: string; error: string; opCount: number; endedAt: number };
+    expect(session).toMatchObject({ status: "error", outcome: "error", error: "boom", opCount: 2 });
+    expect(session.endedAt).toBeGreaterThan(0);
+
+    const eventRow = db.prepare(
+      "SELECT source, owner, data FROM events WHERE event_type = ?",
+    ).get("session.end") as { source: string; owner: string; data: string };
+    expect(eventRow).toMatchObject({ source: "runtime", owner: "agent:dev" });
+    expect(JSON.parse(eventRow.data)).toMatchObject({ sessionId: "s_done", status: "error", outcome: "error" });
+  });
 });

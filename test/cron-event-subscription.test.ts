@@ -146,4 +146,53 @@ describe("Cron event subscriptions", () => {
     expect(handledEvent).not.toHaveProperty("sessionId");
     cron.stop();
   });
+
+  it("delivers canonical event envelopes as trigger.data without promoting domain fields", async () => {
+    const dir = join(tmpdir(), `cron-canonical-event-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "canonical-session-handler",
+        enabled: true,
+        handler: "canonical-session-handler",
+        on: ["session.completed"],
+      },
+    ]));
+
+    const bus = new EventBus();
+    let handledEvent: any;
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    cron.load();
+    cron.registerHandler("canonical-session-handler", async (event) => {
+      handledEvent = event;
+    });
+    cron.subscribeToBus(bus);
+
+    const canonicalEvent = {
+      type: "session.completed",
+      source: "runtime",
+      owner: "agent:may",
+      data: {
+        sessionId: "s_done",
+        agent: "dev",
+        status: "done",
+      },
+    };
+    bus.emit(canonicalEvent as any);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(handledEvent).toMatchObject({
+      type: "session.completed",
+      source: "event",
+      entry: "canonical-session-handler",
+      data: canonicalEvent,
+      timestamp: expect.any(Number),
+    });
+    expect(handledEvent).not.toHaveProperty("sessionId");
+    expect(handledEvent.data).not.toHaveProperty("sessionId");
+    expect(handledEvent.data.data.sessionId).toBe("s_done");
+  });
 });

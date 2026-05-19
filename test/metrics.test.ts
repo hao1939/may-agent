@@ -19,10 +19,10 @@ describe("MetricService", () => {
     const root = mkdtempSync(join(tmpdir(), "metric-service-"));
     roots.push(root);
     const db = getDb(root);
-    const emitted: Array<{ type: string; data?: Record<string, unknown> }> = [];
+    const emitted: Array<{ type: string; data?: Record<string, unknown>; envelope?: Record<string, unknown> }> = [];
     const service = createMetricService({
       getDb: () => db,
-      emit: (type, data) => emitted.push({ type, data }),
+      emit: (type, data, envelope) => emitted.push({ type, data, envelope }),
       measuredBy: "test",
       now: () => 10_000,
     });
@@ -52,8 +52,10 @@ describe("MetricService", () => {
     expect(alert).toMatchObject({ metric_id: "scout.idea-yield-24h", resolved_at: null });
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
-      data: { owner: "scout", metricId: "scout.idea-yield-24h", priority: "P2" },
+      envelope: { owner: "scout", source: "test", urgency: "normal" },
+      data: { metricId: "scout.idea-yield-24h", priority: "P2" },
     });
+    expect(emitted[0].data).not.toHaveProperty("owner");
 
     service.record("scout.idea-yield-24h", 4);
     expect(service.evaluate("scout.idea-yield-24h")).toMatchObject([
@@ -100,8 +102,10 @@ describe("MetricService", () => {
     expect(alert).toMatchObject({ metric_id: "guard.blocked-count-15m", resolved_at: null });
     expect(emitted.at(-1)).toMatchObject({
       type: "metric.breach",
-      data: { owner: "may", metricId: "guard.blocked-count-15m", priority: "P1" },
+      envelope: { owner: "may", source: "test", urgency: "high" },
+      data: { metricId: "guard.blocked-count-15m", priority: "P1" },
     });
+    expect(emitted.at(-1)?.data).not.toHaveProperty("owner");
 
     service.record("guard.blocked-count-15m", 0, { measuredAt: 4_000 });
     expect(service.evaluate("guard.blocked-count-15m")).toMatchObject([
@@ -128,11 +132,12 @@ describe("MetricService", () => {
     expect(metric).toMatchObject({ owner: "may", source_query: "SELECT 12 AS value" });
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
+      envelope: { owner: "may", source: "test", urgency: "high" },
       data: {
-        owner: "may",
         metricId: "custom.queue-depth",
         priority: "P1",
       },
     });
+    expect(emitted[0].data).not.toHaveProperty("owner");
   });
 });
