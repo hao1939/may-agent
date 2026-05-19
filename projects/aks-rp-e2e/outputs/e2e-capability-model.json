@@ -1,0 +1,4900 @@
+{
+  "version": 1,
+  "id": "aks-rp-e2e",
+  "title": "AKS RP E2E Capability Model",
+  "updatedAt": "2026-05-19T06:30:00Z",
+  "observationVariables": [
+    {
+      "id": "observation.environment",
+      "label": "Observation Environment",
+      "description": "Where the evidence was collected; this is a filter, not AKS product input.",
+      "domain": [
+        "standalone",
+        "staging"
+      ]
+    },
+    {
+      "id": "observation.suite",
+      "label": "Observation Suite",
+      "description": "Which e2e suite produced the evidence; this is a filter, not AKS product input.",
+      "domain": [
+        "dev"
+      ]
+    },
+    {
+      "id": "observation.host",
+      "label": "Observation Host",
+      "description": "Machine/context used to collect evidence.",
+      "domain": [
+        "devbox"
+      ]
+    },
+    {
+      "id": "observation.buildVersion",
+      "label": "Build Version",
+      "description": "AKS RP build/config version used for the current evidence.",
+      "domain": [
+        "hayuaebld163822451",
+        "unknown"
+      ]
+    },
+    {
+      "id": "observation.surface",
+      "label": "Observation Surface",
+      "description": "Client/execution surface used to collect evidence; this is not AKS cluster input.",
+      "domain": [
+        "standalone-e2ev3",
+        "arm-rest",
+        "az-cli"
+      ]
+    }
+  ],
+  "inputVariables": [
+    {
+      "id": "addon.appRouting.enabled",
+      "label": "App Routing Addon Enabled",
+      "description": "Real AKS input: whether app routing is enabled for the cluster/test path.",
+      "domain": [
+        "true"
+      ]
+    },
+    {
+      "id": "appRouting.route.kind",
+      "label": "App Routing Route Kind",
+      "description": "Real AKS input branch for app-routing behavior under test.",
+      "domain": [
+        "nginx-disablement",
+        "default-domain",
+        "public-api-enable",
+        "public-api-disable",
+        "public-api-default-domain-enable"
+      ]
+    },
+    {
+      "id": "tls.secret.provided",
+      "label": "TLS Secret Provided",
+      "description": "Real AKS input/precondition for default-domain traffic behavior.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.mode",
+      "label": "Identity Mode",
+      "description": "Real AKS identity mode/precondition for identity-backed scenarios.",
+      "domain": [
+        "msi",
+        "unknown"
+      ]
+    },
+    {
+      "id": "msi.identity.provided",
+      "label": "MSI Identity Provided",
+      "description": "Real AKS input/precondition for MSI-backed behavior.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.kind",
+      "label": "Agent Pool Kind",
+      "description": "Real AKS input branch for pool behavior under test.",
+      "domain": [
+        "managedsystem",
+        "virtualmachines",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.operation",
+      "label": "ManagedSystem Operation",
+      "description": "Real AKS operation shape for ManagedSystem pool behavior.",
+      "domain": [
+        "create-cluster",
+        "add-existing-pool",
+        "enable-scenario",
+        "unknown",
+        "mutate-mode",
+        "delete-existing-pool"
+      ]
+    },
+    {
+      "id": "managedSystem.request.shape",
+      "label": "ManagedSystem Request Shape",
+      "description": "Real request payload shape received by RP for ManagedSystem pool behavior.",
+      "domain": [
+        "minimal-mode-only",
+        "cli-defaults",
+        "unknown",
+        "mode-system-only"
+      ]
+    },
+    {
+      "id": "nodeProvisioning.mode",
+      "label": "Node Provisioning Mode",
+      "description": "Real AKS node auto provisioning mode configured on the managed cluster.",
+      "domain": [
+        "Auto",
+        "Manual",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nodeProvisioning.defaultPools",
+      "label": "Node Provisioning Default Pools",
+      "description": "Real AKS default Karpenter NodePools setting for node auto provisioning.",
+      "domain": [
+        "Auto",
+        "None",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.oidcIssuer.enabled",
+      "label": "OIDC Issuer Enabled",
+      "description": "Real AKS input: whether the managed cluster OIDC issuer is requested/enabled.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.workloadIdentity.enabled",
+      "label": "Workload Identity Enabled",
+      "description": "Real AKS input: whether workload identity is requested/enabled on the managed cluster.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.operation",
+      "label": "Identity Operation",
+      "description": "Real AKS operation shape for OIDC issuer and workload identity behavior.",
+      "domain": [
+        "create-cluster",
+        "idempotent-update",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.artifactSource",
+      "label": "Bootstrap Profile Artifact Source",
+      "description": "Real AKS input: requested source where cluster bootstrap artifacts are downloaded.",
+      "domain": [
+        "Direct",
+        "Cache",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.containerRegistryId.provided",
+      "label": "Bootstrap Container Registry ID Provided",
+      "description": "Real AKS input/precondition: whether a container registry resource ID is supplied or provisioned for Cache artifact source.",
+      "domain": [
+        "true",
+        "false",
+        "auto",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.operation",
+      "label": "Bootstrap Profile Operation",
+      "description": "Real AKS operation shape for bootstrapProfile behavior.",
+      "domain": [
+        "create-cluster",
+        "idempotent-update",
+        "update-to-cache",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.operation",
+      "label": "Agent Pool Operation",
+      "description": "Real AKS operation shape for generic/non-ManagedSystem agent pool behavior.",
+      "domain": [
+        "add-existing-pool",
+        "delete-existing-pool",
+        "update-existing-pool",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.request.shape",
+      "label": "Agent Pool Request Shape",
+      "description": "Real request payload/CLI shape for generic/non-ManagedSystem agent pool behavior.",
+      "domain": [
+        "cli-vmsettype-virtualmachines-multisku",
+        "cli-vmsettype-virtualmachines-single-sku",
+        "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles",
+        "cli-vmsettype-virtualmachines-autoscale-enable-single-sku",
+        "cli-vmsettype-virtualmachines-autoscale-update-single-sku",
+        "unknown"
+      ]
+    }
+  ],
+  "inputDependencies": [
+    {
+      "parent": "addon.appRouting.enabled",
+      "parentValue": "true",
+      "child": "appRouting.route.kind",
+      "reason": "App-routing route branches are meaningful only when app routing is enabled."
+    },
+    {
+      "parent": "appRouting.route.kind",
+      "parentValue": "default-domain",
+      "child": "tls.secret.provided",
+      "reason": "Default-domain traffic behavior depends on TLS secret input/precondition."
+    },
+    {
+      "parent": "identity.mode",
+      "parentValue": "msi",
+      "child": "msi.identity.provided",
+      "reason": "MSI identity input/precondition is meaningful only for MSI mode."
+    },
+    {
+      "parent": "agentPool.kind",
+      "parentValue": "managedsystem",
+      "child": "managedSystem.operation",
+      "reason": "ManagedSystem operation branches are meaningful only for ManagedSystem pool input."
+    },
+    {
+      "parent": "agentPool.kind",
+      "parentValue": "managedsystem",
+      "child": "managedSystem.request.shape",
+      "reason": "ManagedSystem RP behavior depends on the request payload shape."
+    },
+    {
+      "parent": "nodeProvisioning.mode",
+      "parentValue": "Auto",
+      "child": "nodeProvisioning.defaultPools",
+      "reason": "Default Karpenter NodePools are meaningful for Node Auto Provisioning Auto mode."
+    },
+    {
+      "parent": "identity.oidcIssuer.enabled",
+      "parentValue": "true",
+      "child": "identity.workloadIdentity.enabled",
+      "reason": "AKS workload identity depends on the managed cluster OIDC issuer being enabled."
+    },
+    {
+      "parent": "agentPool.kind",
+      "parentValue": "virtualmachines",
+      "child": "agentPool.operation",
+      "reason": "Generic VirtualMachines agent pool operation branches are meaningful only for VirtualMachines agent pool input."
+    },
+    {
+      "parent": "agentPool.kind",
+      "parentValue": "virtualmachines",
+      "child": "agentPool.request.shape",
+      "reason": "VirtualMachines agent pool behavior depends on the request/CLI payload shape."
+    }
+  ],
+  "inputConstraints": [],
+  "expectationVariables": [
+    {
+      "id": "cluster.operation.succeeded",
+      "label": "Cluster Operation Succeeded",
+      "description": "AKS cluster operation/state outcome.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.nginx.disabled",
+      "label": "App Routing Nginx Disabled",
+      "description": "Expected AKS app-routing state/behavior for nginx disablement.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.webAppRouting.enabled",
+      "label": "Web App Routing Enabled",
+      "description": "Expected AKS ingressProfile.webAppRouting.enabled state from public API/CLI enablement.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.defaultDomain.configured",
+      "label": "Default Domain Configured",
+      "description": "Expected AKS state for default-domain traffic.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "traffic.route.reachable",
+      "label": "Traffic Route Reachable",
+      "description": "Expected externally observable AKS traffic behavior.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "traffic.http.status",
+      "label": "Traffic HTTP Status",
+      "description": "Expected externally observable HTTP behavior.",
+      "domain": [
+        "200",
+        "timeout",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.msi.available",
+      "label": "MSI Identity Available",
+      "description": "Expected AKS identity state for MSI-backed behavior.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "paf.throttling.behavior",
+      "label": "PAF Throttling Behavior",
+      "description": "Expected AKS behavior for PAF throttling.",
+      "domain": [
+        "works",
+        "failed",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.managedsystem.ready",
+      "label": "Managedsystem Pool Ready",
+      "description": "Expected AKS state/behavior for managedsystem pool.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "rp.request.accepted",
+      "label": "RP Request Accepted",
+      "description": "Expected RP behavior for the submitted AKS request payload.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.managedsystem.azureManagedNodes",
+      "label": "ManagedSystem Azure-Managed Nodes",
+      "description": "Expected AKS behavior: Azure determines VM size/count and runs managed nodes.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.mode.changeRejected",
+      "label": "Agent Pool Mode Change Rejected",
+      "description": "Expected RP behavior when a ManagedSystem pool mode mutation is submitted.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.managedsystem.deleted",
+      "label": "ManagedSystem Pool Deleted",
+      "description": "Expected AKS/RP state after deleting a ManagedSystem pool.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nodeProvisioning.profile.persisted",
+      "label": "Node Provisioning Profile Persisted",
+      "description": "Expected AKS show state contains the requested nodeProvisioningProfile values.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "networkProfile.nap.prereqsConfigured",
+      "label": "NAP Network Prerequisites Configured",
+      "description": "Expected network profile state for a Node Auto Provisioning cluster, including Azure CNI overlay and Cilium dataplane/policy.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.oidcIssuer.persisted",
+      "label": "OIDC Issuer Persisted",
+      "description": "Expected/observed managed cluster state has oidcIssuerProfile.enabled=true with an issuerUrl.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.workloadIdentity.persisted",
+      "label": "Workload Identity Persisted",
+      "description": "Expected/observed managed cluster state has securityProfile.workloadIdentity.enabled=true.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.artifactSource.persisted",
+      "label": "Bootstrap Artifact Source Persisted",
+      "description": "Expected/observed managed cluster state has the requested bootstrapProfile.artifactSource value.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.containerRegistryId.present",
+      "label": "Bootstrap Container Registry ID Present",
+      "description": "Expected/observed managed cluster state includes a containerRegistryId for Cache artifact source.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.virtualmachines.ready",
+      "label": "VirtualMachines Agent Pool Ready",
+      "description": "Expected/observed AKS state for a non-ManagedSystem agent pool with vm-set-type VirtualMachines.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.virtualmachines.profile.persisted",
+      "label": "VirtualMachines Agent Pool Profile Persisted",
+      "description": "Expected/observed nodepool state has type VirtualMachines and virtualMachinesProfile scale data.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    }
+  ],
+  "expectationDependencies": [
+    {
+      "parent": "appRouting.webAppRouting.enabled",
+      "parentValue": "true",
+      "child": "appRouting.defaultDomain.configured",
+      "reason": "Default-domain state is meaningful once the public webAppRouting profile is enabled."
+    },
+    {
+      "parent": "appRouting.defaultDomain.configured",
+      "parentValue": "true",
+      "child": "traffic.route.reachable",
+      "reason": "Route reachability depends on default-domain configuration."
+    },
+    {
+      "parent": "traffic.route.reachable",
+      "parentValue": "true",
+      "child": "traffic.http.status",
+      "reason": "HTTP status is meaningful once the route is reachable."
+    },
+    {
+      "parent": "identity.msi.available",
+      "parentValue": "true",
+      "child": "paf.throttling.behavior",
+      "reason": "PAF throttling behavior depends on MSI identity being available."
+    },
+    {
+      "parent": "rp.request.accepted",
+      "parentValue": "true",
+      "child": "agentPool.managedsystem.ready",
+      "reason": "A ManagedSystem pool can become ready only after RP accepts the request."
+    },
+    {
+      "parent": "agentPool.managedsystem.ready",
+      "parentValue": "true",
+      "child": "agentPool.managedsystem.azureManagedNodes",
+      "reason": "Azure-managed node evidence is meaningful once the ManagedSystem pool is ready."
+    },
+    {
+      "parent": "rp.request.accepted",
+      "parentValue": "false",
+      "child": "agentPool.mode.changeRejected",
+      "reason": "Mode-change rejection evidence is meaningful when RP rejects the mutation request."
+    },
+    {
+      "parent": "agentPool.managedsystem.ready",
+      "parentValue": "true",
+      "child": "agentPool.managedsystem.deleted",
+      "reason": "Delete behavior is meaningful after a ManagedSystem pool has reached ready state."
+    }
+  ],
+  "expectationConstraints": [],
+  "features": [
+    {
+      "id": "app-routing-nginx-disablement",
+      "label": "App Routing Nginx Disablement",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "nginx-disablement"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.nginx.disabled",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "app-routing-default-domain",
+      "label": "App Routing Default Domain Hello World",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.http.status",
+          "value": "200"
+        }
+      ]
+    },
+    {
+      "id": "app-routing-public-api-enable",
+      "label": "App Routing Public API Enable",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "paf-throttling",
+      "label": "PAF Throttling",
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.msi.available",
+          "value": "true"
+        },
+        {
+          "variable": "paf.throttling.behavior",
+          "value": "works"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-rest-add-existing",
+      "label": "ManagedSystem Pool Add Existing Cluster via ARM REST",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-cli-create-cluster",
+      "label": "ManagedSystem Pool Create Cluster via Azure CLI",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "create-cluster"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cli-defaults"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-cli-add-existing",
+      "label": "ManagedSystem Pool Add Existing Cluster via Azure CLI",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cli-defaults"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-standalone-e2ev3",
+      "label": "ManagedSystem Pool Standalone E2Ev3 Scenario",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "enable-scenario"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "unknown"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-mode-immutability",
+      "label": "ManagedSystem Pool Mode Immutability",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "mutate-mode"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "mode-system-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.mode.changeRejected",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-pool-delete-existing",
+      "label": "ManagedSystem Pool Delete Existing Pool",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "delete-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "node-autoprovision-create-auto",
+      "label": "Node Auto Provisioning Create Cluster Auto Mode",
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultPools",
+          "value": "Auto"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "node-autoprovision-update-default-pools-none",
+      "label": "Node Auto Provisioning Update Default Pools None",
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultPools",
+          "value": "None"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "node-autoprovision-update-mode-manual",
+      "label": "Node Auto Provisioning Update Mode Manual with Default Pools None",
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Manual"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "workload-identity-public-api-create",
+      "label": "OIDC Issuer and Workload Identity Public API Create Enablement",
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "create-cluster"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "workload-identity-public-api-idempotent-update",
+      "label": "OIDC Issuer and Workload Identity Public API Idempotent Update",
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "bootstrap-profile-artifact-source-direct-create",
+      "label": "Bootstrap Profile Artifact Source Direct Create",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Direct"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "false"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "create-cluster"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "bootstrap-profile-artifact-source-direct-update",
+      "label": "Bootstrap Profile Artifact Source Direct Idempotent Update",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Direct"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "false"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "bootstrap-profile-artifact-source-cache-update-auto-registry",
+      "label": "Bootstrap Profile Artifact Source Cache Update Auto Registry",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "auto"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "update-to-cache"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "virtualmachines-agentpool-cli-add-single-sku",
+      "label": "VirtualMachines Agent Pool CLI Add Single SKU",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "virtualmachines-agentpool-cli-add-multi-sku",
+      "label": "VirtualMachines Agent Pool CLI Add Multi SKU",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-multisku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "virtualmachines-agentpool-cli-autoscale-update-single-sku",
+      "label": "VirtualMachines Agent Pool CLI Autoscale Update Single SKU",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-autoscale-update-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "virtualmachines-agentpool-cli-manual-scale-multiple-profiles",
+      "label": "VirtualMachines Agent Pool CLI Manual Scale Multiple Profiles",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "app-routing-public-api-disable",
+      "label": "App Routing Public API Disable",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-disable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "id": "app-routing-public-api-default-domain-enable",
+      "label": "App Routing Public API Default Domain Enable",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-default-domain-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "testCases": [
+    {
+      "id": "Scenario_Traffic_AppRouting_Nginx_Disablement",
+      "featureId": "app-routing-nginx-disablement",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "nginx-disablement"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.nginx.disabled",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.nginx.disabled",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "successful-e2e-run"
+      ]
+    },
+    {
+      "id": "Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld",
+      "featureId": "app-routing-default-domain",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        },
+        {
+          "variable": "tls.secret.provided",
+          "value": "false"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.http.status",
+          "value": "200"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "false"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "false"
+        }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "tls-secret",
+        "summary": "Required TLS secret was not provisioned for the default-domain path."
+      },
+      "evidence": [
+        "e2e-run-results-summary"
+      ]
+    },
+    {
+      "id": "Scenario_PAFThrottling",
+      "featureId": "paf-throttling",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "msi.identity.provided",
+          "value": "false"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.msi.available",
+          "value": "true"
+        },
+        {
+          "variable": "paf.throttling.behavior",
+          "value": "works"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.msi.available",
+          "value": "false"
+        },
+        {
+          "variable": "paf.throttling.behavior",
+          "value": "failed"
+        }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "msi-identity",
+        "summary": "MSI identity was missing for the PAF throttling path."
+      },
+      "evidence": [
+        "e2e-run-results-summary"
+      ]
+    },
+    {
+      "id": "ManagedSystemPool_REST_AddExisting_Staging",
+      "featureId": "managedsystem-pool-rest-add-existing",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "arm-rest"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "notes": "Iteration 56 refreshed eastus2 staging evidence: minimal ARM REST payload created a Succeeded ManagedSystem pool with Azure-managed 2x Standard_D8ds_v4 nodes."
+    },
+    {
+      "id": "ManagedSystemPool_CLI_CreateCluster",
+      "featureId": "managedsystem-pool-cli-create-cluster",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "create-cluster"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cli-defaults"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "false"
+        }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI sent non-default fields that RP rejects for ManagedSystem pools. Refreshed on 2026-05-18 with the same InvalidParameter non-default fields error."
+      },
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ]
+    },
+    {
+      "id": "ManagedSystemPool_CLI_AddExisting",
+      "featureId": "managedsystem-pool-cli-add-existing",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cli-defaults"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "false"
+        }
+      ],
+      "result": "fail",
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI nodepool add sent non-default fields that RP rejects for ManagedSystem pools. Refreshed on 2026-05-18 with the same InvalidParameter non-default fields error."
+      },
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ]
+    },
+    {
+      "id": "Scenario_ManagedSystemPool_Enable",
+      "featureId": "managedsystem-pool-standalone-e2ev3",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "standalone-e2ev3"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "enable-scenario"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "unknown"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration24-managedsystem-pool-pass"
+      ]
+    },
+    {
+      "id": "ManagedSystemPool_ModeMutation_ManagedSystemToSystem_Staging",
+      "featureId": "managedsystem-pool-mode-immutability",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "arm-rest"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "mutate-mode"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "mode-system-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.mode.changeRejected",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.mode.changeRejected",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "notes": "RP returned PropertyChangeNotAllowed for ManagedSystem -> System mode mutation; existing pool remained ManagedSystem/Succeeded."
+    },
+    {
+      "id": "ManagedSystemPool_DeleteExisting_Staging",
+      "featureId": "managedsystem-pool-delete-existing",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "delete-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "notes": "az aks nodepool delete (aks-preview override, no --yes supported) returned exit 0; subsequent show returned NotFound."
+    },
+    {
+      "id": "NodeAutoProvisioning_CreateAuto_Staging",
+      "featureId": "node-autoprovision-create-auto",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultPools",
+          "value": "Auto"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration57-node-autoprovision-staging"
+      ],
+      "notes": "az aks create with --node-provisioning-mode Auto --node-provisioning-default-pools Auto and Azure CNI overlay/Cilium reached Succeeded; show returned nodeProvisioningProfile mode/defaultNodePools Auto."
+    },
+    {
+      "id": "NodeAutoProvisioning_UpdateDefaultPoolsNone_Staging",
+      "featureId": "node-autoprovision-update-default-pools-none",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultPools",
+          "value": "None"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration58-node-autoprovision-followup"
+      ],
+      "notes": "After the interrupted run was resumed, az aks show returned nodeProvisioningProfile.mode=Auto/defaultNodePools=None and Succeeded state for the NAP follow-up cluster; this closes the Auto -> None default-pools update evidence gap."
+    },
+    {
+      "id": "NodeAutoProvisioning_UpdateModeManual_Staging",
+      "featureId": "node-autoprovision-update-mode-manual",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Manual"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration58-node-autoprovision-followup"
+      ],
+      "notes": "az aks update --node-provisioning-mode Manual exited 0; follow-up show returned nodeProvisioningProfile.mode=Manual/defaultNodePools=None and cluster Succeeded."
+    },
+    {
+      "id": "AppRouting_PublicAPI_Enable_Staging",
+      "featureId": "app-routing-public-api-enable",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "false"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration59-app-routing-staging"
+      ],
+      "notes": "az aks approuting enable exited 0 on staging cluster approuting59; follow-up show returned provisioningState=Succeeded and ingressProfile.webAppRouting.enabled=true with defaultDomain.enabled=false."
+    },
+    {
+      "id": "WorkloadIdentity_PublicAPI_Create_Staging",
+      "featureId": "workload-identity-public-api-create",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "create-cluster"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration60-workload-identity-staging"
+      ],
+      "notes": "az aks create with --enable-managed-identity --enable-oidc-issuer --enable-workload-identity exited 0; show returned provisioningState=Succeeded, oidcIssuerProfile.enabled=true with HTTPS issuerUrl, and securityProfile.workloadIdentity.enabled=true."
+    },
+    {
+      "id": "WorkloadIdentity_PublicAPI_IdempotentUpdate_Staging",
+      "featureId": "workload-identity-public-api-idempotent-update",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration60-workload-identity-staging"
+      ],
+      "notes": "az aks update --enable-oidc-issuer --enable-workload-identity exited 0 on the already-enabled cluster and preserved enabled OIDC issuer/workload identity state."
+    },
+    {
+      "id": "BootstrapProfile_ArtifactSource_Direct_Create_Staging",
+      "featureId": "bootstrap-profile-artifact-source-direct-create",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Direct"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "false"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "create-cluster"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration63-bootstrap-profile-staging"
+      ],
+      "notes": "az aks create with preview --bootstrap-artifact-source Direct exited 0 and show/REST GET persisted bootstrapProfile.artifactSource=Direct."
+    },
+    {
+      "id": "BootstrapProfile_ArtifactSource_Direct_IdempotentUpdate_Staging",
+      "featureId": "bootstrap-profile-artifact-source-direct-update",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Direct"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "false"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration63-bootstrap-profile-staging"
+      ],
+      "notes": "az aks update with preview --bootstrap-artifact-source Direct exited 0 on the existing cluster and preserved bootstrapProfile.artifactSource=Direct."
+    },
+    {
+      "id": "BootstrapProfile_ArtifactSource_Cache_UpdateAutoRegistry_Staging",
+      "featureId": "bootstrap-profile-artifact-source-cache-update-auto-registry",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "auto"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "update-to-cache"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration63-bootstrap-profile-staging"
+      ],
+      "notes": "az aks update with preview --bootstrap-artifact-source Cache exited 0 without an explicit registry ID; AKS provisioned/persisted Cache plus a containerRegistryId in the managed resource group."
+    },
+    {
+      "id": "VirtualMachinesAgentPool_CLI_AddSingleSku_Staging",
+      "featureId": "virtualmachines-agentpool-cli-add-single-sku",
+      "label": "Add VirtualMachines agent pool via az CLI preview with a single supported SKU",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration64-virtualmachines-agentpool-staging"
+      ],
+      "notes": "az aks nodepool add --vm-set-type VirtualMachines --vm-sizes Standard_D4s_v4 --node-count 1 exited 0 and show persisted virtualMachinesProfile.scale.manual size/count."
+    },
+    {
+      "id": "VirtualMachinesAgentPool_CLI_AddMultiSku_Staging",
+      "featureId": "virtualmachines-agentpool-cli-add-multi-sku",
+      "label": "Add VirtualMachines agent pool via az CLI preview with multiple SKUs",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-multisku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "false"
+        }
+      ],
+      "result": "fail",
+      "evidence": [
+        "iteration64-virtualmachines-agentpool-staging",
+        "iteration65-virtualmachines-multisku-contract"
+      ],
+      "notes": "az aks nodepool add --vm-set-type VirtualMachines --vm-sizes Standard_D4s_v3,Standard_D8s_v3 exited 1 with preview CLI/client validation \"We only accept single sku size for scale profile\"; iteration65 source inspection found the active aks-preview decorator enforces len(--vm-sizes)==1 before constructing manual/autoscale scale profiles.",
+      "diagnosis": {
+        "kind": "cli-help-documentation-mismatch",
+        "summary": "The add help example advertises comma-separated multi-SKU input, but active aks-preview source rejects multi-value --vm-sizes for VirtualMachines scale profiles."
+      }
+    },
+    {
+      "id": "VirtualMachinesAgentPool_CLI_AutoscaleUpdateSingleSku_Staging",
+      "featureId": "virtualmachines-agentpool-cli-autoscale-update-single-sku",
+      "label": "Enable and update autoscaler settings for a VirtualMachines agent pool via az CLI preview",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-autoscale-update-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration65-virtualmachines-multisku-contract"
+      ],
+      "notes": "Starting from a single-SKU manual VirtualMachines pool, az aks nodepool update --enable-cluster-autoscaler persisted virtualMachinesProfile.scale.autoscale[0] with Standard_D4s_v4 min/max; az aks nodepool update --update-cluster-autoscaler --node-vm-size Standard_D4s_v6 persisted a single autoscale profile with the new size and min/max."
+    },
+    {
+      "id": "VirtualMachinesAgentPool_CLI_ManualScaleMultipleProfiles_Staging",
+      "featureId": "virtualmachines-agentpool-cli-manual-scale-multiple-profiles",
+      "label": "Add and delete an additional single-SKU manual scale profile on a VirtualMachines agent pool via az CLI preview",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration66-virtualmachines-manual-scale-staging"
+      ],
+      "notes": "Starting from a one-profile manual VirtualMachines pool, az aks nodepool manual-scale add --vm-sizes Standard_D4s_v6 --node-count 1 exited 0 and persisted two manual profiles (Standard_D4s_v4 and Standard_D4s_v6); manual-scale delete of the second profile exited 0 and returned to one profile. Enabling autoscaler while two manual profiles existed failed client-side by design. manual-scale update --current-vm-sizes Standard_D4s_v6 --node-count 2 unexpectedly failed with \"None is invalid\" because the CLI validates omitted --vm-sizes as an empty list; this does not negate add/delete multiple-profile support."
+    },
+    {
+      "id": "AppRouting_PublicAPI_Disable_Staging",
+      "featureId": "app-routing-public-api-disable",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-disable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "false"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "false"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "false"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration67-app-routing-disable-staging"
+      ],
+      "notes": "On staging cluster approuting67, az aks approuting enable exited 0 and show returned webAppRouting.enabled=true; az aks approuting disable --yes then exited 0 and follow-up show returned ingressProfile.webAppRouting.enabled=false with identity fields null."
+    },
+    {
+      "id": "AppRouting_PublicAPI_DefaultDomain_Enable_Staging",
+      "featureId": "app-routing-public-api-default-domain-enable",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-default-domain-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration68-app-routing-defaultdomain-staging"
+      ],
+      "notes": "On staging cluster approuting68, az aks approuting enable --enable-default-domain exited 0; follow-up az aks show and az aks approuting defaultdomain show returned defaultDomain.enabled=true with autogenerated domainName 6a0c015aae6c7800012e441e.eastus2.aksapp.io."
+    }
+  ],
+  "judgments": [
+    {
+      "id": "judgment-app-routing-nginx-disablement-standalone",
+      "featureId": "app-routing-nginx-disablement",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "standalone-e2ev3"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "nginx-disablement"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.nginx.disabled",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.nginx.disabled",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "successful-e2e-run"
+      ],
+      "testCases": [
+        "Scenario_Traffic_AppRouting_Nginx_Disablement"
+      ],
+      "summary": "Standalone dev-suite run passed for nginx disablement."
+    },
+    {
+      "id": "judgment-app-routing-default-domain-standalone",
+      "featureId": "app-routing-default-domain",
+      "status": "fail",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "standalone-e2ev3"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        },
+        {
+          "variable": "tls.secret.provided",
+          "value": "false"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.http.status",
+          "value": "200"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "false"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "false"
+        }
+      ],
+      "evidence": [
+        "e2e-run-results-summary"
+      ],
+      "testCases": [
+        "Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld"
+      ],
+      "diagnosis": {
+        "kind": "tls-secret",
+        "summary": "Required TLS secret was not provisioned for the default-domain path."
+      },
+      "nextAction": "Verify the tls.secret.provided=true path or fix TLS secret provisioning."
+    },
+    {
+      "id": "judgment-paf-throttling-standalone",
+      "featureId": "paf-throttling",
+      "status": "fail",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "standalone-e2ev3"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "msi.identity.provided",
+          "value": "false"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.msi.available",
+          "value": "true"
+        },
+        {
+          "variable": "paf.throttling.behavior",
+          "value": "works"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.msi.available",
+          "value": "false"
+        },
+        {
+          "variable": "paf.throttling.behavior",
+          "value": "failed"
+        }
+      ],
+      "evidence": [
+        "e2e-run-results-summary"
+      ],
+      "testCases": [
+        "Scenario_PAFThrottling"
+      ],
+      "diagnosis": {
+        "kind": "msi-identity",
+        "summary": "MSI identity was missing for the PAF throttling path."
+      },
+      "nextAction": "Verify the msi.identity.provided=true path."
+    },
+    {
+      "id": "judgment-managedsystem-rest-add-existing-staging",
+      "featureId": "managedsystem-pool-rest-add-existing",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "arm-rest"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "testCases": [
+        "ManagedSystemPool_REST_AddExisting_Staging"
+      ],
+      "summary": "ARM REST with minimal mode-only payload created a ManagedSystem pool in eastus2 staging on 2026-05-18; pool reached Succeeded with Azure-managed nodes."
+    },
+    {
+      "id": "judgment-managedsystem-cli-create-staging",
+      "featureId": "managedsystem-pool-cli-create-cluster",
+      "status": "fail",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "create-cluster"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cli-defaults"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "false"
+        }
+      ],
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "testCases": [
+        "ManagedSystemPool_CLI_CreateCluster"
+      ],
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI preview sent non-default fields that RP rejects for ManagedSystem pools; refreshed 2026-05-18."
+      },
+      "nextAction": "CLI/tooling should strip disallowed defaults for ManagedSystem create, or callers must bypass with direct ARM REST."
+    },
+    {
+      "id": "judgment-managedsystem-cli-add-existing-staging",
+      "featureId": "managedsystem-pool-cli-add-existing",
+      "status": "fail",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cli-defaults"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "false"
+        }
+      ],
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "testCases": [
+        "ManagedSystemPool_CLI_AddExisting"
+      ],
+      "diagnosis": {
+        "kind": "cli-default-payload",
+        "summary": "Azure CLI preview nodepool add sent non-default fields that RP rejects for ManagedSystem pools; refreshed 2026-05-18."
+      },
+      "nextAction": "CLI/tooling should strip disallowed defaults for ManagedSystem nodepool add, or callers must bypass with direct ARM REST."
+    },
+    {
+      "id": "judgment-managedsystem-standalone-e2ev3",
+      "featureId": "managedsystem-pool-standalone-e2ev3",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "standalone"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "hayuaebld163822451"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "standalone-e2ev3"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "enable-scenario"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "unknown"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.azureManagedNodes",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration24-managedsystem-pool-pass"
+      ],
+      "testCases": [
+        "Scenario_ManagedSystemPool_Enable"
+      ],
+      "summary": "Standalone e2ev3 run passed for ManagedSystemPool_Enable on build hayuaebld163822451."
+    },
+    {
+      "id": "judgment-managedsystem-mode-immutability-staging",
+      "featureId": "managedsystem-pool-mode-immutability",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "arm-rest"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "mutate-mode"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "mode-system-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.mode.changeRejected",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.mode.changeRejected",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "testCases": [
+        "ManagedSystemPool_ModeMutation_ManagedSystemToSystem_Staging"
+      ],
+      "summary": "ManagedSystem pool mode is immutable: direct REST ManagedSystem -> System PUT returned PropertyChangeNotAllowed."
+    },
+    {
+      "id": "judgment-managedsystem-delete-existing-staging",
+      "featureId": "managedsystem-pool-delete-existing",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "delete-existing-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration56-managedsystem-staging-refresh"
+      ],
+      "testCases": [
+        "ManagedSystemPool_DeleteExisting_Staging"
+      ],
+      "summary": "Standard az nodepool delete removed the ManagedSystem pool in staging; show returned NotFound afterward."
+    },
+    {
+      "id": "judgment-node-autoprovision-create-auto-staging",
+      "featureId": "node-autoprovision-create-auto",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultPools",
+          "value": "Auto"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration57-node-autoprovision-staging"
+      ],
+      "testCases": [
+        "NodeAutoProvisioning_CreateAuto_Staging"
+      ],
+      "summary": "Staging accepted public CLI preview NAP Auto create and persisted nodeProvisioningProfile.mode=Auto/defaultNodePools=Auto with Azure CNI overlay and Cilium."
+    },
+    {
+      "id": "judgment-node-autoprovision-update-default-pools-none-staging",
+      "featureId": "node-autoprovision-update-default-pools-none",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultPools",
+          "value": "None"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "networkProfile.nap.prereqsConfigured",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration58-node-autoprovision-followup"
+      ],
+      "testCases": [
+        "NodeAutoProvisioning_UpdateDefaultPoolsNone_Staging"
+      ],
+      "summary": "Staging NAP cluster persisted defaultNodePools=None while remaining mode=Auto/Succeeded after the requested default-pools update."
+    },
+    {
+      "id": "judgment-node-autoprovision-update-mode-manual-staging",
+      "featureId": "node-autoprovision-update-mode-manual",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.suite",
+          "value": "dev"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Manual"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration58-node-autoprovision-followup"
+      ],
+      "testCases": [
+        "NodeAutoProvisioning_UpdateModeManual_Staging"
+      ],
+      "summary": "Staging accepted NAP mode Auto -> Manual via az CLI preview when defaultNodePools=None; show returned mode=Manual/defaultNodePools=None."
+    },
+    {
+      "id": "judgment-app-routing-public-api-enable-staging",
+      "featureId": "app-routing-public-api-enable",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "false"
+        }
+      ],
+      "evidence": [
+        "iteration59-app-routing-staging"
+      ],
+      "testCases": [
+        "AppRouting_PublicAPI_Enable_Staging"
+      ],
+      "summary": "Staging public CLI App Routing enablement is accepted by RP: baseline cluster had null ingressProfile, az aks approuting enable exited 0, and show returned webAppRouting.enabled=true plus managed webAppRouting identity."
+    },
+    {
+      "id": "judgment-workload-identity-public-api-create-staging",
+      "featureId": "workload-identity-public-api-create",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "create-cluster"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration60-workload-identity-staging"
+      ],
+      "testCases": [
+        "WorkloadIdentity_PublicAPI_Create_Staging"
+      ],
+      "summary": "Staging accepted public CLI create-time enablement of OIDC issuer and workload identity; both states persisted on az aks show."
+    },
+    {
+      "id": "judgment-workload-identity-public-api-idempotent-update-staging",
+      "featureId": "workload-identity-public-api-idempotent-update",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "identity.mode",
+          "value": "msi"
+        },
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration60-workload-identity-staging"
+      ],
+      "testCases": [
+        "WorkloadIdentity_PublicAPI_IdempotentUpdate_Staging"
+      ],
+      "summary": "Staging accepted idempotent public CLI update for OIDC issuer and workload identity and preserved enabled state."
+    },
+    {
+      "id": "judgment-bootstrap-profile-artifact-source-direct-create-staging",
+      "featureId": "bootstrap-profile-artifact-source-direct-create",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Direct"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "false"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "create-cluster"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration63-bootstrap-profile-staging"
+      ],
+      "testCases": [
+        "BootstrapProfile_ArtifactSource_Direct_Create_Staging"
+      ],
+      "summary": "az aks create with preview --bootstrap-artifact-source Direct exited 0 and show/REST GET persisted bootstrapProfile.artifactSource=Direct."
+    },
+    {
+      "id": "judgment-bootstrap-profile-artifact-source-direct-update-staging",
+      "featureId": "bootstrap-profile-artifact-source-direct-update",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Direct"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "false"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "idempotent-update"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration63-bootstrap-profile-staging"
+      ],
+      "testCases": [
+        "BootstrapProfile_ArtifactSource_Direct_IdempotentUpdate_Staging"
+      ],
+      "summary": "az aks update with preview --bootstrap-artifact-source Direct exited 0 on the existing cluster and preserved bootstrapProfile.artifactSource=Direct."
+    },
+    {
+      "id": "judgment-bootstrap-profile-artifact-source-cache-update-auto-registry-staging",
+      "featureId": "bootstrap-profile-artifact-source-cache-update-auto-registry",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.provided",
+          "value": "auto"
+        },
+        {
+          "variable": "bootstrapProfile.operation",
+          "value": "update-to-cache"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration63-bootstrap-profile-staging"
+      ],
+      "testCases": [
+        "BootstrapProfile_ArtifactSource_Cache_UpdateAutoRegistry_Staging"
+      ],
+      "summary": "az aks update with preview --bootstrap-artifact-source Cache exited 0 without an explicit registry ID; AKS provisioned/persisted Cache plus a containerRegistryId in the managed resource group."
+    },
+    {
+      "id": "judgment-virtualmachines-agentpool-cli-add-single-sku-staging",
+      "featureId": "virtualmachines-agentpool-cli-add-single-sku",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration64-virtualmachines-agentpool-staging"
+      ],
+      "testCases": [
+        "VirtualMachinesAgentPool_CLI_AddSingleSku_Staging"
+      ],
+      "summary": "az aks nodepool add with aks-preview --vm-set-type VirtualMachines --vm-sizes Standard_D4s_v4 --node-count 1 exited 0 in eastus2 staging and show persisted a User pool with vmSize/count null and virtualMachinesProfile.scale.manual size/count."
+    },
+    {
+      "id": "judgment-virtualmachines-agentpool-cli-add-multi-sku-staging",
+      "featureId": "virtualmachines-agentpool-cli-add-multi-sku",
+      "status": "fail",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "add-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-multisku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "false"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "false"
+        }
+      ],
+      "evidence": [
+        "iteration64-virtualmachines-agentpool-staging",
+        "iteration65-virtualmachines-multisku-contract"
+      ],
+      "testCases": [
+        "VirtualMachinesAgentPool_CLI_AddMultiSku_Staging"
+      ],
+      "diagnosis": {
+        "kind": "cli-help-documentation-mismatch",
+        "summary": "The active aks-preview help example advertises two comma-separated --vm-sizes, but agentpool_decorator.py rejects any VirtualMachines scale profile with len(sizes) != 1 before constructing either manual or autoscale payload. Staging autoscale update supports one autoscale profile with one size, not multi-SKU."
+      },
+      "nextAction": "For add/update VirtualMachines pool paths, use one supported SKU per manual/autoscale profile. Treat the comma-separated multi-SKU add help example as misleading unless a separate manual-scale subcommand or REST path is intentionally validated."
+    },
+    {
+      "id": "judgment-virtualmachines-agentpool-cli-autoscale-update-single-sku-staging",
+      "featureId": "virtualmachines-agentpool-cli-autoscale-update-single-sku",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-autoscale-update-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration65-virtualmachines-multisku-contract"
+      ],
+      "testCases": [
+        "VirtualMachinesAgentPool_CLI_AutoscaleUpdateSingleSku_Staging"
+      ],
+      "summary": "The documented VirtualMachines autoscaler update path is supported for one autoscale profile with one VM size: enable autoscaler converted manual Standard_D4s_v4 to autoscale, and update-cluster-autoscaler changed that profile to Standard_D4s_v6 with min/max persisted.",
+      "diagnosis": {
+        "kind": "supported-single-autoscale-profile",
+        "summary": "Swagger says only one AutoScaleProfile is allowed and CLI source requires one --vm-sizes value when building VirtualMachines scale profiles; this is not multi-SKU support."
+      }
+    },
+    {
+      "id": "judgment-virtualmachines-agentpool-cli-manual-scale-multiple-profiles-staging",
+      "featureId": "virtualmachines-agentpool-cli-manual-scale-multiple-profiles",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration66-virtualmachines-manual-scale-staging"
+      ],
+      "testCases": [
+        "VirtualMachinesAgentPool_CLI_ManualScaleMultipleProfiles_Staging"
+      ],
+      "summary": "The separate preview manual-scale subcommands are the supported CLI path for multiple manual VirtualMachines scale profiles: add persisted a second single-SKU manual profile and delete removed it in eastus2 staging.",
+      "diagnosis": {
+        "kind": "supported-multiple-manual-profiles-via-separate-subcommands",
+        "summary": "Multi-profile manual scaling is supported as multiple single-size ManualScaleProfile entries managed by az aks nodepool manual-scale add/delete, not as a comma-separated multi-SKU --vm-sizes value on nodepool add. Each manual-scale command still accepts exactly one size."
+      },
+      "nextAction": "Use manual-scale add/delete for multiple manual profiles; avoid count-only manual-scale update until the CLI validation bug for omitted --vm-sizes is fixed or intentionally model that bug separately."
+    },
+    {
+      "id": "judgment-app-routing-public-api-disable-staging",
+      "featureId": "app-routing-public-api-disable",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-disable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "false"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "false"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "false"
+        }
+      ],
+      "evidence": [
+        "iteration67-app-routing-disable-staging"
+      ],
+      "testCases": [
+        "AppRouting_PublicAPI_Disable_Staging"
+      ],
+      "summary": "Staging public CLI App Routing disablement is accepted by RP: after successful enablement, az aks approuting disable --yes exited 0 and persisted ingressProfile.webAppRouting.enabled=false with App Routing identity removed/null."
+    },
+    {
+      "id": "judgment-app-routing-public-api-default-domain-enable-staging",
+      "featureId": "app-routing-public-api-default-domain-enable",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.host",
+          "value": "devbox"
+        },
+        {
+          "variable": "observation.buildVersion",
+          "value": "unknown"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "public-api-default-domain-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration68-app-routing-defaultdomain-staging"
+      ],
+      "testCases": [
+        "AppRouting_PublicAPI_DefaultDomain_Enable_Staging"
+      ],
+      "summary": "Staging public CLI App Routing default-domain enablement is accepted by RP: az aks approuting enable --enable-default-domain exited 0 and persisted webAppRouting.enabled=true plus defaultDomain.enabled=true with an autogenerated aksapp.io domain name."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "successful-e2e-run",
+      "kind": "artifact",
+      "path": "outputs/successful-e2e-run.md",
+      "summary": "Green evidence for Scenario_Traffic_AppRouting_Nginx_Disablement."
+    },
+    {
+      "id": "e2e-run-results-summary",
+      "kind": "artifact",
+      "path": "outputs/e2e-run-results-summary.md",
+      "summary": "Current summary of passed and failed scenarios."
+    },
+    {
+      "id": "managedsystem-pool-exploration",
+      "kind": "artifact",
+      "path": "outputs/managedsystem-pool-exploration.md",
+      "summary": "Exploration artifact for the managedsystem pool skill and behavior."
+    },
+    {
+      "id": "iteration24-managedsystem-pool-pass",
+      "kind": "artifact",
+      "path": "outputs/iteration24-managedsystem-pool-pass.md",
+      "summary": "Pass evidence for Scenario_ManagedSystemPool_Enable on standalone."
+    },
+    {
+      "id": "iteration56-managedsystem-staging-refresh",
+      "kind": "artifact",
+      "path": "outputs/iteration56-managedsystem-staging-refresh.md",
+      "summary": "2026-05-18 staging refresh matrix for ManagedSystem Pool CLI create/add, REST add, mode immutability, and delete."
+    },
+    {
+      "id": "managedsystem-standalone-interrupted-session",
+      "kind": "session",
+      "sessionId": "s_1778656714888_6",
+      "summary": "Session was interrupted while standalone Scenario_ManagedSystemPool_Enable was polling CreateAgentPool."
+    },
+    {
+      "id": "iteration57-node-autoprovision-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration57-node-autoprovision-staging.md",
+      "summary": "2026-05-18 staging probe for public API Node Auto Provisioning create/show using az CLI preview."
+    },
+    {
+      "id": "iteration58-node-autoprovision-followup",
+      "kind": "artifact",
+      "path": "outputs/iteration58-node-autoprovision-followup.md",
+      "summary": "2026-05-18 staging follow-up for Node Auto Provisioning default-pools update to None and mode update to Manual."
+    },
+    {
+      "id": "iteration59-app-routing-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration59-app-routing-staging.md",
+      "summary": "2026-05-18 staging public API validation for Web App Routing/App Routing enablement via az CLI preview."
+    },
+    {
+      "id": "iteration60-workload-identity-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration60-workload-identity-staging.md",
+      "summary": "2026-05-18 staging public API validation for OIDC issuer and workload identity create-time enablement plus idempotent update via az CLI preview."
+    },
+    {
+      "id": "iteration63-bootstrap-profile-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration63-bootstrap-profile-staging.md",
+      "summary": "2026-05-19 contract-first staging validation for bootstrapProfile.artifactSource create/update behavior via az CLI preview and ARM REST GET."
+    },
+    {
+      "id": "iteration64-virtualmachines-agentpool-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration64-virtualmachines-agentpool-staging.md",
+      "summary": "2026-05-19 staging validation for non-ManagedSystem VirtualMachines agent pool CLI add behavior, including multi-SKU rejection and single-SKU pass."
+    },
+    {
+      "id": "iteration65-virtualmachines-multisku-contract",
+      "kind": "artifact",
+      "path": "outputs/iteration65-virtualmachines-multisku-contract.md",
+      "summary": "2026-05-19 contract-first classification of VirtualMachines multi-SKU behavior: CLI/source/swagger/help preflight plus staging autoscale enable/update probe."
+    },
+    {
+      "id": "iteration66-virtualmachines-manual-scale-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration66-virtualmachines-manual-scale-staging.md",
+      "summary": "2026-05-19 staging validation of az aks nodepool manual-scale add/delete for multiple single-SKU manual profiles on a VirtualMachines agent pool; update count-only exposed a CLI bug."
+    },
+    {
+      "id": "iteration67-app-routing-disable-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration67-app-routing-disable-staging.md",
+      "summary": "2026-05-19 staging public API validation for Web App Routing/App Routing disablement via az CLI preview enable-to-disable probe."
+    },
+    {
+      "id": "iteration68-app-routing-defaultdomain-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration68-app-routing-defaultdomain-staging.md",
+      "summary": "2026-05-19 staging probe for App Routing public CLI default-domain enable state: enable --enable-default-domain persisted webAppRouting.enabled=true and defaultDomain.enabled=true with autogenerated domainName; defaultdomain show returned the same enabled profile."
+    }
+  ]
+}
