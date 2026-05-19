@@ -140,6 +140,25 @@ describe("AgentSDK escalation", () => {
     expect(syntheticMessages).toHaveLength(0);
   });
 
+  it("uses only human as the message shorthand for human:operator", () => {
+    const { sdk, events, root } = makeSdk();
+    roots.push(root);
+
+    sdk.message("human", "Need approval");
+    sdk.message("operator", "Operator agent should receive this");
+
+    const messages = events.filter((event) => event.type === "message.created");
+    expect(messages).toHaveLength(2);
+    expect(messages[0]).toMatchObject({
+      owner: "human:operator",
+      data: expect.objectContaining({ to: "human" }),
+    });
+    expect(messages[1]).toMatchObject({
+      owner: "agent:operator",
+      data: expect.objectContaining({ to: "operator" }),
+    });
+  });
+
   it("uses owner options for non-default escalation routing", () => {
     const { sdk, events, root } = makeSdk();
     roots.push(root);

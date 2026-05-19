@@ -50,7 +50,7 @@ function eventOwner(owner: unknown): string {
   if (typeof owner !== "string" || !owner.trim()) return "agent:may";
   const value = owner.trim();
   if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  if (value.toLowerCase() === "human") return "human:operator";
   return `agent:${value}`;
 }
 

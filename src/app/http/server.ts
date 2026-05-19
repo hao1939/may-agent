@@ -188,7 +188,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const value = owner.trim();
     if (!value) return "agent:may";
     if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-    if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+    if (value.toLowerCase() === "human") return "human:operator";
     return `agent:${value}`;
   }
 

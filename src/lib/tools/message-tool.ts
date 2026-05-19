@@ -112,10 +112,7 @@ function urgencyForPriority(priority: unknown): "normal" | "high" | "immediate" 
 }
 
 function normalizeTarget(target: string): string {
-  const trimmed = target.trim();
-  const lower = trimmed.toLowerCase();
-  if (lower === "hao" || lower === "user" || lower === "operator") return "human";
-  return trimmed;
+  return target.trim();
 }
 
 function ownerForTarget(target: string): string {
