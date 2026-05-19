@@ -1,0 +1,7 @@
+{
+  "name": "may",
+  "description": "Fixture interface agent for e2e tests",
+  "domain": "e2e",
+  "model": "opus",
+  "tools": ["cron"]
+}
