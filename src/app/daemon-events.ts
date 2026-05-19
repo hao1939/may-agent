@@ -1,5 +1,3 @@
-import { appendFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { eventData, type EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import { DbWriter } from "../lib/db-writer.js";
@@ -91,18 +89,6 @@ export function attachDaemonEventSubscribers(opts: {
     (agent, _sessionId, reason) => {
       log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
       const escalationId = createEscalationId();
-      try {
-        const escalationPath = resolve(persistDir, "escalations.jsonl");
-        appendFileSync(escalationPath, JSON.stringify({
-          ts: new Date().toISOString(),
-          escalationId,
-          agent,
-          owner: "agent:may",
-          reason,
-        }) + "\n", "utf-8");
-      } catch {
-        /* best-effort */
-      }
       bus.emit({
         type: "escalation.created",
         source: "runtime:auto-resume",
