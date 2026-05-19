@@ -160,7 +160,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
     },
 
     message(target: string, content: string): void {
-      const to = target === "hao" || target === "user" || target === "operator" ? "human" : target;
+      const to = target;
       deps.bus.emit({
         type: "message.created",
         source: `agent:${deps.agentName}`,

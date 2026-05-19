@@ -98,10 +98,10 @@ describe("message tool", () => {
     expect(allowed.error).toBeUndefined();
   });
 
-  it("normalizes human aliases", async () => {
+  it("uses only human as the shorthand for human:operator", async () => {
     const { tool, events } = setup({ allowedTargets: ["dev", "scout"] });
 
-    const allowed = await call(tool, { to: "hao", content: "status" });
+    const allowed = await call(tool, { to: "human", content: "status" });
     expect(allowed.error).toBeUndefined();
     expect(allowed.to).toBe("human");
     expect(events).toContainEqual(expect.objectContaining({
@@ -110,6 +110,17 @@ describe("message tool", () => {
       owner: "human:operator",
       data: expect.objectContaining({ to: "human" }),
     }));
+  });
+
+  it("does not treat personal aliases as human owners", async () => {
+    const { tool, events } = setup({ allowedTargets: ["dev", "scout"] });
+
+    for (const target of ["hao", "user", "operator"]) {
+      const denied = await call(tool, { to: target, content: "status" });
+      expect(denied.error).toMatch(/Unknown message target/);
+    }
+
+    expect(events.some((event) => event.type === "message.created" && event.owner === "human:operator")).toBe(false);
   });
 
   it("rejects tool namespace targets with an actionable hint", async () => {
