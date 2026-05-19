@@ -228,10 +228,14 @@ describe("telegram reply e2e", () => {
 
     bus.emit({
       type: "message.created",
-      from: "may",
-      to: "human",
-      content: "Metric alert triage needs attention for capability.session-trace-completeness.",
-    } as any);
+      source: "agent:may",
+      owner: "human:operator",
+      data: {
+        from: "may",
+        to: "human",
+        content: "Metric alert triage needs attention for capability.session-trace-completeness.",
+      },
+    });
 
     await waitFor(() => {
       expect(sentMessages.some((m) => m.text.includes("Metric alert triage needs attention"))).toBe(true);
