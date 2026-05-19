@@ -28,6 +28,7 @@
     "agents/shared/evaluation"
   ],
   "exclude": [
-    "agents/gym"
+    "agents/gym",
+    "**/*.test.ts"
   ]
 }
