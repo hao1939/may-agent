@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-19T19:05:00Z",
+  "updatedAt": "2026-05-19T16:45:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -236,6 +236,175 @@
         "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles",
         "cli-vmsettype-virtualmachines-autoscale-enable-single-sku",
         "cli-vmsettype-virtualmachines-autoscale-update-single-sku",
+        "unknown"
+      ]
+    },
+    {
+      "id": "workloadAutoScalerProfile.keda.enabled",
+      "label": "KEDA Enabled",
+      "description": "workloadAutoScalerProfile.keda.enabled input branch for KEDA source/runtime and public API state coverage.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+      "label": "Vertical Pod Autoscaler Enabled",
+      "description": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled input branch for VPA source/runtime and public API state coverage.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "securityProfile.imageCleaner.enabled",
+      "label": "Image Cleaner Enabled",
+      "description": "securityProfile.imageCleaner.enabled input branch.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "securityProfile.imageCleaner.intervalHours",
+      "label": "Image Cleaner Interval Hours",
+      "description": "securityProfile.imageCleaner.intervalHours input branch.",
+      "domain": [
+        "168",
+        "42",
+        "unknown"
+      ]
+    },
+    {
+      "id": "securityProfile.nodeRestriction.enabled",
+      "label": "Node Restriction Enabled",
+      "description": "securityProfile.nodeRestriction.enabled input branch.",
+      "domain": [
+        "true",
+        "false",
+        "auto",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.runtime.os",
+      "label": "Workload Identity Runtime OS",
+      "description": "Runtime OS branch for workload identity projected token checks.",
+      "domain": [
+        "linux",
+        "windows",
+        "both",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.kubernetesVersion.branch",
+      "label": "OIDC Kubernetes Version Branch",
+      "description": "Kubernetes version branch for OIDC default-enabled versus explicit-enable source behavior.",
+      "domain": [
+        "gte-1.34-default-enabled",
+        "1.33-explicit-enable",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.registry.kind",
+      "label": "Bootstrap Registry Kind",
+      "description": "Registry ownership branch for bootstrapProfile Cache behavior.",
+      "domain": [
+        "aks-managed-acr",
+        "byo-acr",
+        "none",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.lifecycle.operation",
+      "label": "Bootstrap Profile Lifecycle Operation",
+      "description": "Lifecycle operation branch for Direct/Cache disable, re-enable, and BYO registry switch.",
+      "domain": [
+        "direct-disable",
+        "cache-enable",
+        "cache-reenable",
+        "switch-registry",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.controller.kind",
+      "label": "App Routing Controller Kind",
+      "description": "Controller path for App Routing default-domain behavior.",
+      "domain": [
+        "nginx-ingress",
+        "istio-gateway-api",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.tls.lifecycle",
+      "label": "App Routing TLS Lifecycle",
+      "description": "TLS lifecycle branch for initial cert, rotation, and post-upgrade validation.",
+      "domain": [
+        "initial-cert",
+        "rotation",
+        "post-upgrade",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.runtime.validation",
+      "label": "ManagedSystem Runtime Validation",
+      "description": "Runtime validation branch for taints, critical add-on placement, VAP/VAPBinding, and workload restrictions.",
+      "domain": [
+        "taints-critical-addons-vap-unschedulable",
+        "critical-addons-placement",
+        "vap-vapbinding",
+        "customer-workload-unschedulable",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.disable.operation",
+      "label": "ManagedSystem Disable Operation",
+      "description": "Disable/delete operation branch for ManagedSystem migration-back behavior.",
+      "domain": [
+        "delete-pool-migrate-to-system",
+        "unknown"
+      ]
+    },
+    {
+      "id": "agentPool.mode",
+      "label": "Agent Pool Mode",
+      "description": "Agent pool mode branch, including source-derived Machines API mode.",
+      "domain": [
+        "System",
+        "User",
+        "ManagedSystem",
+        "Machines",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nodeProvisioning.defaultMachinesPool",
+      "label": "NAP Default Machines Pool",
+      "description": "NAP-created default Machines pool existence/cleanup branch.",
+      "domain": [
+        "present",
+        "deleted-on-manual",
+        "unknown"
+      ]
+    },
+    {
+      "id": "machinesApi.operation",
+      "label": "Machines API Operation",
+      "description": "Machines API resource operation branch for handwritten Machines scenarios.",
+      "domain": [
+        "create-get-update-list-delete",
+        "unsupported-ultrassd-negative",
         "unknown"
       ]
     }
@@ -512,6 +681,396 @@
       "id": "agentPool.virtualmachines.profile.persisted",
       "label": "VirtualMachines Agent Pool Profile Persisted",
       "description": "Expected/observed nodepool state has type VirtualMachines and virtualMachinesProfile scale data.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "keda.resources.present",
+      "label": "KEDA Resources Present",
+      "description": "KEDA controller/resources are installed and ready.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "keda.resources.absentAfterDisable",
+      "label": "KEDA Resources Absent After Disable",
+      "description": "KEDA resources are removed after disabling the add-on.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "keda.workload.scaled",
+      "label": "KEDA Workload Scaled",
+      "description": "A KEDA ScaledObject changes workload replicas as expected.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "keda.survivesUpgrade",
+      "label": "KEDA Survives Upgrade",
+      "description": "KEDA resources/scaling continue after cluster upgrade.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.helmRelease.present",
+      "label": "VPA Helm Release Present",
+      "description": "VPA Helm release is installed.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.components.ready",
+      "label": "VPA Components Ready",
+      "description": "VPA pods/components are ready.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.recommendations.generated",
+      "label": "VPA Recommendations Generated",
+      "description": "VPA produces recommendations for test workloads.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.inplaceUpdate.observed",
+      "label": "VPA In-Place Update Observed",
+      "description": "VPA performs in-place update where version gates allow it.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "vpa.haAndCertBehavior.valid",
+      "label": "VPA HA And Certificate Behavior Valid",
+      "description": "VPA HA, leader election, version, and certificate renewal behavior matches source intent.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "imageCleaner.components.present",
+      "label": "Image Cleaner Components Present",
+      "description": "Image Cleaner collector/eraser components are present when enabled.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "imageCleaner.components.absentAfterDisable",
+      "label": "Image Cleaner Components Absent After Disable",
+      "description": "Image Cleaner components are removed after disable.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "imageCleaner.vulnerableImage.removed",
+      "label": "Image Cleaner Vulnerable Image Removed",
+      "description": "A vulnerable image present while disabled is removed after Image Cleaner runs.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "imageCleaner.interval.persisted",
+      "label": "Image Cleaner Interval Persisted",
+      "description": "Image Cleaner intervalHours persists through API state.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "imageCleaner.survivesUpgradeRestart",
+      "label": "Image Cleaner Survives Upgrade/Restart",
+      "description": "Image Cleaner behavior survives upgrade and restart where applicable.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nodeRestriction.disableRejected",
+      "label": "Node Restriction Disable Rejected",
+      "description": "Disabling Node Restriction is rejected.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nodeRestriction.errorShape.matches",
+      "label": "Node Restriction Error Shape Matches",
+      "description": "Disable error contains the expected Node restriction required message.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.workloadIdentity.linuxTokenProjected",
+      "label": "Workload Identity Linux Token Projected",
+      "description": "Linux pod receives projected workload identity token/env.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.workloadIdentity.windowsTokenProjected",
+      "label": "Workload Identity Windows Token Projected",
+      "description": "Windows pod receives projected workload identity token/env.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.workloadIdentity.disableReenablePersisted",
+      "label": "Workload Identity Disable/Re-enable Persisted",
+      "description": "Workload identity disable/re-enable lifecycle persists correctly.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.oidc.discoveryReachable",
+      "label": "OIDC Discovery Reachable",
+      "description": "OIDC discovery document is reachable and valid.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.oidc.jwksValid",
+      "label": "OIDC JWKS Valid",
+      "description": "JWKS endpoint/keys match expected shape.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.oidc.signingKeysRotated",
+      "label": "OIDC Signing Keys Rotated",
+      "description": "Signing key rotation behaves as expected.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "identity.oidc.documentDeletedAfterClusterDelete",
+      "label": "OIDC Document Deleted After Cluster Delete",
+      "description": "OIDC issuer documents are deleted after cluster deletion.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.imagePull.succeeds",
+      "label": "Bootstrap Profile Image Pull Succeeds",
+      "description": "Image pulls succeed through the selected bootstrap registry/cache path.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.registry.cleanedOnDisable",
+      "label": "Bootstrap Registry Cleaned On Disable",
+      "description": "AKS-managed bootstrap registry/resources are cleaned when Cache is disabled.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "bootstrapProfile.registryId.matchesBYO",
+      "label": "Bootstrap Registry ID Matches BYO",
+      "description": "Persisted registry ID matches the customer-supplied BYO ACR.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.tls.cert.hostnameValid",
+      "label": "App Routing TLS Cert Hostname Valid",
+      "description": "Managed default-domain TLS cert hostname matches the requested host.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.tls.cert.notExpired",
+      "label": "App Routing TLS Cert Not Expired",
+      "description": "Managed default-domain TLS cert is not expired.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.tls.cert.rotated",
+      "label": "App Routing TLS Cert Rotated",
+      "description": "Default-domain cert rotation is observed after source-triggered rotation path.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.traffic.postUpgradeReachable",
+      "label": "App Routing Traffic Post-Upgrade Reachable",
+      "description": "Default-domain traffic still works after upgrade.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "appRouting.istio.gatewayReachable",
+      "label": "App Routing Istio Gateway Reachable",
+      "description": "Default-domain traffic is reachable through Istio/Gateway API.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.taints.present",
+      "label": "ManagedSystem Taints Present",
+      "description": "ManagedSystem nodes have the expected CriticalAddonsOnly taints.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.criticalAddons.placed",
+      "label": "ManagedSystem Critical Add-ons Placed",
+      "description": "Critical add-ons are scheduled on ManagedSystem nodes with expected affinity.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.vap.present",
+      "label": "ManagedSystem VAP/VAPBinding Present",
+      "description": "ManagedSystem ValidatingAdmissionPolicy and bindings exist.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.customerWorkload.unschedulable",
+      "label": "ManagedSystem Customer Workload Unschedulable",
+      "description": "Customer workload cannot schedule on ManagedSystem nodes.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.disable.migrationSucceeded",
+      "label": "ManagedSystem Disable Migration Succeeded",
+      "description": "Deleting/disabling ManagedSystem migrates components/workloads back to System pool.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "machinesApi.machine.crudSucceeded",
+      "label": "Machines API CRUD Succeeded",
+      "description": "Machine create/get/update/list/delete succeeds.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "machinesApi.unsupportedUltraSSD.rejected",
+      "label": "Machines API Unsupported UltraSSD Rejected",
+      "description": "Unsupported UltraSSD SKU path returns expected rejection.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nap.defaultMachinesPool.deletedOnManual",
+      "label": "NAP Default Machines Pool Deleted On Manual",
+      "description": "NAP-created default Machines pool is deleted after switching to Manual.",
       "domain": [
         "true",
         "false",
@@ -1350,6 +1909,675 @@
           "value": "200"
         }
       ]
+    },
+    {
+      "id": "workload-autoscaler-keda-profile-state",
+      "label": "KEDA Profile Persistence",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        }
+      ],
+      "description": "Public API/CLI state persistence branch for KEDA; does not include runtime scaling."
+    },
+    {
+      "id": "workload-autoscaler-keda-runtime",
+      "label": "KEDA Runtime Scaling and Lifecycle",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.workload.scaled",
+          "value": "true"
+        }
+      ],
+      "description": "Handwritten KEDA scenario intent: add-on resources present and workload scales."
+    },
+    {
+      "id": "workload-autoscaler-keda-crud",
+      "label": "KEDA Disable/Re-enable Lifecycle",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.resources.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "description": "Handwritten KEDA CRUD intent: resources present, absent after disable, and restored after re-enable."
+    },
+    {
+      "id": "workload-autoscaler-vpa-profile-state",
+      "label": "VPA Profile Persistence",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        }
+      ],
+      "description": "Public API/CLI state persistence branch for VPA; does not include recommendations/in-place behavior."
+    },
+    {
+      "id": "workload-autoscaler-vpa-runtime",
+      "label": "VPA Runtime Recommendations and In-place Behavior",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haAndCertBehavior.valid",
+          "value": "true"
+        }
+      ],
+      "description": "Grouped source-derived VPA overlay contract across OS/arch/version variants."
+    },
+    {
+      "id": "image-cleaner-state-interval",
+      "label": "Image Cleaner State and Interval Persistence",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "42"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.interval.persisted",
+          "value": "true"
+        }
+      ],
+      "description": "Public API/CLI state branch for Image Cleaner enabled state and interval."
+    },
+    {
+      "id": "image-cleaner-runtime-lifecycle",
+      "label": "Image Cleaner Runtime Erasure Lifecycle",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "true"
+        }
+      ],
+      "description": "Handwritten Image Cleaner contract: components, disable/enable, vulnerable image erasure, upgrade/restart survival."
+    },
+    {
+      "id": "node-restriction-disable-contract",
+      "label": "Node Restriction Disable Rejection Contract",
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "true"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "true"
+        }
+      ],
+      "description": "Handwritten Node Restriction contract: auto-enabled and cannot be disabled with expected error shape."
+    },
+    {
+      "id": "workload-identity-runtime-token-projection",
+      "label": "Workload Identity Linux/Windows Runtime Token Projection",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "both"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "true"
+        }
+      ],
+      "description": "Handwritten workload identity runtime contract beyond public API persisted state."
+    },
+    {
+      "id": "oidc-issuer-default-enabled-runtime",
+      "label": "OIDC Issuer Default-enabled Runtime Contract",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "true"
+        }
+      ],
+      "description": "Kubernetes >=1.34 OIDC default-enabled source contract."
+    },
+    {
+      "id": "oidc-issuer-v133-explicit-enable-runtime",
+      "label": "OIDC Issuer v1.33 Explicit-enable Runtime Contract",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "1.33-explicit-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "true"
+        }
+      ],
+      "description": "Kubernetes 1.33 explicit-enable OIDC source contract."
+    },
+    {
+      "id": "bootstrap-profile-managed-acr-lifecycle",
+      "label": "Bootstrap Profile Managed ACR Cache Lifecycle",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.registry.kind",
+          "value": "aks-managed-acr"
+        },
+        {
+          "variable": "bootstrapProfile.lifecycle.operation",
+          "value": "cache-reenable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.imagePull.succeeds",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.registry.cleanedOnDisable",
+          "value": "true"
+        }
+      ],
+      "description": "Managed ACR Cache lifecycle: enable, image pull, Direct disable cleanup, re-enable."
+    },
+    {
+      "id": "bootstrap-profile-byo-acr-lifecycle",
+      "label": "Bootstrap Profile BYO ACR Cache Lifecycle",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.registry.kind",
+          "value": "byo-acr"
+        },
+        {
+          "variable": "bootstrapProfile.lifecycle.operation",
+          "value": "switch-registry"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.registryId.matchesBYO",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.imagePull.succeeds",
+          "value": "true"
+        }
+      ],
+      "description": "BYO ACR Cache lifecycle and registry switch source contract."
+    },
+    {
+      "id": "app-routing-default-domain-istio",
+      "label": "App Routing Default-domain Istio Gateway API",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        },
+        {
+          "variable": "appRouting.controller.kind",
+          "value": "istio-gateway-api"
+        },
+        {
+          "variable": "appRouting.tls.lifecycle",
+          "value": "initial-cert"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        },
+        {
+          "variable": "tls.secret.provisioned",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.istio.gatewayReachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.http.status",
+          "value": "200"
+        }
+      ],
+      "description": "Handwritten Istio/Gateway API default-domain TLS traffic branch."
+    },
+    {
+      "id": "app-routing-default-domain-tls-lifecycle",
+      "label": "App Routing Default-domain TLS Certificate Lifecycle",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        },
+        {
+          "variable": "appRouting.controller.kind",
+          "value": "nginx-ingress"
+        },
+        {
+          "variable": "appRouting.tls.lifecycle",
+          "value": "rotation"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "tls.secret.provisioned",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.tls.cert.hostnameValid",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.tls.cert.notExpired",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.tls.cert.rotated",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.traffic.postUpgradeReachable",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived TLS certificate quality, rotation, and post-upgrade App Routing contract."
+    },
+    {
+      "id": "managedsystem-runtime-restrictions",
+      "label": "ManagedSystem Runtime Restrictions",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.runtime.validation",
+          "value": "taints-critical-addons-vap-unschedulable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "managedSystem.taints.present",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.criticalAddons.placed",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.vap.present",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.customerWorkload.unschedulable",
+          "value": "true"
+        }
+      ],
+      "description": "ManagedSystem source runtime contract beyond ARM add/delete state."
+    },
+    {
+      "id": "managedsystem-disable-migration",
+      "label": "ManagedSystem Disable Migration",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.disable.operation",
+          "value": "delete-pool-migrate-to-system"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.disable.migrationSucceeded",
+          "value": "true"
+        }
+      ],
+      "description": "ManagedSystem delete/disable source contract including migration back to System pool."
+    },
+    {
+      "id": "virtualmachines-mixed-sku-rest-scale",
+      "label": "VirtualMachines Mixed-SKU REST Scale Transitions",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "description": "Source intent for mixed-SKU scale transitions; currently approximated by CLI/manual profile evidence."
+    },
+    {
+      "id": "virtualmachines-autoscaled-vms-crud",
+      "label": "VirtualMachines Autoscaled VMs CRUD and Upgrade",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-autoscale-update-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "description": "Source intent for autoscale profile updates and upgrade; current evidence covers autoscale update only."
+    },
+    {
+      "id": "machines-agentpool-api-crud",
+      "label": "Machines AgentPool and Machines API CRUD",
+      "inputPath": [
+        {
+          "variable": "agentPool.mode",
+          "value": "Machines"
+        },
+        {
+          "variable": "machinesApi.operation",
+          "value": "create-get-update-list-delete"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "machinesApi.machine.crudSucceeded",
+          "value": "true"
+        },
+        {
+          "variable": "machinesApi.unsupportedUltraSSD.rejected",
+          "value": "true"
+        }
+      ],
+      "description": "Handwritten Machines-mode agent pool and Machines API CRUD/negative contract."
+    },
+    {
+      "id": "machines-agentpool-nap-default-pool-cleanup",
+      "label": "Machines AgentPool NAP Default Pool Cleanup",
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultMachinesPool",
+          "value": "present"
+        },
+        {
+          "variable": "agentPool.mode",
+          "value": "Machines"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "machinesApi.machine.crudSucceeded",
+          "value": "true"
+        },
+        {
+          "variable": "nap.defaultMachinesPool.deletedOnManual",
+          "value": "true"
+        }
+      ],
+      "description": "Source contract linking NAP Auto mode to default Machines pool CRUD and cleanup on Manual."
     }
   ],
   "testCases": [
@@ -3136,7 +4364,7 @@
         }
       ],
       "result": "pass",
-      "notes": "Manual staging HTTP probe on approuting69: DefaultDomainCertificate API resource existed but the script did not create the TLS CR due to grep matching; non-TLS Ingress for host test.6a0c9c7d819e580001b071b9.eastus2.aksapp.io received address 20.75.57.85, DNS resolved, and curl returned HTTP 200. This validates default-domain HTTP reachability, not TLS-secret provisioning."
+      "notes": "Pass is HTTP/DNS only for non-TLS Ingress; it must not be counted as TLS/certificate success."
     },
     {
       "id": "AppRouting_DefaultDomain_TLS_Secret_Staging",
@@ -3230,7 +4458,829 @@
         "kind": "tls-secret",
         "summary": "DefaultDomainCertificate CR was accepted but never became Available and the requested default-domain-tls secret was not created; HTTPS 200 used nginx fake self-signed fallback certificate."
       },
-      "notes": "Staging cluster approuting70tls created with App Routing default domain. kubectl apply of DefaultDomainCertificate default/default-domain-cert targeting secret default-domain-tls exited 0, but repeated kubectl wait/get secret checks for about 28 minutes returned condition timeout and secrets NotFound. TLS Ingress on test.<domain> resolved and curl -vk returned 200, but the served certificate was Kubernetes Ingress Controller Fake Certificate with SSL_VERIFY=18, so this is route reachability with fallback TLS, not successful DefaultDomainCertificate provisioning."
+      "notes": "Failure is specifically TLS-secret provisioning; HTTP 200 with curl -k reached backend via nginx fake fallback certificate and is not managed TLS success."
+    },
+    {
+      "id": "KEDA_ProfilePersistence_Staging",
+      "featureId": "workload-autoscaler-keda-profile-state",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration61-workload-autoscaler-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        }
+      ],
+      "notes": "Partial evidence only: profile persistence, not KEDA resources or scaling."
+    },
+    {
+      "id": "Scenario_Keda",
+      "featureId": "workload-autoscaler-keda-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.workload.scaled",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-derived intended contract; current staging evidence covers only profile persistence."
+    },
+    {
+      "id": "Scenario_Keda_CRUD",
+      "featureId": "workload-autoscaler-keda-crud",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.keda.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.resources.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only until a disable/re-enable run is linked."
+    },
+    {
+      "id": "VPA_ProfilePersistence_Staging",
+      "featureId": "workload-autoscaler-vpa-profile-state",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration61-workload-autoscaler-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        }
+      ],
+      "notes": "Partial evidence only: profile persistence, not VPA Helm/components/recommendations."
+    },
+    {
+      "id": "Scenario_Overlay_VPA_Runtime",
+      "featureId": "workload-autoscaler-vpa-runtime",
+      "inputPath": [
+        {
+          "variable": "workloadAutoScalerProfile.verticalPodAutoscaler.enabled",
+          "value": "true"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "vpa.helmRelease.present",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.components.ready",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.recommendations.generated",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.inplaceUpdate.observed",
+          "value": "true"
+        },
+        {
+          "variable": "vpa.haAndCertBehavior.valid",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Representative grouped test case for Scenario_Overlay_VPA_* handwritten coverage."
+    },
+    {
+      "id": "ImageCleaner_StateInterval_Staging",
+      "featureId": "image-cleaner-state-interval",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "42"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.interval.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration62-security-profile-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.interval.persisted",
+          "value": "true"
+        }
+      ],
+      "notes": "Partial evidence only: state/interval persistence, not component or erasure behavior."
+    },
+    {
+      "id": "Scenario_ImageCleaner",
+      "featureId": "image-cleaner-runtime-lifecycle",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only runtime contract; staging evidence is partial state only."
+    },
+    {
+      "id": "Node_Restriction",
+      "featureId": "node-restriction-disable-contract",
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "true"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-derived intent conflicts with iteration62 staging path; needs source/spec investigation before another probe."
+    },
+    {
+      "id": "NodeRestriction_RESTPatch_Staging",
+      "featureId": "node-restriction-disable-contract",
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "true"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "true"
+        }
+      ],
+      "result": "fail",
+      "evidence": [
+        "iteration62-security-profile-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "false"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "false"
+        }
+      ],
+      "notes": "Contradictory partial evidence: attempted direct ARM PATCH did not persist nodeRestriction and exact CLI flag was absent; may be wrong API/version/shape/precondition."
+    },
+    {
+      "id": "Scenario_WorkloadIdentity",
+      "featureId": "workload-identity-runtime-token-projection",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "both"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.windowsTokenProjected",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only runtime contract; iteration60 covers only API state."
+    },
+    {
+      "id": "Scenario_OIDC_Issuer",
+      "featureId": "oidc-issuer-default-enabled-runtime",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "gte-1.34-default-enabled"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only default-by-version/runtime/deletion contract."
+    },
+    {
+      "id": "Scenario_OIDC_Issuer_v133",
+      "featureId": "oidc-issuer-v133-explicit-enable-runtime",
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.kubernetesVersion.branch",
+          "value": "1.33-explicit-enable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.oidcIssuer.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.discoveryReachable",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.jwksValid",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.signingKeysRotated",
+          "value": "true"
+        },
+        {
+          "variable": "identity.oidc.documentDeletedAfterClusterDelete",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only explicit-enable/runtime/deletion contract; iteration60 covers approximate API state only."
+    },
+    {
+      "id": "Scenario_NetworkIsolatedCluster_Bootstrap_Profile_Managed_ACR",
+      "featureId": "bootstrap-profile-managed-acr-lifecycle",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.registry.kind",
+          "value": "aks-managed-acr"
+        },
+        {
+          "variable": "bootstrapProfile.lifecycle.operation",
+          "value": "cache-reenable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.containerRegistryId.present",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.imagePull.succeeds",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.registry.cleanedOnDisable",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source lifecycle extends iteration63 state-only Cache evidence."
+    },
+    {
+      "id": "Scenario_NetworkIsolatedCluster_Bootstrap_Profile_BYO_ACR",
+      "featureId": "bootstrap-profile-byo-acr-lifecycle",
+      "inputPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource",
+          "value": "Cache"
+        },
+        {
+          "variable": "bootstrapProfile.registry.kind",
+          "value": "byo-acr"
+        },
+        {
+          "variable": "bootstrapProfile.lifecycle.operation",
+          "value": "switch-registry"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "bootstrapProfile.artifactSource.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.registryId.matchesBYO",
+          "value": "true"
+        },
+        {
+          "variable": "bootstrapProfile.imagePull.succeeds",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only BYO ACR branch; not covered by iteration63 auto-registry path."
+    },
+    {
+      "id": "Scenario_Traffic_AppRouting_DefaultDomain_Istio_HelloWorld",
+      "featureId": "app-routing-default-domain-istio",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        },
+        {
+          "variable": "appRouting.controller.kind",
+          "value": "istio-gateway-api"
+        },
+        {
+          "variable": "appRouting.tls.lifecycle",
+          "value": "initial-cert"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "appRouting.webAppRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.defaultDomain.configured",
+          "value": "true"
+        },
+        {
+          "variable": "tls.secret.provisioned",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.istio.gatewayReachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.route.reachable",
+          "value": "true"
+        },
+        {
+          "variable": "traffic.http.status",
+          "value": "200"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only branch; current App Routing staging evidence is nginx/Ingress HTTP or failed TLS-secret provisioning, not Istio/Gateway."
+    },
+    {
+      "id": "Scenario_Traffic_AppRouting_DefaultDomain_TLS_Lifecycle",
+      "featureId": "app-routing-default-domain-tls-lifecycle",
+      "inputPath": [
+        {
+          "variable": "addon.appRouting.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.route.kind",
+          "value": "default-domain"
+        },
+        {
+          "variable": "appRouting.controller.kind",
+          "value": "nginx-ingress"
+        },
+        {
+          "variable": "appRouting.tls.lifecycle",
+          "value": "rotation"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "tls.secret.provisioned",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.tls.cert.hostnameValid",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.tls.cert.notExpired",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.tls.cert.rotated",
+          "value": "true"
+        },
+        {
+          "variable": "appRouting.traffic.postUpgradeReachable",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-derived extension of Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld; iteration70 proves initial TLS secret failure, not lifecycle success."
+    },
+    {
+      "id": "Scenario_ManagedSystem_AgentPool",
+      "featureId": "managedsystem-runtime-restrictions",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.runtime.validation",
+          "value": "taints-critical-addons-vap-unschedulable"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "managedSystem.taints.present",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.criticalAddons.placed",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.vap.present",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.customerWorkload.unschedulable",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only create-time/runtime restriction branch; standalone add-existing pass covers a subset of runtime add-on placement."
+    },
+    {
+      "id": "Scenario_ManagedSystemPool_Disable",
+      "featureId": "managedsystem-disable-migration",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.disable.operation",
+          "value": "delete-pool-migrate-to-system"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.ready",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.managedsystem.deleted",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.disable.migrationSucceeded",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Current staging delete evidence proves NotFound/delete only, not migration-back."
+    },
+    {
+      "id": "Scenario_Mixed_SKU_Scale",
+      "featureId": "virtualmachines-mixed-sku-rest-scale",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-manual-scale-multiple-single-sku-profiles"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source intent includes repeated REST scale transitions beyond iteration66 add/delete proof."
+    },
+    {
+      "id": "Scenario_Autoscaled_VMs_CRUD",
+      "featureId": "virtualmachines-autoscaled-vms-crud",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "virtualmachines"
+        },
+        {
+          "variable": "agentPool.operation",
+          "value": "update-existing-pool"
+        },
+        {
+          "variable": "agentPool.request.shape",
+          "value": "cli-vmsettype-virtualmachines-autoscale-update-single-sku"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.profile.persisted",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source intent includes upgrade after scale updates; iteration65 covers profile update."
+    },
+    {
+      "id": "Scenario_MachinesAgentPool",
+      "featureId": "machines-agentpool-api-crud",
+      "inputPath": [
+        {
+          "variable": "agentPool.mode",
+          "value": "Machines"
+        },
+        {
+          "variable": "machinesApi.operation",
+          "value": "create-get-update-list-delete"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "agentPool.virtualmachines.ready",
+          "value": "true"
+        },
+        {
+          "variable": "machinesApi.machine.crudSucceeded",
+          "value": "true"
+        },
+        {
+          "variable": "machinesApi.unsupportedUltraSSD.rejected",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only Machines API contract; not covered by VirtualMachines CLI pool probes."
+    },
+    {
+      "id": "Scenario_MachinesAgentPoolNAPEnabled",
+      "featureId": "machines-agentpool-nap-default-pool-cleanup",
+      "inputPath": [
+        {
+          "variable": "nodeProvisioning.mode",
+          "value": "Auto"
+        },
+        {
+          "variable": "nodeProvisioning.defaultMachinesPool",
+          "value": "present"
+        },
+        {
+          "variable": "agentPool.mode",
+          "value": "Machines"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeProvisioning.profile.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "machinesApi.machine.crudSucceeded",
+          "value": "true"
+        },
+        {
+          "variable": "nap.defaultMachinesPool.deletedOnManual",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Current NAP evidence covers profile transitions only, not default Machines pool CRUD/cleanup."
     }
   ],
   "judgments": [
@@ -5321,13 +7371,31 @@
       "id": "iteration69-app-routing-defaultdomain-traffic-staging",
       "kind": "artifact",
       "path": "outputs/iteration69-app-routing-defaultdomain-traffic-staging.md",
-      "summary": "Fresh staging cluster App Routing default-domain HTTP traffic probe: enable --enable-default-domain persisted a generated aksapp.io domain; workload/service/Ingress became ready; DNS resolved test.<domain> to 20.75.57.85; curl http://test.<domain>/ returned HTTP 200 from hello-world; cleanup delete accepted."
+      "summary": "Staging evidence for default-domain HTTP/DNS only: non-TLS Ingress resolved to App Routing LB and returned HTTP 200; not TLS/certificate success."
     },
     {
       "id": "iteration70-app-routing-defaultdomain-tls-staging",
       "kind": "artifact",
       "path": "outputs/iteration70-app-routing-defaultdomain-tls-staging.md",
-      "summary": "Fresh staging App Routing default-domain TLS follow-up: DefaultDomainCertificate CRD existed and CR creation succeeded, but over 60 polls (~28 minutes) the CR never reached Available and secret default-domain-tls was never created; a TLS Ingress still returned HTTPS 200 only with the nginx fake self-signed certificate, so TLS secret provisioning failed while route reachability remained functional."
+      "summary": "Staging failure evidence for DefaultDomainCertificate/TLS-secret provisioning: CR created but TLS secret remained NotFound; HTTPS backend reachability used nginx fake fallback cert and is not managed TLS success."
+    },
+    {
+      "id": "iteration61-workload-autoscaler-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration61-workload-autoscaler-staging.md",
+      "summary": "Partial staging evidence: public CLI --enable-keda/--enable-vpa succeeds and persists workloadAutoScalerProfile state only; it does not prove runtime KEDA scaling or VPA recommendations."
+    },
+    {
+      "id": "iteration62-security-profile-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration62-security-profile-staging.md",
+      "summary": "Partial/contradictory staging evidence: Image Cleaner state and interval persist; Node Restriction CLI flag is absent and direct REST PATCH did not persist nodeRestriction. It does not prove Image Cleaner erasure runtime."
+    },
+    {
+      "id": "e2ev3-handwritten-coverage-inventory",
+      "kind": "source",
+      "path": "outputs/e2ev3-handwritten-coverage-inventory.md",
+      "summary": "Source-derived inventory of handwritten e2ev3 scenario intent, input paths, expectation paths, and partial evidence gaps; not execution evidence by itself."
     }
   ]
 }
