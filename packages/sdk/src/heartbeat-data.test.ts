@@ -45,7 +45,7 @@ function makeHeartbeatCtx(agentsRoot: string): WorkflowContext & { events: any[]
 }
 
 describe("genericHeartbeat events", () => {
-  it("emits canonical workflow.step_started envelope before the heartbeat session", async () => {
+  it("emits canonical heartbeat.step_started envelope before the heartbeat session", async () => {
     const appRoot = mkdtempSync(join(tmpdir(), "heartbeat-events-"));
     const agentsRoot = join(appRoot, "agents");
     const ctx = makeHeartbeatCtx(agentsRoot);
@@ -58,7 +58,7 @@ describe("genericHeartbeat events", () => {
       expect(result.type).toBe("done");
       expect(ctx.runAgentCalls).toEqual(["builder"]);
       expect(ctx.events).toContainEqual({
-        type: "workflow.step_started",
+        type: "heartbeat.step_started",
         source: "agent:builder",
         owner: "agent:builder",
         data: {
