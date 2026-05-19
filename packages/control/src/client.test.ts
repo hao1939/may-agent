@@ -1,6 +1,6 @@
 import { Duplex } from "node:stream";
 import { describe, expect, it } from "bun:test";
-import { daemonSocketPath, sendDaemonEvent, type SocketEndpoint } from "./client.js";
+import { daemonSocketPath, emitDaemonEvent, sendDaemonEvent, type SocketEndpoint } from "./client.js";
 
 function okEndpoint(): SocketEndpoint {
   return () => {
@@ -31,6 +31,24 @@ function failingEndpoint(): SocketEndpoint {
   };
 }
 
+function captureEndpoint(writes: string[]): SocketEndpoint {
+  return () => {
+    const stream = new Duplex({
+      read() {},
+      write(chunk, _encoding, callback) {
+        writes.push(String(chunk));
+        const frame = JSON.parse(String(chunk));
+        queueMicrotask(() => {
+          stream.emit("data", Buffer.from(JSON.stringify({ type: "ok", command: frame.type }) + "\n"));
+        });
+        callback();
+      },
+    });
+    queueMicrotask(() => stream.emit("connect"));
+    return stream;
+  };
+}
+
 describe("daemonSocketPath", () => {
   it("uses the convention instance/interface-agent socket path", () => {
     expect(daemonSocketPath("/state", { instance: "background", interfaceAgent: "may" }))
@@ -51,5 +69,68 @@ describe("sendDaemonEvent", () => {
   it("fails clearly when the socket cannot be connected", async () => {
     await expect(sendDaemonEvent(failingEndpoint(), { type: "trigger.metrics-snapshot" }))
       .rejects.toThrow("connection refused");
+  });
+});
+
+describe("emitDaemonEvent", () => {
+  it("wraps dot-named event payloads in a canonical envelope", async () => {
+    const writes: string[] = [];
+
+    await expect(emitDaemonEvent(captureEndpoint(writes), "metric.breach", {
+      source: "metrics-snapshot",
+      owner: "dev",
+      metricId: "system.health",
+      message: "check",
+    })).resolves.toMatchObject({ type: "ok", command: "metric.breach" });
+
+    expect(JSON.parse(writes[0] ?? "")).toEqual({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "agent:dev",
+      data: {
+        metricId: "system.health",
+        message: "check",
+      },
+    });
+  });
+
+  it("preserves caller-built canonical envelopes", async () => {
+    const writes: string[] = [];
+
+    await expect(emitDaemonEvent(captureEndpoint(writes), "message.created", {
+      source: "agent:dev",
+      owner: "human:operator",
+      urgency: "high",
+      data: {
+        from: "dev",
+        to: "human",
+        content: "Need approval",
+      },
+    })).resolves.toMatchObject({ type: "ok", command: "message.created" });
+
+    expect(JSON.parse(writes[0] ?? "")).toEqual({
+      type: "message.created",
+      source: "agent:dev",
+      owner: "human:operator",
+      urgency: "high",
+      data: {
+        from: "dev",
+        to: "human",
+        content: "Need approval",
+      },
+    });
+  });
+
+  it("keeps socket command shortcuts flat", async () => {
+    const writes: string[] = [];
+
+    await expect(emitDaemonEvent(captureEndpoint(writes), "trigger.metrics-snapshot", {
+      source: "control",
+    })).resolves.toMatchObject({ type: "ok", command: "trigger.metrics-snapshot" });
+
+    expect(JSON.parse(writes[0] ?? "")).toEqual({
+      type: "trigger.metrics-snapshot",
+      source: "control",
+    });
   });
 });
