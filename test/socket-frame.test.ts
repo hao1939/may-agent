@@ -86,53 +86,62 @@ describe("socket frame normalization", () => {
     });
   });
 
-  it("unwraps emit frames without reshaping domain events", () => {
-    expect(normalizeSocketFrame({ type: "emit", event: "trigger.metrics-snapshot", forced: true })).toEqual({
+  it("passes direct command/event frames through without aliasing fields", () => {
+    expect(normalizeSocketFrame({ type: "trigger.metrics-snapshot", forced: true })).toEqual({
       kind: "event",
-      command: "emit",
+      command: "trigger.metrics-snapshot",
       event: { type: "trigger.metrics-snapshot", forced: true },
     });
-    expect(normalizeSocketFrame({
-      type: "emit",
-      event: "heartbeat.trigger",
-      source: "socket",
-      owner: "agent:dev",
-      data: { agent: "dev" },
-    })).toEqual({
+    expect(normalizeSocketFrame({ type: "input", message: "hello", source: "socket" })).toEqual({
       kind: "event",
-      command: "emit",
-      event: { type: "heartbeat.trigger", source: "socket", owner: "agent:dev", data: { agent: "dev" } },
+      command: "input",
+      event: { type: "input", message: "hello", source: "socket" },
     });
-    expect(normalizeSocketFrame({ type: "emit", event: "heartbeat.trigger", agent: "dev" })).toEqual({
-      kind: "error",
-      command: "emit",
-      message: "Canonical event 'heartbeat.trigger' requires object field 'data'",
+    expect(normalizeSocketFrame({ type: "fork", agent: "dev", task: "investigate", opts: { kind: "job", source: "web-ui" } })).toEqual({
+      kind: "event",
+      command: "fork",
+      event: { type: "fork", agent: "dev", task: "investigate", opts: { kind: "job", source: "web-ui" } },
     });
   });
 
-  it("normalizes input frames with source and content aliases", () => {
+  it("does not alias content/message fields at the socket boundary", () => {
     expect(normalizeSocketFrame({ type: "input", content: "hello" })).toEqual({
       kind: "event",
       command: "input",
-      event: { type: "input", content: "hello", source: "socket", message: "hello" },
+      event: { type: "input", content: "hello" },
+    });
+    expect(normalizeSocketFrame({ type: "fork", agent: "dev", message: "investigate" })).toEqual({
+      kind: "event",
+      command: "fork",
+      event: { type: "fork", agent: "dev", message: "investigate" },
+    });
+    expect(normalizeSocketFrame({ type: "message", from: "may", to: "dev", content: "hello" })).toEqual({
+      kind: "event",
+      command: "message",
+      event: { type: "message", from: "may", to: "dev", content: "hello" },
     });
   });
 
-  it("normalizes backwards-compatible command aliases at the boundary", () => {
+  it("rejects legacy socket wrapper and command aliases", () => {
+    expect(normalizeSocketFrame({ type: "emit", event: "trigger.metrics-snapshot", forced: true })).toEqual({
+      kind: "error",
+      command: "emit",
+      message: "Unsupported legacy socket frame type: emit",
+    });
     expect(normalizeSocketFrame({ type: "close" })).toEqual({
-      kind: "event",
+      kind: "error",
       command: "close",
-      event: { type: "shutdown" },
+      message: "Unsupported legacy socket frame type: close",
     });
     expect(normalizeSocketFrame({ type: "reload_agents" })).toEqual({
-      kind: "event",
+      kind: "error",
       command: "reload_agents",
-      event: { type: "reload" },
+      message: "Unsupported legacy socket frame type: reload_agents",
     });
     expect(normalizeSocketFrame({ type: "cancel_task" })).toEqual({
-      kind: "event",
+      kind: "error",
       command: "cancel_task",
-      event: { type: "cancel_all" },
+      message: "Unsupported legacy socket frame type: cancel_task",
     });
   });
 
