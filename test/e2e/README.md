@@ -49,12 +49,15 @@ ls /tmp/may-e2e-*/
 | `e3a-task-driven-project-loop` | Task-driven project loop (lite); dispatch → dependency unblock → owner judgment routing. SDK project-task helpers | ✅ |
 | `e3b-workflow-discovery` | Agent-scoped workflow file resolution + dispatch + `workflow_runs` persistence; `workflow-authoring.md § Workflow Location` | ✅ |
 | `e4-metric-lifecycle` | `sdk.metrics.define`/`record`/`evaluate` → breach event → `metric_alerts` row → recovery; `metric-alerts.md`, `metrics.md § Pipeline` | ✅ |
+| `e5-agent-reload` | `reload` socket command → new agent on disk picked up, updated agent reported; `user-guide.md § Reload`, `agent-convention.md` | ✅ |
+| `e6-agent-call-chain` | `ctx.sdk.runAgent(target, task)` from a handler → child session with `kind=call`+`source=callAgent`, completion event observed; `sdk-quickstart.md § sdk.runAgent` | ✅ |
 | `e7-escalation-roundtrip` | `escalation.created` → `escalation.resolved` → resume_attempted/resume_failed; `needs_human` short-circuit; `sdk-quickstart.md § External Escalate`, `escalation.md` | ✅ |
 | `control-routing-e2e` | In-process socket frame routing; canonical `message.created` persistence/rejection plus legacy `fork` command translation | ✅ |
 | `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
 
-E5 (agent reload) and E6 (agent call chain) are not yet implemented — see
-roadmap in `projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
+E8 (telegram UI exercising) and full-LLM variants of E3a/E6 are not yet
+implemented — see roadmap in
+`projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
 
 ## Library
 
