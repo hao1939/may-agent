@@ -37,6 +37,33 @@ type CronExecutor = "handler" | "agent";
 /** Callback when a job fires (for notifications). */
 type CronJobCallback = (entry: CronEntry, executor: CronExecutor) => void;
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
+function ownerAgent(owner: unknown): string | undefined {
+  if (typeof owner !== "string") return undefined;
+  const value = owner.trim();
+  if (value.startsWith("agent:")) return value.slice("agent:".length);
+  return value || undefined;
+}
+
+function heartbeatTriggerAgent(event: unknown): string | undefined {
+  const record = asRecord(event);
+  const nested = asRecord(record?.data);
+  const fromData = typeof nested?.agent === "string" ? nested.agent.trim() : "";
+  return fromData || ownerAgent(record?.owner) || ownerAgent(record?.agent);
+}
+
+function entryAgent(entry: CronEntry): string | undefined {
+  const fromConfig = typeof entry.handlerConfig?.agent === "string" ? entry.handlerConfig.agent.trim() : "";
+  const fromEntry = typeof entry.agent === "string" ? entry.agent.trim() : "";
+  if (fromConfig || fromEntry) return fromConfig || fromEntry;
+  if (entry.name === "heartbeat") return "may";
+  if (entry.name.startsWith("heartbeat-")) return entry.name.slice("heartbeat-".length);
+  return undefined;
+}
+
 // ── Cron class ────────────────────────────────────────────────────────
 
 export class Cron {
@@ -240,7 +267,10 @@ export class Cron {
     const subscribers = this.eventSubscriptions.get(eventType);
     if (!subscribers?.size) return 0;
     let triggered = 0;
+    const targetHeartbeatAgent = eventType === "heartbeat.trigger" ? heartbeatTriggerAgent(data) : undefined;
     for (const entryName of subscribers) {
+      const entry = this.entries.find((candidate) => candidate.name === entryName);
+      if (targetHeartbeatAgent && entry && entryAgent(entry) !== targetHeartbeatAgent) continue;
       // Dedup: skip if triggered < 5s ago
       const last = this.lastEventTrigger.get(entryName) || 0;
       if (Date.now() - last < 5000) continue;

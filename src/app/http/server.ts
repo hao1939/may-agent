@@ -184,6 +184,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return { owner, name, projectId: `${owner}/${name}` };
   }
 
+  function eventOwner(owner: string): string {
+    const value = owner.trim();
+    if (!value) return "agent:may";
+    if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+    if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+    return `agent:${value}`;
+  }
+
   function projectNameFromPath(path: string): string {
     return parseProjectIdentity(path).name;
   }
@@ -2031,15 +2039,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectFile = resolveProjectFile(path);
       if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
       const projectContent = readFileSync(projectFile, "utf-8");
-      const { projectId } = parseProjectIdentity(path, projectContent);
+      const { projectId, owner } = parseProjectIdentity(path, projectContent);
       const sentAt = Date.now();
 
       const trigger = await sendDaemonFrame({
         type: "project.comment.created",
         source: "web-ui",
-        projectPath: path,
-        comment,
-        author: "hao",
+        owner: eventOwner(owner),
+        data: {
+          projectPath: path,
+          comment,
+          author: "hao",
+        },
       });
       if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
 
@@ -2497,8 +2508,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     } catch { /* body optional */ }
     const result = await sendDaemonFrame({
       type: "heartbeat.trigger",
-      agent: agentName,
       source: actor,
+      owner: eventOwner(agentName),
+      data: { agent: agentName },
     });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, triggeredAt: Date.now() });
@@ -2512,16 +2524,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json({ error: "threshold (finite number) required" }, 400);
     }
     const db = _db();
-    const existing = db.prepare("SELECT id, threshold FROM metrics WHERE id = ?").get(metricId) as { id: string; threshold: number | null } | undefined;
+    const existing = db.prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as { id: string; owner?: string | null; threshold: number | null } | undefined;
     if (!existing) return json({ error: "metric not found" }, 404);
     db.prepare("UPDATE metrics SET threshold = ?, updated_at = ? WHERE id = ?").run(body.threshold, Date.now(), metricId);
     // Best-effort emit so subscribers see the change.
     void sendDaemonFrame({
       type: "metric.threshold_changed",
-      metric: metricId,
-      from: existing.threshold,
-      to: body.threshold,
       source: "web-ui",
+      owner: eventOwner(existing.owner ?? "may"),
+      data: {
+        metricId,
+        from: existing.threshold,
+        to: body.threshold,
+      },
     });
     return json({ ok: true, metric: metricId, from: existing.threshold, to: body.threshold });
   }
@@ -2532,16 +2547,24 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     let body: { reason?: string } = {};
     try { body = await req.json() as { reason?: string }; } catch { /* body optional */ }
     const db = _db();
-    const existing = db.prepare("SELECT id, metric_id, resolved_at FROM metric_alerts WHERE id = ?").get(id) as { id: number; metric_id: string; resolved_at: number | null } | undefined;
+    const existing = db.prepare(
+      `SELECT ma.id, ma.metric_id, ma.resolved_at, m.owner
+       FROM metric_alerts ma
+       LEFT JOIN metrics m ON m.id = ma.metric_id
+       WHERE ma.id = ?`,
+    ).get(id) as { id: number; metric_id: string; owner?: string | null; resolved_at: number | null } | undefined;
     if (!existing) return json({ error: "alert not found" }, 404);
     if (existing.resolved_at !== null) return json({ ok: true, alreadyResolved: true });
     db.prepare("UPDATE metric_alerts SET resolved_at = ? WHERE id = ?").run(Date.now(), id);
     void sendDaemonFrame({
       type: "metric.alert_resolved",
-      metric: existing.metric_id,
-      alertId: id,
       source: "web-ui",
-      reason: body.reason ?? null,
+      owner: eventOwner(existing.owner ?? "may"),
+      data: {
+        metricId: existing.metric_id,
+        alertId: id,
+        reason: body.reason ?? null,
+      },
     });
     return json({ ok: true, alertId: id });
   }

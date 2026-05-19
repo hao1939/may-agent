@@ -145,7 +145,7 @@ describe("Telegram Reply Metric", () => {
   it("tracks enriched reply as event", () => {
     // Simulate what the bot does when enriching a reply:
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)")
-      .run("telegram.reply", "telegram", "may", JSON.stringify({ enriched: true, originalMsgId: 12345 }), Date.now());
+      .run("telegram.reply", "telegram", "agent:may", JSON.stringify({ enriched: true, originalMsgId: 12345 }), Date.now());
 
     const count = (db.prepare("SELECT COUNT(*) as c FROM events WHERE event_type = 'telegram.reply'").get() as any).c;
     expect(count).toBe(1);
@@ -156,11 +156,11 @@ describe("Telegram Reply Metric", () => {
     // 3 enriched replies
     for (let i = 0; i < 3; i++) {
       db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)")
-        .run("telegram.reply", "telegram", "may", JSON.stringify({ enriched: true }), now - i * 60000);
+        .run("telegram.reply", "telegram", "agent:may", JSON.stringify({ enriched: true }), now - i * 60000);
     }
     // 1 non-enriched reply (no context found)
     db.prepare("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)")
-      .run("telegram.reply", "telegram", "may", JSON.stringify({ enriched: false }), now - 300000);
+      .run("telegram.reply", "telegram", "agent:may", JSON.stringify({ enriched: false }), now - 300000);
 
     const total = (db.prepare("SELECT COUNT(*) as c FROM events WHERE event_type = 'telegram.reply'").get() as any).c;
     const enriched = (db.prepare("SELECT COUNT(*) as c FROM events WHERE event_type = 'telegram.reply' AND json_extract(data, '$.enriched') = 1").get() as any).c;
