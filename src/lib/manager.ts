@@ -106,6 +106,14 @@ interface ActiveSession {
   resumeMessages?: AgentMessage[];
 }
 
+function eventOwner(owner: string | undefined): string {
+  const value = owner?.trim();
+  if (!value) return "agent:may";
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  return `agent:${value}`;
+}
+
 type DispatchDedupDb = {
   records?: Record<string, { agent?: string; lastStatus?: string; taskPrefix?: string }>;
   version?: number;
@@ -275,16 +283,18 @@ export class SubagentManager {
     this.bus?.emit({
       type: "session.resume_failed",
       source: "manager",
-      owner: meta?.agent ?? "may",
-      sessionId,
-      agent: meta?.agent,
-      workflowRunId: meta?.workflowRunId,
-      projectId: meta?.projectId,
-      reason,
-      category,
-      recoverable,
-      nextAction: category === "already_active" ? "resume" : recoverable ? "resume" : "escalate",
+      owner: eventOwner(meta?.agent),
       timestamp: Date.now(),
+      data: {
+        sessionId,
+        agent: meta?.agent,
+        workflowRunId: meta?.workflowRunId,
+        projectId: meta?.projectId,
+        reason,
+        category,
+        recoverable,
+        nextAction: category === "already_active" ? "resume" : recoverable ? "resume" : "escalate",
+      },
     });
   }
 
@@ -1252,17 +1262,19 @@ export class SubagentManager {
       if (result) {
         this.bus?.emit({
           type: "guard.triggered",
-          owner: agentName,
           source: "tool",
-          workflowRunId: opts?.workflowRunId,
-          projectId: opts?.projectId,
-          parentSessionId: opts?.parentSessionId,
-          sessionId,
-          guard: "beforeToolCall",
-          demandType: result.block ? "block" : "warn",
-          action: result.block ? "blocked" : "warned",
-          reason: result.reason,
-          sourceEventType: `tool.${context.toolCall.name}`,
+          owner: `agent:${agentName}`,
+          data: {
+            workflowRunId: opts?.workflowRunId,
+            projectId: opts?.projectId,
+            parentSessionId: opts?.parentSessionId,
+            sessionId,
+            guard: "beforeToolCall",
+            demandType: result.block ? "block" : "warn",
+            action: result.block ? "blocked" : "warned",
+            reason: result.reason,
+            sourceEventType: `tool.${context.toolCall.name}`,
+          },
         });
       }
       return result;

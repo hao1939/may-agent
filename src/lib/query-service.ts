@@ -262,6 +262,30 @@ function addEquals(where: string[], params: unknown[], column: string, value: un
   params.push(value);
 }
 
+function ownerAliases(owner: string): string[] {
+  const value = owner.trim();
+  if (!value) return [];
+  if (value.startsWith("agent:")) {
+    const name = value.slice("agent:".length);
+    return name ? [value, name] : [value];
+  }
+  if (value.startsWith("human:")) {
+    const aliases = [value];
+    if (value === "human:operator") aliases.push("human", "hao", "user", "operator");
+    return aliases;
+  }
+  if (["human", "hao", "user", "operator"].includes(value)) return [value, "human:operator"];
+  return [value, `agent:${value}`];
+}
+
+function addOwnerEquals(where: string[], params: unknown[], owner: unknown): void {
+  if (typeof owner !== "string") return;
+  const aliases = ownerAliases(owner);
+  if (aliases.length === 0) return;
+  where.push(`owner IN (${aliases.map(() => "?").join(", ")})`);
+  params.push(...aliases);
+}
+
 function addSinceUntil(where: string[], params: unknown[], column: string, filter: TimeFilter): void {
   if (filter.since !== undefined) {
     where.push(`${column} >= ?`);
@@ -331,7 +355,7 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const where: string[] = [];
       const params: unknown[] = [];
       addEquals(where, params, "event_type", filter.type);
-      addEquals(where, params, "owner", filter.owner);
+      addOwnerEquals(where, params, filter.owner);
       addEquals(where, params, "source", filter.source);
       addSinceUntil(where, params, "timestamp", filter);
       return select(opts.getDb(), "events", where, params, "timestamp DESC, id DESC", clampLimit(filter.limit, defaultLimit, maxLimit));
@@ -432,16 +456,17 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          LIMIT ?`,
       ).all(alertLimit + 1) as Record<string, unknown>[]).slice(0, alertLimit);
 
+      const inboxOwners = ownerAliases(filter.agent);
       const inbox = normalizeRows(db.prepare(
         `SELECT id, event_type as eventType, data, urgency, timestamp
          FROM events
-         WHERE owner = ?
+         WHERE owner IN (${inboxOwners.map(() => "?").join(", ")})
            AND timestamp > ?
            AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
          ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
            timestamp DESC, id DESC
          LIMIT ?`,
-      ).all(filter.agent, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[]).slice(0, inboxLimit);
+      ).all(...inboxOwners, now - inboxLookbackMs, now, inboxLimit + 1) as Record<string, unknown>[]).slice(0, inboxLimit);
 
       return { now, metrics, alerts, inbox };
     },

@@ -145,7 +145,7 @@ describe("control routing e2e", () => {
       ).get("message.created") as { source: string; owner: string; data: string };
       expect(row).toMatchObject({
         source: "socket",
-        owner: "dev",
+        owner: "agent:dev",
       });
       expect(JSON.parse(row.data)).toMatchObject({
         from: "socket",

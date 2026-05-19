@@ -599,7 +599,12 @@ export class Cron {
       this.emitEvent?.({ type: "heartbeat", agent, entry: entry.name });
     }
 
-    this.emitEvent?.({ type: "handler.started", handler: entry.name, agent });
+    this.emitEvent?.({
+      type: "handler.started",
+      source: "cron",
+      owner: `agent:${agent}`,
+      data: { handler: entry.name, agent },
+    });
 
     const HANDLER_TIMEOUT_MS = Number(entry.handlerConfig?.timeoutMs) || 5 * 60_000; // per-handler or 5min default
 
@@ -611,12 +616,22 @@ export class Cron {
     Promise.race([handlerPromise, timeoutPromise])
       .then(() => {
         this.inflightJobs.delete(entry.name);
-        this.emitEvent?.({ type: "handler.completed", handler: entry.name, agent, durationMs: Date.now() - startMs });
+        this.emitEvent?.({
+          type: "handler.completed",
+          source: "cron",
+          owner: `agent:${agent}`,
+          data: { handler: entry.name, agent, durationMs: Date.now() - startMs },
+        });
       })
       .catch((err) => {
         this.inflightJobs.delete(entry.name);
         const errMsg = err instanceof Error ? err.message : String(err);
-        this.emitEvent?.({ type: "handler.failed", handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs });
+        this.emitEvent?.({
+          type: "handler.failed",
+          source: "cron",
+          owner: `agent:${agent}`,
+          data: { handler: entry.name, agent, error: errMsg, durationMs: Date.now() - startMs },
+        });
         this.onError?.(`Cron handler "${entry.name}" failed: ${errMsg}`);
         this.notify?.(`\u26a0\ufe0f Handler "${entry.name}" failed: ${errMsg}`);
       });

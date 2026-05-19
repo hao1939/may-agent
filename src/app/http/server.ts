@@ -600,7 +600,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const action = String(data.action || data.demandType || "triggered");
         const demandType = String(data.demandType || "");
         const guard = String(data.guard || data.name || "unknown");
-        const owner = String(data.owner || event.owner || "unknown");
+        const owner = String(event.owner || "unknown");
         const createdAt = Number(event.timestamp || now);
         const blocked = action === "blocked" || demandType === "block";
         incrementCount(byGuard, guard);

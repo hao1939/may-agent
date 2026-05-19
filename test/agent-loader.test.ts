@@ -159,11 +159,11 @@ describe("agent loader boundaries", () => {
       mkdirSync(agentDir, { recursive: true });
       writeFileSync(join(agentDir, "agent.json"), "{");
 
-      const events: Array<{ type: string; agent?: string; message?: string }> = [];
+      const events: Array<{ type: string; agent?: string; message?: string; data?: Record<string, unknown> }> = [];
       const config = loadAgentConfig(agentDir, { emit: (event: any) => events.push(event) } as any);
 
       expect(config).toBeNull();
-      expect(events.some((event) => event.type === "agent.config_invalid" && event.agent === "broken")).toBe(true);
+      expect(events.some((event) => event.type === "agent.config_invalid" && event.data?.agent === "broken")).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

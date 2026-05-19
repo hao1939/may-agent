@@ -42,12 +42,15 @@ describe("Cron event subscriptions", () => {
 
     bus.emit({
       type: "metric.breach",
-      owner: "may",
-      metricId: "test.metric",
-      metricName: "Test metric",
-      current: 1,
-      threshold: 2,
-      message: "breached",
+      source: "metrics-snapshot",
+      owner: "agent:may",
+      data: {
+        metricId: "test.metric",
+        metricName: "Test metric",
+        current: 1,
+        threshold: 2,
+        message: "breached",
+      },
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -83,13 +86,17 @@ describe("Cron event subscriptions", () => {
 
     bus.emit({
       type: "metric.breach",
-      owner: "arc",
-      metricId: "v2.spec-coverage-rate",
-      metricName: "v2 spec measurement coverage",
-      current: 0.1,
-      threshold: 0.8,
-      message: "breached",
-      priority: "P1",
+      source: "metrics-snapshot",
+      owner: "agent:arc",
+      urgency: "high",
+      data: {
+        metricId: "v2.spec-coverage-rate",
+        metricName: "v2 spec measurement coverage",
+        current: 0.1,
+        threshold: 0.8,
+        message: "breached",
+        priority: "P1",
+      },
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -126,9 +133,13 @@ describe("Cron event subscriptions", () => {
 
     const completedEvent = {
       type: "session.completed",
-      sessionId: "s_done",
-      agent: "dev",
-      parentSessionId: "s_parent",
+      source: "runtime",
+      owner: "agent:dev",
+      data: {
+        sessionId: "s_done",
+        agent: "dev",
+        parentSessionId: "s_parent",
+      },
     };
     bus.emit(completedEvent as any);
 
@@ -144,6 +155,7 @@ describe("Cron event subscriptions", () => {
       timestamp: expect.any(Number),
     });
     expect(handledEvent).not.toHaveProperty("sessionId");
+    expect(handledEvent.data.data.sessionId).toBe("s_done");
     cron.stop();
   });
 

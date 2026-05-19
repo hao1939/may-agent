@@ -176,7 +176,7 @@ function failoverExecution(row: Row): LoopTraceExecution | null {
   const kind = sessionId ? "session" : workflowRunId ? "workflow" : null;
   const id = sessionId ?? workflowRunId;
   if (!kind || !id) return null;
-  const owner = stringValue(row.owner ?? data.owner ?? data.agent);
+  const owner = stringValue(row.owner);
   const status = resumeDiagnosticStatus(eventType, data);
   const execution = toLoopTraceExecution(resumeDiagnosticToExecutionResult({
     id,
@@ -242,7 +242,7 @@ function resolveSeeds(db: SqliteDb, target: LoopTraceTarget): {
     alertId = numberValue(data.alertId ?? data.alert_id);
     workflowRunId = stringValue(data.workflowRunId ?? data.runId);
     sessionId = stringValue(data.sessionId);
-    owner = stringValue(origin?.owner ?? data.owner);
+    owner = stringValue(origin?.owner);
     projectId = stringValue(data.projectId);
     handlerName = stringValue(data.entry ?? data.handler ?? origin?.source);
     handlerStatus = stringValue(data.status);
@@ -388,8 +388,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   ));
   const uniqueFailoverEvents = uniqBy(failoverEvents, "id");
   const failoverOwner = uniqueFailoverEvents.map((row) => {
-    const data = parseData(row);
-    return stringValue(row.owner ?? data.owner ?? data.agent);
+    return stringValue(row.owner);
   }).find(Boolean) ?? null;
   const failoverProjectId = uniqueFailoverEvents.map((row) => stringValue(parseData(row).projectId)).find(Boolean) ?? null;
 
@@ -401,7 +400,7 @@ export function buildLoopTrace(db: SqliteDb, target: LoopTraceTarget): LoopTrace
   return {
     target: targetKind(target),
     origin: seed.origin,
-    owner: seed.owner ?? failoverOwner,
+    owner: failoverOwner ?? seed.owner,
     projectId: seed.projectId ?? failoverProjectId,
     metricId,
     alertId,
