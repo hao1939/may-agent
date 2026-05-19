@@ -235,6 +235,38 @@ describe("event-native: events table", () => {
     expect(count.count).toBe(0);
   });
 
+  it("does not persist flat domain events", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "metric.breach",
+      source: "metrics",
+      owner: "agent:may",
+      metricId: "system.health",
+      message: "flat metric event",
+    } as any);
+    writer.handler({
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
+      escalationId: "esc_flat",
+      reason: "flat escalation",
+    } as any);
+    writer.handler({
+      type: "handler.started",
+      source: "cron",
+      owner: "agent:may",
+      handler: "flat-handler",
+      agent: "may",
+    } as any);
+
+    const count = db.prepare(
+      "SELECT COUNT(*) AS count FROM events WHERE event_type IN ('metric.breach', 'escalation.created', 'handler.started')",
+    ).get() as { count: number };
+    expect(count.count).toBe(0);
+  });
+
   it("does not duplicate owner/source envelope fields into canonical event data", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);

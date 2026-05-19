@@ -172,6 +172,7 @@ export class DbWriter {
           if (event.type.includes('.')) {
             try {
               const ev = event as any;
+              if (!isCanonicalEnvelope(ev)) break;
               const data = eventPayload(ev);
               this.db.run(
                 "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
