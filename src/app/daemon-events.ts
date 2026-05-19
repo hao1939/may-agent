@@ -12,6 +12,10 @@ import {
 import { log } from "../lib/log.js";
 import { runAgentCleanup, setAgentSessionId } from "./agent-loader.js";
 
+function createEscalationId(): string {
+  return `esc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function attachEventPersistence(opts: {
   bus: EventBus;
   persistDir: string;
@@ -63,22 +67,32 @@ export function attachDaemonEventSubscribers(opts: {
     },
     (agent, _sessionId, reason) => {
       log("warn", `[resume] ${agent} exhausted resume attempts — escalating`);
+      const escalationId = createEscalationId();
       try {
         const escalationPath = resolve(persistDir, "escalations.jsonl");
-        appendFileSync(escalationPath, JSON.stringify({ ts: new Date().toISOString(), agent, reason, notified: true }) + "\n", "utf-8");
+        appendFileSync(escalationPath, JSON.stringify({
+          ts: new Date().toISOString(),
+          escalationId,
+          agent,
+          owner: "agent:may",
+          reason,
+        }) + "\n", "utf-8");
       } catch {
         /* best-effort */
       }
       bus.emit({
-        type: "message.created",
-        source: "agent:may",
-        owner: "human:operator",
+        type: "escalation.created",
+        source: "runtime:auto-resume",
+        owner: "agent:may",
         urgency: "high",
         data: {
-          from: "may",
-          to: "human",
-          content: `⚠️ *Agent Blocked*\n${agent} — ${reason}`,
-          priority: "P1",
+          escalationId,
+          sourceAgent: agent,
+          sourceSessionId: _sessionId,
+          reason,
+          requestedAction: `Investigate repeated auto-resume failure for ${agent} and decide whether to resume, requeue, or fix runtime state.`,
+          severity: "P1",
+          evidence: { trigger: "resume_exhausted" },
         },
       } as any);
     },
