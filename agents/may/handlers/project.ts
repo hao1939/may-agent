@@ -9,6 +9,7 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 import {
@@ -19,8 +20,10 @@ import {
 } from "@may-agent/sdk";
 import type { ProjectInfo, HealthAction } from "../../../shared/lib/project-health.ts";
 
-async function loadProjectHealth() {
-  return await import(`../../../shared/lib/project-health.ts?t=${Date.now()}`) as typeof import("../../../shared/lib/project-health.ts");
+async function loadProjectHealth(root: string) {
+  const moduleUrl = pathToFileURL(resolve(root, "shared/lib/project-health.ts"));
+  moduleUrl.searchParams.set("t", String(Date.now()));
+  return await import(moduleUrl.href) as typeof import("../../../shared/lib/project-health.ts");
 }
 
 function normalizeProjectPath(value: unknown): string | null {
@@ -224,7 +227,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
   const stateFile = resolve(ctx.sdk.paths.root, ".state/project-health-state.json");
 
   return async (event?: TriggerEvent) => {
-    const ph = await loadProjectHealth();
+    const ph = await loadProjectHealth(ctx.sdk.paths.root);
     const now = Date.now();
     const healthState = ph.readHealthState(stateFile);
 
