@@ -401,7 +401,7 @@ async function resolveDemands(
           injectedAgent: demand.step.agent,
         });
 
-        onEvent?.({ type: "step_start", step: label });
+        onEvent?.({ type: "workflow.step_started", step: label });
 
         const taskResult = await manager.callAgent(demand.step.agent, demand.step.task, {
           parentSessionId,
@@ -428,7 +428,7 @@ async function resolveDemands(
         run.steps.push(wfStep);
         // Step data persisted via sessions table (db-writer)
 
-        onEvent?.({ type: "step_done", step: label, sessionId: taskResult.sessionId, result: taskResult });
+        onEvent?.({ type: "workflow.step_completed", step: label, sessionId: taskResult.sessionId, result: taskResult });
         break;
       }
     }
@@ -819,7 +819,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               run.steps.push(wfStep);
               // Step data persisted via sessions table (db-writer)
 
-              onEvent?.({ type: "step_done", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
+              onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
               return taskResult;
             } catch {
               // Archived data unavailable — fall through to live execution
@@ -837,7 +837,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           throw new WorkflowInterrupted(steering, completedSteps, runId);
         }
 
-        onEvent?.({ type: "step_start", step: agentName });
+        onEvent?.({ type: "workflow.step_started", step: agentName });
 
         // Gap 1: Inject accumulated guard warnings into the task
         let effectiveTask = agentTask;
@@ -874,7 +874,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         run.steps.push(wfStep);
         // Step data persisted via sessions table (db-writer)
 
-        onEvent?.({ type: "step_done", step: agentName, sessionId: sid, result: taskResult });
+        onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
 
         // ── Guard: step_done event ────────────────────────────────────
         if (guards.length > 0) {
@@ -904,7 +904,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
       runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
         const start = Date.now();
-        onEvent?.({ type: "step_start", step: `fn:${label}` });
+        onEvent?.({ type: "workflow.step_started", step: `fn:${label}` });
 
         let output: string;
         let hadError = false;
@@ -943,7 +943,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         completedSteps.push(step);
         pruneCompletedSteps(completedSteps);
 
-        onEvent?.({ type: "step_done", step: `fn:${label}`, sessionId: taskResult.sessionId, result: taskResult });
+        onEvent?.({ type: "workflow.step_completed", step: `fn:${label}`, sessionId: taskResult.sessionId, result: taskResult });
 
         // Guard: step_done for function steps
         if (guards.length > 0) {
@@ -985,7 +985,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           return { type: "escalate", reason: subErr ?? `Workflow "${wfName}" not found` };
         }
 
-        onEvent?.({ type: "workflow_start", workflow: subWf.name, task: wfTask });
+        onEvent?.({ type: "workflow.started", workflow: subWf.name, task: wfTask });
 
         const sub = await executeWorkflow(
           subWf,
@@ -998,9 +998,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         );
 
         if (sub.result.type === "done") {
-          onEvent?.({ type: "workflow_done", summary: sub.result.summary });
+          onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
         } else {
-          onEvent?.({ type: "workflow_escalate", reason: sub.result.reason });
+          onEvent?.({ type: "workflow.escalated", reason: sub.result.reason });
         }
 
         return sub.result;
@@ -1026,7 +1026,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             history.push({ role: "user", text: message });
 
             const stepName = `session:${label}`;
-            onEvent?.({ type: "step_start", step: stepName });
+            onEvent?.({ type: "workflow.step_started", step: stepName });
 
             const taskResult = await manager.callAgent(agentName, fullPrompt, {
               parentSessionId,
@@ -1058,7 +1058,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             run.steps.push(wfStep);
             // Step data persisted via sessions table (db-writer)
 
-            onEvent?.({ type: "step_done", step: stepName, sessionId: taskResult.sessionId, result: taskResult });
+            onEvent?.({ type: "workflow.step_completed", step: stepName, sessionId: taskResult.sessionId, result: taskResult });
 
             // Fire guards
             if (guards.length > 0) {
@@ -1144,7 +1144,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     activeSteeringQueue = steeringQueue;
     activeWorkflowName = workflow.name;
 
-    onEvent?.({ type: "workflow_start", workflow: workflow.name, task });
+    onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
 
     try {
       const { result, runId } = await executeWorkflow(
@@ -1164,7 +1164,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       const stepSummaries = buildStepSummaries(completedSteps);
 
       if (result.type === "done") {
-        onEvent?.({ type: "workflow_done", summary: result.summary });
+        onEvent?.({ type: "workflow.completed", summary: result.summary });
         const toolResult: WorkflowToolResult = {
           type: "done",
           workflow: workflow.name,
@@ -1175,7 +1175,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         return textResult(JSON.stringify(toolResult, null, 2));
       }
 
-      onEvent?.({ type: "workflow_escalate", reason: result.reason });
+      onEvent?.({ type: "workflow.escalated", reason: result.reason });
       const toolResult: WorkflowToolResult = {
         type: "escalated",
         workflow: workflow.name,

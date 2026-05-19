@@ -157,7 +157,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "sub-events";
       export const description = "Sub with events";
       export async function execute(ctx) {
-        ctx.emit({ type: "step_start", step: "sub-step" });
+        ctx.emit({ type: "test.sub_step", step: "sub-step" });
         return ctx.done("sub done");
       }
     `,
@@ -190,17 +190,17 @@ describe("workflow composition: runWorkflow", () => {
     });
 
     // Expected events:
-    // 1. workflow_start (parent)
-    // 2. workflow_start (sub)
-    // 3. step_start (sub-step)
-    // 4. workflow_done (sub)
-    // 5. workflow_done (parent)
+    // 1. workflow.started (parent)
+    // 2. workflow.started (sub)
+    // 3. test.sub_step (sub-step, emitted by workflow code)
+    // 4. workflow.completed (sub)
+    // 5. workflow.completed (parent)
     const types = events.map((e) => e.type);
-    expect(types).toContain("workflow_start");
-    expect(types).toContain("workflow_done");
+    expect(types).toContain("workflow.started");
+    expect(types).toContain("workflow.completed");
 
-    // Should have multiple workflow_start events (parent + sub)
-    const starts = events.filter((e) => e.type === "workflow_start");
+    // Should have multiple workflow.started events (parent + sub)
+    const starts = events.filter((e) => e.type === "workflow.started");
     expect(starts.length).toBe(2);
   });
 
@@ -212,7 +212,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "sub-steerable";
       export const description = "Sub that can be steered";
       export async function execute(ctx) {
-        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
         const result = await ctx.runAgent("coder", "something");
@@ -262,7 +262,7 @@ describe("workflow composition: runWorkflow", () => {
       task: "task",
     });
 
-    await waitForEvent((e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent((e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
 
     // Steer the parent — should propagate to sub-workflow since they share the queue
     expect(tool.isRunning).toBe(true);

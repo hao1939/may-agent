@@ -45,6 +45,38 @@ function makeHeartbeatCtx(agentsRoot: string): WorkflowContext & { events: any[]
 }
 
 describe("genericHeartbeat events", () => {
+  it("emits canonical workflow.step_started envelope before the heartbeat session", async () => {
+    const appRoot = mkdtempSync(join(tmpdir(), "heartbeat-events-"));
+    const agentsRoot = join(appRoot, "agents");
+    const ctx = makeHeartbeatCtx(agentsRoot);
+    const previousStateDir = process.env.STATE_DIR;
+    process.env.STATE_DIR = join(appRoot, ".state");
+
+    try {
+      const result = await genericHeartbeat(ctx, "builder");
+
+      expect(result.type).toBe("done");
+      expect(ctx.runAgentCalls).toEqual(["builder"]);
+      expect(ctx.events).toContainEqual({
+        type: "workflow.step_started",
+        source: "agent:builder",
+        owner: "agent:builder",
+        data: {
+          workflow: "heartbeat",
+          step: "heartbeat",
+        },
+      });
+      expect(ctx.events.some((event) => event.type === "step_start")).toBe(false);
+    } finally {
+      if (previousStateDir === undefined) {
+        delete process.env.STATE_DIR;
+      } else {
+        process.env.STATE_DIR = previousStateDir;
+      }
+      rmSync(appRoot, { recursive: true, force: true });
+    }
+  });
+
   it("emits canonical heartbeat.skipped envelope when the circuit breaker is open", async () => {
     const appRoot = mkdtempSync(join(tmpdir(), "heartbeat-events-"));
     const agentsRoot = join(appRoot, "agents");

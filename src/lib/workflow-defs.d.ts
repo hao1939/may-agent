@@ -35,11 +35,11 @@ interface TaskResult {
 
 /** Workflow event types for observability. */
 type WorkflowEvent =
-  | { type: "workflow_start"; workflow: string; task: string }
-  | { type: "step_start"; step: string; sessionId?: string }
-  | { type: "step_done"; step: string; sessionId?: string; result: TaskResult }
-  | { type: "workflow_done"; summary: string }
-  | { type: "workflow_escalate"; reason: string };
+  | { type: "workflow.started"; workflow: string; task: string }
+  | { type: "workflow.step_started"; step: string; sessionId?: string }
+  | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
+  | { type: "workflow.completed"; summary: string }
+  | { type: "workflow.escalated"; reason: string };
 
 /** Workflow result — either done or escalated to slow mode. */
 type WorkflowResult = { type: "done"; summary: string } | { type: "escalate"; reason: string; context?: unknown };
