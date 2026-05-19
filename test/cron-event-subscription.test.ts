@@ -208,6 +208,59 @@ describe("Cron event subscriptions", () => {
     expect(handledEvent.data.data.sessionId).toBe("s_done");
   });
 
+  it("wraps dispatchEvent payloads in a canonical envelope before emit and handler delivery", async () => {
+    const dir = join(tmpdir(), `cron-dispatch-envelope-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "metric-reactor",
+        enabled: true,
+        handler: "metric-reactor",
+        on: ["metric.breach"],
+      },
+    ]));
+
+    const emitted: SystemEvent[] = [];
+    let handledEvent: any;
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir, undefined, (event) => {
+      emitted.push(event);
+    });
+    cron.load();
+    cron.registerHandler("metric-reactor", async (event) => {
+      handledEvent = event;
+    });
+
+    const triggered = cron.dispatchEvent("metric.breach", {
+      metricId: "system.health",
+      message: "breached",
+      current: 1,
+      threshold: 2,
+    });
+
+    expect(triggered).toBe(1);
+    expect(emitted[0]).toEqual({
+      type: "metric.breach",
+      source: "cron",
+      owner: "agent:may",
+      data: {
+        metricId: "system.health",
+        message: "breached",
+        current: 1,
+        threshold: 2,
+      },
+    });
+    expect(emitted[0]).not.toHaveProperty("metricId");
+    expect(handledEvent).toMatchObject({
+      type: "metric.breach",
+      source: "event",
+      entry: "metric-reactor",
+      data: emitted[0],
+      timestamp: expect.any(Number),
+    });
+  });
+
   it("routes heartbeat.trigger only to the requested agent heartbeat", async () => {
     const dir = join(tmpdir(), `cron-heartbeat-route-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(dir);
