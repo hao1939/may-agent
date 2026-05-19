@@ -43,17 +43,19 @@ describe("SubagentManager guard signals", () => {
     expect(emitted).toEqual([
       expect.objectContaining({
         type: "guard.triggered",
-        owner: "may",
         source: "tool",
-        workflowRunId: "wr_guard",
-        projectId: "p_guard",
-        parentSessionId: "s_parent",
-        sessionId: "s_guard",
-        guard: "beforeToolCall",
-        demandType: "block",
-        action: "blocked",
-        reason: "finish blocked by test guard",
-        sourceEventType: "tool.finish",
+        owner: "agent:may",
+        data: {
+          workflowRunId: "wr_guard",
+          projectId: "p_guard",
+          parentSessionId: "s_parent",
+          sessionId: "s_guard",
+          guard: "beforeToolCall",
+          demandType: "block",
+          action: "blocked",
+          reason: "finish blocked by test guard",
+          sourceEventType: "tool.finish",
+        },
       }),
     ]);
   });

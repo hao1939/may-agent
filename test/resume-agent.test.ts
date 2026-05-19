@@ -170,11 +170,13 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     expect(events).toContainEqual(expect.objectContaining({
       type: "session.resume_failed",
       source: "manager",
-      owner: "unknown-agent",
-      sessionId: "session-x",
-      agent: "unknown-agent",
-      category: "agent_not_registered",
-      recoverable: false,
+      owner: "agent:unknown-agent",
+      data: expect.objectContaining({
+        sessionId: "session-x",
+        agent: "unknown-agent",
+        category: "agent_not_registered",
+        recoverable: false,
+      }),
     }));
   });
 
@@ -189,10 +191,12 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     expect(events).toContainEqual(expect.objectContaining({
       type: "session.resume_failed",
       source: "manager",
-      owner: "may",
-      sessionId: "missing-session",
-      category: "session_not_found",
-      recoverable: false,
+      owner: "agent:may",
+      data: expect.objectContaining({
+        sessionId: "missing-session",
+        category: "session_not_found",
+        recoverable: false,
+      }),
     }));
   });
 

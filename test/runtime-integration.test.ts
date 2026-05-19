@@ -167,18 +167,64 @@ describe("runtime integration", () => {
       "SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC",
     ).all("message.created") as Array<{ source: string; owner: string; data: string }>;
     expect(messages).toHaveLength(2);
-    expect(messages[0]).toMatchObject({ source: "dev", owner: "human" });
+    expect(messages[0]).toMatchObject({ source: "agent:dev", owner: "human:operator" });
     expect(JSON.parse(messages[0].data)).toMatchObject({
       from: "dev",
       to: "human",
       content: expect.stringContaining("Blocked on production credentials"),
     });
-    expect(messages[1]).toMatchObject({ source: "dev", owner: "reviewer" });
+    expect(messages[1]).toMatchObject({ source: "agent:dev", owner: "agent:reviewer" });
     expect(JSON.parse(messages[1].data)).toMatchObject({
       from: "dev",
       to: "reviewer",
       content: "Please inspect the migration.",
     });
+  });
+
+  it("sends SDK metric events through the same canonical envelope", () => {
+    const { root, stateDir } = makeRoot("may-sdk-metrics-");
+    const bus = new EventBus();
+    const writer = new DbWriter(stateDir);
+    bus.subscribe(writer.handler, { priority: "first" });
+
+    const sdk = buildAgentSDK({
+      bus,
+      persistDir: stateDir,
+      projectRoot: root,
+      agentsRoot: join(root, "agents"),
+      sharedRoot: join(root, "shared"),
+      projectsRoot: join(root, "projects"),
+      agentName: "dev",
+      callAgent: async (agent: string) => ({
+        sessionId: `s_${agent}`,
+        status: "done",
+        lastAssistantText: "ok",
+      }),
+    });
+
+    sdk.metrics.define({
+      id: "reviewer.queue-depth",
+      threshold: 1,
+      target: 0,
+      alertOp: ">",
+      priority: "P1",
+    });
+    sdk.metrics.record("reviewer.queue-depth", 2);
+    sdk.metrics.evaluate("reviewer.queue-depth");
+
+    const breach = getDb(stateDir).prepare(
+      "SELECT source, owner, urgency, data FROM events WHERE event_type = ?",
+    ).get("metric.breach") as { source: string; owner: string; urgency: string; data: string };
+    expect(breach).toMatchObject({
+      source: "agent:dev",
+      owner: "agent:reviewer",
+      urgency: "high",
+    });
+    expect(JSON.parse(breach.data)).toMatchObject({
+      metricId: "reviewer.queue-depth",
+      priority: "P1",
+    });
+    expect(JSON.parse(breach.data)).not.toHaveProperty("owner");
   });
 
   it("keeps workflow escalation local until the caller promotes it across the workflow boundary", async () => {

@@ -204,6 +204,14 @@ function urgencyForPriority(priority: unknown): "low" | "normal" | "high" | "imm
   return "normal";
 }
 
+function normalizeEventOwner(owner: string | undefined): string {
+  const value = owner?.trim();
+  if (!value) return "agent:may";
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  return `agent:${value}`;
+}
+
 export function createMetricService(options: MetricServiceOptions): MetricService {
   const now = () => options.now?.() ?? Date.now();
   const emit = (
@@ -218,7 +226,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
   ) => options.emit?.(type, data, envelope);
   const emitMetricEvent = (type: string, owner: string, data: Record<string, unknown>) => {
     emit(type, data, {
-      owner,
+      owner: normalizeEventOwner(owner),
       source: options.measuredBy ?? "metrics",
       urgency: urgencyForPriority(data.priority),
     });

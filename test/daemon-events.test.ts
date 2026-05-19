@@ -34,8 +34,29 @@ describe("daemon event subscribers", () => {
         finishParams: { status: "blocked", summary: "need input" },
       });
 
-      expect(events.some((event) => event.type === "session.escalated" && event.sessionId === "s_1")).toBe(true);
-      expect(events.some((event) => event.type === "session.completed" && event.sessionId === "s_1")).toBe(true);
+      expect(events).toContainEqual(expect.objectContaining({
+        type: "session.escalated",
+        source: "runtime",
+        owner: "agent:scout",
+        data: expect.objectContaining({
+          sessionId: "s_1",
+          agent: "scout",
+          finishParams: { status: "blocked", summary: "need input" },
+        }),
+      }));
+      const completed = events.find((event) => event.type === "session.completed");
+      expect(completed).toMatchObject({
+        type: "session.completed",
+        source: "runtime",
+        owner: "agent:scout",
+        data: {
+          sessionId: "s_1",
+          agent: "scout",
+          outcome: "need input",
+          status: "done",
+        },
+      });
+      expect(completed).not.toHaveProperty("sessionId");
     } finally {
       rmSync(persistDir, { recursive: true, force: true });
     }

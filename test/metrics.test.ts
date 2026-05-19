@@ -52,7 +52,7 @@ describe("MetricService", () => {
     expect(alert).toMatchObject({ metric_id: "scout.idea-yield-24h", resolved_at: null });
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
-      envelope: { owner: "scout", source: "test", urgency: "normal" },
+      envelope: { owner: "agent:scout", source: "test", urgency: "normal" },
       data: { metricId: "scout.idea-yield-24h", priority: "P2" },
     });
     expect(emitted[0].data).not.toHaveProperty("owner");
@@ -102,7 +102,7 @@ describe("MetricService", () => {
     expect(alert).toMatchObject({ metric_id: "guard.blocked-count-15m", resolved_at: null });
     expect(emitted.at(-1)).toMatchObject({
       type: "metric.breach",
-      envelope: { owner: "may", source: "test", urgency: "high" },
+      envelope: { owner: "agent:may", source: "test", urgency: "high" },
       data: { metricId: "guard.blocked-count-15m", priority: "P1" },
     });
     expect(emitted.at(-1)?.data).not.toHaveProperty("owner");
@@ -132,7 +132,7 @@ describe("MetricService", () => {
     expect(metric).toMatchObject({ owner: "may", source_query: "SELECT 12 AS value" });
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
-      envelope: { owner: "may", source: "test", urgency: "high" },
+      envelope: { owner: "agent:may", source: "test", urgency: "high" },
       data: {
         metricId: "custom.queue-depth",
         priority: "P1",

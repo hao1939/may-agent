@@ -117,15 +117,17 @@ describe("Guard integration: warn demand delivery", () => {
       expect(stepTwoCall.task).toContain("test-warn-on-step-done");
       expect(emitted).toContainEqual(expect.objectContaining({
         type: "guard.triggered",
-        owner: "test-agent",
         source: "workflow",
-        workflow: "test-two-step",
-        guard: "test-warn-on-step-done",
-        demandType: "warn",
-        action: "warned",
-        sourceEventType: "step_done",
-        step: "step-one",
-        sessionId: expect.any(String),
+        owner: "agent:test-agent",
+        data: expect.objectContaining({
+          workflow: "test-two-step",
+          guard: "test-warn-on-step-done",
+          demandType: "warn",
+          action: "warned",
+          sourceEventType: "step_done",
+          step: "step-one",
+          sessionId: expect.any(String),
+        }),
       }));
     } finally {
       if (origDisabled === undefined) {
@@ -224,12 +226,16 @@ describe("Guard integration: run_step demand injection", () => {
       expect(stepDones.some(e => e.step === "guard:verify-step-one")).toBe(true);
       expect(emitted).toContainEqual(expect.objectContaining({
         type: "guard.triggered",
-        guard: "test-inject-step",
-        demandType: "run_step",
-        action: "injected",
-        sessionId: expect.any(String),
-        injectedStepLabel: "guard:verify-step-one",
-        injectedAgent: "verifier",
+        source: "workflow",
+        owner: "agent:test-agent",
+        data: expect.objectContaining({
+          guard: "test-inject-step",
+          demandType: "run_step",
+          action: "injected",
+          sessionId: expect.any(String),
+          injectedStepLabel: "guard:verify-step-one",
+          injectedAgent: "verifier",
+        }),
       }));
     } finally {
       if (origDisabled === undefined) {
@@ -314,11 +320,15 @@ describe("Guard integration: block demand", () => {
       }
       expect(emitted).toContainEqual(expect.objectContaining({
         type: "guard.triggered",
-        guard: "test-blocker",
-        demandType: "block",
-        action: "blocked",
-        sourceEventType: "step_done",
-        sessionId: expect.any(String),
+        source: "workflow",
+        owner: "agent:test-agent",
+        data: expect.objectContaining({
+          guard: "test-blocker",
+          demandType: "block",
+          action: "blocked",
+          sourceEventType: "step_done",
+          sessionId: expect.any(String),
+        }),
       }));
     } finally {
       if (origDisabled === undefined) {

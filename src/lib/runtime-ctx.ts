@@ -47,10 +47,23 @@ export interface RuntimeCtxOptions {
   agentName: string;
 }
 
+function normalizeOwner(owner: string | undefined): string {
+  const value = owner?.trim();
+  if (!value) return "agent:may";
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  return `agent:${value}`;
+}
+
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
   return {
     emit: (event) => opts.bus.emit(event as any),
-    dispatchEvent: (eventType, data) => opts.bus.emit({ type: eventType, ...(data || {}) } as any),
+    dispatchEvent: (eventType, data) => opts.bus.emit({
+      type: eventType,
+      source: `agent:${opts.agentName}`,
+      owner: normalizeOwner(opts.agentName),
+      data: data ?? {},
+    } as any),
     getDb: () => getDb(opts.persistDir),
     query: createQueryService({
       getDb: () => getDb(opts.persistDir),
@@ -64,13 +77,13 @@ export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
       getDb: () => getDb(opts.persistDir),
       emit: (type, data, envelope) => opts.bus.emit({
         type,
-        source: envelope?.source ?? opts.agentName,
-        owner: envelope?.owner ?? opts.agentName,
+        source: envelope?.source ?? `agent:${opts.agentName}`,
+        owner: normalizeOwner(envelope?.owner ?? opts.agentName),
         ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},
       } as any),
-      measuredBy: opts.agentName,
+      measuredBy: `agent:${opts.agentName}`,
       log: (msg) => globalLog("info", `[${opts.agentName}] ${msg}`),
     }),
     persistDir: opts.persistDir,

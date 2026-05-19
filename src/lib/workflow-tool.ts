@@ -59,6 +59,14 @@ import type { RuntimeCtx } from "./runtime-ctx.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import { createUnavailableQueryService } from "./query-service.js";
 
+function eventOwner(owner: string | undefined): string {
+  const value = owner?.trim();
+  if (!value) return "agent:may";
+  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
+  if (["human", "hao", "user", "operator"].includes(value.toLowerCase())) return "human:operator";
+  return `agent:${value}`;
+}
+
 // ── Tool schema ────────────────────────────────────────────────────────
 
 const WorkflowToolParams: TSchema = Type.Object({
@@ -585,15 +593,17 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const event = {
       type: "workflow.resume_failed",
       source: "workflow-tool",
-      owner: opts.agentName ?? "may",
-      workflowRunId: data.workflowRunId,
-      workflow: data.workflow,
-      projectId: data.projectId ?? opts.projectId,
-      reason: data.reason,
-      category: data.category,
-      recoverable: data.recoverable ?? false,
-      nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
       timestamp: Date.now(),
+      owner: eventOwner(opts.agentName),
+      data: {
+        workflowRunId: data.workflowRunId,
+        workflow: data.workflow,
+        projectId: data.projectId ?? opts.projectId,
+        reason: data.reason,
+        category: data.category,
+        recoverable: data.recoverable ?? false,
+        nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
+      },
     } as const;
     opts.runtimeCtx?.emit(event);
     onEvent?.(event);
@@ -609,14 +619,16 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     const event = {
       type: "workflow.resume_skipped",
       source: "workflow-tool",
-      owner: opts.agentName ?? "may",
-      workflowRunId: data.workflowRunId,
-      workflow: data.workflow,
-      projectId: data.projectId ?? opts.projectId,
-      status: data.status,
-      reason: data.reason,
-      nextAction: "none",
       timestamp: Date.now(),
+      owner: eventOwner(opts.agentName),
+      data: {
+        workflowRunId: data.workflowRunId,
+        workflow: data.workflow,
+        projectId: data.projectId ?? opts.projectId,
+        status: data.status,
+        reason: data.reason,
+        nextAction: "none",
+      },
     } as const;
     opts.runtimeCtx?.emit(event);
     onEvent?.(event);
@@ -712,21 +724,23 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       const sourceEventType = typeof extra.sourceEventType === "string" ? extra.sourceEventType : "unknown";
       opts.runtimeCtx?.emit({
         type: "guard.triggered",
-        owner: opts.agentName ?? "may",
         source: "workflow",
-        workflow: workflow.name,
-        workflowRunId: runId,
-        projectId: effectiveProjectId,
-        parentSessionId,
-        sessionId: typeof extra.sessionId === "string" ? extra.sessionId : undefined,
-        guard: demand.guardName ?? "unknown",
-        demandType: demand.type,
-        action,
-        reason: demand.reason,
-        sourceEventType,
-        step: typeof extra.step === "string" ? extra.step : undefined,
-        injectedStepLabel: typeof extra.injectedStepLabel === "string" ? extra.injectedStepLabel : undefined,
-        injectedAgent: typeof extra.injectedAgent === "string" ? extra.injectedAgent : undefined,
+        owner: `agent:${opts.agentName ?? "may"}`,
+        data: {
+          workflow: workflow.name,
+          workflowRunId: runId,
+          projectId: effectiveProjectId,
+          parentSessionId,
+          sessionId: typeof extra.sessionId === "string" ? extra.sessionId : undefined,
+          guard: demand.guardName ?? "unknown",
+          demandType: demand.type,
+          action,
+          reason: demand.reason,
+          sourceEventType,
+          step: typeof extra.step === "string" ? extra.step : undefined,
+          injectedStepLabel: typeof extra.injectedStepLabel === "string" ? extra.injectedStepLabel : undefined,
+          injectedAgent: typeof extra.injectedAgent === "string" ? extra.injectedAgent : undefined,
+        },
       } as any);
     };
 

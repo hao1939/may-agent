@@ -73,6 +73,22 @@ describe("QueryService", () => {
     expect(result.rows.map((row) => row.event_type)).toEqual(["example", "example", "example"]);
   });
 
+  it("matches event owners by canonical and legacy owner spelling", () => {
+    const { db, query } = harness();
+
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["project.nudge", "test", "agent:may", JSON.stringify({ canonical: true }), 2],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["project.nudge", "test", "may", JSON.stringify({ legacy: true }), 1],
+    );
+
+    expect(query.events({ owner: "may" }).rows.map((row) => row.owner)).toEqual(["agent:may", "may"]);
+    expect(query.events({ owner: "agent:may" }).rows.map((row) => row.owner)).toEqual(["agent:may", "may"]);
+  });
+
   it("rejects writes and multi-statement SQL", () => {
     const { query } = harness();
 
@@ -282,7 +298,7 @@ describe("QueryService", () => {
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["project.nudge", "test", "arc", JSON.stringify({ summary: "resume project" }), now - 100, "immediate", 10_000],
+      ["project.nudge", "test", "agent:arc", JSON.stringify({ summary: "resume project" }), now - 100, "immediate", 10_000],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
