@@ -102,6 +102,9 @@ an explicit judgment. Do this before `finish()` whenever no fix/artifact is warr
    unresolved metric alerts, and unmeasured metrics.
 5. Run and cite `cd /app/agents && git status --short`. If you wrote no files, say so and
    classify any dirty paths as unrelated/runtime/other-agent rather than committing them.
+   Do not turn pre-existing unrelated dirty paths into a fresh `finish(blocked)` loop;
+   close with an explicit non-actionable classification unless a dev-owned write path or
+   deliverable from the current session is dirty.
 6. Stop after the checklist. Avoid ad hoc multi-file reads or speculative shell probes after
    the canned checks; they have caused malformed-tool and schema-error failures without
    adding value.
