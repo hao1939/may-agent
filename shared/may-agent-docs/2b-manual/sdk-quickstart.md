@@ -20,15 +20,15 @@ The AgentSDK is available to all handlers via `ctx.sdk`. See
 const result = await sdk.runAgent("tech-lead", "Review this PR");
 // result.status, result.lastAssistantText, result.sessionId
 
-const [coder, qa] = await Promise.all([
-  sdk.runAgent("coder", "Implement the fix"),
+const [dev, qa] = await Promise.all([
+  sdk.runAgent("dev", "Implement the fix"),
   sdk.runAgent("qa", "Review the fix"),
 ]);
 ```
 
 ## Emit an Event
 
-Use events for durable facts: metric breaches, project iterations, handler
+Use events for durable facts: metric breaches, project task lifecycle, handler
 decisions, recovery attempts, and similar things that other handlers or the UI
 may query later. Put routing metadata in the envelope argument and domain
 context in `data`.
@@ -44,9 +44,10 @@ sdk.emit("metric.breach", {
   priority: "P1",
 }, { owner: "agent:may", source: "metrics-snapshot", urgency: "high" });
 
-sdk.emit("project.iteration", {
+sdk.emit("project.task.finished", {
   projectId: "platform",
-  iteration: 3,
+  taskId: "task-123",
+  result: "Tests are green.",
 }, { owner: "agent:may", source: "project-handler" });
 ```
 
@@ -148,11 +149,15 @@ const inbox = sdk.query.events({
 ### Agent-to-agent message
 ```typescript
 sdk.message("bob", "Check the failing tests");
-// emits: { type: "message.created", from: agent, to: "bob", content: "..." }
+// emits canonical message.created with owner: "agent:bob"
+// and data: { from: agent, to: "bob", content: "...", priority: "P2" }
 ```
 
-### Trigger another handler
+### Trigger another handler from handler code
 ```typescript
-sdk.emit("trigger.metrics-snapshot", {}, { owner: "agent:may", source: "operator" });
-// Manual operator/control shortcut for a cron entry, not a domain lifecycle event.
+ctx.triggerNow("metrics-snapshot");
 ```
+
+`trigger.<entry-name>` is an operator/control shortcut for a cron entry, not a
+domain lifecycle event. Use `ctx.triggerNow(...)` inside handlers instead of
+publishing `trigger.*` through `sdk.emit(...)`.

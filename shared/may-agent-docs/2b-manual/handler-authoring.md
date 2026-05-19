@@ -15,10 +15,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 };
 ```
 
-> **Import path**: Prefer `from "@may-agent/sdk"` — the compiled binary
-> registers a Bun plugin that resolves the bare specifier for dynamically-loaded
-> handlers. The legacy relative path (`from "../../../shared/agent-sdk.ts"`)
-> still works but is deprecated.
+> **Import path**: Use `from "@may-agent/sdk"`. Runtime handler imports resolve
+> through the repo/workspace `node_modules/@may-agent/sdk` package link; compiled
+> builds map the same package at build time. Avoid relative imports into private
+> source files or old shared SDK files.
 
 Default convention:
 

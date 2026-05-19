@@ -354,6 +354,12 @@ Some of these are currently dynamic event-store names rather than variants in
 `SystemEvent`. The design direction is to type the stable core names while still
 allowing adapter-local evidence events when needed.
 
+For task-driven projects, `project.task.dispatched` and
+`project.task.finished` are the task lifecycle events to teach in handler and
+SDK examples. `project.iteration` remains a project-owner loop/workflow-launch
+signal used by current health metrics and historical rows; do not use it as the
+general task lifecycle example.
+
 ## Inbox (time-window based)
 
 Agents see recent events in their heartbeat. No ack/done needed:
@@ -425,7 +431,8 @@ Uses `message.created` — the single async communication primitive:
 
 ```typescript
 sdk.message("bob", "Review the PR");
-// Emits: { type: "message.created", source: "agent:<sender>", owner: "agent:bob", data: { from, to, content } }
+// Emits canonical message.created with source: "agent:<sender>",
+// owner: "agent:bob", and data: { from, to, content, priority }.
 ```
 
 Bob sees it in his inbox on next heartbeat.
@@ -438,7 +445,12 @@ The Unix socket is an event transport, not a second command system.
   already use the event schema. Dot-named events must use the canonical
   envelope (`type`, `source`, `owner`, `data`).
 - `subscribe` and `status` are the only socket-local protocol frames.
-- Legacy socket wrapper and command aliases are rejected instead of normalized.
+- Non-dot daemon/operator frames such as `input`, `steer`, `cancel`, `resume`,
+  `reload`, `shutdown`, and the legacy `fork` shortcut are accepted into the
+  event path and handled by runtime subscribers. When a shortcut creates domain
+  work, runtime should emit canonical trace events such as `message.created`.
+- Deprecated wrapper aliases such as `emit`, `message`, `close`,
+  `cancel_task`, and `reload_agents` are rejected instead of normalized.
 - Socket `ok` means the frame was accepted into the event transport. It does
   not mean every handler finished.
 
@@ -480,7 +492,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `handler.started` | cron runner on every handler invocation | ✅ live |
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
-| `project.iteration` | `project.ts` on the default project path; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live default plus legacy compatibility shape |
+| `project.iteration` | `agents/may/handlers/project.ts` when launching the owner workflow; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live owner-loop signal; not the task lifecycle event |
 | `project.task.dispatched` | `agents/may/handlers/project.ts` when dispatching a ready `## Tasks` item to its assignee | ✅ live for task-driven projects |
 | `project.task.finished` | `agents/may/handlers/project.ts` when the task session resolves or throws | ✅ live for task-driven projects |
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event, including errored/interrupted sessions |

@@ -46,7 +46,7 @@ Heartbeats are `job` sessions whose `source` identifies the heartbeat workflow.
 ```
 Root (May heartbeat)
   ├── call("tech-lead", task)          ← child (blocks parent)
-  │     └── call("coder", subtask)     ← grandchild
+  │     └── call("dev", subtask)       ← grandchild
   └── fork("bob", task)                ← new root (async, returns immediately)
 ```
 

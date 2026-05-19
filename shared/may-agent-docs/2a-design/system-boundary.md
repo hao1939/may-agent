@@ -642,7 +642,7 @@ Existing pieces already align with this direction:
 | Event bus | `src/app/event-bus.ts` |
 | Metrics API | `src/lib/metrics.ts` |
 | Handler SDK | `src/lib/sdk.ts`, `src/lib/sdk-impl.ts`, `src/lib/handler-context.ts` |
-| Agent import boundary | `shared/agent-sdk.ts` |
+| Agent import boundary | `@may-agent/sdk` package |
 | Workflow context | `src/lib/workflow.ts`, `src/lib/workflow-tool.ts` |
 | Runtime context | `src/lib/runtime-ctx.ts` |
 | Socket protocol | `packages/control/src/protocol.ts` |

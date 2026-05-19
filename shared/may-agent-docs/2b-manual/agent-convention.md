@@ -105,8 +105,8 @@ sessions, not normal agent configuration.
 
 ```jsonc
 {
-  "name": "coder",
-  "description": "Writes code and returns verified patches",
+  "name": "dev",
+  "description": "Investigates runtime failures and returns verified fixes",
   "domain": "may-agent implementation",
   "model": "opus",
   "tools": ["coding", "agents", "finish"],

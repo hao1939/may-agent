@@ -11,23 +11,22 @@ escalated. Use `agents.fork` for background agent sessions outside workflow
 control.
 
 ```typescript
-import type { WorkflowContext, WorkflowModule, WorkflowResult } from "../../shared/agent-sdk.ts";
-import type { TaskResult } from "../../shared/agent-sdk.ts";
+import type { WorkflowContext, WorkflowModule, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "my-workflow";
-export const description = "Does X by coordinating coder and QA";
+export const description = "Does X by coordinating dev and QA";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // 1. Run agents as steps
-  const coder = await ctx.runAgent("coder", ctx.task);
+  const dev = await ctx.runAgent("dev", ctx.task);
 
   // 2. Use results to decide next steps
-  if (coder.status === "error") {
-    return ctx.escalate("Coder failed", { error: coder.error });
+  if (dev.status === "error") {
+    return ctx.escalate("Dev failed", { error: dev.error });
   }
 
   // 3. Finish
-  return ctx.done(`Completed: ${coder.lastAssistantText}`);
+  return ctx.done(`Completed: ${dev.lastAssistantText}`);
 }
 ```
 
@@ -103,7 +102,7 @@ return ctx.escalate("Missing sessionId", {
 ### Implement → Verify (shell gate)
 
 ```typescript
-const coder = await ctx.runAgent("coder", task);
+const dev = await ctx.runAgent("dev", task);
 const verify = await ctx.runFunction("verify", async () => {
   const { execSync } = await import("node:child_process");
   execSync("tsc --noEmit && bun test", { encoding: "utf-8" });
@@ -118,14 +117,14 @@ return ctx.done("Implemented and verified");
 ### Implement → Review (agent gate)
 
 ```typescript
-const coder = await ctx.runAgent("coder", task);
-const reviewTask = `Review this:\n\n${ctx.summarize(coder)}`;
+const dev = await ctx.runAgent("dev", task);
+const reviewTask = `Review this:\n\n${ctx.summarize(dev)}`;
 const review = await ctx.runAgent("qa", reviewTask);
 
 if (review.lastAssistantText.includes("FAIL")) {
   // Retry with feedback
   const fixTask = `Fix based on review:\n${review.lastAssistantText}\n\nOriginal: ${task}`;
-  await ctx.runAgent("coder", fixTask);
+  await ctx.runAgent("dev", fixTask);
 }
 return ctx.done("Implemented and reviewed");
 ```
@@ -154,7 +153,7 @@ return ctx.done(prioritized);
 ```typescript
 const MAX_ATTEMPTS = 2;
 for (let i = 1; i <= MAX_ATTEMPTS; i++) {
-  const result = await ctx.runAgent("coder", i === 1 ? task : fixTask);
+  const result = await ctx.runAgent("dev", i === 1 ? task : fixTask);
   const verify = runVerification();
   if (verify.passed) return ctx.done("Verified");
   fixTask = `Fix errors:\n${verify.output}\n\nOriginal: ${task}`;

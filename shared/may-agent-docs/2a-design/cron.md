@@ -45,7 +45,7 @@ Each cron entry:
 
 ```typescript
 // agents/may/handlers/metric-alert-router.ts
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   return async (event?: TriggerEvent) => {

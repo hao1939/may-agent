@@ -352,7 +352,7 @@ Agent-defined step sequences with **two step types**: agent steps (LLM) and func
 
 ```typescript
 // Agent step — needs judgment
-{ agent: "coder", task: "Implement: {{request}}" }
+{ agent: "dev", task: "Implement: {{request}}" }
 
 // Function step — mechanical, no LLM
 { fn: "run-tests", exec: async (ctx) => {
@@ -564,7 +564,7 @@ Timer/socket -> timer.heartbeat_due -> heartbeat handler -> may-heartbeat workfl
   -> ctx.runAgent("may", assembled heartbeat task)
   -> runtime context includes metrics, projects, messages
   -> agent sees build_health FAILING -> calls run_workflow("fix-build", {})
-  -> workflow: coder implements fix -> fn: run tests -> done
+  -> workflow: dev implements fix -> fn: run tests -> done
   -> session.end -> metric engine re-measures -> healthy signal
 ```
 

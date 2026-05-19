@@ -32,11 +32,13 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 | `--socket` | Enable Unix socket for external control |
 | `--cron` | Enable cron jobs (heartbeats, JS handlers, scheduled tasks) |
 | `--telegram` | Enable Telegram bot for notifications |
+| `--web` | Enable web UI |
 | `--status` | Print system dashboard and exit (agent quality, process health, trends) |
 | `--status --notify` | Print dashboard and also send it to Telegram |
 | `--send <agent> --message "msg"` | Send a message through the running daemon and exit |
 
-At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`, `--message`, or `--emit` is required.
+At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
+`--send --message`, `--emit`, `--web`, `--socket`, or `--telegram` is required.
 
 ### Local Startup
 
@@ -81,7 +83,7 @@ you> now add tests for it
 ### @agent Prefix
 
 ```
-you> @coder fix the failing test in test/retry.test.ts
+you> @dev fix the failing test in test/retry.test.ts
 ```
 
 Routes through the interface agent's persistent chat session as an explicit
@@ -97,35 +99,39 @@ peek at the result, and report back.
 
 ## Agents
 
-### Built-in agents
+### Configured agents
 
 | Agent | Model | Role |
 |-------|-------|------|
 | **may** | opus | Supervisor — delegates, coordinates |
-| **bob** | gemini-3-pro | System architect, philosophy, meta-loop |
-| **tech-lead** | opus | Designs and delegates implementation |
-| **coder** | opus | Writes code, runs tests |
-| **qa** | gpt-5.2 | Reviews code |
+| **bob** | opus | System architect, philosophy, meta-loop |
+| **tech-lead** | opus | Designs and supervises implementation |
+| **dev** | gpt-5.5 | System reliability, metrics, debugging |
+| **qa** | gpt52 | Reviews code |
 | **evaluator** | gpt-5.4 | Scores sessions, extracts lessons |
 | **optimizer** | opus | Implements system improvements |
 | **coach** | opus | Trains agents via fork/verify cycle |
 | **master** | opus | Uses CLI agents for complex tasks |
+| **arc** | opus | Architecture synthesis |
+| **judge** | opus | Convention compliance evaluation |
 | **scout** | opus | Research and discovery |
 | **amy** | opus | XHS exploration |
-| **amy-kimi** | kimi | XHS exploration (Kimi model) |
+
+The runtime discovers agents from `agents/<name>/agent.json` and project-local
+agent roots. Treat this table as the current normal fleet, not a hardcoded
+protocol list.
 
 ### agent.json Format
 
 ```json
 {
-  "name": "coder",
-  "description": "Writes code, runs tests — does not commit",
-  "domain": "may-agent implementation",
+  "name": "dev",
+  "description": "Investigates runtime failures and improves observability",
+  "domain": "system reliability, metrics, debugging",
   "model": "opus",
-  "tools": ["coding", "agents"],
-  "maxTurns": 30,
+  "tools": ["coding", "query_db", "finish"],
   "memoryLimit": 20,
-  "delegateDeny": { "agents": ["coder"], "hint": "Use agents.call instead" }
+  "compaction": true
 }
 ```
 
@@ -136,8 +142,8 @@ peek at the result, and report back.
 | `domain` | Yes | Domain of expertise |
 | `model` | Yes | Model key: `opus`, `gpt52`, `gpt-5.4`, `gemini-3.1-pro`, etc. |
 | `tools` | Yes | Tool presets (see below) |
-| `maxTurns` | No | Max assistant turns before auto-abort |
 | `memoryLimit` | No | Number of recent memory entries in prompt (default: 20) |
+| `compaction` | No | Enable automatic context compaction for long sessions |
 | `delegateDeny` | No | Block delegation to specific agents |
 
 agent.json is **purely operational** — model, tools, limits, delegation rules.
@@ -149,21 +155,18 @@ indexes are read on demand.
 
 | Preset | Description |
 |--------|-------------|
-| `coding` | Read + write files, shell execution (aliased from `read-write` + `exec`) |
-| `read-write` | Read and write files |
+| `coding` | Read, write, edit, and shell tools scoped to the project root |
 | `read-only` | Read files only |
-| `exec` | Shell execution |
-| `exec-readonly` | Shell execution, no file writes |
-| `exec-master` | Shell execution with higher output limits |
-| `claude-code` | Spawn Claude Code subprocess |
-| `gemini-cli` | Spawn Gemini CLI subprocess |
-| `agents` | Agent cooperation (call/send/list/peek/cancel) |
+| `agents` | Agent cooperation (`call`, `fork`, `context`, `list`, `peek`, `cancel`, `requests`) |
+| `message` | Async human/agent inbox messages |
 | `workflow` | Multi-step workflow recipes |
 | `background-exec` | Spawn background processes |
-| `socket-watch` | Watch agent sessions via socket |
 | `cron` | Schedule and manage cron jobs |
 | `scrape` | Web scraping |
-| ~~`agent-growth`~~ | *(removed — growth is agent-scope, not infra)* |
+| `query_db` / `query-db` | Read-only DB query tool |
+| `system-status` / `system_status` | Runtime status summary |
+| `checkpoint` | Persist explicit session checkpoints |
+| `finish` | Finish the current task with a structured result |
 
 ### Adding a New Agent
 
@@ -218,8 +221,11 @@ socat - UNIX-CONNECT:.state/instances/default/may.sock
 # Send input
 echo '{"type":"input","message":"check status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Run a specific agent
-echo '{"type":"fork","agent":"coder","task":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+# Send a canonical async message
+echo '{"type":"message.created","source":"human:operator","owner":"agent:dev","data":{"from":"human","to":"dev","content":"fix the test","intent":"notify","priority":"P2"}}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
+
+# Legacy operator shortcut to start a background agent session
+echo '{"type":"fork","agent":"dev","task":"fix the test"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
@@ -263,6 +269,11 @@ tests, but they are not domain lifecycle events. Lifecycle docs and handlers
 should use canonical event names such as `session.completed`, `metric.breach`,
 `escalation.created`, and `escalation.resolved`.
 
+Dot-named domain events use the canonical envelope: top-level `type`, `source`,
+and `owner`, plus domain context inside `data`. Flat dot-named socket frames are
+rejected before persistence. Handler subscriptions receive the original event
+envelope at `event.data`; domain fields are under `event.data.data`.
+
 ## Cron System
 
 Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
@@ -295,8 +306,7 @@ See [cron.md](../2a-design/cron.md) for details.
       <id>/                   # Archived sessions
   evaluations/
     <sessionId>.json          # Session evaluation scores
-  workflows/
-    <runId>.json              # Workflow execution records
+  may.db                      # events, sessions, workflow_runs, metrics, alerts
 ```
 
 ## Docker

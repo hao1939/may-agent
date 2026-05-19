@@ -9,7 +9,7 @@ How the binary processes input, runs sessions concurrently, and structures LLM c
 User input goes through `ChatSession.handleInput()`:
 
 1. **Built-in commands** (`status`, `cancel`, `reload`, `/new`) — handled directly, no LLM
-2. **@agent prefix** (`@coder fix the test`) — rewritten into May's chat session as a delegation request; May forks/monitors the target agent
+2. **@agent prefix** (`@dev fix the test`) — rewritten into May's chat session as a delegation request; May forks/monitors the target agent
 3. **Normal message** — routed to the persistent chat session:
    - No session yet → `manager.run(agent, message, { kind: "chat", autoClose: "never" })`
    - Session exists → `manager.input(sessionId, message)` (wakes if idle, steers if running)
