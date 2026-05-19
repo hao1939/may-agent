@@ -2,15 +2,25 @@ import { describe, expect, it } from "bun:test";
 import { normalizeSocketFrame } from "../packages/control/src/protocol.js";
 
 describe("socket frame normalization", () => {
-  it("passes unknown raw bus events through by default", () => {
-    expect(normalizeSocketFrame({ type: "custom.event", projectId: "p1" })).toEqual({
+  it("accepts unknown dot-named events when they use canonical envelopes", () => {
+    expect(normalizeSocketFrame({
+      type: "custom.event",
+      source: "test",
+      owner: "agent:may",
+      data: { projectId: "p1" },
+    })).toEqual({
       kind: "event",
       command: "custom.event",
-      event: { type: "custom.event", projectId: "p1" },
+      event: {
+        type: "custom.event",
+        source: "test",
+        owner: "agent:may",
+        data: { projectId: "p1" },
+      },
     });
   });
 
-  it("accepts known domain events that already use canonical envelopes", () => {
+  it("accepts domain events that already use canonical envelopes", () => {
     expect(normalizeSocketFrame({
       type: "message.created",
       source: "agent:may",
@@ -58,9 +68,32 @@ describe("socket frame normalization", () => {
         data: { projectPath: "projects/x", comment: "go", author: "hao" },
       },
     });
+
+    expect(normalizeSocketFrame({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "agent:may",
+      urgency: "high",
+      data: { metricId: "system.health", message: "check" },
+    })).toEqual({
+      kind: "event",
+      command: "metric.breach",
+      event: {
+        type: "metric.breach",
+        source: "metrics-snapshot",
+        owner: "agent:may",
+        urgency: "high",
+        data: { metricId: "system.health", message: "check" },
+      },
+    });
   });
 
-  it("rejects flat frames for known canonical events", () => {
+  it("rejects flat frames for dot-named event types", () => {
+    expect(normalizeSocketFrame({ type: "custom.event", projectId: "p1" })).toEqual({
+      kind: "error",
+      command: "custom.event",
+      message: "Canonical event 'custom.event' requires object field 'data'",
+    });
     expect(normalizeSocketFrame({ type: "message.created", from: "may", to: "human", content: "hi" })).toEqual({
       kind: "error",
       command: "message.created",
@@ -70,6 +103,16 @@ describe("socket frame normalization", () => {
       kind: "error",
       command: "project.nudge",
       message: "Canonical event 'project.nudge' requires object field 'data'",
+    });
+    expect(normalizeSocketFrame({ type: "metric.breach", source: "metrics-snapshot", owner: "agent:may", metricId: "system.health", message: "check" })).toEqual({
+      kind: "error",
+      command: "metric.breach",
+      message: "Canonical event 'metric.breach' requires object field 'data'",
+    });
+    expect(normalizeSocketFrame({ type: "session.end", source: "runtime", owner: "agent:dev", sessionId: "s_1", status: "done" })).toEqual({
+      kind: "error",
+      command: "session.end",
+      message: "Canonical event 'session.end' requires object field 'data'",
     });
   });
 
@@ -91,6 +134,11 @@ describe("socket frame normalization", () => {
       kind: "event",
       command: "trigger.metrics-snapshot",
       event: { type: "trigger.metrics-snapshot", forced: true },
+    });
+    expect(normalizeSocketFrame({ type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" })).toEqual({
+      kind: "event",
+      command: "session.cancel.requested",
+      event: { type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" },
     });
     expect(normalizeSocketFrame({ type: "input", message: "hello", source: "socket" })).toEqual({
       kind: "event",
