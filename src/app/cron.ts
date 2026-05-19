@@ -64,6 +64,22 @@ function entryAgent(entry: CronEntry): string | undefined {
   return undefined;
 }
 
+function isFlatCommandEvent(type: string): boolean {
+  return type.startsWith("trigger.") || type === "session.cancel.requested";
+}
+
+function cronDispatchEvent(eventType: string, data?: Record<string, unknown>): Record<string, unknown> {
+  if (!eventType.includes(".") || isFlatCommandEvent(eventType)) {
+    return { type: eventType, ...(data ?? {}) };
+  }
+  return {
+    type: eventType,
+    source: "cron",
+    owner: "agent:may",
+    data: data ?? {},
+  };
+}
+
 // ── Cron class ────────────────────────────────────────────────────────
 
 export class Cron {
@@ -256,10 +272,11 @@ export class Cron {
 
   /** Dispatch a new system event — emits it on the bus, then triggers subscribed handlers. */
   dispatchEvent(eventType: string, data?: Record<string, unknown>): number {
+    const event = cronDispatchEvent(eventType, data);
     if (this.emitEvent) {
-      this.emitEvent({ type: eventType, ...(data || {}) } as any);
+      this.emitEvent(event as any);
     }
-    return this.triggerSubscribers(eventType, data);
+    return this.triggerSubscribers(eventType, event);
   }
 
   /** Trigger handlers subscribed to an event that is already on the bus. */
