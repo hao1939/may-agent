@@ -255,6 +255,96 @@ describe("agent loader boundaries", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+  it("warns when cron.json exists but agent.json tools[] omits \"cron\" (F2)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ignored-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const sharedRoot = join(root, "shared");
+      const agentDir = join(agentsRoot, "silenced");
+      mkdirSync(agentDir, { recursive: true });
+      mkdirSync(sharedRoot, { recursive: true });
+      writeFileSync(
+        join(agentDir, "agent.json"),
+        JSON.stringify({
+          name: "silenced",
+          description: "agent with cron.json but no cron tool",
+          domain: "test",
+          model: "opus",
+          tools: ["query_db"], // no "cron"
+        }),
+      );
+      writeFileSync(join(agentDir, "cron.json"), JSON.stringify([{ name: "forgotten", handler: "x", intervalMs: 60000 }]));
+
+      const events: any[] = [];
+      const manager = { hasAgent: () => false, register: () => undefined };
+
+      await loadAgents({
+        agentsRoot,
+        projectRoot: root,
+        sharedRoot,
+        projectsRoot: join(root, "projects"),
+        persistDir: join(root, ".state"),
+        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        manager: manager as any,
+        bus: { emit: (e: any) => events.push(e) } as any,
+        cronEnabled: false,
+      });
+
+      const warning = events.find(
+        (e) => e.type === "info" && typeof e.message === "string" && e.message.includes("silenced") && e.message.includes("IGNORED"),
+      );
+      expect(warning).toBeDefined();
+      expect(warning.message).toContain("cron.json");
+      expect(warning.message).toContain("Add \"cron\" to tools");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does NOT warn when cron.json exists and \"cron\" is in tools[]", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-cron-ok-"));
+    try {
+      const agentsRoot = join(root, "agents");
+      const sharedRoot = join(root, "shared");
+      const agentDir = join(agentsRoot, "enabled");
+      mkdirSync(agentDir, { recursive: true });
+      mkdirSync(sharedRoot, { recursive: true });
+      writeFileSync(
+        join(agentDir, "agent.json"),
+        JSON.stringify({
+          name: "enabled",
+          description: "agent with cron.json and cron tool",
+          domain: "test",
+          model: "opus",
+          tools: ["cron"],
+        }),
+      );
+      writeFileSync(join(agentDir, "cron.json"), JSON.stringify([]));
+
+      const events: any[] = [];
+      const manager = { hasAgent: () => false, register: () => undefined };
+
+      await loadAgents({
+        agentsRoot,
+        projectRoot: root,
+        sharedRoot,
+        projectsRoot: join(root, "projects"),
+        persistDir: join(root, ".state"),
+        models: { opus: { id: "opus", provider: "test", apiKey: "test" } } as any,
+        manager: manager as any,
+        bus: { emit: (e: any) => events.push(e) } as any,
+        cronEnabled: false,
+      });
+
+      const warning = events.find(
+        (e) => e.type === "info" && typeof e.message === "string" && e.message.includes("IGNORED"),
+      );
+      expect(warning).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("generates conventional heartbeat entries only when no explicit heartbeat exists", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-heartbeat-"));
     try {
