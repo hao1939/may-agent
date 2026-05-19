@@ -6,11 +6,11 @@ import type { QueryAPI } from "./query-service.js";
 // ── Workflow Events ────────────────────────────────────────────────────
 
 export type WorkflowEvent =
-  | { type: "workflow_start"; workflow: string; task: string }
-  | { type: "step_start"; step: string; sessionId?: string }
-  | { type: "step_done"; step: string; sessionId?: string; result: TaskResult }
-  | { type: "workflow_done"; summary: string }
-  | { type: "workflow_escalate"; reason: string }
+  | { type: "workflow.started"; workflow: string; task: string }
+  | { type: "workflow.step_started"; step: string; sessionId?: string }
+  | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
+  | { type: "workflow.completed"; summary: string }
+  | { type: "workflow.escalated"; reason: string }
   | { type: "workflow.resume_failed"; source: string; owner: string; timestamp: number; data: { workflowRunId?: string; workflow?: string; reason: string; category: string; recoverable: boolean; nextAction?: string; projectId?: string } }
   | { type: "workflow.resume_skipped"; source: string; owner: string; timestamp: number; data: { workflowRunId: string; workflow: string; status: string; reason: string; nextAction?: string; projectId?: string } };
 

@@ -271,8 +271,7 @@ describe("workflow tool: run", () => {
       export const name = "evented";
       export const description = "Emits custom events";
       export async function execute(ctx) {
-        ctx.emit({ type: "step_start", step: "custom-step" });
-        ctx.emit({ type: "step_done", step: "custom-step" });
+        await ctx.runFunction("custom-step", async () => "ok");
         return ctx.done("done with events");
       }
     `,
@@ -292,15 +291,15 @@ describe("workflow tool: run", () => {
       task: "evented task",
     });
 
-    // Should have: workflow_start, step_start, step_done, workflow_done
+    // Should have: workflow.started, workflow.step_started, workflow.step_completed, workflow.completed
     expect(events.length).toBe(4);
-    expect(events[0].type).toBe("workflow_start");
-    expect(events[1].type).toBe("step_start");
-    expect(events[2].type).toBe("step_done");
-    expect(events[3].type).toBe("workflow_done");
+    expect(events[0].type).toBe("workflow.started");
+    expect(events[1].type).toBe("workflow.step_started");
+    expect(events[2].type).toBe("workflow.step_completed");
+    expect(events[3].type).toBe("workflow.completed");
   });
 
-  it("emits workflow_escalate event on escalation", async () => {
+  it("emits workflow.escalated event on escalation", async () => {
     writeWorkflow(
       "esc-event.ts",
       `
@@ -327,8 +326,8 @@ describe("workflow tool: run", () => {
     });
 
     expect(events.length).toBe(2);
-    expect(events[0].type).toBe("workflow_start");
-    expect(events[1].type).toBe("workflow_escalate");
+    expect(events[0].type).toBe("workflow.started");
+    expect(events[1].type).toBe("workflow.escalated");
   });
 
   it("keeps ctx.escalate local and does not emit escalation.created", async () => {
@@ -388,7 +387,7 @@ describe("workflow tool: run", () => {
         evidence: { triggerType: "session.completed" },
       });
     }
-    expect(lifecycleEvents.map((event) => event.type)).toEqual(["workflow_start", "workflow_escalate"]);
+    expect(lifecycleEvents.map((event) => event.type)).toEqual(["workflow.started", "workflow.escalated"]);
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
   });
 
@@ -643,7 +642,7 @@ describe("workflow tool: steering", () => {
     });
 
     // The workflow is synchronous up to the first runAgent, so by the time
-    // execute() is called, the workflow_start event fires synchronously,
+    // execute() is called, the workflow.started event fires synchronously,
     // and then the workflow calls runAgent which checks the queue.
     // Since we need to steer BEFORE runAgent checks, we need to pre-queue.
     // But the tool only exposes steer() after the workflow starts...
@@ -683,7 +682,7 @@ describe("workflow tool: steering", () => {
       export async function execute(ctx) {
         // Signal readiness via a custom event, then wait for the steering signal
         // to be queued before proceeding to runAgent
-        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
         // Small yield to let the test queue a steering signal
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -709,7 +708,7 @@ describe("workflow tool: steering", () => {
     });
 
     // Wait for the workflow to signal it's ready for steering
-    await waitForEvent(events, (e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent(events, (e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
 
     // Now the workflow is running and waiting — steer it
     expect(tool.isRunning).toBe(true);
@@ -744,11 +743,11 @@ describe("workflow tool: steering", () => {
       export const name = "two-step";
       export const description = "Two step workflow";
       export async function execute(ctx) {
-        ctx.emit({ type: "step_start", step: "planning" });
-        ctx.emit({ type: "step_done", step: "planning" });
+        ctx.emit({ type: "test.planning_started", step: "planning" });
+        ctx.emit({ type: "test.planning_completed", step: "planning" });
 
         // Signal that we're past step 1 and ready for steering
-        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
         // Yield to let the test queue a steering signal
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -775,7 +774,7 @@ describe("workflow tool: steering", () => {
     });
 
     // Wait for the workflow to signal readiness
-    await waitForEvent(events, (e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent(events, (e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
 
     expect(tool.isRunning).toBe(true);
     tool.steer("abort now");
@@ -800,7 +799,7 @@ describe("workflow tool: steering", () => {
       export const name = "multi-steer";
       export const description = "Multi-steer test";
       export async function execute(ctx) {
-        ctx.emit({ type: "step_start", step: "ready-for-steering" });
+        ctx.emit({ type: "test.ready", step: "ready-for-steering" });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
         const result = await ctx.runAgent("coder", "first");
@@ -823,7 +822,7 @@ describe("workflow tool: steering", () => {
       task: "task",
     });
 
-    await waitForEvent(events, (e) => e.type === "step_start" && "step" in e && e.step === "ready-for-steering");
+    await waitForEvent(events, (e) => e.type === "test.ready" && "step" in e && e.step === "ready-for-steering");
 
     tool.steer("first signal");
     tool.steer("second signal");

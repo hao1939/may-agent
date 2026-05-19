@@ -566,7 +566,12 @@ iteration: 0
 
 ${FINISH_HYGIENE_INSTRUCTIONS}`;
 
-  ctx.emit({ type: "step_start", step: "heartbeat" });
+  ctx.emit({
+    type: "workflow.step_started",
+    source: `agent:${agent}`,
+    owner: `agent:${agent}`,
+    data: { workflow: "heartbeat", step: "heartbeat" },
+  });
   ctx.emit({
     type: "context.read",
     source: `agent:${agent}`,
