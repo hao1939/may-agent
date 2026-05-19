@@ -820,6 +820,25 @@ export {
 } from "./project-schema.js";
 export type { ProjectMeta } from "./project-schema.js";
 
+export {
+  PROJECT_TASK_RESULTS,
+  PROJECT_TASK_STATUSES,
+  parseProjectTasks,
+  planProjectTasks,
+  updateProjectTaskFields,
+  validateProjectTasks,
+} from "./project-tasks.js";
+export type {
+  PlannedProjectTask,
+  ProjectTaskFieldPatch,
+  ProjectTask,
+  ProjectTaskParseResult,
+  ProjectTaskPlan,
+  ProjectTaskPlanOptions,
+  ProjectTaskResult,
+  ProjectTaskStatus,
+} from "./project-tasks.js";
+
 // ── Metric ownership (which agents exist; who owns which metric) ────────────
 export {
   listConfiguredAgents,
