@@ -277,6 +277,42 @@ bare specifier statically."
   Either ship node_modules with the binary or keep using the static bundler
   inlining the plugin enables at compile time.
 
+### F7. `info` events emitted from daemon-lifecycle don't surface in `--cron --socket` mode
+
+**Status:** RESOLVED — `src/app/daemon-lifecycle.ts` now routes reload
+summaries through `log("info", ...)` in addition to `bus.emit({type:"info"})`.
+
+**Surfaced when:** writing E5. The test fired `reload` over the socket,
+the command-router received it, `handleReload` ran to completion (verified
+with a `console.log` probe), yet the daemon log showed no `[reload] ...`
+summary line. The `bus.emit({ type: "info", message: ... })` calls inside
+`handleReload` reached the bus but were silently dropped because no
+subscriber writes `info` events to stdout in `--cron --socket` mode.
+
+`info` events are only forwarded to stdout by `attachConsoleUI`, which is
+guarded behind `--console` or `--chat` flags. The daemon process running
+in production is `--cron --socket` (no console attach). So any code that
+relies on `bus.emit({type:"info"})` for operator visibility is effectively
+invisible in production.
+
+Counter-examples that DO appear: anything written via `log()` from
+`src/lib/log.ts` (which uses `console.log` directly), and direct
+`console.log` calls in the codebase (e.g. `daemon-agents.ts` prints
+`[agents] Loaded N: ...` that way).
+
+**Fix:** `handleReload` now calls both `log("info", summary)` (always
+visible in daemon log) and `bus.emit({type:"info", message: summary})`
+(for future bus subscribers — telegram echoes, chat console, etc.). The
+same pattern should be applied to other ops-facing info emits if they
+are meant to be observable in daemon mode.
+
+**Broader question (out of scope for the immediate fix):** should
+`attachConsoleUI` (or a slimmed log-only variant) auto-attach when neither
+`--console` nor `--chat` is provided? Right now daemon mode has *no*
+bus→stdout transport at all. This was probably intentional to keep cron
+stdout clean, but it means `info` events from any subsystem are invisible
+unless they also call `log()`. A `--quiet` opt-out would be cleaner than
+the current implicit gate.
 
 ## Recommended sequencing
 
