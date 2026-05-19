@@ -34,5 +34,8 @@ ls shared/knowledge/entries/KE-NNNN-* shared/knowledge/entries/KE-NNNN.md 2>/dev
 ```
 If the `ls` finds any file, stop and pick the next max+1 id. If the topic already exists, update the existing KE instead.
 
+## Finish Hygiene (MANDATORY)
+After writing or editing ANY file, you MUST call `read()` on that file before calling `finish()`. The C1.3 Verify-After-Write guard will block your session if you skip this step. This applies to every file: KE entries, today's digest, working notes — all of them.
+
 ## Quality
 A good creative session produces one genuine insight or connection. A bad session echoes what's already known. Go deep on something specific rather than broad on everything.
