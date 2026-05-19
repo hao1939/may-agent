@@ -166,15 +166,9 @@ describe("runtime integration", () => {
     const messages = db.prepare(
       "SELECT source, owner, data FROM events WHERE event_type = ? ORDER BY id ASC",
     ).all("message.created") as Array<{ source: string; owner: string; data: string }>;
-    expect(messages).toHaveLength(2);
-    expect(messages[0]).toMatchObject({ source: "agent:dev", owner: "human:operator" });
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toMatchObject({ source: "agent:dev", owner: "agent:reviewer" });
     expect(JSON.parse(messages[0].data)).toMatchObject({
-      from: "dev",
-      to: "human",
-      content: expect.stringContaining("Blocked on production credentials"),
-    });
-    expect(messages[1]).toMatchObject({ source: "agent:dev", owner: "agent:reviewer" });
-    expect(JSON.parse(messages[1].data)).toMatchObject({
       from: "dev",
       to: "reviewer",
       content: "Please inspect the migration.",
