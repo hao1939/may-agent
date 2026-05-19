@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAgentSDK, buildWorkflowSDK } from "../src/lib/sdk-impl.js";
@@ -190,23 +190,14 @@ describe("AgentSDK escalation", () => {
     expect(events.some((event) => event.type === "escalation.created")).toBe(false);
   });
 
-  it("persists escalation audit rows using the canonical owner and escalation id", () => {
-    const { sdk, root } = makeSdk();
+  it("does not write a separate escalation side log", () => {
+    const { sdk, events, root } = makeSdk();
     roots.push(root);
 
     sdk.escalate("Build cannot continue");
 
-    const rows = readFileSync(join(root, "escalations.jsonl"), "utf-8")
-      .trim()
-      .split("\n")
-      .map((line) => JSON.parse(line));
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      agent: "dev",
-      owner: "agent:may",
-      reason: "Build cannot continue",
-    });
-    expect(rows[0].escalationId).toMatch(/^esc_/);
+    expect(events.some((event) => event.type === "escalation.created")).toBe(true);
+    expect(existsSync(join(root, "escalations.jsonl"))).toBe(false);
   });
 });
 

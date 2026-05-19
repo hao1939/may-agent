@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "bun:test";
@@ -128,6 +128,7 @@ describe("daemon event subscribers", () => {
         }),
       });
       expect(events.some((event) => event.type === "message.created" && event.owner === "human:operator")).toBe(false);
+      expect(existsSync(join(persistDir, "escalations.jsonl"))).toBe(false);
     } finally {
       globalThis.setTimeout = originalSetTimeout;
       rmSync(persistDir, { recursive: true, force: true });

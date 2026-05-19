@@ -16,8 +16,8 @@ import { log as globalLog } from "./log.js";
 import { buildRuntimeCtx } from "./runtime-ctx.js";
 import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
-import { appendFileSync, existsSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { basename, join } from "node:path";
 
 // ── Dependencies (injected, not imported directly) ────────────────────
 
@@ -202,19 +202,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
           ...(opts.dedupKey ? { dedupKey: opts.dedupKey } : {}),
         },
       };
-
-      // Persist to escalations.jsonl (survives restarts)
-      try {
-        const escalationPath = resolve(deps.persistDir, "escalations.jsonl");
-        const entry = JSON.stringify({
-          ts: new Date().toISOString(),
-          escalationId,
-          agent: deps.agentName,
-          owner,
-          reason,
-        });
-        appendFileSync(escalationPath, entry + "\n", "utf-8");
-      } catch { /* best-effort */ }
 
       deps.bus.emit(event as any);
     },
