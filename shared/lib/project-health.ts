@@ -94,7 +94,7 @@ import {
   appendDiscussionComment,
   unreadDiscussionTail,
   type ProjectMeta,
-} from "../agent-sdk.ts";
+} from "@may-agent/sdk";
 
 export { parseProjectMeta, validateProjectFormat, updateField, appendDiscussionComment, unreadDiscussionTail };
 export type { ProjectMeta };

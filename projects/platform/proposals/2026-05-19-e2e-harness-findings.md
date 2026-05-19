@@ -163,6 +163,8 @@ introduces unbounded latency and an implicit dependency on a global handler).
 
 ### F6. `@may-agent/sdk` does not resolve in dev mode
 
+**Status:** RESOLVED — see resolution notes below.
+
 **Surfaced when:** writing E3a's fixture workflow with
 `import { parseProjectMeta } from "@may-agent/sdk"`. The dynamic import fails
 with `Cannot find module '@may-agent/sdk' from <path>`.
@@ -226,6 +228,55 @@ actually only affects build-time bundling. The comment should say: "Bundler
 plugin that rewrites `@may-agent/sdk` to its source path during
 `bun build --compile`. Without this, the bundled binary cannot resolve the
 bare specifier statically."
+
+**Resolution (delivered):**
+
+1. **Repo workspaces declaration.** Added `"workspaces": ["packages/*"]` and
+   `"@may-agent/sdk": "workspace:*"` to
+   `projects/platform/repos/may-agent/package.json`. `bun install` materializes
+   `<repo>/node_modules/@may-agent/sdk` as a symlink to `packages/sdk`. The
+   repo's own tests and any process spawned with `cwd: REPO_ROOT` resolve
+   the bare specifier through this entry. (`/app/package.json` already had
+   the equivalent `file:` dep for the `/app/` host context.)
+
+2. **52-importer rewrite.** All `agent-sdk.ts` and `agent-sdk.js` import
+   paths under `/app/agents/`, `/app/shared/lib/`, `/app/projects/*/workflows/`,
+   `/app/scripts/seeds/` were mechanically rewritten to `@may-agent/sdk`.
+   The two callers of the app-only `growth.*` re-exports
+   (`agents/coach/workflows/growth-cycle.ts`,
+   `agents/coach/workflows/training-sprint.ts`) were redirected to import
+   directly from `shared/lib/growth.js`. Zero callers of the finish-guard
+   re-exports existed.
+
+3. **Bridge deleted.** `shared/agent-sdk.ts` removed. One source of truth:
+   the `@may-agent/sdk` package.
+
+4. **Seed updated.** `scripts/seeds/project-iteration-seed.ts` and the
+   migrator `scripts/migrate-project-workflow.mjs` now reference
+   `@may-agent/sdk` directly; no path rewrite is performed on the SDK import.
+
+5. **Comment corrected.** `src/app/sdk-resolver-plugin.ts` now states
+   accurately that `Bun.plugin()` only affects build-time bundling, lists
+   the three runtime resolution paths (`/app/` file: dep, repo workspaces,
+   sandbox-local symlink), and explains why all three coexist.
+
+6. **E3a unblocked.** `test/e2e/e3a-task-driven-project-loop.test.ts`
+   passes against a live sandbox — the harness symlinks the SDK into the
+   sandbox's local `node_modules/@may-agent/sdk` (because the sandbox lives
+   outside any workspace at `/tmp/may-e2e-<runId>/`, importer-relative
+   resolution wouldn't otherwise find a node_modules entry).
+
+**What still needs explicit handling:**
+
+- The e2e sandbox symlink stays in `test/e2e/lib/sandbox.ts`. Bun's ESM
+  resolver walks up from the importer file (not just cwd) when resolving
+  bare specifiers, so dynamically-loaded files at `/tmp/...` need their own
+  ancestral node_modules. This is structural, not a workaround.
+- If a future change tries to deliver SDK to compiled binaries by relying on
+  the resolver plugin alone (no node_modules), it will fail at runtime.
+  Either ship node_modules with the binary or keep using the static bundler
+  inlining the plugin enables at compile time.
+
 
 ## Recommended sequencing
 

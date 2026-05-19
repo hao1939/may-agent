@@ -12,8 +12,8 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-} from "../../../shared/agent-sdk.ts";
-import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "../../../shared/agent-sdk.ts";
+} from "@may-agent/sdk";
+import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispatch, recordDedupOutcome, cleanupDispatchRecords } from "@may-agent/sdk";
 
 export const name = "scout-heartbeat";
 export const description = "Scout's creative heartbeat — synthesize, connect, discover.";

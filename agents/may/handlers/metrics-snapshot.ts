@@ -15,8 +15,8 @@ import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, s
 import { basename, join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.ts";
-import type { CronEntry } from "../../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry } from "@may-agent/sdk";
 import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 import { validateProjectFormat } from "../../../shared/lib/project-health.ts";
 

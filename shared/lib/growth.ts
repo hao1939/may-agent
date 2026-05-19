@@ -1,8 +1,15 @@
 /**
  * growth — Agent forking/promotion utilities.
  *
- * Stub file recreated because the original was deleted but agent-sdk.ts
- * still imports from it, breaking all handlers that import agent-sdk.
+ * App-only helpers for the coach agent's training-sprint and growth-cycle
+ * workflows. Not part of @may-agent/sdk because forking, promoting, and
+ * discarding agents are operations on the host filesystem layout that
+ * belong to the app, not the SDK.
+ *
+ * Imported directly by:
+ *   - agents/coach/workflows/growth-cycle.ts
+ *   - agents/coach/workflows/training-sprint.ts
+ *   - shared/tests/growth.test.ts
  */
 
 import { existsSync, mkdirSync, cpSync, rmSync, readdirSync } from "node:fs";

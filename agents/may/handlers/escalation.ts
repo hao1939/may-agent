@@ -7,8 +7,8 @@
  * Replaces inline bus.subscribe() escalation logic that was in may.ts.
  */
 
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.js";
-import type { CronEntry } from "../../../shared/agent-sdk.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry } from "@may-agent/sdk";
 
 function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string, data: Record<string, unknown> = {}): void {
   ctx.sdk.log("info", `[escalation] skipped: ${reason}`);

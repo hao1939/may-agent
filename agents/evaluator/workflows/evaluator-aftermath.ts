@@ -4,7 +4,7 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 8;
+export const HEURISTIC_VERSION = 9;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -292,6 +292,46 @@ function toolCalls(content: any): any[] {
   return Array.isArray(content) ? content.filter((part) => part?.type === "toolCall" && typeof part?.name === "string") : [];
 }
 
+function normalizedToolPath(rawPath: unknown): string | null {
+  if (typeof rawPath !== "string") return null;
+  const normalized = rawPath.trim().replace(/^\/app\//, "").replace(/^\.\//, "").replace(/\/+/g, "/");
+  return normalized || null;
+}
+
+function toolCallPaths(call: any): string[] {
+  const argumentsObject = call?.arguments ?? {};
+  const directPaths = [argumentsObject?.path, argumentsObject?.filePath]
+    .map(normalizedToolPath)
+    .filter((value): value is string => typeof value === "string" && value.length > 0);
+
+  if (String(call?.name ?? "") !== "apply_patch") return [...new Set(directPaths)];
+
+  const patchText = typeof argumentsObject?.patch === "string" ? argumentsObject.patch : "";
+  const patchPaths = [...patchText.matchAll(/^(?:\+\+\+|---)\s+(?:b\/|a\/)?([^\n\t]+)$/gm)]
+    .map((match) => normalizedToolPath(match[1]))
+    .filter((value): value is string => typeof value === "string" && value.length > 0 && value !== "/dev/null");
+
+  return [...new Set([...directPaths, ...patchPaths])];
+}
+
+function assistantToolCallRecords(transcript: string): Array<{ name: string; paths: string[]; command: string }> {
+  const records = parseJsonlTranscript(transcript);
+  if (!records) return [];
+
+  const calls: Array<{ name: string; paths: string[]; command: string }> = [];
+  for (const record of records) {
+    if (record?.role !== "assistant") continue;
+    for (const call of toolCalls(record.content)) {
+      calls.push({
+        name: String(call?.name ?? ""),
+        paths: toolCallPaths(call),
+        command: String(call?.arguments?.command ?? ""),
+      });
+    }
+  }
+  return calls;
+}
+
 function parseJsonlTranscript(transcript: string): any[] | null {
   const lines = transcript.split(/\n/).filter((line) => line.trim().startsWith("{"));
   if (lines.length === 0) return null;
@@ -407,14 +447,19 @@ export function transcriptOutputSignals(session: any, transcript: string): strin
   const signals = new Set<string>();
   const view = sessionOwnedTranscriptView(transcript);
   const ownText = view.text;
+  const assistantCalls = assistantToolCallRecords(transcript);
+  const materialWriteCalls = assistantCalls.filter((call) => ["write", "edit", "apply_patch"].includes(call.name));
+  const materialPaths = materialWriteCalls.flatMap((call) => call.paths);
 
-  if (/"name":"(?:write|edit|apply_patch)"/.test(ownText)) signals.add("file write/edit");
+  if (materialWriteCalls.length > 0) signals.add("file write/edit");
   if (/\bgit\s+commit\b/.test(ownText)) signals.add("git commit");
-  if (/(?:\/app\/)?projects\/[^/\s"']+\/(?:outputs\/|project\.md|journal\.md)/.test(ownText)) {
+  if (materialPaths.some((path) => /^(?:projects\/[^/]+\/(?:outputs\/|project\.md|journal\.md))/.test(path))) {
     signals.add("project artifact");
   }
-  if (/agents\/[^/\s"']+\/knowledge\//.test(ownText)) signals.add("knowledge update");
-  if (/\b(?:bun|npm|pnpm|yarn)\s+(?:test|run\s+(?:test|check|build))\b|\bvitest\b|\bpytest\b|\bPASS\b/i.test(ownText)) {
+  if (materialPaths.some((path) => /^agents\/[^/]+\/knowledge\//.test(path))) {
+    signals.add("knowledge update");
+  }
+  if (assistantCalls.some((call) => isVerificationToolCall({ name: call.name, arguments: { command: call.command } })) || /\bPASS\b/i.test(ownText)) {
     signals.add("verification command");
   }
   if (session?.projectId) signals.add("project-linked session");
@@ -432,18 +477,19 @@ export function classifyEvaluationLane(session: any, transcript: string, heurist
     };
   }
 
-  if (finishBlockedByUncommittedChanges(transcript)) {
-    return {
-      lane: "success_candidate",
-      reason: "finish/uncommitted friction self-repaired or cleanly exited; review output quality separately from hygiene friction",
-      signals: [...heuristic.issues, ...transcriptOutputSignals(session, transcript)],
-    };
-  }
-
   const signals = transcriptOutputSignals(session, transcript);
   const materialSignals = signals.filter((signal) =>
     ["file write/edit", "git commit", "project artifact", "knowledge update"].includes(signal),
   );
+
+  if (finishBlockedByUncommittedChanges(transcript)) {
+    return {
+      lane: "success_candidate",
+      reason: "finish/uncommitted friction self-repaired or cleanly exited; review output quality separately from hygiene friction",
+      signals: [...heuristic.issues, ...signals],
+    };
+  }
+
   if (materialSignals.length > 0) {
     return {
       lane: "success_candidate",

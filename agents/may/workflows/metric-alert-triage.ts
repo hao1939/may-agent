@@ -1,6 +1,6 @@
 import type { TaskResult, WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
-import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/agent-sdk.ts";
+import { listConfiguredAgents, resolveMetricOwner } from "@may-agent/sdk";
 
 export const name = "metric-alert-triage";
 export const description = "Judge one metric alert, require a concrete operation, and emit a durable judgment event.";
@@ -19,6 +19,11 @@ const OPERATION_LIST = [...OPERATIONS];
 type Trigger = {
   type?: string;
   data?: Record<string, unknown>;
+};
+
+type TriggerPayload = {
+  owner?: string;
+  data: Record<string, unknown>;
 };
 
 type AlertContext = {
@@ -45,6 +50,29 @@ function extractTrigger(task: string): Trigger | null {
 
 function triggerData(trigger: Trigger | null): Record<string, unknown> {
   return (trigger?.data ?? trigger ?? {}) as Record<string, unknown>;
+}
+
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() !== "" ? value : undefined;
+}
+
+function triggerPayload(trigger: Trigger | null): TriggerPayload {
+  const data = triggerData(trigger);
+  const nested = recordOrNull(data.data);
+  if (data.type === "metric.breach" && nested) {
+    return {
+      owner: optionalString(data.owner),
+      data: nested,
+    };
+  }
+  return {
+    owner: optionalString(data.owner),
+    data,
+  };
 }
 
 function numberOrNull(value: unknown): number | null {
@@ -193,7 +221,8 @@ function notifyTriageEscalation(ctx: WorkflowContext, metricId: string, reason: 
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const trigger = extractTrigger(String(ctx.task ?? ""));
-  const data = triggerData(trigger);
+  const payload = triggerPayload(trigger);
+  const data = payload.data;
   const metricId = String(data.metricId ?? data.metric_id ?? "");
   if (!metricId) return ctx.escalate("metric-alert-triage requires metricId", { trigger });
 
@@ -209,7 +238,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const metric = context.metric as Record<string, unknown> | null;
     const alert = context.alert as Record<string, unknown> | null;
 
-    const explicitOwner = String(metric?.explicitOwner ?? data.owner ?? "");
+    const explicitOwner = String(metric?.explicitOwner ?? payload.owner ?? data.owner ?? "");
     const projectOwner = String(metric?.projectOwner ?? "");
     const owner = resolveMetricOwner(metricId, configuredAgents, explicitOwner, projectOwner);
     const createdAt = Number(alert?.created_at ?? data.created_at ?? 0);

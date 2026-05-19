@@ -1,7 +1,8 @@
 /**
  * session-recovery — Auto-resume failed sessions (Ambulance Protocol).
  *
- * Subscribes to `session.failed` events via cron.json `on` field.
+ * Subscribes to canonical `session.completed` error/interrupted events, with
+ * `session.failed` kept as a compatibility input.
  * Two-tier classification:
  *   Tier 1: Digest classifier (structured understanding of what happened)
  *   Tier 2: classifyError fallback (string matching)
@@ -15,8 +16,8 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.js";
-import type { CronEntry } from "../../../shared/agent-sdk.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry } from "@may-agent/sdk";
 
 const MAX_RECOVERY_ATTEMPTS = 2;
 const STALE_AUTOCLOSE_MS = 30 * 60_000;
@@ -45,6 +46,18 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
     ...data,
     reason,
   });
+}
+
+function triggerPayload(event: TriggerEvent): Record<string, unknown> {
+  const raw = event.data;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const maybeEnvelope = raw as Record<string, unknown>;
+    if (maybeEnvelope.data && typeof maybeEnvelope.data === "object" && !Array.isArray(maybeEnvelope.data)) {
+      return maybeEnvelope.data as Record<string, unknown>;
+    }
+    return maybeEnvelope;
+  }
+  return {};
 }
 
 function workflowTask(input: {
@@ -183,19 +196,27 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     }
 
     if (!event.data) {
-      emitSkip(ctx, null, "missing session.failed event data", { eventType: event?.type ?? null });
+      emitSkip(ctx, null, "missing session recovery event data", { eventType: event?.type ?? null });
       return;
     }
 
-    const { sessionId, agent, error, task } = event.data as {
-      sessionId: string;
-      agent: string;
-      error: string;
-      task?: string;
-    };
+    const payload = triggerPayload(event);
+    const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
+    const agent = typeof payload.agent === "string" ? payload.agent : "";
+    const task = typeof payload.task === "string" ? payload.task : undefined;
+    const status = typeof payload.status === "string" ? payload.status : "";
+    const outcome = typeof payload.outcome === "string" ? payload.outcome : "";
+    const error = typeof payload.error === "string" && payload.error
+      ? payload.error
+      : `session ended with status=${status || "unknown"} outcome=${outcome || "unknown"}`;
 
-    if (!sessionId || !agent || !error) {
-      emitSkip(ctx, sessionId ?? null, "session.failed event missing sessionId, agent, or error", { eventType: event.type });
+    if (event.type === "session.completed" && status !== "error" && status !== "interrupted" && outcome !== "error" && outcome !== "interrupted") {
+      emitSkip(ctx, sessionId || null, "session.completed is not recoverable", { eventType: event.type, status, outcome });
+      return;
+    }
+
+    if (!sessionId || !agent) {
+      emitSkip(ctx, sessionId || null, "session recovery event missing sessionId or agent", { eventType: event.type });
       return;
     }
 

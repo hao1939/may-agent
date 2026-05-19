@@ -9,14 +9,14 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.ts";
-import type { CronEntry } from "../../../shared/agent-sdk.ts";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry } from "@may-agent/sdk";
 import {
   parseProjectTasks,
   planProjectTasks,
   updateProjectTaskFields,
   type PlannedProjectTask,
-} from "../../../shared/agent-sdk.ts";
+} from "@may-agent/sdk";
 import type { ProjectInfo, HealthAction } from "../../../shared/lib/project-health.ts";
 
 async function loadProjectHealth() {

@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, statSync, readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { WorkflowFileCache } from "../agent-sdk.ts";
+import { WorkflowFileCache } from "@may-agent/sdk";
 // budget-checkpoint removed per human request (iteration 51)
 import { onProjectCreate } from "../../../shared/hooks/validate-on-create.ts";
 import { unreadDiscussionTail } from "../lib/project-health.js";

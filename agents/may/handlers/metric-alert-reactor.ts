@@ -13,8 +13,8 @@
  * metric within the last 24h.
  */
 
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.js";
-import type { CronEntry } from "../../../shared/agent-sdk.js";
+import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry } from "@may-agent/sdk";
 import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
@@ -39,6 +39,25 @@ function numberOrNull(value: unknown): number | null {
 
 function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+function recordOrNull(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function metricBreachData(event: TriggerEvent): { owner?: string; payload: Record<string, unknown> } {
+  const triggerData = recordOrNull(event.data) ?? {};
+  const nestedData = recordOrNull(triggerData.data);
+  if (triggerData.type === "metric.breach" && nestedData) {
+    return {
+      owner: stringOrNull(triggerData.owner) ?? undefined,
+      payload: nestedData,
+    };
+  }
+  return {
+    owner: stringOrNull(triggerData.owner) ?? undefined,
+    payload: triggerData,
+  };
 }
 
 function parseValidationTime(value: unknown): number | null {
@@ -115,7 +134,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
 async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, configuredAgents: Set<string>) {
 
-    const { owner: eventOwner, metricId, metricName, current, threshold, target, message, priority: eventPriority } = event.data as {
+    const normalized = metricBreachData(event);
+    const { metricId, metricName, current, threshold, target, message, priority: eventPriority } = normalized.payload as {
       owner?: string;
       metricId: string;
       metricName: string;
@@ -125,6 +145,7 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       message: string;
       priority?: string;
     };
+    const eventOwner = normalized.owner ?? stringOrNull(normalized.payload.owner);
 
     if (!metricId) {
       emitSkip(ctx, null, "Missing metricId in event data.");
@@ -251,14 +272,18 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
         source: "event",
         entry: "metric-alert-reactor",
         data: {
+          type: "metric.breach",
+          source: "metric-alert-reactor",
           owner,
-          metricId,
-          metricName,
-          current,
-          threshold,
-          target,
-          message,
-          priority,
+          data: {
+            metricId,
+            metricName,
+            current,
+            threshold,
+            target,
+            message,
+            priority,
+          },
         },
         timestamp: Date.now(),
       }, null, 2),

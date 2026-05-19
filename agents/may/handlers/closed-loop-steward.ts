@@ -6,7 +6,7 @@
  * failures are moving toward closure.
  */
 
-import type { CronEntry, HandlerContext, HandlerModule } from "../../../shared/agent-sdk.ts";
+import type { CronEntry, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 
 type Config = {
@@ -139,15 +139,19 @@ function buildTriageTask(alert: AlertRow, owner: string, reason: string): string
       source: "closed-loop-steward",
       entry: "closed-loop-steward",
       data: {
-        alertId: alert.id,
+        type: "metric.breach",
+        source: "closed-loop-steward",
         owner,
-        metricId: alert.metric_id,
-        metricName: alert.metricName ?? alert.metric_id,
-        current: alert.current,
-        threshold: alert.threshold,
-        target: alert.target,
-        message: alert.message,
-        priority: alert.priority ?? "P2",
+        data: {
+          alertId: alert.id,
+          metricId: alert.metric_id,
+          metricName: alert.metricName ?? alert.metric_id,
+          current: alert.current,
+          threshold: alert.threshold,
+          target: alert.target,
+          message: alert.message,
+          priority: alert.priority ?? "P2",
+        },
       },
       timestamp: Date.now(),
     }, null, 2),
@@ -246,7 +250,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const routedTriageCandidates = triageCandidates.slice(0, triageLimit);
     for (const candidate of routedTriageCandidates) {
       const task = buildTriageTask(candidate.alert, candidate.owner, candidate.reason);
-      ctx.sdk.runWorkflow("metric-alert-triage", task, { source: "may" })
+      ctx.sdk.runWorkflow("metric-alert-triage", task, { source: candidate.owner })
         .then((result) => {
           ctx.sdk.log("info", `[closed-loop-steward] Routed ${candidate.alert.metric_id} to metric-alert-triage for ${candidate.owner}: ${String((result as any)?.status ?? "done")}`);
           ctx.sdk.emit("handler.workflow_dispatched", {
@@ -254,7 +258,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
             workflow: "metric-alert-triage",
             metricId: candidate.alert.metric_id,
             alertId: candidate.alert.id,
-            source: "may",
+            source: candidate.owner,
             owner: candidate.owner,
             workflowRunId: result.runId ?? null,
             status: result.status,

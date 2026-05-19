@@ -60,11 +60,12 @@ if (existsSync(workflowFile)) {
 // 1. Read seed and rewrite for new location.
 let src = readFileSync(SHARED_SEED, "utf8");
 
-// Imports relative to shared/workflows/ -> rewrite for projects/<id>/workflows/
+// Imports relative to scripts/seeds/ -> rewrite for projects/<id>/workflows/
 // Note: validate-on-create lives at shared/hooks/ and the seed already encodes
 // the projects/<id>/workflows/-relative path; no rewrite needed for it.
+// `@may-agent/sdk` is a bare specifier that resolves via node_modules in
+// both contexts (workspace + file: dep), so it also needs no rewrite.
 const importRewrites = [
-  ['from "../agent-sdk.ts"', 'from "../../../shared/agent-sdk.ts"'],
   ['from "../lib/project-health.js"', 'from "../../../shared/lib/project-health.js"'],
 ];
 

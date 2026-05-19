@@ -13,7 +13,7 @@
 
 import { resolve } from "node:path";
 import { existsSync, readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
-import type { HandlerContext, HandlerModule, CronEntry } from "../../../shared/agent-sdk.js";
+import type { HandlerContext, HandlerModule, CronEntry } from "@may-agent/sdk";
 
 const EVAL_DIR = ".state/evaluations";
 const QUEUE_DIR = ".state/coaching-queue";

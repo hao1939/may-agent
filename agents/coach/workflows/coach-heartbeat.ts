@@ -8,8 +8,8 @@ import {
   loadInbox,
   formatMetricsBlock,
   runRedMetricCommands,
-} from "../../../shared/agent-sdk.ts";
-import { checkCircuitBreaker, recordCircuitOutcome } from "../../../shared/agent-sdk.ts";
+} from "@may-agent/sdk";
+import { checkCircuitBreaker, recordCircuitOutcome } from "@may-agent/sdk";
 
 export const name = "coach-heartbeat";
 export const description = "coach's 2-phase heartbeat: plan first, then execute.";
