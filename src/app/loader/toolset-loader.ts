@@ -97,12 +97,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "workflow": {
         const workflowDir = resolve(agentDir, "workflows");
-        const sharedWorkflowDir = resolve(opts.sharedRoot, "workflows");
         tools.push(
           createWorkflowTool({
             manager,
             workflowDir,
-            sharedWorkflowDir,
             persistDir,
             agentName: config.name,
             runtimeCtx: buildRuntimeCtx({

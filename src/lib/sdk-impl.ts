@@ -113,7 +113,6 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         agentName: agentForWorkflow,
         persistDir: deps.persistDir,
         workflowDir: join(deps.agentsRoot, agentForWorkflow, "workflows"),
-        sharedWorkflowDir: join(deps.sharedRoot, "workflows"),
         projectWorkflowDir,
         guardsDir: join(deps.agentsRoot, agentForWorkflow, "guards"),
         sharedGuardsDir: join(deps.sharedRoot, "guards"),

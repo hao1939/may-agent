@@ -127,7 +127,8 @@ describe("emitDaemonEvent", () => {
     await expect(emitDaemonEvent(captureEndpoint(writes), "project.status_changed", {
       data: {
         projectId: "p1",
-        status: "active",
+        from: "open",
+        to: "active",
       },
     })).resolves.toMatchObject({ type: "ok", command: "project.status_changed" });
 
@@ -137,7 +138,8 @@ describe("emitDaemonEvent", () => {
       owner: "agent:may",
       data: {
         projectId: "p1",
-        status: "active",
+        from: "open",
+        to: "active",
       },
     });
   });
