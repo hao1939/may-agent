@@ -329,7 +329,6 @@ export interface AgentSDK {
   log(level: "info" | "warn" | "error", msg: string): void;
   message(target: string, content: string): void;
   escalate(reason: string, opts?: EscalationOptions): void;
-  escalate(target: string, reason: string): void;
   paths: {
     persist: string;
     root: string;

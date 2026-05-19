@@ -174,13 +174,11 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       } as any);
     },
 
-    escalate(reasonOrTarget: string, optsOrReason?: EscalationOptions | string): void {
-      const legacy = typeof optsOrReason === "string";
-      const reason = legacy ? optsOrReason : reasonOrTarget;
-      const opts: EscalationOptions = legacy ? {
-        owner: reasonOrTarget,
-        evidence: { legacyEscalate: true },
-      } : (optsOrReason ?? {});
+    escalate(reason: string, opts?: EscalationOptions): void {
+      if (typeof (opts as unknown) === "string") {
+        throw new Error("sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts");
+      }
+      opts = opts ?? {};
       const owner = normalizeOwner(opts.owner);
       const severity = opts.severity ?? "P2";
       const escalationId = createEscalationId();
@@ -253,9 +251,11 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
       return result;
     },
 
-    escalate(reasonOrTarget: string, optsOrReason?: EscalationOptions | string): void {
-      const summary = typeof optsOrReason === "string" ? optsOrReason : reasonOrTarget;
-      deps.finish({ status: "escalated", summary });
+    escalate(reason: string, opts?: EscalationOptions): void {
+      if (typeof (opts as unknown) === "string") {
+        throw new Error("sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts");
+      }
+      deps.finish({ status: "escalated", summary: reason });
     },
   };
 }

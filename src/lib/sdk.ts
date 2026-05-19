@@ -40,8 +40,6 @@ export interface AgentSDK {
 
   /** External escalation. Defaults to owner agent:may. */
   escalate(reason: string, opts?: EscalationOptions): void;
-  /** Legacy compatibility wrapper. */
-  escalate(target: string, reason: string): void;
 
   /** System paths. */
   paths: {
