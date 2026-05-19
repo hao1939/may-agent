@@ -61,16 +61,18 @@ export function attachDaemonEventSubscribers(opts: {
     },
     (agent, sessionId, reason) => {
       bus.emit({
-        type: "message.created",
-        source: "system:circuit-breaker",
+        type: "escalation.created",
+        source: "runtime:circuit-breaker",
         owner: "agent:may",
         urgency: "high",
         data: {
-          from: "system:circuit-breaker",
-          to: "may",
-          content: `[circuit-breaker] Agent "${agent}" terminated (session ${sessionId}): ${reason}. Investigate the root cause — check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
-          intent: "investigate",
-          priority: "P1",
+          escalationId: createEscalationId(),
+          sourceAgent: agent,
+          sourceSessionId: sessionId,
+          reason,
+          requestedAction: `Investigate the root cause for ${agent}: check the session transcript, recent errors, and whether the agent needs guidance or a code fix.`,
+          severity: "P1",
+          evidence: { trigger: "circuit_break" },
         },
       } as any);
     },
