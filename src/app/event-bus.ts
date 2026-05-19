@@ -92,16 +92,75 @@ export type SessionEvent =
 /** System events */
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
+  | { type: "heartbeat.trigger"; source?: string; owner: string; data: { agent: string } }
   | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
   | { type: "handler.completed"; source: "cron"; owner: string; data: { handler: string; agent: string; durationMs: number } }
   | { type: "handler.failed"; source: "cron"; owner: string; data: { handler: string; agent: string; error: string; durationMs: number } }
+  | { type: "handler.skipped"; source?: string; owner: string; data: { handler: string; reason: string; eventType?: string | null; [key: string]: unknown } }
+  | { type: "handler.workflow_dispatched"; source?: string; owner: string; data: { handler: string; workflow: string; source?: string | null; projectId?: string | null; workflowRunId?: string | null; status: string; [key: string]: unknown } }
   | { type: "session.completed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; parentSessionId?: string; outcome?: string; status?: string; source?: string; kind?: string } }
   | { type: "session.failed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; error?: string; task?: string } }
   | { type: "session.escalated"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; finishParams: Record<string, unknown> } }
-  | { type: "project.iteration"; project: string; iteration: number }
-  | { type: "project.status_changed"; project: string; from: string; to: string }
+  | { type: "project.iteration"; source?: string; owner: string; data: { iteration: number; project?: string; projectId?: string; projectPath?: string } }
+  | { type: "project.status_changed"; source?: string; owner: string; data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string } }
   | { type: "project.nudge"; source: string; owner: string; data: { projectPath: string; comment?: boolean; commentText?: string } }
   | { type: "telegram.reply"; source: "telegram"; owner: string; data: { enriched: boolean; originalMsgId?: number; projectPath?: string; delivery?: string; hasSessionCtx?: boolean; hasDbCtx?: boolean; fallback?: string; reason?: string } }
+  | {
+      type: "escalation.created";
+      source: string;
+      owner: string;
+      urgency?: "low" | "normal" | "high" | "immediate";
+      ttl_ms?: number;
+      data: {
+        escalationId: string;
+        sourceAgent: string;
+        reason: string;
+        requestedAction: string;
+        severity?: "P0" | "P1" | "P2" | "P3";
+        sourceSessionId?: string;
+        projectId?: string;
+        projectPath?: string;
+        parentEscalationId?: string;
+        blockedOn?: string;
+        evidence?: Record<string, unknown>;
+        resume?: Record<string, unknown>;
+        dedupKey?: string;
+      };
+    }
+  | {
+      type: "escalation.routed";
+      source: string;
+      owner: string;
+      data: {
+        escalationId: string;
+        route: string;
+        reason?: string;
+      };
+    }
+  | {
+      type: "escalation.resolved";
+      source: string;
+      owner: string;
+      data: {
+        escalationId: string;
+        resolverAgent?: string;
+        outcome: "fixed" | "answered" | "dismissed" | "needs_human" | "expired" | string;
+        summary: string;
+        evidence?: Record<string, unknown>;
+        resumeInstruction?: string;
+        childEscalationId?: string;
+      };
+    }
+  | {
+      type: "escalation.dismissed";
+      source: string;
+      owner: string;
+      data: {
+        escalationId: string;
+        reason: string;
+        resolverAgent?: string;
+      };
+    }
   | {
       type: "message.created";
       source: string;
@@ -154,6 +213,12 @@ export type SystemEvent =
   | { type: "metric.breach"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; current?: number | null; threshold?: number | null; target?: number | null; message: string; priority?: "P0" | "P1" | "P2" | "P3" } }
   | { type: "metric.recovered"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; priority?: "P0" | "P1" | "P2" | "P3" } }
   | { type: "metric.stalled"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; message: string; priority?: "P0" | "P1" | "P2" | "P3" } }
+  | { type: "metric.threshold_changed"; source?: string; owner: string; data: { metricId: string; from?: number | null; to: number } }
+  | { type: "metric.alert_resolved"; source?: string; owner: string; data: { metricId: string; alertId: number; reason?: string | null } }
+  | { type: "metric.alert_judged"; source?: string; owner: string; data: { metricId: string; alertId: string | number; verdict?: string; reason?: string; evidence?: Record<string, unknown> } }
+  | { type: "agent.decision"; source?: string; owner: string; data: { agent: string; sessionId?: string; decision: string; evidence?: Record<string, unknown> } }
+  | { type: "context.read"; source?: string; owner: string; data: { agent?: string; sessionId?: string; [key: string]: unknown } }
+  | { type: "learning.feedback"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { [key: string]: unknown } }
   | {
       type: "guard.triggered";
       owner: string;
