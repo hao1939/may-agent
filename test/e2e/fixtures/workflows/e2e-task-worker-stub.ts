@@ -7,7 +7,7 @@ export const name = "e2e-task-worker-stub";
 export const description = "Fixture task worker workflow for task-driven project e2e tests.";
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const projectId = ctx.task.match(/project=(\S+)/)?.[1] ?? "unknown";
+  const projectId = ctx.task.match(/projectId=(\S+)/)?.[1] ?? "unknown";
   const taskId = ctx.task.match(/task=(\S+)/)?.[1] ?? "unknown";
 
   ctx.emit({
