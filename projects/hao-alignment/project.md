@@ -1,7 +1,7 @@
 ---
 id: hao-alignment
 owner: may
-status: complete
+status: done
 type: milestone
 priority: P1
 workflow: project
