@@ -140,25 +140,35 @@ describe("AgentSDK escalation", () => {
     expect(syntheticMessages).toHaveLength(0);
   });
 
-  it("keeps sdk.escalate(target, reason) as a compatibility wrapper", () => {
+  it("uses owner options for non-default escalation routing", () => {
     const { sdk, events, root } = makeSdk();
     roots.push(root);
 
-    sdk.escalate("may", "Metric breached but fix unclear");
-    sdk.escalate("human", "Need operator approval");
+    sdk.escalate("Metric breached but fix unclear", { owner: "may" });
+    sdk.escalate("Need operator approval", { owner: "human" });
 
     const escalations = events.filter((event) => event.type === "escalation.created");
     expect(escalations).toHaveLength(2);
     expect(escalations[0]).toMatchObject({ owner: "agent:may" });
     expect(escalations[0].data).toMatchObject({
       reason: "Metric breached but fix unclear",
-      evidence: { legacyEscalate: true },
     });
+    expect(escalations[0].data).not.toHaveProperty("evidence");
     expect(escalations[1]).toMatchObject({ owner: "human:operator" });
     expect(escalations[1].data).toMatchObject({
       reason: "Need operator approval",
-      evidence: { legacyEscalate: true },
     });
+    expect(escalations[1].data).not.toHaveProperty("evidence");
+  });
+
+  it("rejects the removed sdk.escalate(target, reason) shape", () => {
+    const { sdk, events, root } = makeSdk();
+    roots.push(root);
+
+    expect(() => (sdk.escalate as any)("may", "Metric breached but fix unclear")).toThrow(
+      /sdk\.escalate\(reason, opts\?\)/,
+    );
+    expect(events.some((event) => event.type === "escalation.created")).toBe(false);
   });
 
   it("persists escalation audit rows using the canonical owner and escalation id", () => {
