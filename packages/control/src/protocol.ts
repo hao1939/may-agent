@@ -1,3 +1,5 @@
+import { isRecord } from "./event-envelope.js";
+
 export const SOCKET_CONTROL_TYPES = new Set(["subscribe", "status"]);
 
 export type SocketFrame =
@@ -5,11 +7,7 @@ export type SocketFrame =
   | { kind: "event"; command: string; event: Record<string, unknown> }
   | { kind: "error"; command: unknown; message: string };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-const LEGACY_SOCKET_FRAME_TYPES = new Set([
+const UNSUPPORTED_SOCKET_FRAME_TYPES = new Set([
   "emit",
   "message",
   "close",
@@ -50,8 +48,8 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
     return { kind: "control", command: cmdType as "subscribe" | "status", frame };
   }
 
-  if (LEGACY_SOCKET_FRAME_TYPES.has(cmdType)) {
-    return { kind: "error", command: cmdType, message: `Unsupported legacy socket frame type: ${cmdType}` };
+  if (UNSUPPORTED_SOCKET_FRAME_TYPES.has(cmdType)) {
+    return { kind: "error", command: cmdType, message: `Unsupported socket frame type: ${cmdType}` };
   }
 
   return socketEvent(cmdType, frame);

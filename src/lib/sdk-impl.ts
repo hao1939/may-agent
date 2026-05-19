@@ -18,6 +18,7 @@ import { createMetricService } from "./metrics.js";
 import { createQueryService } from "./query-service.js";
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
+import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 // ── Dependencies (injected, not imported directly) ────────────────────
 
@@ -56,16 +57,8 @@ export function projectWorkflowDirFor(projectsRoot: string, projectId: string | 
   return candidates.find((dir) => existsSync(dir)) ?? candidates[candidates.length - 1];
 }
 
-function normalizeOwner(owner: string | undefined): string {
-  const value = owner?.trim();
-  if (!value) return "agent:may";
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value === "human") return "human:operator";
-  return `agent:${value}`;
-}
-
 function messageOwner(target: string): string {
-  return normalizeOwner(target);
+  return normalizeEventOwner(target);
 }
 
 function urgencyForSeverity(severity: EscalationOptions["severity"]): "low" | "normal" | "high" | "immediate" {
@@ -125,7 +118,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       deps.bus.emit({
         type,
         source: envelope?.source ?? `agent:${deps.agentName}`,
-        owner: normalizeOwner(envelope?.owner ?? deps.agentName),
+        owner: normalizeEventOwner(envelope?.owner, deps.agentName),
         ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},
@@ -145,7 +138,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
       emit: (type, data, envelope) => deps.bus.emit({
         type,
         source: envelope?.source ?? `agent:${deps.agentName}`,
-        owner: normalizeOwner(envelope?.owner ?? deps.agentName),
+        owner: normalizeEventOwner(envelope?.owner, deps.agentName),
         ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
         ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
         data: data ?? {},
@@ -178,7 +171,7 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         throw new Error("sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts");
       }
       opts = opts ?? {};
-      const owner = normalizeOwner(opts.owner);
+      const owner = normalizeEventOwner(opts.owner);
       const severity = opts.severity ?? "P2";
       const escalationId = createEscalationId();
       const requestedAction = opts.requestedAction ?? `Investigate and resolve or answer this blocker: ${reason}`;

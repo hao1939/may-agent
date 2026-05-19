@@ -28,6 +28,7 @@ import {
 } from "./telegram-reply-router.js";
 import { createTelegramClient } from "./telegram-client.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
+import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
 
 // Force IPv4 for fetch — Node 22's undici tries IPv6 first which times out
 // on some networks (e.g., when IPv6 to api.telegram.org is unreachable).
@@ -44,14 +45,6 @@ export interface TelegramBotOptions {
   manager: SubagentManager;
   getSessionId: () => string;
   interfaceAgent: string;
-}
-
-function eventOwner(owner: unknown): string {
-  if (typeof owner !== "string" || !owner.trim()) return "agent:may";
-  const value = owner.trim();
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
 }
 
 function projectOwner(projectRoot: string, projectPath: string): string {
@@ -170,7 +163,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     bus.emit({
       type: "project.comment.created",
       source: "telegram",
-      owner: eventOwner(projectOwner(projectRoot, normalized)),
+      owner: normalizeEventOwner(projectOwner(projectRoot, normalized)),
       data: {
         projectPath: normalized,
         comment: comment.trim(),
@@ -224,7 +217,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             bus.emit({
               type: "telegram.reply",
               source: "telegram",
-              owner: eventOwner(route.owner),
+              owner: normalizeEventOwner(route.owner),
               data: {
                 enriched: true,
                 projectPath: route.projectPath,
@@ -248,7 +241,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           bus.emit({
             type: "telegram.reply",
             source: "telegram",
-            owner: eventOwner(route.owner),
+            owner: normalizeEventOwner(route.owner),
             data: {
               enriched: true,
               hasSessionCtx: route.hasSessionCtx,
@@ -279,7 +272,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           bus.emit({
             type: "telegram.reply",
             source: "telegram",
-            owner: eventOwner(opts.interfaceAgent),
+            owner: normalizeEventOwner(opts.interfaceAgent),
             data: {
               enriched: true,
               hasDbCtx: false,
@@ -292,7 +285,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           bus.emit({
             type: "telegram.reply",
             source: "telegram",
-            owner: eventOwner(opts.interfaceAgent),
+            owner: normalizeEventOwner(opts.interfaceAgent),
             data: {
               enriched: false,
               reason: "context-not-found",

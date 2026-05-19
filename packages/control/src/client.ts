@@ -2,6 +2,7 @@ import { connect, Socket, type NetConnectOpts } from "node:net";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { isSocketCommandType } from "./protocol.js";
+import { buildCanonicalEventEnvelope } from "./event-envelope.js";
 
 export interface SocketResponse {
   type: "ok" | "error" | "status";
@@ -28,55 +29,12 @@ export function daemonSocketPath(persistDir: string, opts: DaemonSocketPathOptio
   return resolve(persistDir, "instances", instance, `${interfaceAgent}.sock`);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function normalizeOwner(owner: unknown): string {
-  const value = typeof owner === "string" ? owner.trim() : "";
-  if (!value) return "agent:may";
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
-}
-
-function isCanonicalEnvelope(frame: Record<string, unknown>): boolean {
-  return typeof frame.source === "string"
-    && frame.source.trim().length > 0
-    && typeof frame.owner === "string"
-    && frame.owner.trim().length > 0
-    && isRecord(frame.data);
-}
-
 function daemonEventFrame(eventType: string, data: Record<string, unknown>): Record<string, unknown> {
   if (!eventType.includes(".") || isSocketCommandType(eventType)) {
     return { ...data, type: eventType };
   }
 
-  if (isCanonicalEnvelope(data)) {
-    return { ...data, type: eventType };
-  }
-
-  const {
-    source,
-    owner,
-    urgency,
-    ttl_ms,
-    timestamp,
-    data: eventData,
-    ...payload
-  } = data;
-  const payloadData = isRecord(eventData) ? { ...eventData, ...payload } : payload;
-
-  return {
-    type: eventType,
-    source: typeof source === "string" && source.trim() ? source.trim() : "control",
-    owner: normalizeOwner(owner),
-    ...(typeof urgency === "string" && urgency.trim() ? { urgency } : {}),
-    ...(typeof ttl_ms === "number" ? { ttl_ms } : {}),
-    ...(typeof timestamp === "number" ? { timestamp } : {}),
-    data: payloadData,
-  };
+  return buildCanonicalEventEnvelope(eventType, data, { source: "control" });
 }
 
 export function sendSocketCommand(

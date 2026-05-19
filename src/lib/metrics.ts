@@ -1,4 +1,5 @@
 import type { SqliteDb } from "./db.js";
+import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 
 export type MetricType = "gauge" | "counter" | "health" | "derived";
 export type MetricPriority = "P0" | "P1" | "P2" | "P3";
@@ -202,14 +203,6 @@ function urgencyForPriority(priority: unknown): "low" | "normal" | "high" | "imm
   if (priority === "P1") return "high";
   if (priority === "P3") return "low";
   return "normal";
-}
-
-function normalizeEventOwner(owner: string | undefined): string {
-  const value = owner?.trim();
-  if (!value) return "agent:may";
-  if (value.startsWith("agent:") || value.startsWith("human:")) return value;
-  if (value.toLowerCase() === "human") return "human:operator";
-  return `agent:${value}`;
 }
 
 export function createMetricService(options: MetricServiceOptions): MetricService {
