@@ -14,6 +14,42 @@ beforeEach(() => {
 });
 
 describe("DbWriter", () => {
+  it("ignores flat session lifecycle events", () => {
+    const writer = new DbWriter(TEST_DIR);
+    const db = getDb(TEST_DIR);
+
+    writer.handler({
+      type: "session.start",
+      sessionId: "s_flat",
+      agent: "dev",
+      task: "flat start",
+      source: "runtime",
+      owner: "agent:dev",
+    } as any);
+
+    expect(db.prepare("SELECT COUNT(*) AS count FROM sessions WHERE sessionId = ?").get("s_flat")).toMatchObject({ count: 0 });
+
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
+      ["s_running", "dev", "task", "running", Date.now() - 1_000],
+    );
+
+    writer.handler({
+      type: "session.end",
+      sessionId: "s_running",
+      agent: "dev",
+      status: "error",
+      source: "runtime",
+      owner: "agent:dev",
+    } as any);
+
+    expect(db.prepare("SELECT status, endedAt FROM sessions WHERE sessionId = ?").get("s_running")).toMatchObject({
+      status: "running",
+      endedAt: null,
+    });
+    expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type IN ('session.start', 'session.end')").get()).toMatchObject({ count: 0 });
+  });
+
   it("does not erase session lineage when a duplicate start event lacks projectId", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);
