@@ -68,6 +68,13 @@ export interface SandboxSpec {
   startupTimeoutMs?: number;
   /** Capture daemon stdout/stderr to a file in sandbox dir. Default: true. */
   captureLogs?: boolean;
+  /**
+   * Include the platform UI under projects/platform/ui by copying the repo's
+   * ui/ tree into the sandbox. Required for UI-driven tests (E8). Default: false.
+   * When true and `fixtureProjects` does not include "platform", a minimal
+   * platform project.md is also synthesized so the index route resolves.
+   */
+  includePlatformUi?: boolean;
 }
 
 export interface Sandbox {
@@ -80,6 +87,10 @@ export interface Sandbox {
   instance: string;
   daemonPid: number | null;
   daemonReady: Promise<void>;
+  /** HTTP port assigned to --web (when daemonArgs include --web). undefined otherwise. */
+  webPort?: number;
+  /** Wait for the web server to accept HTTP requests. Resolves only if --web is enabled. */
+  waitForWeb?: (timeoutMs?: number) => Promise<void>;
   /** Returns daemon stdout+stderr captured so far. Empty if captureLogs is false. */
   getLogs: () => string;
   close: () => Promise<void>;
@@ -177,12 +188,44 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     copyFixtureFile(join("projects", name), join(projectsRoot, name));
   }
 
+  // Optional: copy the repo's platform UI into projects/platform/ui so that
+  // --web serves the real production UI for UI-driven tests (E8).
+  if (spec.includePlatformUi) {
+    const platformDir = join(projectsRoot, "platform");
+    mkdirSync(platformDir, { recursive: true });
+    const uiSrc = resolve(REPO_ROOT, "ui");
+    if (!existsSync(uiSrc)) {
+      throw new Error(`includePlatformUi requested but repo ui/ not found at ${uiSrc}`);
+    }
+    cpSync(uiSrc, join(platformDir, "ui"), { recursive: true });
+    // Synthesize minimal project.md + discussion.md if not already supplied.
+    const projectMd = join(platformDir, "project.md");
+    if (!existsSync(projectMd)) {
+      writeFileSync(
+        projectMd,
+        `---\nstatus: waiting\npriority: P2\nowner: agent:may\n---\n\n# Platform (e2e fixture)\n\nMinimal platform project for UI e2e tests.\n`,
+      );
+    }
+    const discussionMd = join(platformDir, "discussion.md");
+    if (!existsSync(discussionMd)) {
+      writeFileSync(discussionMd, `# discussion\n\n`);
+    }
+  }
+
   // ── 2. Spawn daemon ────────────────────────────────────────────────
   const socketPath = resolve(stateDir, "instances", instance, `${interfaceAgent}.sock`);
   const dbPath = resolve(stateDir, "may.db"); // adjust if real path differs
   const logPath = join(root, "daemon.log");
   const captureLogs = spec.captureLogs !== false;
   const logChunks: string[] = [];
+
+  // Allocate a free port for --web if it's in the args.
+  const daemonArgs = spec.daemonArgs ?? ["--cron", "--socket"];
+  const webEnabled = daemonArgs.includes("--web");
+  let webPort: number | undefined;
+  if (webEnabled) {
+    webPort = await allocateFreePort();
+  }
 
   const env: Record<string, string> = {
     ...process.env as Record<string, string>,
@@ -197,10 +240,11 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     // Make sure no telegram bot tries to start.
     TELEGRAM_BOT_TOKEN: "",
     TELEGRAM_CHAT_ID: "",
+    ...(webPort !== undefined ? { WEB_PORT: String(webPort) } : {}),
     ...spec.env,
   };
 
-  const args = spec.daemonArgs ?? ["--cron", "--socket"];
+  const args = daemonArgs;
   const child: ChildProcess = spawn("bun", [MAY_TS, ...args], {
     cwd: REPO_ROOT,
     env,
@@ -280,7 +324,46 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     instance,
     daemonPid: child.pid ?? null,
     daemonReady,
+    webPort,
+    waitForWeb: webEnabled && webPort !== undefined
+      ? (timeoutMs = 15000) => waitForHttp(`http://127.0.0.1:${webPort}/`, timeoutMs)
+      : undefined,
     getLogs: () => logChunks.join(""),
     close,
   };
+}
+
+async function allocateFreePort(): Promise<number> {
+  // Bind a listener on port 0, read the assigned port, immediately close.
+  // There is a small race between close and re-bind but it's adequate for tests.
+  const net = await import("node:net");
+  return new Promise<number>((resolveP, rejectP) => {
+    const srv = net.createServer();
+    srv.once("error", rejectP);
+    srv.listen(0, "127.0.0.1", () => {
+      const addr = srv.address();
+      if (addr && typeof addr === "object") {
+        const port = addr.port;
+        srv.close(() => resolveP(port));
+      } else {
+        srv.close(() => rejectP(new Error("could not allocate port")));
+      }
+    });
+  });
+}
+
+async function waitForHttp(url: string, timeoutMs: number): Promise<void> {
+  const start = Date.now();
+  let lastErr: unknown = null;
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await fetch(url, { method: "GET" });
+      // Any HTTP response (including 404) proves the server is listening.
+      if (res.status >= 0) return;
+    } catch (err) {
+      lastErr = err;
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  throw new Error(`waitForHttp timeout after ${timeoutMs}ms: ${url} (last error: ${lastErr instanceof Error ? lastErr.message : String(lastErr)})`);
 }

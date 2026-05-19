@@ -52,11 +52,12 @@ ls /tmp/may-e2e-*/
 | `e5-agent-reload` | `reload` socket command → new agent on disk picked up, updated agent reported; `user-guide.md § Reload`, `agent-convention.md` | ✅ |
 | `e6-agent-call-chain` | `ctx.sdk.runAgent(target, task)` from a handler → child session with `kind=call`+`source=callAgent`, completion event observed; `sdk-quickstart.md § sdk.runAgent` | ✅ |
 | `e7-escalation-roundtrip` | `escalation.created` → `escalation.resolved` → resume_attempted/resume_failed; `needs_human` short-circuit; `sdk-quickstart.md § External Escalate`, `escalation.md` | ✅ |
+| `e8-project-comment-ui` | Served platform UI: index loads, top-level assets resolve, row click navigates to canonical id, comment form POSTs to `/api/projects/comment`, discussion.md appended, status flips. Replaces the manual `scripts/e2e-platform-comment.mjs`. Skipped on hosts without Chrome (set `E2E_NO_UI=1` to opt out). | ✅ |
 | `control-routing-e2e` | In-process socket frame routing; canonical `message.created` persistence/rejection plus legacy `fork` command translation | ✅ |
 | `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
 
-E8 (telegram UI exercising) and full-LLM variants of E3a/E6 are not yet
-implemented — see roadmap in
+E8 currently covers project-comment UI; broader telegram UI flows and
+full-LLM variants of E3a/E6 are still future work — see roadmap in
 `projects/platform/proposals/2026-05-19-e2e-harness-findings.md`.
 
 ## Library
