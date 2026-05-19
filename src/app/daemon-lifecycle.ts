@@ -1,7 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { exec } from "node:child_process";
 import { resolve } from "node:path";
-import { log } from "../lib/log.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
@@ -114,10 +113,9 @@ export function createDaemonLifecycle(opts: {
     } else {
       summary = "[reload] No changes";
     }
-    // Use log() so the summary is visible in --cron / --socket daemon modes
-    // (where no bus->stdout transport is attached). Also emit on the bus so
-    // bus subscribers (chat console, telegram echo, future routes) see it.
-    log("info", summary);
+    // info events are forwarded to stdout by attachConsoleUI (chat/console
+    // mode) or attachDaemonInfoLog (default daemon mode). See
+    // src/app/transport/daemon-info-log.ts.
     opts.bus.emit({ type: "info", message: summary });
   };
 

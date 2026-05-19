@@ -21,6 +21,7 @@ import { waitForModelProxy } from "./model-proxy-health.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachConsoleUI } from "./transport/console.js";
+import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 
 export async function runAppRuntime(opts: {
@@ -60,6 +61,7 @@ export async function runAppRuntime(opts: {
   let chatSession: Awaited<ReturnType<typeof startRequestedSession>>["chatSession"];
 
   if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
+  else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
 
   if (WEB_ENABLED) {
     const { port } = await startWebMode({ stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
