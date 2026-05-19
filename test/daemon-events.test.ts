@@ -74,6 +74,54 @@ describe("daemon event subscribers", () => {
     }
   });
 
+  it("translates error session.end to session.completed without emitting live session.failed", () => {
+    const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-error-"));
+    const bus = new EventBus();
+    const events: any[] = [];
+    const manager = {
+      resumeInterrupted: () => false,
+    };
+
+    try {
+      attachDaemonEventSubscribers({
+        bus,
+        manager: manager as any,
+        persistDir,
+        projectRoot: persistDir,
+      });
+      bus.subscribe((event) => events.push(event));
+
+      bus.emit({
+        type: "session.end",
+        sessionId: "s_error",
+        agent: "dev",
+        outcome: "error",
+        summary: "failed",
+        durationMs: 10,
+        status: "error",
+        error: "boom",
+        task: "fix issue",
+      });
+
+      expect(events).toContainEqual(expect.objectContaining({
+        type: "session.completed",
+        source: "runtime",
+        owner: "agent:dev",
+        data: expect.objectContaining({
+          sessionId: "s_error",
+          agent: "dev",
+          outcome: "error",
+          status: "error",
+          error: "boom",
+          task: "fix issue",
+        }),
+      }));
+      expect(events.some((event) => event.type === "session.failed")).toBe(false);
+    } finally {
+      rmSync(persistDir, { recursive: true, force: true });
+    }
+  });
+
   it("emits canonical escalation.created when auto-resume attempts are exhausted", () => {
     const persistDir = mkdtempSync(join(tmpdir(), "daemon-events-resume-"));
     const bus = new EventBus();

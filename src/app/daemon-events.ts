@@ -124,20 +124,6 @@ export function attachDaemonEventSubscribers(opts: {
     if (event.type !== "session.end") return;
     const info = eventData(event) as any;
 
-    if (info.error && info.status === "error") {
-      bus.emit({
-        type: "session.failed",
-        source: "runtime",
-        owner: `agent:${info.agent}`,
-        data: {
-          sessionId: info.sessionId,
-          agent: info.agent,
-          error: info.error,
-          task: info.task,
-        },
-      } as any);
-    }
-
     const fp = info.finishParams;
     if (fp && (fp.status === "blocked" || fp.status === "failure")) {
       const status = String(fp.status);
@@ -173,6 +159,8 @@ export function attachDaemonEventSubscribers(opts: {
           status: info.status,
           source: typeof event.source === "string" ? event.source : undefined,
           kind: info.kind,
+          error: typeof info.error === "string" ? info.error : undefined,
+          task: typeof info.task === "string" ? info.task : undefined,
         },
       } as any);
     }
