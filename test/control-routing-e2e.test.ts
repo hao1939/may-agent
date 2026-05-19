@@ -126,7 +126,8 @@ describe("control routing e2e", () => {
       const ack = await sendSocketCommand(mockEndpoint(core.attachClient), {
         type: "fork",
         agent: "dev",
-        message: "Investigate the failing migration",
+        task: "Investigate the failing migration",
+        opts: { kind: "job", source: "socket" },
       });
       await waitForSocketDispatch();
 
