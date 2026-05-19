@@ -296,9 +296,12 @@ For active projects without tasks:
 `project.md`. Sessions and events provide execution evidence. No new task
 service or separate database is required.
 
-Implementation status: proposed. Current runtime has project status, sessions,
-workflows, events, and project nudges; task parsing and task-aware dispatch from
-`## Tasks` is not live yet.
+Implementation status: first slice live. Current runtime can parse `## Tasks`,
+compute ready/running/pending from dependencies and live task sessions, and
+dispatch ready tasks directly from `agents/may/handlers/project.ts`. Task
+completion currently updates the task projection for `finish({ status:
+"success" })` and emits task lifecycle events. Owner judgment after failed or
+blocked task attempts still needs a fuller follow-up implementation.
 
 Minimal task shape:
 

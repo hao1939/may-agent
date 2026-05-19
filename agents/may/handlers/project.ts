@@ -7,10 +7,16 @@
  *   - reactivate/add-comment for blocked projects
  *   - escalate persistent blockers
  */
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import type { HandlerContext, HandlerModule, TriggerEvent } from "../../../shared/agent-sdk.ts";
 import type { CronEntry } from "../../../shared/agent-sdk.ts";
+import {
+  parseProjectTasks,
+  planProjectTasks,
+  updateProjectTaskFields,
+  type PlannedProjectTask,
+} from "../../../shared/agent-sdk.ts";
 import type { ProjectInfo, HealthAction } from "../../../shared/lib/project-health.ts";
 
 async function loadProjectHealth() {
@@ -33,6 +39,145 @@ function matchesProjectTarget(project: ProjectInfo, target: string | null): bool
 
 function projectIdFor(project: ProjectInfo): string {
   return `${project.owner}/${project.relPath.split("/").pop()}`;
+}
+
+function taskSource(taskId: string): string {
+  return `project-task:${taskId}`;
+}
+
+function taskIdFromSource(source: unknown): string | null {
+  if (typeof source !== "string") return null;
+  const match = source.match(/^project-task:([^:\s]+)$/);
+  return match ? match[1] : null;
+}
+
+function projectMaxConcurrent(content: string): number {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  const raw = match?.[1].match(/^max_concurrent:\s*(\d+)\s*$/m)?.[1];
+  const parsed = raw ? Number.parseInt(raw, 10) : 3;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+}
+
+function buildProjectTaskPrompt(project: ProjectInfo, task: PlannedProjectTask): string {
+  const deps = task.depends_on.length ? task.depends_on.join(", ") : "none";
+  return [
+    "## Project Task",
+    `Project: ${project.relPath}`,
+    `Task ID: ${task.id}`,
+    `Assignee: ${task.assignee}`,
+    `Dependencies: ${deps}`,
+    `Attempt: ${task.attempts + 1}`,
+    "",
+    "## Goal",
+    task.goal,
+    "",
+    "## Project Context",
+    `Read ${project.relPath}/project.md and any files the task explicitly requires.`,
+    "Focus on this task only. Do not replan the whole project unless this task cannot proceed.",
+    "",
+    "## Finish Contract",
+    "Use finish({ status: 'success', summary: '...' }) only when this task goal is met.",
+    "Use partial when more work on the same task is useful.",
+    "Use blocked or failure when owner judgment is needed.",
+  ].join("\n");
+}
+
+function finishStatus(result: unknown): string {
+  const finish = (result as { finishResult?: { status?: unknown } } | null)?.finishResult;
+  return typeof finish?.status === "string" ? finish.status : "";
+}
+
+function updateTaskFile(projectFile: string, taskId: string, patch: Parameters<typeof updateProjectTaskFields>[2]): void {
+  const latest = readFileSync(projectFile, "utf-8");
+  writeFileSync(projectFile, updateProjectTaskFields(latest, taskId, patch), "utf-8");
+}
+
+function activeProjectTaskIds(ctx: HandlerContext, projectId: string): string[] {
+  const ids = new Set<string>();
+  for (const status of ["running", "idle"]) {
+    const rows = ctx.sdk.query.sessions({ projectId, status, limit: 100 }).rows as Array<{ source?: unknown }>;
+    for (const row of rows) {
+      const taskId = taskIdFromSource(row.source);
+      if (taskId) ids.add(taskId);
+    }
+  }
+  return [...ids];
+}
+
+function dispatchReadyProjectTasks(
+  ctx: HandlerContext,
+  project: ProjectInfo,
+  projectId: string,
+  remainingLaunches: number,
+): { handled: boolean; launched: number; reason: string } {
+  const parsed = parseProjectTasks(project.content);
+  if (parsed.tasks.length === 0) return { handled: false, launched: 0, reason: "no tasks" };
+  if (parsed.errors.length > 0) {
+    emitSkip(ctx, `Skip ${project.relPath} — invalid task section: ${parsed.errors.join("; ")}`, {
+      projectId,
+      projectPath: project.relPath,
+    });
+    return { handled: true, launched: 0, reason: "invalid tasks" };
+  }
+
+  const plan = planProjectTasks(parsed.tasks, {
+    activeTaskIds: activeProjectTaskIds(ctx, projectId),
+    maxConcurrent: projectMaxConcurrent(project.content),
+  });
+  if (plan.running.length > 0 && plan.dispatchable.length === 0) {
+    return { handled: true, launched: 0, reason: "task session running" };
+  }
+  if (plan.dispatchable.length === 0) {
+    return { handled: false, launched: 0, reason: plan.allDone ? "all tasks done" : "no ready tasks" };
+  }
+
+  let launched = 0;
+  for (const task of plan.dispatchable.slice(0, remainingLaunches)) {
+    const attempts = task.attempts + 1;
+    updateTaskFile(project.projectFile, task.id, { status: "running", attempts });
+    const source = taskSource(task.id);
+    const prompt = buildProjectTaskPrompt(project, task);
+    ctx.sdk.log("info", `[project] Dispatching task ${project.relPath}#${task.id} to ${task.assignee}`);
+    ctx.sdk.emit("project.task.dispatched", {
+      projectId,
+      projectPath: project.relPath,
+      taskId: task.id,
+      assignee: task.assignee,
+    });
+
+    ctx.sdk.runAgent(task.assignee, prompt, { source, projectId })
+      .then((result: any) => {
+        const status = finishStatus(result);
+        if (result?.status === "done" && status === "success") {
+          updateTaskFile(project.projectFile, task.id, { status: "done", result: "succeeded" });
+        } else {
+          updateTaskFile(project.projectFile, task.id, { status: "ready", result: null });
+        }
+        ctx.sdk.emit("project.task.finished", {
+          projectId,
+          projectPath: project.relPath,
+          taskId: task.id,
+          assignee: task.assignee,
+          sessionId: result?.sessionId ?? null,
+          status: result?.status ?? "unknown",
+          finishStatus: status || null,
+        });
+      })
+      .catch((e: any) => {
+        updateTaskFile(project.projectFile, task.id, { status: "ready", result: null });
+        ctx.sdk.emit("project.task.finished", {
+          projectId,
+          projectPath: project.relPath,
+          taskId: task.id,
+          assignee: task.assignee,
+          status: "error",
+          error: e?.message?.slice(0, 200) ?? String(e).slice(0, 200),
+        });
+      });
+    launched++;
+  }
+
+  return { handled: true, launched, reason: `launched ${launched} task(s)` };
 }
 
 export function resolveWorkflowName(project: ProjectInfo): string | null {
@@ -178,6 +323,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     for (const { project, action } of actions) {
       const pState = healthState.projects[project.relPath];
       const projectId = projectIdFor(project);
+
+      if (project.status === "active" && !project.formatErrors?.length && launched < ph.MAX_LAUNCHES_PER_TICK) {
+        const taskDispatch = dispatchReadyProjectTasks(ctx, project, projectId, ph.MAX_LAUNCHES_PER_TICK - launched);
+        if (taskDispatch.handled) {
+          if (taskDispatch.launched > 0) {
+            pState.lastLaunch = now;
+            if (!pState.launchTimestamps) pState.launchTimestamps = [];
+            pState.launchTimestamps = pState.launchTimestamps.filter((t: number) => now - t < 7200_000);
+            pState.launchTimestamps.push(now);
+            pState.consecutiveSkips = 0;
+            launched += taskDispatch.launched;
+          }
+          continue;
+        }
+      }
 
       if (action.type === "skip") {
         const liveSessionId = liveProjectSessions.get(projectId);

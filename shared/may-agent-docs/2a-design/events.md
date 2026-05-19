@@ -321,6 +321,20 @@ a separate boolean for the same decision.
 ### Project, adapter, and guard events
 ```typescript
 {
+  type: "project.task.dispatched",
+  source: "agent:may",
+  owner: "agent:may",
+  data: { projectId: "may/task-demo", projectPath: "projects/task-demo", taskId: "score-a", assignee: "evaluator" }
+}
+
+{
+  type: "project.task.finished",
+  source: "agent:may",
+  owner: "agent:may",
+  data: { projectId: "may/task-demo", projectPath: "projects/task-demo", taskId: "score-a", assignee: "evaluator", sessionId: "s_123", status: "done", finishStatus: "success" }
+}
+
+{
   type: "guard.triggered",
   source: "workflow",
   owner: "agent:may",
@@ -328,8 +342,9 @@ a separate boolean for the same decision.
 }
 ```
 
-`project.comment.created`, `project.iteration`, `project.status_changed`,
-`telegram.reply`, `guard.triggered`, and `tool.executed` follow the same
+`project.comment.created`, `project.iteration`, `project.task.dispatched`,
+`project.task.finished`, `project.status_changed`, `telegram.reply`,
+`guard.triggered`, and `tool.executed` follow the same
 envelope rule. `guard.triggered` is an unreviewed detector signal. It is useful
 evidence for triage, metrics, and evaluator review, but it is not proof of agent
 fault. A reviewed guard outcome may later produce `learning.feedback`; raw guard
@@ -466,6 +481,8 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
 | `project.iteration` | `project.ts` on the default project path; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live default plus legacy compatibility shape |
+| `project.task.dispatched` | `agents/may/handlers/project.ts` when dispatching a ready `## Tasks` item to its assignee | ✅ live for task-driven projects |
+| `project.task.finished` | `agents/may/handlers/project.ts` when the task session resolves or throws | ✅ live for task-driven projects |
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event, including errored/interrupted sessions |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ⚠️ live; see consumer status below |
