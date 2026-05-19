@@ -2,14 +2,14 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Cron } from "../src/app/cron.js";
-import { EventBus } from "../src/app/event-bus.js";
-import { DbWriter } from "../src/lib/db-writer.js";
-import { closeDb, getDb } from "../src/lib/requests.js";
-import { buildAgentSDK, type SDKDeps } from "../src/lib/sdk-impl.js";
-import { SubagentManager } from "../src/lib/manager.js";
-import { createWorkflowTool } from "../src/lib/workflow-tool.js";
-import type { WorkflowToolResult } from "../src/lib/workflow.js";
+import { Cron } from "../../src/app/cron.js";
+import { EventBus } from "../../src/app/event-bus.js";
+import { DbWriter } from "../../src/lib/db-writer.js";
+import { closeDb, getDb } from "../../src/lib/requests.js";
+import { buildAgentSDK, type SDKDeps } from "../../src/lib/sdk-impl.js";
+import { SubagentManager } from "../../src/lib/manager.js";
+import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
+import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 
 type RuntimeEvent = { type: string; [key: string]: unknown };
 
