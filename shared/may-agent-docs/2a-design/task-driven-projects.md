@@ -154,6 +154,12 @@ If a session finishes with outcome `blocked`, the task stays running (or
 reverts to ready). The owner sees the blocked evidence and decides: retry, split,
 add a dependency task, escalate, drop, or move the project to waiting.
 
+The handler allows a small number of direct attempts before owner judgment.
+Default `max_task_attempts` is 2 and can be set in project frontmatter. When a
+ready task has already reached that attempt count, the handler stops dispatching
+that task directly and launches the project owner workflow so the owner can
+retry with a different approach, split it, drop it, or escalate.
+
 ### Blocked task example
 
 ```
@@ -300,8 +306,15 @@ Implementation status: first slice live. Current runtime can parse `## Tasks`,
 compute ready/running/pending from dependencies and live task sessions, and
 dispatch ready tasks directly from `agents/may/handlers/project.ts`. Task
 completion currently updates the task projection for `finish({ status:
-"success" })` and emits task lifecycle events. Owner judgment after failed or
-blocked task attempts still needs a fuller follow-up implementation.
+"success" })` and emits task lifecycle events. Repeated direct attempts fall
+back to the project owner workflow for judgment.
+
+Optional project frontmatter:
+
+```yaml
+max_concurrent: 3
+max_task_attempts: 2
+```
 
 Minimal task shape:
 

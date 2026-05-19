@@ -58,6 +58,13 @@ function projectMaxConcurrent(content: string): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
 }
 
+function projectMaxTaskAttempts(content: string): number {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  const raw = match?.[1].match(/^max_task_attempts:\s*(\d+)\s*$/m)?.[1];
+  const parsed = raw ? Number.parseInt(raw, 10) : 2;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
+}
+
 function buildProjectTaskPrompt(project: ProjectInfo, task: PlannedProjectTask): string {
   const deps = task.depends_on.length ? task.depends_on.join(", ") : "none";
   return [
@@ -129,6 +136,16 @@ function dispatchReadyProjectTasks(
   }
   if (plan.dispatchable.length === 0) {
     return { handled: false, launched: 0, reason: plan.allDone ? "all tasks done" : "no ready tasks" };
+  }
+
+  const maxTaskAttempts = projectMaxTaskAttempts(project.content);
+  const needsOwnerJudgment = plan.dispatchable.find(task => task.attempts >= maxTaskAttempts);
+  if (needsOwnerJudgment) {
+    return {
+      handled: false,
+      launched: 0,
+      reason: `task ${needsOwnerJudgment.id} reached ${needsOwnerJudgment.attempts}/${maxTaskAttempts} attempts`,
+    };
   }
 
   let launched = 0;
