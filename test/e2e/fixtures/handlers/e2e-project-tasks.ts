@@ -92,7 +92,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           assignee: task.assignee,
         });
 
-        const result = await ctx.sdk.runWorkflow("e2e-task-worker-stub", `work project=${projectName} task=${task.id}`, {
+        const result = await ctx.sdk.runWorkflow("e2e-task-worker-stub", `work projectId=${projectId} task=${task.id}`, {
           source: task.assignee,
           projectId,
         });

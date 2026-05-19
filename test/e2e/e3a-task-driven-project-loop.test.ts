@@ -26,8 +26,7 @@ import {
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
 function eventPayload(row: { data: string | null }): Record<string, unknown> {
-  const parsed = JSON.parse(row.data ?? "{}");
-  return (parsed.data ?? parsed) as Record<string, unknown>;
+  return JSON.parse(row.data ?? "{}") as Record<string, unknown>;
 }
 
 function taskBlock(content: string, taskId: string): string {
@@ -78,16 +77,59 @@ describe("E3a: task-driven project loop (lite)", () => {
         const result = await pollUntil(
           () => {
             const finished = queryEvents(db, { types: ["project.task.finished"], since: t0, limit: 20 })
-              .map(eventPayload)
-              .filter((data) => data.projectId === "may/e2e-task-chain");
-            const taskIds = new Set(finished.map((data) => data.taskId));
+              .filter((row) => eventPayload(row).projectId === "may/e2e-task-chain");
+            const taskIds = new Set(finished.map((row) => eventPayload(row).taskId));
             return taskIds.has("score-a") && taskIds.has("analyze") ? finished : null;
           },
           { timeoutMs: 45_000, intervalMs: 500, description: "task chain completion" },
         );
 
-        expect(result.some((data) => data.taskId === "score-a" && data.finishStatus === "success")).toBe(true);
-        expect(result.some((data) => data.taskId === "analyze" && data.finishStatus === "success")).toBe(true);
+        const finishedPayloads = result.map(eventPayload);
+        expect(result.every((row) => row.source === "agent:may" && row.owner === "agent:may")).toBe(true);
+        expect(finishedPayloads.some((data) => data.taskId === "score-a" && data.finishStatus === "success")).toBe(true);
+        expect(finishedPayloads.some((data) => data.taskId === "analyze" && data.finishStatus === "success")).toBe(true);
+        for (const payload of finishedPayloads) {
+          expect(payload).toMatchObject({
+            projectId: "may/e2e-task-chain",
+            projectPath: "projects/e2e-task-chain",
+            assignee: "may",
+            status: "done",
+            finishStatus: "success",
+          });
+          expect(typeof payload.workflowRunId).toBe("string");
+        }
+
+        const dispatched = queryEvents(db, { types: ["project.task.dispatched"], since: t0, limit: 20 })
+          .filter((row) => eventPayload(row).projectId === "may/e2e-task-chain");
+        expect(dispatched.length).toBeGreaterThanOrEqual(2);
+        expect(dispatched.every((row) => row.source === "agent:may" && row.owner === "agent:may")).toBe(true);
+        expect(dispatched.map(eventPayload)).toEqual(
+          expect.arrayContaining([
+            {
+              projectId: "may/e2e-task-chain",
+              projectPath: "projects/e2e-task-chain",
+              taskId: "score-a",
+              assignee: "may",
+            },
+            {
+              projectId: "may/e2e-task-chain",
+              projectPath: "projects/e2e-task-chain",
+              taskId: "analyze",
+              assignee: "may",
+            },
+          ]),
+        );
+
+        const workerEvents = queryEvents(db, { types: ["e2e.task_worker.ran"], since: t0, limit: 20 })
+          .filter((row) => eventPayload(row).projectId === "may/e2e-task-chain");
+        expect(workerEvents.length).toBeGreaterThanOrEqual(2);
+        expect(workerEvents.every((row) => row.source === "agent:may" && row.owner === "agent:may")).toBe(true);
+        expect(workerEvents.map(eventPayload)).toEqual(
+          expect.arrayContaining([
+            { projectId: "may/e2e-task-chain", taskId: "score-a" },
+            { projectId: "may/e2e-task-chain", taskId: "analyze" },
+          ]),
+        );
 
         const projectFile = join(sb.projectsRoot, "e2e-task-chain", "project.md");
         const content = readFileSync(projectFile, "utf-8");
@@ -118,14 +160,28 @@ describe("E3a: task-driven project loop (lite)", () => {
         const judgment = await pollUntil(
           () => {
             const events = queryEvents(db, { types: ["e2e.owner_judgment.ran"], since: t0, limit: 10 })
-              .map(eventPayload)
-              .filter((data) => data.projectId === "may/e2e-task-judgment" && data.taskId === "stuck-task");
+              .filter((row) => {
+                const data = eventPayload(row);
+                return data.projectId === "may/e2e-task-judgment" && data.taskId === "stuck-task";
+              });
             return events.length ? events[0] : null;
           },
           { timeoutMs: 45_000, intervalMs: 500, description: "owner judgment for repeated task" },
         );
 
-        expect(judgment).toMatchObject({ projectId: "may/e2e-task-judgment", taskId: "stuck-task" });
+        expect(judgment.source).toBe("agent:may");
+        expect(judgment.owner).toBe("agent:may");
+        expect(eventPayload(judgment)).toEqual({ projectId: "may/e2e-task-judgment", taskId: "stuck-task" });
+
+        const judgmentDispatches = queryEvents(db, { types: ["e2e.owner_judgment.dispatch"], since: t0, limit: 10 })
+          .filter((row) => eventPayload(row).projectId === "may/e2e-task-judgment");
+        expect(judgmentDispatches.length).toBeGreaterThanOrEqual(1);
+        expect(judgmentDispatches.every((row) => row.source === "agent:may" && row.owner === "agent:may")).toBe(true);
+        expect(judgmentDispatches.map(eventPayload)).toContainEqual({
+          projectId: "may/e2e-task-judgment",
+          projectName: "e2e-task-judgment",
+          taskId: "stuck-task",
+        });
 
         const directDispatches = queryEvents(db, { types: ["project.task.dispatched"], since: t0, limit: 20 })
           .map(eventPayload)
