@@ -73,9 +73,54 @@ an accepted exception.
 ### Agent communication
 ```
 message.created    { from, to, content, intent?, priority? }
-escalation.created { id, agent, reason, level }
 agent.decision     { agent, sessionId, decision, evidence? }
 ```
+
+### Escalation lifecycle
+```
+escalation.created {
+  escalationId,
+  sourceAgent,
+  sourceSessionId?,
+  targetOwner,
+  projectId?,
+  projectPath?,
+  reason,
+  requestedAction,
+  severity?,
+  blockedOn?,
+  evidence?,
+  resume?,
+  dedupKey?,
+  createdAt
+}
+
+escalation.resolved {
+  escalationId,
+  resolverAgent,
+  outcome,
+  summary,
+  evidence?,
+  resumeInstruction?,
+  resolvedAt
+}
+```
+
+Escalation routing follows the same payload rule as every other reactive
+handler: the event type routes work and the payload carries facts. A subscriber
+must read fields from `TriggerEvent.data`; the cron framework should not promote
+domain fields onto the trigger object.
+
+`targetOwner` should resolve to a concrete owner:
+
+| `targetOwner` | Runtime route |
+|---------------|---------------|
+| `agent:<name>` | owner inbox / handler queue for `<name>` |
+| `human:<role>` | May-owned human routing |
+
+On `escalation.resolved`, infra should try to resume the original paused
+session/checkpoint first. Starting a continuation session is a fallback only
+when true resume is unavailable.
 
 ### Learning feedback
 ```
@@ -253,6 +298,8 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
 | `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
 | `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
+| `escalation.created` | `sdk.escalate` and workflow `ctx.escalate` | ⚠️ live, but current payloads are minimal/legacy and do not yet include full lifecycle correlation |
+| `escalation.resolved` | no emitter exists | ❌ aspirational |
 | `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings |
 
 Note: `session.failed` and `session.completed` are translated from `session.end`
@@ -270,6 +317,7 @@ SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() *
 | `session-recovery` | `session.failed` | ⚠️ emitter migrated to `session.completed{outcome:'error'}` (KE-1248) — event path fires zero times on real traffic; 5-min timer fallback does 100% of recovery work |
 | `evaluator-aftermath` | `session.completed` | ✅ wired; `session-aftermath-scan` remains the 7-minute fallback |
 | `escalation` | `session.escalated` | ✅ wired as event-first routing for blocked/failure finishes |
+| (no lifecycle handler) | `escalation.created`, `escalation.resolved` | ❌ full escalation lifecycle routing/resume is not implemented yet |
 | `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
 | (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781 |
 | `context-learn` | `context-learn` | ❌ replaced by timer-driven `context-learn-poller` |
