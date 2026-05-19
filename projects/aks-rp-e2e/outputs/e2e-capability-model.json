@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-19T16:45:00Z",
+  "updatedAt": "2026-05-19T16:45:19Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -405,6 +405,17 @@
       "domain": [
         "create-get-update-list-delete",
         "unsupported-ultrassd-negative",
+        "unknown"
+      ]
+    },
+    {
+      "id": "securityProfile.nodeRestriction.operation",
+      "label": "Node Restriction Operation Shape",
+      "description": "Operation shape used for Node Restriction: full ManagedCluster PUT/create-or-update, tag-only PATCH, or runtime default path.",
+      "domain": [
+        "create-or-update-put",
+        "tag-only-patch",
+        "runtime-default",
         "unknown"
       ]
     }
@@ -1071,6 +1082,16 @@
       "id": "nap.defaultMachinesPool.deletedOnManual",
       "label": "NAP Default Machines Pool Deleted On Manual",
       "description": "NAP-created default Machines pool is deleted after switching to Manual.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "nodeRestriction.runtimeAdmission.enabled",
+      "label": "Node Restriction Runtime Admission Enabled",
+      "description": "Kube-apiserver runtime admission plugins include NodeRestriction for the cluster.",
       "domain": [
         "true",
         "false",
@@ -2096,6 +2117,10 @@
         {
           "variable": "securityProfile.nodeRestriction.enabled",
           "value": "auto"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "create-or-update-put"
         }
       ],
       "expectationPath": [
@@ -2108,7 +2133,7 @@
           "value": "true"
         }
       ],
-      "description": "Handwritten Node Restriction contract: auto-enabled and cannot be disabled with expected error shape."
+      "description": "Handwritten/RP-validator Node Restriction contract for full ManagedCluster create-or-update: k8s >=1.24 cannot be disabled with expected error shape."
     },
     {
       "id": "workload-identity-runtime-token-projection",
@@ -2578,6 +2603,52 @@
         }
       ],
       "description": "Source contract linking NAP Auto mode to default Machines pool CRUD and cleanup on Manual."
+    },
+    {
+      "id": "node-restriction-runtime-default",
+      "label": "Node Restriction Runtime Default",
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "runtime-default"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.runtimeAdmission.enabled",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived runtime contract: overlay/CCP enables the NodeRestriction admission plugin for RBAC clusters on Kubernetes >=1.24 even when the ARM profile is omitted."
+    },
+    {
+      "id": "node-restriction-tag-only-patch-shape",
+      "label": "Node Restriction Tag-only PATCH Shape",
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "tag-only-patch"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "unknown"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "unknown"
+        }
+      ],
+      "description": "Iteration62 operation-shape evidence: ManagedCluster PATCH is tag-only and is not valid evidence for securityProfile.nodeRestriction full PUT semantics."
     }
   ],
   "testCases": [
@@ -4708,6 +4779,10 @@
         {
           "variable": "securityProfile.nodeRestriction.enabled",
           "value": "auto"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "create-or-update-put"
         }
       ],
       "expectationPath": [
@@ -4724,42 +4799,46 @@
       "evidence": [
         "e2ev3-handwritten-coverage-inventory"
       ],
-      "notes": "Source-derived intent conflicts with iteration62 staging path; needs source/spec investigation before another probe."
+      "notes": "Source-derived full PUT/create-or-update intent: explicit true at create, then full PUT false should be rejected for k8s >=1.24. Iteration74 source investigation resolved iteration62 PATCH as wrong operation shape."
     },
     {
       "id": "NodeRestriction_RESTPatch_Staging",
-      "featureId": "node-restriction-disable-contract",
+      "featureId": "node-restriction-tag-only-patch-shape",
       "inputPath": [
         {
           "variable": "securityProfile.nodeRestriction.enabled",
-          "value": "auto"
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "tag-only-patch"
         }
       ],
       "expectationPath": [
         {
           "variable": "nodeRestriction.disableRejected",
-          "value": "true"
+          "value": "unknown"
         },
         {
           "variable": "nodeRestriction.errorShape.matches",
-          "value": "true"
+          "value": "unknown"
         }
       ],
-      "result": "fail",
+      "result": "unknown",
       "evidence": [
         "iteration62-security-profile-staging"
       ],
       "observedPath": [
         {
           "variable": "nodeRestriction.disableRejected",
-          "value": "false"
+          "value": "unknown"
         },
         {
           "variable": "nodeRestriction.errorShape.matches",
-          "value": "false"
+          "value": "unknown"
         }
       ],
-      "notes": "Contradictory partial evidence: attempted direct ARM PATCH did not persist nodeRestriction and exact CLI flag was absent; may be wrong API/version/shape/precondition."
+      "notes": "Iteration74 source/spec resolution: ManagedCluster PATCH is tag-only, so iteration62 PATCH of securityProfile.nodeRestriction is invalid/irrelevant for the full PUT disable contract; keep as operation-shape evidence, not feature failure."
     },
     {
       "id": "Scenario_WorkloadIdentity",
@@ -5281,6 +5360,31 @@
         "e2ev3-handwritten-coverage-inventory"
       ],
       "notes": "Current NAP evidence covers profile transitions only, not default Machines pool CRUD/cleanup."
+    },
+    {
+      "id": "NodeRestriction_RuntimeDefault_Source",
+      "featureId": "node-restriction-runtime-default",
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "runtime-default"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.runtimeAdmission.enabled",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory"
+      ],
+      "notes": "Source-only: overlay helmvalues enables NodeRestriction for Kubernetes >=1.24/RBAC; no current execution artifact verifies runtime admission plugins."
     }
   ],
   "judgments": [
@@ -7389,7 +7493,7 @@
       "id": "iteration62-security-profile-staging",
       "kind": "artifact",
       "path": "outputs/iteration62-security-profile-staging.md",
-      "summary": "Partial/contradictory staging evidence: Image Cleaner state and interval persist; Node Restriction CLI flag is absent and direct REST PATCH did not persist nodeRestriction. It does not prove Image Cleaner erasure runtime."
+      "summary": "Partial staging evidence: Image Cleaner state and interval persist; Node Restriction CLI flag is absent. Iteration74 source/spec resolution found the direct REST PATCH was tag-only/invalid for securityProfile.nodeRestriction full PUT semantics, so it is not treated as disable-contract failure."
     },
     {
       "id": "e2ev3-handwritten-coverage-inventory",
