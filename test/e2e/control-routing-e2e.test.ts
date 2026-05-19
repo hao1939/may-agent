@@ -83,6 +83,116 @@ afterEach(() => {
 });
 
 describe("control routing e2e", () => {
+  it("persists canonical message.created socket events without command translation", async () => {
+    const { root, stateDir } = makeRoot();
+    const bus = new EventBus();
+    const writer = new DbWriter(stateDir);
+    const emitted: ControlEvent[] = [];
+    bus.subscribe(writer.handler, { priority: "first" });
+
+    const core = createControlSocketCore({
+      getSessionId: () => "",
+      getStatus: () => [],
+      emitEvent: (event: ControlEvent) => {
+        emitted.push(event);
+        bus.emit(event as never);
+      },
+      subscribeEvents: (handler) => bus.subscribe(handler as never),
+      agentName: "may",
+      instance: "test",
+    });
+    sockets.push(core);
+
+    const ack = await sendSocketCommand(mockEndpoint(core.attachClient), {
+      type: "message.created",
+      source: "agent:may",
+      owner: "agent:dev",
+      urgency: "high",
+      data: {
+        from: "may",
+        to: "dev",
+        content: "Review the deploy checklist",
+        intent: "notify",
+        priority: "P1",
+      },
+    });
+    await waitForSocketDispatch();
+
+    expect(ack).toEqual({ type: "ok", command: "message.created" });
+    expect(emitted).toContainEqual({
+      type: "message.created",
+      source: "agent:may",
+      owner: "agent:dev",
+      urgency: "high",
+      data: {
+        from: "may",
+        to: "dev",
+        content: "Review the deploy checklist",
+        intent: "notify",
+        priority: "P1",
+      },
+    });
+
+    const db = getDb(stateDir);
+    const row = db.prepare(
+      "SELECT source, owner, urgency, data FROM events WHERE event_type = ? ORDER BY id ASC LIMIT 1",
+    ).get("message.created") as { source: string; owner: string; urgency: string; data: string };
+    expect(row).toMatchObject({
+      source: "agent:may",
+      owner: "agent:dev",
+      urgency: "high",
+    });
+    expect(JSON.parse(row.data)).toEqual({
+      from: "may",
+      to: "dev",
+      content: "Review the deploy checklist",
+      intent: "notify",
+      artifact: null,
+      priority: "P1",
+    });
+    expect(stateDir.startsWith(root)).toBe(true);
+  });
+
+  it("rejects flat message.created socket events before persistence", async () => {
+    const { stateDir } = makeRoot();
+    const bus = new EventBus();
+    const writer = new DbWriter(stateDir);
+    const emitted: ControlEvent[] = [];
+    bus.subscribe(writer.handler, { priority: "first" });
+
+    const core = createControlSocketCore({
+      getSessionId: () => "",
+      getStatus: () => [],
+      emitEvent: (event: ControlEvent) => {
+        emitted.push(event);
+        bus.emit(event as never);
+      },
+      subscribeEvents: (handler) => bus.subscribe(handler as never),
+      agentName: "may",
+      instance: "test",
+    });
+    sockets.push(core);
+
+    await expect(
+      sendSocketCommand(mockEndpoint(core.attachClient), {
+        type: "message.created",
+        source: "agent:may",
+        owner: "agent:dev",
+        from: "may",
+        to: "dev",
+        content: "flat payload should be rejected",
+      }),
+    ).rejects.toThrow("requires object field 'data'");
+    await waitForSocketDispatch();
+
+    expect(emitted).toEqual([]);
+    const db = getDb(stateDir);
+    const count = db.prepare(
+      "SELECT COUNT(*) AS count FROM events WHERE event_type = ?",
+    ).get("message.created") as { count: number };
+    expect(count.count).toBe(0);
+  });
+
   it("routes socket fork frames to agent work and persists the inbox event in a temp state DB", async () => {
     const { root, stateDir } = makeRoot();
     const bus = new EventBus();

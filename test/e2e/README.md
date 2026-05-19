@@ -50,7 +50,7 @@ ls /tmp/may-e2e-*/
 | `e3b-workflow-discovery` | Agent-scoped workflow file resolution + dispatch + `workflow_runs` persistence; `workflow-authoring.md § Workflow Location` | ✅ |
 | `e4-metric-lifecycle` | `sdk.metrics.define`/`record`/`evaluate` → breach event → `metric_alerts` row → recovery; `metric-alerts.md`, `metrics.md § Pipeline` | ✅ |
 | `e7-escalation-roundtrip` | `escalation.created` → `escalation.resolved` → resume_attempted/resume_failed; `needs_human` short-circuit; `sdk-quickstart.md § External Escalate`, `escalation.md` | ✅ |
-| `control-routing-e2e` | In-process socket frame routing → command router → `message.created` persistence in an isolated DB | ✅ |
+| `control-routing-e2e` | In-process socket frame routing; canonical `message.created` persistence/rejection plus legacy `fork` command translation | ✅ |
 | `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
 
 E5 (agent reload) and E6 (agent call chain) are not yet implemented — see
