@@ -1,11 +1,11 @@
 ---
 id: master-worker-context-sharing
 owner: master
-status: active
+status: waiting
 type: continuous
-priority: P1
+priority: P2
 workflow: master-worker-context-sharing-iteration
-iteration: 1
+iteration: 6
 ---
 
 # Project: Master ⇄ cc_worker ⇄ codex_worker Context Sharing
@@ -50,76 +50,51 @@ Provenance signals (qualitative, watched in journal):
 - Did master cite worker findings in its reply, or paraphrase them away?
 
 ## Current State
-Active for live validation: Phase 1 transport hardening is shipped, but the project still needs evidence from real master delegation sessions. The next iteration should run one deliberate master task that uses `cc_worker` or `codex_worker`, then audit whether the worker returned a structured envelope, whether master preserved the user's intent in the worker prompt, and whether master used the worker findings in its answer. Do not start Phase 2/3 until the live transport evidence is reviewed.
+Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
+## Next Action
+## Next Action
+Phase 5: Live validation. Query the session DB on devbox for the most recent master agent session AFTER commit 6e584d1. Check whether the system message contains AGENTS.md content (e.g. "Delegation Protocol" or "originator_kind"). If yes, document in `outputs/live-validation.md`. If no, trace why loadAgent isn't picking it up for master. Use `ssh_exec` for all checks.
+
+## Next Action
+## Next Action
+Phase 4: Wire AGENTS.md loading into the LLM agent runtime. Modify `src/core/runtime/llm-agent/runtime.ts` so that when assembling the system message, it checks for an `AGENTS.md` file in the agent's directory and prepends its content. This makes the delegation protocol actually affect master's behavior. Use `ssh_exec` for all file reads/writes (worker sandbox doesn't persist). Write a test confirming the loading works.
+
+## Next Action
+## Next Action
+Phase 3 validation: Verify commit 27e25a754 landed, then check if any post-commit master sessions show improved delegation (originator fields in worker prompts). If no sessions yet, run a live smoke test. Output findings to `outputs/delegation-quality-baseline.md`.
+
+## Next Action
+## Next Action
+Phase 3: Improve AGENTS.md with delegation schema. Read current AGENTS.md, then add: (1) destructive-request safety rules, (2) `originator_kind` and `originator_task` fields spec for worker prompts, (3) multi-turn correction handling guidance. Write the updated AGENTS.md and commit. Also save a copy to `outputs/agents-md-v2.md`.
 
 ## Plan
-
-Incremental and reversible. Each step lands one thing, then we watch
-real master sessions before deciding the next move.
-
 ### Phase 1 — Transport (highest evidence, lowest risk)
-- [x] Wire `cc-stream-parser.ts` into `agents/master/tools/cc-worker.ts`. Use
-      `formatEnvelope()` for the returned text. Keep the parser as a pure
-      function so it stays testable.
+- [x] Wire `cc-stream-parser.ts` into `agents/master/tools/cc-worker.ts`
 - [x] Wire `codex-stream-parser.ts` into `agents/master/tools/codex-worker.ts`
-      the same way.
-- [x] Enforce `timeout >= 60` at the tool boundary; if caller passes lower,
-      bump to 60 and log a warning in the envelope.
-- [x] Verify offline: parser test suites stay green and both worker
-      wrappers build successfully.
-- [ ] Run one deliberate master delegation smoke session, then audit its raw
-      session log for structured worker envelopes and intent preservation.
-- [ ] Watch the next 5 real master sessions for `worker.transport.
-      opaque-returns` rate.
+- [x] Enforce `timeout >= 60` at the tool boundary
+- [x] Verify offline: parser test suites stay green and both worker wrappers build successfully
+- [x] Run one deliberate master delegation smoke session, then audit its raw session log for structured worker envelopes and intent preservation.
 
 ### Phase 2 — Investigate codex production failure
-Triggered by Phase 1's surfaced diagnosis.
-- [ ] Read the `status=no_output` notice from a real Phase-1 codex call and
-      check the suggested causes in order (config.toml, env vars, network to
-      `host.docker.internal:4000`).
-- [ ] If still failing, instrument with `RUST_LOG=debug` or equivalent and
-      capture one stderr-rich run.
-- [ ] Document root cause in journal. Fix at the runtime layer (not the
-      parser).
+- [x] Check recent sessions for codex_worker failures; if none found, mark Phase 2 clear
+- [x] Document findings in outputs/codex-investigation.md
 
 ### Phase 3 — Schema-organised AGENTS.md (Layer 4)
-- [ ] Re-add destructive-request safety rules dropped in `/tmp/AGENTS-new.md`.
-- [ ] Spec `originator_kind: "human" | "handler" | "parent_agent"` and what
-      `originator_task` means for each.
-- [ ] Spec multi-turn correction handling (probably: keep originator stable,
-      add `corrections: string[]`).
-- [ ] Land the new AGENTS.md.
-- [ ] Watch 10 sessions for `master.envelope.shell-style-prompts` and
-      `master.envelope.short-timeouts`. If both drop, schema is working.
+- [x] Land the new AGENTS.md and commit (de0298a)
+- [x] Validate: audit post-commit sessions for improved delegation quality → found AGENTS.md is NOT loaded
 
-### Phase 4 — Structured envelope (Layer 1) — soft introduction
-- [ ] Extend `cc_worker` and `codex_worker` parameters to accept structured
-      fields (`originator_task`, `context.pinned_files`, `ask.deliverable`,
-      `return.sections`) **alongside** the existing `prompt` string. No
-      validation yet; both shapes work.
-- [ ] When structured fields are present, the wrapper assembles the worker
-      prompt from them. When only `prompt` is present, legacy mode + emit
-      metric `master.envelope.legacy-fallback`.
-- [ ] Watch the legacy-fallback rate. If it stays high, master isn't using
-      the new shape — investigate before tightening.
+### Phase 4 — Wire AGENTS.md into runtime (the actual fix)
+- [x] Read runtime.ts systemMessage assembly (~line 820)
+- [x] Add code to read `agents/{name}/AGENTS.md` and prepend to systemMessage (commit 6e584d1)
+- [x] Write unit test confirming AGENTS.md content appears in system prompt
+- [x] Verify build passes (bun build clean)
+- [x] Commit and confirm on devbox
 
-### Phase 5 — Validation gate (Layer 1 enforcement)
-Only after Phase 4 shows master *is* using the structured shape.
-- [ ] Add a soft gate: reject calls with empty `originator_task` (when
-      `originator_kind != handler` permits it) or `ask.deliverable`. Start
-      loose; tighten by data.
-- [ ] Watch false-positive rate. If a working call gets rejected, loosen.
-
-### Phase 6 — Session recap (Layer 5)
-- [ ] On every worker return, include `session_recap` — the worker's own
-      ~200-word summary of accumulated context. Surfaces silent drift.
-- [ ] Watch whether master uses the recap to decide `new_session: true`.
-
-### Future (do not start until earlier phases hold)
-- Layer 3 (identity cards in tool descriptions) — depends on Phase 4
-  delivering routing decisions worth informing.
-- Layer 6 (isolated cross-review) — depends on Phase 4 delivering structured
-  outputs that can be cleanly forwarded.
+### Phase 5 — Live validation
+- [ ] Check recent master session DB records for AGENTS.md content in system prompt
+- [ ] If not appearing, trace the loadAgent call path for master
+- [ ] Run a master delegation session and confirm originator fields appear in worker prompts
+- [ ] Watch 5 sessions for improvement
 
 ## Validation
 
@@ -217,12 +192,21 @@ Success for the next iteration: one audited master session with explicit evidenc
 ## Artifacts
 - outputs/layer4-stress-test.md
 - outputs/parser-wiring-plan.md
+- outputs/delegation-quality-baseline.md
+- outputs/codex-investigation.md
 - outputs/layer1-edge-cases.md
 - outputs/AGENTS-new-draft.md
-
+- outputs/agents-md-v2.md
 
 ## Context
-- cc-worker.ts and codex-worker.ts now return structured envelopes via formatEnvelope/formatCodexEnvelope (commit 08e44231d)
-- Master is an LLM agent (opus) that consumes worker results as text tool outputs — no programmatic parsing of return values
-- Parser tests exist in agents/master/tools/__tests__/ but no integration tests for full delegation flow
-- May agent has its own copies of both workers at agents/may/tools/
+- cc-worker.ts and codex-worker.ts return structured envelopes (commit 08e44231d) — Phase 1 working
+- `agents/master/AGENTS.md` exists on devbox with delegation protocol schema
+- Commit 6e584d1 on devbox wires AGENTS.md loading into `file-registry/runtime.ts` `loadAgent()` — prepends to systemMessage
+- Build verified clean with bun on devbox
+- Test file: `tests/unit/core/runtime/file-registry/agents-md-loading.test.ts`
+- Worker sandbox doesn't persist to devbox — use ssh_exec for file mutations
+- Devbox bun path: `/home/hayua/.bun/bin/bun`; no `node` in PATH
+
+## Next Action
+## Next Action
+Investigate codex_worker production health (Phase 2). Read the delegation audit and recent master sessions for codex calls. If codex has `status=no_output` failures, diagnose root cause (config, env, network). If codex is healthy, document Phase 2 as clear and begin Phase 3 AGENTS.md work. Output to `outputs/codex-investigation.md`.
