@@ -32,6 +32,17 @@ describe("socket frame normalization", () => {
         data: { projectPath: "projects/x" },
       },
     });
+
+    expect(normalizeSocketFrame({ type: "project.comment.created", projectPath: "projects/x", comment: "go", author: "hao" })).toEqual({
+      kind: "event",
+      command: "project.comment.created",
+      event: {
+        type: "project.comment.created",
+        source: "socket",
+        owner: "agent:may",
+        data: { projectPath: "projects/x", comment: "go", author: "hao" },
+      },
+    });
   });
 
   it("keeps socket-local protocol frames local", () => {

@@ -31,7 +31,6 @@ export type AgentCommand =
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }
   | { type: "session.cancel.requested"; sessionId: string; source?: string }
-  | { type: "project.comment.created"; projectPath: string; comment: string; source?: string; author?: string }
   | { type: "project.comment.created"; source?: string; owner: string; data: { projectPath: string; comment: string; author?: string } };
 
 /** Management commands (to core / supervisord) */
