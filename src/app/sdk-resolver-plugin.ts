@@ -1,22 +1,24 @@
 /**
- * Bun plugin that resolves `@may-agent/sdk` (and `@may-agent/sdk/testing`)
+ * Bun plugin that maps `@may-agent/sdk` (and `@may-agent/sdk/testing`)
  * bare specifiers to the workspace SDK source files.
  *
- * Purpose: dynamically-loaded files (handlers under agents/<name>, workflows
- * under agents/<name>/workflows or projects/<name>/workflows) need to import the SDK by its
- * package name. In the compiled binary the bare specifier cannot resolve via
- * node_modules (the binary doesn't ship node_modules in a normal layout). In
- * dev mode the bare specifier resolves only if a node_modules entry exists,
- * which depends on having run `bun install` against a workspace.
+ * **Scope: build-time only.** `Bun.plugin()` hooks fire during `Bun.build`
+ * (bundler), not during runtime ESM import. This plugin lets the compiled
+ * binary statically inline SDK symbols at build time — it does **not**
+ * intercept dynamic `import()` from running handlers/workflows. Runtime
+ * dynamic-import resolution relies on a normal node_modules entry:
  *
- * Registering this plugin in BOTH the compiled binary entry and the dev-mode
- * entry (`may.ts`) makes the bare specifier work the same way everywhere:
- * directly from the SDK source files. No node_modules, no relative re-export
- * bridge.
+ *   - In `/app/` (production-style host): `file:` dep in /app/package.json
+ *     populates `/app/node_modules/@may-agent/sdk`.
+ *   - In the repo itself: workspaces directive in
+ *     `projects/platform/repos/may-agent/package.json` materializes
+ *     `<repo>/node_modules/@may-agent/sdk` as a symlink.
+ *   - In e2e sandbox dirs (outside any workspace): the harness symlinks
+ *     the SDK into the sandbox's `node_modules` directly.
  *
- * Side effect: importing this module registers the plugin globally for the
- * current Bun process. Import it as early as possible — before any
- * dynamically-loaded handler or workflow is imported.
+ * Importing this module is still useful because the binary entry point
+ * invokes `Bun.build` indirectly via `--compile`, and we want the SDK
+ * resolved consistently in that path.
  */
 import { plugin } from "bun";
 import { dirname, resolve } from "node:path";
