@@ -55,9 +55,55 @@ function normalizeOwner(owner: string | undefined): string {
   return `agent:${value}`;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function isSocketCommandType(type: string): boolean {
+  return type.startsWith("trigger.") || type === "session.cancel.requested";
+}
+
+function isCanonicalEnvelope(event: Record<string, unknown>): boolean {
+  return typeof event.source === "string"
+    && event.source.trim().length > 0
+    && typeof event.owner === "string"
+    && event.owner.trim().length > 0
+    && isRecord(event.data);
+}
+
+function runtimeEventEnvelope(event: { type: string; [key: string]: unknown }, agentName: string): { type: string; [key: string]: unknown } {
+  if (!event.type.includes(".") || isSocketCommandType(event.type)) return event;
+  if (isCanonicalEnvelope(event)) return {
+    ...event,
+    owner: normalizeOwner(event.owner as string),
+  };
+
+  const {
+    type,
+    source,
+    owner,
+    urgency,
+    ttl_ms,
+    timestamp,
+    data,
+    ...payload
+  } = event;
+  const eventData = isRecord(data) ? { ...data, ...payload } : payload;
+
+  return {
+    type,
+    source: typeof source === "string" && source.trim() ? source.trim() : `agent:${agentName}`,
+    owner: normalizeOwner(typeof owner === "string" ? owner : agentName),
+    ...(typeof urgency === "string" && urgency.trim() ? { urgency } : {}),
+    ...(typeof ttl_ms === "number" ? { ttl_ms } : {}),
+    ...(typeof timestamp === "number" ? { timestamp } : {}),
+    data: eventData,
+  };
+}
+
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
   return {
-    emit: (event) => opts.bus.emit(event as any),
+    emit: (event) => opts.bus.emit(runtimeEventEnvelope(event, opts.agentName) as any),
     dispatchEvent: (eventType, data) => opts.bus.emit({
       type: eventType,
       source: `agent:${opts.agentName}`,

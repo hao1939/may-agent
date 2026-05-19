@@ -63,8 +63,10 @@ function daemonEventFrame(eventType: string, data: Record<string, unknown>): Rec
     urgency,
     ttl_ms,
     timestamp,
+    data: eventData,
     ...payload
   } = data;
+  const payloadData = isRecord(eventData) ? { ...eventData, ...payload } : payload;
 
   return {
     type: eventType,
@@ -73,7 +75,7 @@ function daemonEventFrame(eventType: string, data: Record<string, unknown>): Rec
     ...(typeof urgency === "string" && urgency.trim() ? { urgency } : {}),
     ...(typeof ttl_ms === "number" ? { ttl_ms } : {}),
     ...(typeof timestamp === "number" ? { timestamp } : {}),
-    data: payload,
+    data: payloadData,
   };
 }
 
