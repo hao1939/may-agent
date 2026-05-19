@@ -1,11 +1,13 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "may-agent",
       "dependencies": {
         "@mariozechner/pi-agent-core": "^0.70.6",
         "@mariozechner/pi-ai": "^0.70.6",
+        "@may-agent/sdk": "workspace:*",
         "better-sqlite3": "^12.8.0",
         "diff": "^8.0.3",
       },
@@ -19,6 +21,18 @@
         "prettier": "^3.8.1",
         "typescript": "^6.0.2",
       },
+    },
+    "packages/control": {
+      "name": "@may-agent/control",
+      "version": "0.1.0",
+    },
+    "packages/sdk": {
+      "name": "@may-agent/sdk",
+      "version": "0.1.0",
+    },
+    "packages/webui": {
+      "name": "@may-agent/webui",
+      "version": "0.1.0",
     },
   },
   "trustedDependencies": [
@@ -130,6 +144,12 @@
     "@mariozechner/pi-agent-core": ["@mariozechner/pi-agent-core@0.70.6", "", { "dependencies": { "@mariozechner/pi-ai": "^0.70.6", "typebox": "^1.1.24" } }, "sha512-PovJZJqhY4ajgTJRUcLzfWKnlQuJHxHW3T030CafR9LYeLmOHi/HGS8DbCdRgSJNbnoIG+kl67/7++9DKZ2+sg=="],
 
     "@mariozechner/pi-ai": ["@mariozechner/pi-ai@0.70.6", "", { "dependencies": { "@anthropic-ai/sdk": "^0.90.0", "@aws-sdk/client-bedrock-runtime": "^3.1030.0", "@google/genai": "^1.40.0", "@mistralai/mistralai": "^2.2.0", "chalk": "^5.6.2", "openai": "6.26.0", "partial-json": "^0.1.7", "proxy-agent": "^6.5.0", "typebox": "^1.1.24", "undici": "^7.19.1", "zod-to-json-schema": "^3.24.6" }, "bin": { "pi-ai": "dist/cli.js" } }, "sha512-LVAadu0Y+hb7Bj7EDiLsx6AuGxHlxDq0euLzyqX698i9qt0BW6a+oQSUIZQz4rJwExF18OvyL7ygJ5781ojrIQ=="],
+
+    "@may-agent/control": ["@may-agent/control@workspace:packages/control"],
+
+    "@may-agent/sdk": ["@may-agent/sdk@workspace:packages/sdk"],
+
+    "@may-agent/webui": ["@may-agent/webui@workspace:packages/webui"],
 
     "@mistralai/mistralai": ["@mistralai/mistralai@2.2.1", "", { "dependencies": { "ws": "^8.18.0", "zod": "^3.25.0 || ^4.0.0", "zod-to-json-schema": "^3.25.0" } }, "sha512-uKU8CZmL2RzYKmplsU01hii4p3pe4HqJefpWNRWXm1Tcm0Sm4xXfwSLIy4k7ZCPlbETCGcp69E7hZs+WOJ5itQ=="],
 

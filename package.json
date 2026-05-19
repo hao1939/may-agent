@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Persistent feature-unit sub-agent system built on pi-agent-core",
   "type": "module",
+  "workspaces": ["packages/*"],
   "scripts": {
     "check": "tsc --noEmit",
     "ci": "bun run check && bun run check:sdk && bun run test",
@@ -32,6 +33,7 @@
   "dependencies": {
     "@mariozechner/pi-agent-core": "^0.70.6",
     "@mariozechner/pi-ai": "^0.70.6",
+    "@may-agent/sdk": "workspace:*",
     "better-sqlite3": "^12.8.0",
     "diff": "^8.0.3"
   },
