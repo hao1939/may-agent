@@ -35,7 +35,7 @@ describe.skipIf(!E2E_LIVE)("E1: handler loop liveness", () => {
           {
             name: "e2e-noop",
             handler: "e2e-noop",
-            intervalMs: 1000,
+            intervalMs: 10000,
             agent: "may",
             enabled: true,
           },
@@ -54,8 +54,8 @@ describe.skipIf(!E2E_LIVE)("E1: handler loop liveness", () => {
     async () => {
       const db = openSandboxDb(sb.dbPath);
       try {
-        // Wait up to 15s for at least 2 fires to land. 1s interval means we
-        // expect a fire within ~1-2s of socket-ready; first cron tick may lag.
+        // Wait up to 45s for ≥2 fires (10s interval; first fire after socket-ready,
+        // second ~10s later; plus jitter).
         const result = await pollUntil(
           () => {
             const started = queryEvents(db, { types: ["handler.started"], since: t0, limit: 20 })
@@ -68,7 +68,7 @@ describe.skipIf(!E2E_LIVE)("E1: handler loop liveness", () => {
             }
             return null;
           },
-          { timeoutMs: 15_000, intervalMs: 250, description: "≥2 handler fire-cycles" },
+          { timeoutMs: 45_000, intervalMs: 500, description: "≥2 handler fire-cycles" },
         );
 
         // Invariants:
@@ -91,6 +91,6 @@ describe.skipIf(!E2E_LIVE)("E1: handler loop liveness", () => {
         db.close();
       }
     },
-    30_000,
+    60_000,
   );
 });
