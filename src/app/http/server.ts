@@ -1619,7 +1619,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectJournal(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    if (path.endsWith(".md")) return json({ content: "(Legacy project — journal is in the project file)" });
     const journalPath = resolve(resolveProjectDir(path), "journal.md");
     try {
       return json({ content: readFileSync(journalPath, "utf-8") });
@@ -1631,7 +1630,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function handleProjectDiscussion(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
-    if (path.endsWith(".md")) return json({ content: "(Legacy project — no discussion file)" });
     const discPath = resolve(resolveProjectDir(path), "discussion.md");
     try {
       return json({ content: readFileSync(discPath, "utf-8") });
@@ -2209,12 +2207,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
-    // Use 'steer' — may.ts handles both branches:
-    //   idle session    → manager.input()  (resumes from prior context with this as next user turn)
-    //   running session → manager.steer()  (delivers mid-flight, agent sees it next tool turn)
-    // The previous 'message' command required from/to/task and silently
-    // dropped sessionId/content; this endpoint returned 200 but the agent
-    // never saw the message.
+    // Use 'steer' — command-router routes to manager.send() for both idle
+    // and running sessions (send() enqueues the user turn; the agent picks
+    // it up on the next loop iteration whether currently active or idle).
+    // Cold (interrupted) sessions go through manager.resumeSession().
     const result = await sendDaemonFrame({ type: "steer", sessionId, message: content });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
