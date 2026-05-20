@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 92
+iteration: 94
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -55,73 +55,74 @@ agent pools, and later dark-side discovery.
 ## Signals
 - knowledge.input-space-modeled: current capability model has 35 AKS input variables.
 - knowledge.expectation-space-modeled: current capability model has 67 expectation variables.
-- knowledge.feature-mapping-started: current capability model has 60 feature mappings and 63 test-case evidence mappings.
+- knowledge.feature-mapping-started: current capability model has 60 feature mappings and 63 test-case evidence mappings; current validator has 7 failing features, 21 unknown features, and 0 blocked features.
 - knowledge.source-inventory-modeled: `outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
 - e2e.existing-cases-cataloged: `outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
 - knowledge.public-api-candidates-started: `outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active with one bounded local selection task. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+Active; the VPA residual runtime staging task is complete. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+
+`outputs/iteration93-vpa-residual-runtime-staging.md` executed the iteration92-selected focused VPA residual probe in staging on Kubernetes `1.34.7`. The run passed the source-derived Helm metadata, HA/leader-election, and in-place update branches: `overlay-vpa` had a Helm-owned deployed release secret; `vpa-recommender` and `vpa-updater` each had two ready replicas and `--leader-elect=true`; and VPA `InPlaceOrRecreate` resized two running workload pods while preserving UIDs. VPA cert renewal and upgrade survival remain explicit non-goals/unknowns.
 
 The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
 
 Resume-menu item 2 is complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` now makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
 
-The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. Resume-menu item 3 is now selected: produce a short local selection artifact for the next non-blocked model unknown before any cloud mutation.
+The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. `outputs/iteration94-next-model-unknown-selection.md` ranked the post-VPA unknowns and selected Image Cleaner vulnerable-image erasure as the next non-gated runtime branch. The active task is to execute that source-preflighted staging probe and produce `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md`; VPA cert renewal/upgrade, Workload Identity Windows, and OIDC post-delete cleanup remain later alternatives.
 
 ## Owner Review of Latest Comments
-- Reviewed `discussion.md` through the 2026-05-20 creative-audit comment. The audit was proposal-only and did not change state itself.
-- Accepted the audit observation that project state was stale: frontmatter/status and `## Next Action` still pointed at a completed/dropped ManagedSystem task. This update makes the paused state explicit and adds a concrete resume menu.
-- Accepted the audit observation that App Routing TLS escalation needs a follow-up tracker before it fades into a permanent untracked failure.
-- Adjusted the ManagedSystem observation: the migration-positive branch is not merely a timeout problem now; iteration88 produced a stronger gating condition, the RP-selected SKU/image mismatch.
+- Reviewed `discussion.md` through the 2026-05-20 creative-audit comments; they remain proposal-only and no newer human instruction changed the current branch selection.
+- The stale-state concern has been addressed: App Routing TLS has an explicit gated tracker, the VPA residual task is complete, and `outputs/iteration94-next-model-unknown-selection.md` now selects the next non-gated unknown.
+- ManagedSystem migration-positive and App Routing TLS remain gated; neither should be retried blindly.
 
 ## Review Questions
 
 1. **Is the goal closer?**  
-   Yes. The project now has a durable ManagedSystem feature packet, checkpointed rerun artifact, and a validated model that distinguishes the observed iteration86 migration/delete failure from iteration88 add-phase blocker evidence.
+   Yes. Iteration93 converted three VPA residual runtime unknowns to pass evidence, and iteration94 selected the next non-gated Image Cleaner branch with input paths, expectation paths, non-goals, and preflight requirements.
 
 2. **What did we learn?**  
-   Retrying the ManagedSystem migration loop immediately is low value: two checkpointed staging attempts failed before placement because ManagedSystem defaulted to `Standard_D8pds_v5` with an x64 image. This is a staging/RP default-selection gate, not a script-resumability issue.
+   VPA Helm metadata, HA/leader-election, and in-place update behavior pass on Kubernetes `1.34.7`; actual Image Cleaner vulnerable-image erasure is now the strongest non-gated runtime/security gap because state, interval, and component lifecycle are already proved.
 
 3. **Is the current milestone the right next step?**  
-   The ManagedSystem Pool worked example is complete enough for now. The next milestone should either track an external owner/fix for ManagedSystem/App Routing failures or select another high-density unknown branch from the model.
+   Yes. The next milestone is a bounded Image Cleaner vulnerable-image erasure execution task, not another local selection loop and not a gated ManagedSystem/App Routing rerun.
 
 4. **Are we closing the loop?**  
-   Yes for project control: all current tasks are closed, stale active instructions were retired, and the next resume choices are explicit. No cloud run should start until one resume choice is selected.
+   Yes. The parser-visible task block now has exactly one active task, `image-cleaner-vulnerable-erasure-staging`, with a single durable output target and explicit preflight gates before cloud mutation.
 
 5. **Is it verified?**  
-   Yes. `outputs/iteration88-managedsystem-disable-migration-checkpointed.md` records both attempts, cleanup, and validator result; a fresh local validator run exits 0.
+   Yes. The capability-model validator exited 0 after iteration93 with 35 input variables, 67 expectation variables, 7 failing features, 21 unknown features, and 0 blocked features. The iteration94 artifact records the same checkpoint and ranking.
 
 6. **What’s blocking progress?**  
-   Only the ManagedSystem positive migration rerun is blocked/gated. It should resume only after staging ManagedSystem SKU/image selection is fixed or an owner provides an allowed way to influence the RP-selected ManagedSystem SKU without violating the minimal `name`+`mode` contract.
+   The project as a whole is not blocked. Only specific branches are gated: ManagedSystem migration-positive awaits a SKU/image fix or allowed override; App Routing TLS awaits owner diagnostics/fix; VPA cert/upgrade and Image Cleaner upgrade/restart are intentionally out of the next task scope.
 
 ## Resume Menu (ranked)
 
-1. **Track/escalate ManagedSystem default SKU/image mismatch — highest priority if ManagedSystem remains the focus.**  
-   Produce an owner packet or source triage artifact from `outputs/iteration88-managedsystem-disable-migration-checkpointed.md` and devbox RP source showing why ManagedSystem selected Arm64-only `Standard_D8pds_v5` with an x64 image. Do not create another cluster unless the owner/fix gate changes.
+1. **Execute Image Cleaner vulnerable-image erasure — current active task.**  
+   Produce `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md` after source preflight confirms the vulnerable image constant, node/containerd run-command path, eraser collector selector, and source wait budget.
 
-2. **Add an App Routing TLS follow-up tracker — low cost, high hygiene.**  
-   Convert `outputs/iteration81-app-routing-tls-owner-escalation.md` into an explicit gated task or discussion note with the rerun trigger (owner response, CCP/default-domain-svc diagnostic access, or fixed build). No staging rerun until the gate is satisfied.
+2. **If Image Cleaner erasure blocks before behavior is tested, write a blocker artifact.**  
+   Capture the exact missing prerequisite (for example run-command access, vulnerable image availability, or collector observability) and then return to the non-gated unknown list.
 
-3. **Select the next non-blocked model unknown — best forward progress.**  
-   Use `outputs/input-expectation-knowledge-map.md`, `outputs/iteration75-model-driven-probe-selection.md`, and current validator unknowns to choose one bounded branch such as Image Cleaner vulnerable-image erasure, Image Cleaner upgrade/restart survival, VPA residual runtime behavior, Windows workload identity token projection, or OIDC signing-key rotation/post-delete cleanup. Produce a short selection artifact before any cloud mutation.
+3. **Do not run gated branches blindly.**  
+   ManagedSystem migration-positive and App Routing TLS require their documented gate changes before rerun; VPA cert/upgrade should be selected only if autoscaler becomes the explicit priority.
 
 ## Decision
 
-Resume-menu item 2 is complete. Select resume-menu item 3 now: choose the next non-blocked model unknown with a short local selection artifact. No cloud run is selected until that artifact names the branch, input/expectation paths, expected model update, and exact gating/non-goals.
+`outputs/iteration94-next-model-unknown-selection.md` is complete and selects **Image Cleaner vulnerable-image erasure** as the next non-gated branch. Proceed with one active parser-visible execution task, `image-cleaner-vulnerable-erasure-staging`, after source preflight confirms the vulnerable image constant, node/containerd run-command path, eraser collector selector, and source wait budget.
 
 ## (a) Concrete output
 
-`outputs/iteration91-app-routing-tls-gated-followup-tracker.md` is the completed hygiene artifact. `project.md` now marks the App Routing TLS tracker task done and creates the single next parser-visible local selection task.
+`outputs/iteration94-next-model-unknown-selection.md` is the completed local selection artifact. `project.md` now creates the single next parser-visible execution task for `outputs/iteration95-image-cleaner-vulnerable-erasure-staging`.
 
 ## (b) What’s different
 
-The previous state selected an App Routing TLS tracker. The new state keeps App Routing TLS behind explicit owner/diagnostic/fixed-build gates and moves project execution to a non-blocked model-unknown selection step.
+The previous state selected a post-VPA unknown but had not committed to a branch. The new state selects Image Cleaner vulnerable-image erasure based on the validated post-iteration93 model and keeps App Routing TLS, ManagedSystem migration-positive, VPA cert/upgrade, Workload Identity Windows, and OIDC cleanup out of this next task.
 
 ## (c) First step on resume
 
-Read this `## Current State`, then read `outputs/input-expectation-knowledge-map.md`, `outputs/iteration75-model-driven-probe-selection.md`, and the current validator unknown list. Produce `outputs/iteration92-next-model-unknown-selection.md` choosing one bounded non-blocked branch such as Image Cleaner vulnerable-image erasure, Image Cleaner upgrade/restart survival, VPA residual runtime behavior, Windows workload identity token projection, or OIDC signing-key rotation/post-delete cleanup. Do not run staging/cloud probes for this selection task.
+Read this `## Current State`, then read `outputs/iteration94-next-model-unknown-selection.md` and `outputs/iteration86-image-cleaner-runtime-source-gated-staging.md`. Run the local/devbox source preflight from iteration94 to confirm the vulnerable image constant, node/containerd run-command inspection path, eraser collector selector, and source wait budget before any cluster creation.
 
 ## Linked Context
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
@@ -138,6 +139,9 @@ Read this `## Current State`, then read `outputs/input-expectation-knowledge-map
 - `outputs/iteration80-app-routing-tls-source-hypothesis.md` — source-first comparison showing App Routing DefaultDomainCertificate TLS failure is not explained by malformed customer CR/input
 - `outputs/iteration81-app-routing-tls-owner-escalation.md` — owner escalation packet and diagnostic rerun gate for App Routing TLS
 - `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` — explicit App Routing TLS follow-up tracker with owner/diagnostic/fixed-build rerun gates and no-blind-rerun rule
+- `outputs/iteration92-next-model-unknown-selection.md` — local selection artifact that selected the focused VPA residual runtime probe
+- `outputs/iteration93-vpa-residual-runtime-staging.md` — VPA Helm, HA/leader-election, and in-place-update staging pass evidence
+- `outputs/iteration94-next-model-unknown-selection.md` — local selection artifact choosing Image Cleaner vulnerable-image erasure as the next non-gated runtime branch
 - `outputs/iteration82-post-escalation-next-probe-selection.md` — post-App-Routing ranking that selected Node Restriction
 - `outputs/iteration83-node-restriction-fullput-runtime-staging.md` — Node Restriction corrected full-PUT disable contract and runtime-default staging pass evidence
 - `outputs/iteration84-keda-disable-reenable-crud-staging.md` — KEDA disable/re-enable CRUD lifecycle staging pass evidence
@@ -196,7 +200,7 @@ Read this `## Current State`, then read `outputs/input-expectation-knowledge-map
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
 - Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 60 feature mappings, 63 test-case evidence mappings, 43 judgments, 32 evidence references.
-- Current feature status: 30 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 24 unknown, 0 blocked.
+- Current feature status: 33 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 21 unknown, 0 blocked.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -207,12 +211,18 @@ Read this `## Current State`, then read `outputs/input-expectation-knowledge-map
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Execute the single active task `next-model-unknown-selection`. Produce `outputs/iteration92-next-model-unknown-selection.md` as a local selection artifact for one bounded non-blocked model-unknown branch. Do not retry the ManagedSystem migration-positive staging loop until the RP-selected ManagedSystem SKU/image mismatch is fixed or an owner provides an allowed SKU override, and do not run an App Routing TLS staging rerun until one of the tracker gates in `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` is satisfied.
+The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-selection.md` is complete and selects **Image Cleaner vulnerable-image erasure** as the next non-gated runtime branch. Next task: execute the source-preflighted Image Cleaner vulnerable-image erasure staging probe, producing `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md`. Start with the iteration94 preflight reads/greps, and do not create a cluster until the vulnerable image constant, node/containerd run-command path, eraser collector selector, and source wait budget are confirmed. Do not combine this with Image Cleaner upgrade/restart survival, VPA/KEDA, Workload Identity/OIDC, App Routing, ManagedSystem, or unrelated probes. Continue to keep ManagedSystem migration-positive and App Routing TLS behind their existing gates.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
+### 2026-05-20 — Selected Image Cleaner vulnerable-image erasure after VPA residual pass
+- `outputs/iteration93-vpa-residual-runtime-staging.md` closed the focused VPA residual branches for Helm metadata, HA/leader-election, and in-place update on Kubernetes `1.34.7`; VPA cert renewal and upgrade survival remain explicit unknown/non-goals.
+- Fresh capability-model validator run after iteration93 exited 0 with 35 input variables, 67 expectation variables, 7 failing features, and 21 unknown features.
+- `outputs/iteration94-next-model-unknown-selection.md` ranked the remaining non-gated unknowns and selected Image Cleaner vulnerable-image erasure as the next branch because Image Cleaner component lifecycle already passed and actual vulnerable-image removal is the strongest non-gated security runtime gap.
+- The next parser-visible task is `image-cleaner-vulnerable-erasure-staging`; it must confirm the source vulnerable image, node/containerd run-command path, eraser collector selector, and wait budget before creating a staging cluster.
+
 ### 2026-05-20 — Completed App Routing TLS tracker; selected next model unknown
 - `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` records the valid-input DefaultDomainCertificate TLS-secret failure, owner questions, diagnostic data needed, allowed rerun triggers, and explicit no-blind-rerun rule.
 - App Routing TLS remains gated on owner response, CCP/default-domain-svc diagnostic access, fixed/known-good build/configuration, or source-proven chart/config mismatch; no customer-cluster-only rerun is selected.
@@ -478,10 +488,18 @@ Execute the single active task `next-model-unknown-selection`. Produce `outputs/
   attempts: 1
 
 - id: vpa-residual-runtime-staging
-  status: ready
+  status: done
+  result: succeeded
   assignee: aks-explorer
   goal: "Execute the VPA residual runtime probe in staging as selected by outputs/iteration92-next-model-unknown-selection.md. Focus on in-place update behavior, Helm metadata/ownership, and HA/leader-election evidence. Start from outputs/iteration78-workload-autoscaler-runtime-staging.md (VPA components/recommendations pass), outputs/iteration79-vpa-runtime-model-split.md (branch split), and the iteration92 preflight commands. Produce outputs/iteration93-vpa-residual-runtime-staging.md with source preflight, exact devbox/staging commands, in-place update evidence, Helm chart metadata, leader-election evidence, cleanup status, and capability-model/knowledge-map updates if clear verdicts are reached. Do not combine with cert-renewal, upgrade-survival, App Routing, Image Cleaner, KEDA, or unrelated probes."
   depends_on: [next-model-unknown-selection]
+  attempts: 1
+
+- id: image-cleaner-vulnerable-erasure-staging
+  status: ready
+  assignee: aks-explorer
+  goal: "Execute the Image Cleaner vulnerable-image erasure staging probe selected by outputs/iteration94-next-model-unknown-selection.md. Start from outputs/iteration86-image-cleaner-runtime-source-gated-staging.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and the iteration94 preflight commands. Before creating any cluster, confirm from devbox source the vulnerable image constant, node/containerd run-command inspection path, eraser collector selector, and source wait budget. Then create a small staging cluster with Image Cleaner enabled, disable Image Cleaner, pull/prove the vulnerable image exists on nodes while disabled, re-enable Image Cleaner, wait for eraser collectors to complete, prove the vulnerable image is absent, clean up the resource group, and produce outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md with exact commands, raw evidence snippets, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if image-cleaner-vulnerable-image-erasure gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. Do not combine with Image Cleaner upgrade/restart survival, VPA/KEDA, Workload Identity/OIDC, App Routing, ManagedSystem, Node Restriction, bootstrap, VirtualMachines, or unrelated probes."
+  depends_on: [vpa-residual-runtime-staging]
   attempts: 0
 
 ## References
@@ -514,6 +532,8 @@ Execute the single active task `next-model-unknown-selection`. Produce `outputs/
 ## Comments
 
 ## Artifacts
+- outputs/iteration94-next-model-unknown-selection.md
+- outputs/iteration93-vpa-residual-runtime-staging.md
 - outputs/iteration91-app-routing-tls-gated-followup-tracker.md
 - outputs/iteration82-post-escalation-next-probe-selection.md
 - outputs/iteration66-virtualmachines-manual-scale-staging.md
