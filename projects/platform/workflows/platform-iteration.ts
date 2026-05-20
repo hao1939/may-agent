@@ -34,7 +34,6 @@ interface PersistentTaskConfig {
   goal: string;
   maxIterations: number;
   reviewEvery: number;
-  isLegacy: boolean;        // true if single-file format
 }
 
 interface ProjectState {
@@ -53,24 +52,12 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
   const projectInput = field("project");
   if (!projectInput) throw new Error("Missing required field: project");
 
-  // Detect format: directory (new) vs file (legacy)
-  let projectDir: string;
-  let projectPath: string;
-  let journalPath: string;
-  let isLegacy = false;
-
-  if (projectInput.endsWith(".md")) {
-    // Legacy: single file
-    isLegacy = true;
-    projectDir = dirname(projectInput);
-    projectPath = projectInput;
-    journalPath = projectInput; // journal goes in same file for legacy
-  } else {
-    // New: directory format
-    projectDir = projectInput;
-    projectPath = join(projectInput, "project.md");
-    journalPath = join(projectInput, "journal.md");
-  }
+  // Project directory format: <projectDir>/project.md + <projectDir>/journal.md
+  // (Single-file `.md` format dropped; see
+  // projects/platform/proposals/2026-05-20-legacy-cleanup-resume-path.md L1.)
+  const projectDir: string = projectInput;
+  const projectPath: string = join(projectInput, "project.md");
+  const journalPath: string = join(projectInput, "journal.md");
 
   let goal = field("goal");
   // Read goal from project file if generic
@@ -82,8 +69,8 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
     } catch { /* file may not exist yet */ }
   }
   if (!goal) {
-    // For legacy projects, use the project name as fallback
-    goal = projectInput.replace(/\.md$/, "").split("/").pop() ?? "unknown project";
+    // Use the project directory name as fallback.
+    goal = projectInput.split("/").pop() ?? "unknown project";
   }
 
   const agent = field("agent");
@@ -92,7 +79,7 @@ function parseInput(raw: string, callingAgent: string): PersistentTaskConfig {
   const maxIterations = parseInt(field("maxIterations") ?? "200", 10);
   const reviewEvery = parseInt(field("reviewEvery") ?? "1", 10);
 
-  return { projectDir, projectPath, journalPath, owner, worker, goal, maxIterations, reviewEvery, isLegacy };
+  return { projectDir, projectPath, journalPath, owner, worker, goal, maxIterations, reviewEvery };
 }
 
 // ── File helpers ───────────────────────────────────────────────────────
@@ -813,9 +800,7 @@ function extractDecision(text: string): { status: "waiting" | "blocked" | "conti
 
 
 function emitProjectEvent(ctx: WorkflowContext, config: PersistentTaskConfig, event: string, extra?: Record<string, unknown>): void {
-  const name = config.isLegacy
-    ? config.projectPath.split("/").pop()?.replace(/\.md$/, "") ?? "unknown"
-    : config.projectDir.split("/").pop() ?? "unknown";
+  const name = config.projectDir.split("/").pop() ?? "unknown";
   const projectId = `${config.owner}/${name}`;
   ctx.dispatchEvent(event, { projectId, owner: config.owner, ...extra });
 }
@@ -832,24 +817,15 @@ type StopHandlerResult =
   | { outcome: "stopped"; result: WorkflowResult };
 
 /**
- * Append an entry to the journal, handling legacy vs directory format.
+ * Append an entry to the journal (directory-format projects).
  */
 function appendJournalEntry(
   config: PersistentTaskConfig,
   projectContent: string,
   entry: string,
-  isCommentIteration: boolean,
+  _isCommentIteration: boolean,
 ): string {
-  if (isCommentIteration) {
-    if (!config.isLegacy) cachedAppend(config.journalPath, entry);
-  } else {
-    if (config.isLegacy) {
-      projectContent += entry;
-      cachedWrite(config.projectPath, projectContent);
-    } else {
-      cachedAppend(config.journalPath, entry);
-    }
-  }
+  cachedAppend(config.journalPath, entry);
   return projectContent;
 }
 
@@ -1012,11 +988,7 @@ function handleDirectiveComment(
     `**Comment**: ${pendingComments}\n` +
     `**Reviewer**: ${directive.label} — Marked ${directive.status} by human/May (JS fast-path, no LLM review needed).\n\n`;
 
-  if (config.isLegacy) {
-    projectContent += commentEntry;
-  } else {
-    cachedAppend(config.journalPath, commentEntry);
-  }
+  cachedAppend(config.journalPath, commentEntry);
 
   projectContent = clearComments(projectContent);
   projectContent = updateField(projectContent, "Iteration", String(iteration));
@@ -1045,13 +1017,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     createProjectDir(config);
   }
   // Ensure journal exists
-  if (!existsSync(config.journalPath) && !config.isLegacy) {
+  if (!existsSync(config.journalPath)) {
     ensureDir(dirname(config.journalPath));
     cachedWrite(config.journalPath, `# Journal\n\n`);
   }
 
   let projectContent = readFile(config.projectPath) ?? "";
-  const journalContentAtStart = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
+  const journalContentAtStart = readFile(config.journalPath) ?? "";
   let state = parseProjectState(projectContent);
 
   // Handle non-active states
@@ -1095,7 +1067,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (state.status === "cancelled") return ctx.done(`Cancelled by owner at iteration ${iteration}.`);
 
     // Read journal for context
-    const journalContent = config.isLegacy ? projectContent : (readFile(config.journalPath) ?? "");
+    const journalContent = readFile(config.journalPath) ?? "";
     const features = parseFeatures(projectContent);
 
     // ── Comment iteration ─────────────────────────────────────────
@@ -1168,11 +1140,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         `**Comment**: ${pendingComments}\n` +
         `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
 
-      if (config.isLegacy) {
-        projectContent += commentEntry;
-      } else {
-        cachedAppend(config.journalPath, commentEntry);
-      }
+      cachedAppend(config.journalPath, commentEntry);
 
       // Clear comments — they're now in the journal
       projectContent = clearComments(projectContent);
@@ -1233,14 +1201,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const journalEntry = `### Iteration ${iteration} — ${now}\n` +
       `**Worker**: ${workerSummary}\n`;
 
-    if (config.isLegacy) {
-      // Legacy: append to the single file
-      projectContent = appendToSection(projectContent, "Progress Log",
-        `\n### Iteration ${iteration} — ${now}\n**Worker**: ${workerSummary}\n`);
-      cachedWrite(config.projectPath, projectContent);
-    } else {
-      cachedAppend(config.journalPath, journalEntry);
-    }
+    cachedAppend(config.journalPath, journalEntry);
 
     // Re-read project file from disk — worker may have checked off milestones or updated sections
     projectContent = readFile(config.projectPath) ?? projectContent;
@@ -1249,9 +1210,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     projectContent = updateField(projectContent, "Iteration", String(iteration));
 
     // Auto-catalog outputs/
-    if (!config.isLegacy) {
-      projectContent = catalogOutputs(config.projectDir, projectContent);
-    }
+    projectContent = catalogOutputs(config.projectDir, projectContent);
     cachedWrite(config.projectPath, projectContent);
 
     // ── Budget checkpoint: REMOVED ──
@@ -1271,12 +1230,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
       if (reviewResult.status === "error") {
         const reviewEntry = `**Reviewer**: CONTINUE — review errored, auto-continuing\n\n`;
-        if (config.isLegacy) {
-          projectContent += reviewEntry;
-          cachedWrite(config.projectPath, projectContent);
-        } else {
-          cachedAppend(config.journalPath, reviewEntry);
-        }
+        cachedAppend(config.journalPath, reviewEntry);
         iteration++;
         continue;
       }
@@ -1288,12 +1242,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       if (refreshedAfterReview) projectContent = refreshedAfterReview;
       const reviewEntry = `**Reviewer**: ${decision.status.toUpperCase()} — ${decision.detail}\n\n`;
 
-      if (config.isLegacy) {
-        projectContent += reviewEntry;
-        cachedWrite(config.projectPath, projectContent);
-      } else {
-        cachedAppend(config.journalPath, reviewEntry);
-      }
+      cachedAppend(config.journalPath, reviewEntry);
 
       // Update milestone checkboxes based on reviewer's assessment
       const beforeMs = extractMilestones(projectContent).done;
@@ -1310,7 +1259,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         // false done — continue to progress tracking
       }
 
-      // CONTINUE — track progress and auto-escalate if stuck
+      // CONTINUE/PIVOT — track milestone movement. Lack of milestone movement is
+      // a replan signal, not a project-level blocker; only an explicit reviewer
+      // WAITING/BLOCKED decision should stop the project.
       // Re-read from disk — worker or reviewer may have checked off milestones
       projectContent = readFile(config.projectPath) ?? projectContent;
       const currentMilestoneDone = extractMilestones(projectContent).done;
@@ -1324,30 +1275,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Emit iteration event for metrics tracking
       emitProjectEvent(ctx, config, "project.iteration", { iteration });
 
-      // Auto-escalate after 5 iterations without milestone progress
-      if (continueWithoutProgress >= 5) {
-        projectContent = updateField(projectContent, "Status", "blocked");
-        projectContent = setStatusFooter(projectContent, "Current State",
-          `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
-        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: 0, reason: decision.detail.slice(0, 100) });
-        cachedWrite(config.projectPath, projectContent);
-        return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
-      }
-
       // Update Current State with reviewer's synthesis
       const ms = extractMilestones(projectContent);
       const reviewerInsight = decision.detail.replace(/^CONTINUE[:\s]*/i, "").trim();
       const reviewerStateUpdate = extractDirectiveBlock(reviewerText, "CURRENT_STATE_UPDATE");
+      const stalledButReplanning = continueWithoutProgress >= 5;
 
-      if (reviewerStateUpdate || !reviewerEditedProject) {
+      if (stalledButReplanning) {
+        projectContent = updateField(projectContent, "Status", "active");
+        projectContent = updateField(projectContent, "Stop Reason", "");
+        projectContent = updateField(projectContent, "Resume Condition", "");
+      }
+
+      if (reviewerStateUpdate || !reviewerEditedProject || stalledButReplanning) {
         // When the reviewer explicitly provides a CURRENT_STATE_UPDATE, overwrite
         // the section (that's the directive's purpose). Otherwise just refresh
         // the status footer line and keep the existing narrative body.
         if (reviewerStateUpdate) {
           projectContent = updateSection(projectContent, "Current State", `${reviewerStateUpdate}\n`);
         } else {
-          const footer = `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.` +
-            (reviewerInsight ? ` Reviewer: ${reviewerInsight}` : "");
+          const footer = stalledButReplanning
+            ? `Active: ${continueWithoutProgress} consecutive iterations without milestone progress; owner must replan, split work, or choose a different evidence path.` +
+              (reviewerInsight ? ` Reviewer: ${reviewerInsight}` : "")
+            : `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.` +
+              (reviewerInsight ? ` Reviewer: ${reviewerInsight}` : "");
           projectContent = setStatusFooter(projectContent, "Current State", footer);
         }
 

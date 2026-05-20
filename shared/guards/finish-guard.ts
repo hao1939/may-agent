@@ -33,15 +33,14 @@ function isPersistentTaskRequired(taskText: string): boolean {
     return true;
   }
 
-  // Task has a project: field pointing to a directory
+  // Task has a project: field pointing to a directory — indicates a
+  // persistent-task ask. (Single-file `.md` project format is gone, so the
+  // legacy `.endsWith('.md')` exclusion was removed; see
+  // projects/platform/proposals/2026-05-20-legacy-cleanup-resume-path.md L1.)
   const projectMatch = taskText.match(/^project:\s*(.+)$/m);
   if (projectMatch) {
     const projectPath = projectMatch[1].trim();
-    // Directory-style project references (not .md files) indicate persistent-task
-    if (!projectPath.endsWith('.md') && (
-      projectPath.includes('/projects/') ||
-      projectPath.includes('/project.md') === false
-    )) {
+    if (projectPath.includes('/projects/') || projectPath.includes('/project.md') === false) {
       return true;
     }
   }
