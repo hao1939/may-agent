@@ -4,12 +4,9 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-workflow: project
-iteration: 86
+iteration: 88
 max_concurrent: 1
 max_task_attempts: 2
-stop_reason: 
-resume_condition: 
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -65,8 +62,300 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Iteration85 closed Workload Identity disable/re-enable lifecycle. `outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` shows public `--disable-workload-identity` leaves OIDC issuer enabled while persisting `securityProfile.workloadIdentity.enabled=false`, removes the AKS-managed `azure-wi` webhook runtime surface, and public `--enable-workload-identity` restores profile state, webhook resources, and Linux pod token projection. The ManagedSystem Pool feature-standard wave is also complete: `outputs/managedsystem-pool-feature-standard.md` integrates source/API/docs/evidence/repro/context into the first reusable feature packet and keeps source-only gaps as unknown. App Routing DefaultDomainCertificate TLS remains paused behind owner/CCP diagnostics. The next high-value ManagedSystem gap is delete/disable migration runtime: prove whether critical add-ons move back to System nodes after the ManagedSystem pool is deleted.
+Active under the task-driven project handler. The legacy `aks-rp-e2e-iteration`
+workflow was superseded and must not drive project state. The active task is
+`managedsystem-disable-migration-runtime-probe`, which should complete the
+checkpointed ManagedSystem Pool migration evidence without spawning the legacy
+project workflow.
+## Review Questions
 
+1. **Is the goal closer?**  
+   Slightly. The preflight artifact is useful, but the actual goal — resolving `managedsystem-disable-migration` with runtime placement evidence — is not yet materially closer.
+
+2. **What did we learn?**  
+   The first attempt was too fragile: a single long remote script can be interrupted before it records evidence. We need checkpointed logging and explicit resume points.
+
+3. **Is the current milestone the right next step?**  
+   Yes. The right feature branch remains `managedsystem-disable-migration`; only the execution strategy changes.
+
+4. **Are we closing the loop?**  
+   Not yet. The next iteration should prevent recurrence by producing a resumable script/run log that captures each phase independently: create, REST add, pre-delete placement, delete, post-delete placement, cleanup.
+
+5. **Is it verified?**  
+   Preflight is verified by the artifact. Runtime migration is not verified yet. I also checked devbox for obvious leaked `msmig*` groups and saw no output.
+
+6. **What’s blocking progress?**  
+   No external blocker. The problem is execution fragility from a monolithic remote command.
+
+## Required stall response: 3 alternative approaches ranked by feasibility
+
+1. **Checkpointed/resumable ManagedSystem migration script — highest feasibility.**  
+   Keep the same feature branch, but change execution shape: write a remote-safe script that logs every command, writes phase markers, and can resume or at least preserve partial evidence after interruption.
+
+2. **Evidence-mining fallback — medium feasibility.**  
+   Search existing ManagedSystem e2ev3 standalone/staging logs and source assertions for delete/disable migration evidence before spending another staging run. Useful if staging is flaky, but less authoritative than fresh runtime evidence.
+
+3. **Source-only branch classification — lower feasibility.**  
+   Inspect RP/e2ev3 source to model expected delete migration behavior without cloud execution. This can refine expectations but cannot close observed behavior.
+
+## Decision
+
+Pick approach #1: **checkpointed/resumable ManagedSystem migration script**.
+
+## (a) Concrete output
+
+Produce and complete:
+
+`outputs/iteration87-managedsystem-disable-migration-runtime-staging.md`
+
+Append a new section titled:
+
+`## Checkpointed rerun`
+
+The artifact must include:
+
+- Confirmation whether any interrupted-run resources existed.
+- Exact checkpointed script or command block used.
+- Resource identifiers: subscription, resource group, cluster, ManagedSystem pool name, API version.
+- Baseline cluster creation output.
+- REST add URL and minimal payload.
+- ManagedSystem node label evidence.
+- Before-delete placement for:
+  - `coredns`
+  - `metrics-server`
+  - `konnectivity-agent`
+  - `coredns-autoscaler`
+- REST/ARM delete command and NotFound/deleted-state evidence.
+- After-delete placement for the same add-ons on `kubernetes.azure.com/mode=system` nodes.
+- Timing observations, especially whether pods were recreated or merely rescheduled.
+- Verdict table.
+- Cleanup command/output.
+- Capability-model and knowledge-map updates only if evidence clearly resolves `managedsystem-disable-migration`.
+- Validator output:
+
+```bash
+cd /app/projects/aks-rp-e2e/capability-model
+bun src/validate.ts ../outputs/e2e-capability-model.json
+```
+
+If the run fails before reaching the before-delete or after-delete checkpoint, preserve the partial log and write the exact failed phase plus next resume command instead of starting over blindly.
+
+## (b) What’s different
+
+This is a **PIVOT in execution strategy**, not feature selection. The previous attempt used one long remote command and was interrupted before durable runtime evidence was captured. The next attempt must be checkpointed and resumable, with phase-by-phase logging to a devbox file and artifact append points so interruption does not erase progress.
+
+## (c) First step
+
+Run this exact command first:
+
+```bash
+cd /app/projects/aks-rp-e2e && {
+  echo '===== local artifact tail ====='
+  tail -120 outputs/iteration87-managedsystem-disable-migration-runtime-staging.md
+
+  echo '===== check for interrupted-run resources ====='
+  ssh devbox "az group list --query \"[?starts_with(name, 'msmig-87-') || starts_with(name, 'msmig87') || contains(name, 'msmig')].{name:name, location:location, state:properties.provisioningState}\" -o table"
+
+  echo '===== check for devbox leftover logs ====='
+  ssh devbox "ls -l /tmp/iteration87-managedsystem* /tmp/msmig87* 2>/dev/null || true"
+}
+```
+
+Then create the checkpointed rerun section before starting any new cluster creation.
+
+PLAN_UPDATE:
+1. ✅ Run e2e scenarios and collect initial standalone results
+2. ✅ Explore ManagedSystem Pool enough to split REST/CLI/standalone evidence
+3. ✅ Capture standalone e2ev3 verdict for Scenario_ManagedSystemPool_Enable
+4. ✅ Refresh ManagedSystem Pool evidence in staging using a fixed CLI/REST classification matrix
+5. ✅ Update `outputs/managedsystem-pool-exploration.md` and validate `outputs/e2e-capability-model.json` with current ManagedSystem evidence
+6. ✅ Fetch Azure AKS public API specs/docs and derive the next candidate feature scenarios in `outputs/aks-public-api-scenario-candidates.md`
+7. ✅ Validate Node Auto Provisioning create/update behavior in staging and update the capability model
+8. ✅ Validate Web App Routing/App Routing public API behavior in staging and update the capability model
+9. ✅ Validate OIDC issuer + workload identity public API behavior in staging and update the capability model
+10. ✅ Select the next public API candidate based on iteration60 results
+11. ✅ Validate workload autoscaler profile KEDA/VPA public API behavior and update the capability model
+12. ✅ Select the next public API candidate based on iteration61 results
+13. ✅ Validate security profile image cleaner/node restriction public API behavior and update the capability model
+14. ✅ Validate bootstrap profile artifact source public API behavior with a contract-first staging probe and update the capability model if verdicted
+15. ✅ Validate non-ManagedSystem VirtualMachines agent pool public preview behavior and classify the multi-SKU/manual-scale contract
+16. ✅ Close App Routing public API disable/default-domain/traffic evidence and escalate DefaultDomainCertificate TLS failure
+17. ✅ Consolidate the input/expectation knowledge map and handwritten e2ev3 coverage inventory
+18. ✅ Resolve Node Restriction source/spec contradiction and validate corrected runtime/default behavior
+19. ✅ Validate KEDA disable/re-enable CRUD lifecycle in staging
+20. ✅ Validate Workload Identity disable/re-enable lifecycle in staging
+21. ✅ Decompose and validate Image Cleaner runtime lifecycle branches with source-gated staging evidence
+22. 🔄 Execute ManagedSystem Pool delete/disable migration runtime probe with checkpointed staging evidence
+
+NEXT_ACTION_UPDATE: Complete `outputs/iteration87-managedsystem-disable-migration-runtime-staging.md` using a checkpointed/resumable ManagedSystem Pool migration probe. First verify whether the interrupted run left any `msmig*` resource group or devbox log. Then run a phase-logged staging script that creates a normal baseline cluster, adds one ManagedSystem pool via the proven minimal ARM REST payload (`api-version=2025-04-02-preview`), records critical add-on placement on `managed-system` nodes, deletes the ManagedSystem pool, verifies the pool is deleted/NotFound, records the same add-ons on `system` nodes, cleans up the resource group with `--no-wait`, and updates the capability model/map only if `managedsystem-disable-migration` is clearly resolved. Do not rerun CLI create/add failures, second-pool constraint, reconcile preservation, Image Cleaner, Workload Identity/OIDC, KEDA/VPA, App Routing, or Node Restriction.
+## Review Questions
+
+1. **Is the goal closer?**  
+   Yes. The knowledge model is now more branch-accurate for Image Cleaner and no longer hides erasure/upgrade survival behind a broad runtime lifecycle feature.
+
+2. **What did we learn?**  
+   Image Cleaner’s public lifecycle reconciles the eraser controller, rolebinding, service accounts, and collector pods across enable → disable → re-enable. Vulnerable-image erasure is a separate, longer branch requiring node run-command and up to 3600s collector wait.
+
+3. **Is the current milestone the right next step?**  
+   No. Image Cleaner source-gated decomposition is complete enough for now. The right next step is the ManagedSystem Pool delete/disable migration runtime probe that is already the project’s current high-value gap.
+
+4. **Are we closing the loop?**  
+   Yes. Iteration86 prevented recurrence of over-broad model closure by splitting Image Cleaner. The next loop is to close another explicit model unknown, `managedsystem-disable-migration`, with runtime scheduling evidence.
+
+5. **Is it verified?**  
+   Yes. I read `outputs/iteration86-image-cleaner-runtime-source-gated-staging.md` and reran the capability-model validator; it exits successfully and shows `image-cleaner-components-lifecycle: pass` with erasure/upgrade residuals as explicit unknowns.
+
+6. **What's blocking progress?**  
+   Nothing external. The guard warning about `/home/hayua` reflects path-guard sensitivity; devbox paths must only be accessed inside `ssh devbox`, which the worker did. Staging remains usable.
+
+## Required stall response: 3 alternative approaches ranked by feasibility
+
+1. **ManagedSystem Pool delete/disable migration runtime — highest feasibility.**  
+   Reuses the fresh ManagedSystem REST add/delete evidence and targets one clear unknown: whether critical add-ons move back from ManagedSystem nodes to System nodes after deleting the ManagedSystem pool.
+
+2. **Image Cleaner vulnerable-image erasure — medium feasibility.**  
+   Valuable but requires vulnerable-image setup, node run-command checks, and up to one hour of eraser collector wait.
+
+3. **VPA residual single-branch runtime probe — lower feasibility.**  
+   Still useful, but selecting the right branch without over-broadening requires more care and may consume more time than ManagedSystem migration.
+
+## Decision
+
+Pick approach #1: **ManagedSystem Pool delete/disable migration runtime**.
+
+## (a) Concrete output
+
+Produce:
+
+`outputs/iteration87-managedsystem-disable-migration-runtime-staging.md`
+
+It must include:
+
+- **Preflight**
+  - Read `outputs/managedsystem-pool-feature-standard.md`, `outputs/managedsystem-pool-repro-pack.md`, `outputs/20260519T1646Z-managedsystem-priority-staging.md`, and current validator output for `managedsystem-disable-migration`.
+  - Identify exact branch under test: `managedsystem-disable-migration`.
+  - Explicitly exclude:
+    - CLI create/add failures,
+    - second-pool constraint,
+    - reconcile preservation,
+    - Image Cleaner,
+    - Workload Identity/OIDC,
+    - KEDA/VPA,
+    - App Routing,
+    - Node Restriction.
+
+- **Execution**
+  - Create a normal baseline staging cluster.
+  - Add one ManagedSystem pool using the proven minimal ARM REST payload, not CLI.
+  - Record API version and exact REST URL/payload.
+  - Verify ManagedSystem pool exists and nodes are labeled `kubernetes.azure.com/mode=managed-system`.
+  - Verify critical add-ons are running on ManagedSystem nodes before delete:
+    - `coredns`,
+    - `metrics-server`,
+    - `konnectivity-agent`,
+    - `coredns-autoscaler`.
+  - Delete the ManagedSystem pool.
+  - Verify the agent pool returns NotFound or equivalent deleted state.
+  - Verify those same add-ons move back to nodes labeled `kubernetes.azure.com/mode=system`.
+  - Capture timing, rollout/pod recreation observations, and Kubernetes snippets.
+
+- **Verdict**
+  - Include a table with one row per add-on:
+    - before-delete node,
+    - before-delete node mode,
+    - after-delete node,
+    - after-delete node mode,
+    - pass/fail/partial,
+    - notes.
+
+- **Model/map update**
+  - Update `outputs/e2e-capability-model.json` only if the evidence clearly resolves `managedsystem-disable-migration`.
+  - Update `outputs/input-expectation-knowledge-map.md` ManagedSystem row if the branch status changes.
+  - Run:
+
+    ```bash
+    cd /app/projects/aks-rp-e2e/capability-model
+    bun src/validate.ts ../outputs/e2e-capability-model.json
+    ```
+
+- **Cleanup**
+  - Delete any new staging resource group with `--no-wait`.
+  - Record cleanup command and output.
+
+## (b) What’s different
+
+This pivots away from Image Cleaner entirely. Iteration86 decomposed Image Cleaner and closed only the bounded component lifecycle; the next iteration returns to ManagedSystem Pool and targets runtime scheduling/migration behavior, not API/CLI classification.
+
+## (c) First step
+
+Run this exact command first:
+
+```bash
+cd /app/projects/aks-rp-e2e && {
+  echo '===== current validator ManagedSystem unknowns ====='
+  cd capability-model
+  bun src/validate.ts ../outputs/e2e-capability-model.json | tee /tmp/iteration87-validator.txt | grep -E 'managedsystem|unknownFeatureIds|failingFeatureIds' -A80 -B8 || true
+  cd ..
+
+  echo '===== ManagedSystem feature standard ====='
+  grep -n "disable\\|migration\\|delete\\|critical\\|coredns\\|metrics-server\\|konnectivity\\|managed-system\\|system" \
+    outputs/managedsystem-pool-feature-standard.md | head -220
+
+  echo '===== ManagedSystem repro pack ====='
+  grep -n "REST\\|api-version\\|ManagedSystem\\|agentPools\\|payload\\|delete\\|kubectl\\|label" \
+    outputs/managedsystem-pool-repro-pack.md | head -220
+
+  echo '===== latest ManagedSystem staging evidence ====='
+  grep -n "REST\\|ManagedSystem\\|delete\\|api-version\\|payload\\|CLI\\|mode" \
+    outputs/20260519T1646Z-managedsystem-priority-staging.md | head -220
+
+  echo '===== active devbox CLI/account context ====='
+  ssh devbox "az account show --query '{name:name,id:id,tenantId:tenantId,user:user.name}' -o json && az extension show -n aks-preview --query '{name:name,version:version,path:path}' -o json"
+}
+```
+
+Then write the preflight section in `outputs/iteration87-managedsystem-disable-migration-runtime-staging.md` before any staging mutation.
+
+## Project updates
+
+Completed plan item to mark off:
+
+- **Decompose and validate Image Cleaner runtime lifecycle branches with source-gated staging evidence**
+
+PLAN_UPDATE:
+1. ✅ Run e2e scenarios and collect initial standalone results
+2. ✅ Explore ManagedSystem Pool enough to split REST/CLI/standalone evidence
+3. ✅ Capture standalone e2ev3 verdict for Scenario_ManagedSystemPool_Enable
+4. ✅ Refresh ManagedSystem Pool evidence in staging using a fixed CLI/REST classification matrix
+5. ✅ Update `outputs/managedsystem-pool-exploration.md` and validate `outputs/e2e-capability-model.json` with current ManagedSystem evidence
+6. ✅ Fetch Azure AKS public API specs/docs and derive the next candidate feature scenarios in `outputs/aks-public-api-scenario-candidates.md`
+7. ✅ Validate Node Auto Provisioning create/update behavior in staging and update the capability model
+8. ✅ Validate Web App Routing/App Routing public API behavior in staging and update the capability model
+9. ✅ Validate OIDC issuer + workload identity public API behavior in staging and update the capability model
+10. ✅ Select the next public API candidate based on iteration60 results
+11. ✅ Validate workload autoscaler profile KEDA/VPA public API behavior and update the capability model
+12. ✅ Select the next public API candidate based on iteration61 results
+13. ✅ Validate security profile image cleaner/node restriction public API behavior and update the capability model
+14. ✅ Select the next public API candidate based on iteration62 results
+15. ✅ Validate bootstrap profile artifact source public API behavior with a contract-first staging probe and update the capability model if verdicted
+16. ✅ Select the next public API candidate based on iteration63 results
+17. ✅ Validate non-ManagedSystem VirtualMachines agent pool public preview behavior and update the capability model
+18. ✅ Close the VirtualMachines multi-SKU contract gap with a source/spec-first staging follow-up
+19. ✅ Close the App Routing public API disable gap with a focused staging toggle probe
+20. ✅ Validate App Routing default-domain public API/state enablement in staging
+21. ✅ Validate App Routing default-domain traffic reachability with a real workload
+22. ✅ Validate App Routing DefaultDomainCertificate/TLS-secret behavior in staging
+23. ✅ Consolidate the current capability model into an explicit input/expectation knowledge map, using the handwritten ManagedSystem Pool e2ev3 case as the first worked boundary example
+24. ✅ Inventory existing handwritten e2ev3 cases against the feature matrix and identify real coverage gaps
+25. ✅ Update the capability model from handwritten e2ev3 source intent and existing evidence, marking partial coverage explicitly
+26. ✅ Investigate the Node Restriction source/spec contradiction before selecting another run
+27. ✅ Rank high-density future probes from the validated model, public API/docs candidates, source-derived intent, and existing evidence
+28. ✅ Execute the selected high-density Workload Identity + OIDC runtime token/discovery probe with explicit coverage and non-goals
+29. ✅ Consolidate identity/OIDC runtime evidence into branch-accurate model and knowledge-map status before selecting the next cloud probe
+30. ✅ Execute the next ranked high-density runtime probe: source-scoped KEDA/VPA runtime behavior in staging
+31. ✅ Split VPA runtime evidence into branch-accurate model features and rerank the next cloud probe
+32. ✅ Investigate App Routing DefaultDomainCertificate TLS-secret failure from source and produce a rerun-or-escalation hypothesis
+33. ✅ Prepare App
 ## Review Questions
 
 1. **Is the goal closer?**  
@@ -580,7 +869,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Produce `outputs/iteration86-managedsystem-disable-migration-runtime-staging.md` by executing one focused ManagedSystem Pool delete/disable migration runtime probe in staging. Start from `outputs/managedsystem-pool-feature-standard.md` and `outputs/managedsystem-pool-repro-pack.md`: create a normal baseline cluster, add a ManagedSystem pool through the proven minimal ARM REST payload, verify critical add-ons are running on nodes labelled `kubernetes.azure.com/mode=managed-system`, delete the ManagedSystem pool, verify the pool is NotFound, and verify `coredns`, `metrics-server`, `konnectivity-agent`, and `coredns-autoscaler` move back to nodes labelled `kubernetes.azure.com/mode=system`. Record exact commands, API version, Kubernetes object snippets, timing, cleanup status, and a verdict table. Update `outputs/e2e-capability-model.json` only if the evidence clearly resolves `managedsystem-disable-migration`, then run the capability-model validator. Do not rerun known CLI create/add failures, second-pool constraint, reconcile preservation, App Routing, Image Cleaner, KEDA/VPA, Workload Identity, or Node Restriction in this task.
+Complete `outputs/iteration87-managedsystem-disable-migration-runtime-staging.md` using a checkpointed/resumable ManagedSystem Pool migration probe. First verify whether the interrupted run left any `msmig*` resource group or devbox log. Then run a phase-logged staging script that creates a normal baseline cluster, adds one ManagedSystem pool via the proven minimal ARM REST payload (`api-version=2025-04-02-preview`), records critical add-on placement on `managed-system` nodes, deletes the ManagedSystem pool, verifies the pool is deleted/NotFound, records the same add-ons on `system` nodes, cleans up the resource group with `--no-wait`, and updates the capability model/map only if `managedsystem-disable-migration` is clearly resolved. Do not rerun CLI create/add failures, second-pool constraint, reconcile preservation, Image Cleaner, Workload Identity/OIDC, KEDA/VPA, App Routing, or Node Restriction.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -591,7 +880,7 @@ Produce `outputs/iteration86-managedsystem-disable-migration-runtime-staging.md`
   step does not require external unblock.
 - The active next task is `managedsystem-disable-migration-runtime-probe`.
 - This reactivation lets the project handler dispatch the `aks-explorer` task
-  directly instead of waiting on a legacy owner-loop workflow path.
+  directly instead of waiting on a legacy project workflow path.
 
 ## Plan
 1. ✅ Run e2e scenarios and collect initial standalone results
@@ -604,35 +893,18 @@ Produce `outputs/iteration86-managedsystem-disable-migration-runtime-staging.md`
 8. ✅ Validate Web App Routing/App Routing public API behavior in staging and update the capability model
 9. ✅ Validate OIDC issuer + workload identity public API behavior in staging and update the capability model
 10. ✅ Select the next public API candidate based on iteration60 results
-11. ✅ Validate workload autoscaler profile KEDA/VPA public API behavior in staging and update the capability model
+11. ✅ Validate workload autoscaler profile KEDA/VPA public API behavior and update the capability model
 12. ✅ Select the next public API candidate based on iteration61 results
 13. ✅ Validate security profile image cleaner/node restriction public API behavior and update the capability model
-14. ✅ Select the next public API candidate based on iteration62 results
-15. ✅ Validate bootstrap profile artifact source public API behavior with a contract-first staging probe and update the capability model if verdicted
-16. ✅ Select the next public API candidate based on iteration63 results
-17. ✅ Validate non-ManagedSystem VirtualMachines agent pool public preview behavior and update the capability model
-18. ✅ Close the VirtualMachines multi-SKU contract gap with a source/spec-first staging follow-up
-19. ✅ Close the App Routing public API disable gap with a focused staging toggle probe
-20. ✅ Validate App Routing default-domain public API/state enablement in staging
-21. ✅ Validate App Routing default-domain traffic reachability with a real workload
-22. ✅ Validate App Routing DefaultDomainCertificate/TLS-secret behavior in staging
-23. ✅ Consolidate the current capability model into an explicit input/expectation knowledge map, using the handwritten ManagedSystem Pool e2ev3 case as the first worked boundary example
-24. ✅ Inventory existing handwritten e2ev3 cases against the feature matrix and identify real coverage gaps
-25. ✅ Update the capability model from handwritten e2ev3 source intent and existing evidence, marking partial coverage explicitly
-26. ✅ Investigate the Node Restriction source/spec contradiction before selecting another run
-27. ✅ Rank high-density future probes from the validated model, public API/docs candidates, source-derived intent, and existing evidence
-28. ✅ Execute the selected high-density Workload Identity + OIDC runtime token/discovery probe with explicit coverage and non-goals
-29. ✅ Consolidate identity/OIDC runtime evidence into branch-accurate model and knowledge-map status before selecting the next cloud probe
-30. ✅ Execute the next ranked high-density runtime probe: source-scoped KEDA/VPA runtime behavior in staging
-31. ✅ Split VPA runtime evidence into branch-accurate model features and rerank the next cloud probe
-32. ✅ Investigate App Routing DefaultDomainCertificate TLS-secret failure from source and produce a rerun-or-escalation hypothesis
-33. ✅ Prepare App Routing DefaultDomainCertificate TLS owner-escalation packet and diagnostic rerun gate
-34. ✅ Select the next non-blocked high-value feature path after App Routing TLS escalation
-35. ✅ Execute the Node Restriction corrected full-PUT disable contract and runtime-default probe
-36. ✅ Validate KEDA disable/re-enable CRUD lifecycle in staging
-37. ✅ Validate Workload Identity disable/re-enable lifecycle in staging
-38. ✅ Build the ManagedSystem Pool standard feature packet from source, API/docs, evidence, repro, and related-resource context
-39. 🔄 Validate ManagedSystem Pool delete/disable migration runtime in staging
+14. ✅ Validate bootstrap profile artifact source public API behavior with a contract-first staging probe and update the capability model if verdicted
+15. ✅ Validate non-ManagedSystem VirtualMachines agent pool public preview behavior and classify the multi-SKU/manual-scale contract
+16. ✅ Close App Routing public API disable/default-domain/traffic evidence and escalate DefaultDomainCertificate TLS failure
+17. ✅ Consolidate the input/expectation knowledge map and handwritten e2ev3 coverage inventory
+18. ✅ Resolve Node Restriction source/spec contradiction and validate corrected runtime/default behavior
+19. ✅ Validate KEDA disable/re-enable CRUD lifecycle in staging
+20. ✅ Validate Workload Identity disable/re-enable lifecycle in staging
+21. ✅ Decompose and validate Image Cleaner runtime lifecycle branches with source-gated staging evidence
+22. 🔄 Execute ManagedSystem Pool delete/disable migration runtime probe with checkpointed staging evidence
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -820,12 +1092,19 @@ Produce `outputs/iteration86-managedsystem-disable-migration-runtime-staging.md`
   attempts: 1
 
 - id: managedsystem-disable-migration-runtime-probe
-  status: running
-  result: null
+  status: done
+  result: succeeded
   assignee: aks-explorer
   goal: "Execute the ManagedSystem Pool delete/disable migration runtime probe in staging. Start from outputs/managedsystem-pool-feature-standard.md and outputs/managedsystem-pool-repro-pack.md. Create a normal baseline cluster, add ManagedSystem via the proven minimal ARM REST payload, verify critical add-ons run on nodes labelled kubernetes.azure.com/mode=managed-system, delete the ManagedSystem pool, verify the pool is NotFound, and verify coredns, metrics-server, konnectivity-agent, and coredns-autoscaler migrate back to nodes labelled kubernetes.azure.com/mode=system. Produce outputs/iteration86-managedsystem-disable-migration-runtime-staging.md with exact commands, API version, Kubernetes object snippets, delete timing, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if managedsystem-disable-migration gets clear evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. Do not rerun known CLI create/add failures or combine this with second-pool, reconcile, App Routing, Image Cleaner, KEDA/VPA, Workload Identity, or Node Restriction."
   depends_on: [managedsystem-feature-standard-packet]
-  attempts: 1
+  attempts: 2
+
+- id: managedsystem-disable-migration-checkpointed-rerun
+  status: pending
+  assignee: aks-explorer
+  goal: "Complete the checkpointed ManagedSystem Pool migration evidence. Check for interrupted-run resources (msmig* resource groups on devbox), then run a phase-logged staging script that creates a normal baseline cluster, adds one ManagedSystem pool via proven minimal ARM REST payload (api-version=2025-04-02-preview), records critical add-on placement on managed-system nodes (coredns, metrics-server, konnectivity-agent, coredns-autoscaler), deletes the ManagedSystem pool, verifies NotFound, records the same add-ons on system nodes, cleans up the resource group with --no-wait, and updates the capability model only if managedsystem-disable-migration is clearly resolved. Each phase must checkpoint to a devbox log file so interruption preserves partial evidence. Produce outputs/iteration88-managedsystem-disable-migration-checkpointed.md."
+  depends_on: [managedsystem-disable-migration-runtime-probe]
+  attempts: 0
 
 ## References
 
@@ -869,6 +1148,7 @@ Produce `outputs/iteration86-managedsystem-disable-migration-runtime-staging.md`
 - outputs/public-api-input-expectation-expansion.md
 - outputs/iteration68-app-routing-defaultdomain-staging.md
 - outputs/iteration55-managedsystem-staging-results.md
+- outputs/iteration88-msmig-checkpoint.sh
 - outputs/run-now.sh
 - outputs/e2ev3-handwritten-coverage-inventory.md
 - outputs/first-e2e-run-results.md
@@ -901,6 +1181,7 @@ Produce `outputs/iteration86-managedsystem-disable-migration-runtime-staging.md`
 - outputs/iteration53-managedsystem-pool-inventory-and-blocker.md
 - outputs/test-execution-playbook.md
 - outputs/iteration49-provision-blocker.md
+- outputs/iteration87-managedsystem-disable-migration-runtime-staging.md
 - outputs/managedsystem-pool-exploration.md
 - outputs/project-status.md
 - outputs/standalone-readiness-check.sh
