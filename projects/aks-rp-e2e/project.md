@@ -4,7 +4,8 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 94
+project_policy: aggressive-push
+iteration: 97
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -62,67 +63,69 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active; the VPA residual runtime staging task is complete. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+Active; the Image Cleaner vulnerable-image erasure execution and post-Image-Cleaner unknown-selection tasks are complete. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
 
-`outputs/iteration93-vpa-residual-runtime-staging.md` executed the iteration92-selected focused VPA residual probe in staging on Kubernetes `1.34.7`. The run passed the source-derived Helm metadata, HA/leader-election, and in-place update branches: `overlay-vpa` had a Helm-owned deployed release secret; `vpa-recommender` and `vpa-updater` each had two ready replicas and `--leader-elect=true`; and VPA `InPlaceOrRecreate` resized two running workload pods while preserving UIDs. VPA cert renewal and upgrade survival remain explicit non-goals/unknowns.
+`outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md` executed the source-gated Image Cleaner vulnerable-image erasure probe in staging. The run passed: source preflight confirmed the vulnerable image constant (`mcr.microsoft.com/mirror/docker/library/nginx:1.21-alpine`), `ctr -n k8s.io images list` run-command inspection path, `eraser.sh/type=collector` selector, and 3600s/30s wait budget; a Kubernetes `1.34` cluster was created with Image Cleaner enabled; Image Cleaner disable removed components; the vulnerable image was pulled and proved present on both nodes while disabled; re-enable launched eraser collectors that completed; and follow-up node checks proved the image absent. Cleanup reached `ResourceGroupNotFound`. The capability model was updated so `image-cleaner-vulnerable-image-erasure` is `pass`; `image-cleaner-upgrade-restart-survival` remains `unknown`.
+
+`outputs/iteration96-post-image-cleaner-unknown-selection.md` ranked the next viable model unknowns after the Image Cleaner pass. It selected **OIDC default-enabled post-delete issuer cleanup** as the next non-blocked branch because it has a strong source/e2ev3 anchor, builds on the already-passed iteration76 OIDC discovery/JWKS evidence, avoids Windows/upgrade/cert-mutation cost, and can test exactly one expectation path: `identity.oidc.documentDeletedAfterClusterDelete`.
 
 The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
 
 Resume-menu item 2 is complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` now makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
 
-The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. Image Cleaner vulnerable-image erasure passed in iteration95. The active task is `post-image-cleaner-unknown-selection`: select the next non-blocked model-unknown branch from VPA cert renewal/upgrade, Workload Identity Windows, OIDC post-delete cleanup, or other viable unknowns.
+The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. The active task is now `oidc-post-delete-cleanup-staging`: source-preflight and execute the OIDC default-enabled post-delete issuer cleanup probe, producing `outputs/iteration97-oidc-post-delete-cleanup-staging.md`.
 
 ## Owner Review of Latest Comments
-- Reviewed `discussion.md` through the 2026-05-20 creative-audit comments; they remain proposal-only and no newer human instruction changed the current branch selection.
-- The stale-state concern has been addressed: App Routing TLS has an explicit gated tracker, the VPA residual task is complete, and `outputs/iteration94-next-model-unknown-selection.md` now selects the next non-gated unknown.
+- Reviewed `discussion.md`; no newer human instruction supersedes the current model-driven branch selection.
+- The stale-state concern remains addressed: App Routing TLS has an explicit gated tracker, VPA residual runtime and Image Cleaner vulnerable-image erasure are complete, and `outputs/iteration96-post-image-cleaner-unknown-selection.md` now selects the next non-gated unknown.
 - ManagedSystem migration-positive and App Routing TLS remain gated; neither should be retried blindly.
 
 ## Review Questions
 
 1. **Is the goal closer?**  
-   Yes. Iteration93 converted three VPA residual runtime unknowns to pass evidence, and iteration94 selected the next non-gated Image Cleaner branch with input paths, expectation paths, non-goals, and preflight requirements.
+   Yes. Iteration95 converted Image Cleaner vulnerable-image erasure from unknown to pass evidence, and iteration96 selected the next non-gated OIDC post-delete cleanup branch with input paths, expectation paths, non-goals, and preflight requirements.
 
 2. **What did we learn?**  
-   VPA Helm metadata, HA/leader-election, and in-place update behavior pass on Kubernetes `1.34.7`; actual Image Cleaner vulnerable-image erasure is now the strongest non-gated runtime/security gap because state, interval, and component lifecycle are already proved.
+   Image Cleaner can remove the source-selected vulnerable image from nodes after re-enable, with collector pods completing under the source 3600s budget. OIDC default-enabled post-delete cleanup is now the cheapest high-value unknown because discovery/JWKS already pass and the remaining expectation is narrow.
 
 3. **Is the current milestone the right next step?**  
-   Yes. The next milestone is a bounded Image Cleaner vulnerable-image erasure execution task, not another local selection loop and not a gated ManagedSystem/App Routing rerun.
+   Yes. The next milestone is a bounded OIDC post-delete issuer cleanup staging task, not another local selection loop and not a gated ManagedSystem/App Routing rerun.
 
 4. **Are we closing the loop?**  
-   Yes. The parser-visible task block now has exactly one active task, `image-cleaner-vulnerable-erasure-staging`, with a single durable output target and explicit preflight gates before cloud mutation.
+   Yes. The parser-visible task block now has exactly one active task, `oidc-post-delete-cleanup-staging`, with a single durable output target and explicit source preflight before cloud mutation.
 
 5. **Is it verified?**  
-   Yes. The capability-model validator exited 0 after iteration93 with 35 input variables, 67 expectation variables, 7 failing features, 21 unknown features, and 0 blocked features. The iteration94 artifact records the same checkpoint and ranking.
+   Yes. A fresh capability-model validator run exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 20 unknown features, and 0 blocked features after the iteration95 model update. The iteration96 artifact records the same checkpoint and ranking.
 
 6. **What’s blocking progress?**  
-   The project as a whole is not blocked. Only specific branches are gated: ManagedSystem migration-positive awaits a SKU/image fix or allowed override; App Routing TLS awaits owner diagnostics/fix; VPA cert/upgrade and Image Cleaner upgrade/restart are intentionally out of the next task scope.
+   The project as a whole is not blocked. Specific branches remain gated or deprioritized: ManagedSystem migration-positive awaits a SKU/image fix or allowed override; App Routing TLS awaits owner diagnostics/fix; OIDC signing-key rotation needs a cheap trigger/source clarification; Windows Workload Identity and upgrade/cert-survival branches are viable but higher cost.
 
 ## Resume Menu (ranked)
 
-1. **Execute Image Cleaner vulnerable-image erasure — current active task.**  
-   Produce `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md` after source preflight confirms the vulnerable image constant, node/containerd run-command path, eraser collector selector, and source wait budget.
+1. **Execute OIDC default-enabled post-delete issuer cleanup — current active task.**  
+   Produce `outputs/iteration97-oidc-post-delete-cleanup-staging.md` after source preflight confirms the Kubernetes version branch (`>=1.34` expected), discovery/JWKS URL construction, expected post-delete HTTP result, source wait budget/poll interval, deletion shape, and skip/cloud conditions.
 
-2. **If Image Cleaner erasure blocks before behavior is tested, write a blocker artifact.**  
-   Capture the exact missing prerequisite (for example run-command access, vulnerable image availability, or collector observability) and then return to the non-gated unknown list.
+2. **If OIDC post-delete cleanup blocks before behavior is tested, write a blocker artifact.**  
+   Capture the exact missing prerequisite (for example source wait semantics, cluster creation, pre-delete discovery/JWKS reachability, ARM deletion state, or issuer cleanup observability) and then return to the iteration96 non-gated unknown list.
 
 3. **Do not run gated branches blindly.**  
-   ManagedSystem migration-positive and App Routing TLS require their documented gate changes before rerun; VPA cert/upgrade should be selected only if autoscaler becomes the explicit priority.
+   ManagedSystem migration-positive and App Routing TLS require their documented gate changes before rerun; OIDC signing-key rotation needs trigger/source clarification; VPA/Image Cleaner upgrade survival and Workload Identity Windows should be selected only when their cost/risk is explicitly accepted.
 
 ## Decision
 
-`outputs/iteration94-next-model-unknown-selection.md` is complete and selects **Image Cleaner vulnerable-image erasure** as the next non-gated branch. Proceed with one active parser-visible execution task, `image-cleaner-vulnerable-erasure-staging`, after source preflight confirms the vulnerable image constant, node/containerd run-command path, eraser collector selector, and source wait budget.
+`outputs/iteration96-post-image-cleaner-unknown-selection.md` is complete and selects **OIDC default-enabled post-delete issuer cleanup** as the next non-gated branch. Proceed with one active parser-visible execution task, `oidc-post-delete-cleanup-staging`, after source preflight resolves the expected delete semantics and wait budget.
 
 ## (a) Concrete output
 
-`outputs/iteration94-next-model-unknown-selection.md` is the completed local selection artifact. `project.md` now creates the single next parser-visible execution task for `outputs/iteration95-image-cleaner-vulnerable-erasure-staging`.
+`outputs/iteration96-post-image-cleaner-unknown-selection.md` is the completed local selection artifact. `project.md` now creates the single next parser-visible execution task for `outputs/iteration97-oidc-post-delete-cleanup-staging.md`.
 
 ## (b) What’s different
 
-The previous state selected a post-VPA unknown but had not committed to a branch. The new state selects Image Cleaner vulnerable-image erasure based on the validated post-iteration93 model and keeps App Routing TLS, ManagedSystem migration-positive, VPA cert/upgrade, Workload Identity Windows, and OIDC cleanup out of this next task.
+The previous state had selected Image Cleaner vulnerable-image erasure. That branch is now executed and passed with model validation. The new state selects OIDC post-delete cleanup based on the validated post-iteration95 model and keeps App Routing TLS, ManagedSystem migration-positive, OIDC signing-key rotation, Workload Identity Windows, VPA cert/upgrade, and Image Cleaner upgrade/restart out of this next task.
 
 ## (c) First step on resume
 
-Read this `## Current State`, then read `outputs/iteration94-next-model-unknown-selection.md` and `outputs/iteration86-image-cleaner-runtime-source-gated-staging.md`. Run the local/devbox source preflight from iteration94 to confirm the vulnerable image constant, node/containerd run-command inspection path, eraser collector selector, and source wait budget before any cluster creation.
+Read this `## Current State`, then read `outputs/iteration96-post-image-cleaner-unknown-selection.md`, `outputs/iteration76-workload-identity-oidc-runtime-staging.md`, `outputs/iteration77-identity-runtime-model-consolidation.md`, and `outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md`. Run the local/model and devbox source preflight from iteration96 before any cluster creation or deletion behavior is tested.
 
 ## Linked Context
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
@@ -200,7 +203,7 @@ Read this `## Current State`, then read `outputs/iteration94-next-model-unknown-
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
 - Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 60 feature mappings, 63 test-case evidence mappings, 43 judgments, 32 evidence references.
-- Current feature status: 33 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 21 unknown, 0 blocked.
+- Current feature status: 33 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 20 unknown, 0 blocked.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -211,12 +214,17 @@ Read this `## Current State`, then read `outputs/iteration94-next-model-unknown-
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-selection.md` is complete and selects **Image Cleaner vulnerable-image erasure** as the next non-gated runtime branch. Next task: execute the source-preflighted Image Cleaner vulnerable-image erasure staging probe, producing `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md`. Start with the iteration94 preflight reads/greps, and do not create a cluster until the vulnerable image constant, node/containerd run-command path, eraser collector selector, and source wait budget are confirmed. Do not combine this with Image Cleaner upgrade/restart survival, VPA/KEDA, Workload Identity/OIDC, App Routing, ManagedSystem, or unrelated probes. Continue to keep ManagedSystem migration-positive and App Routing TLS behind their existing gates.
+The local post-Image-Cleaner selection artifact `outputs/iteration96-post-image-cleaner-unknown-selection.md` is complete and selects **OIDC default-enabled post-delete issuer cleanup** as the next non-gated runtime branch. Next task: source-preflight and execute the bounded OIDC post-delete cleanup staging probe, producing `outputs/iteration97-oidc-post-delete-cleanup-staging.md`. Start with the iteration96 local/model reads and devbox source greps, and do not create a cluster until the Kubernetes version branch, discovery/JWKS URL construction, post-delete expected HTTP result, source wait budget/poll interval, deletion shape, and skip/cloud conditions are confirmed. Do not combine this with OIDC signing-key rotation, v1.33 explicit-enable, Windows Workload Identity, VPA, App Routing, ManagedSystem, Image Cleaner upgrade/restart, or unrelated probes. Continue to keep ManagedSystem migration-positive and App Routing TLS behind their existing gates.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
+### 2026-05-20 — Selected OIDC post-delete cleanup after Image Cleaner erasure pass
+- `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md` closed `image-cleaner-vulnerable-image-erasure` as pass: source-preflighted vulnerable image removal succeeded after Image Cleaner re-enable, eraser collectors completed, node image checks found the vulnerable image absent, cleanup reached `ResourceGroupNotFound`, and the capability-model validator exited 0.
+- `outputs/iteration96-post-image-cleaner-unknown-selection.md` ranked the remaining non-gated unknowns and selected OIDC default-enabled post-delete issuer cleanup as the next branch because iteration76 already proved discovery/JWKS on Kubernetes `1.34` and the remaining cleanup expectation is narrow and lower cost than Windows, upgrade, or cert-renewal branches.
+- The next parser-visible task is `oidc-post-delete-cleanup-staging`; it must source-confirm delete semantics and wait budget before cluster creation, then update only `oidc-issuer-default-enabled-post-delete-cleanup` if behavior is actually tested.
+
 ### 2026-05-20 — Selected Image Cleaner vulnerable-image erasure after VPA residual pass
 - `outputs/iteration93-vpa-residual-runtime-staging.md` closed the focused VPA residual branches for Helm metadata, HA/leader-election, and in-place update on Kubernetes `1.34.7`; VPA cert renewal and upgrade survival remain explicit unknown/non-goals.
 - Fresh capability-model validator run after iteration93 exited 0 with 35 input variables, 67 expectation variables, 7 failing features, and 21 unknown features.
@@ -268,6 +276,9 @@ The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-se
 20. ✅ Validate Workload Identity disable/re-enable lifecycle in staging
 21. ✅ Decompose and validate Image Cleaner runtime lifecycle branches with source-gated staging evidence
 22. ✅ Execute ManagedSystem Pool delete/disable migration runtime probe with checkpointed staging evidence
+23. ✅ Execute Image Cleaner vulnerable-image erasure with source-gated staging evidence
+24. ✅ Select the next post-Image-Cleaner non-gated model unknown
+25. ▶️ Execute OIDC default-enabled post-delete issuer cleanup with source-gated staging evidence
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -503,6 +514,13 @@ The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-se
   depends_on: [image-cleaner-vulnerable-erasure-staging]
   attempts: 1
 
+- id: oidc-post-delete-cleanup-staging
+  status: ready
+  assignee: aks-explorer
+  goal: "Execute the OIDC default-enabled post-delete issuer cleanup staging probe selected by outputs/iteration96-post-image-cleaner-unknown-selection.md. Start from outputs/iteration76-workload-identity-oidc-runtime-staging.md, outputs/iteration77-identity-runtime-model-consolidation.md, outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and the iteration96 preflight commands. Before creating any cluster, confirm from devbox source the exact Kubernetes version branch for default-enabled OIDC issuer, discovery and JWKS URL construction, expected post-delete HTTP status/body/error shape, source wait budget and polling interval, whether source deletes the resource group or managed cluster and waits for ARM deletion, and any skip/cloud-environment conditions. Then create a small staging cluster on Kubernetes >=1.34, capture ARM OIDC profile and issuer URL, prove discovery/JWKS reachable before delete, delete the source-equivalent cluster/resource group, wait for the source-required ARM deletion point, poll discovery/JWKS until the source-expected post-delete status appears or budget expires, clean up, and produce outputs/iteration97-oidc-post-delete-cleanup-staging.md with exact commands, raw evidence snippets, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if oidc-issuer-default-enabled-post-delete-cleanup gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. Do not combine with OIDC signing-key rotation, v1.33 explicit-enable runtime, Windows Workload Identity, VPA/KEDA, App Routing, ManagedSystem, Image Cleaner upgrade/restart, or unrelated probes."
+  depends_on: [post-image-cleaner-unknown-selection]
+  attempts: 0
+
 - id: image-cleaner-vulnerable-erasure-staging
   result: succeeded
   status: done
@@ -541,6 +559,8 @@ The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-se
 ## Comments
 
 ## Artifacts
+- outputs/iteration96-post-image-cleaner-unknown-selection.md
+- outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md
 - outputs/iteration94-next-model-unknown-selection.md
 - outputs/iteration93-vpa-residual-runtime-staging.md
 - outputs/iteration91-app-routing-tls-gated-followup-tracker.md
