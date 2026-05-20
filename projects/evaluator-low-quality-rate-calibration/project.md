@@ -4,7 +4,6 @@ owner: evaluator
 status: done
 type: milestone
 priority: P1
-workflow: project
 iteration: 6
 stop_reason: Completed. May approved the broad/substantive metric split, runtime code now treats the broad metric as dashboard-only, and the substantive metric is the primary quality alert.
 ---
@@ -30,7 +29,7 @@ Current runtime verification from `.state/may.db` on 2026-05-18:
 - `evaluator.substantive-low-quality-rate-24h`: `0.0452`, threshold `0.30`, priority `P1`, healthy.
 - Prior broad-metric alerts for `evaluator.low-quality-rate-24h` are resolved.
 
-The adjacent issue, `evaluator.false-good-rate-sample`, is intentionally split into a separate follow-up project: `evaluator-false-good-calibration`.
+The adjacent issue, `evaluator.false-good-rate-sample`, is tracked in the merged evaluator calibration lane under `projects/agent-system-evolution/outputs/evaluator/false-good-calibration/`.
 
 ## Plan
 - [x] Diagnose why broad low-quality rate was persistently red.
@@ -55,7 +54,7 @@ Success condition met:
 - 2026-05-08: Iterations 1-3 located the metric source and produced a DB-backed impact model: current broad rate `0.6807`, hygiene-excluded `0.0975`, substantive-only `0.0765`.
 - 2026-05-08: Iterations 4-5 produced the metric split implementation plan and approval packet.
 - 2026-05-09: May approved the pivot: broad metric dashboard-only, substantive metric primary alert.
-- 2026-05-18: Runtime review confirmed code and DB state match the approved design. Project closed; false-good calibration moved to `evaluator-false-good-calibration`.
+- 2026-05-18: Runtime review confirmed code and DB state match the approved design. Project closed; false-good calibration is preserved under `projects/agent-system-evolution/outputs/evaluator/false-good-calibration/`.
 
 ## Artifacts
 - outputs/iteration-1-diagnosis.md
@@ -80,4 +79,4 @@ Success condition met:
 - `agents/may/handlers/metrics-snapshot.ts` - metric registry and measurement code.
 - `agents/may/heartbeat-log.md` - May approval note for the broad/substantive pivot.
 - `.state/may.db` - runtime metrics and historical alert rows used for final verification.
-- `projects/evaluator-false-good-calibration` - follow-up project for scoring false-good hardening.
+- `projects/agent-system-evolution/outputs/evaluator/false-good-calibration/` - merged follow-up lane for scoring false-good hardening.

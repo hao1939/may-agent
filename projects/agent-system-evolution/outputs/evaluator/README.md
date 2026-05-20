@@ -6,6 +6,10 @@ This directory holds evaluator-specific learning artifacts inside the broader
 ## Current Artifacts
 
 - `signal-heuristics.md` - v1 unsupervised session-quality signal design.
+- `strategy-extractor/` - positive strategy extraction calibration evidence,
+  regression notes, and fixed modern-session fixture.
+- `false-good-calibration/` - false-good audit, hardening, replay validation,
+  final review bundle, and post-merge watch query.
 
 ## Expected Next Artifacts
 

@@ -39,8 +39,10 @@ async function runCase(label, logPath) {
 (async () => {
   const fixturePath = appPath(
     'projects',
-    'evaluator-strategy-extractor-calibration',
+    'agent-system-evolution',
     'outputs',
+    'evaluator',
+    'strategy-extractor',
     'fixtures',
     'strategy-positive-modern-session',
     'session.jsonl'

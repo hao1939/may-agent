@@ -14,7 +14,7 @@ The harness checks four cases:
 
 ## Fixed fixture
 Fixture path:
-- `agents/shared/projects/evaluator-strategy-extractor-calibration/outputs/fixtures/strategy-positive-modern-session/session.jsonl`
+- `projects/agent-system-evolution/outputs/evaluator/strategy-extractor/fixtures/strategy-positive-modern-session/session.jsonl`
 
 Fixture composition:
 - planning frame with `GOAL` / `PLAN` / `DONE WHEN`
