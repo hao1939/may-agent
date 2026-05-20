@@ -114,7 +114,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
 
     if (event.type === "message.created") {
       const message = messageData(event);
-      if (message.to !== "human" || message.from !== opts.interfaceAgent) return;
+      if (message.to !== "human") return;
       if (pendingChatId) {
         const content = String(message.content ?? "").slice(0, 4000);
         const projectId = normalizeProjectPath(message.projectPath ?? message.projectId, opts.projectRoot) ?? extractProjectPath(content, opts.projectRoot) ?? undefined;
