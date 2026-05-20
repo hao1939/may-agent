@@ -1,7 +1,7 @@
 ---
 id: agent-system-evolution
 owner: may
-status: waiting
+status: completed
 type: milestone
 priority: P1
 iteration: 0
