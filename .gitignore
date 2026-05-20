@@ -89,3 +89,7 @@ shared/circuit-breaker-state.json
 /types/
 /_archetypes/
 **/repos/*
+
+# Python bytecode caches
+__pycache__/
+*.pyc

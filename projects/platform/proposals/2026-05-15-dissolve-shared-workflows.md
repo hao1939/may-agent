@@ -97,31 +97,22 @@ copies + ~20 deletions.
 
 ## Critical runtime constraint (discovered during Phase 1 execution)
 
-**Bare `@may-agent/sdk` value imports do not resolve at runtime from dynamically-loaded
-files** (workflows, handlers under `agents/` or `shared/`).
+**RESOLVED:** A `Bun.plugin` registered in `binary-entry.ts` now maps
+`@may-agent/sdk` and `@may-agent/sdk/testing` to the SDK source at runtime.
+Dynamically-imported handlers and workflows can use bare `@may-agent/sdk`
+imports directly.
 
-- Type-only imports (`import type { ... } from "@may-agent/sdk"`) work because
-  they are erased at compile time.
-- Value imports (`import { fn } from "@may-agent/sdk"`) fail with:
-  `ResolveMessage: Cannot find module '@may-agent/sdk' from '/app/<file>'`
-- Reason: the compiled `may-agent` binary doesn't walk `/app/node_modules` for
-  bare specifiers in dynamically-imported modules (same root cause as the
-  prior `shared/agent-sdk.ts` fix).
-
-**Workaround in use:** import via the local re-export bridge
-`shared/agent-sdk.ts` (which uses a relative path to the SDK source):
+**Previous workaround** (still works, now deprecated): import via the local
+re-export bridge `shared/agent-sdk.ts`:
 
 ```ts
 import { fn } from "../../../shared/agent-sdk.ts";  // from agents/<a>/workflows/
 import { fn } from "../agent-sdk.ts";                // from shared/workflows/
 ```
 
-This is mechanical — the import statement just routes through `agent-sdk.ts`,
-which `export *`s from the relative SDK path. No semantic change.
-
-When project-scoped workflows are created later (Phase 5+), they will use:
+**Preferred going forward:**
 ```ts
-import { fn } from "../../../shared/agent-sdk.ts";   // from projects/<id>/workflows/
+import { fn } from "@may-agent/sdk";
 ```
 
 ## Execution log
