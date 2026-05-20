@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-20T04:45:00Z",
+  "updatedAt": "2026-05-20T05:24:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -180,6 +180,7 @@
       "domain": [
         "create-cluster",
         "idempotent-update",
+        "disable-reenable-update",
         "unknown"
       ]
     },
@@ -2363,7 +2364,7 @@
         },
         {
           "variable": "identity.operation",
-          "value": "idempotent-update"
+          "value": "disable-reenable-update"
         }
       ],
       "expectationPath": [
@@ -2374,9 +2375,13 @@
         {
           "variable": "identity.workloadIdentity.disableReenablePersisted",
           "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
         }
       ],
-      "description": "Residual workload identity lifecycle branch for disable/re-enable or update-down/update-up persistence; iteration76 did not exercise lifecycle toggles."
+      "description": "Workload identity public disable/re-enable lifecycle branch: OIDC issuer remains enabled, workloadIdentity profile toggles true/false/true, AKS-managed azure-wi webhook runtime surface is removed/restored, and Linux pod mutation/token projection works after re-enable."
     },
     {
       "id": "oidc-issuer-default-enabled-discovery-jwks-runtime",
@@ -6016,7 +6021,7 @@
       "notes": "Residual branch made explicit during iteration77; iteration76 declared Windows token projection a non-goal."
     },
     {
-      "id": "Identity_Disable_Reenable_Lifecycle_Residual_Unknown",
+      "id": "Iteration85_WorkloadIdentity_Disable_Reenable_Lifecycle_Staging",
       "featureId": "workload-identity-disable-reenable-lifecycle",
       "inputPath": [
         {
@@ -6029,7 +6034,11 @@
         },
         {
           "variable": "identity.operation",
-          "value": "idempotent-update"
+          "value": "disable-reenable-update"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "linux"
         }
       ],
       "expectationPath": [
@@ -6040,20 +6049,32 @@
         {
           "variable": "identity.workloadIdentity.disableReenablePersisted",
           "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
         }
       ],
       "observedPath": [
         {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        },
+        {
           "variable": "identity.workloadIdentity.disableReenablePersisted",
-          "value": "unknown"
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
         }
       ],
-      "result": "unknown",
+      "result": "pass",
       "evidence": [
-        "iteration76-workload-identity-oidc-runtime-staging",
-        "e2ev3-handwritten-coverage-inventory"
+        "iteration85-workload-identity-disable-reenable-lifecycle-staging"
       ],
-      "notes": "Residual branch made explicit during iteration77; iteration76 did not run workload identity disable/re-enable lifecycle."
+      "notes": "Iteration85 used public CLI --disable-workload-identity and --enable-workload-identity on a disposable staging cluster with OIDC issuer left enabled. Profile state toggled enabled=true -> false -> true. AKS-managed azure-wi runtime surface in kube-system (deployment, pods, service/endpoints, webhook configuration, Helm secrets) was present when enabled, removed after disable, and restored after re-enable. A labeled Linux pod after re-enable received AZURE_* env vars and the projected token volume/file.",
+      "label": "Iteration85 Workload Identity Disable/Re-enable Lifecycle Staging"
     },
     {
       "id": "OIDC_DefaultEnabled_SigningKeyRotation_Residual_Unknown",
@@ -8269,51 +8290,6 @@
       "nextAction": "Run only if Windows workload identity parity becomes higher value than KEDA/VPA or other runtime gaps."
     },
     {
-      "id": "iteration77-workload-identity-disable-reenable-lifecycle-unknown",
-      "featureId": "workload-identity-disable-reenable-lifecycle",
-      "status": "unknown",
-      "contextPath": [],
-      "inputPath": [
-        {
-          "variable": "identity.oidcIssuer.enabled",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.enabled",
-          "value": "true"
-        },
-        {
-          "variable": "identity.operation",
-          "value": "idempotent-update"
-        }
-      ],
-      "expectationPath": [
-        {
-          "variable": "identity.workloadIdentity.persisted",
-          "value": "true"
-        },
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
-          "value": "true"
-        }
-      ],
-      "observedPath": [
-        {
-          "variable": "identity.workloadIdentity.disableReenablePersisted",
-          "value": "unknown"
-        }
-      ],
-      "evidence": [
-        "iteration76-workload-identity-oidc-runtime-staging",
-        "e2ev3-handwritten-coverage-inventory"
-      ],
-      "testCases": [
-        "Identity_Disable_Reenable_Lifecycle_Residual_Unknown"
-      ],
-      "summary": "Workload identity disable/re-enable lifecycle remains unknown because iteration76 used create-time enablement only and did not toggle the feature.",
-      "nextAction": "Run only as a focused lifecycle probe if disable/update-down behavior becomes priority."
-    },
-    {
       "id": "iteration77-oidc-default-enabled-signing-key-rotation-unknown",
       "featureId": "oidc-issuer-default-enabled-signing-key-rotation",
       "status": "unknown",
@@ -8868,6 +8844,66 @@
       ],
       "summary": "Runtime default passed on a CLI-created RBAC Kubernetes 1.34 cluster with omitted/null ARM nodeRestriction profile: a kubelet client certificate was forbidden from setting a node-restriction.kubernetes.io/* label on its Node, showing NodeRestriction admission behavior is active by default.",
       "nextAction": "If future work needs underlay certainty, collect kube-apiserver flags/chart values, but customer-visible runtime admission behavior is now passed for the >=1.24 RBAC default branch."
+    },
+    {
+      "id": "iteration85-workload-identity-disable-reenable-lifecycle-pass",
+      "featureId": "workload-identity-disable-reenable-lifecycle",
+      "status": "pass",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "identity.oidcIssuer.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "identity.operation",
+          "value": "disable-reenable-update"
+        },
+        {
+          "variable": "identity.runtime.os",
+          "value": "linux"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "identity.workloadIdentity.persisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.disableReenablePersisted",
+          "value": "true"
+        },
+        {
+          "variable": "identity.workloadIdentity.linuxTokenProjected",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration85-workload-identity-disable-reenable-lifecycle-staging"
+      ],
+      "testCases": [
+        "Iteration85_WorkloadIdentity_Disable_Reenable_Lifecycle_Staging"
+      ],
+      "summary": "Staging proved Workload Identity disable/re-enable lifecycle through the public CLI: initial create persisted workloadIdentity.enabled=true with OIDC issuer enabled; disable persisted workloadIdentity.enabled=false and removed the AKS-managed kube-system azure-wi deployment/pods/service/endpoints/secrets and mutating webhook; re-enable persisted workloadIdentity.enabled=true, restored the webhook runtime surface, and a Linux smoke pod received AZURE_* env vars plus a projected Azure federated token file.",
+      "nextAction": "Do not re-run this Linux lifecycle branch unless implementation changes. Residual identity/OIDC unknowns remain separate: Windows token projection, signing-key rotation, post-delete issuer cleanup, and Kubernetes 1.33 explicit-enable runtime."
     }
   ],
   "evidence": [
@@ -9032,6 +9068,12 @@
       "kind": "artifact",
       "path": "outputs/iteration84-keda-disable-reenable-crud-staging.md",
       "summary": "2026-05-20 staging KEDA CRUD lifecycle evidence: public CLI create/enable persisted workloadAutoScalerProfile.keda.enabled=true and installed KEDA CRDs/deployments/APIService; --disable-keda persisted enabled=false and removed KEDA CRDs, kube-system controllers/resources, and external metrics APIService; --enable-keda restored profile enabled=true and the KEDA runtime surface."
+    },
+    {
+      "id": "iteration85-workload-identity-disable-reenable-lifecycle-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md",
+      "summary": "2026-05-20 staging validation that public Workload Identity disable/re-enable persists profile state, removes/restores the AKS-managed azure-wi webhook runtime surface in kube-system, and restores Linux pod mutation/token projection after re-enable while OIDC issuer remains enabled."
     }
   ]
 }
