@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-20T05:24:00Z",
+  "updatedAt": "2026-05-20T05:38:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -119,7 +119,9 @@
         "enable-scenario",
         "unknown",
         "mutate-mode",
-        "delete-existing-pool"
+        "delete-existing-pool",
+        "add-second-pool",
+        "reconcile"
       ]
     },
     {
@@ -130,7 +132,8 @@
         "minimal-mode-only",
         "cli-defaults",
         "unknown",
-        "mode-system-only"
+        "mode-system-only",
+        "cleaned-managedcluster-put"
       ]
     },
     {
@@ -1123,6 +1126,26 @@
       "id": "vpa.survivesUpgrade",
       "label": "VPA Survives Upgrade",
       "description": "VPA components and recommendation/update behavior continue after cluster upgrade.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.singlePool.enforced",
+      "label": "ManagedSystem Single-Pool Constraint Enforced",
+      "description": "Second ManagedSystem pool creation is rejected because only one ManagedSystem pool is allowed per cluster.",
+      "domain": [
+        "true",
+        "false",
+        "unknown"
+      ]
+    },
+    {
+      "id": "managedSystem.reconcile.preserved",
+      "label": "ManagedSystem Reconcile Preserved",
+      "description": "Managed-cluster reconcile/update is accepted and preserves the ManagedSystem pool and GET type=VirtualMachines.",
       "domain": [
         "true",
         "false",
@@ -2227,39 +2250,6 @@
       "description": "Public API/CLI state branch for Image Cleaner enabled state and interval."
     },
     {
-      "id": "image-cleaner-runtime-lifecycle",
-      "label": "Image Cleaner Runtime Erasure Lifecycle",
-      "inputPath": [
-        {
-          "variable": "securityProfile.imageCleaner.enabled",
-          "value": "true"
-        },
-        {
-          "variable": "securityProfile.imageCleaner.intervalHours",
-          "value": "168"
-        }
-      ],
-      "expectationPath": [
-        {
-          "variable": "imageCleaner.components.present",
-          "value": "true"
-        },
-        {
-          "variable": "imageCleaner.components.absentAfterDisable",
-          "value": "true"
-        },
-        {
-          "variable": "imageCleaner.vulnerableImage.removed",
-          "value": "true"
-        },
-        {
-          "variable": "imageCleaner.survivesUpgradeRestart",
-          "value": "true"
-        }
-      ],
-      "description": "Handwritten Image Cleaner contract: components, disable/enable, vulnerable image erasure, upgrade/restart survival."
-    },
-    {
       "id": "node-restriction-disable-contract",
       "label": "Node Restriction Disable Rejection Contract",
       "inputPath": [
@@ -2890,6 +2880,143 @@
         }
       ],
       "description": "Iteration62 operation-shape evidence: ManagedCluster PATCH is tag-only and is not valid evidence for securityProfile.nodeRestriction full PUT semantics."
+    },
+    {
+      "id": "managedsystem-single-pool-constraint",
+      "label": "ManagedSystem Single-Pool Constraint",
+      "description": "Public spec/source/skill contract that a cluster can have only one ManagedSystem pool; exact staging error shape is not yet observed.",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-second-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "managedSystem.singlePool.enforced",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "managedsystem-reconcile-preservation",
+      "label": "ManagedSystem Reconcile Preservation",
+      "description": "Source contract that managed-cluster reconcile/update is accepted and preserves the ManagedSystem pool with type=VirtualMachines after PUT hygiene.",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "reconcile"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cleaned-managedcluster-put"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.reconcile.preserved",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "image-cleaner-components-lifecycle",
+      "label": "Image Cleaner Components Disable/Re-enable Lifecycle",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "description": "Branch-accurate Image Cleaner runtime component lifecycle: enabled state installs eraser/image-cleaner controller resources, public disable removes them, and public re-enable restores them."
+    },
+    {
+      "id": "image-cleaner-vulnerable-image-erasure",
+      "label": "Image Cleaner Vulnerable Image Erasure",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived erasure branch: while Image Cleaner is disabled a vulnerable test image remains on nodes; after re-enable eraser collector pods complete and the image is removed from node containerd image lists."
+    },
+    {
+      "id": "image-cleaner-upgrade-restart-survival",
+      "label": "Image Cleaner Upgrade/Restart Survival",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "true"
+        }
+      ],
+      "description": "Source-derived survival branch: Image Cleaner remains enabled and functional after cluster upgrade and stop/start restart where those operations are supported."
     }
   ],
   "testCases": [
@@ -5226,43 +5353,6 @@
       "notes": "Partial evidence only: state/interval persistence, not component or erasure behavior."
     },
     {
-      "id": "Scenario_ImageCleaner",
-      "featureId": "image-cleaner-runtime-lifecycle",
-      "inputPath": [
-        {
-          "variable": "securityProfile.imageCleaner.enabled",
-          "value": "true"
-        },
-        {
-          "variable": "securityProfile.imageCleaner.intervalHours",
-          "value": "168"
-        }
-      ],
-      "expectationPath": [
-        {
-          "variable": "imageCleaner.components.present",
-          "value": "true"
-        },
-        {
-          "variable": "imageCleaner.components.absentAfterDisable",
-          "value": "true"
-        },
-        {
-          "variable": "imageCleaner.vulnerableImage.removed",
-          "value": "true"
-        },
-        {
-          "variable": "imageCleaner.survivesUpgradeRestart",
-          "value": "true"
-        }
-      ],
-      "result": "unknown",
-      "evidence": [
-        "e2ev3-handwritten-coverage-inventory"
-      ],
-      "notes": "Source-only runtime contract; staging evidence is partial state only."
-    },
-    {
       "id": "Node_Restriction",
       "featureId": "node-restriction-disable-contract",
       "inputPath": [
@@ -6147,6 +6237,203 @@
         "e2ev3-handwritten-coverage-inventory"
       ],
       "notes": "Residual branch made explicit during iteration77; iteration76 initiated asynchronous cluster deletion but did not verify OIDC document deletion after cluster delete."
+    },
+    {
+      "id": "ManagedSystemPool_SecondPool_Rejection_Source",
+      "featureId": "managedsystem-single-pool-constraint",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "add-second-pool"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "minimal-mode-only"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "false"
+        },
+        {
+          "variable": "managedSystem.singlePool.enforced",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "managedsystem-pool-feature-intent",
+        "managedsystem-pool-api-doc-boundary"
+      ],
+      "notes": "Source/API-intended one ManagedSystem pool constraint only; no local staging execution artifact captures the exact second-pool rejection or error shape."
+    },
+    {
+      "id": "ManagedSystemPool_Reconcile_Preservation_Source",
+      "featureId": "managedsystem-reconcile-preservation",
+      "inputPath": [
+        {
+          "variable": "agentPool.kind",
+          "value": "managedsystem"
+        },
+        {
+          "variable": "managedSystem.operation",
+          "value": "reconcile"
+        },
+        {
+          "variable": "managedSystem.request.shape",
+          "value": "cleaned-managedcluster-put"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "managedSystem.reconcile.preserved",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "managedsystem-pool-feature-intent",
+        "managedsystem-pool-related-context"
+      ],
+      "notes": "Source-intended reconcile preservation branch only; current staging mode-mutation rejection is a different negative path and does not prove cleaned reconcile acceptance."
+    },
+    {
+      "id": "Iteration86_ImageCleaner_Components_Lifecycle_Staging",
+      "featureId": "image-cleaner-components-lifecycle",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "result": "pass",
+      "evidence": [
+        "iteration86-image-cleaner-runtime-source-gated-staging",
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration62-security-profile-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "cluster.operation.succeeded",
+          "value": "true"
+        },
+        {
+          "variable": "rp.request.accepted",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "notes": "Staging create with Image Cleaner enabled installed eraser-controller-manager and collector pods plus source-expected RBAC/SAs; public disable removed controller/collector resources and source-specific RBAC/SAs; public re-enable restored them. Does not prove vulnerable-image erasure or upgrade/restart survival."
+    },
+    {
+      "id": "Scenario_ImageCleaner_Vulnerable_Image_Erasure_Source",
+      "featureId": "image-cleaner-vulnerable-image-erasure",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration86-image-cleaner-runtime-source-gated-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "unknown"
+        }
+      ],
+      "notes": "Source requires vulnerable image pod, node run-command checks, eraser collector completion wait up to 3600s, and post-run containerd image absence checks. Iteration86 did not run this long branch."
+    },
+    {
+      "id": "Scenario_ImageCleaner_Upgrade_Restart_Survival_Source",
+      "featureId": "image-cleaner-upgrade-restart-survival",
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "true"
+        }
+      ],
+      "result": "unknown",
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration86-image-cleaner-runtime-source-gated-staging"
+      ],
+      "observedPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "unknown"
+        },
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "unknown"
+        }
+      ],
+      "notes": "Source performs cluster upgrade and stop/start then validates Image Cleaner enabled/components. Iteration86 explicitly scoped this out as not cheap or bounded."
     }
   ],
   "judgments": [
@@ -8904,6 +9191,133 @@
       ],
       "summary": "Staging proved Workload Identity disable/re-enable lifecycle through the public CLI: initial create persisted workloadIdentity.enabled=true with OIDC issuer enabled; disable persisted workloadIdentity.enabled=false and removed the AKS-managed kube-system azure-wi deployment/pods/service/endpoints/secrets and mutating webhook; re-enable persisted workloadIdentity.enabled=true, restored the webhook runtime surface, and a Linux smoke pod received AZURE_* env vars plus a projected Azure federated token file.",
       "nextAction": "Do not re-run this Linux lifecycle branch unless implementation changes. Residual identity/OIDC unknowns remain separate: Windows token projection, signing-key rotation, post-delete issuer cleanup, and Kubernetes 1.33 explicit-enable runtime."
+    },
+    {
+      "id": "iteration86-image-cleaner-components-lifecycle-pass",
+      "featureId": "image-cleaner-components-lifecycle",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "imageCleaner.components.present",
+          "value": "true"
+        },
+        {
+          "variable": "imageCleaner.components.absentAfterDisable",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration86-image-cleaner-runtime-source-gated-staging"
+      ],
+      "testCases": [
+        "Iteration86_ImageCleaner_Components_Lifecycle_Staging"
+      ],
+      "summary": "Image Cleaner component lifecycle passed in staging: enabled profile installed ready eraser-controller-manager, collector pods, eraser-manager-rolebinding, and eraser service accounts; --disable-image-cleaner removed them; --enable-image-cleaner restored them.",
+      "nextAction": "Do not treat this as erasure or upgrade/restart coverage; use the split Image Cleaner erasure branch for the next deeper probe."
+    },
+    {
+      "id": "iteration86-image-cleaner-vulnerable-image-erasure-unknown",
+      "featureId": "image-cleaner-vulnerable-image-erasure",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "imageCleaner.vulnerableImage.removed",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration86-image-cleaner-runtime-source-gated-staging"
+      ],
+      "testCases": [
+        "Scenario_ImageCleaner_Vulnerable_Image_Erasure_Source"
+      ],
+      "summary": "Image Cleaner vulnerable-image erasure remains unknown. Source requires a test vulnerable image, Azure run-command inspection on nodes, and waiting up to one hour for eraser collector pods to complete.",
+      "nextAction": "Run only when a one-hour wait plus node run-command checks are acceptable; begin from a cluster with component lifecycle already healthy."
+    },
+    {
+      "id": "iteration86-image-cleaner-upgrade-restart-survival-unknown",
+      "featureId": "image-cleaner-upgrade-restart-survival",
+      "status": "unknown",
+      "contextPath": [],
+      "inputPath": [
+        {
+          "variable": "securityProfile.imageCleaner.enabled",
+          "value": "true"
+        },
+        {
+          "variable": "securityProfile.imageCleaner.intervalHours",
+          "value": "168"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "imageCleaner.survivesUpgradeRestart",
+          "value": "unknown"
+        }
+      ],
+      "evidence": [
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration86-image-cleaner-runtime-source-gated-staging"
+      ],
+      "testCases": [
+        "Scenario_ImageCleaner_Upgrade_Restart_Survival_Source"
+      ],
+      "summary": "Image Cleaner upgrade/restart survival remains unknown because iteration86 deliberately avoided upgrade and stop/start operations.",
+      "nextAction": "Only include in an upgrade/restart-focused probe; do not combine with quick component lifecycle evidence."
     }
   ],
   "evidence": [
@@ -9074,6 +9488,36 @@
       "kind": "artifact",
       "path": "outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md",
       "summary": "2026-05-20 staging validation that public Workload Identity disable/re-enable persists profile state, removes/restores the AKS-managed azure-wi webhook runtime surface in kube-system, and restores Linux pod mutation/token projection after re-enable while OIDC issuer remains enabled."
+    },
+    {
+      "id": "managedsystem-pool-feature-intent",
+      "kind": "source",
+      "path": "outputs/managedsystem-pool-feature-intent.md",
+      "summary": "Source/e2ev3 intent map for ManagedSystem Pool request-shape hygiene, runtime taints/add-on placement, VAP/VAPBinding, customer workload isolation, disable migration, reconcile, and second-pool constraint."
+    },
+    {
+      "id": "managedsystem-pool-api-doc-boundary",
+      "kind": "source",
+      "path": "outputs/managedsystem-pool-api-doc-boundary.md",
+      "summary": "Public API/docs boundary for ManagedSystem Pool: mode=ManagedSystem opt-in, one-pool enum text, minimal request-shape rule, CLI/default-payload mismatch, and public documentation gaps."
+    },
+    {
+      "id": "managedsystem-pool-evidence-state-matrix",
+      "kind": "artifact",
+      "path": "outputs/managedsystem-pool-evidence-state-matrix.md",
+      "summary": "Audited state matrix separating ManagedSystem Pool pass/fail/unknown states across standalone e2ev3, staging REST, staging CLI, immutability, delete, and source-only runtime gaps."
+    },
+    {
+      "id": "managedsystem-pool-related-context",
+      "kind": "source",
+      "path": "outputs/managedsystem-pool-related-context.md",
+      "summary": "Related-resource context distinguishing ManagedSystem Pool from generic VirtualMachines pools, Machines API, Node Auto Provisioning, normal System pools, and CLI preview behavior."
+    },
+    {
+      "id": "iteration86-image-cleaner-runtime-source-gated-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration86-image-cleaner-runtime-source-gated-staging.md",
+      "summary": "Source-gated Image Cleaner split plus staging component lifecycle pass: create-time enable installed eraser controller/collector resources; public disable removed controller pods, clusterrolebinding, service accounts, and collector pods; public re-enable restored them. Vulnerable-image erasure and upgrade/restart survival remain separate unknown branches."
     }
   ]
 }
