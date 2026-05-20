@@ -717,10 +717,19 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
   attempts: 1
 
 - id: vpa-model-split-and-rerank
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: Split VPA runtime evidence into branch-accurate model features (VPA components/recommendations passed, in-place update/HA/cert-renewal/upgrade unknown) and rerank the next cloud probe. Produce `outputs/iteration79-vpa-runtime-model-split.md`, update `outputs/e2e-capability-model.json` and `outputs/input-expectation-knowledge-map.md`, validate the model. No staging/cloud probes.
   depends_on: [app-routing-tls-source-hypothesis]
+  attempts: 1
+
+- id: app-routing-tls-corrected-rerun
+  status: pending
+  result: ~
+  assignee: aks-explorer
+  goal: Based on source hypothesis in `outputs/iteration80-app-routing-tls-source-hypothesis.md`, execute a corrected App Routing DefaultDomainCertificate TLS-secret staging probe addressing the identified precondition failures. Produce `outputs/iteration81-app-routing-tls-corrected-rerun.md` with exact inputs, commands, CR spec, observed TLS secret state, verdict, cleanup status, and capability-model update if a clear verdict is reached. If the source hypothesis indicates owner escalation is needed instead of a rerun, document that decision and mark the feature as externally blocked.
+  depends_on: [vpa-model-split-and-rerank]
   attempts: 0
 
 ## References
