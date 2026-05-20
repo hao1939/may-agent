@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 84
+iteration: 86
 max_concurrent: 1
 max_task_attempts: 2
 stop_reason: 
@@ -56,16 +56,16 @@ NAP, workload identity, security profile, bootstrap profile, VirtualMachines
 agent pools, and later dark-side discovery.
 
 ## Signals
-- knowledge.input-space-modeled: current capability model has 34 AKS input variables.
-- knowledge.expectation-space-modeled: current capability model has 61 expectation variables.
-- knowledge.feature-mapping-started: current capability model has 46 feature mappings and 48 test-case evidence mappings.
+- knowledge.input-space-modeled: current capability model has 35 AKS input variables.
+- knowledge.expectation-space-modeled: current capability model has 67 expectation variables.
+- knowledge.feature-mapping-started: current capability model has 60 feature mappings and 63 test-case evidence mappings.
 - knowledge.source-inventory-modeled: `outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
 - e2e.existing-cases-cataloged: `outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
 - knowledge.public-api-candidates-started: `outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Iteration84 closed KEDA disable/re-enable CRUD lifecycle. `outputs/iteration84-keda-disable-reenable-crud-staging.md` shows public `--enable-keda` persists `workloadAutoScalerProfile.keda.enabled=true` and installs KEDA CRDs/controllers/APIService, public `--disable-keda` persists `enabled=false` and removes the KEDA runtime/API surface, and re-enable restores it. App Routing DefaultDomainCertificate TLS remains paused behind owner/CCP diagnostics. The next independent high-value unknown is Workload Identity disable/re-enable lifecycle.
+Iteration85 closed Workload Identity disable/re-enable lifecycle. `outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` shows public `--disable-workload-identity` leaves OIDC issuer enabled while persisting `securityProfile.workloadIdentity.enabled=false`, removes the AKS-managed `azure-wi` webhook runtime surface, and public `--enable-workload-identity` restores profile state, webhook resources, and Linux pod token projection. The ManagedSystem Pool feature-standard wave is also complete: `outputs/managedsystem-pool-feature-standard.md` integrates source/API/docs/evidence/repro/context into the first reusable feature packet and keeps source-only gaps as unknown. App Routing DefaultDomainCertificate TLS remains paused behind owner/CCP diagnostics. The next high-value ManagedSystem gap is delete/disable migration runtime: prove whether critical add-ons move back to System nodes after the ManagedSystem pool is deleted.
 
 ## Review Questions
 
@@ -515,6 +515,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - `outputs/iteration82-post-escalation-next-probe-selection.md` — post-App-Routing ranking that selected Node Restriction
 - `outputs/iteration83-node-restriction-fullput-runtime-staging.md` — Node Restriction corrected full-PUT disable contract and runtime-default staging pass evidence
 - `outputs/iteration84-keda-disable-reenable-crud-staging.md` — KEDA disable/re-enable CRUD lifecycle staging pass evidence
+- `outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` — Workload Identity disable/re-enable lifecycle staging pass evidence
 - `outputs/managedsystem-pool-feature-standard-init-tasks.md` — narrative draft for the ManagedSystem Pool feature-standard parallel task wave
 - `outputs/iteration24-managedsystem-pool-pass.md` — pass evidence for `Scenario_ManagedSystemPool_Enable`
 - `outputs/underlay-debug-findings.md` — root cause analysis, MSI fix, retry results
@@ -578,7 +579,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` by executing a focused Workload Identity disable/re-enable lifecycle probe in staging. Start from the current validator identity unknowns and prior identity/OIDC runtime evidence, keep scope to `workload-identity-disable-reenable-lifecycle`, and record public API/profile state plus Kubernetes Workload Identity webhook/runtime surface before disable, after disable, and after re-enable. Update the capability model and knowledge map only if the evidence clearly resolves the Workload Identity lifecycle branch, validate the model, and clean up any new staging resource group. Do not combine this run with OIDC key rotation/post-delete cleanup, Windows identity projection, KEDA/VPA, Image Cleaner, App Routing, ManagedSystem, or Node Restriction.
+Produce `outputs/iteration86-image-cleaner-runtime-source-gated-staging.md` by source-gating the broad Image Cleaner runtime unknown before cloud mutation. Start from the current validator Image Cleaner unknowns, prior iteration62 Image Cleaner API/state evidence, and handwritten `Scenario_ImageCleaner` source on devbox. Split `image-cleaner-runtime-lifecycle` into branch-accurate model features if needed, update the knowledge map, validate the model, and only run a bounded staging probe for Image Cleaner component enable/disable/re-enable or erasure if the source-derived wait/observation path is practical. Do not combine with KEDA/VPA, Workload Identity/OIDC, App Routing, ManagedSystem, Node Restriction, or upgrade/restart survival unless source proves that branch is cheap and bounded.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -612,7 +613,7 @@ Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-stagin
 18. ✅ Close the VirtualMachines multi-SKU contract gap with a source/spec-first staging follow-up
 19. ✅ Close the App Routing public API disable gap with a focused staging toggle probe
 20. ✅ Validate App Routing default-domain public API/state enablement in staging
-21. ✅ Validate App Routing default-domain traffic reachability with a real staging workload
+21. ✅ Validate App Routing default-domain traffic reachability with a real workload
 22. ✅ Validate App Routing DefaultDomainCertificate/TLS-secret behavior in staging
 23. ✅ Consolidate the current capability model into an explicit input/expectation knowledge map, using the handwritten ManagedSystem Pool e2ev3 case as the first worked boundary example
 24. ✅ Inventory existing handwritten e2ev3 cases against the feature matrix and identify real coverage gaps
@@ -628,7 +629,8 @@ Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-stagin
 34. ✅ Select the next non-blocked high-value feature path after App Routing TLS escalation
 35. ✅ Execute the Node Restriction corrected full-PUT disable contract and runtime-default probe
 36. ✅ Validate KEDA disable/re-enable CRUD lifecycle in staging
-37. 🔄 Validate Workload Identity disable/re-enable lifecycle in staging
+37. ✅ Validate Workload Identity disable/re-enable lifecycle in staging
+38. 🔄 Decompose and validate Image Cleaner runtime lifecycle branches with source-gated staging evidence
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -808,10 +810,18 @@ Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-stagin
   attempts: 1
 
 - id: managedsystem-feature-standard-packet
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Integrate the ManagedSystem Pool parallel artifacts into one standard feature packet. Read outputs/managedsystem-pool-feature-intent.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-evidence-state-matrix.md, outputs/managedsystem-pool-repro-pack.md, and outputs/managedsystem-pool-related-context.md. Produce outputs/managedsystem-pool-feature-standard.md as the integrated packet. Update outputs/e2e-capability-model.json only for unambiguous model additions, then run the capability-model validator. The packet should be reusable as the template for the next feature, explain the feature without hiding uncertainty, and name the next concrete action."
   depends_on: [managedsystem-related-resource-context]
+  attempts: 1
+
+- id: next-feature-selection
+  status: pending
+  assignee: aks-explorer
+  goal: "Select the next feature to map using the ManagedSystem Pool feature-standard template. Review outputs/managedsystem-pool-feature-standard.md as the template, outputs/e2e-capability-model.json for current coverage, and the capability map weakness list. Choose the feature with highest coverage gap density (candidates: app-routing-default-domain-tls, paf-throttling, virtualmachines-agentpool, node-auto-provisioning). Produce outputs/next-feature-selection-rationale.md with the choice, justification, and initial wave plan file under tasks/."
+  depends_on: [managedsystem-feature-standard-packet]
   attempts: 0
 
 ## References
@@ -847,6 +857,7 @@ Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-stagin
 - outputs/iteration82-post-escalation-next-probe-selection.md
 - outputs/iteration66-virtualmachines-manual-scale-staging.md
 - outputs/iteration70-app-routing-defaultdomain-tls-staging.md
+- outputs/managedsystem-pool-repro-pack.md
 - outputs/iteration57-node-autoprovision-staging.md
 - outputs/doc-verification.md
 - outputs/deploy-retry-log.md
@@ -893,18 +904,22 @@ Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-stagin
 - outputs/aks-public-api-scenario-candidates.md
 - outputs/writing-e2e-tests.md
 - outputs/iteration77-identity-runtime-model-consolidation.md
+- outputs/managedsystem-pool-evidence-state-matrix.md
 - outputs/high-density-probe-plan.md
 - outputs/iteration83-node-restriction-fullput-runtime-staging.md
 - outputs/iteration60-workload-identity-staging.md
 - outputs/managedsystem-pool-feature-standard-init-tasks.md
+- outputs/managedsystem-pool-api-doc-boundary.md
 - outputs/iteration48-new-build-blocker.md
 - outputs/iteration81-app-routing-tls-owner-escalation.md
 - outputs/iteration69-app-routing-defaultdomain-traffic-staging.md
 - outputs/first-e2e-run.sh
+- outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md
 - outputs/troubleshooting.md
 - outputs/run-e2e.sh
 - outputs/e2ev3-architecture.md
 - outputs/iteration58-node-autoprovision-followup.md
+- outputs/managedsystem-pool-feature-intent.md
 - outputs/iteration64-virtualmachines-agentpool-staging.md
 - outputs/iteration3-status.md
 - outputs/second-e2e-run-results.md
@@ -913,6 +928,7 @@ Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-stagin
 - outputs/e2e-capability-model.json
 - outputs/iteration59-app-routing-staging.md
 - outputs/e2e-run-attempt.md
+- outputs/managedsystem-pool-related-context.md
 - outputs/iteration33-standalone-environment-dead.md
 - outputs/successful-e2e-run.md
 - outputs/iteration75-model-driven-probe-selection.md
