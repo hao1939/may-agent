@@ -71,7 +71,7 @@ describe("tool receipt signing (HMAC receipts)", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-receipts-"));
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
   });
 
   afterEach(() => {
@@ -377,7 +377,7 @@ describe("tool receipt signing (HMAC receipts)", () => {
       // RUNTIME_RECEIPT_SECRET is a module-level constant, shared within a process.
       // This is by design: "receipts are verifiable within the same runtime."
       const persistDir2 = mkdtempSync(join(tmpdir(), "may-receipts-2-"));
-      const manager2 = new SubagentManager({ persistDir: persistDir2, infraRetryMax: 0 });
+      const manager2 = new SubagentManager({ persistDir: persistDir2 });
 
       const output = "same content";
       const signed1 = manager.signToolOutput(output);

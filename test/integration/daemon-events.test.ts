@@ -11,7 +11,7 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeInterrupted: () => false,
+      resumeSession: () => { throw new Error("test: resume not wired"); },
     };
 
     try {
@@ -79,7 +79,7 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeInterrupted: () => false,
+      resumeSession: () => { throw new Error("test: resume not wired"); },
     };
 
     try {
@@ -127,7 +127,7 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeInterrupted: () => false,
+      resumeSession: () => { throw new Error("test: resume not wired"); },
     };
     const originalSetTimeout = globalThis.setTimeout;
 
@@ -188,7 +188,7 @@ describe("daemon event subscribers", () => {
     const bus = new EventBus();
     const events: any[] = [];
     const manager = {
-      resumeInterrupted: () => false,
+      resumeSession: () => { throw new Error("test: resume not wired"); },
     };
 
     try {

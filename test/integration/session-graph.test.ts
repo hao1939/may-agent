@@ -58,7 +58,7 @@ afterEach(() => {
 
 describe("session graph: parent links on run()", () => {
   it("sessions spawned with RunOptions have parentSessionId in status()", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "worker",
       description: "test",
@@ -82,7 +82,7 @@ describe("session graph: parent links on run()", () => {
   });
 
   it("sessions without RunOptions have no parent links", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "worker",
       description: "test",
@@ -101,7 +101,7 @@ describe("session graph: parent links on run()", () => {
   });
 
   it("parent links are persisted in registry", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "worker",
       description: "test",
@@ -140,7 +140,7 @@ describe("workflow run persistence", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "simple", task: "test" });
@@ -178,7 +178,7 @@ describe("workflow run persistence", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "no-steps", task: "task" });
@@ -204,7 +204,7 @@ describe("workflow run persistence", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "esc", task: "hard task" });
@@ -229,7 +229,7 @@ describe("workflow run persistence", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "crash", task: "doomed" });
@@ -255,7 +255,7 @@ describe("workflow run persistence", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     await tool.execute("tc1", { action: "run", name: "list-test", task: "first" });
@@ -282,7 +282,7 @@ describe("workflow result: step summaries", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "no-agents", task: "task" });
@@ -306,7 +306,7 @@ describe("workflow result: step summaries", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "esc-steps", task: "task" });
@@ -346,7 +346,7 @@ describe("workflow nesting depth cap", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir, maxDepth: 3 });
 
     const result = await tool.execute("tc1", { action: "run", name: "outer", task: "test" });
@@ -370,7 +370,7 @@ describe("workflow nesting depth cap", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir, maxDepth: 2 });
 
     const result = await tool.execute("tc1", { action: "run", name: "recursive", task: "go" });
@@ -404,7 +404,7 @@ describe("workflow nesting depth cap", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "parent-wf", task: "test" });
@@ -433,17 +433,17 @@ describe("workflow nesting depth cap", () => {
 
 describe("trace()", () => {
   it("returns null for unknown session ID", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     expect(manager.trace("nonexistent")).toBeNull();
   });
 
   it("returns null for unknown session", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.trace("anything")).toBeNull();
   });
 
   it("traces a standalone session (no workflow)", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "worker",
       description: "test",
@@ -477,7 +477,7 @@ describe("trace()", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -528,7 +528,7 @@ describe("trace()", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -568,7 +568,7 @@ describe("trace()", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -602,7 +602,7 @@ describe("trace()", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -625,7 +625,7 @@ describe("trace()", () => {
   });
 
   it("trace requires a valid sessionId", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
 
     const traceData = manager.trace("nonexistent");
     expect(traceData).toBeNull();
@@ -647,7 +647,7 @@ describe("callerSessionId", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -676,7 +676,7 @@ describe("callerSessionId", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({ manager, workflowDir, persistDir });
 
     const result = await tool.execute("tc1", { action: "run", name: "no-caller", task: "test" });
@@ -700,7 +700,7 @@ describe("callerSessionId", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,
@@ -730,7 +730,7 @@ describe("callerSessionId", () => {
     );
 
     const callerSid = "s_project_caller";
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     (manager as any).registry.saveSession(callerSid, {
       agent: "worker",
       task: "caller",

@@ -43,7 +43,7 @@ describe("ChatSession", () => {
     persistDir = mkdtempSync(join(tmpdir(), "chatsession-"));
     mkdirSync(join(persistDir, "sessions"), { recursive: true });
     mkdirSync(join(persistDir, "memory"), { recursive: true });
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     bus = new EventBus();
 
     manager.register({
@@ -308,7 +308,7 @@ describe("Session kind in resumeStaleSessions", () => {
     persistDir = mkdtempSync(join(tmpdir(), "session-kind-"));
     mkdirSync(join(persistDir, "sessions"), { recursive: true });
     mkdirSync(join(persistDir, "memory"), { recursive: true });
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     manager.register({
       name: "may",
       description: "Test agent",
@@ -372,7 +372,7 @@ describe("Session kind in resumeStaleSessions", () => {
     }
 
     // Create a fresh manager to simulate restart
-    const manager2 = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager2 = new SubagentManager({ persistDir });
     manager2.register({
       name: "may",
       description: "Test agent",
@@ -415,7 +415,7 @@ describe("Session kind in resumeStaleSessions", () => {
     } as any);
     writeFileSync(join(persistDir, "sessions", chatSid, "[STARTED]"), new Date().toISOString(), "utf-8");
 
-    const manager2 = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager2 = new SubagentManager({ persistDir });
     manager2.register({
       name: "may",
       description: "Test agent",

@@ -136,5 +136,3 @@ export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, ValidationError } from "../app/agent-loader.js";
-export { ApiGate } from "./api-gate.js";
-export type { ApiGateConfig, ApiGateStatus } from "./api-gate.js";

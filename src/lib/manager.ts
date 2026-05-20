@@ -36,7 +36,7 @@ import { updateSessionDb, listWorkflowRunIds, getWorkflowRun, updateWorkflowRun,
 import { readIdentity } from "./detached.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
-import type { SessionKind } from "./persistence.js";
+import type { SessionKind, PersistedSession } from "./persistence.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import { signToolOutput, verifyToolOutput, createVerifyReceiptTool } from "./manager-receipts.js";
@@ -81,8 +81,6 @@ export interface RunOptions {
   orderId?: string;
   startedAt?: number;
   resumeMessages?: AgentMessage[];
-  /** Enable compaction for long-lived sessions */
-  compaction?: boolean;
 }
 
 interface ActiveSession {
@@ -177,10 +175,6 @@ export interface SubagentManagerOptions {
   projectRoot?: string;
   bus?: EventBus;
   maxCallDepth?: number;
-  /** @deprecated v2 doesn't use apiGate — pi-agent-core handles retries */
-  apiGate?: any;
-  /** @deprecated v2 doesn't use infraRetryMax — pi-agent-core handles retries */
-  infraRetryMax?: number;
 }
 
 // ── Finish extraction ────────────────────────────────────────────────
@@ -289,6 +283,91 @@ export class SubagentManager {
         nextAction: category === "already_active" ? "resume" : recoverable ? "resume" : "escalate",
       },
     });
+  }
+
+  /**
+   * Resume primitive: rebuild transcript, optionally inject a new user turn,
+   * reset persistence, hand off to `this.run`. All resume entry points
+   * (resumeSession, resumeStaleSessions, auto-resume after interrupt) funnel
+   * through here so behavior stays consistent.
+   *
+   * Preconditions (callers must check before invoking):
+   *  - meta exists and has a registered agent
+   *  - sessionId is not currently in `_sessions` (in-memory live)
+   *
+   * On failure: emits `session.resume_failed` and re-throws. Callers that
+   * need to record an additional registry/DB row update on failure should
+   * catch and do so (resumeStaleSessions does, see below).
+   */
+  private executeResume(
+    sessionId: string,
+    meta: PersistedSession,
+    opts: {
+      source: string;
+      injectUserMessage?: string;
+      unarchive?: boolean;
+      resetDbRow?: boolean;
+    },
+  ): void {
+    if (opts.unarchive) {
+      try { unarchiveSession(this._persistDir, sessionId); } catch { /* best-effort */ }
+    }
+
+    const resumeMessages = this.buildResumeMessages(sessionId);
+
+    if (opts.injectUserMessage) {
+      // buildResumeMessages always ends with a user turn (either the original
+      // last user turn, or a synthetic "Process restarted..." notice). When an
+      // explicit message is provided, replace the synthetic tail so the new
+      // turn lands cleanly.
+      const tail: any = resumeMessages[resumeMessages.length - 1];
+      const isSyntheticRestart = tail?.role === "user"
+        && Array.isArray(tail.content)
+        && tail.content[0]?.type === "text"
+        && /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
+      if (isSyntheticRestart) resumeMessages.pop();
+      const newUserTurn: any = {
+        role: "user",
+        content: [{ type: "text", text: opts.injectUserMessage }],
+        timestamp: Date.now(),
+      };
+      resumeMessages.push(newUserTurn);
+      // Persist the injected user turn to JSONL now — message_end events only
+      // fire for messages the agent itself emits, so without this the operator's
+      // turn would not appear in transcript views.
+      try { appendSessionMessage(this._persistDir, sessionId, newUserTurn); } catch { /* best-effort */ }
+    }
+
+    if (opts.resetDbRow) {
+      // Clear stale endedAt/error in the DB row so the session looks fresh
+      // again. updateSessionDb uses COALESCE(?, endedAt) which keeps the old
+      // value on null, so we have to write directly.
+      try {
+        const db = getDb(this._persistDir);
+        db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
+      } catch { /* best-effort — manager.run will re-save the registry row */ }
+    }
+
+    try {
+      this.run(meta.agent, meta.task, {
+        sessionId,
+        parentSessionId: meta.parentSessionId,
+        workflowRunId: meta.workflowRunId,
+        stepLabel: meta.stepLabel,
+        source: opts.source,
+        kind: meta.kind ?? "job",
+        autoClose: meta.autoClose ?? "immediate",
+        requestId: meta.requestId,
+        orderId: meta.orderId,
+        startedAt: meta.startedAt,
+        projectId: meta.projectId,
+        resumeMessages,
+      });
+    } catch (err) {
+      const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
+      this.emitSessionResumeFailed(sessionId, meta, reason, "resume_run_failed", true);
+      throw err;
+    }
   }
 
   // ── Registration ──
@@ -459,22 +538,10 @@ export class SubagentManager {
     }
   }
 
-  /** @deprecated Use send() instead */
-  steer(sessionId: string, text: string, _source?: string): "steered" | "queued" {
-    this.send(sessionId, text);
-    return "steered";
-  }
-
   followUp(sessionId: string, text: string): void {
     const session = this._sessions.get(sessionId);
     if (!session) throw new Error(`Session "${sessionId}" not found`);
     session.agent.followUp({ role: "user", content: [{ type: "text", text }] } as any);
-  }
-
-  /** @deprecated Use send() instead */
-  async input(sessionId: string, text: string): Promise<TaskResult> {
-    this.send(sessionId, text);
-    return this.waitFor(sessionId);
   }
 
   // ── Query ──
@@ -601,10 +668,7 @@ export class SubagentManager {
     });
   }
 
-  // ── Compatibility stubs (v2 doesn't need these) ──
-
-  /** @deprecated No-op in v2. Sessions timeout; no zombies. */
-  cleanupZombieSessions(): number { return 0; }
+  // ── Session resume (v1 carryover; pi-agent-core has agent.continue() but we don't wire it yet) ──
 
   /** Resume or interrupt sessions left running by a previous process. */
   resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
@@ -683,29 +747,24 @@ export class SubagentManager {
         continue;
       }
 
-      const resumeMessages = this.buildResumeMessages(sessionId);
       try {
-        this.run(persisted.agent, persisted.task, {
-          sessionId,
-          parentSessionId: persisted.parentSessionId,
-          workflowRunId: persisted.workflowRunId,
-          stepLabel: persisted.stepLabel,
+        this.executeResume(sessionId, persisted, {
           source: persisted.source ?? "resumeStaleSessions",
-          kind: persisted.kind ?? "job",
-          autoClose: persisted.autoClose ?? "immediate",
-          requestId: persisted.requestId,
-          projectId: persisted.projectId,
-          orderId: persisted.orderId,
-          startedAt: persisted.startedAt,
-          resumeMessages,
+          // No injectUserMessage: keep the synthetic "Process restarted..."
+          // tail injected by buildResumeMessages.
+          // No unarchive: stale sessions are not archived (their session dir
+          // is still live; only the sentinel needs cleanup).
+          // No resetDbRow: manager.run reseats the row.
         });
         try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
         resumed.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "running" }));
       } catch (err) {
+        // executeResume already emitted session.resume_failed. We additionally
+        // mark the session interrupted in registry+DB so it is not retried
+        // forever, and surface it via the `interrupted` return slot.
         const error = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        this.emitSessionResumeFailed(sessionId, persisted, error, "resume_run_failed", true);
         try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
       }
@@ -719,9 +778,17 @@ export class SubagentManager {
     return { resumed, interrupted };
   }
 
-  /** @deprecated No-op in v2. */
-  resumeInterrupted(_sessionId: string): boolean { return false; }
-
+  /**
+   * Resume a cold (done/error/interrupted) session with a new user message.
+   *
+   * Reuses the original sessionId so the JSONL transcript grows in place
+   * (Telegram-style: one persistent thread per chat). The new message is
+   * appended after the rebuilt transcript as the next user turn.
+   *
+   * Throws if the session is unknown or already active in memory — callers
+   * should check `_sessions.has(sessionId)` first and use steer/input for
+   * live sessions.
+   */
   /**
    * Resume a cold (done/error/interrupted) session with a new user message.
    *
@@ -751,65 +818,12 @@ export class SubagentManager {
       throw new Error(reason);
     }
 
-    // Promote the JSONL/output dir back to live before reading the prior
-    // transcript or running the agent. archiveSession() moves a finished
-    // session to history/<sid>/; resume needs that content back in
-    // sessions/<sid>/ so appendSessionMessage and the transcript reader
-    // both see the full thread.
-    try { unarchiveSession(this._persistDir, sessionId); } catch { /* best-effort */ }
-
-    // Rebuild prior transcript with any pending tool-calls repaired.
-    const resumeMessages = this.buildResumeMessages(sessionId);
-
-    // Replace the auto-generated "Process restarted..." tail with the
-    // operator's actual message. buildResumeMessages always ends with a user
-    // turn (either the original last user turn, or the synthetic restart
-    // notice it just appended). We overwrite the tail when it is the
-    // synthetic notice so the new user turn lands cleanly.
-    const tail: any = resumeMessages[resumeMessages.length - 1];
-    const isSyntheticRestart = tail?.role === "user"
-      && Array.isArray(tail.content)
-      && tail.content[0]?.type === "text"
-      && /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
-    if (isSyntheticRestart) resumeMessages.pop();
-    const newUserTurn: any = {
-      role: "user",
-      content: [{ type: "text", text: message }],
-      timestamp: Date.now(),
-    };
-    resumeMessages.push(newUserTurn);
-    // Persist the injected user turn to JSONL now — message_end events only
-    // fire for messages the agent itself emits, so without this the operator's
-    // turn would not appear in transcript views.
-    try { appendSessionMessage(this._persistDir, sessionId, newUserTurn); } catch { /* best-effort */ }
-
-    // Clear stale endedAt/error in the DB row so the session looks fresh
-    // again. updateSessionDb uses COALESCE(?, endedAt) which keeps the old
-    // value on null, so we have to write directly.
-    try {
-      const db = getDb(this._persistDir);
-      db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
-    } catch { /* best-effort — manager.run will re-save the registry row */ }
-
-    try {
-      this.run(meta.agent, meta.task, {
-        sessionId,
-        parentSessionId: meta.parentSessionId,
-        workflowRunId: meta.workflowRunId,
-        stepLabel: meta.stepLabel,
-        source: opts?.source ?? "resume",
-        kind: meta.kind ?? "job",
-        autoClose: meta.autoClose ?? "immediate",
-        requestId: meta.requestId,
-        orderId: meta.orderId,
-        startedAt: meta.startedAt,
-        resumeMessages,
-      });
-    } catch (err) {
-      const reason = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
-      this.emitSessionResumeFailed(sessionId, meta, reason, "resume_run_failed", true);
-      throw err;
-    }
+    this.executeResume(sessionId, meta, {
+      source: opts?.source ?? "resume",
+      injectUserMessage: message,
+      unarchive: true,
+      resetDbRow: true,
+    });
     return sessionId;
   }
 
@@ -878,9 +892,6 @@ export class SubagentManager {
       audit,
     };
   }
-
-  /** @deprecated No-op in v2. */
-  apiGateStatus(): any[] { return []; }
 
   // ── Tool creation ──
 

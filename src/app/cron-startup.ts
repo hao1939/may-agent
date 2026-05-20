@@ -50,14 +50,6 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
     });
   }
 
-  const zombiesArchived = manager.cleanupZombieSessions();
-  if (zombiesArchived > 0) {
-    bus.emit({
-      type: "info",
-      message: `[startup] Archived ${zombiesArchived} zombie session(s) with terminal status`,
-    });
-  }
-
   const handlerResult = await loadAgentHandlers({
     ...loaderOpts,
     getSessionId: (agentName: string) => getAgentSessionId(agentName) ?? null,

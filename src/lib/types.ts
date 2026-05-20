@@ -46,12 +46,6 @@ export interface SubagentDefinition {
   memoryLimit?: number; // default 20
 
   /**
-   * Enable automatic context compaction for long-running sessions.
-   * @deprecated Not currently wired — flag is accepted but has no effect.
-   */
-  compaction?: boolean;
-
-  /**
    * @deprecated Volatile files should be injected as session context, not system prompt.
    * Kept while older agent.json files migrate away from context_files.
    */

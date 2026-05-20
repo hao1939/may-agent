@@ -35,7 +35,7 @@ afterEach(() => {
 
 describe("getSessionTree()", () => {
   it("returns a single node with no children", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "worker",
       description: "test worker",
@@ -56,7 +56,7 @@ describe("getSessionTree()", () => {
   });
 
   it("returns a parent with children", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "supervisor",
       description: "supervisor",
@@ -100,7 +100,7 @@ describe("getSessionTree()", () => {
   });
 
   it("builds a deeply nested tree (3 levels)", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "root-agent",
       description: "root",
@@ -163,7 +163,7 @@ describe("getSessionTree()", () => {
       endedAt: Date.now() - 5000,
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     manager.register({
       name: "worker",
       description: "worker",
@@ -192,7 +192,7 @@ describe("getSessionTree()", () => {
   });
 
   it("throws for a non-existent session", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     expect(() => manager.getSessionTree("nonexistent")).toThrow('Session "nonexistent" not found');
   });
 
@@ -208,7 +208,7 @@ describe("getSessionTree()", () => {
       endedAt: Date.now(),
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tree = manager.getSessionTree("s_done_1");
 
     expect(tree.status).toBe("completed");
@@ -226,7 +226,7 @@ describe("getSessionTree()", () => {
       error: "Process restarted",
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tree = manager.getSessionTree("s_int_1");
 
     expect(tree.status).toBe("cancelled");
@@ -242,7 +242,7 @@ describe("getSessionTree()", () => {
       error: "Something broke",
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tree = manager.getSessionTree("s_err_1");
 
     expect(tree.status).toBe("cancelled");
@@ -257,7 +257,7 @@ describe("getSessionTree()", () => {
       startedAt: Date.now(),
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tree = manager.getSessionTree("s_idle_1");
 
     expect(tree.status).toBe("running");
@@ -282,7 +282,7 @@ describe("getSessionTree()", () => {
       timestamp: Date.now(),
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const tree = manager.getSessionTree(sid);
 
     expect(tree.status).toBe("completed");

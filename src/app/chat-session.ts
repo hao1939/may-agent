@@ -199,7 +199,6 @@ export class ChatSession {
         parentSessionId: previousSessionId ?? undefined,
         kind: "chat",
         autoClose: "never",
-        compaction: true,
         source: source ?? "chat",
         resumeMessages,
       });
@@ -208,8 +207,9 @@ export class ChatSession {
     }
 
     // Subsequent messages: wake the idle session or steer the running one
+    this.manager.send(this.sessionId, message);
     this.manager
-      .input(this.sessionId, message)
+      .waitFor(this.sessionId)
       .then(() => {
         // Surface session errors on subsequent messages too
         const session = this.manager.status().find((s) => s.sessionId === this.sessionId);

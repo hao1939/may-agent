@@ -53,7 +53,7 @@ describe("silent error detection", () => {
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "silent-error-test-"));
-    manager = new SubagentManager({ persistDir: dir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir: dir });
   });
 
   afterEach(() => {

@@ -183,10 +183,11 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         try {
           const sessions = manager.status();
           const target = sessions.find((s) => s.sessionId === targetSid);
-          if (target?.status === "idle") {
-            void manager.input(targetSid, steerText);
-          } else if (target) {
-            manager.steer(targetSid, steerText, "human");
+          if (target) {
+            // Idle or running — send() handles both: it enqueues the user
+            // turn for the next agent loop iteration (idle: wakes up;
+            // running: queued for mid-flight delivery).
+            manager.send(targetSid, steerText);
           } else {
             try {
               manager.resumeSession(targetSid, steerText, { source: event.source ?? "human" });
@@ -251,16 +252,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         break;
       case "reload":
         void options.reload();
-        break;
-      case "resume":
-        if ("sessionId" in event && event.sessionId) {
-          const ok = manager.resumeInterrupted(event.sessionId);
-          if (ok) {
-            log("info", `[resume] Resumed session ${event.sessionId}`);
-          } else {
-            log("warn", `[resume] Failed to resume session ${event.sessionId}`);
-          }
-        }
         break;
       case "restart":
         options.restart();

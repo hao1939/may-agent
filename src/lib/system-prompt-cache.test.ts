@@ -5,7 +5,7 @@ describe("System Prompt Caching", () => {
   it("should place stable context before volatile session IDs", () => {
     // We create a manager instance but we'll call the private method directly via prototype
     // to avoid filesystem dependencies in the test.
-    const manager = new SubagentManager({ persistDir: "/tmp/test", infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: "/tmp/test" });
 
     // Mock the private method by binding it
     // @ts-expect-error Accessing private method for testing
