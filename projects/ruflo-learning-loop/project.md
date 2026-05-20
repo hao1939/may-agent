@@ -4,7 +4,7 @@ owner: arc
 status: paused
 type: iterative
 priority: P2
-workflow: ruflo-learning-loop-iteration
+workflow: project
 iteration: 12
 stop_reason: Iteration 12 converged on one durable rule and there is no current falsifier or new Ruflo idea worth another autonomous cycle.
 resume_condition: A periodic-snapshot event type enters the top-15 event volume within 30 days, or Arc chooses a new concrete Ruflo idea for another investigate-judge-experiment loop.

@@ -4,7 +4,7 @@ owner: evaluator
 status: done
 type: milestone
 priority: P1
-workflow: evaluator-aftermath-null-trigger-loop-iteration
+workflow: project
 iteration: 2
 ---
 

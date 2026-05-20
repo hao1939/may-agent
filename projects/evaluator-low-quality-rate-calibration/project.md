@@ -4,7 +4,7 @@ owner: evaluator
 status: done
 type: milestone
 priority: P1
-workflow: evaluator-low-quality-rate-calibration-iteration
+workflow: project
 iteration: 6
 stop_reason: Completed. May approved the broad/substantive metric split, runtime code now treats the broad metric as dashboard-only, and the substantive metric is the primary quality alert.
 ---

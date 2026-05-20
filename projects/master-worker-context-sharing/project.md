@@ -4,7 +4,7 @@ owner: master
 status: waiting
 type: continuous
 priority: P2
-workflow: master-worker-context-sharing-iteration
+workflow: project
 iteration: 6
 ---
 

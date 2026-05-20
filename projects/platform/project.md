@@ -4,7 +4,7 @@ owner: tech-lead
 status: paused
 type: milestone
 priority: P0
-workflow: platform-iteration
+workflow: project
 iteration: 37
 ---
 

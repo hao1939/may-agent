@@ -4,7 +4,7 @@ owner: evaluator
 status: waiting
 type: milestone
 priority: P2
-workflow: evaluator-strategy-extractor-calibration-iteration
+workflow: project
 iteration: 2
 stop_reason: Cleanup review complete: the extractor improvement is regression-tested and propagated, with remaining work limited to optional calibration follow-up on compact-success coverage and optimization-noise ranking.
 resume_condition: review requests another calibration pass on compact-success coverage, optimization-noise ranking, or evaluator criteria/doc interpretation.

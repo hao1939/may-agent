@@ -160,6 +160,11 @@ ready task has already reached that attempt count, the handler stops dispatching
 that task directly and launches the project owner workflow so the owner can
 retry with a different approach, split it, drop it, or escalate.
 
+The project steward observes the same condition read-only. It reports
+`owner_judgment_needed` as a project health finding and metric so heartbeat and
+closed-loop review can see the stall even if the dispatcher is not currently
+able to make progress. This is a signal, not a project status change.
+
 ### Blocked task example
 
 ```

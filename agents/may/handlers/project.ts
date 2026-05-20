@@ -21,7 +21,12 @@ import {
 import type { ProjectInfo, HealthAction } from "../../../shared/lib/project-health.ts";
 
 async function loadProjectHealth(root: string) {
-  const moduleUrl = pathToFileURL(resolve(root, "shared/lib/project-health.ts"));
+  const hotLoadPath = resolve(root, "shared/lib/project-health.ts");
+  if (!existsSync(hotLoadPath)) {
+    return await import("../../../shared/lib/project-health.ts") as typeof import("../../../shared/lib/project-health.ts");
+  }
+
+  const moduleUrl = pathToFileURL(hotLoadPath);
   moduleUrl.searchParams.set("t", String(Date.now()));
   return await import(moduleUrl.href) as typeof import("../../../shared/lib/project-health.ts");
 }
@@ -322,9 +327,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     const targetProject = normalizeProjectPath(event?.data?.projectPath);
     const commentNudge = event?.type === "project.nudge" && event?.data?.comment === true && !!targetProject;
+    const taskFinishedNudge = event?.type === "project.task.finished" && !!targetProject;
     for (const project of projects) {
       if (targetProject && !matchesProjectTarget(project, targetProject)) continue;
-      const forceLaunch = event?.type === "trigger.project" || commentNudge;
+      const forceLaunch = event?.type === "trigger.project" || commentNudge || taskFinishedNudge;
       actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects, forceLaunch) });
     }
     if (targetProject && actions.length === 0) {

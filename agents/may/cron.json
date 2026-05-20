@@ -283,6 +283,24 @@
     "description": "Detect projects needing attention, run project workflow. Event triggers provide immediate reaction; timer is backup scan.",
     "on": [
       "project.nudge",
+      "project.task.finished",
+      "project.completed",
+      "project.blocked"
+    ]
+  },
+  {
+    "name": "project-steward",
+    "type": "job",
+    "intervalMs": 1800000,
+    "handler": "project-steward",
+    "agent": "may",
+    "enabled": true,
+    "message": "[cron:project-steward] Read-only project health discovery.",
+    "description": "Scan project docs/tasks without mutating them; emit project.health.* events and project-health metrics for heartbeat/closed-loop handling.",
+    "offsetMs": 180000,
+    "on": [
+      "project.nudge",
+      "project.task.finished",
       "project.completed",
       "project.blocked"
     ]
@@ -324,6 +342,7 @@
     "intervalMs": 300000,
     "description": "React to failed sessions by dispatching the session-recovery workflow; timer fallback auto-closes stale immediate sessions with no assistant activity.",
     "on": [
+      "session.completed",
       "session.failed"
     ]
   },

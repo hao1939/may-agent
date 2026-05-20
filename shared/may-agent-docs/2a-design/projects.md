@@ -155,6 +155,10 @@ CREATE TABLE projects (
 ## Implementation
 
 - **Project handler:** `agents/may/handlers/project.ts`
+- **Project steward:** `agents/may/handlers/project-steward.ts` scans project
+  docs/tasks read-only and reports deterministic findings as
+  `project.health.checked` / `project.health.finding` events plus project
+  health metrics. It does not dispatch work or edit project files.
 - **Health lib:** `shared/lib/project-health.ts`
 - **DB schema:** `src/lib/db/schema.ts` (projects table)
 - **Project query/projection helpers:** `src/lib/query-service.ts` and project handler cache sync

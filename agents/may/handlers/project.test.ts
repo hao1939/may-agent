@@ -226,4 +226,96 @@ Run ready tasks.
     expect(workflowCalls[0].task).toContain("project:");
     expect(readFileSync(projectFile, "utf-8")).toContain("attempts: 2");
   });
+
+  it("launches owner judgment immediately on project.task.finished when all tasks are done", async () => {
+    const root = join(tmpdir(), `project-task-finished-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const stateDir = join(root, ".state");
+    const projectDir = join(projectsRoot, "task-demo");
+    const workflowDir = join(projectDir, "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(join(workflowDir, "task-demo-iteration.ts"), "export const name = 'task-demo-iteration';\n");
+    writeFileSync(join(stateDir, "project-health-state.json"), JSON.stringify({
+      lastFullScan: Date.now(),
+      projects: {
+        "projects/task-demo": {
+          blockerHash: "",
+          consecutiveSkips: 0,
+          reactivationAttempts: 0,
+          lastEscalation: 0,
+          lastLaunch: Date.now(),
+          lastStatusChange: 0,
+          launchTimestamps: [Date.now()],
+        },
+      },
+    }));
+    const projectFile = join(projectDir, "project.md");
+    writeFileSync(projectFile, `---
+id: task-demo
+owner: evaluator
+status: active
+workflow: project
+---
+
+# Task Demo
+
+## Goal
+Judge the finished phase.
+
+## Tasks
+- id: score-a
+  status: done
+  result: succeeded
+  assignee: evaluator
+  goal: Score batch A.
+  depends_on: []
+  attempts: 1
+`);
+
+    const agentCalls: unknown[] = [];
+    const workflowCalls: Array<{ workflow: string; task: string; opts: Record<string, unknown> | undefined }> = [];
+    const ctx = {
+      agentName: "may",
+      sdk: {
+        paths: { root, projects: projectsRoot },
+        log: () => {},
+        emit: () => {},
+        getDb: () => ({ run: () => ({}), prepare: () => ({ get: () => null, all: () => [] }) }),
+        query: {
+          alerts: () => ({ rows: [] }),
+          workflowRuns: () => ({ rows: [] }),
+          sessions: () => ({ rows: [] }),
+        },
+        runAgent: async (...args: unknown[]) => {
+          agentCalls.push(args);
+          return { sessionId: "s_unexpected", status: "done", lastAssistantText: "" };
+        },
+        runWorkflow: async (workflow: string, task: string, opts?: Record<string, unknown>) => {
+          workflowCalls.push({ workflow, task, opts });
+          return { status: "done", summary: "judged", runId: "wr_judge" };
+        },
+      },
+      triggerNow: () => false,
+    } as any;
+
+    await create(ctx, { name: "project", enabled: true, handler: "project" } as any)({
+      type: "project.task.finished",
+      data: {
+        projectPath: "projects/task-demo",
+        projectId: "evaluator/task-demo",
+        taskId: "score-a",
+      },
+    } as any);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(agentCalls).toEqual([]);
+    expect(workflowCalls).toHaveLength(1);
+    expect(workflowCalls[0]).toMatchObject({
+      workflow: "task-demo-iteration",
+      opts: { source: "evaluator", projectId: "evaluator/task-demo" },
+    });
+  });
 });
