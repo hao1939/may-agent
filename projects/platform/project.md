@@ -1,7 +1,7 @@
 ---
 id: platform
 owner: tech-lead
-status: active
+status: waiting
 type: milestone
 priority: P0
 iteration: 38
