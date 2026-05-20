@@ -82,7 +82,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   { id: "guard.triggered-count-24h", name: "Guard triggers (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1300, unit: "count", alert_op: ">", priority: "P3" },
-  { id: "guard.warned-count-24h", name: "Guard warnings (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 900, unit: "count", alert_op: ">", priority: "P3" },
+  { id: "guard.warned-count-24h", name: "Guard warnings (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1200, unit: "count", alert_op: ">", priority: "P3" },
   { id: "guard.blocked-count-15m", name: "Guard blocks (15m)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "guard.repeat-trigger-count-24h", name: "Repeated guard triggers (24h)", owner: "may", type: "gauge", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P2" },
@@ -191,17 +191,19 @@ function listEnabledHeartbeatAgents(agentsRoot: string, configuredAgents: Set<st
       name?: string;
       enabled?: boolean;
       agent?: string;
-      handler?: string;
+      handler?: string | { workflow?: string; agent?: string };
       handlerConfig?: { agent?: string; workflow?: string };
     }>;
     for (const entry of cron) {
       if (entry.enabled === false) continue;
+      const workflowHandler = entry.handler && typeof entry.handler === "object" ? entry.handler : undefined;
       const isHeartbeat = entry.name === "heartbeat"
         || entry.name?.startsWith("heartbeat-")
         || entry.handlerConfig?.workflow?.includes("heartbeat")
-        || entry.handler === "heartbeat";
+        || entry.handler === "heartbeat"
+        || workflowHandler?.workflow?.includes("heartbeat");
       if (!isHeartbeat) continue;
-      const agent = (entry.handlerConfig?.agent || entry.agent || "").trim();
+      const agent = (workflowHandler?.agent || entry.handlerConfig?.agent || entry.agent || "").trim();
       if (agent && configuredAgents.has(agent)) agents.add(agent);
     }
   } catch {
