@@ -173,6 +173,10 @@ export class Cron {
     this.handlers.set(jobName, handler);
   }
 
+  getConfigPath(): string {
+    return this.configPath;
+  }
+
   /** Set a resolver for dynamically loading handlers when new entries appear post-startup. */
   setHandlerResolver(resolver: (entryName: string, entry: CronEntry) => Promise<boolean>): void {
     this.handlerResolver = resolver;
