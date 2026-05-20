@@ -64,8 +64,7 @@ Workflow-backed handler:
 - `handler: { workflow, agent, task }` — workflow-backed handler
 - `context` — local docs/projects/agent files that explain why this trigger
   exists and where maintenance/improvement should happen
-- `message` — legacy detached-job prompt; new trigger entries should put the
-  task in `handler.task`
+- `message` — not a trigger mode; use `handler.task` for workflow-backed work
 - `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
 
 ## Handler Structure
