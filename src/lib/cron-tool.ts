@@ -42,12 +42,13 @@ export type CronHandlerSpec = string | WorkflowBackedHandler;
 export interface CronEntry {
   name: string;
   intervalMs?: number;
+  /** Legacy detached-agent prompt. New jobs should use handler.task instead. */
   message?: string;
   enabled: boolean;
   description?: string;
   /** Durable maintenance context for the loop this trigger serves. Local paths from app root. */
   context?: string[];
-  /** Agent that owns/runs this job. If no `handler` is set, spawns a dedicated agent instance. */
+  /** Agent associated with the trigger. Workflow-backed handlers set this inside handler.agent. */
   agent?: string;
   /** Handler implementation: a named JS handler or a workflow-backed handler object. */
   handler?: CronHandlerSpec;
@@ -105,7 +106,7 @@ const CronParams: TSchema = Type.Object({
   message: Type.Optional(
     Type.String({
       description:
-        "Message to inject into the agent session each time the job fires (required for 'add'). This becomes the heartbeat prompt.",
+        "Task prompt used by the workflow-backed handler each time the timer fires (required for 'add').",
     }),
   ),
   enabled: Type.Optional(
@@ -128,7 +129,7 @@ interface CronInput {
 export interface CronToolOptions {
   /** Path to the agent's cron.json */
   configPath: string;
-  /** Agent that owns this cron tool. New agent-message jobs default to this executor. */
+  /** Agent that owns this cron tool. New workflow-backed jobs run this agent. */
   agentName?: string;
   /** Called after any write to cron.json so the cron runner can reload. */
   onConfigChange: () => void;
@@ -158,8 +159,8 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
     name: "cron",
     label: "cron",
     description:
-      "Manage YOUR cron jobs — recurring tasks that run on a fixed interval. " +
-      "By default, new jobs run you as the agent executor with the configured message. " +
+      "Manage YOUR timer-triggered handlers — recurring tasks that run on a fixed interval. " +
+      "By default, new jobs use a workflow-backed handler that runs you with the configured task. " +
       "Jobs are persisted in your cron.json config file.\n\n" +
       "Actions:\n" +
       "- list: show all your cron jobs and whether cron is currently active\n" +
@@ -203,13 +204,17 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
               `Error: job "${input.name}" already exists. Use 'update' to modify it, or 'remove' first to replace it.`,
             );
           }
+          const executor = opts.agentName ?? "may";
           const newEntry: CronEntry = {
             name: input.name,
             intervalMs: input.intervalMs,
-            message: input.message,
+            handler: {
+              workflow: "verify-wrap",
+              agent: executor,
+              task: input.message,
+            },
             enabled: input.enabled !== undefined ? input.enabled : true,
           };
-          if (opts.agentName) newEntry.agent = opts.agentName;
           if (input.description !== undefined)
             newEntry.description =
               input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;
@@ -238,7 +243,12 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
             if (input.intervalMs < 10_000) return textResult("Error: intervalMs must be >= 10000 (10 seconds)");
             entry.intervalMs = input.intervalMs;
           }
-          if (input.message !== undefined) entry.message = input.message;
+          if (input.message !== undefined && typeof entry.handler === "object") {
+            entry.handler.task = input.message;
+            delete entry.message;
+          } else if (input.message !== undefined) {
+            entry.message = input.message;
+          }
           if (input.description !== undefined)
             entry.description =
               input.description.length > 200 ? input.description.slice(0, 200) + "..." : input.description;

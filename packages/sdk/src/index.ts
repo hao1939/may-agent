@@ -384,10 +384,12 @@ export type CronHandlerSpec = string | WorkflowBackedHandler;
 export interface CronEntry {
   name: string;
   intervalMs?: number;
+  /** Legacy detached-agent prompt. New jobs should use handler.task instead. */
   message?: string;
   enabled: boolean;
   description?: string;
   context?: string[];
+  /** Agent associated with the trigger. Workflow-backed handlers set this inside handler.agent. */
   agent?: string;
   handler?: CronHandlerSpec;
   timeoutMs?: number;
