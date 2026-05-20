@@ -48,19 +48,6 @@ function workflowHandler(handler: CronEntry["handler"]): WorkflowBackedHandler |
   return handler && typeof handler === "object" && typeof handler.workflow === "string" ? handler : undefined;
 }
 
-function legacyWorkflowConfig(entry: CronEntry): { workflow?: string; agent?: string; timeoutMs?: number } {
-  const config = entry.handlerConfig;
-  return {
-    workflow: typeof config?.workflow === "string" ? config.workflow : undefined,
-    agent: typeof config?.agent === "string" ? config.agent : undefined,
-    timeoutMs: typeof config?.timeoutMs === "number" ? config.timeoutMs : undefined,
-  };
-}
-
-function workflowName(entry: CronEntry): string | undefined {
-  return workflowHandler(entry.handler)?.workflow ?? legacyWorkflowConfig(entry).workflow;
-}
-
 function handlerDisplay(handler: CronEntry["handler"]): string {
   if (!handler) return "";
   if (typeof handler === "string") return handler;
@@ -83,9 +70,8 @@ function heartbeatTriggerAgent(event: unknown): string | undefined {
 
 function entryAgent(entry: CronEntry): string | undefined {
   const fromHandler = workflowHandler(entry.handler)?.agent?.trim() ?? "";
-  const fromConfig = legacyWorkflowConfig(entry).agent?.trim() ?? "";
   const fromEntry = typeof entry.agent === "string" ? entry.agent.trim() : "";
-  if (fromHandler || fromConfig || fromEntry) return fromHandler || fromConfig || fromEntry;
+  if (fromHandler || fromEntry) return fromHandler || fromEntry;
   if (entry.name === "heartbeat") return "may";
   if (entry.name.startsWith("heartbeat-")) return entry.name.slice("heartbeat-".length);
   return undefined;
@@ -628,9 +614,8 @@ export class Cron {
     // Fall back to DB: check workflow_runs for the most recent run of this entry's workflow
     try {
       const db = getDb(this.persistDir);
-      // The workflow column matches a workflow-backed handler, legacy handlerConfig.workflow, or the entry name.
       const entry = this.entries.find(e => e.name === entryName);
-      const configuredWorkflowName = entry ? workflowName(entry) : undefined;
+      const configuredWorkflowName = entry ? workflowHandler(entry.handler)?.workflow : undefined;
       const latestWorkflowName = configuredWorkflowName ?? entryName;
       const row = db.prepare(
         "SELECT startedAt FROM workflow_runs WHERE workflow = ? ORDER BY startedAt DESC LIMIT 1"
@@ -747,7 +732,7 @@ export class Cron {
     });
 
     const workflowTimeout = workflowHandler(entry.handler)?.timeoutMs;
-    const HANDLER_TIMEOUT_MS = Number(entry.timeoutMs ?? workflowTimeout ?? legacyWorkflowConfig(entry).timeoutMs) || 5 * 60_000; // per-handler or 5min default
+    const HANDLER_TIMEOUT_MS = Number(entry.timeoutMs ?? workflowTimeout) || 5 * 60_000; // per-handler or 5min default
 
     const handlerPromise = handler(triggerEvent);
     const timeoutPromise = new Promise<never>((_, reject) =>
