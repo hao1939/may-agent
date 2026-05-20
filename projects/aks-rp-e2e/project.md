@@ -1100,7 +1100,8 @@ Complete `outputs/iteration87-managedsystem-disable-migration-runtime-staging.md
   attempts: 2
 
 - id: managedsystem-disable-migration-checkpointed-rerun
-  status: pending
+  result: null
+  status: ready
   assignee: aks-explorer
   goal: "Complete the checkpointed ManagedSystem Pool migration evidence. Check for interrupted-run resources (msmig* resource groups on devbox), then run a phase-logged staging script that creates a normal baseline cluster, adds one ManagedSystem pool via proven minimal ARM REST payload (api-version=2025-04-02-preview), records critical add-on placement on managed-system nodes (coredns, metrics-server, konnectivity-agent, coredns-autoscaler), deletes the ManagedSystem pool, verifies NotFound, records the same add-ons on system nodes, cleans up the resource group with --no-wait, and updates the capability model only if managedsystem-disable-migration is clearly resolved. Each phase must checkpoint to a devbox log file so interruption preserves partial evidence. Produce outputs/iteration88-managedsystem-disable-migration-checkpointed.md."
   depends_on: [managedsystem-disable-migration-runtime-probe]
