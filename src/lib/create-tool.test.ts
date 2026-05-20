@@ -60,7 +60,7 @@ describe("createAgentsTool()", () => {
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-agents-tool-"));
     agentsRoot = mkdtempSync(join(tmpdir(), "may-agents-root-"));
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     registerTestAgents(manager);
   });
 
@@ -325,12 +325,12 @@ describe("createAgentsTool()", () => {
 
 describe("listAgents()", () => {
   it("returns empty array when no agents registered", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     expect(manager.listAgents()).toEqual([]);
   });
 
   it("returns correct { name, description, domain } for registered agents", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerTestAgents(manager);
 
     const agents = manager.listAgents();
@@ -352,7 +352,7 @@ describe("listAgents()", () => {
   });
 
   it("does NOT include session info (simpler than status/list)", () => {
-    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")), infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
     registerTestAgents(manager);
 
     const agents = manager.listAgents();

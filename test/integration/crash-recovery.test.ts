@@ -126,7 +126,7 @@ describe("Crash Recovery: Sentinel File Lifecycle", () => {
   });
 
   it("run() writes a [STARTED] sentinel file", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     const sessionId = manager.run("worker", "do something");
@@ -139,7 +139,7 @@ describe("Crash Recovery: Sentinel File Lifecycle", () => {
   });
 
   it("handleCompletion() deletes the [STARTED] sentinel on success", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     const sessionId = manager.run("worker", "do something");
@@ -153,7 +153,7 @@ describe("Crash Recovery: Sentinel File Lifecycle", () => {
   });
 
   it("handleCompletion() deletes the [STARTED] sentinel on error", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     const sessionId = manager.run("worker", "do something");
@@ -167,7 +167,7 @@ describe("Crash Recovery: Sentinel File Lifecycle", () => {
   });
 
   it("handleCompletion() deletes the [STARTED] sentinel on cancel (abort)", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     const sessionId = manager.run("worker", "do something");
@@ -205,7 +205,7 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     setupSession(persistDir, "s_crashed", [userMessage("important task"), assistantMessage("Working on it...")]);
     writeSentinel(persistDir, "s_crashed");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -227,7 +227,7 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     // Sentinel exists but no corresponding registry entry — should be cleaned up
     writeSentinel(persistDir, "s_orphan");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const { resumed, interrupted } = manager.resumeStaleSessions();
 
     expect(resumed).toHaveLength(0);
@@ -249,7 +249,7 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     setupSession(persistDir, "s_unknown");
     writeSentinel(persistDir, "s_unknown");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     // Do NOT register "nonexistent-agent"
 
     const { resumed, interrupted } = manager.resumeStaleSessions();
@@ -289,7 +289,7 @@ describe("Crash Recovery: Sentinel-Driven Crash Detection", () => {
     expect(readSessionMeta(persistDir, sessionId)!.status).toBe("running");
 
     // Phase 3: "Restart" — create new manager (simulates new process)
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     // Phase 4: Run crash recovery
@@ -339,7 +339,7 @@ describe("Crash Recovery: JSONL Rehydration", () => {
       assistantMessage("I found 3 issues in the dataset."),
     ]);
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     manager.resumeStaleSessions();
@@ -375,7 +375,7 @@ describe("Crash Recovery: JSONL Rehydration", () => {
     // Last message is assistant (not user), so resumeSession injects restart notice
     setupSession(persistDir, sessionId, [userMessage("build module"), assistantMessage("Working on the module...")]);
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     manager.resumeStaleSessions();
@@ -406,7 +406,7 @@ describe("Crash Recovery: JSONL Rehydration", () => {
     // Last message is user — resumeSession calls agent.continue() without injecting a new message
     setupSession(persistDir, sessionId, [userMessage("fix bug")]);
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     manager.resumeStaleSessions();
@@ -446,7 +446,7 @@ describe("Crash Recovery: Mid-Tool-Call Repair", () => {
     // Session crashed mid-tool-call: last message is assistant with a toolCall
     setupSession(persistDir, sessionId, [userMessage("run tests"), toolCallMessage("tc_1", "exec")]);
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     manager.resumeStaleSessions();
@@ -492,7 +492,7 @@ describe("Crash Recovery: Registry Status Updates", () => {
     });
     setupSession(persistDir, "s_unreg");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     // "gone-agent" is NOT registered
 
     manager.resumeStaleSessions();
@@ -513,7 +513,7 @@ describe("Crash Recovery: Registry Status Updates", () => {
     });
     setupSession(persistDir, "s_resuming", [userMessage("task")]);
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     registerAgent(manager, "worker");
 
     const { resumed } = manager.resumeStaleSessions();
@@ -546,7 +546,7 @@ describe("Crash Recovery: Registry Status Updates", () => {
       },
     });
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const { resumed, interrupted } = manager.resumeStaleSessions();
 
     expect(resumed).toHaveLength(0);

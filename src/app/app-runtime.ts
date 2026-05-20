@@ -15,7 +15,6 @@ import {
 } from "./daemon.js";
 import { EventBus } from "./event-bus.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import { createRuntimeApiGate } from "./api-gate-runtime.js";
 import type { ModelRegistry } from "./model-registry.js";
 import { waitForModelProxy } from "./model-proxy-health.js";
 import { parseWebPort, startWebMode } from "./modes/web.js";
@@ -88,8 +87,6 @@ export async function runAppRuntime(opts: {
   const manager = new SubagentManager({
     persistDir: opts.persistDir,
     projectRoot: opts.projectRoot,
-    infraRetryMax: 3,
-    apiGate: createRuntimeApiGate(),
     bus,
   });
 

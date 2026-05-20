@@ -35,7 +35,7 @@ describe("System prompt assembly", () => {
   });
 
   it("uses systemPrompt directly when set", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
 
     manager.register({
       name: "direct-prompt",
@@ -63,7 +63,7 @@ describe("System prompt assembly", () => {
     writeFileSync(file1, "# Domain\nYou are an expert.", "utf-8");
     writeFileSync(file2, "# Patterns\nUse pattern X.", "utf-8");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
 
     manager.register({
       name: "files-agent",
@@ -85,7 +85,7 @@ describe("System prompt assembly", () => {
     const file1 = join(knowledgeDir, "domain.md");
     writeFileSync(file1, "# Identity\nYou are a test agent.", "utf-8");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
 
     manager.register({
       name: "memory-agent",
@@ -109,7 +109,7 @@ describe("System prompt assembly", () => {
     const file1 = join(knowledgeDir, "domain.md");
     writeFileSync(file1, "# Identity\nYou are a test agent.", "utf-8");
 
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
 
     manager.register({
       name: "no-memory-agent",

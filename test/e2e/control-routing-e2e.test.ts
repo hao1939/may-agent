@@ -209,10 +209,8 @@ describe("control routing e2e", () => {
           return "s_e2e_dev";
         },
         cancel: () => {},
-        input: () => {},
-        steer: () => {},
+        send: () => {},
         resumeSession: () => {},
-        resumeInterrupted: () => false,
       } as never,
       getChatSession: () => undefined,
       clearCancelLatch: () => {},

@@ -242,7 +242,7 @@ describe("runtime integration", () => {
     bus.subscribe(writer.handler, { priority: "first" });
     bus.subscribe((event) => runtimeEvents.push(event as RuntimeEvent));
 
-    const manager = new SubagentManager({ persistDir: stateDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir: stateDir });
     const tool = createWorkflowTool({
       manager,
       workflowDir,

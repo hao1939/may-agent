@@ -83,7 +83,7 @@ describe("Manager session startup robustness", () => {
   });
 
   it("runs with large task text without crashing", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
 
     // We can't directly access the system prompt, but we can verify
     // the manager doesn't crash and the session starts successfully
@@ -108,7 +108,7 @@ describe("Manager session startup robustness", () => {
   });
 
   it("runs with long summary text without crashing", async () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const domainFile = join(knowledgeDir, "domain.md");
     writeFileSync(domainFile, "# Test Agent\nYou are a test.", "utf-8");
 
