@@ -117,9 +117,9 @@ export async function reloadAgents(
  * Auto-discover and register handlers for trigger entries.
  *
  * For each agent with a scheduler, scans its cron.json for entries with a
- * `handler` field. String handlers name a file in
- * agents/<name>/handlers/<handler>.js. Object handlers are workflow-backed
- * and are registered directly.
+ * `handler` field. String handlers name a file in the handlers/ directory
+ * beside that cron.json. Object handlers are workflow-backed and are
+ * registered directly.
  *
  * Call this after loadAgents() completes.
  */

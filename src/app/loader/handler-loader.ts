@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { createWorkflowHandler, SubagentManager } from "../../lib/index.js";
 import type { HandlerContext, HandlerModule, EventEnvelope } from "../../lib/handler-context.js";
 import type { CronEntry, WorkflowBackedHandler } from "../../lib/cron-tool.js";
@@ -19,6 +19,8 @@ export interface AgentHandlerLoaderOptions {
   bus: EventBus;
   agentCrons: Map<string, Cron>;
 }
+
+type CronWithConfigPath = Cron & { getConfigPath?: () => string };
 
 export async function loadHandlersForAgentCrons(
   opts: AgentHandlerLoaderOptions,
@@ -71,9 +73,9 @@ export async function loadHandlersForAgentCrons(
     }
 
     for (const [handlerFile, fileEntries] of byFile) {
-      const modulePath = resolveHandlerModule(agentsRoot, agentName, handlerFile);
+      const handlerDir = resolveHandlerDir(agentsRoot, agentName, cron as CronWithConfigPath);
+      const modulePath = resolveHandlerModule(handlerDir, handlerFile);
       if (!modulePath) {
-        const handlerDir = resolve(agentsRoot, agentName, "handlers");
         const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;
         errors.push(msg);
         bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
@@ -117,9 +119,9 @@ export async function loadHandlersForAgentCrons(
       }
       if (typeof entry.handler !== "string") return false;
 
-      const modulePath = resolveHandlerModule(agentsRoot, agentName, entry.handler);
+      const handlerDir = resolveHandlerDir(agentsRoot, agentName, cron as CronWithConfigPath);
+      const modulePath = resolveHandlerModule(handlerDir, entry.handler);
       if (!modulePath) {
-        const handlerDir = resolve(agentsRoot, agentName, "handlers");
         bus.emit({
           type: "info",
           message: `[handler] ⚠️ Handler file not found for "${entryName}": ${handlerDir}/${entry.handler}.(js|ts)`,
@@ -172,8 +174,13 @@ function createWorkflowBackedHandler(ctx: HandlerContext, entry: CronEntry, hand
   })(ctx as any, entry as any);
 }
 
-function resolveHandlerModule(agentsRoot: string, agentName: string, handlerFile: string): string | null {
-  const handlerDir = resolve(agentsRoot, agentName, "handlers");
+function resolveHandlerDir(agentsRoot: string, agentName: string, cron: CronWithConfigPath): string {
+  const configPath = typeof cron.getConfigPath === "function" ? cron.getConfigPath() : "";
+  if (configPath) return resolve(dirname(configPath), "handlers");
+  return resolve(agentsRoot, agentName, "handlers");
+}
+
+function resolveHandlerModule(handlerDir: string, handlerFile: string): string | null {
   const jsPath = resolve(handlerDir, `${handlerFile}.js`);
   const tsPath = resolve(handlerDir, `${handlerFile}.ts`);
   if (existsSync(jsPath)) return jsPath;
