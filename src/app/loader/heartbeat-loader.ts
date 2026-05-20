@@ -56,8 +56,7 @@ export function generateAutoHeartbeats(agentsRoot: string): CronEntry[] {
       message: `[heartbeat] ${agentName} heartbeat (auto-generated).`,
       enabled: true,
       description: `Auto-generated heartbeat for ${agentName}.`,
-      handler: "run-workflow",
-      handlerConfig: {
+      handler: {
         workflow: `${agentName}-heartbeat`,
         agent: agentName,
         task: `[heartbeat] You are ${agentName}. Read agents/${agentName}/heartbeat.md and work through each section. End with a brief of what you did.`,

@@ -23,6 +23,7 @@ Exercise task parsing.
   result: null
   assignee: evaluator
   goal: Score sessions 1-5.
+  run: agent
   depends_on: []
   attempts: 0
 
@@ -58,6 +59,7 @@ describe("project task parsing", () => {
         result: null,
         assignee: "evaluator",
         goal: "Score sessions 1-5.",
+        run: "agent",
         depends_on: [],
         attempts: 0,
       },
@@ -67,6 +69,7 @@ describe("project task parsing", () => {
         result: "succeeded",
         assignee: "evaluator",
         goal: "Score sessions 6-10.",
+        run: null,
         depends_on: [],
         attempts: 1,
       },
@@ -76,6 +79,7 @@ describe("project task parsing", () => {
         result: null,
         assignee: "may",
         goal: "Analyze scored sessions.",
+        run: null,
         depends_on: ["score-a", "score-b"],
         attempts: 0,
       },
@@ -129,12 +133,14 @@ describe("project task parsing", () => {
   result: maybe
   assignee: may
   goal: Bad task.
+  run: workflow:
   depends_on: []
 `;
 
     expect(validateProjectTasks(parseProjectTasks(invalid).tasks)).toEqual([
       "task bad has non-canonical status 'blocked'",
       "task bad has non-canonical result 'maybe'",
+      "task bad has non-canonical run 'workflow:'",
       "task bad is done only when status is 'done' and result is set",
     ]);
   });

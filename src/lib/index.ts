@@ -130,7 +130,7 @@ export type {
   ResumeDiagnostic,
 } from "./execution-result.js";
 
-export type { HandlerContext, HandlerModule } from "./handler-context.js";
+export type { EventEnvelope, HandlerContext, HandlerModule } from "./handler-context.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and sdk-impl.ts
 export { retryWithBackoff } from "./retry-with-backoff.js";
 export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";

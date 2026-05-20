@@ -105,6 +105,41 @@ describe("Cron event subscriptions", () => {
     expect(handled).toBe(1);
   });
 
+  it("does not dispatch flat dot-named events to subscribers", async () => {
+    const dir = join(tmpdir(), `cron-flat-event-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "metric-alert-reactor",
+        intervalMs: 60_000,
+        enabled: true,
+        handler: "metric-alert-reactor",
+        on: ["metric.breach"],
+      },
+    ]));
+
+    const bus = new EventBus();
+    let handled = 0;
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    cron.load();
+    cron.registerHandler("metric-alert-reactor", async () => {
+      handled++;
+    });
+    cron.subscribeToBus(bus);
+
+    bus.emit({
+      type: "metric.breach",
+      metricId: "v2.spec-coverage-rate",
+      message: "flat payload should not wake handlers",
+    } as any);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(handled).toBe(0);
+  });
+
   it("accepts event-only handler entries without interval timers", async () => {
     const dir = join(tmpdir(), `cron-event-only-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(dir);
@@ -114,7 +149,12 @@ describe("Cron event subscriptions", () => {
       {
         name: "evaluator-aftermath",
         enabled: true,
-        handler: "run-workflow",
+        handler: {
+          workflow: "evaluator-aftermath",
+          agent: "evaluator",
+          task: "Review completed session.",
+          includeEvent: true,
+        },
         on: ["session.completed"],
       },
     ]));
@@ -147,19 +187,13 @@ describe("Cron event subscriptions", () => {
 
     expect(entries.map((entry) => entry.name)).toContain("evaluator-aftermath");
     expect(handled).toBe(1);
-    expect(handledEvent).toEqual({
-      type: "session.completed",
-      source: "event",
-      entry: "evaluator-aftermath",
-      data: completedEvent,
-      timestamp: expect.any(Number),
-    });
+    expect(handledEvent).toEqual(completedEvent);
     expect(handledEvent).not.toHaveProperty("sessionId");
-    expect(handledEvent.data.data.sessionId).toBe("s_done");
+    expect(handledEvent.data.sessionId).toBe("s_done");
     cron.stop();
   });
 
-  it("delivers canonical event envelopes as trigger.data without promoting domain fields", async () => {
+  it("delivers canonical event envelopes to handlers unchanged", async () => {
     const dir = join(tmpdir(), `cron-canonical-event-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(dir);
     mkdirSync(dir, { recursive: true });
@@ -196,19 +230,12 @@ describe("Cron event subscriptions", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    expect(handledEvent).toMatchObject({
-      type: "session.completed",
-      source: "event",
-      entry: "canonical-session-handler",
-      data: canonicalEvent,
-      timestamp: expect.any(Number),
-    });
+    expect(handledEvent).toEqual(canonicalEvent);
     expect(handledEvent).not.toHaveProperty("sessionId");
-    expect(handledEvent.data).not.toHaveProperty("sessionId");
-    expect(handledEvent.data.data.sessionId).toBe("s_done");
+    expect(handledEvent.data.sessionId).toBe("s_done");
   });
 
-  it("wraps dispatchEvent payloads in a canonical envelope before emit and handler delivery", async () => {
+  it("dispatchEvent synthesizes one canonical envelope for emit and handler delivery", async () => {
     const dir = join(tmpdir(), `cron-dispatch-envelope-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(dir);
     mkdirSync(dir, { recursive: true });
@@ -244,6 +271,7 @@ describe("Cron event subscriptions", () => {
       type: "metric.breach",
       source: "cron",
       owner: "agent:may",
+      timestamp: expect.any(Number),
       data: {
         metricId: "system.health",
         message: "breached",
@@ -252,13 +280,7 @@ describe("Cron event subscriptions", () => {
       },
     });
     expect(emitted[0]).not.toHaveProperty("metricId");
-    expect(handledEvent).toMatchObject({
-      type: "metric.breach",
-      source: "event",
-      entry: "metric-reactor",
-      data: emitted[0],
-      timestamp: expect.any(Number),
-    });
+    expect(handledEvent).toEqual(emitted[0]);
   });
 
   it("routes heartbeat.trigger only to the requested agent heartbeat", async () => {
@@ -270,17 +292,13 @@ describe("Cron event subscriptions", () => {
       {
         name: "heartbeat-alpha",
         enabled: true,
-        handler: "run-workflow",
-        agent: "alpha",
-        handlerConfig: { agent: "alpha", workflow: "alpha-heartbeat" },
+        handler: { agent: "alpha", workflow: "alpha-heartbeat", task: "[heartbeat]" },
         on: ["heartbeat.trigger"],
       },
       {
         name: "heartbeat-beta",
         enabled: true,
-        handler: "run-workflow",
-        agent: "beta",
-        handlerConfig: { agent: "beta", workflow: "beta-heartbeat" },
+        handler: { agent: "beta", workflow: "beta-heartbeat", task: "[heartbeat]" },
         on: ["heartbeat.trigger"],
       },
     ]));
@@ -313,14 +331,9 @@ describe("Cron event subscriptions", () => {
     expect(betaHandled).toBe(0);
     expect(alphaEvent).toMatchObject({
       type: "heartbeat.trigger",
-      source: "event",
-      entry: "heartbeat-alpha",
-      data: {
-        type: "heartbeat.trigger",
-        source: "web-ui",
-        owner: "agent:alpha",
-        data: { agent: "alpha" },
-      },
+      source: "web-ui",
+      owner: "agent:alpha",
+      data: { agent: "alpha" },
     });
   });
 });
