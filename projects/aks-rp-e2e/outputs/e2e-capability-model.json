@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-20T04:25:00Z",
+  "updatedAt": "2026-05-20T04:45:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -4860,11 +4860,23 @@
           "value": "true"
         }
       ],
-      "result": "unknown",
+      "result": "pass",
       "evidence": [
-        "e2ev3-handwritten-coverage-inventory"
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration78-workload-autoscaler-runtime-staging",
+        "iteration84-keda-disable-reenable-crud-staging"
       ],
-      "notes": "Source-only until a disable/re-enable run is linked."
+      "notes": "Iteration84 staging CRUD evidence: KEDA create/enable profile state and runtime surface present; public --disable-keda persisted keda.enabled=false and removed KEDA CRDs/controllers/APIService; public --enable-keda restored profile state and runtime surface. ScaledObject scale smoke after re-enable was skipped because iteration78 already proved scaling and this branch targeted lifecycle state/removal/restoration.",
+      "observedPath": [
+        {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
+          "variable": "keda.resources.absentAfterDisable",
+          "value": "true"
+        }
+      ]
     },
     {
       "id": "VPA_ProfilePersistence_Staging",
@@ -8718,9 +8730,9 @@
       "nextAction": "Prefer the split VPA branches for ranking; retire this roll-up after downstream inventory/ranking no longer references it."
     },
     {
-      "id": "iteration78-workload-autoscaler-keda-crud-unknown",
+      "id": "iteration84-workload-autoscaler-keda-crud-pass",
       "featureId": "workload-autoscaler-keda-crud",
-      "status": "unknown",
+      "status": "pass",
       "contextPath": [],
       "inputPath": [
         {
@@ -8740,19 +8752,24 @@
       ],
       "observedPath": [
         {
+          "variable": "keda.resources.present",
+          "value": "true"
+        },
+        {
           "variable": "keda.resources.absentAfterDisable",
-          "value": "unknown"
+          "value": "true"
         }
       ],
       "evidence": [
         "iteration78-workload-autoscaler-runtime-staging",
-        "e2ev3-handwritten-coverage-inventory"
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration84-keda-disable-reenable-crud-staging"
       ],
       "testCases": [
         "Scenario_Keda_CRUD"
       ],
-      "summary": "KEDA CRUD remains unknown because iteration78 intentionally did not disable/re-enable KEDA after the runtime scaling pass.",
-      "nextAction": "Run a dedicated KEDA lifecycle toggle probe only if disable/re-enable coverage outranks other gaps."
+      "summary": "KEDA CRUD lifecycle passed in staging: create-time --enable-keda persisted keda.enabled=true and installed ready KEDA CRDs/deployments/APIService; public --disable-keda persisted keda.enabled=false and removed CRDs, kube-system KEDA resources, and external metrics APIService; public --enable-keda restored keda.enabled=true and the KEDA runtime surface.",
+      "nextAction": "Keep KEDA upgrade survival and OS-SKU variants separate; do not combine this CRUD pass with VPA residual branches."
     },
     {
       "id": "iteration83-node-restriction-disable-contract-pass",
@@ -9009,6 +9026,12 @@
       "kind": "artifact",
       "path": "outputs/iteration83-node-restriction-fullput-runtime-staging.md",
       "summary": "Staging evidence for Node Restriction: full ManagedCluster PUT enable persisted, full PUT disable on Kubernetes 1.34 failed with the expected BadRequest message, and a kubelet-identity restricted-label mutation was denied even though baseline ARM nodeRestriction profile was omitted/null."
+    },
+    {
+      "id": "iteration84-keda-disable-reenable-crud-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration84-keda-disable-reenable-crud-staging.md",
+      "summary": "2026-05-20 staging KEDA CRUD lifecycle evidence: public CLI create/enable persisted workloadAutoScalerProfile.keda.enabled=true and installed KEDA CRDs/deployments/APIService; --disable-keda persisted enabled=false and removed KEDA CRDs, kube-system controllers/resources, and external metrics APIService; --enable-keda restored profile enabled=true and the KEDA runtime surface."
     }
   ]
 }
