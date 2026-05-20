@@ -1,0 +1,112 @@
+---
+id: system-operations
+owner: may
+status: waiting
+type: continuous
+priority: P1
+iteration: 0
+stop_reason: Standing ops lane is healthy; run on daily cadence, explicit human request, or operational signal.
+resume_condition: Run on the next daily ops cycle, a P0/P1 reliability signal breach, an unresolved metric-alert chain, stale project/session evidence, local instance health issue, or human request.
+---
+
+# Project: System Operations
+
+## Goal
+
+Keep the May agent system healthy day to day by watching operational signals,
+running known checks and playbooks, producing human-facing reports, and routing
+concrete work to the right owner lane.
+
+This project owns ops cadence and operational judgment. It does not own platform
+implementation, agent learning strategy, evaluator calibration, or domain
+project content.
+
+## Scope
+
+In scope:
+- Daily alert review and proof-of-life reporting.
+- Closed-loop reliability watch: signal -> owner -> judgment -> concrete operation -> validation signal.
+- Stale project/session checks and "is the system moving?" review.
+- Local instance health checks when operational state looks stale or broken.
+- Metric alert hygiene: identify noisy thresholds, missing owners, stale judgments, and unresolved validation paths.
+- Routing concrete follow-up work to `platform`, `agent-system-evolution`, or a domain project.
+
+Out of scope:
+- Runtime, SDK, persistence, event schema, UI, build/test implementation. Route to `projects/platform/project.md`.
+- Agent behavior, learning policy, prompt/evaluator calibration. Route to `projects/agent-system-evolution/project.md`.
+- Domain-specific exploration or test planning. Route to that domain project, for example `projects/aks-rp-e2e/project.md`.
+
+## Signals
+
+- `metric_alerts` rows created or still open.
+- `metric.breach`, `metric.recovered`, and `metric.alert_judged` events.
+- Runtime reliability vitals such as heartbeat dark count, message delivery failures, empty assistant stops, stale running sessions, and handler failures.
+- Project movement signals: active projects with no progress, waiting projects with fired resume conditions, stale sessions, blocked work without owner judgment.
+- Human-facing digest/report quality feedback.
+
+## Operating Modes
+
+### Daily Review
+
+Merged from `projects/daily-alert-review/project.md`.
+
+Every daily cycle:
+1. Query recent alerts and unresolved older alerts.
+2. Correlate breach/recovered/judged events and remediation sessions.
+3. Produce a concise report for human review.
+4. Call out noisy thresholds, missing owners, unresolved validation, and repeated patterns.
+5. Route concrete follow-up work to the owning lane.
+
+Proof-of-life/digest presentation context from
+`projects/proof-of-life-dashboard/project.md` also belongs here unless the
+change requires shared platform UI/runtime work.
+
+### Reliability Watch
+
+Merged from `projects/closed-loop-reliability/project.md`.
+
+For any operational reliability signal, verify the full chain:
+
+```text
+signal -> owner -> judgment -> concrete operation -> validation signal
+```
+
+If the chain is missing, route or create a concrete task. Do not mark an issue
+closed just because an owner was notified.
+
+Absorbed watch items:
+- `projects/eval-llm-lane-restoration/project.md` — watch `eval.llm-coverage-lag-h` and `evaluation.deep_*` lifecycle gaps.
+- `projects/finish-blocked-hygiene-reduction/project.md` — watch `session.finish-blocked-unresolved-count-24h`.
+- `projects/empty-assistant-stop-runtime-retry/project.md` — watch `session.empty-assistant-stop-count-1h` unless platform accepts a concrete runtime patch.
+
+## Routing Rules
+
+- Platform implementation issue -> comment/task on `projects/platform/project.md`.
+- Agent behavior/evaluator issue -> comment/task on `projects/agent-system-evolution/project.md`.
+- Domain issue -> comment/task on the domain project.
+- Known ops runbook issue -> execute the runbook here and record evidence.
+- Unclear issue -> investigate only far enough to identify the owner and next concrete action.
+
+## Validation
+
+- Daily report is produced on schedule or skipped with an explicit reason.
+- P0/P1 operational alerts have owner, judgment, concrete action, and validation state.
+- No closed-loop alert is treated as resolved only because a notification was sent.
+- Stale project/session findings result in either concrete owner work, a documented exception, or a calibrated metric.
+- Follow-up work is routed to the owning lane rather than absorbed here by default.
+
+## Related Historical Projects
+
+- `projects/daily-alert-review/project.md`
+- `projects/closed-loop-reliability/project.md`
+- `projects/proof-of-life-dashboard/project.md`
+- `projects/eval-llm-lane-restoration/project.md`
+- `projects/finish-blocked-hygiene-reduction/project.md`
+- `projects/empty-assistant-stop-runtime-retry/project.md`
+
+## Journal
+
+### 2026-05-20 — Created Ops Lane
+- Merged daily alert review and closed-loop reliability into one standing ops lane.
+- Kept old project folders in place as closed historical evidence.
+- Preserved the boundary: ops watches, judges, reports, and routes; platform and evolution implement their own owned changes.

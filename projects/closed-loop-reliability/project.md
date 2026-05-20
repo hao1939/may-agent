@@ -1,12 +1,11 @@
 ---
 id: closed-loop-reliability
 owner: may
-status: waiting
-type: continuous
+status: closed
+type: archive
 priority: P1
 iteration: 3
-stop_reason: Current P0/P1 runtime reliability vitals are green and remaining alerts have owners or human-governance dependencies. No concrete autonomous push remains right now.
-resume_condition: Reactivate when a P0/P1 runtime reliability vital breaches, a closed-loop alert lacks owner/judgment/action/validation, or an absorbed watch item such as eval LLM coverage or finish-blocked unresolved sessions breaches again.
+stop_reason: Merged into system-operations as the reliability watch mode; keep this folder as historical evidence.
 ---
 
 # Project: Closed Loop Reliability
@@ -38,9 +37,11 @@ Absorbed watch items:
 
 ## Current State
 
-Waiting: this is a standing reliability ownership project, but it should not
-run filler sessions while the current push has no concrete next autonomous
-action. Recent runtime fixes improved the loop:
+Closed historical project. The live reliability watch now belongs to
+`projects/system-operations/project.md`.
+
+This project remains as evidence for the metric-driven closed-loop model and
+prior reliability fixes:
 
 - `opCount` now persists for new sessions.
 - Clean-start call sessions are resumed instead of being aborted as synthetic failures.

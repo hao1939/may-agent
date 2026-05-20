@@ -5,7 +5,7 @@ status: closed
 type: archive
 priority: P1
 iteration: 4
-stop_reason: Folded into daily-alert-review as the human-facing proof-of-life/digest presentation lane; resume there if Hao requests a dashboard or digest change.
+stop_reason: Folded into system-operations as the human-facing proof-of-life/digest presentation lane; resume there if Hao requests a dashboard or digest change.
 ---
 
 # Project: Proof-of-Life Dashboard
@@ -25,7 +25,7 @@ Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that 
 
 ## Current State
 Closed historical project. Proof-of-life presentation work is now folded into
-`projects/daily-alert-review/project.md`; shared UI/runtime work should be
+`projects/system-operations/project.md`; shared UI/runtime work should be
 requested through `projects/platform/project.md`.
 
 - `agents/may/workspace/tools/top5-metrics.ts` runs successfully with 🟢🟡🔴 + ↑↓→
@@ -35,7 +35,7 @@ requested through `projects/platform/project.md`.
 - Metrics shown: Success Rate (100%), Eval Quality (0.43 🔴), Handler Health (100%), Error Rate (0%), Sessions (652)
 - "Tests" metric was replaced with "Handler Health" — uses real data
 - **Issue**: Eval Quality is 0.43 🔴 — this is a real system health signal, not a dashboard bug
-- M1-M3 complete. M4 (Hao feedback) transferred to `daily-alert-review`.
+- M1-M3 complete. M4 (Hao feedback) transferred to `system-operations`.
 - **v2 upgrades verified**: 24h window in digest mode, 7-day mini-history line under each metric
 - Dashboard is feature-complete — awaiting Hao's review of metric selection
 
@@ -45,12 +45,12 @@ requested through `projects/platform/project.md`.
 - [x] M1: Select 5 key metrics (session success rate, eval quality, error rate, throughput, handler health)
 - [x] M2: Implement trend calculation (compare current vs prior 6h)
 - [x] M3: Integrate top5-metrics output into daily digest generation
-- [x] M4: Transfer Hao feedback loop to `daily-alert-review`
+- [x] M4: Transfer Hao feedback loop to `system-operations`
 
 ### Next Actions
 - [x] Change Sessions metric to 24h window in daily digest context
 - [x] Add 7-day mini-history line under each metric
-- [x] Transfer future metric-selection feedback to `daily-alert-review`
+- [x] Transfer future metric-selection feedback to `system-operations`
 - [x] Stop this standalone project
 
 ## Validation

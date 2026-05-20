@@ -5,7 +5,7 @@ status: closed
 type: archive
 priority: P1
 iteration: 6
-stop_reason: Folded into closed-loop-reliability as a metric-triggered watch item; reopen only if finish-blocked unresolved metrics breach again.
+stop_reason: Folded into system-operations as a metric-triggered watch item; reopen only if finish-blocked unresolved metrics breach again.
 ---
 
 # Finish-Blocked Hygiene Reduction
@@ -23,7 +23,7 @@ Reduce sessions that reach `finish()` with uncommitted/dirty worktree changes, b
 
 ## Current State
 Closed historical project. The strict unresolved metric recovered, and the
-ongoing watch has moved to `projects/closed-loop-reliability/project.md`.
+ongoing watch has moved to `projects/system-operations/project.md`.
 Reopen or create a new task there only if
 `session.finish-blocked-unresolved-count-24h` breaches again, or if raw
 finish-block friction reveals a new non-recovered source pattern.

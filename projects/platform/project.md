@@ -69,7 +69,7 @@ Historical project references:
   envelope, or persistence changes that come from that evidence.
 - `projects/proof-of-life-dashboard/project.md` — closed presentation project.
   Platform owns only shared web UI/runtime work; report content stays in
-  `projects/daily-alert-review/project.md`.
+  `projects/system-operations/project.md`.
 
 ## Plan
 - [x] Fix failing `sendSocketCommand` test (commit `6d577a42`)

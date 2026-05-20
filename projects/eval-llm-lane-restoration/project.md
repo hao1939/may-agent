@@ -5,7 +5,7 @@ status: closed
 type: archive
 priority: P0
 iteration: 5
-stop_reason: Folded into closed-loop-reliability as a metric-triggered watch item; reopen only if eval.llm coverage or deep-eval lifecycle metrics breach again.
+stop_reason: Folded into system-operations as a metric-triggered watch item; reopen only if eval.llm coverage or deep-eval lifecycle metrics breach again.
 ---
 
 # Restore Non-Heuristic Evaluator Lane
@@ -25,7 +25,7 @@ Restore a safe non-heuristic/LLM-backed evaluation producer so `eval.llm-coverag
 
 ## Current State
 Closed historical project. Runtime evidence is healthy and the ongoing watch
-has moved to `projects/closed-loop-reliability/project.md`. Reopen or create a
+has moved to `projects/system-operations/project.md`. Reopen or create a
 new task there if `eval.llm-coverage-lag-h` breaches 4h, or if
 `evaluation.deep_dispatched` repeats without a later
 `evaluation.deep_recorded`/`evaluation.deep_failed`.

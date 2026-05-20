@@ -1,12 +1,11 @@
 ---
 id: daily-alert-review
 owner: may
-status: waiting
-type: recurring
+status: closed
+type: archive
 priority: P1
 iteration: 6
-stop_reason: Daily alert review for 2026-05-20 produced and sent via Telegram. Cron job registered for daily automation. Resume when: next daily cycle (2026-05-21) or human feedback on report quality.
-resume_condition: next daily cycle (2026-05-21) or human feedback on report quality.
+stop_reason: Merged into system-operations as the daily review/reporting mode; keep this folder as historical evidence.
 ---
 
 # Project: Daily Alert Review
@@ -50,12 +49,12 @@ Send via Telegram (use `message("human", report)`):
 ```
 
 ## Current State
-Waiting: Daily alert review for 2026-05-20 produced and sent via Telegram. Cron job registered for daily automation. Resume when: next daily cycle (2026-05-21) or human feedback on report quality.
+Closed historical project. The live daily alert review and proof-of-life
+reporting cadence now belongs to `projects/system-operations/project.md`.
 
-The old `proof-of-life-dashboard` project is folded into this lane as
-human-facing presentation context. Keep the daily review focused on the report
-and Telegram/digest workflow; request platform work only for shared UI/runtime
-changes.
+The old `proof-of-life-dashboard` project is folded into system operations as
+human-facing presentation context. Request platform work only for shared
+UI/runtime changes.
 ## Plan
 1. Query `metric_alerts` for last 24h alerts
 2. Correlate with breach/recovered/judged events and remediation sessions
@@ -99,4 +98,4 @@ changes.
 - Goal includes: root cause, action taken, resolution status, threshold calibration, systemic patterns
 
 ## Next Action
-Automated via cron. Next run produces 2026-05-21 alert review. No manual action needed unless human requests changes to format or thresholds.
+Use `projects/system-operations/project.md` for the next daily review cycle.
