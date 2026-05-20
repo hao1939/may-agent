@@ -479,4 +479,44 @@ describe("agent loader boundaries", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it("resolves named handlers beside project-local agent cron files", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-project-handlers-"));
+    try {
+      const globalAgentsRoot = join(root, "agents");
+      const projectAgentDir = join(root, "projects", "aks-rp-e2e", "agents", "aks-explorer");
+      const handlersDir = join(projectAgentDir, "handlers");
+      mkdirSync(handlersDir, { recursive: true });
+      const cronPath = join(projectAgentDir, "cron.json");
+      const handlerPath = join(handlersDir, "pool-watch.ts");
+      writeFileSync(cronPath, JSON.stringify([{ name: "pool-watch", handler: "pool-watch", enabled: true }]));
+      writeFileSync(handlerPath, `export function create() { return async () => "project-local"; }`);
+
+      const handlers = new Map<string, () => Promise<string>>();
+      const cron = {
+        getConfigPath: () => cronPath,
+        getEntries: () => [{ name: "pool-watch", handler: "pool-watch", enabled: true }],
+        registerHandler: (name: string, handler: () => Promise<string>) => handlers.set(name, handler),
+        setHandlerResolver: () => undefined,
+        triggerNow: () => false,
+      };
+
+      const result = await loadHandlersForAgentCrons({
+        agentsRoot: globalAgentsRoot,
+        sharedRoot: join(root, "shared"),
+        projectsRoot: join(root, "projects"),
+        persistDir: join(root, ".state"),
+        projectRoot: join(root, "projects", "aks-rp-e2e"),
+        manager: { callAgent: async () => ({}) } as any,
+        bus: { emit: () => undefined } as any,
+        agentCrons: new Map([["aks-explorer", cron as any]]),
+      });
+
+      expect(result.errors).toEqual([]);
+      expect(result.registered).toEqual(["aks-explorer:pool-watch"]);
+      expect(await handlers.get("pool-watch")!()).toBe("project-local");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
