@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 79
+iteration: 82
 max_concurrent: 1
 max_task_attempts: 2
 stop_reason: 
@@ -65,7 +65,8 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active: iteration 79 pivoted to source-first App Routing TLS investigation. The project is not externally blocked; the next autonomous step is to explain the DefaultDomainCertificate missing-secret failure from source and decide whether a corrected rerun or owner escalation is warranted.
+Iteration83 queued Node Restriction corrected full-PUT disable contract plus runtime-default probing as the next non-blocked high-value path. App Routing DefaultDomainCertificate TLS remains paused behind owner/CCP diagnostics. The next work should resolve the Node Restriction operation-shape gap left by iteration62 by using source-resolved full PUT semantics and a clear runtime-default evidence method.
+
 ## Review Questions
 
 1. **Is the goal closer?**  
@@ -509,6 +510,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - `outputs/iteration77-identity-runtime-model-consolidation.md` — branch-accurate Identity/OIDC model consolidation
 - `outputs/iteration78-workload-autoscaler-runtime-staging.md` — KEDA runtime pass and bounded VPA component/recommendation evidence
 - `outputs/iteration79-vpa-runtime-model-split.md` — branch-accurate VPA runtime model split and next-probe reranking
+- `outputs/iteration80-app-routing-tls-source-hypothesis.md` — source-first comparison showing App Routing DefaultDomainCertificate TLS failure is not explained by malformed customer CR/input
 - `outputs/managedsystem-pool-feature-standard-init-tasks.md` — narrative draft for the ManagedSystem Pool feature-standard parallel task wave
 - `outputs/iteration24-managedsystem-pool-pass.md` — pass evidence for `Scenario_ManagedSystemPool_Enable`
 - `outputs/underlay-debug-findings.md` — root cause analysis, MSI fix, retry results
@@ -572,7 +574,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Investigate the App Routing DefaultDomainCertificate TLS-secret failure from source before any rerun. Produce `outputs/iteration80-app-routing-tls-source-hypothesis.md` comparing iteration70’s CR/input and observed missing-secret behavior against the App Routing controller/source-required preconditions, then decide whether the next step is a corrected focused rerun or owner escalation. Do not run staging/cloud probes in this iteration.
+Produce `outputs/iteration83-node-restriction-fullput-runtime-staging.md` by executing the selected Node Restriction probe in staging. Start with a written preflight that prevents repeating the old tag-only PATCH mistake: use the correct full ManagedCluster GET/PUT operation shape for `securityProfile.nodeRestriction.enabled`, record API version and payload hygiene, test that disabling NodeRestriction on RBAC Kubernetes `>=1.24` is rejected, and collect the best available runtime-default evidence. Update the capability model and knowledge map only for branches with clear evidence, then validate the model. Do not combine this run with App Routing, VPA/KEDA, Image Cleaner, or ManagedSystem work.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -581,7 +583,7 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
 ### 2026-05-20 — Reactivated for task-driven execution
 - Reactivated because the current task chain is parser-visible and the next
   step does not require external unblock.
-- The active next task is `app-routing-tls-source-hypothesis`.
+- The active next task is `post-app-routing-escalation-next-probe-selection`.
 - This reactivation lets the project handler dispatch the `aks-explorer` task
   directly instead of waiting on a legacy owner-loop workflow path.
 
@@ -617,7 +619,10 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
 29. ✅ Consolidate identity/OIDC runtime evidence into branch-accurate model and knowledge-map status before selecting the next cloud probe
 30. ✅ Execute the next ranked high-density runtime probe: source-scoped KEDA/VPA runtime behavior in staging
 31. ✅ Split VPA runtime evidence into branch-accurate model features and rerank the next cloud probe
-32. 🔄 Investigate App Routing DefaultDomainCertificate TLS-secret failure from source and produce a rerun-or-escalation hypothesis
+32. ✅ Investigate App Routing DefaultDomainCertificate TLS-secret failure from source and produce a rerun-or-escalation hypothesis
+33. ✅ Prepare App Routing DefaultDomainCertificate TLS owner-escalation packet and diagnostic rerun gate
+34. ✅ Select the next non-blocked high-value feature path after App Routing TLS escalation
+35. 🔄 Execute the Node Restriction corrected full-PUT disable contract and runtime-default probe
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -725,11 +730,34 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
   attempts: 1
 
 - id: app-routing-tls-corrected-rerun
-  status: pending
-  result: ~
+  status: done
+  result: superseded
   assignee: aks-explorer
-  goal: Based on source hypothesis in `outputs/iteration80-app-routing-tls-source-hypothesis.md`, execute a corrected App Routing DefaultDomainCertificate TLS-secret staging probe addressing the identified precondition failures. Produce `outputs/iteration81-app-routing-tls-corrected-rerun.md` with exact inputs, commands, CR spec, observed TLS secret state, verdict, cleanup status, and capability-model update if a clear verdict is reached. If the source hypothesis indicates owner escalation is needed instead of a rerun, document that decision and mark the feature as externally blocked.
+  goal: Superseded by `outputs/iteration80-app-routing-tls-source-hypothesis.md`: the source hypothesis did not identify a corrected customer CR/input and selected owner escalation before any rerun. Do not dispatch a staging rerun from this task.
   depends_on: [vpa-model-split-and-rerank]
+  attempts: 0
+
+- id: app-routing-tls-owner-escalation-packet
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: Convert `outputs/iteration80-app-routing-tls-source-hypothesis.md` into a concise owner-escalation packet and project decision artifact. Produce `outputs/iteration81-app-routing-tls-owner-escalation.md` with the exact failing contract, iteration70 evidence, source-derived fault-domain ranking, minimum CCP/default-domain-svc diagnostics needed, and a clear next-step decision: wait for owner/fixed build, run a diagnostic rerun with underlay access, or pivot to another high-density non-blocked feature. Do not run staging/cloud probes in this task.
+  depends_on: [vpa-model-split-and-rerank]
+  attempts: 1
+
+- id: post-app-routing-escalation-next-probe-selection
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: Produce `outputs/iteration82-post-escalation-next-probe-selection.md`: pick the next non-blocked high-value feature path after App Routing TLS escalation. Start from `outputs/input-expectation-knowledge-map.md`, `outputs/e2e-capability-model.json`, `outputs/iteration81-app-routing-tls-owner-escalation.md`, and current failing/unknown feature lists. Rank at least three candidates by input paths covered, expectation paths checked, cost/risk, required access, and whether the work can proceed without waiting on App Routing owner/CCP diagnostics. End with one concrete next task recommendation and any model/knowledge-map update needed. Do not run staging/cloud probes in this task.
+  depends_on: [app-routing-tls-owner-escalation-packet]
+  attempts: 0
+
+- id: node-restriction-full-put-disable-probe
+  status: pending
+  assignee: aks-explorer
+  goal: Execute the Node Restriction corrected full-PUT disable contract probe in staging. Start from `outputs/node-restriction-source-spec-investigation.md`, `outputs/iteration74-node-restriction-source-spec-resolution.md`, and `outputs/iteration62-security-profile-staging.md`. Use a staging cluster with Node Restriction enabled, then attempt disable via full PUT (not PATCH) with the source-resolved correct request shape. Also probe runtime-default behavior to determine whether the feature has a default state when not explicitly set. Produce `outputs/iteration83-node-restriction-full-put-disable-staging.md` with exact commands, request bodies, API version, response evidence, runtime kubectl checks if applicable, cleanup status, and verdict table. Update `outputs/e2e-capability-model.json` only for branches that receive clear pass/fail evidence; run `cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json` if the model changes.
+  depends_on: [post-app-routing-escalation-next-probe-selection]
   attempts: 0
 
 ## References
@@ -762,6 +790,7 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
 ## Comments
 
 ## Artifacts
+- outputs/iteration82-post-escalation-next-probe-selection.md
 - outputs/iteration66-virtualmachines-manual-scale-staging.md
 - outputs/iteration70-app-routing-defaultdomain-tls-staging.md
 - outputs/iteration57-node-autoprovision-staging.md
@@ -775,6 +804,7 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
 - outputs/run-now.sh
 - outputs/e2ev3-handwritten-coverage-inventory.md
 - outputs/first-e2e-run-results.md
+- outputs/iteration80-app-routing-tls-source-hypothesis.md
 - outputs/iteration50-provision-blocker.md
 - outputs/e2e-capacity-blocker-analysis.md
 - outputs/post-deploy-validation.sh
@@ -812,6 +842,7 @@ Investigate the App Routing DefaultDomainCertificate TLS-secret failure from sou
 - outputs/iteration60-workload-identity-staging.md
 - outputs/managedsystem-pool-feature-standard-init-tasks.md
 - outputs/iteration48-new-build-blocker.md
+- outputs/iteration81-app-routing-tls-owner-escalation.md
 - outputs/iteration69-app-routing-defaultdomain-traffic-staging.md
 - outputs/first-e2e-run.sh
 - outputs/troubleshooting.md
