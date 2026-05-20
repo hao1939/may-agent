@@ -55,4 +55,28 @@ describe("May cron config design alignment", () => {
 
     expect(triggerSubscriptions).toEqual([]);
   });
+
+  it("declares reachable maintenance context for every trigger entry", () => {
+    const cronPath = "/app/agents/may/cron.json";
+    if (!existsSync(cronPath)) return;
+
+    const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; context?: string[] }>;
+    const invalid = entries.flatMap((entry) => {
+      const context = entry.context ?? [];
+      if (!Array.isArray(context) || context.length === 0) {
+        return [{ entry: entry.name, reason: "missing context" }];
+      }
+      return context
+        .filter((contextPath) =>
+          typeof contextPath !== "string"
+          || contextPath.trim() === ""
+          || contextPath.startsWith("/")
+          || contextPath.includes("..")
+          || !existsSync(`/app/${contextPath}`),
+        )
+        .map((contextPath) => ({ entry: entry.name, reason: `invalid context path: ${String(contextPath)}` }));
+    });
+
+    expect(invalid).toEqual([]);
+  });
 });
