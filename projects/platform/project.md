@@ -1,7 +1,7 @@
 ---
 id: platform
 owner: tech-lead
-status: waiting
+status: active
 type: milestone
 priority: P0
 iteration: 38
@@ -39,7 +39,7 @@ discussion live here.
 - Build / test failures in `repos/may-agent/` (`bun test`, `bun run check`)
 
 ## Current State
-Active: — Processing directive to redesign web UI around infrastructure fundamentals (hao comment + codex design advice, iter38).
+Waiting — UI redesign task completed (iter38). No active signals. Waiting for next platform trigger.
 
 ## Scope Boundary
 
@@ -80,7 +80,7 @@ Historical project references:
 - [x] Design UI features: session→API mapping, logs+API tab, LLM summarization, session scoring, investigation UX (iter20)
 - [x] Implement Logs + API session inspector view (iter25-26)
 - [x] Codify hygiene discipline (trigger-driven, not scheduled) — see "Hygiene discipline" section below; evidence in `proposals/2026-05-20-legacy-cleanup-resume-path.md`
-- [ ] Redesign web UI to foreground infrastructure fundamentals (iter38 — hao directive + codex design advice in discussion.md)
+- [x] Redesign web UI to foreground infrastructure fundamentals (iter38 — hao directive + codex design advice in discussion.md)
 - [ ] Wait for signal — failing platform metric, unread comment, or owner push
 
 ## Tasks

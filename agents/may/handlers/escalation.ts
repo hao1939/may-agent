@@ -1,13 +1,8 @@
 /**
- * escalation — Route blocked/failed session escalations to human.
- *
- * Subscribes to `session.escalated` events via cron.json `on` field.
- * Consults the digest classifier to decide whether to escalate or ignore.
- *
- * Replaces inline bus.subscribe() escalation logic that was in may.ts.
+ * escalation — Route canonical escalation.created events.
  */
 
-import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 
 function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string, data: Record<string, unknown> = {}): void {
@@ -20,63 +15,97 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
   });
 }
 
+function stringField(data: Record<string, unknown>, key: string): string {
+  const value = data[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function routeTarget(owner: string): string | null {
+  if (owner.startsWith("human:")) return "human";
+  if (owner.startsWith("agent:")) return owner.slice("agent:".length);
+  return owner || null;
+}
+
+function routeBrief(input: {
+  escalationId: string;
+  sourceAgent: string;
+  reason: string;
+  requestedAction: string;
+  sourceSessionId?: string;
+  projectId?: string;
+  projectPath?: string;
+}): string {
+  return [
+    `[escalation] ${input.escalationId}`,
+    `From: ${input.sourceAgent}`,
+    input.sourceSessionId ? `Session: ${input.sourceSessionId}` : "",
+    input.projectId ? `Project: ${input.projectId}` : "",
+    input.projectPath ? `Path: ${input.projectPath}` : "",
+    "",
+    `Reason: ${input.reason}`,
+    `Requested action: ${input.requestedAction}`,
+  ].filter(Boolean).join("\n");
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     if (!event?.data) {
-      emitSkip(ctx, null, "missing session.escalated event data", { eventType: event?.type ?? null });
+      emitSkip(ctx, null, "missing escalation.created event data", { eventType: event?.type ?? null });
       return;
     }
 
-    const { sessionId, agent, finishParams } = event.data as {
-      sessionId: string;
-      agent: string;
-      finishParams: { status: string; summary?: string; [key: string]: unknown };
-    };
-
-    if (!sessionId || !agent || !finishParams) {
-      emitSkip(ctx, sessionId ?? null, "session.escalated event missing sessionId, agent, or finishParams", { eventType: event.type });
+    if (event.type !== "escalation.created") {
+      emitSkip(ctx, null, "unsupported escalation event type", { eventType: event.type });
       return;
     }
 
-    const fp = finishParams;
+    const data = event.data;
+    const escalationId = stringField(data, "escalationId");
+    const sourceAgent = stringField(data, "sourceAgent");
+    const reason = stringField(data, "reason");
+    const requestedAction = stringField(data, "requestedAction");
 
-    // ── Consult digest classifier ──────────────────────────────────────
-    const trigger = fp.status === "blocked" ? "session_end_blocked" : "session_end_failure";
-    let action = "escalate"; // fallback: always escalate (backward compat)
-    let reason = `${fp.status}: ${fp.summary ?? "unknown"}`;
-    let source = "fallback";
-
-    try {
-      const digest = ctx.getLastDigest(sessionId);
-      if (digest?.what_happened) {
-        const classification = ctx.classifyDigest(
-          {
-            outcome: digest.outcome ?? fp.status,
-            still_open: digest.still_open ?? null,
-            what_happened: digest.what_happened,
-          },
-          trigger,
-        );
-        action = classification.action;
-        reason = classification.reason;
-        source = "digest";
-      }
-    } catch { /* best-effort — classifier failure falls through to escalate */ }
-
-    ctx.sdk.log("info", `[escalation] decision=${action} source=${source} session=${sessionId} agent=${agent} status=${fp.status}`);
-
-    if (action === "escalate") {
-      ctx.sdk.escalate(agent, `${fp.status}: ${fp.summary ?? "unknown"}`);
-      ctx.sdk.emit("handler.routed", {
-        handler: "escalation",
-        sessionId,
-        agent,
-        action,
-        decisionSource: source,
-        reason,
+    if (!escalationId || !sourceAgent || !reason || !requestedAction) {
+      emitSkip(ctx, stringField(data, "sourceSessionId") || null, "escalation.created missing required data", {
+        eventType: event.type,
+        escalationId: escalationId || null,
       });
-    } else {
-      emitSkip(ctx, sessionId, `classifier chose ${action}`, { agent, decisionSource: source, reason });
+      return;
+    }
+
+    const route = event.owner || "agent:may";
+    const target = routeTarget(route);
+    const sourceSessionId = stringField(data, "sourceSessionId") || undefined;
+    const projectId = stringField(data, "projectId") || undefined;
+    const projectPath = stringField(data, "projectPath") || undefined;
+
+    ctx.sdk.log("info", `[escalation] route=${route} escalation=${escalationId} sourceAgent=${sourceAgent}`);
+    ctx.sdk.emit("escalation.routed", {
+      escalationId,
+      route,
+      reason,
+    }, {
+      source: "agent:may",
+      owner: route,
+    });
+    ctx.sdk.emit("handler.routed", {
+      handler: "escalation",
+      escalationId,
+      sourceAgent,
+      route,
+      reason,
+    });
+
+    if (target && target !== "may") {
+      ctx.sdk.message(target, routeBrief({
+        escalationId,
+        sourceAgent,
+        reason,
+        requestedAction,
+        sourceSessionId,
+        projectId,
+        projectPath,
+      }));
     }
   };
 };

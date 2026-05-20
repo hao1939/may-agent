@@ -12,9 +12,9 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 - **Applies to**: all
 - **Reason**: Hao's direct order. We watch what you did, not listen to what you say.
 
-### [ORDER-003] Use workflows for structured work (2026-04-13, updated 2026-04-22)
-Workflows are for **structured multi-session work** — projects and heartbeats. These are handled automatically:
-- **Projects** → project workflow (launched by project handler)
+### [ORDER-003] Use workflows for structured work (2026-04-13, updated 2026-05-20)
+Workflows are for **structured bounded work** — heartbeats, reusable procedures, and task-level recipes. These are handled automatically:
+- **Projects** → project handler dispatches tasks or owner agent sessions
 - **Heartbeats** → per-agent heartbeat workflow (launched by cron)
 - **Code changes** → `workflow.run("implement-and-review", ...)` or `workflow.run("verified-coder", ...)`
 
@@ -53,9 +53,9 @@ Before creating any new hypothesis, you must first test or archive one existing 
 - **Reason**: 85% of hypotheses are untested. Stop accumulating, start resolving.
 -->
 
-### [ORDER-014] Re-judge projects when a plan completes (2026-05-02, updated 2026-05-14)
+### [ORDER-014] Re-judge projects when a plan completes (2026-05-02, updated 2026-05-20)
 When a project plan appears complete, judge it against the goal, current signals, evidence, and next useful action. If concrete autonomous work remains, re-plan and continue. Use `waiting`, `blocked`, or `closed` only when there is a real stop condition: an external precondition, an unresolved dependency, or explicit human/May closure.
-- **Applies to**: all orchestrator roles running project workflows
+- **Applies to**: all project owners and orchestrator roles
 - **Reason**: checked-off milestones are evidence, not the goal. Projects should keep moving while useful work remains, and stop only for a clear reason.
 
 ### [ORDER-010] All src/ code changes require Hao's approval before merge (2026-04-19)

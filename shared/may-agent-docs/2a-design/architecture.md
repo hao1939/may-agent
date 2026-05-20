@@ -139,7 +139,7 @@ type EventEnvelope<TData extends Record<string, unknown>> = {
 };
 
 type SystemEvent =
-  | EventEnvelope<{ entry: string }> & { type: "timer.heartbeat_due" }
+  | EventEnvelope<{ entry: string }> & { type: "timer.tick" }
   | EventEnvelope<{ handler: string; agent: string; durationMs?: number; error?: string }> & { type: "handler.started" | "handler.completed" | "handler.failed" }
   | EventEnvelope<{ metricId: string; metricName: string; current: number; threshold: number; target?: number; message: string; priority?: "P0" | "P1" | "P2" | "P3" }> & { type: "metric.breach" }
   | EventEnvelope<{ metricId: string; metricName: string }> & { type: "metric.recovered" }
@@ -152,8 +152,8 @@ type SystemEvent =
 // trigger it; the handler builds/reuses workflow context and the workflow calls
 // ctx.runAgent() for the owner.
 // agentName("agent:may") -> "may"; human owners route through May.
-bus.on("timer.heartbeat_due", (e) =>
-  runWorkflow(`${agentName(e.owner)}-heartbeat`, buildHeartbeatTask(e.owner), { source: "timer.heartbeat_due" })
+bus.on("timer.tick", (e) =>
+  runWorkflow(`${agentName(e.owner)}-heartbeat`, buildHeartbeatTask(e.owner), { source: "timer" })
 );
 
 // Metric breach creates durable alert state. The alert reactor resolves owner,
@@ -167,7 +167,7 @@ bus.on("metric.breach", (e) =>
 bus.on("message.created", (e) => { /* already persisted by bus.emit() */ });
 
 // Timers are event sources — cron emits timer events on the bus.
-registerTimer("may", "*/20 * * * *");  // emits { type: "timer.heartbeat_due", owner: "agent:may", data: { entry: "may-heartbeat" } }
+registerTimer("may", "*/20 * * * *");  // emits { type: "timer.tick", source: "timer", owner: "agent:may", data: { entry: "may-heartbeat" } }
 
 // Event persistence is the first-priority subscriber.
 // Invariant:
@@ -560,7 +560,7 @@ The goal is fewer execution paths, not minimum LOC.
 ### Autonomous heartbeat
 
 ```
-Timer/socket -> timer.heartbeat_due -> heartbeat handler -> may-heartbeat workflow
+Timer/socket -> timer.tick -> heartbeat handler -> may-heartbeat workflow
   -> ctx.runAgent("may", assembled heartbeat task)
   -> runtime context includes metrics, projects, messages
   -> agent sees build_health FAILING -> calls run_workflow("fix-build", {})

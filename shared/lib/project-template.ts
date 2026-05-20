@@ -50,7 +50,6 @@ owner: ${owner}
 status: active
 type: milestone
 priority: P2
-workflow: project
 iteration: 0
 ---
 

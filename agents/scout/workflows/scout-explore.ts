@@ -26,7 +26,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   recordDispatch(agent, "explore");
   cleanupDispatchRecords();
 
-  // The task comes from cron handlerConfig.task — source-specific instructions
+  // The task comes from the workflow-backed handler config — source-specific instructions
   const task = ctx.task || "Explore sources and update shared knowledge base.";
 
   let result: any;

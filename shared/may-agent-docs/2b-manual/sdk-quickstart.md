@@ -158,6 +158,6 @@ sdk.message("bob", "Check the failing tests");
 ctx.triggerNow("metrics-snapshot");
 ```
 
-`trigger.<entry-name>` is an operator/control shortcut for a cron entry, not a
+`trigger.<entry-name>` is an operator/control shortcut for a trigger entry, not a
 domain lifecycle event. Use `ctx.triggerNow(...)` inside handlers instead of
 publishing `trigger.*` through `sdk.emit(...)`.

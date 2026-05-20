@@ -96,16 +96,16 @@ describe('project-health', () => {
       expect(result.reason).toContain('closed');
     });
 
-    it('returns launch-workflow for active projects', () => {
+    it('returns launch-owner for active projects', () => {
       const result = diagnoseProject(baseProject, emptyState, new Set(), new Set(), Date.now(), []);
-      expect(result.type).toBe('launch-workflow');
+      expect(result.type).toBe('launch-owner');
     });
 
-    it('skips active project if already running', () => {
+    it('skips active project if the owner loop is already running', () => {
       const running = new Set(['bob/test-proj']);
       const result = diagnoseProject(baseProject, emptyState, new Set(), running, Date.now(), []);
       expect(result.type).toBe('skip');
-      expect(result.reason).toContain('live session');
+      expect(result.reason).toContain('owner already running');
     });
 
     it('skips active project during cooldown', () => {
@@ -135,7 +135,7 @@ describe('project-health', () => {
         },
       };
       const result = diagnoseProject(baseProject, state, new Set(), new Set(), now, [], true);
-      expect(result.type).toBe('launch-workflow');
+      expect(result.type).toBe('launch-owner');
       expect(result.reason).toContain('manual project trigger');
     });
 
@@ -152,7 +152,7 @@ describe('project-health', () => {
         content: '# Test\n',
       };
       const result = diagnoseProject(proj, emptyState, new Set(), new Set(), Date.now(), []);
-      expect(result.type).toBe('launch-workflow');
+      expect(result.type).toBe('launch-owner');
       expect(result.reason).toContain('paused with unread comments');
       fs.rmSync(tmpDir, { recursive: true, force: true });
     });
@@ -177,7 +177,7 @@ describe('project-health', () => {
         content: `---\nresume_after: ${new Date(now - 60_000).toISOString()}\n---\n# Test\n`,
       };
       const result = diagnoseProject(proj, emptyState, new Set(), new Set(), now, []);
-      expect(result.type).toBe('launch-workflow');
+      expect(result.type).toBe('launch-owner');
       expect(result.reason).toContain('resume_after is due');
     });
 
@@ -396,7 +396,7 @@ describe('project-health', () => {
       fs.mkdirSync(projDir, { recursive: true });
       fs.writeFileSync(
         path.join(projDir, 'project.md'),
-        '---\nid: my-proj\nowner: alice\nstatus: active\nworkflow: project\n---\n\n# My Project\n'
+        '---\nid: my-proj\nowner: alice\nstatus: active\n---\n\n# My Project\n'
       );
       const projects = scanAllProjects(tmpRoot);
       expect(projects.length).toBe(1);

@@ -7,7 +7,7 @@ function makeCtx(action?: string) {
     sdk: {
       emit: vi.fn(),
       log: vi.fn(),
-      escalate: vi.fn(),
+      message: vi.fn(),
     },
     getLastDigest: vi.fn(() => action ? {
       outcome: "blocked",
@@ -19,52 +19,61 @@ function makeCtx(action?: string) {
 }
 
 describe("escalation handler", () => {
-  it("routes session.escalated events to the target owner", async () => {
-    const ctx = makeCtx("escalate");
+  it("routes escalation.created events to the target owner", async () => {
+    const ctx = makeCtx();
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.escalated",
-      source: "event",
-      entry: "escalation",
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "human:operator",
       timestamp: Date.now(),
       data: {
-        sessionId: "s_blocked",
-        agent: "dev",
-        finishParams: { status: "blocked", summary: "needs human" },
+        escalationId: "esc_1",
+        sourceAgent: "dev",
+        sourceSessionId: "s_blocked",
+        reason: "blocked: needs human",
+        requestedAction: "Decide the next step",
       },
     });
 
-    expect(ctx.sdk.escalate).toHaveBeenCalledWith("dev", "blocked: needs human");
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("escalation.routed", {
+      escalationId: "esc_1",
+      route: "human:operator",
+      reason: "blocked: needs human",
+    }, {
+      source: "agent:may",
+      owner: "human:operator",
+    });
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.routed", expect.objectContaining({
       handler: "escalation",
-      sessionId: "s_blocked",
-      agent: "dev",
-      action: "escalate",
+      escalationId: "esc_1",
+      sourceAgent: "dev",
+      route: "human:operator",
     }));
+    expect(ctx.sdk.message).toHaveBeenCalledWith("human", expect.stringContaining("blocked: needs human"));
   });
 
-  it("records non-escalation decisions as skipped", async () => {
-    const ctx = makeCtx("nothing");
+  it("records malformed escalation.created events as skipped", async () => {
+    const ctx = makeCtx();
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.escalated",
-      source: "event",
-      entry: "escalation",
+      type: "escalation.created",
+      source: "agent:dev",
+      owner: "agent:may",
       timestamp: Date.now(),
       data: {
-        sessionId: "s_ok",
-        agent: "dev",
-        finishParams: { status: "failure", summary: "already handled" },
+        escalationId: "esc_2",
+        sourceAgent: "dev",
       },
     });
 
-    expect(ctx.sdk.escalate).not.toHaveBeenCalled();
+    expect(ctx.sdk.message).not.toHaveBeenCalled();
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       handler: "escalation",
-      sessionId: "s_ok",
-      reason: "classifier chose nothing",
+      escalationId: "esc_2",
+      reason: "escalation.created missing required data",
     }));
   });
 });

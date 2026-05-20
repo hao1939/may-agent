@@ -334,7 +334,7 @@ The human's verbs, complete list:
 | **Close project** | project detail | sets project status to `closed` | immediate (system) |
 | **Send message to agent** | session detail, agent context | `message.created` event | next heartbeat |
 | **Cancel session** | session detail | WebSocket command to manager | immediate |
-| **Trigger heartbeat now** | agent context | emits `timer.heartbeat_due` or the control shortcut for that heartbeat entry | immediate |
+| **Trigger heartbeat now** | agent context | emits `timer.tick` or the control shortcut for that heartbeat entry | immediate |
 | **Adjust metric threshold** | metric detail | updates `metrics.threshold`, emits config-change event | next measure cycle |
 | **Resolve metric alert** | metric detail | updates `metric_alerts` | immediate |
 

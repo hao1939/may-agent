@@ -496,11 +496,12 @@ The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-se
   attempts: 1
 
 - id: post-image-cleaner-unknown-selection
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Produce outputs/iteration96-post-image-cleaner-unknown-selection.md selecting the next non-blocked model-unknown branch after Image Cleaner vulnerable-image erasure passed. Start from outputs/input-expectation-knowledge-map.md, outputs/e2e-capability-model.json, outputs/iteration94-next-model-unknown-selection.md, and the current validator unknown list (20 unknowns). Rank VPA cert renewal/upgrade survival, Workload Identity Windows, OIDC post-delete cleanup, and at least two other viable unknowns by input paths covered, expectation paths checked, source/e2ev3 anchor, cost/risk, required access, and gating status. End with one concrete recommended branch, exact preflight reads for a later execution task, and expected model/knowledge-map update. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
   depends_on: [image-cleaner-vulnerable-erasure-staging]
-  attempts: 0
+  attempts: 1
 
 - id: image-cleaner-vulnerable-erasure-staging
   result: succeeded

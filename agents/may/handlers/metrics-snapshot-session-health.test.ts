@@ -449,9 +449,9 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       tools: [],
     }));
     writeFileSync(join(root, "agents", "may", "cron.json"), JSON.stringify([
-      { name: "heartbeat", enabled: true, handlerConfig: { agent: "may", workflow: "may-heartbeat" } },
-      { name: "heartbeat-scout", enabled: true, handlerConfig: { agent: "scout", workflow: "scout-heartbeat" } },
-      { name: "heartbeat-disabled", enabled: false, handlerConfig: { agent: "disabled", workflow: "disabled-heartbeat" } },
+      { name: "heartbeat", enabled: true, handler: { agent: "may", workflow: "may-heartbeat", task: "[heartbeat]" } },
+      { name: "heartbeat-scout", enabled: true, handler: { agent: "scout", workflow: "scout-heartbeat", task: "[heartbeat]" } },
+      { name: "heartbeat-disabled", enabled: false, handler: { agent: "disabled", workflow: "disabled-heartbeat", task: "[heartbeat]" } },
     ]));
 
     const db = getDb(root);
@@ -518,11 +518,11 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     const metric = (id: string) => db.prepare("SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
     expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
     expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P1" });
+    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 10, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 2, priority: "P2" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
     expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 1300, priority: "P3" });
-    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 900, priority: "P3" });
+    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 1200, priority: "P3" });
     expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
   });

@@ -15,7 +15,7 @@ import {
   shouldRefreshEvaluation,
   transcriptOutputSignals,
   transcriptIssues,
-} from "./evaluator-aftermath.ts";
+} from "../evaluator-aftermath.ts";
 
 describe("evaluator aftermath transcript checks", () => {
   it("flags schema guessing and runtime handoff commit friction", () => {
@@ -803,6 +803,80 @@ describe("evaluator aftermath transcript checks", () => {
       "project-linked session",
     ]);
     expect(classifyEvaluationLane({ status: "done", opCount: 10, projectId: "example" }, transcript).lane).toBe("success_candidate");
+  });
+
+  it("does not treat git status dirty paths as material output signals", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: {
+              command: "git status --short && bun test agents/evaluator/workflows/__tests__/evaluator-aftermath.test.ts",
+            },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "b1",
+        toolName: "bash",
+        content: [
+          {
+            type: "text",
+            text: [
+              " M projects/example/outputs/result.md",
+              " M agents/evaluator/knowledge/criteria.md",
+              "1 pass",
+            ].join("\n"),
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptOutputSignals({ status: "done", projectId: "example", workflowRunId: "wr_1" }, transcript)).toEqual([
+      "verification command",
+      "project-linked session",
+      "workflow-linked session",
+    ]);
+    expect(classifyEvaluationLane({ status: "done", opCount: 10, projectId: "example", workflowRunId: "wr_1" }, transcript).lane).toBe("routine_ok");
+  });
+
+  it("still detects knowledge updates from real assistant write calls", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: { path: "agents/evaluator/knowledge/new-pattern.md", content: "pattern" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "b1",
+            name: "bash",
+            arguments: { command: "bun test agents/evaluator/workflows/__tests__/evaluator-aftermath.test.ts" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptOutputSignals({ status: "done" }, transcript)).toEqual([
+      "file write/edit",
+      "knowledge update",
+      "verification command",
+    ]);
+    expect(classifyEvaluationLane({ status: "done", opCount: 10 }, transcript).lane).toBe("success_candidate");
   });
 
   it("routes good sessions without material output as routine ok", () => {

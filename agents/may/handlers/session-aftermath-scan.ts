@@ -37,14 +37,14 @@ function taskFor(candidate: Candidate): string {
   const trigger = {
     type: "session.completed.backfill",
     source: "timer",
-    entry: "session-aftermath-scan",
+    owner: "agent:evaluator",
+    timestamp: Date.now(),
     data: {
       mode: "completed",
       sessionId: candidate.sessionId,
       agent: candidate.agent,
       status: candidate.status,
     },
-    timestamp: Date.now(),
   };
 
   return [

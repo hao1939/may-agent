@@ -86,9 +86,9 @@ Escalation events have two layers:
 
 The event envelope routes the work. `event.data` carries escalation correlation
 and context. The framework must not lift domain fields such as `sessionId`,
-`projectId`, `metricId`, or `escalationId` onto `TriggerEvent`. Event-subscribed
-handlers receive the original event envelope in `trigger.data` and read
-escalation fields from `trigger.data.data`.
+`projectId`, `metricId`, or `escalationId` onto subscriber-specific shortcut
+fields. Event-subscribed handlers receive the original event envelope and read
+escalation fields from `event.data`.
 
 ### 2. Route And Wake
 
@@ -118,7 +118,7 @@ The owner emits `escalation.resolved` when it has a disposition.
     "escalationId": "esc_...",
     "resolverAgent": "may",
     "outcome": "fixed",
-    "summary": "The session.completed emitter now includes sessionId in event data and the subscribed handler reads it from trigger.data.data.",
+    "summary": "The session.completed emitter now includes sessionId in event data and the subscribed handler reads it from event.data.",
     "evidence": {
       "commits": ["abc1234"],
       "files": ["src/app/daemon-events.ts", "agents/evaluator/handlers/evaluator-aftermath.ts"],
@@ -161,7 +161,7 @@ Resume behavior must map to current work state:
 | Active source session | Send the resolution into the same session. |
 | Finished job/call/chat session | Use `resumeSession(sessionId, message)` when the transcript/state is recoverable. |
 | Workflow run id | Include it in the resumed session context; the task can call workflow resume if that is still the right next action. |
-| Project id/path/status | Include it as context only. Project status changes are handled by project workflows/handlers, not by escalation resume. |
+| Project id/path/status | Include it as context only. Project status changes are handled by the project handler/owner loop, not by escalation resume. |
 
 Starting a new continuation session is only a fallback when true resume is unavailable:
 
@@ -233,13 +233,13 @@ Metrics should measure lifecycle health, not replace judgment:
 
 | Area | Current state | Gap |
 |------|---------------|-----|
-| Event payload delivery | `Cron.triggerSubscribers()` passes the original bus event envelope as `TriggerEvent.data`; canonical handlers read domain fields from `trigger.data.data`. | Good direction. Keep this model; do not add per-field framework promotion. Emitters must wrap or reject flattened input before it reaches handlers. |
-| SDK helper | `createWorkflowHandler({ includeEvent: true })` appends the trigger object and can skip when missing. | Good for event-to-workflow bridges. |
+| Event payload delivery | `Cron.triggerSubscribers()` passes the original bus event envelope directly; canonical handlers read domain fields from `event.data`. | Implemented. Keep this model; do not add per-field framework promotion or wrapper payloads. |
+| Workflow-backed handler | `handler: { workflow, agent, task, includeEvent: true }` uses the SDK workflow adapter, appends the event envelope, and can skip when missing. | Good for event-to-workflow bridges without custom handler code. |
 | SDK escalation | `sdk.escalate(reason, opts?)` emits canonical `escalation.created`, keeps envelope fields out of `data`, and relies on the event pipeline for persistence. | Structured create is in place. |
 | Workflow escalation | Workflow `ctx.escalate(reason, context)` returns an escalated workflow result and stops the synchronous workflow. | Good target shape. It should not automatically publish `escalation.created`; boundary code decides whether the local workflow escalation needs owner routing. |
 | Session boundary promotion | Blocked/failure `session.end` with structured `finishParams` emits canonical `escalation.created` owned by May, with source agent/session and blocker context in `data`. | Session-source escalation resume is wired after terminal resolution. Owner routing still depends on subscribed handlers/workflows. |
 | Resume capability | Runtime has session/workflow resume primitives and resume diagnostic events. | Terminal `escalation.resolved` resumes the original source session when `sourceSessionId` is available. Workflow checkpoint resume from escalation resolution is still not wired. |
-| Docs | `events.md` documents the common event envelope and canonical escalation taxonomy. | Handler/manual examples need to converge on `trigger.data.data` as implementation catches up. |
+| Docs | `events.md` documents the common event envelope and canonical escalation taxonomy. | Handler/manual examples should keep using direct `event.data` payloads. |
 
 ## Workflow Escalation: Simple Sync Path
 
@@ -337,7 +337,7 @@ escalation lifecycle.
 
 ### Slice 3: Resolution
 
-- Add an owner workflow convention for emitting `escalation.resolved`.
+- Add an owner handler/session convention for emitting `escalation.resolved`.
 - Include `outcome`, `summary`, `evidence`, and `resumeInstruction`.
 - For `needs_human`, create or link a child `escalation.created` with `parentEscalationId` and `owner: "human:<role>"`; do not resume the original source until the human child reaches a terminal disposition.
 - Add tests proving resolution is correlated by `escalationId`, not by fuzzy reason text. Current coverage includes terminal session resume, active-session send, and the `needs_human` child chain.

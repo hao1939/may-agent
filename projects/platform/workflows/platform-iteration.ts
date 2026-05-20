@@ -329,7 +329,6 @@ owner: ${config.owner}
 status: active
 type: milestone
 priority: P1
-workflow: project
 iteration: 0
 worker: ${config.worker}
 ---

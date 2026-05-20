@@ -25,8 +25,8 @@ describe("session-recovery handler", () => {
 
     await handler({
       type: "session.failed",
-      source: "event",
-      entry: "session-recovery",
+      source: "runtime",
+      owner: "agent:dev",
       timestamp: Date.now(),
       data: {
         sessionId: "s_failed",
@@ -58,8 +58,8 @@ describe("session-recovery handler", () => {
 
     await handler({
       type: "session.failed",
-      source: "event",
-      entry: "session-recovery",
+      source: "runtime",
+      owner: "agent:dev",
       timestamp: Date.now(),
       data: {
         sessionId: "s_failed",
@@ -75,5 +75,28 @@ describe("session-recovery handler", () => {
       sessionId: "s_failed",
       reason: "classifier chose nothing",
     }));
+  });
+
+  it("treats canonical timer.tick as the stale-session reap path", async () => {
+    const ctx = makeCtx("requeue");
+    const db = {
+      prepare: vi.fn(() => ({
+        all: vi.fn(() => []),
+      })),
+    };
+    ctx.sdk.paths = { root: "/tmp/may-agent-test", persist: "/tmp/may-agent-test/.state" };
+    ctx.sdk.getDb = vi.fn(() => db);
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "timer.tick",
+      source: "timer",
+      owner: "agent:may",
+      timestamp: Date.now(),
+      data: { entry: "session-recovery" },
+    });
+
+    expect(ctx.sdk.getDb).toHaveBeenCalled();
+    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
   });
 });

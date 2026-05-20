@@ -170,8 +170,8 @@ event
 
 Examples:
 
-- `timer.heartbeat_due` -> heartbeat workflow builds live context -> run owner.
-- `project.comment.created` -> project workflow builds project context -> run owner.
+- `timer.tick` -> heartbeat workflow builds live context -> run owner.
+- `project.comment.created` -> project handler builds project context -> run owner.
 - `metric.breach` P0 -> alert workflow builds alert context -> run owner.
 - `metric.breach` P1/P2 -> persisted signal -> owner sees it in next heartbeat/project pass.
 
@@ -266,9 +266,9 @@ Socket-local commands should stay minimal:
 Everything else should be an event frame:
 
 ```json
-{ "type": "project.comment.created", "projectId": "x", "text": "..." }
+{ "type": "project.comment.created", "source": "web-ui", "owner": "agent:may", "data": { "projectPath": "projects/x", "comment": "..." } }
 { "type": "input", "sessionId": "s_123", "message": "continue" }
-{ "type": "metric.threshold.changed", "metricId": "m", "threshold": 0.8 }
+{ "type": "metric.threshold_changed", "source": "metrics", "owner": "agent:may", "data": { "metricId": "m", "to": 0.8 } }
 ```
 
 Socket `ok` means the event was accepted into the transport. It does not mean
@@ -685,7 +685,7 @@ Keep this incremental.
    context bundle.
 3. Keep `getDb()` for compatibility and mechanical infra work.
 4. Make new adapter actions daemon events.
-5. Make new judgment/action handlers event-to-workflow bridges by default.
+5. Make new judgment/action trigger entries workflow-backed handlers by default.
 6. Validate every boundary refactor with one real runtime event and trace.
 7. Fold stable behavior into `architecture.md`, `sdk.md`, `events.md`,
    `metrics.md`, `cron.md`, and `work-model.md`.

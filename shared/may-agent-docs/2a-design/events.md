@@ -79,8 +79,8 @@ Key categories agents encounter:
 ### Timers and triggers
 ```typescript
 {
-  type: "timer.heartbeat_due",
-  source: "cron",
+  type: "timer.tick",
+  source: "timer",
   owner: "agent:may",
   data: { entry: "may-heartbeat" }
 }
@@ -88,7 +88,7 @@ Key categories agents encounter:
 
 Timers are event sources. Cron/timer code should emit timer events; handlers then
 bridge them to workflows. `trigger.<entry-name>` remains an operator/control
-shortcut for manually firing a cron entry; it is not the heartbeat lifecycle
+shortcut for manually firing a trigger entry; it is not the heartbeat lifecycle
 event name.
 
 ### Handler lifecycle (paired)
@@ -176,9 +176,9 @@ are for common event transport: type, source, owner, urgency/TTL, and timestamp.
 agent-facing brief. Do not hide routing decisions inside agent prose, and do not
 put long investigation context into the envelope.
 
-When a cron subscription receives an escalation event, `TriggerEvent.data` is the
-original event envelope. Handlers use envelope fields for common routing and read
-escalation-specific fields from the envelope's `data` object.
+When a handler subscribes to an escalation event, it receives that canonical
+event envelope directly. Handlers use envelope fields for common routing and
+read escalation-specific fields from the envelope's `data` object.
 
 ```
 {
@@ -256,9 +256,8 @@ escalation-specific fields from the envelope's `data` object.
 
 Escalation routing follows the same payload rule as every other reactive
 handler: the event type and envelope route work; `data` carries the agent-facing
-facts. A subscriber must read the original event envelope from
-`TriggerEvent.data`; the cron framework should not promote domain fields onto
-the trigger object.
+facts. The cron framework must deliver the original event envelope unchanged; it
+must not add subscriber-specific shortcut fields.
 
 For escalation events, `owner` is the responsibility label:
 
@@ -356,9 +355,9 @@ allowing adapter-local evidence events when needed.
 
 For task-driven projects, `project.task.dispatched` and
 `project.task.finished` are the task lifecycle events to teach in handler and
-SDK examples. `project.iteration` remains a project-owner loop/workflow-launch
-signal used by current health metrics and historical rows; do not use it as the
-general task lifecycle example.
+SDK examples. `project.iteration` remains a project-owner loop signal used by
+current health metrics and historical rows; do not use it as the general task
+lifecycle example.
 
 ## Inbox (time-window based)
 
@@ -377,25 +376,25 @@ LIMIT 20
 
 Events naturally expire via TTL or time window. Agents act or they don't.
 
-## Trigger Payloads
+## Handler Event Payloads
 
-Reactive cron handlers have their own trigger wrapper. For event subscriptions,
-`TriggerEvent.data` is the original event envelope:
+Reactive handlers receive the canonical event envelope directly:
 
 ```typescript
-type TriggerEvent = {
+type EventEnvelope = {
   type: string;
-  source: "timer" | "event" | "manual";
-  entry: string;
-  data?: EventEnvelope;
-  timestamp: number;
+  source: string;
+  owner: string;
+  timestamp?: number;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  data: Record<string, unknown>;
 };
 ```
 
 The framework does not promote domain fields such as `sessionId`, `projectId`,
-or `metricId` onto `TriggerEvent`. The subscribed handler reads the original
-event envelope from `trigger.data`, then reads event-specific fields from
-`trigger.data.data`.
+or `metricId` onto the event envelope. The subscribed handler reads
+event-specific fields from `event.data`.
 
 Example:
 
@@ -405,8 +404,7 @@ sdk.emit("session.completed",
   { owner: "agent:may", source: "runtime" },
 );
 
-const original = event?.data;
-const sessionId = original?.data?.sessionId;
+const sessionId = event?.data?.sessionId;
 ```
 
 This keeps the event model simple: event type routes work, event data carries
@@ -492,7 +490,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `handler.started` | cron runner on every handler invocation | ✅ live |
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
-| `project.iteration` | `agents/may/handlers/project.ts` when launching the owner workflow; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live owner-loop signal; not the task lifecycle event |
+| `project.iteration` | `agents/may/handlers/project.ts` when launching a project action; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live owner-loop signal; not the task lifecycle event |
 | `project.task.dispatched` | `agents/may/handlers/project.ts` when dispatching a ready `## Tasks` item to its assignee | ✅ live for task-driven projects |
 | `project.task.finished` | `agents/may/handlers/project.ts` when the task session resolves or throws | ✅ live for task-driven projects |
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event, including errored/interrupted sessions |
@@ -502,7 +500,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
 | `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
 | `escalation.created` | `sdk.escalate`; blocked/failure session boundary promotion; boundary promotion of a workflow `ctx.escalate` result is the intended path when routing is needed | ✅ canonical event; workflow `ctx.escalate` itself is local and should not emit this event |
-| `escalation.resolved` | owner workflows/handlers may emit it when they have a disposition | ✅ persisted as a canonical event and handled by escalation lifecycle for session resume |
+| `escalation.resolved` | owner sessions/handlers may emit it when they have a disposition | ✅ persisted as a canonical event and handled by escalation lifecycle for session resume |
 | `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings |
 
 Note: `session.completed` is translated from `session.end` in daemon event

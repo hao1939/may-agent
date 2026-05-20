@@ -328,7 +328,6 @@ owner: ${config.owner}
 status: active
 type: milestone
 priority: P1
-workflow: project
 iteration: 0
 worker: ${config.worker}
 ---
@@ -1297,7 +1296,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         // false done — continue to progress tracking
       }
 
-      // CONTINUE — track progress and auto-escalate if stuck
+      // CONTINUE/PIVOT — track milestone movement. Lack of milestone movement is
+      // a replan signal, not a project-level blocker; only an explicit reviewer
+      // WAITING/BLOCKED decision should stop the project.
       // Re-read from disk — worker or reviewer may have checked off milestones
       projectContent = readFile(config.projectPath) ?? projectContent;
       const currentMilestoneDone = extractMilestones(projectContent).done;
@@ -1311,25 +1312,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       // Emit iteration event for metrics tracking
       emitProjectEvent(ctx, config, "project.iteration", { iteration });
 
-      // Auto-escalate after 5 iterations without milestone progress
-      if (continueWithoutProgress >= 5) {
-        projectContent = updateField(projectContent, "Status", "blocked");
-        projectContent = updateSection(projectContent, "Current State",
-          `Blocked: ${continueWithoutProgress} consecutive iterations without milestone progress. Approach needs rethinking.`);
-        emitProjectEvent(ctx, config, "project.blocked", { iteration, health: 0, reason: decision.detail.slice(0, 100) });
-        cachedWrite(config.projectPath, projectContent);
-        return ctx.escalate(`Stuck: ${continueWithoutProgress} iterations without progress at iteration ${iteration}.`);
-      }
-
       // Update Current State with reviewer's synthesis
       const ms = extractMilestones(projectContent);
       const reviewerInsight = decision.detail.replace(/^CONTINUE[:\s]*/i, "").trim();
       const reviewerStateUpdate = extractDirectiveBlock(reviewerText, "CURRENT_STATE_UPDATE");
+      const stalledButReplanning = continueWithoutProgress >= 5;
 
-      if (reviewerStateUpdate || !reviewerEditedProject) {
+      if (stalledButReplanning) {
+        projectContent = updateField(projectContent, "Status", "active");
+        projectContent = updateField(projectContent, "Stop Reason", "");
+        projectContent = updateField(projectContent, "Resume Condition", "");
+      }
+
+      if (reviewerStateUpdate || !reviewerEditedProject || stalledButReplanning) {
         projectContent = updateSection(projectContent, "Current State",
           reviewerStateUpdate
             ? `${reviewerStateUpdate}\n`
+            : stalledButReplanning
+              ? `Active: ${continueWithoutProgress} consecutive iterations without milestone progress; owner must replan, split work, or choose a different evidence path.\n` +
+                (reviewerInsight ? `Reviewer: ${reviewerInsight}` : "")
             : `Iteration ${iteration}. Milestones: ${ms.done}/${ms.total} done.\n` +
               (reviewerInsight ? `Reviewer: ${reviewerInsight}` : ""));
 

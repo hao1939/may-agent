@@ -18,7 +18,7 @@ The heartbeat is the **temporal scaffolding of agency**.
 
 | Trigger | Source | Agent's task | Agency level |
 |---|---|---|---|
-| `timer.heartbeat_due` | Cron | Agent reassesses its standing work context | **High** — the agent chooses what matters |
+| `timer.tick` | Cron | Agent reassesses its standing work context | **High** — the agent chooses what matters |
 | `metric.breach` | Metric engine | Judge a metric signal in context | Medium for P0 |
 | `message` | Another agent or human | Judge and respond to a request/signal | Medium |
 | `order` | Human direct command | Execute the order | None |
@@ -33,7 +33,7 @@ It follows the same model as projects, metrics, and events: signals arrive, the 
 ## Data Flow
 
 ```
-Cron tick → timer.heartbeat_due → heartbeat handler → heartbeat workflow
+Cron tick → timer.tick → heartbeat handler → heartbeat workflow
   → loads work context/signals → runs agent session → agent judges/acts/records evidence
 ```
 

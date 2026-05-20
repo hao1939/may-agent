@@ -210,10 +210,10 @@ describe("metric-alert-reactor", () => {
 
     await handler({
       type: "trigger.metric-alert-reactor",
-      source: "event",
-      entry: "metric-alert-reactor",
+      source: "manual",
+      owner: "agent:may",
       timestamp: now,
-      data: { type: "trigger.metric-alert-reactor" },
+      data: {},
     });
 
     expect(workflows).toHaveLength(1);

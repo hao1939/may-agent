@@ -18,6 +18,7 @@ const OPERATION_LIST = [...OPERATIONS];
 
 type Trigger = {
   type?: string;
+  owner?: string;
   data?: Record<string, unknown>;
 };
 
@@ -52,25 +53,19 @@ function triggerData(trigger: Trigger | null): Record<string, unknown> {
   return (trigger?.data ?? trigger ?? {}) as Record<string, unknown>;
 }
 
-function recordOrNull(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
-}
-
 function optionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() !== "" ? value : undefined;
 }
 
+function agentNameFromOwner(owner: string | undefined): string | undefined {
+  if (!owner) return undefined;
+  return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
+}
+
 function triggerPayload(trigger: Trigger | null): TriggerPayload {
   const data = triggerData(trigger);
-  const nested = recordOrNull(data.data);
-  if (data.type === "metric.breach" && nested) {
-    return {
-      owner: optionalString(data.owner),
-      data: nested,
-    };
-  }
   return {
-    owner: optionalString(data.owner),
+    owner: agentNameFromOwner(optionalString(trigger?.owner)),
     data,
   };
 }
@@ -238,7 +233,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const metric = context.metric as Record<string, unknown> | null;
     const alert = context.alert as Record<string, unknown> | null;
 
-    const explicitOwner = String(metric?.explicitOwner ?? payload.owner ?? data.owner ?? "");
+    const explicitOwner = String(metric?.explicitOwner ?? payload.owner ?? "");
     const projectOwner = String(metric?.projectOwner ?? "");
     const owner = resolveMetricOwner(metricId, configuredAgents, explicitOwner, projectOwner);
     const createdAt = Number(alert?.created_at ?? data.created_at ?? 0);

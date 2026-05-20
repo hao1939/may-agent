@@ -15,7 +15,7 @@ import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, s
 import { basename, join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 import { validateProjectFormat } from "../../../shared/lib/project-health.ts";
@@ -322,7 +322,7 @@ function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  return async (_event?: TriggerEvent) => {
+  return async (_event?: EventEnvelope) => {
     const db = ctx.sdk.getDb();
     const now = Date.now();
 

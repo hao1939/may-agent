@@ -16,7 +16,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 
 const MAX_RECOVERY_ATTEMPTS = 2;
@@ -48,7 +48,7 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
   });
 }
 
-function triggerPayload(event: TriggerEvent): Record<string, unknown> {
+function triggerPayload(event: EventEnvelope): Record<string, unknown> {
   const raw = event.data;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const maybeEnvelope = raw as Record<string, unknown>;
@@ -69,7 +69,7 @@ function workflowTask(input: {
   source: string;
   attempt?: number;
   maxAttempts?: number;
-  event?: TriggerEvent;
+  event?: EventEnvelope;
 }): string {
   return [
     `[session-recovery] Handle failed session ${input.sessionId}.`,
@@ -189,8 +189,8 @@ function reapStaleAutocloseSessions(ctx: HandlerContext): void {
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  return async (event?: TriggerEvent) => {
-    if (!event) {
+  return async (event?: EventEnvelope) => {
+    if (!event || event.type === "timer.tick") {
       reapStaleAutocloseSessions(ctx);
       return;
     }

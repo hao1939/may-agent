@@ -240,7 +240,7 @@ echo '{"type":"fork","agent":"dev","task":"fix the test"}' | socat - UNIX-CONNEC
 # Status
 echo '{"type":"status"}' | socat - UNIX-CONNECT:.state/instances/default/may.sock
 
-# Manually fire a cron entry through the control shortcut.
+# Manually fire a trigger entry through the control shortcut.
 # Domain lifecycle docs should use canonical event names, not trigger.*.
 may-agent --emit trigger.metrics-snapshot '{}'
 
@@ -282,16 +282,16 @@ should use canonical event names such as `session.completed`, `metric.breach`,
 Dot-named domain events use the canonical envelope: top-level `type`, `source`,
 and `owner`, plus domain context inside `data`. Flat dot-named socket frames are
 rejected before persistence. Handler subscriptions receive the original event
-envelope at `event.data`; domain fields are under `event.data.data`.
+envelope unchanged; domain fields are under `event.data`.
 
-## Cron System
+## Timer And Event Handlers
 
-Cron is enabled with `--cron`. Each agent can have a `cron.json` defining jobs:
+Timer-triggered handlers are enabled with `--cron`. The filename is historical:
+each agent can have a `cron.json` defining trigger entries.
 
-- **Heartbeat jobs**: Run a heartbeat workflow that starts a fresh agent task session (`handler` entry, `type` remains `"job"` or omitted)
-- **JS handlers**: Run in-process functions (`handler: "evaluate-sessions"`)
+- **Workflow-backed handlers**: Run a workflow directly (`handler: { "workflow": "...", "agent": "...", "task": "..." }`)
+- **JS handlers**: Run deterministic in-process functions (`handler: "evaluate-sessions"`)
 - **Detached agent tasks**: Spawn an agent task in a separate OS process (`agent` + `message`)
-- **Pre-checked heartbeats**: Check if work exists before spawning LLM session
 
 Handlers live in `agents/<name>/handlers/` and are auto-discovered.
 

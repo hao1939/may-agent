@@ -13,7 +13,7 @@
  * metric within the last 24h.
  */
 
-import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
 
@@ -41,22 +41,15 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
-function recordOrNull(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+function agentNameFromOwner(owner: string | null): string | null {
+  if (!owner) return null;
+  return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
 }
 
-function metricBreachData(event: TriggerEvent): { owner?: string; payload: Record<string, unknown> } {
-  const triggerData = recordOrNull(event.data) ?? {};
-  const nestedData = recordOrNull(triggerData.data);
-  if (triggerData.type === "metric.breach" && nestedData) {
-    return {
-      owner: stringOrNull(triggerData.owner) ?? undefined,
-      payload: nestedData,
-    };
-  }
+function metricBreachData(event: EventEnvelope): { owner?: string; payload: Record<string, unknown> } {
   return {
-    owner: stringOrNull(triggerData.owner) ?? undefined,
-    payload: triggerData,
+    owner: agentNameFromOwner(stringOrNull(event.owner)) ?? undefined,
+    payload: event.data,
   };
 }
 
@@ -86,13 +79,14 @@ function emitSkip(ctx: HandlerContext, metricId: string | null, reason: string, 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
   const configuredAgents = listConfiguredAgents(ctx.sdk.paths.agents);
 
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const entryName = typeof entry?.name === "string" && entry.name ? entry.name : "metric-alert-reactor";
     const isTriggerScan = event?.type === `trigger.${entryName}`;
+    const isTimerScan = event?.type === "timer.tick";
     // If no event, timer tick, or a direct trigger event, poll unresolved
     // alerts and process each. Operators should not need to hand-build a
     // metric.breach payload to kick the default reactor scan.
-    if (!event?.data || isTriggerScan) {
+    if (!event || isTimerScan || isTriggerScan) {
       try {
         const unresolved = ctx.sdk.query.alerts({ resolved: false, limit: 50 }).rows;
 
@@ -105,10 +99,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           const metricId = String(row.metric_id ?? "");
           const state = metricId ? ctx.sdk.query.metricAlertReactorState({ metricId, alertId: numberOrNull(row.id) }) : null;
           const metric = state?.metric ?? {};
-          const syntheticEvent: TriggerEvent = {
+          const owner = resolveMetricOwner(metricId, configuredAgents, stringOrNull(metric.explicitOwner), stringOrNull(metric.projectOwner));
+          const syntheticEvent: EventEnvelope = {
             type: "metric.breach",
+            source: "metric-alert-reactor",
+            owner: `agent:${owner}`,
+            timestamp: Date.now(),
             data: {
-              owner: resolveMetricOwner(metricId, configuredAgents, stringOrNull(metric.explicitOwner), stringOrNull(metric.projectOwner)),
               metricId,
               metricName: String(metric.name ?? metricId),
               current: numberOrNull(metric.current),
@@ -132,7 +129,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   };
 };
 
-async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, configuredAgents: Set<string>) {
+async function processBreachEvent(ctx: HandlerContext, event: EventEnvelope, configuredAgents: Set<string>) {
 
     const normalized = metricBreachData(event);
     const { metricId, metricName, current, threshold, target, message, priority: eventPriority } = normalized.payload as {
@@ -269,23 +266,18 @@ async function processBreachEvent(ctx: HandlerContext, event: TriggerEvent, conf
       "```json",
       JSON.stringify({
         type: "metric.breach",
-        source: "event",
-        entry: "metric-alert-reactor",
-        data: {
-          type: "metric.breach",
-          source: "metric-alert-reactor",
-          owner,
-          data: {
-            metricId,
-            metricName,
-            current,
-            threshold,
-            target,
-            message,
-            priority,
-          },
-        },
+        source: "metric-alert-reactor",
+        owner: `agent:${owner}`,
         timestamp: Date.now(),
+        data: {
+          metricId,
+          metricName,
+          current,
+          threshold,
+          target,
+          message,
+          priority,
+        },
       }, null, 2),
       "```",
     ].join("\n");

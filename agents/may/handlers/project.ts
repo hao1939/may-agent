@@ -3,14 +3,15 @@
  *
  * Core logic lives in shared/lib/project-health.ts.
  * This handler scans projects, diagnoses health, and executes actions:
- *   - launch-workflow for active projects
+ *   - dispatch project tasks for active projects
+ *   - launch the owner agent when the project itself needs judgment
  *   - reactivate/add-comment for blocked projects
  *   - escalate persistent blockers
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 import {
   parseProjectTasks,
@@ -53,9 +54,17 @@ function taskSource(taskId: string): string {
   return `project-task:${taskId}`;
 }
 
+const OWNER_SOURCE = "project-owner";
+
 function taskIdFromSource(source: unknown): string | null {
   if (typeof source !== "string") return null;
   const match = source.match(/^project-task:([^:\s]+)$/);
+  return match ? match[1] : null;
+}
+
+function taskIdFromProjectTaskPrompt(task: unknown): string | null {
+  if (typeof task !== "string") return null;
+  const match = task.match(/^Task ID:\s*([^\s]+)\s*$/m);
   return match ? match[1] : null;
 }
 
@@ -75,11 +84,13 @@ function projectMaxTaskAttempts(content: string): number {
 
 function buildProjectTaskPrompt(project: ProjectInfo, task: PlannedProjectTask): string {
   const deps = task.depends_on.length ? task.depends_on.join(", ") : "none";
+  const runner = task.run ?? "agent";
   return [
     "## Project Task",
     `Project: ${project.relPath}`,
     `Task ID: ${task.id}`,
     `Assignee: ${task.assignee}`,
+    `Runner: ${runner}`,
     `Dependencies: ${deps}`,
     `Attempt: ${task.attempts + 1}`,
     "",
@@ -97,9 +108,39 @@ function buildProjectTaskPrompt(project: ProjectInfo, task: PlannedProjectTask):
   ].join("\n");
 }
 
+function buildProjectOwnerPrompt(project: ProjectInfo, reason: string): string {
+  return [
+    "## Project Owner Loop",
+    `Project: ${project.relPath}`,
+    `Owner: ${project.owner}`,
+    `Reason: ${reason}`,
+    "",
+    "## Context",
+    `Read ${project.relPath}/project.md and related project files before changing state.`,
+    "You own the project loop: assess current state, update tasks, replan, close, wait, or escalate.",
+    "Do not run the legacy project iteration workflow. Work through project.md tasks and normal agent/tool actions.",
+    "",
+    "## Finish Contract",
+    "Use finish({ status: 'success', summary: '...' }) after project.md reflects the next correct state.",
+  ].join("\n");
+}
+
 function finishStatus(result: unknown): string {
   const finish = (result as { finishResult?: { status?: unknown } } | null)?.finishResult;
   return typeof finish?.status === "string" ? finish.status : "";
+}
+
+function workflowNameForTask(task: PlannedProjectTask): string | null {
+  const run = task.run ?? "agent";
+  if (!run.startsWith("workflow:")) return null;
+  const workflow = run.slice("workflow:".length).trim();
+  return workflow || null;
+}
+
+function taskCompletedSuccessfully(task: PlannedProjectTask, result: any): boolean {
+  if (result?.status !== "done") return false;
+  const status = finishStatus(result);
+  return workflowNameForTask(task) ? status !== "failure" && status !== "blocked" : status === "success";
 }
 
 function updateTaskFile(projectFile: string, taskId: string, patch: Parameters<typeof updateProjectTaskFields>[2]): void {
@@ -115,6 +156,11 @@ function activeProjectTaskIds(ctx: HandlerContext, projectId: string): string[] 
       const taskId = taskIdFromSource(row.source);
       if (taskId) ids.add(taskId);
     }
+  }
+  const workflowRows = ctx.sdk.query.workflowRuns({ projectId, status: "running", limit: 100 }).rows as Array<{ task?: unknown }>;
+  for (const row of workflowRows) {
+    const taskId = taskIdFromProjectTaskPrompt(row.task);
+    if (taskId) ids.add(taskId);
   }
   return [...ids];
 }
@@ -162,18 +208,25 @@ function dispatchReadyProjectTasks(
     updateTaskFile(project.projectFile, task.id, { status: "running", attempts });
     const source = taskSource(task.id);
     const prompt = buildProjectTaskPrompt(project, task);
+    const workflowName = workflowNameForTask(task);
     ctx.sdk.log("info", `[project] Dispatching task ${project.relPath}#${task.id} to ${task.assignee}`);
     ctx.sdk.emit("project.task.dispatched", {
       projectId,
       projectPath: project.relPath,
       taskId: task.id,
       assignee: task.assignee,
+      runner: workflowName ? "workflow" : "agent",
+      workflow: workflowName,
     });
 
-    ctx.sdk.runAgent(task.assignee, prompt, { source, projectId })
+    const run = workflowName
+      ? ctx.sdk.runWorkflow(workflowName, prompt, { source, projectId })
+      : ctx.sdk.runAgent(task.assignee, prompt, { source, projectId });
+
+    run
       .then((result: any) => {
         const status = finishStatus(result);
-        if (result?.status === "done" && status === "success") {
+        if (taskCompletedSuccessfully(task, result)) {
           updateTaskFile(project.projectFile, task.id, { status: "done", result: "succeeded" });
         } else {
           updateTaskFile(project.projectFile, task.id, { status: "ready", result: null });
@@ -184,6 +237,7 @@ function dispatchReadyProjectTasks(
           taskId: task.id,
           assignee: task.assignee,
           sessionId: result?.sessionId ?? null,
+          workflowRunId: result?.runId ?? null,
           status: result?.status ?? "unknown",
           finishStatus: status || null,
         });
@@ -205,17 +259,6 @@ function dispatchReadyProjectTasks(
   return { handled: true, launched, reason: `launched ${launched} task(s)` };
 }
 
-export function resolveWorkflowName(project: ProjectInfo): string | null {
-  const configured = project.workflow || "project";
-  if (configured !== "project") return configured;
-
-  const slug = project.relPath.split("/").pop();
-  if (!slug) return null;
-
-  const projectWorkflow = resolve(dirname(project.projectFile), "workflows", `${slug}-iteration.ts`);
-  return existsSync(projectWorkflow) ? `${slug}-iteration` : null;
-}
-
 function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unknown> = {}): void {
   ctx.sdk.log("info", `[project] ${reason}`);
   try {
@@ -227,11 +270,85 @@ function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unkn
   } catch { /* best-effort */ }
 }
 
+function launchProjectOwner(
+  ctx: HandlerContext,
+  project: ProjectInfo,
+  projectId: string,
+  reason: string,
+  ownerLoopsInFlight: Set<string>,
+): void {
+  if (ownerLoopsInFlight.has(projectId)) {
+    emitSkip(ctx, `Skip ${project.relPath} — project owner already running`, {
+      projectId,
+      projectPath: project.relPath,
+    });
+    return;
+  }
+
+  const prompt = buildProjectOwnerPrompt(project, reason);
+  ctx.sdk.log("info", `[project] Launching owner ${project.owner} for ${project.relPath}: ${reason}`);
+  ctx.sdk.emit("project.owner.dispatched", {
+    projectId,
+    projectPath: project.relPath,
+    owner: project.owner,
+    reason,
+  });
+
+  ownerLoopsInFlight.add(projectId);
+  let run: Promise<any>;
+  try {
+    run = ctx.sdk.runAgent(project.owner, prompt, { source: OWNER_SOURCE, projectId });
+  } catch (e: any) {
+    ownerLoopsInFlight.delete(projectId);
+    const message = e.message?.slice(0, 200) ?? String(e).slice(0, 200);
+    ctx.sdk.log("info", `[project] ${project.relPath} owner ERROR: ${message}`);
+    ctx.sdk.emit("handler.failed", {
+      handler: "project",
+      agent: ctx.agentName,
+      projectId,
+      projectPath: project.relPath,
+      owner: project.owner,
+      error: message,
+      durationMs: 0,
+    });
+    return;
+  }
+
+  run
+    .then((result: any) => {
+      ctx.sdk.emit("project.owner.finished", {
+        projectId,
+        projectPath: project.relPath,
+        owner: project.owner,
+        sessionId: result?.sessionId ?? null,
+        status: result?.status ?? "unknown",
+        finishStatus: finishStatus(result) || null,
+      });
+    })
+    .catch((e: any) => {
+      const message = e.message?.slice(0, 200) ?? String(e).slice(0, 200);
+      ctx.sdk.log("info", `[project] ${project.relPath} owner ERROR: ${message}`);
+      ctx.sdk.emit("handler.failed", {
+        handler: "project",
+        agent: ctx.agentName,
+        projectId,
+        projectPath: project.relPath,
+        owner: project.owner,
+        error: message,
+        durationMs: 0,
+      });
+    })
+    .finally(() => {
+      ownerLoopsInFlight.delete(projectId);
+    });
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const projectsRoot = ctx.sdk.paths.projects ?? resolve(ctx.sdk.paths.root, "projects");
   const stateFile = resolve(ctx.sdk.paths.root, ".state/project-health-state.json");
+  const ownerLoopsInFlight = new Set<string>();
 
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const ph = await loadProjectHealth(ctx.sdk.paths.root);
     const now = Date.now();
     const healthState = ph.readHealthState(stateFile);
@@ -275,27 +392,25 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Gather system context
     let breachedMetrics = new Set<string>();
-    let runningProjects = new Set<string>();
+    let ownerRunningProjects = new Set<string>();
     let liveProjectSessions = new Map<string, string>();
     try {
       for (const a of ctx.sdk.query.alerts({ resolved: false, limit: 500 }).rows)
         if (typeof a.metric_id === "string") breachedMetrics.add(a.metric_id);
-      const runningRuns = ctx.sdk.query.workflowRuns({ status: "running", limit: 500 }).rows as Array<{ task?: string | null; workflow?: string | null }>;
       for (const project of projects) {
-        const projectDir = dirname(project.projectFile);
         const projectId = projectIdFor(project);
-        if (runningRuns.some(run => {
-          if (!run.workflow) return false;
-          const task = run.task ?? "";
-          return task.includes(`project: ${projectDir}`) || task.includes(`project: ${project.relPath}`);
-        })) {
-          runningProjects.add(projectId);
+        if (ownerLoopsInFlight.has(projectId)) ownerRunningProjects.add(projectId);
+
+        const projectSessions = [
+          ...ctx.sdk.query.sessions({ projectId, status: "running", limit: 100 }).rows,
+          ...ctx.sdk.query.sessions({ projectId, status: "idle", limit: 100 }).rows,
+        ] as Array<{ sessionId?: string; source?: unknown }>;
+        const liveSession = projectSessions.find(row => row.sessionId);
+        if (liveSession?.sessionId) {
+          liveProjectSessions.set(projectId, liveSession.sessionId);
         }
-        const runningSession = (ctx.sdk.query.sessions({ projectId, status: "running", limit: 1 }).rows[0]
-          ?? ctx.sdk.query.sessions({ projectId, status: "idle", limit: 1 }).rows[0]) as { sessionId?: string } | undefined;
-        if (runningSession?.sessionId) {
-          runningProjects.add(projectId);
-          liveProjectSessions.set(projectId, runningSession.sessionId);
+        if (projectSessions.some(row => row.source === OWNER_SOURCE)) {
+          ownerRunningProjects.add(projectId);
         }
       }
     } catch { /* skip */ }
@@ -326,12 +441,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
     const targetProject = normalizeProjectPath(event?.data?.projectPath);
-    const commentNudge = event?.type === "project.nudge" && event?.data?.comment === true && !!targetProject;
+    const projectNudge = event?.type === "project.nudge" && !!targetProject;
+    const commentNudge = projectNudge && event?.data?.comment === true;
     const taskFinishedNudge = event?.type === "project.task.finished" && !!targetProject;
     for (const project of projects) {
       if (targetProject && !matchesProjectTarget(project, targetProject)) continue;
-      const forceLaunch = event?.type === "trigger.project" || commentNudge || taskFinishedNudge;
-      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, runningProjects, now, projects, forceLaunch) });
+      const forceLaunch = event?.type === "trigger.project" || projectNudge || taskFinishedNudge;
+      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, ownerRunningProjects, now, projects, forceLaunch) });
     }
     if (targetProject && actions.length === 0) {
       emitSkip(ctx, `Target project not found: ${targetProject}`, { eventType: event?.type ?? "timer.tick", projectPath: targetProject });
@@ -414,7 +530,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         continue;
       }
 
-      // launch-workflow
+      // launch owner agent
       if (launched >= ph.MAX_LAUNCHES_PER_TICK) {
         emitSkip(ctx, `Skip ${project.relPath} — cap reached`, {
           eventType: event?.type ?? "timer.tick",
@@ -424,20 +540,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         continue;
       }
 
-      const workflowName = resolveWorkflowName(project);
-      if (!workflowName) {
-        emitSkip(ctx, `Skip ${project.relPath} — workflow: project has no ${project.relPath.split("/").pop()}-iteration.ts implementation`, {
-          eventType: event?.type ?? "timer.tick",
-          projectId,
-          projectPath: project.relPath,
-        });
-        continue;
-      }
-      const projectDir = dirname(project.projectFile);
-      const task = `project: ${projectDir}\nagent: ${project.owner}\ngoal: see project file`;
-
-      ctx.sdk.log("info", `[project] Launching ${project.relPath} (workflow: ${workflowName}): ${action.reason}`);
-
       if (project.status !== "active") {
         let content = ph.updateField(project.content, "Status", "active");
         content = ph.updateField(content, "Stop Reason", "");
@@ -446,33 +548,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         writeFileSync(project.projectFile, content, "utf-8");
       }
 
-      ctx.sdk.runWorkflow(workflowName, task, { source: project.owner, projectId })
-        .then((r) => {
-          ctx.sdk.log("info", `[project] ${project.relPath} → ${r.status}${r.runId ? ` (${r.runId})` : ""}`);
-          ctx.sdk.emit("handler.workflow_dispatched", {
-            handler: "project",
-            workflow: workflowName,
-            source: project.owner,
-            projectId,
-            projectPath: project.relPath,
-            workflowRunId: r.runId ?? null,
-            status: r.status,
-            reason: action.reason,
-          });
-        })
-        .catch((e: any) => {
-          const message = e.message?.slice(0, 200) ?? String(e).slice(0, 200);
-          ctx.sdk.log("info", `[project] ${project.relPath} ERROR: ${message}`);
-          ctx.sdk.emit("handler.failed", {
-            handler: "project",
-            agent: ctx.agentName,
-            projectId,
-            projectPath: project.relPath,
-            workflow: workflowName,
-            error: message,
-            durationMs: 0,
-          });
-        });
+      launchProjectOwner(ctx, project, projectId, action.reason, ownerLoopsInFlight);
 
       pState.lastLaunch = now;
       if (!pState.launchTimestamps) pState.launchTimestamps = [];
@@ -489,7 +565,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     if (launched > 0) {
       const source = event?.source ?? "timer";
       ctx.sdk.emit("metric", { name: source === "timer" ? "handler.project.timer-catches" : "handler.project.event-triggers", value: launched });
-      ctx.sdk.log("info", `[project] Launched ${launched} workflow(s) [trigger: ${event?.type ?? "timer.tick"}]`);
+      ctx.sdk.log("info", `[project] Launched ${launched} project action(s) [trigger: ${event?.type ?? "timer.tick"}]`);
     }
   };
 };

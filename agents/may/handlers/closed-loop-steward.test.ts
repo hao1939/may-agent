@@ -132,9 +132,9 @@ describe("closed-loop-steward handler", () => {
     const triggerMatch = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
     expect(triggerMatch).not.toBeNull();
     const trigger = JSON.parse(triggerMatch?.[1] ?? "{}");
-    expect(trigger.data).toMatchObject({ type: "metric.breach", owner: "evaluator" });
-    expect(trigger.data.data).toMatchObject({ metricId: "evaluator.false-good-rate-sample" });
-    expect(trigger.data.data).not.toHaveProperty("owner");
+    expect(trigger).toMatchObject({ type: "metric.breach", owner: "agent:evaluator" });
+    expect(trigger.data).toMatchObject({ metricId: "evaluator.false-good-rate-sample" });
+    expect(trigger.data).not.toHaveProperty("owner");
     expect(runWorkflow).not.toHaveBeenCalledWith("closed-loop-steward", expect.anything(), { source: "may" });
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       handler: "closed-loop-steward",

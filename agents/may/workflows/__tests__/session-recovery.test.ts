@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "bun:test";
-import { execute } from "./session-recovery.js";
+import { execute } from "../session-recovery.ts";
 
 describe("session-recovery workflow", () => {
   it("reruns the failed agent for recoverable decisions and emits recovery evidence", async () => {

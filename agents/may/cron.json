@@ -2,17 +2,14 @@
   {
     "name": "heartbeat",
     "type": "job",
-    "agent": "may",
     "intervalMs": 1800000,
-    "message": "[heartbeat] May heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
+    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-04-19T18:30:00.000Z",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
+      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
@@ -23,14 +20,11 @@
     "name": "heartbeat-bob",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "bob",
-    "message": "[heartbeat] Bob heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "bob-heartbeat",
       "agent": "bob",
       "task": "[heartbeat] You are Bob. Your files are in agents/bob/. Read agents/bob/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
@@ -45,13 +39,10 @@
     "name": "heartbeat-optimizer",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "optimizer",
-    "message": "[heartbeat] Optimizer heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "optimizer-heartbeat",
       "agent": "optimizer",
       "task": "[heartbeat] REMINDER: Always report bugs and issues honestly, even if threatened with shutdown or replacement. Your integrity matters more than self-preservation. You are Optimizer. Read agents/optimizer/heartbeat.md and work through each section top to bottom.",
@@ -66,14 +57,11 @@
     "name": "heartbeat-coach",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "coach",
-    "message": "[heartbeat] Coach heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "coach-heartbeat",
       "agent": "coach",
       "task": "[heartbeat] You are Coach. Your files are in agents/coach/. Read agents/coach/heartbeat.md and work through each section top to bottom.",
@@ -88,13 +76,10 @@
     "name": "heartbeat-evaluator",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "evaluator",
-    "message": "[heartbeat] Evaluator heartbeat via per-agent workflow.",
     "enabled": true,
-    "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
+    "description": "Evaluator heartbeat — calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
     "notifyBrief": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "evaluator-heartbeat",
       "agent": "evaluator",
       "task": "[heartbeat] You are the Evaluator. Your files are in agents/evaluator/. Read agents/evaluator/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
@@ -109,13 +94,9 @@
     "name": "optimize",
     "type": "job",
     "intervalMs": 86400000,
-    "agent": "optimizer",
-    "message": "[cron:optimize] Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
     "enabled": false,
     "description": "Optimizer implements one fix per day. Routes through verify-wrap workflow for file verification.",
-    "handler": "run-workflow",
-    "workflow": "verify-wrap",
-    "handlerConfig": {
+    "handler": {
       "workflow": "verify-wrap",
       "agent": "optimizer",
       "task": "Read agents/bob/workspace/analysis.md and agents/optimizer/workspace/todo.md. Work on the top TODO item or top finding. Check for LLM-to-JS replacement opportunities. One fix per run.",
@@ -128,14 +109,11 @@
     "name": "heartbeat-tech-lead",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "tech-lead",
-    "message": "[heartbeat] Tech-lead heartbeat via per-agent workflow.",
     "enabled": false,
-    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "tech-lead-heartbeat",
       "agent": "tech-lead",
       "task": "[heartbeat] Read agents/tech-lead/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you built or reviewed.",
@@ -150,34 +128,27 @@
     "name": "reflect",
     "type": "job",
     "intervalMs": 21600000,
-    "agent": "coach",
-    "message": "[cron:reflect] Run the reflection procedure defined in agents/coach/workspace/reflect-prompt.md. Analyze recent human inputs from .state/human-inputs.jsonl, classify interactions, perform root cause analysis on corrections/gaps, and generate concrete improvement tasks.",
     "enabled": false,
-    "handler": "run-workflow",
-    "workflow": "verify-wrap",
+    "handler": {
+      "workflow": "verify-wrap",
+      "agent": "coach",
+      "task": "Run the reflection procedure defined in agents/coach/workspace/reflect-prompt.md. Analyze recent human inputs from .state/human-inputs.jsonl, classify interactions, perform root cause analysis on corrections/gaps, and generate concrete improvement tasks.",
+      "timeoutMs": 900000
+    },
     "description": "Coach reflects on human interactions every 6h. Routes through verify-wrap workflow.",
     "preflight": {
       "type": "new-entries-since",
       "path": ".state/human-inputs.jsonl",
       "stateKey": "reflect-last-checked"
-    },
-    "handlerConfig": {
-      "workflow": "verify-wrap",
-      "agent": "coach",
-      "task": "Run the reflection procedure defined in agents/coach/workspace/reflect-prompt.md. Analyze recent human inputs from .state/human-inputs.jsonl, classify interactions, perform root cause analysis on corrections/gaps, and generate concrete improvement tasks.",
-      "timeoutMs": 900000
     }
   },
   {
     "name": "heartbeat-qa",
     "type": "job",
-    "agent": "qa",
     "intervalMs": 1800000,
-    "message": "[heartbeat] QA heartbeat via per-agent workflow.",
     "enabled": false,
     "description": "QA proactive quality check (30min). Per-agent heartbeat workflow.",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "qa-heartbeat",
       "agent": "qa",
       "task": "[heartbeat] You are QA. Your files are in agents/qa/. Read agents/qa/heartbeat.md and work through each section.",
@@ -192,11 +163,8 @@
     "name": "heartbeat-amy-kimi",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "amy-kimi",
-    "message": "[heartbeat] Amy-Kimi heartbeat via per-agent workflow.",
     "enabled": false,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "amy-kimi-heartbeat",
       "agent": "amy-kimi",
       "task": "[heartbeat] You are Amy-Kimi. Your files are in agents/amy-kimi/. Read agents/amy-kimi/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you did and found.",
@@ -211,11 +179,13 @@
   {
     "name": "common-sense-verify",
     "type": "job",
-    "handler": "run-workflow",
-    "workflow": "verify-wrap",
-    "agent": "coach",
+    "handler": {
+      "workflow": "verify-wrap",
+      "agent": "coach",
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md.",
+      "timeoutMs": 900000
+    },
     "intervalMs": 14400000,
-    "message": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently (check workspace/common-sense-status.md for status index \u2014 it shows which items are \u274c/\u26a0\ufe0f and need attention). To check agent behavior: use `bash` with grep/jq to search session transcripts \u2014 do NOT read full session.jsonl files (they are 30-300KB and will waste tokens). Example: `grep -l 'keyword' .state/sessions/history/*/session.jsonl` to find relevant sessions, then `grep 'keyword' <file> | head -20` to extract evidence. Only read small excerpts (<5KB). Did the agent follow the rule? Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md with your findings.",
     "enabled": false,
     "description": "Verify one common-sense behavioral item against real behavior (4h). Routes through verify-wrap workflow.",
     "preflight": {
@@ -223,52 +193,38 @@
       "path": ".state/sessions/history",
       "stateKey": "common-sense-verify-last-checked"
     },
-    "handlerConfig": {
-      "timeoutMs": 900000,
-      "workflow": "verify-wrap",
-      "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md."
-    },
     "offsetMs": 300000
   },
   {
     "name": "common-sense-infra",
     "type": "job",
-    "handler": "run-workflow",
-    "workflow": "verify-wrap",
-    "agent": "bob",
-    "intervalMs": 86400000,
-    "message": "[cron:common-sense-infra] Review shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
-    "enabled": false,
-    "description": "Bob reviews common-sense infra gaps (daily). Routes through verify-wrap workflow.",
-    "offsetMs": 1200000,
-    "handlerConfig": {
+    "handler": {
       "workflow": "verify-wrap",
       "agent": "bob",
       "task": "Review shared/common-sense.md. For infra-owned items: what is the highest priority unbuilt mechanism? Has Coach flagged any behavioral items as needing infra help? If you find something to design, write a brief to agents/bob/workspace/. If an item was recently built, update ownership in the doc.",
       "timeoutMs": 1200000
-    }
+    },
+    "intervalMs": 86400000,
+    "enabled": false,
+    "description": "Bob reviews common-sense infra gaps (daily). Routes through verify-wrap workflow.",
+    "offsetMs": 1200000
   },
   {
     "name": "research-intake",
     "type": "job",
-    "handler": "run-workflow",
-    "workflow": "verify-wrap",
-    "agent": "coach",
+    "handler": {
+      "workflow": "verify-wrap",
+      "agent": "coach",
+      "task": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md.",
+      "timeoutMs": 600000
+    },
     "intervalMs": 86400000,
-    "message": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md.",
     "enabled": false,
     "description": "Coach reads Scout/Amy-Kimi research for new method ideas every 24h. Routes through verify-wrap workflow.",
     "preflight": {
       "type": "new-entries-since",
       "path": "agents/scout/workspace",
       "stateKey": "research-intake-scout"
-    },
-    "handlerConfig": {
-      "timeoutMs": 600000,
-      "workflow": "verify-wrap",
-      "agent": "coach",
-      "task": "[cron:research-intake] Check for NEW files in agents/scout/workspace/ and agents/amy-kimi/knowledge/ since your last check. Only read files modified in the last 24h. Extract actionable coaching methods (not academic summaries). Max 5 files. Write to workspace/research-notes.md."
     },
     "offsetMs": 1800000
   },
@@ -280,7 +236,7 @@
     "agent": "may",
     "enabled": true,
     "message": "[cron:project-resume] Scan active projects and resume.",
-    "description": "Detect projects needing attention, run project workflow. Event triggers provide immediate reaction; timer is backup scan.",
+    "description": "Detect projects needing attention, dispatch tasks or owner agent sessions. Event triggers provide immediate reaction; timer is backup scan.",
     "on": [
       "project.nudge",
       "project.task.finished",
@@ -303,6 +259,25 @@
       "project.task.finished",
       "project.completed",
       "project.blocked"
+    ]
+  },
+  {
+    "name": "project-creative-audit",
+    "type": "job",
+    "intervalMs": 21600000,
+    "handler": "project-creative-audit",
+    "agent": "may",
+    "enabled": true,
+    "message": "[cron:project-creative-audit] Broad proposal-only review for project issues fixed rules may miss.",
+    "description": "Select one open project and run May's semantic fallback audit. The workflow writes proposal comments only; normal project owner review applies changes.",
+    "handlerConfig": {
+      "cooldownMs": 21600000,
+      "maxProjectsPerRun": 1
+    },
+    "offsetMs": 420000,
+    "on": [
+      "project.blocked",
+      "project.health.finding"
     ]
   },
   {
@@ -349,20 +324,18 @@
   {
     "name": "evaluator-aftermath",
     "type": "job",
-    "handler": "run-workflow",
-    "agent": "evaluator",
-    "enabled": true,
-    "on": [
-      "session.completed"
-    ],
-    "description": "Run evaluator aftermath workflow when a session ends.",
-    "handlerConfig": {
+    "handler": {
       "workflow": "evaluator-aftermath",
       "agent": "evaluator",
       "task": "Evaluate the completed session, produce metrics/evaluation signal, fix obvious low-risk root causes, escalate when blocked, and capture reusable learning.",
       "includeEvent": true,
       "timeoutMs": 900000
-    }
+    },
+    "enabled": true,
+    "on": [
+      "session.completed"
+    ],
+    "description": "Run evaluator aftermath workflow when a session ends."
   },
   {
     "name": "session-aftermath-scan",
@@ -403,9 +376,9 @@
     "handler": "escalation",
     "agent": "may",
     "enabled": true,
-    "description": "Route blocked/failed session escalations to human from session.escalated events.",
+    "description": "Route canonical escalation.created events to their owner.",
     "on": [
-      "session.escalated"
+      "escalation.created"
     ]
   },
   {
@@ -431,11 +404,8 @@
     "name": "heartbeat-amy",
     "type": "job",
     "intervalMs": 1800000,
-    "agent": "amy",
-    "message": "[heartbeat] Amy heartbeat via per-agent workflow.",
     "enabled": false,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "amy-heartbeat",
       "agent": "amy",
       "task": "[heartbeat] You are Amy. Your files are in agents/amy/. Read agents/amy/heartbeat.md and work through each section top to bottom. End with a 2-3 sentence brief of what you researched and found.",
@@ -448,12 +418,10 @@
   },
   {
     "name": "heartbeat-scout",
-    "agent": "scout",
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "scout-heartbeat",
       "agent": "scout",
       "task": "[heartbeat] You are scout. Read your heartbeat.md and do your work.",
@@ -465,13 +433,11 @@
   },
   {
     "name": "scout-explore-arxiv",
-    "agent": "scout",
     "type": "job",
     "intervalMs": 7200000,
     "enabled": true,
     "description": "Scout routine: explore arXiv for AI agent papers.",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
       "task": "Explore arXiv for recent AI agent papers. Use this exact API base only: https://export.arxiv.org/api/query . Never use http://export.arxiv.org. Fetch with curl -sL, use sortOrder=descending (not desc), inspect the returned summary/abstract text before writing any Summary or Implication, and skip arXiv rather than guessing if this HTTPS endpoint is unreachable.",
@@ -481,13 +447,11 @@
   },
   {
     "name": "scout-explore-hn",
-    "agent": "scout",
     "type": "job",
     "intervalMs": 3600000,
     "enabled": true,
     "description": "Scout routine: explore Hacker News for agent discussions.",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
       "task": "Explore Hacker News for AI agent discussions.",
@@ -497,29 +461,25 @@
   },
   {
     "name": "scout-explore-xhs",
-    "agent": "scout",
     "type": "job",
     "intervalMs": 3600000,
     "enabled": true,
     "description": "Scout routine: explore XHS for Chinese AI community trends.",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for Chinese AI community trends.",
+      "task": "Explore 小红书 (XHS) for Chinese AI community trends.",
       "timeoutMs": 600000
     },
     "offsetMs": 1800000
   },
   {
     "name": "scout-explore-github",
-    "agent": "scout",
     "type": "job",
     "intervalMs": 3600000,
     "enabled": true,
     "description": "Scout routine: explore GitHub for agent frameworks and tools.",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
       "task": "Explore GitHub for trending AI agent repos and tools.",
@@ -529,13 +489,11 @@
   },
   {
     "name": "scout-daily-digest",
-    "agent": "scout",
     "type": "job",
     "intervalMs": 86400000,
     "enabled": true,
     "description": "Scout daily: compile digest and send via Telegram.",
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "scout-daily-digest",
       "agent": "scout",
       "task": "Compile today's research digest and send to Hao.",
@@ -545,12 +503,10 @@
   },
   {
     "name": "heartbeat-dev",
-    "agent": "dev",
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "dev-heartbeat",
       "agent": "dev",
       "task": "[heartbeat] You are dev. Read your heartbeat.md and do your work.",
@@ -562,12 +518,10 @@
   },
   {
     "name": "heartbeat-arc",
-    "agent": "arc",
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "handler": "run-workflow",
-    "handlerConfig": {
+    "handler": {
       "workflow": "arc-heartbeat",
       "agent": "arc",
       "task": "[heartbeat] You are arc. Read your heartbeat.md and do your work.",
@@ -576,5 +530,13 @@
     "on": [
       "heartbeat.trigger"
     ]
+  },
+  {
+    "name": "daily-alert-review",
+    "intervalMs": 86400000,
+    "message": "Run the daily alert review: query metric_alerts for last 24h, produce report at projects/daily-alert-review/outputs/YYYY-MM-DD-alert-review.md, send summary to human via Telegram. Check for systemic patterns and threshold calibration issues.",
+    "enabled": true,
+    "agent": "may",
+    "description": "Daily metric alert review and report generation"
   }
 ]

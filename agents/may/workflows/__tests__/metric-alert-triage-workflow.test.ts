@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { execute } from "./metric-alert-triage.ts";
+import { execute } from "../metric-alert-triage.ts";
 
 function makeDbData() {
   return {
@@ -62,9 +62,36 @@ function task(metricId = "arc.quality") {
     "```json",
     JSON.stringify({
       type: "metric.breach",
+      source: "metric-alert-reactor",
+      owner: "agent:arc",
       data: {
         alertId: 7,
-        owner: "arc",
+        metricId,
+        metricName: "Arc quality",
+        current: 0.4,
+        threshold: 0.8,
+        target: 0.95,
+        message: "quality below threshold",
+        priority: "P1",
+      },
+    }, null, 2),
+    "```",
+  ].join("\n");
+}
+
+function canonicalTask(metricId = "arc.quality") {
+  return [
+    "Run metric alert triage.",
+    "",
+    "## Trigger Event",
+    "```json",
+    JSON.stringify({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "agent:arc",
+      urgency: "high",
+      data: {
+        alertId: 7,
         metricId,
         metricName: "Arc quality",
         current: 0.4,
@@ -131,6 +158,58 @@ describe("metric-alert-triage workflow", () => {
       evidence: "handler bug reproduced and patched",
       ownerSessionId: "s_owner",
       workflow: "metric-alert-triage",
+    });
+  });
+
+  it("reads canonical metric.breach envelopes and does not require data.owner", async () => {
+    const emitted: Array<Record<string, unknown>> = [];
+    const sessionFilters: Array<Record<string, unknown>> = [];
+    const rows = makeDbData();
+    rows.metric.explicitOwner = null;
+    const query = makeQuery(rows);
+    const ctx = {
+      task: canonicalTask(),
+      agentsRoot: "/tmp/no-agents",
+      query: {
+        metricAlertContext: query.metricAlertContext,
+        sessions: (filter: Record<string, unknown>) => {
+          sessionFilters.push(filter);
+          return query.sessions(filter);
+        },
+      },
+      runFunction: async (_label: string, fn: () => Promise<string>) => ({
+        sessionId: "fn_load",
+        status: "done",
+        lastAssistantText: await fn(),
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+      }),
+      runAgent: async () => ({
+        sessionId: "s_owner",
+        status: "done",
+        lastAssistantText: [
+          "METRIC_ALERT_OPERATION: fix_root_cause",
+          "METRIC_ALERT_EVIDENCE: canonical event payload handled",
+          "METRIC_ALERT_NEXT_VALIDATION: next metrics-snapshot",
+        ].join("\n"),
+        messages: [],
+        duration: "1s",
+        outputDir: "",
+      }),
+      emit: (event: Record<string, unknown>) => emitted.push(event),
+      done: (summary: string) => ({ type: "done", summary }),
+      escalate: (reason: string, context?: unknown) => ({ type: "escalate", reason, context }),
+    } as any;
+
+    const result = await execute(ctx);
+
+    expect(result).toMatchObject({ type: "done" });
+    expect(sessionFilters[0]).toMatchObject({ agent: "arc" });
+    expect(emitted[0]).toMatchObject({
+      type: "metric.alert_judged",
+      metricId: "arc.quality",
+      owner: "arc",
     });
   });
 

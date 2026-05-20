@@ -1,38 +1,46 @@
-# Proposed Strategies — 2026-05-17 13:44Z
+# Proposed Strategies — 2026-05-18 00:50Z
 
 ## Scope
-Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical heuristic `good` evaluation rows:
-- `.state/sessions/history/s_1779025311150_347/session.jsonl` (scout)
-- `.state/sessions/history/s_1779023420244_342/session.jsonl` (arc)
-- `.state/sessions/history/s_1779021458235_332/session.jsonl` (scout)
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical `good` evaluation rows:
+- `.state/sessions/history/s_1779067892659_16/session.jsonl` (arc)
+- `.state/sessions/history/s_1779067892567_12/session.jsonl` (may)
+- `.state/sessions/history/s_1779067860070_11/session.jsonl` (may)
 
 ## Output Summary
 - Logs scanned: 3
-- Sessions with at least one positive `strategy` lesson: 1
-- Sessions with zero extracted positive `strategy` lessons: 2
-- Total extracted strategy lessons: 1
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted positive `strategy` lessons: 1
+- Total extracted strategy lessons: 3
 
 ## Lessons
 
-### 1. Turn evidence gathering into one concrete action before finishing
-**Evidence:** The fresh scout sample `s_1779021458235_332` emitted `Turns evidence gathering into one concrete action before finishing`.
+### 1. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh May sample `s_1779067892567_12` emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
 
 **Strategy:**
-- After collecting enough signal, convert the scan into one concrete outward action (`message`, `edit`, or `write`) before ending the session.
-- Preserve the evidence-to-action transition as a reusable completion tactic for coordination and alert-triage work.
-- Distinguish this from optimization noise: the positive signal is the concrete outward action after evidence gathering, not merely high tool activity.
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic across successful coordination and diagnosis sessions.
+
+### 2. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh May samples `s_1779067892567_12` and `s_1779067860070_11` both emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
 
 ## Calibration Notes
-- Positive extraction is still live, but this freshest batch regressed from the prior 2/3 coverage to 1/3.
-- The remaining gap is no longer just compact scout transcripts: the fresh compact arc sample `s_1779023420244_342` also returned `{"lessons":[]}` despite a canonical heuristic `good` row and six success-language matches.
-- Optimization noise still dominates some successful transcripts: the only positive sample also emitted three `optimization` lessons before surfacing the single reusable tactic.
+- Positive extraction remains live on the freshest batch at 2/3 coverage.
+- The remaining gap is not just compact scout work: the fresh arc sample `s_1779067892659_16` returned only `recovery`/`optimization` output despite a canonical `good` row and seven success-language matches.
+- Optimization noise still coexists with positive tactics on successful May sessions: `s_1779067860070_11` surfaced one `strategy` lesson only alongside two optimization warnings.
 
 ## Verification Snapshot
-- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779025311150_347/session.jsonl --type strategy` returned `{"lessons":[],...}` with `scanned_lines: 13`.
-- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779023420244_342/session.jsonl --type strategy` returned `{"lessons":[],...}` with `scanned_lines: 11`.
-- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779021458235_332/session.jsonl --type strategy` returned one `type: "strategy"` lesson (`Turns evidence gathering into one concrete action before finishing`) plus three `optimization` lessons, with `scanned_lines: 29`.
-- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `3`, `6`, and `8` respectively.
-- `query_db` confirmed canonical heuristic `good` evaluation rows for all three sampled sessions (`quality=0.85`, `efficiency=0.8`).
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779067892659_16/session.jsonl --type strategy` returned only one `recovery` lesson plus one `optimization` lesson, with `scanned_lines: 22`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779067892567_12/session.jsonl --type strategy` returned 2 `type: "strategy"` lessons with `scanned_lines: 16`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779067860070_11/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson plus 2 `optimization` lessons, with `scanned_lines: 26`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `7`, `5`, and `6` respectively.
+- `query_db` confirmed canonical latest evaluation rows `verdict='good'`, `quality=0.85`, `efficiency=0.8` for all three sampled sessions.
 
 ---
 
@@ -331,7 +339,7 @@ Re-ran `extract-strategy.cjs --mode strategy` on the same 3 freshest verified-`g
 - Optimization lessons can still appear beside the stronger positive tactics on live runs, so consumers should treat the key change here as **positive extraction now works**, not **ranking/noise is fully solved**.
 
 ## Regression Snapshot
-- Added fixed fixture: `agents/shared/projects/evaluator-strategy-extractor-calibration/outputs/fixtures/strategy-positive-modern-session/session.jsonl`
+- Added fixed fixture: `projects/agent-system-evolution/outputs/evaluator/strategy-extractor/fixtures/strategy-positive-modern-session/session.jsonl`
 - Added harness: `agents/evaluator/skills/extract-strategy.test.cjs`
 - `node agents/evaluator/skills/extract-strategy.test.cjs` now passes (`Passed: 8`, `Failed: 0`)
 - Fixture run preserves 3 positive strategy triggers on the modern `assistant.content[].toolCall` transcript shape

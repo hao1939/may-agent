@@ -1,14 +1,37 @@
-# How to Write a Handler
+# How to Author Handlers
 
 ## Basics
 
-A handler is a TypeScript file in `agents/<name>/handlers/`. It exports a `create` function:
+A handler is what runs when a timer, event subscription, or manual
+`trigger.<entry-name>` fires.
+
+For straightforward workflow work, configure a workflow-backed handler directly
+in `cron.json`:
+
+```json
+{
+  "name": "evaluator-aftermath",
+  "handler": {
+    "workflow": "evaluator-aftermath",
+    "agent": "evaluator",
+    "task": "Review the completed session and record evaluator signal.",
+    "includeEvent": true,
+    "timeoutMs": 900000
+  },
+  "enabled": true,
+  "on": ["session.completed"]
+}
+```
+
+Write a TypeScript handler only when the handler must do deterministic infra
+work before deciding what to do. A TypeScript handler lives in
+`agents/<name>/handlers/` and exports a `create` function:
 
 ```typescript
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
+import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const sdk = ctx.sdk;
     // ... your code here ...
   };
@@ -23,7 +46,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 Default convention:
 
 ```
-event/timer -> handler -> workflow -> sessions/functions/metrics
+timer/event/manual trigger -> handler -> workflow/code -> sessions/functions/metrics
 ```
 
 Handlers are bridges. They should normalize the trigger, do deterministic
@@ -38,14 +61,16 @@ collection in the workflow.
 | Timer measures a fact | Read bounded state, update metrics, emit/resolve metric events if needed | Starting an agent just to count rows |
 | Event needs judgment | Validate the event payload, build a compact task, run the owning workflow | Doing multi-step reasoning inside the handler |
 | Event is missing required fields | Emit `handler.skipped` with the reason and return | Guessing fields from subscriber-specific shortcuts |
-| Owner action is needed | Route to a workflow with `sdk.runWorkflow(...)` and set `source` to the owner/entry that should appear in trace | Calling many agents directly from handler code |
+| Owner action is needed | Use a workflow-backed handler, or route to a workflow with `sdk.runWorkflow(...)` when deterministic preflight is needed | Calling many agents directly from handler code |
 | External blocker is clear | Use `sdk.escalate(...)` with owner, evidence, and requested action | Sending an informal message and calling it escalation |
-| Operator manually fires a job | Treat `trigger.<entry-name>` as a control shortcut for that cron entry | Treating `trigger.*` as a domain lifecycle event |
+| Operator manually fires a job | Treat `trigger.<entry-name>` as a control shortcut for that trigger entry | Treating `trigger.*` as a domain lifecycle event |
 
-## Registering (cron.json)
+## Registering Trigger Entries
 
-Add an entry to your agent's `cron.json`. The file is a top-level JSON
-array of entries:
+Add an entry to your agent's `cron.json`. The filename is historical; each
+entry describes triggers plus the handler to run.
+
+Named TypeScript handler:
 
 ```json
 [
@@ -59,10 +84,28 @@ array of entries:
 ]
 ```
 
+Workflow-backed handler:
+
+```json
+[
+  {
+    "name": "scout-daily-digest",
+    "handler": {
+      "workflow": "scout-daily-digest",
+      "agent": "scout",
+      "task": "Compile today's research digest and send it to Hao.",
+      "timeoutMs": 300000
+    },
+    "intervalMs": 86400000,
+    "enabled": true
+  }
+]
+```
+
 - `name` — unique identifier
-- `handler` — filename (without .ts)
+- `handler` — filename without `.ts`, or `{ workflow, agent, task }`
 - `intervalMs` — fire interval in ms. **Minimum: 10000 (10 seconds).** Entries
-  below the floor are rejected at load time (an error is emitted via cron's
+  below the floor are rejected at load time (an error is emitted via the scheduler's
   error channel) — the rest of `cron.json` continues to load. If you need
   sub-10s reactions, use an event subscription via `on` instead.
 - `on` — (optional) event types that also trigger this handler
@@ -91,7 +134,7 @@ cached normally).
 Via `ctx.sdk` (preferred):
 - `sdk.emit(type, data, envelope?)` — emit canonical events
 - `sdk.runWorkflow(name, task)` — dispatch pre-orchestrated sessions/functions
-- `sdk.runAgent(agent, task)` — exceptional from handlers; prefer workflow bridge
+- `sdk.runAgent(agent, task)` — exceptional from handlers; prefer workflow-backed handlers
 - `sdk.metrics` — define, record, alert, resolve, evaluate, and list metrics
 - `sdk.query` — target preferred bounded read surface for sessions/events/metrics/projects
 - `sdk.getDb()` — compatibility escape hatch; prefer `query`/`metrics`
@@ -104,48 +147,44 @@ Via `ctx` (handler-specific):
 - `ctx.agentName` — the agent that owns this handler
 - `ctx.triggerNow(name)` — fire another handler immediately
 
-## Trigger Events
+## Handler Events
 
-Timer handlers may receive no event or a manual/timer trigger. Event-subscribed
-handlers receive:
+Handlers receive the canonical event envelope directly. Timer/manual triggers
+use the same shape as event subscriptions:
 
 ```typescript
-type TriggerEvent = {
+type EventEnvelope = {
   type: string;
-  source: "timer" | "event" | "manual";
-  entry: string;
-  data?: EventEnvelope;
-  timestamp: number;
+  source: string;
+  owner: string;
+  timestamp?: number;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  data: Record<string, unknown>;
 };
 ```
 
-`EventEnvelope` is the canonical event shape from
-[events.md](../2a-design/events.md): top-level `type/source/owner/urgency` plus
-event-specific `data`.
-
-For event subscriptions, `event.data` is the original event envelope. Read
-domain fields from `event.data.data`:
+For event subscriptions, the handler receives the original event unchanged. Read
+domain fields from `event.data`:
 
 ```typescript
-const original = event?.data;
-const sessionId = typeof original?.data?.sessionId === "string"
-  ? original.data.sessionId
+const sessionId = typeof event?.data?.sessionId === "string"
+  ? event.data.sessionId
   : null;
 ```
 
-Do not expect cron to add shortcut fields to `event` for a specific subscriber.
+Do not expect the trigger runtime to add shortcut fields to `event` for a specific subscriber.
 If the handler needs a field, the event emitter should include it in the event's
-`data` payload and the handler should validate it from `event.data.data`.
+`data` payload and the handler should validate it from `event.data`.
 
-Example: a handler subscribed to `metric.breach` receives a trigger whose
-`event.data` is the original event envelope. The envelope `owner` is the
-routable owner, and metric details live under `event.data.data`.
+Example: a handler subscribed to `metric.breach` receives the `metric.breach`
+event envelope. The envelope `owner` is the routable owner, and metric details
+live under `event.data`.
 
 ```typescript
-const envelope = event?.data;
-const owner = typeof envelope?.owner === "string" ? envelope.owner : null;
-const metricId = typeof envelope?.data?.metricId === "string"
-  ? envelope.data.metricId
+const owner = typeof event?.owner === "string" ? event.owner : null;
+const metricId = typeof event?.data?.metricId === "string"
+  ? event.data.metricId
   : null;
 
 if (!owner || !metricId) {
@@ -163,7 +202,7 @@ Handlers are hot-reloaded on every tick. Edit the file → next fire picks up ch
 
 ## Lifecycle Events
 
-The cron system automatically emits:
+The trigger runtime automatically emits:
 - `handler.started` when your handler fires
 - `handler.completed` when it finishes
 - `handler.failed` if it throws
@@ -183,10 +222,10 @@ fires only inside `sdk.metrics.record()`/`evaluate()`. If you go through raw
 SQL you'll see the value change but never see `metric.breach` events.
 
 ```typescript
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
+import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  return async (_event?: TriggerEvent) => {
+  return async (_event?: EventEnvelope) => {
     const sdk = ctx.sdk;
     const db = sdk.getDb();
 
@@ -204,13 +243,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 };
 ```
 
-## Example: Event-To-Workflow Bridge
+## Example: TypeScript Event-To-Workflow Bridge
 
 ```typescript
-import type { HandlerContext, HandlerModule, TriggerEvent, CronEntry } from "@may-agent/sdk";
+import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const task = [
       `Trigger: ${event?.type ?? "timer"}`,
       `Entry: ${entry.name}`,
@@ -224,13 +263,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 };
 ```
 
-Use this shape for any handler that needs judgment, project context,
-investigation, or agent action.
+Use this shape when deterministic handler code must inspect or validate state
+before the workflow dispatch. If the entry always runs the same workflow, prefer
+the workflow-backed handler object in `cron.json`.
 
-## Example: SDK Workflow Bridge Helper
+## SDK Workflow Bridge Helper
 
-For straightforward event-to-workflow bridges, use the SDK helper instead of
-writing boilerplate:
+`createWorkflowHandler()` is the adapter used by workflow-backed handler config.
+Use it directly only when you are writing a reusable TypeScript handler module:
 
 ```typescript
 import { createWorkflowHandler } from "@may-agent/sdk";
@@ -239,14 +279,14 @@ export const create = createWorkflowHandler({
   workflow: "evaluator-aftermath",
   includeEvent: true,
   task: (_ctx, event) => {
-    const sessionId = event?.data?.data?.sessionId;
+    const sessionId = event?.data?.sessionId;
     return `Review completed session ${sessionId}`;
   },
-  shouldRun: (_ctx, event) => typeof event?.data?.data?.sessionId === "string",
+  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
 });
 ```
 
-With `includeEvent: true`, the helper appends the exact trigger object under
+With `includeEvent: true`, the helper appends the exact event envelope under
 `## Trigger Event` in the workflow task. If no event payload is present, it
 skips dispatch and emits `handler.skipped`.
 

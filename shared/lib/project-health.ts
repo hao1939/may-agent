@@ -14,7 +14,7 @@ import { createHash, randomBytes } from "node:crypto";
 
 export const MAX_LAUNCHES_PER_TICK = 3;
 export const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between launches per project
-export const MAX_ITERATIONS_PER_HOUR = 2;   // Max 2 workflow launches per project per hour
+export const MAX_ITERATIONS_PER_HOUR = 2;   // Max 2 owner-loop launches per project per hour
 export const ESCALATION_COOLDOWN_MS = 24 * 60 * 60 * 1000; // Max one human escalation per project per day
 const COMMENT_RESUME_STATUSES = new Set(["waiting", "blocked", "pending-review", "paused"]);
 
@@ -33,7 +33,7 @@ export interface ProjectInfo {
   owner: string;
   /** Parsed blocker reason (from Current State or Stop Reason) */
   blockerReason: string;
-  /** Parsed workflow field (default: "project") */
+  /** Legacy workflow field, no longer used to drive projects. */
   workflow: string;
   /** Project file format violations. Empty means current convention. */
   formatErrors?: string[];
@@ -45,7 +45,7 @@ export interface ProjectScanRoots {
 }
 
 export interface HealthAction {
-  type: "skip" | "reactivate" | "add-comment" | "escalate" | "launch-workflow";
+  type: "skip" | "reactivate" | "add-comment" | "escalate" | "launch-owner";
   reason: string;
   comment: string;
 }
@@ -120,7 +120,7 @@ function scanProjectDir(projectsDir: string, relPrefix: string, seen: Set<string
       const status = meta.status?.toLowerCase() || "active";
       const owner = meta.owner || "unknown";
       const blockerReason = meta.stop_reason || meta.resume_condition || "";
-      const workflow = meta.workflow || "project";
+      const workflow = meta.workflow || "";
       seen.add(projDir);
       projects.push({ relPath: `${relPrefix}/${projDir}`, projectFile, content, status, owner, blockerReason, workflow, formatErrors });
     }
@@ -184,7 +184,7 @@ export function diagnoseProject(
     if (hasUnread) {
       const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
-      return { type: "launch-workflow", reason: "closed but has unread comments — reopening", comment: "" };
+      return { type: "launch-owner", reason: "closed but has unread comments — reopening", comment: "" };
     }
     return { ...skip, reason: "closed by human" };
   }
@@ -208,7 +208,7 @@ export function diagnoseProject(
     if (hasUnread) {
       const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
-      return { type: "launch-workflow", reason: `${status} with unread comments`, comment: "" };
+      return { type: "launch-owner", reason: `${status} with unread comments`, comment: "" };
     }
 
     const resumeAfter = parseResumeAfter(project.content);
@@ -216,7 +216,7 @@ export function diagnoseProject(
       if (now >= resumeAfter) {
         const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
         if (limited) return { ...skip, reason: limited };
-        return { type: "launch-workflow", reason: `${status} resume_after is due`, comment: "" };
+        return { type: "launch-owner", reason: `${status} resume_after is due`, comment: "" };
       }
       return { ...skip, reason: `${status} until ${new Date(resumeAfter).toISOString()}` };
     }
@@ -249,12 +249,13 @@ export function diagnoseProject(
     return { ...skip, reason: `${status} — waiting for fix (${Math.round(stoppedHours * 60)}min)` };
   }
 
-  // Active — launch if no session running for this project
+  // Active — launch if no owner loop is already running for this project
   if (status === "active") {
-    // Check if there's already a live session for this specific project
+    // Task sessions may run in parallel; only an existing owner loop suppresses
+    // another owner launch for this project.
     const projectId = `${project.owner}/${project.relPath.split("/").pop()}`;
     if (runningProjects.has(projectId)) {
-      return { ...skip, reason: "project has live session" };
+      return { ...skip, reason: "project owner already running" };
     }
 
     if (!forceLaunch) {
@@ -262,7 +263,7 @@ export function diagnoseProject(
       if (limited) return { ...skip, reason: limited };
     }
 
-    return { type: "launch-workflow", reason: forceLaunch ? "manual project trigger" : "active project needs work", comment: "" };
+    return { type: "launch-owner", reason: forceLaunch ? "manual project trigger" : "active project needs work", comment: "" };
   }
 
   return skip;
@@ -345,7 +346,7 @@ export function upsertProject(db: any, project: ProjectInfo): void {
   const meta = parseProjectMeta(project.content);
   const name = meta.name || meta.id || project.relPath.split("/").pop() || project.relPath;
   const type = meta.type?.toLowerCase() || "milestone";
-  const workflow = project.workflow || "project";
+  const workflow = project.workflow || "";
   const iteration = parseInt(meta.iteration || "0", 10);
   const priority = meta.priority || "";
   const id = project.relPath.split("/").pop() || project.relPath;

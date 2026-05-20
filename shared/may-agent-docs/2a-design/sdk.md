@@ -59,7 +59,7 @@ bookkeeping, and keep those reads bounded.
 
 ```typescript
 export const create = (ctx: HandlerContext, entry: CronEntry) => {
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const sdk = ctx.sdk;           // ← the SDK
     await sdk.runWorkflow("metric-alert-triage", "task/context from event", {
       source: entry.name,
@@ -92,10 +92,11 @@ context for that resumed task, not direct escalation resume targets.
 
 ## Workflow Handler Helper
 
-`@may-agent/sdk` also exports `createWorkflowHandler(options)`, the canonical
-helper for simple cron/event-to-workflow bridges. Keep the implementation in the
-SDK package; runtime/shared code should import it rather than carrying local
-copies.
+`@may-agent/sdk` also exports `createWorkflowHandler(options)`, the adapter that
+turns a workflow into the same handler interface used by timer/event/manual
+triggers. The trigger loader uses it for `handler: { workflow, agent, task }`
+entries. TypeScript handlers may import it directly when they need a reusable
+workflow-backed module.
 
 ```typescript
 import { createWorkflowHandler } from "@may-agent/sdk";
@@ -103,17 +104,16 @@ import { createWorkflowHandler } from "@may-agent/sdk";
 export const create = createWorkflowHandler({
   workflow: "evaluator-aftermath",
   task: (_ctx, event) => {
-    const sessionId = event?.data?.data?.sessionId;
+    const sessionId = event?.data?.sessionId;
     return `Review completed session ${sessionId}`;
   },
   includeEvent: true,
-  shouldRun: (_ctx, event) => typeof event?.data?.data?.sessionId === "string",
+  shouldRun: (_ctx, event) => typeof event?.data?.sessionId === "string",
 });
 ```
 
-`includeEvent: true` appends the exact trigger object under `## Trigger Event`.
-For event subscriptions, `event.data` is the original event envelope and
-event-specific fields stay inside `event.data.data`.
+`includeEvent: true` appends the exact event envelope under `## Trigger Event`.
+For event subscriptions, event-specific fields stay inside `event.data`.
 
 ## WorkflowSDK
 

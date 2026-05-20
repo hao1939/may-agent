@@ -11,7 +11,7 @@ iteration: 2
 
 ## Goal
 
-Stop the recurring `evaluator-aftermath requires a sessionId` escalation loop by preserving the original event payload for event-triggered handlers and having `evaluator-aftermath` read the session id from `trigger.data.sessionId`.
+Stop the recurring `evaluator-aftermath requires a sessionId` escalation loop by preserving the canonical event envelope for event-triggered handlers and having `evaluator-aftermath` read the session id from `event.data.sessionId`.
 
 ## Signals
 
@@ -25,9 +25,9 @@ Completed.
 
 The clean model is now implemented and documented:
 
-- Cron passes the original event payload through `TriggerEvent.data`.
-- Framework code does not promote domain fields such as `sessionId` onto the trigger object.
-- `evaluator-aftermath` reads the session id from `trigger.data.sessionId`.
+- Timer-triggered handlers and event subscribers receive a canonical event envelope directly.
+- Framework code does not promote domain fields such as `sessionId` onto the envelope.
+- `evaluator-aftermath` reads the session id from `event.data.sessionId`.
 - `createWorkflowHandler` is owned by `@may-agent/sdk`; shadow workflow-handler implementations were removed.
 - Project discussion handling now uses `discussion.md` and canonical YAML frontmatter only.
 
@@ -40,8 +40,8 @@ Runtime validation on 2026-05-18 shows the loop is no longer active:
 ## Plan
 
 - [x] Confirm the failing path was the event-driven aftermath bridge.
-- [x] Fix event trigger payload preservation so subscribers receive the original event data.
-- [x] Update `evaluator-aftermath` to read `sessionId` from `trigger.data.sessionId`.
+- [x] Fix event trigger payload preservation so subscribers receive the canonical event envelope.
+- [x] Update `evaluator-aftermath` to read `sessionId` from `event.data.sessionId`.
 - [x] Remove duplicate workflow-handler surfaces and document SDK ownership.
 - [x] Remove stale project-comment legacy support from the active runtime path.
 - [x] Validate runtime events show no fresh missing-session escalation loop.
@@ -78,6 +78,6 @@ Opened from evaluator heartbeat after fresh DB triage showed the null-trigger lo
 
 ### 2026-05-18
 
-Closed after implementing the clean event model. The framework now passes the original event payload as `TriggerEvent.data`; handlers and workflows interpret their own domain fields from that payload. The fix removed the need for `sessionId` promotion or workflow-specific framework patches. Follow-up cleanup removed shadow workflow-handler implementations, documented the clean trigger model, and removed active legacy project-comment status handling.
+Closed after implementing the clean event model. The framework now passes the canonical event envelope directly to handlers; handlers and workflows interpret their own domain fields from `event.data`. The fix removed the need for `sessionId` promotion or workflow-specific framework patches. Follow-up cleanup removed shadow workflow-handler implementations, documented the clean handler event model, and removed active legacy project-comment status handling.
 
 Validation: runtime DB checks show `0` missing-session escalations in the last hour and last 24 hours, and recent `evaluator-aftermath` workflow dispatches have `status='done'`.

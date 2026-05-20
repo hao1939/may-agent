@@ -116,7 +116,6 @@ describe("project-steward handler", () => {
 id: good
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Good
@@ -135,7 +134,6 @@ workflow: project
 id: bad-tasks
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Bad Tasks
@@ -147,7 +145,6 @@ this is not a task row
 id: needs-owner
 owner: evaluator
 status: active
-workflow: project
 max_task_attempts: 2
 ---
 
@@ -171,7 +168,6 @@ max_task_attempts: 2
     const findings = emitted.filter((event) => event.type === "project.health.finding");
     expect(findings.map((event) => event.data?.code).sort()).toEqual([
       "invalid_format",
-      "missing_owner_workflow",
       "owner_judgment_needed",
       "task_parser_error",
     ]);
@@ -180,24 +176,22 @@ max_task_attempts: 2
 
     expect(metrics.defineMany).toHaveBeenCalledTimes(1);
     expect(metrics.recorded.map((record) => [record.id, record.value])).toEqual([
-      ["project.health.finding-count", 4],
+      ["project.health.finding-count", 3],
       ["project.invalid-format-count", 1],
       ["project.task-parser-error-count", 1],
       ["project.owner-judgment-needed-count", 1],
-      ["project.missing-owner-workflow-count", 1],
     ]);
     expect(metrics.evaluated).toEqual([
       "project.health.finding-count",
       "project.invalid-format-count",
       "project.task-parser-error-count",
       "project.owner-judgment-needed-count",
-      "project.missing-owner-workflow-count",
     ]);
 
     for (const [file, content] of before) {
       expect(readFileSync(file, "utf-8")).toBe(content);
     }
-    expect(ctx.sdk.log).toHaveBeenCalledWith("info", "[project-steward] checked 4 project(s), findings=4");
+    expect(ctx.sdk.log).toHaveBeenCalledWith("info", "[project-steward] checked 4 project(s), findings=3");
   });
 
   it("treats all active tasks done as owner judgment instead of a project blocker", () => {
@@ -238,23 +232,22 @@ status: active
     expect(report.findings[0].message).toContain("replan the next phase or close");
   });
 
-  it("flags active projects that need the owner loop but have no project workflow", () => {
+  it("flags active projects that need owner planning but have no tasks", () => {
     const project: ProjectInfo = {
-      relPath: "projects/no-workflow",
-      projectFile: join(tmpdir(), `no-workflow-${Date.now()}`, "project.md"),
+      relPath: "projects/no-tasks",
+      projectFile: join(tmpdir(), `no-tasks-${Date.now()}`, "project.md"),
       content: `---
-id: no-workflow
+id: no-tasks
 owner: evaluator
 status: active
-workflow: project
 ---
 
-# No Workflow
+# No Tasks
 `,
       status: "active",
       owner: "evaluator",
       blockerReason: "",
-      workflow: "project",
+      workflow: "",
       formatErrors: [],
     };
 
@@ -262,11 +255,10 @@ workflow: project
 
     expect(report.findings).toHaveLength(1);
     expect(report.findings[0]).toMatchObject({
-      code: "missing_owner_workflow",
-      severity: "P1",
+      code: "owner_judgment_needed",
+      severity: "P2",
     });
     expect(report.findings[0].evidence).toMatchObject({
-      workflow: "project",
       taskCount: 0,
     });
   });
@@ -322,13 +314,19 @@ workflow: project
 id: legacy
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Legacy
+
+## Tasks
+- id: next
+  status: ready
+  result: null
+  assignee: evaluator
+  goal: Continue.
+  depends_on: []
+  attempts: 0
 `, "utf-8");
-      mkdirSync(join(projectsRoot, "legacy", "workflows"), { recursive: true });
-      writeFileSync(join(projectsRoot, "legacy", "workflows", "legacy-iteration.ts"), "export const name = 'legacy-iteration';\n", "utf-8");
       await create(ctx, { name: "project-steward", enabled: true, handler: "project-steward" } as any)();
 
       expect(db.query("SELECT current FROM metrics WHERE id = ?").get("project.health.finding-count")).toMatchObject({ current: 0 });

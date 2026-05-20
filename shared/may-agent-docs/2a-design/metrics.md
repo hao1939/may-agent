@@ -181,10 +181,10 @@ metrics-snapshot handler
 project docs/tasks read-only, emits `project.health.checked` and
 `project.health.finding`, and records/evaluates project metrics such as
 `project.health.finding-count`, `project.task-parser-error-count`, and
-`project.owner-judgment-needed-count`. It also flags active projects that need
-the owner loop but have no per-project workflow with
-`project.missing-owner-workflow-count`. The repair path is still the normal
-metric/heartbeat/closed-loop path; the steward does not mutate project files.
+`project.owner-judgment-needed-count`. Active projects with no tasks are owner
+judgment findings, not missing workflow findings. The repair path is still the
+normal metric/heartbeat/closed-loop path; the steward does not mutate project
+files.
 
 The usual path is project/context-driven: agents see metric state and unresolved
 alerts, read the relevant project context when one exists, and decide what the

@@ -53,11 +53,10 @@ describe("metric-alert-reactor handler", () => {
 
     await handler({
       type: "metric.breach",
-      source: "event",
-      entry: "metric-alert-reactor",
+      source: "metrics-snapshot",
+      owner: "agent:may",
       timestamp: Date.now(),
       data: {
-        owner: "may",
         metricId: "handler.failed-count",
         metricName: "Handler failures",
         current: 5,
@@ -91,6 +90,48 @@ describe("metric-alert-reactor handler", () => {
     }));
   });
 
+  it("reads canonical metric.breach envelopes without requiring data.owner", async () => {
+    const ctx = makeCtx();
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "agent:may",
+      timestamp: Date.now(),
+      data: {
+        metricId: "handler.failed-count",
+        metricName: "Handler failures",
+        current: 5,
+        threshold: 3,
+        target: 0,
+        message: "above threshold",
+        priority: "P1",
+      },
+    });
+
+    expect(ctx.sdk.query.metricAlertReactorState).toHaveBeenCalledWith(expect.objectContaining({
+      metricId: "handler.failed-count",
+      owner: "may",
+    }));
+    expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
+      "metric-alert-triage",
+      expect.stringContaining("handler.failed-count"),
+      { source: "arc" },
+    );
+    const task = ctx.sdk.runWorkflow.mock.calls[0][1] as string;
+    const match = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
+    expect(match).not.toBeNull();
+    const trigger = JSON.parse(match?.[1] ?? "{}");
+    expect(trigger).toMatchObject({
+      type: "metric.breach",
+      source: "metric-alert-reactor",
+      owner: "agent:arc",
+    });
+    expect(trigger.data).toMatchObject({ metricId: "handler.failed-count" });
+    expect(trigger.data).not.toHaveProperty("owner");
+  });
+
   it("treats an empty direct trigger as an unresolved-alert scan", async () => {
     const ctx = makeCtx();
     ctx.sdk.query.alerts = vi.fn(() => ({
@@ -103,10 +144,10 @@ describe("metric-alert-reactor handler", () => {
 
     await handler({
       type: "trigger.metric-alert-reactor",
-      source: "event",
-      entry: "metric-alert-reactor",
+      source: "manual",
+      owner: "agent:may",
       timestamp: Date.now(),
-      data: { type: "trigger.metric-alert-reactor" },
+      data: {},
     });
 
     expect(ctx.sdk.query.alerts).toHaveBeenCalledWith({ resolved: false, limit: 50 });
@@ -118,6 +159,32 @@ describe("metric-alert-reactor handler", () => {
     expect(ctx.sdk.log).not.toHaveBeenCalledWith(
       "info",
       expect.stringContaining("Missing metricId"),
+    );
+  });
+
+  it("treats canonical timer.tick as an unresolved-alert scan", async () => {
+    const ctx = makeCtx();
+    ctx.sdk.query.alerts = vi.fn(() => ({
+      rows: [{ id: 42, metric_id: "handler.failed-count", message: "above threshold" }],
+      rowCount: 1,
+      limit: 50,
+      truncated: false,
+    }));
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "timer.tick",
+      source: "timer",
+      owner: "agent:may",
+      timestamp: Date.now(),
+      data: { entry: "metric-alert-reactor" },
+    });
+
+    expect(ctx.sdk.query.alerts).toHaveBeenCalledWith({ resolved: false, limit: 50 });
+    expect(ctx.sdk.runWorkflow).toHaveBeenCalledWith(
+      "metric-alert-triage",
+      expect.stringContaining("handler.failed-count"),
+      { source: "arc" },
     );
   });
 
@@ -135,11 +202,10 @@ describe("metric-alert-reactor handler", () => {
 
     await handler({
       type: "metric.breach",
-      source: "event",
-      entry: "metric-alert-reactor",
+      source: "metrics-snapshot",
+      owner: "agent:arc",
       timestamp: Date.now(),
       data: {
-        owner: "arc",
         metricId: "guard.blocked-count-24h",
         metricName: "Old guard blocks",
         current: 1,

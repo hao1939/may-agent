@@ -5,7 +5,6 @@ const validProject = `---
 id: test-project
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Test Project
@@ -27,7 +26,6 @@ const missingGoal = `---
 id: test-project
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Test Project
@@ -51,7 +49,6 @@ const noMetricTarget = `---
 id: test-project
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Test Project

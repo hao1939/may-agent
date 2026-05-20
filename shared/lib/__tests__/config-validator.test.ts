@@ -5,7 +5,6 @@ const validProject = `---
 id: my-project
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # My Project

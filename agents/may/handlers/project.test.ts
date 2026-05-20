@@ -2,78 +2,78 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { create, resolveWorkflowName } from "./project.js";
-import type { ProjectInfo } from "../../../shared/lib/project-health.ts";
+import { create } from "./project.js";
 
 const roots: string[] = [];
 
-function makeProject(root: string, slug: string, workflow = "project"): ProjectInfo {
-  const projectDir = join(root, slug);
-  mkdirSync(projectDir, { recursive: true });
-  const projectFile = join(projectDir, "project.md");
-  writeFileSync(projectFile, `---\nid: ${slug}\nowner: dev\nstatus: active\nworkflow: ${workflow}\n---\n`);
-  return {
-    relPath: `projects/${slug}`,
-    projectFile,
-    content: "",
-    status: "active",
-    owner: "dev",
-    blockerReason: "",
-    workflow,
-    formatErrors: [],
-  };
+function makeCtx(
+  root: string,
+  projectsRoot: string,
+  opts: {
+    sessions?: Array<Record<string, unknown>>;
+    workflowRuns?: Array<Record<string, unknown>>;
+  } = {},
+) {
+  const agentCalls: Array<{ agent: string; task: string; opts: Record<string, unknown> | undefined }> = [];
+  const workflowCalls: Array<{ workflow: string; task: string; opts: Record<string, unknown> | undefined }> = [];
+  const emitted: Array<{ type: string; data?: Record<string, unknown> }> = [];
+  const filterRows = (rows: Array<Record<string, unknown>>, query: Record<string, unknown>) => rows.filter((row) => {
+    for (const [key, value] of Object.entries(query)) {
+      if (key === "limit") continue;
+      if (value !== undefined && row[key] !== value) return false;
+    }
+    return true;
+  });
+  const ctx = {
+    agentName: "may",
+    sdk: {
+      paths: { root, projects: projectsRoot },
+      log: () => {},
+      emit: (type: string, data?: Record<string, unknown>) => emitted.push({ type, data }),
+      getDb: () => ({ run: () => ({}), prepare: () => ({ get: () => null, all: () => [] }) }),
+      query: {
+        alerts: () => ({ rows: [] }),
+        workflowRuns: (query: Record<string, unknown> = {}) => ({ rows: filterRows(opts.workflowRuns ?? [], query) }),
+        sessions: (query: Record<string, unknown> = {}) => ({ rows: filterRows(opts.sessions ?? [], query) }),
+      },
+      runAgent: async (agent: string, task: string, opts?: Record<string, unknown>) => {
+        agentCalls.push({ agent, task, opts });
+        return {
+          sessionId: `s_${agentCalls.length}`,
+          status: "done",
+          lastAssistantText: "done",
+          finishResult: { status: "success", summary: "done" },
+        };
+      },
+      runWorkflow: async (workflow: string, task: string, opts?: Record<string, unknown>) => {
+        workflowCalls.push({ workflow, task, opts });
+        return { status: "done", summary: "workflow done", runId: `wr_${workflowCalls.length}` };
+      },
+    },
+    triggerNow: () => false,
+  } as any;
+
+  return { ctx, agentCalls, workflowCalls, emitted };
 }
-
-describe("project handler workflow resolution", () => {
-  afterEach(() => {
-    for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
-  });
-
-  it("maps canonical workflow: project to a slug iteration workflow when present", () => {
-    const root = join(tmpdir(), `project-handler-${Date.now()}-${Math.random().toString(16).slice(2)}`);
-    roots.push(root);
-    const project = makeProject(root, "example-project");
-    const workflowDir = join(root, "example-project", "workflows");
-    mkdirSync(workflowDir, { recursive: true });
-    writeFileSync(join(workflowDir, "example-project-iteration.ts"), "export const name = 'example-project-iteration';\n");
-
-    expect(resolveWorkflowName(project)).toBe("example-project-iteration");
-  });
-
-  it("preserves explicit non-project workflow names", () => {
-    const root = join(tmpdir(), `project-handler-${Date.now()}-${Math.random().toString(16).slice(2)}`);
-    roots.push(root);
-    const project = makeProject(root, "example-project", "custom-workflow");
-
-    expect(resolveWorkflowName(project)).toBe("custom-workflow");
-  });
-
-  it("returns null for workflow: project when no slug iteration workflow exists", () => {
-    const root = join(tmpdir(), `project-handler-${Date.now()}-${Math.random().toString(16).slice(2)}`);
-    roots.push(root);
-    const project = makeProject(root, "no-workflow-project");
-
-    expect(resolveWorkflowName(project)).toBeNull();
-  });
-});
 
 describe("project handler task-driven dispatch", () => {
   afterEach(() => {
     for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
   });
 
-  it("dispatches ready project tasks without launching the serial project workflow", async () => {
+  it("dispatches ready project tasks without launching a legacy project workflow", async () => {
     const root = join(tmpdir(), `project-task-handler-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     roots.push(root);
     const projectsRoot = join(root, "projects");
     const projectDir = join(projectsRoot, "task-demo");
-    mkdirSync(projectDir, { recursive: true });
+    const workflowDir = join(projectDir, "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(join(workflowDir, "task-demo-iteration.ts"), "export const name = 'task-demo-iteration';\n");
     const projectFile = join(projectDir, "project.md");
     writeFileSync(projectFile, `---
 id: task-demo
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Task Demo
@@ -99,37 +99,7 @@ Run ready tasks.
   attempts: 0
 `);
 
-    const agentCalls: Array<{ agent: string; task: string; opts: Record<string, unknown> | undefined }> = [];
-    const workflowCalls: unknown[] = [];
-    const emitted: Array<{ type: string; data?: Record<string, unknown> }> = [];
-    const ctx = {
-      agentName: "may",
-      sdk: {
-        paths: { root, projects: projectsRoot },
-        log: () => {},
-        emit: (type: string, data?: Record<string, unknown>) => emitted.push({ type, data }),
-        getDb: () => ({ run: () => ({}), prepare: () => ({ get: () => null, all: () => [] }) }),
-        query: {
-          alerts: () => ({ rows: [] }),
-          workflowRuns: () => ({ rows: [] }),
-          sessions: () => ({ rows: [] }),
-        },
-        runAgent: async (agent: string, task: string, opts?: Record<string, unknown>) => {
-          agentCalls.push({ agent, task, opts });
-          return {
-            sessionId: "s_score_a",
-            status: "done",
-            lastAssistantText: "scored",
-            finishResult: { status: "success", summary: "scored" },
-          };
-        },
-        runWorkflow: async (...args: unknown[]) => {
-          workflowCalls.push(args);
-          return { status: "done", summary: "workflow done", runId: "wr_serial" };
-        },
-      },
-      triggerNow: () => false,
-    } as any;
+    const { ctx, agentCalls, workflowCalls, emitted } = makeCtx(root, projectsRoot);
 
     await create(ctx, { name: "project", enabled: true, handler: "project" } as any)();
     await Promise.resolve();
@@ -152,11 +122,56 @@ Run ready tasks.
         projectPath: "projects/task-demo",
         taskId: "score-a",
         assignee: "evaluator",
+        runner: "agent",
+        workflow: null,
       },
     });
   });
 
-  it("falls back to owner workflow when a ready task has repeated attempts", async () => {
+  it("runs a task through a workflow only when the task asks for it", async () => {
+    const root = join(tmpdir(), `project-task-workflow-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const projectDir = join(projectsRoot, "task-demo");
+    mkdirSync(projectDir, { recursive: true });
+    const projectFile = join(projectDir, "project.md");
+    writeFileSync(projectFile, `---
+id: task-demo
+owner: evaluator
+status: active
+---
+
+# Task Demo
+
+## Tasks
+- id: probe
+  status: ready
+  result: null
+  assignee: evaluator
+  goal: Run a bounded probe.
+  run: workflow:managedsystem-probe
+  depends_on: []
+  attempts: 0
+`);
+
+    const { ctx, agentCalls, workflowCalls } = makeCtx(root, projectsRoot);
+
+    await create(ctx, { name: "project", enabled: true, handler: "project" } as any)();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(agentCalls).toEqual([]);
+    expect(workflowCalls).toHaveLength(1);
+    expect(workflowCalls[0]).toMatchObject({
+      workflow: "managedsystem-probe",
+      opts: { source: "project-task:probe", projectId: "evaluator/task-demo" },
+    });
+    expect(workflowCalls[0].task).toContain("Task ID: probe");
+    expect(readFileSync(projectFile, "utf-8")).toContain("status: done");
+    expect(readFileSync(projectFile, "utf-8")).toContain("result: succeeded");
+  });
+
+  it("launches the project owner agent instead of a workflow when a task needs judgment", async () => {
     const root = join(tmpdir(), `project-task-judgment-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     roots.push(root);
     const projectsRoot = join(root, "projects");
@@ -169,13 +184,10 @@ Run ready tasks.
 id: task-demo
 owner: evaluator
 status: active
-workflow: project
+max_task_attempts: 2
 ---
 
 # Task Demo
-
-## Goal
-Run ready tasks.
 
 ## Tasks
 - id: score-a
@@ -187,43 +199,20 @@ Run ready tasks.
   attempts: 2
 `);
 
-    const agentCalls: unknown[] = [];
-    const workflowCalls: Array<{ workflow: string; task: string; opts: Record<string, unknown> | undefined }> = [];
-    const ctx = {
-      agentName: "may",
-      sdk: {
-        paths: { root, projects: projectsRoot },
-        log: () => {},
-        emit: () => {},
-        getDb: () => ({ run: () => ({}), prepare: () => ({ get: () => null, all: () => [] }) }),
-        query: {
-          alerts: () => ({ rows: [] }),
-          workflowRuns: () => ({ rows: [] }),
-          sessions: () => ({ rows: [] }),
-        },
-        runAgent: async (...args: unknown[]) => {
-          agentCalls.push(args);
-          return { sessionId: "s_unexpected", status: "done", lastAssistantText: "" };
-        },
-        runWorkflow: async (workflow: string, task: string, opts?: Record<string, unknown>) => {
-          workflowCalls.push({ workflow, task, opts });
-          return { status: "done", summary: "judged", runId: "wr_judge" };
-        },
-      },
-      triggerNow: () => false,
-    } as any;
+    const { ctx, agentCalls, workflowCalls } = makeCtx(root, projectsRoot);
 
     await create(ctx, { name: "project", enabled: true, handler: "project" } as any)();
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(agentCalls).toEqual([]);
-    expect(workflowCalls).toHaveLength(1);
-    expect(workflowCalls[0]).toMatchObject({
-      workflow: "task-demo-iteration",
-      opts: { source: "evaluator", projectId: "evaluator/task-demo" },
+    expect(workflowCalls).toEqual([]);
+    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls[0]).toMatchObject({
+      agent: "evaluator",
+      opts: { source: "project-owner", projectId: "evaluator/task-demo" },
     });
-    expect(workflowCalls[0].task).toContain("project:");
+    expect(agentCalls[0].task).toContain("## Project Owner Loop");
+    expect(agentCalls[0].task).toContain("replan, close, wait, or escalate");
     expect(readFileSync(projectFile, "utf-8")).toContain("attempts: 2");
   });
 
@@ -256,7 +245,6 @@ Run ready tasks.
 id: task-demo
 owner: evaluator
 status: active
-workflow: project
 ---
 
 # Task Demo
@@ -274,31 +262,7 @@ Judge the finished phase.
   attempts: 1
 `);
 
-    const agentCalls: unknown[] = [];
-    const workflowCalls: Array<{ workflow: string; task: string; opts: Record<string, unknown> | undefined }> = [];
-    const ctx = {
-      agentName: "may",
-      sdk: {
-        paths: { root, projects: projectsRoot },
-        log: () => {},
-        emit: () => {},
-        getDb: () => ({ run: () => ({}), prepare: () => ({ get: () => null, all: () => [] }) }),
-        query: {
-          alerts: () => ({ rows: [] }),
-          workflowRuns: () => ({ rows: [] }),
-          sessions: () => ({ rows: [] }),
-        },
-        runAgent: async (...args: unknown[]) => {
-          agentCalls.push(args);
-          return { sessionId: "s_unexpected", status: "done", lastAssistantText: "" };
-        },
-        runWorkflow: async (workflow: string, task: string, opts?: Record<string, unknown>) => {
-          workflowCalls.push({ workflow, task, opts });
-          return { status: "done", summary: "judged", runId: "wr_judge" };
-        },
-      },
-      triggerNow: () => false,
-    } as any;
+    const { ctx, agentCalls, workflowCalls } = makeCtx(root, projectsRoot);
 
     await create(ctx, { name: "project", enabled: true, handler: "project" } as any)({
       type: "project.task.finished",
@@ -311,11 +275,150 @@ Judge the finished phase.
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(agentCalls).toEqual([]);
-    expect(workflowCalls).toHaveLength(1);
-    expect(workflowCalls[0]).toMatchObject({
-      workflow: "task-demo-iteration",
-      opts: { source: "evaluator", projectId: "evaluator/task-demo" },
+    expect(workflowCalls).toEqual([]);
+    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls[0]).toMatchObject({
+      agent: "evaluator",
+      opts: { source: "project-owner", projectId: "evaluator/task-demo" },
     });
+  });
+
+  it("treats a generic project.nudge as a force reconcile without requiring a comment", async () => {
+    const root = join(tmpdir(), `project-generic-nudge-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const stateDir = join(root, ".state");
+    const projectDir = join(projectsRoot, "nudge-demo");
+    mkdirSync(projectDir, { recursive: true });
+    mkdirSync(stateDir, { recursive: true });
+    writeFileSync(join(stateDir, "project-health-state.json"), JSON.stringify({
+      lastFullScan: Date.now(),
+      projects: {
+        "projects/nudge-demo": {
+          blockerHash: "",
+          consecutiveSkips: 0,
+          reactivationAttempts: 0,
+          lastEscalation: 0,
+          lastLaunch: Date.now(),
+          lastStatusChange: 0,
+          launchTimestamps: [Date.now(), Date.now()],
+        },
+      },
+    }));
+    writeFileSync(join(projectDir, "project.md"), `---
+id: nudge-demo
+owner: evaluator
+status: active
+---
+
+# Nudge Demo
+`);
+
+    const { ctx, agentCalls } = makeCtx(root, projectsRoot);
+
+    await create(ctx, { name: "project", enabled: true, handler: "project" } as any)({
+      type: "project.nudge",
+      data: {
+        projectPath: "projects/nudge-demo",
+        projectId: "evaluator/nudge-demo",
+      },
+    } as any);
+    await Promise.resolve();
+
+    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls[0]).toMatchObject({
+      agent: "evaluator",
+      opts: { source: "project-owner", projectId: "evaluator/nudge-demo" },
+    });
+  });
+
+  it("does not let a live project task session block final owner judgment", async () => {
+    const root = join(tmpdir(), `project-task-session-live-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const projectDir = join(projectsRoot, "task-demo");
+    mkdirSync(projectDir, { recursive: true });
+    writeFileSync(join(projectDir, "project.md"), `---
+id: task-demo
+owner: evaluator
+status: active
+---
+
+# Task Demo
+
+## Tasks
+- id: score-a
+  status: done
+  result: succeeded
+  assignee: evaluator
+  goal: Score batch A.
+  depends_on: []
+  attempts: 1
+`);
+
+    const { ctx, agentCalls } = makeCtx(root, projectsRoot, {
+      sessions: [
+        {
+          sessionId: "s_task",
+          projectId: "evaluator/task-demo",
+          status: "running",
+          source: "project-task:score-a",
+        },
+      ],
+    });
+
+    await create(ctx, { name: "project", enabled: true, handler: "project" } as any)({
+      type: "project.task.finished",
+      data: {
+        projectPath: "projects/task-demo",
+        projectId: "evaluator/task-demo",
+        taskId: "score-a",
+      },
+    } as any);
+    await Promise.resolve();
+
+    expect(agentCalls).toHaveLength(1);
+    expect(agentCalls[0]).toMatchObject({
+      agent: "evaluator",
+      opts: { source: "project-owner", projectId: "evaluator/task-demo" },
+    });
+  });
+
+  it("keeps project owner launches singleflight", async () => {
+    const root = join(tmpdir(), `project-owner-live-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    roots.push(root);
+    const projectsRoot = join(root, "projects");
+    const projectDir = join(projectsRoot, "owner-demo");
+    mkdirSync(projectDir, { recursive: true });
+    writeFileSync(join(projectDir, "project.md"), `---
+id: owner-demo
+owner: evaluator
+status: active
+---
+
+# Owner Demo
+`);
+
+    const { ctx, agentCalls } = makeCtx(root, projectsRoot, {
+      sessions: [
+        {
+          sessionId: "s_owner",
+          projectId: "evaluator/owner-demo",
+          status: "running",
+          source: "project-owner",
+        },
+      ],
+    });
+
+    await create(ctx, { name: "project", enabled: true, handler: "project" } as any)({
+      type: "project.nudge",
+      data: {
+        projectPath: "projects/owner-demo",
+        projectId: "evaluator/owner-demo",
+      },
+    } as any);
+    await Promise.resolve();
+
+    expect(agentCalls).toEqual([]);
   });
 });

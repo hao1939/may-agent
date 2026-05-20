@@ -27,7 +27,6 @@ owner: <your-agent-name>
 status: active
 type: milestone
 priority: P0 | P1 | P2
-workflow: project
 iteration: 0
 ---
 

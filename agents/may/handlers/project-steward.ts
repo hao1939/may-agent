@@ -7,15 +7,14 @@
  * them through the existing repair path.
  */
 import { existsSync, statSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import type { CronEntry, HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import { parseProjectMeta, parseProjectTasks, planProjectTasks } from "@may-agent/sdk";
 import { scanAllProjects, type ProjectInfo } from "../../../shared/lib/project-health.ts";
 
 type FindingSeverity = "P0" | "P1" | "P2" | "P3";
 
 interface ProjectFinding {
-  code: "invalid_format" | "task_parser_error" | "owner_judgment_needed" | "missing_owner_workflow";
+  code: "invalid_format" | "task_parser_error" | "owner_judgment_needed";
   severity: FindingSeverity;
   message: string;
   evidence: Record<string, unknown>;
@@ -80,17 +79,6 @@ const METRICS = [
     alertOp: ">" as const,
     priority: "P2" as const,
   },
-  {
-    id: "project.missing-owner-workflow-count",
-    name: "Active projects missing owner workflow",
-    owner: "may",
-    type: "health" as const,
-    target: 0,
-    threshold: 0,
-    unit: "count",
-    alertOp: ">" as const,
-    priority: "P1" as const,
-  },
 ];
 
 function projectIdFor(project: ProjectInfo): string {
@@ -107,13 +95,6 @@ function maxConcurrent(content: string): number {
   const meta = parseProjectMeta(content);
   const parsed = Number.parseInt(meta.max_concurrent ?? "3", 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
-}
-
-function expectedOwnerWorkflowPath(project: ProjectInfo): string | null {
-  if ((project.workflow || "project") !== "project") return null;
-  const slug = project.relPath.split("/").pop();
-  if (!slug) return null;
-  return resolve(dirname(project.projectFile), "workflows", `${slug}-iteration.ts`);
 }
 
 export function analyzeProject(project: ProjectInfo): ProjectStewardReport {
@@ -167,28 +148,18 @@ export function analyzeProject(project: ProjectInfo): ProjectStewardReport {
     }
   }
 
-  const expectedWorkflow = expectedOwnerWorkflowPath(project);
   if (
     project.status === "active"
-    && expectedWorkflow
-    && !existsSync(expectedWorkflow)
+    && parsed.tasks.length === 0
     && !project.formatErrors?.length
     && parsed.errors.length === 0
   ) {
-    const needsOwnerLoop = parsed.tasks.length === 0
-      || findings.some((finding) => finding.code === "owner_judgment_needed");
-    if (needsOwnerLoop) {
-      findings.push({
-        code: "missing_owner_workflow",
-        severity: "P1",
-        message: `Active project needs the owner loop, but workflow: project has no ${project.relPath.split("/").pop()}-iteration.ts implementation.`,
-        evidence: {
-          workflow: project.workflow || "project",
-          expectedWorkflow,
-          taskCount: parsed.tasks.length,
-        },
-      });
-    }
+    findings.push({
+      code: "owner_judgment_needed",
+      severity: "P2",
+      message: "Active project has no tasks; owner should create the next task slice or close the project.",
+      evidence: { taskCount: 0 },
+    });
   }
 
   return {
@@ -238,7 +209,7 @@ function recordMetric(ctx: HandlerContext, id: string, value: number, now: numbe
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const projectsRoot = ctx.sdk.paths.projects ?? resolve(ctx.sdk.paths.root, "projects");
 
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const now = Date.now();
     if (!existsSync(projectsRoot)) {
       ctx.sdk.emit("handler.skipped", {
@@ -287,7 +258,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const invalidFormatCount = reports.filter((report) => report.findings.some((f) => f.code === "invalid_format")).length;
     const taskParserErrorCount = reports.filter((report) => report.findings.some((f) => f.code === "task_parser_error")).length;
     const ownerJudgmentNeededCount = reports.filter((report) => report.findings.some((f) => f.code === "owner_judgment_needed")).length;
-    const missingOwnerWorkflowCount = reports.filter((report) => report.findings.some((f) => f.code === "missing_owner_workflow")).length;
     const note = JSON.stringify({
       trigger: event?.type ?? "timer.tick",
       projects: reports.length,
@@ -303,7 +273,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     recordMetric(ctx, "project.invalid-format-count", invalidFormatCount, now, note, reports.length);
     recordMetric(ctx, "project.task-parser-error-count", taskParserErrorCount, now, note, reports.length);
     recordMetric(ctx, "project.owner-judgment-needed-count", ownerJudgmentNeededCount, now, note, reports.length);
-    recordMetric(ctx, "project.missing-owner-workflow-count", missingOwnerWorkflowCount, now, note, reports.length);
     for (const metric of METRICS) ctx.sdk.metrics.evaluate(metric.id);
 
     ctx.sdk.log("info", `[project-steward] checked ${projects.length} project(s), findings=${findingCount}`);
