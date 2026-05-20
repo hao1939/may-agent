@@ -47,6 +47,7 @@ ls /tmp/may-e2e-*/
 | `e1-handler-loop-liveness` | Cron → handler-loader → event-persistence pipeline; `user-guide.md § Cron`, `handler-authoring.md § Lifecycle Events` | ✅ |
 | `e2-project-comment-roundtrip` | `project.comment.created` socket flow → discussion.md append + status flip + `project.nudge` event; comment intake portion of `user-guide.md § Events in Practice` | ✅ |
 | `e3a-task-driven-project-loop` | Task-driven project loop (lite); dispatch → dependency unblock → owner judgment routing. SDK project-task helpers | ✅ |
+| `e3c-project-reconciler-events` | Project events trigger current-state reconciliation; covers queued project nudges, task-finished dependency unblock, immediate final owner review, and owner singleflight. Canonical contract: `shared/may-agent-docs/2a-design/projects.md § E2E Behavior Contracts` | ✅ |
 | `e3b-workflow-discovery` | Agent-scoped workflow file resolution + dispatch + `workflow_runs` persistence; `workflow-authoring.md § Workflow Location` | ✅ |
 | `e4-metric-lifecycle` | `sdk.metrics.define`/`record`/`evaluate` → breach event → `metric_alerts` row → recovery; `metric-alerts.md`, `metrics.md § Pipeline` | ✅ |
 | `e5-agent-reload` | `reload` socket command → new agent on disk picked up, updated agent reported; `user-guide.md § Reload`, `agent-convention.md` | ✅ |

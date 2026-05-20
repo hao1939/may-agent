@@ -63,12 +63,10 @@ function runtimeEventEnvelope(event: { type: string; [key: string]: unknown }, a
 export function buildRuntimeCtx(opts: RuntimeCtxOptions): RuntimeCtx {
   return {
     emit: (event) => opts.bus.emit(runtimeEventEnvelope(event, opts.agentName) as any),
-    dispatchEvent: (eventType, data) => opts.bus.emit({
-      type: eventType,
+    dispatchEvent: (eventType, data) => opts.bus.emit(buildCanonicalEventEnvelope(eventType, data ?? {}, {
       source: `agent:${opts.agentName}`,
-      owner: normalizeEventOwner(opts.agentName),
-      data: data ?? {},
-    } as any),
+      owner: opts.agentName,
+    }) as any),
     getDb: () => getDb(opts.persistDir),
     query: createQueryService({
       getDb: () => getDb(opts.persistDir),

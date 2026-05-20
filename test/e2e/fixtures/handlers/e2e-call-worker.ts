@@ -11,10 +11,10 @@
  * module-level state cannot gate dispatches. The handler will re-dispatch
  * on each cron tick; the test just looks for the first qualifying row.
  */
-import type { CronEntry, HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
-  return async (_event?: TriggerEvent) => {
+  return async (_event?: EventEnvelope) => {
     ctx.sdk.emit(
       "e2e.call-worker.dispatching",
       { caller: entry.name },

@@ -51,10 +51,10 @@ export function setAgentSessionId(name: string, sid: string): void {
 /** Per-agent cleanup functions. Called when agent sessions end. */
 const agentCleanups = new Map<string, Array<() => void>>();
 
-/** Per-agent cron instances. Created for agents with the "cron" tool preset. */
+/** Per-agent trigger scheduler instances. Created for agents with the legacy "cron" tool preset. */
 const agentCrons = new Map<string, Cron>();
 
-/** Get all cron instances (for starting/stopping from may.ts). */
+/** Get all trigger scheduler instances (for starting/stopping from may.ts). */
 export function getAgentCrons(): Map<string, Cron> {
   return agentCrons;
 }
@@ -114,11 +114,12 @@ export async function reloadAgents(
 }
 
 /**
- * Auto-discover and register JS handlers for cron entries.
+ * Auto-discover and register handlers for trigger entries.
  *
- * For each agent with a cron, scans its cron.json for entries with a `handler`
- * field. The handler field names a file in agents/<name>/handlers/<handler>.js.
- * The file must export { create } conforming to HandlerModule.
+ * For each agent with a scheduler, scans its cron.json for entries with a
+ * `handler` field. String handlers name a file in
+ * agents/<name>/handlers/<handler>.js. Object handlers are workflow-backed
+ * and are registered directly.
  *
  * Call this after loadAgents() completes.
  */

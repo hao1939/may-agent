@@ -2,7 +2,7 @@
  * Test helpers for agent-owned handlers and workflows.
  *
  * This module provides factory functions for test doubles of SDK types
- * (AgentSDK, HandlerContext, WorkflowContext, CronEntry, TriggerEvent).
+ * (AgentSDK, HandlerContext, WorkflowContext, CronEntry, EventEnvelope).
  *
  * The testing surface owns its default infra wiring so app tests can stay
  * on the public SDK package boundary.
@@ -24,7 +24,7 @@ import type {
   QueryAPI,
   SqliteDb,
   TaskResult,
-  TriggerEvent,
+  EventEnvelope,
   WorkflowContext,
 } from "./index.js";
 
@@ -238,11 +238,11 @@ export function createTestCronEntry(overrides: Partial<CronEntry> = {}): CronEnt
   };
 }
 
-export function createTestTriggerEvent(overrides: Partial<TriggerEvent> = {}): TriggerEvent {
+export function createTestEventEnvelope(overrides: Partial<EventEnvelope> = {}): EventEnvelope {
   return {
     type: "manual.trigger",
     source: "manual",
-    entry: "test-handler",
+    owner: "agent:may",
     timestamp: Date.now(),
     data: {},
     ...overrides,

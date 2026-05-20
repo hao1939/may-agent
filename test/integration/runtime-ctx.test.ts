@@ -96,6 +96,30 @@ describe("buildRuntimeCtx", () => {
     expect(opts.bus.emit).toHaveBeenCalledWith({ type: "notification", agent: "test-agent", text: "hello" });
   });
 
+  it("dispatchEvent promotes envelope fields and keeps data domain-only", () => {
+    const opts = baseOpts();
+    const rtx = buildRuntimeCtx(opts);
+
+    rtx.dispatchEvent("project.nudge", {
+      owner: "may",
+      source: "project-loop",
+      projectId: "may/demo",
+      projectPath: "projects/demo",
+      comment: true,
+    });
+
+    expect(opts.bus.emit).toHaveBeenCalledWith({
+      type: "project.nudge",
+      source: "project-loop",
+      owner: "agent:may",
+      data: {
+        projectId: "may/demo",
+        projectPath: "projects/demo",
+        comment: true,
+      },
+    });
+  });
+
   it("notify emits notification event on bus", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);

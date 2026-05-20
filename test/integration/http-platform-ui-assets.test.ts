@@ -8,10 +8,9 @@
  * registered a /projects/platform/ui/* route — root-level GETs 404'd, and the
  * page was non-interactive.
  *
- * This test starts the real Bun web server with a synthetic PROJECTS_ROOT
- * containing a minimal platform/ui/ tree, then issues HTTP GETs to assert
- * that the F8 fix routes top-level static asset paths correctly. No browser
- * required — keeps the regression check fast and chromeless.
+ * This test calls the real platform UI fetch helper with a synthetic
+ * PROJECTS_ROOT containing a minimal platform/ui/ tree. No socket or browser is
+ * required — keeps the regression check fast, stable, and chromeless.
  *
  * See projects/platform/proposals/2026-05-19-e2e-harness-findings.md § F8.
  */
@@ -19,15 +18,10 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { startWebUI } from "../../src/app/http/server.js";
+import { servePlatformUiRequest } from "../../src/app/http/server.js";
 
 describe("F8 regression: top-level platform UI assets (chromeless)", () => {
   let tmpRoot: string;
-  let server: { port: number; stop?: () => void } | null = null;
-  // Save env vars we mutate so other tests aren't affected.
-  let savedProjectsRoot: string | undefined;
-  let savedProjectRoot: string | undefined;
-  let savedStateDir: string | undefined;
 
   beforeAll(() => {
     tmpRoot = mkdtempSync(join(tmpdir(), "may-f8-"));
@@ -46,70 +40,42 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
     // Also a "would-be path traversal" target to verify containment.
     writeFileSync(join(tmpRoot, "outside.js"), "// must not be served");
 
-    // State dir needs to exist for openStateDb; an empty dir is fine.
-    const stateDir = join(tmpRoot, ".state");
-    mkdirSync(stateDir, { recursive: true });
-
-    // Snapshot + override env vars consumed at startWebUI() call time.
-    savedProjectsRoot = process.env.PROJECTS_ROOT;
-    savedProjectRoot = process.env.PROJECT_ROOT;
-    savedStateDir = process.env.STATE_DIR;
-    process.env.PROJECTS_ROOT = join(tmpRoot, "projects");
-    process.env.PROJECT_ROOT = tmpRoot;
-    process.env.STATE_DIR = stateDir;
-
-    // port 0 — let Bun pick.
-    const result = startWebUI({ stateDir, port: 0 });
-    server = result as { port: number; stop?: () => void };
   });
 
   afterAll(() => {
-    try {
-      // Bun.serve returns a server with .stop(); cast loosely since the
-      // type declaration in server.ts only includes { port }.
-      const stoppable = server as unknown as { stop?: () => void } | null;
-      stoppable?.stop?.();
-    } catch {}
-    // Restore env.
-    if (savedProjectsRoot === undefined) delete process.env.PROJECTS_ROOT;
-    else process.env.PROJECTS_ROOT = savedProjectsRoot;
-    if (savedProjectRoot === undefined) delete process.env.PROJECT_ROOT;
-    else process.env.PROJECT_ROOT = savedProjectRoot;
-    if (savedStateDir === undefined) delete process.env.STATE_DIR;
-    else process.env.STATE_DIR = savedStateDir;
     try {
       rmSync(tmpRoot, { recursive: true, force: true });
     } catch {}
   });
 
-  function baseUrl(): string {
-    if (!server) throw new Error("server not started");
-    return `http://127.0.0.1:${server.port}`;
+  function get(path: string): Response {
+    return servePlatformUiRequest(new Request(`http://localhost${path}`), join(tmpRoot, "projects"))
+      ?? new Response("Not found", { status: 404 });
   }
 
   test("serves the platform index at /", async () => {
-    const res = await fetch(`${baseUrl()}/`);
+    const res = get("/");
     expect(res.status).toBe(200);
     const body = await res.text();
     expect(body).toContain(`<link rel="stylesheet" href="styles.css">`);
   });
 
   test("serves top-level /styles.css from platform/ui (F8)", async () => {
-    const res = await fetch(`${baseUrl()}/styles.css`);
+    const res = get("/styles.css");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/css");
     expect(await res.text()).toContain("rebeccapurple");
   });
 
   test("serves top-level /app.js from platform/ui (F8)", async () => {
-    const res = await fetch(`${baseUrl()}/app.js`);
+    const res = get("/app.js");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("javascript");
     expect(await res.text()).toContain("console.log");
   });
 
   test("serves nested /pages/projects.js from platform/ui (F8)", async () => {
-    const res = await fetch(`${baseUrl()}/pages/projects.js`);
+    const res = get("/pages/projects.js");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("javascript");
     expect(await res.text()).toContain("addProjectComment");
@@ -117,7 +83,7 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
 
   test("does NOT serve assets outside the platform/ui dir (containment)", async () => {
     // ../../outside.js encoded — must not escape platform/ui.
-    const res = await fetch(`${baseUrl()}/..%2F..%2Foutside.js`);
+    const res = get("/..%2F..%2Foutside.js");
     // 404 (asset not found at platform/ui/...) is the expected outcome;
     // 400/403 would also be acceptable. Anything 2xx is the bug.
     expect(res.status).toBeGreaterThanOrEqual(400);
@@ -126,7 +92,7 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
   test("does NOT route /api/* through the asset fallback", async () => {
     // Asset fallback only matches static extensions, so an unknown /api path
     // must still 404 (its real handler) not be hijacked.
-    const res = await fetch(`${baseUrl()}/api/does-not-exist`);
+    const res = get("/api/does-not-exist");
     // Real API router returns 404 too; the assertion is that we don't get a
     // 200 with file contents from platform/ui (which would prove fallthrough
     // bug). The body should not be a JS/CSS file.
@@ -134,7 +100,7 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
   });
 
   test("404s on a static-extension request when the file isn't present", async () => {
-    const res = await fetch(`${baseUrl()}/missing.css`);
+    const res = get("/missing.css");
     expect(res.status).toBe(404);
   });
 });

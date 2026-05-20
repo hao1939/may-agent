@@ -10,6 +10,7 @@ export interface ProjectTask {
   result: ProjectTaskResult | string | null;
   assignee: string;
   goal: string;
+  run: string | null;
   depends_on: string[];
   attempts: number;
 }
@@ -46,6 +47,7 @@ export type ProjectTaskFieldPatch = Partial<{
   result: ProjectTaskResult | null;
   assignee: string;
   goal: string;
+  run: string | null;
   depends_on: string[];
   attempts: number;
 }>;
@@ -108,6 +110,7 @@ function emptyTask(fields: Record<string, string>): ProjectTask {
     result: parseResult(fields.result),
     assignee: unquote(fields.assignee ?? ""),
     goal: unquote(fields.goal ?? ""),
+    run: parseResult(fields.run),
     depends_on: parseList(fields.depends_on ?? "[]"),
     attempts: parseAttempts(fields.attempts),
   };
@@ -166,6 +169,9 @@ export function validateProjectTasks(tasks: ProjectTask[]): string[] {
     if (!task.goal) errors.push(`task ${label} is missing goal`);
     if (!STATUS_SET.has(task.status)) errors.push(`task ${label} has non-canonical status '${task.status}'`);
     if (task.result !== null && !RESULT_SET.has(task.result)) errors.push(`task ${label} has non-canonical result '${task.result}'`);
+    if (task.run !== null && task.run !== "agent" && !/^workflow:[A-Za-z0-9_.-]+$/.test(task.run)) {
+      errors.push(`task ${label} has non-canonical run '${task.run}'`);
+    }
     if ((task.status === "done") !== (task.result !== null)) {
       errors.push(`task ${label} is done only when status is 'done' and result is set`);
     }

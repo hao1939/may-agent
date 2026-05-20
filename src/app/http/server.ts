@@ -46,6 +46,60 @@ export interface WebUIOptions {
   port: number;
 }
 
+function platformUiContentTypeFor(path: string): string {
+  switch (extname(path).toLowerCase()) {
+    case ".html": return "text/html; charset=utf-8";
+    case ".css": return "text/css; charset=utf-8";
+    case ".js": return "application/javascript; charset=utf-8";
+    case ".map": return "application/json; charset=utf-8";
+    case ".json": return "application/json; charset=utf-8";
+    case ".md": return "text/markdown; charset=utf-8";
+    case ".txt": return "text/plain; charset=utf-8";
+    case ".svg": return "image/svg+xml";
+    case ".png": return "image/png";
+    case ".jpg":
+    case ".jpeg": return "image/jpeg";
+    case ".gif": return "image/gif";
+    case ".webp": return "image/webp";
+    case ".ico": return "image/x-icon";
+    default: return "application/octet-stream";
+  }
+}
+
+function servePlatformUiFile(path: string): Response {
+  return new Response(readFileSync(path), {
+    headers: {
+      "Content-Type": platformUiContentTypeFor(path),
+      "Cache-Control": "no-cache",
+    },
+  });
+}
+
+export function servePlatformUiRequest(req: Request, projectsRoot: string): Response | null {
+  const url = new URL(req.url);
+  if (req.method !== "GET") return null;
+
+  const platformUiDir = resolve(projectsRoot, "platform", "ui");
+  if (url.pathname === "/" || url.pathname === "/index.html") {
+    const indexPath = resolve(platformUiDir, "index.html");
+    return existsSync(indexPath) && statSync(indexPath).isFile() ? servePlatformUiFile(indexPath) : null;
+  }
+
+  // Top-level platform UI assets: index.html uses relative paths like
+  // `styles.css`, `app.js`, `pages/projects.js`. Map those to
+  // <PROJECTS_ROOT>/platform/ui/<path>. Restricted to known static
+  // extensions so /api/foo never falls through to this branch.
+  if (!/^\/([\w\-.]+\/)*[\w\-.]+\.(css|js|map|svg|png|jpg|jpeg|gif|webp|ico)$/.test(url.pathname)) {
+    return null;
+  }
+
+  const assetPath = resolve(platformUiDir, url.pathname.replace(/^\//, ""));
+  const rel = relative(platformUiDir, assetPath);
+  const inside = rel === "" || (!rel.startsWith("..") && !rel.startsWith("/"));
+  if (inside && existsSync(assetPath) && statSync(assetPath).isFile()) return servePlatformUiFile(assetPath);
+  return null;
+}
+
 export function extractMarkdownSection(body: string, headings: string | string[]): string | null {
   const wanted = new Set((Array.isArray(headings) ? headings : [headings]).map((h) => h.trim().toLowerCase()));
   const lines = body.split(/\r?\n/);
@@ -143,17 +197,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         name?: string;
         enabled?: boolean;
         agent?: string;
-        handler?: string;
+        handler?: string | { workflow?: string; agent?: string };
         handlerConfig?: { agent?: string; workflow?: string };
       }>;
       for (const entry of cron) {
         if (entry.enabled === false) continue;
+        const workflowHandler = entry.handler && typeof entry.handler === "object" ? entry.handler : undefined;
         const isHeartbeat = entry.name === "heartbeat"
           || entry.name?.startsWith("heartbeat-")
           || entry.handler === "heartbeat"
-          || entry.handlerConfig?.workflow?.includes("heartbeat");
+          || entry.handlerConfig?.workflow?.includes("heartbeat")
+          || workflowHandler?.workflow?.includes("heartbeat");
         if (!isHeartbeat) continue;
-        const agent = (entry.handlerConfig?.agent || entry.agent || "").trim();
+        const agent = (workflowHandler?.agent || entry.handlerConfig?.agent || entry.agent || "").trim();
         if (agent && configured.has(agent)) agents.add(agent);
       }
     } catch {
@@ -2051,8 +2107,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const fallback = await sendDaemonFrame({
           type: "trigger.project",
           source: "web-ui",
-          projectPath: path,
-          reason: "comment-created-fallback",
+          owner: normalizeEventOwner(owner),
+          data: {
+            projectPath: path,
+            reason: "comment-created-fallback",
+          },
         });
         fallbackTriggered = fallback.ok;
         workflow = await waitForProjectWorkflowStart(projectId, path, sentAt, 2500);
@@ -2687,21 +2746,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (alertResolveMatch) return handleAlertResolve(req, alertResolveMatch[1]);
       }
 
+      const platformUiResponse = servePlatformUiRequest(req, PROJECTS_ROOT);
+      if (platformUiResponse) return platformUiResponse;
       if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return serveIndex();
       if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/"))) return serveProjectStatic(url.pathname);
-      // Top-level platform UI assets: index.html uses relative paths like
-      // `styles.css`, `app.js`, `pages/projects.js`. Map those to
-      // <PROJECTS_ROOT>/platform/ui/<path>. Restricted to known static
-      // extensions so /api/foo never falls through to this branch.
-      if (req.method === "GET" && /^\/([\w\-.]+\/)*[\w\-.]+\.(css|js|map|svg|png|jpg|jpeg|gif|webp|ico)$/.test(url.pathname)) {
-        const platformUiAsset = resolve(PROJECTS_ROOT, "platform", "ui", url.pathname.replace(/^\//, ""));
-        const platformUiDir = resolve(PROJECTS_ROOT, "platform", "ui");
-        const rel = relative(platformUiDir, platformUiAsset);
-        const inside = rel === "" || (!rel.startsWith("..") && !rel.startsWith("/"));
-        if (inside && existsSync(platformUiAsset) && statSync(platformUiAsset).isFile()) {
-          return serveFile(platformUiAsset);
-        }
-      }
       return new Response("Not found", { status: 404 });
     },
     websocket: {

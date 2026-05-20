@@ -9,12 +9,12 @@
  *   2: record 0.95 (recover)
  *   3+: noop
  */
-import type { CronEntry, HandlerContext, HandlerModule, TriggerEvent } from "@may-agent/sdk";
+import type { CronEntry, HandlerContext, HandlerModule, EventEnvelope } from "@may-agent/sdk";
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   const metricId = "e2e.canary";
 
-  return async (_event?: TriggerEvent) => {
+  return async (_event?: EventEnvelope) => {
     const db = ctx.sdk.getDb() as { prepare: (sql: string) => { get: (...args: unknown[]) => unknown } };
     const row = db
       .prepare("SELECT COUNT(*) AS c FROM metric_snapshots WHERE metric_id = ?")
