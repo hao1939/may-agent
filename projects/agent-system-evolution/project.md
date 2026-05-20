@@ -112,10 +112,8 @@ canonical evaluator verdicts before proposing rubric changes.
 ## Tasks
 
 - [x] Establish a dedicated project boundary for agent-system evolution.
-- [ ] Inventory existing learning/evolution projects and decide which remain
-  independent lanes versus children/references of this umbrella.
-- [ ] Define the first accepted evolution task only after a real signal or
-  explicit owner directive.
+- [ ] Inventory existing learning/evolution projects and decide which remain independent lanes versus children/references of this umbrella.
+- [ ] Define the first accepted evolution task only after a real signal or explicit owner directive.
 
 ## Validation
 
