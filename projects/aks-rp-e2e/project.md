@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 83
+iteration: 84
 max_concurrent: 1
 max_task_attempts: 2
 stop_reason: 
@@ -65,7 +65,7 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Iteration83 closed Node Restriction corrected full-PUT disable contract and runtime-default probing. `outputs/iteration83-node-restriction-fullput-runtime-staging.md` shows full ManagedCluster PUT at `properties.securityProfile.nodeRestriction.enabled=true` persists, full PUT disable on Kubernetes `1.34` is rejected with `Node restriction is required on version 1.24.0 or above.`, and runtime NodeRestriction admission is enabled by default via kubelet restricted-label denial. App Routing DefaultDomainCertificate TLS remains paused behind owner/CCP diagnostics. The next independent high-value unknown is KEDA disable/re-enable CRUD lifecycle.
+Iteration84 closed KEDA disable/re-enable CRUD lifecycle. `outputs/iteration84-keda-disable-reenable-crud-staging.md` shows public `--enable-keda` persists `workloadAutoScalerProfile.keda.enabled=true` and installs KEDA CRDs/controllers/APIService, public `--disable-keda` persists `enabled=false` and removes the KEDA runtime/API surface, and re-enable restores it. App Routing DefaultDomainCertificate TLS remains paused behind owner/CCP diagnostics. The next independent high-value unknown is Workload Identity disable/re-enable lifecycle.
 
 ## Review Questions
 
@@ -514,6 +514,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - `outputs/iteration81-app-routing-tls-owner-escalation.md` — owner escalation packet and diagnostic rerun gate for App Routing TLS
 - `outputs/iteration82-post-escalation-next-probe-selection.md` — post-App-Routing ranking that selected Node Restriction
 - `outputs/iteration83-node-restriction-fullput-runtime-staging.md` — Node Restriction corrected full-PUT disable contract and runtime-default staging pass evidence
+- `outputs/iteration84-keda-disable-reenable-crud-staging.md` — KEDA disable/re-enable CRUD lifecycle staging pass evidence
 - `outputs/managedsystem-pool-feature-standard-init-tasks.md` — narrative draft for the ManagedSystem Pool feature-standard parallel task wave
 - `outputs/iteration24-managedsystem-pool-pass.md` — pass evidence for `Scenario_ManagedSystemPool_Enable`
 - `outputs/underlay-debug-findings.md` — root cause analysis, MSI fix, retry results
@@ -577,7 +578,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Produce `outputs/iteration84-keda-disable-reenable-crud-staging.md` by executing a focused KEDA disable/re-enable CRUD lifecycle probe in staging. Start from the current validator unknown list and prior KEDA runtime evidence, keep scope to `workload-autoscaler-keda-crud`, and record public API/profile state plus Kubernetes KEDA runtime surface before disable, after disable, and after re-enable. Update the capability model and knowledge map only if the evidence clearly resolves the KEDA CRUD branch, validate the model, and clean up any new staging resource group. Do not combine this run with VPA residual branches, Image Cleaner, App Routing, ManagedSystem, or Node Restriction.
+Produce `outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` by executing a focused Workload Identity disable/re-enable lifecycle probe in staging. Start from the current validator identity unknowns and prior identity/OIDC runtime evidence, keep scope to `workload-identity-disable-reenable-lifecycle`, and record public API/profile state plus Kubernetes Workload Identity webhook/runtime surface before disable, after disable, and after re-enable. Update the capability model and knowledge map only if the evidence clearly resolves the Workload Identity lifecycle branch, validate the model, and clean up any new staging resource group. Do not combine this run with OIDC key rotation/post-delete cleanup, Windows identity projection, KEDA/VPA, Image Cleaner, App Routing, ManagedSystem, or Node Restriction.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -626,7 +627,8 @@ Produce `outputs/iteration84-keda-disable-reenable-crud-staging.md` by executing
 33. ✅ Prepare App Routing DefaultDomainCertificate TLS owner-escalation packet and diagnostic rerun gate
 34. ✅ Select the next non-blocked high-value feature path after App Routing TLS escalation
 35. ✅ Execute the Node Restriction corrected full-PUT disable contract and runtime-default probe
-36. 🔄 Validate KEDA disable/re-enable CRUD lifecycle in staging
+36. ✅ Validate KEDA disable/re-enable CRUD lifecycle in staging
+37. 🔄 Validate Workload Identity disable/re-enable lifecycle in staging
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -766,38 +768,50 @@ Produce `outputs/iteration84-keda-disable-reenable-crud-staging.md` by executing
   attempts: 1
 
 - id: managedsystem-feature-intent-source-anchors
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Build the ManagedSystem Pool feature-intent source map. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/managedsystem*.go, /home/hayua/rp/test/e2ev3/validate/agent_pool/managedsystem_pool.go, /home/hayua/rp/test/e2ev3/handlers/azure/azcontainerservice/clean_managedsystem_pool.go, and .claude/skills/test-managedsystem-pool/. Produce outputs/managedsystem-pool-feature-intent.md explaining feature meaning, source paths, behavior each path contributes, scenario inventory, source-intended vs observed behavior separation, and unknowns."
   depends_on: [node-restriction-full-put-disable-probe]
-  attempts: 0
+  attempts: 1
 
 - id: managedsystem-api-doc-boundary
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Build the ManagedSystem Pool API/docs boundary. Use public AKS API/spec as input-space source and public docs/design references as expectation-space source. Produce outputs/managedsystem-pool-api-doc-boundary.md answering what enables the feature, what must not be sent, API/RP vs CLI contract distinction, and missing doc/design links."
   depends_on: [node-restriction-full-put-disable-probe]
-  attempts: 0
+  attempts: 1
 
 - id: managedsystem-evidence-state-matrix
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Audit ManagedSystem Pool states from existing artifacts and the capability model. Produce outputs/managedsystem-pool-evidence-state-matrix.md covering standalone e2ev3 enable, staging REST add, staging CLI create/add, mode immutability, delete, and unknown/exploring runtime behaviors with linked raw evidence. Read first: outputs/e2e-capability-model.json, outputs/input-expectation-knowledge-map.md, outputs/iteration24-managedsystem-pool-pass.md, outputs/iteration56-managedsystem-staging-refresh.md, outputs/20260519T1646Z-managedsystem-priority-staging.md, outputs/managedsystem-pool-exploration.md, outputs/iteration53-managedsystem-pool-inventory-and-blocker.md."
   depends_on: [node-restriction-full-put-disable-probe]
-  attempts: 0
+  attempts: 1
 
 - id: managedsystem-agent-repro-pack
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Convert the known ManagedSystem Pool checks into an agent-consumable repro pack. Produce outputs/managedsystem-pool-repro-pack.md with placeholder-based commands for minimal ARM REST add, polling/show, CLI create diagnostic, CLI add diagnostic, delete, post-delete verification, optional e2ev3 entry, cleanup guidance, and async cleanup/leak risk. Do not execute the checks."
   depends_on: [node-restriction-full-put-disable-probe]
-  attempts: 0
+  attempts: 1
 
 - id: managedsystem-related-resource-context
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Build the related-resource context for ManagedSystem Pool. Produce outputs/managedsystem-pool-related-context.md covering managed cluster, agent pool, VirtualMachines type, node status, node taints, critical add-ons, and VAP/VAP bindings. Separate ManagedSystem from generic VirtualMachines pools, Node Auto Provisioning, normal System pools, and CLI preview behavior."
   depends_on: [node-restriction-full-put-disable-probe]
+  attempts: 1
+
+- id: managedsystem-feature-standard-packet
+  status: pending
+  assignee: aks-explorer
+  goal: "Integrate the ManagedSystem Pool parallel artifacts into one standard feature packet. Read outputs/managedsystem-pool-feature-intent.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-evidence-state-matrix.md, outputs/managedsystem-pool-repro-pack.md, and outputs/managedsystem-pool-related-context.md. Produce outputs/managedsystem-pool-feature-standard.md as the integrated packet. Update outputs/e2e-capability-model.json only for unambiguous model additions, then run the capability-model validator. The packet should be reusable as the template for the next feature, explain the feature without hiding uncertainty, and name the next concrete action."
+  depends_on: [managedsystem-related-resource-context]
   attempts: 0
 
 ## References
@@ -866,6 +880,7 @@ Produce `outputs/iteration84-keda-disable-reenable-crud-staging.md` by executing
 - outputs/20260519T1646Z-managedsystem-priority-staging.md
 - outputs/iteration62-security-profile-staging.md
 - outputs/underlay-debug-findings.md
+- outputs/iteration84-keda-disable-reenable-crud-staging.md
 - outputs/e2e-run-results-summary.md
 - outputs/final-status.md
 - outputs/iteration53-managedsystem-pool-inventory-and-blocker.md
