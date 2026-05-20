@@ -4,7 +4,9 @@ owner: tech-lead
 status: active
 type: milestone
 priority: P0
-iteration: 38
+iteration: 39
+project_policy: stable-watch
+wait_reason:
 ---
 
 # Project: platform
@@ -39,7 +41,7 @@ discussion live here.
 - Build / test failures in `repos/may-agent/` (`bun test`, `bun run check`)
 
 ## Current State
-Waiting — UI redesign task completed (iter38). No active signals. Waiting for next platform trigger.
+Active — structural receipt persistence requested by agent-system-evolution (iter39). Implementing closeout receipt path per contract.
 
 ## Scope Boundary
 
@@ -81,6 +83,7 @@ Historical project references:
 - [x] Implement Logs + API session inspector view (iter25-26)
 - [x] Codify hygiene discipline (trigger-driven, not scheduled) — see "Hygiene discipline" section below; evidence in `proposals/2026-05-20-legacy-cleanup-resume-path.md`
 - [x] Redesign web UI to foreground infrastructure fundamentals (iter38 — hao directive + codex design advice in discussion.md)
+- [ ] Implement structural receipt persistence at successful session closeout (iter39 — contract in projects/agent-system-evolution/contracts/structural-receipt-contract.md)
 - [ ] Wait for signal — failing platform metric, unread comment, or owner push
 
 ## Tasks
@@ -92,6 +95,13 @@ Historical project references:
   goal: Redesign web UI to foreground infrastructure fundamentals (hao directive + codex design advice in discussion.md).
   depends_on: []
   attempts: 1
+
+- id: structural-receipt-persistence
+  status: ready
+  assignee: tech-lead
+  goal: Persist a structural session.receipt when finish(success) is accepted, visible in canonical session history/read models. Contract: projects/agent-system-evolution/contracts/structural-receipt-contract.md
+  depends_on: []
+  attempts: 0
 
 ## Validation
 
