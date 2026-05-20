@@ -869,10 +869,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           `SELECT COUNT(*) as c FROM events
            WHERE event_type = 'handler.completed'
              AND json_valid(data)
-             AND json_extract(data, '$.agent') = ?
+             AND (json_extract(data, '$.agent') = ? OR json_extract(data, '$.handler') LIKE ?)
              AND json_extract(data, '$.handler') LIKE 'heartbeat%'
              AND timestamp > ?`,
-          agent, now - 4 * 3600000);
+          agent, `heartbeat-${agent}%`, now - 4 * 3600000);
         if (recentHeartbeat === 0) agentsWithoutHeartbeat++;
       }
 
