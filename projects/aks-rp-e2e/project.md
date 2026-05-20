@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 workflow: project
-iteration: 77
+iteration: 79
 max_concurrent: 1
 max_task_attempts: 2
 stop_reason: 
@@ -65,8 +65,7 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Iteration77 consolidated iteration76 Identity/OIDC runtime evidence into branch-accurate model and knowledge-map status. `workload-identity-runtime-token-projection-linux` and `oidc-issuer-default-enabled-discovery-jwks-runtime` are passed with iteration76 evidence, while Windows token projection, Workload Identity disable/re-enable, OIDC signing-key rotation, post-delete issuer cleanup, and v1.33 explicit-enable runtime remain visible unknowns. The capability-model validator exits 0. The next ranked cloud probe is Combined KEDA/VPA runtime, but it must be source-scoped first so runtime pass/fail verdicts do not hide untested autoscaler lifecycle branches.
-
+Active: iteration 79 pivoted to source-first App Routing TLS investigation. The project is not externally blocked; the next autonomous step is to explain the DefaultDomainCertificate missing-secret failure from source and decide whether a corrected rerun or owner escalation is warranted.
 ## Review Questions
 
 1. **Is the goal closer?**  
@@ -503,7 +502,13 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - `tasks/managedsystem-pool/wave-01-feature-standard.yaml` — ManagedSystem Pool parallel feature-standard task wave
 - `outputs/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
 - `outputs/e2ev3-handwritten-coverage-inventory.md` — handwritten e2ev3 source inventory mapping scenarios to input paths, expectation paths, current evidence coverage, and model gaps
-- `outputs/iteration73-capability-model-source-inventory-update.md` — validated capability-model update from handwritten e2ev3 source inventory; recommends Node Restriction source/spec investigation next
+- `outputs/iteration73-capability-model-source-inventory-update.md` — validated capability-model update from handwritten e2ev3 source inventory
+- `outputs/iteration74-node-restriction-source-spec-resolution.md` — Node Restriction source/spec contradiction resolution and operation-shape correction
+- `outputs/iteration75-model-driven-probe-selection.md` — ranked high-density future probes from the validated model
+- `outputs/iteration76-workload-identity-oidc-runtime-staging.md` — Workload Identity Linux token projection and OIDC discovery/JWKS runtime pass evidence
+- `outputs/iteration77-identity-runtime-model-consolidation.md` — branch-accurate Identity/OIDC model consolidation
+- `outputs/iteration78-workload-autoscaler-runtime-staging.md` — KEDA runtime pass and bounded VPA component/recommendation evidence
+- `outputs/iteration79-vpa-runtime-model-split.md` — branch-accurate VPA runtime model split and next-probe reranking
 - `outputs/managedsystem-pool-feature-standard-init-tasks.md` — narrative draft for the ManagedSystem Pool feature-standard parallel task wave
 - `outputs/iteration24-managedsystem-pool-pass.md` — pass evidence for `Scenario_ManagedSystemPool_Enable`
 - `outputs/underlay-debug-findings.md` — root cause analysis, MSI fix, retry results
@@ -511,13 +516,13 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - `outputs/managedsystem-pool-exploration.md` — ManagedSystem Pool feature exploration and refreshed conclusions
 - `outputs/iteration55-managedsystem-staging-results.md` — initial staging ManagedSystem Pool evidence
 - `outputs/iteration56-managedsystem-staging-refresh.md` — refreshed staging ManagedSystem Pool CLI/REST classification matrix
-- `outputs/20260519T1646Z-managedsystem-priority-staging.md` — fresh priority re-test confirming ManagedSystem Pool REST/CLI/delete verdict and strengthening the capability model
+- `outputs/20260519T1646Z-managedsystem-priority-staging.md` — fresh priority re-test confirming ManagedSystem Pool REST/CLI/delete verdict
 - `outputs/aks-public-api-scenario-candidates.md` — prioritized public API feature scenarios
 - `outputs/iteration57-node-autoprovision-staging.md` — NAP staging create evidence
 - `outputs/iteration58-node-autoprovision-followup.md` — NAP staging update evidence
 - `outputs/iteration59-app-routing-staging.md` — App Routing public CLI staging enablement evidence
 - `outputs/iteration60-workload-identity-staging.md` — OIDC issuer + workload identity public CLI staging evidence
-- `outputs/iteration61-workload-autoscaler-staging.md` — workload autoscaler KEDA/VPA public CLI staging evidence
+- `outputs/iteration61-workload-autoscaler-staging.md` — workload autoscaler KEDA/VPA public CLI profile-state evidence
 - `outputs/iteration62-security-profile-staging.md` — Image Cleaner pass and Node Restriction absent/unpersisted staging evidence
 - `outputs/iteration63-bootstrap-profile-staging.md` — bootstrapProfile.artifactSource contract-first staging evidence
 - `outputs/iteration64-virtualmachines-agentpool-staging.md` — non-ManagedSystem VirtualMachines agent-pool single-SKU pass and multi-SKU failure evidence
@@ -567,7 +572,7 @@ HTTPS can return 200 through nginx's fake fallback certificate.
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Source-scope and execute the next ranked high-density runtime probe: Combined KEDA/VPA runtime in staging. Produce `outputs/iteration78-workload-autoscaler-runtime-staging.md` with source-derived input/expectation paths, explicit non-goals, exact devbox/staging commands, KEDA runtime scaling evidence, VPA runtime recommendation/component evidence, cleanup status, and capability-model/knowledge-map updates if clear verdicts are reached. Do not combine this run with App Routing TLS, Identity/OIDC residuals, Image Cleaner, Node Restriction, upgrade/HA/cert-renewal branches, or unrelated probes.
+Investigate the App Routing DefaultDomainCertificate TLS-secret failure from source before any rerun. Produce `outputs/iteration80-app-routing-tls-source-hypothesis.md` comparing iteration70’s CR/input and observed missing-secret behavior against the App Routing controller/source-required preconditions, then decide whether the next step is a corrected focused rerun or owner escalation. Do not run staging/cloud probes in this iteration.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -576,7 +581,7 @@ Source-scope and execute the next ranked high-density runtime probe: Combined KE
 ### 2026-05-20 — Reactivated for task-driven execution
 - Reactivated because the current task chain is parser-visible and the next
   step does not require external unblock.
-- The active next task is `node-restriction-source-spec-investigation`.
+- The active next task is `app-routing-tls-source-hypothesis`.
 - This reactivation lets the project handler dispatch the `aks-explorer` task
   directly instead of waiting on a legacy owner-loop workflow path.
 
@@ -593,7 +598,7 @@ Source-scope and execute the next ranked high-density runtime probe: Combined KE
 10. ✅ Select the next public API candidate based on iteration60 results
 11. ✅ Validate workload autoscaler profile KEDA/VPA public API behavior in staging and update the capability model
 12. ✅ Select the next public API candidate based on iteration61 results
-13. ✅ Validate security profile image cleaner/node restriction public API behavior in staging and update the capability model
+13. ✅ Validate security profile image cleaner/node restriction public API behavior and update the capability model
 14. ✅ Select the next public API candidate based on iteration62 results
 15. ✅ Validate bootstrap profile artifact source public API behavior with a contract-first staging probe and update the capability model if verdicted
 16. ✅ Select the next public API candidate based on iteration63 results
@@ -610,7 +615,9 @@ Source-scope and execute the next ranked high-density runtime probe: Combined KE
 27. ✅ Rank high-density future probes from the validated model, public API/docs candidates, source-derived intent, and existing evidence
 28. ✅ Execute the selected high-density Workload Identity + OIDC runtime token/discovery probe with explicit coverage and non-goals
 29. ✅ Consolidate identity/OIDC runtime evidence into branch-accurate model and knowledge-map status before selecting the next cloud probe
-30. 🔄 Execute the next ranked high-density runtime probe: source-scoped KEDA/VPA runtime behavior in staging
+30. ✅ Execute the next ranked high-density runtime probe: source-scoped KEDA/VPA runtime behavior in staging
+31. ✅ Split VPA runtime evidence into branch-accurate model features and rerank the next cloud probe
+32. 🔄 Investigate App Routing DefaultDomainCertificate TLS-secret failure from source and produce a rerun-or-escalation hypothesis
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -694,10 +701,26 @@ Source-scope and execute the next ranked high-density runtime probe: Combined KE
   attempts: 1
 
 - id: keda-vpa-runtime-staging
-  status: pending
+  status: done
+  result: succeeded
   assignee: aks-explorer
   goal: Source-scope and execute the next ranked high-density runtime probe — Combined KEDA/VPA runtime in staging. Produce `outputs/iteration78-workload-autoscaler-runtime-staging.md` with source-derived input/expectation paths, explicit non-goals, exact devbox/staging commands, KEDA runtime scaling evidence, VPA runtime recommendation/component evidence, cleanup status, and capability-model/knowledge-map updates if clear verdicts are reached. Do not combine this run with App Routing TLS, Identity/OIDC residuals, Image Cleaner, Node Restriction, upgrade/HA/cert-renewal branches, or unrelated probes.
   depends_on: [workload-identity-oidc-runtime-staging]
+  attempts: 1
+
+- id: app-routing-tls-source-hypothesis
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: Investigate the App Routing DefaultDomainCertificate TLS-secret failure from source before any rerun. Produce `outputs/iteration80-app-routing-tls-source-hypothesis.md` comparing iteration70's CR/input and observed missing-secret behavior against App Routing controller/source-required preconditions, then decide whether the next step is a corrected focused rerun or owner escalation. Do not run staging/cloud probes in this task.
+  depends_on: [keda-vpa-runtime-staging]
+  attempts: 1
+
+- id: vpa-model-split-and-rerank
+  status: ready
+  assignee: aks-explorer
+  goal: Split VPA runtime evidence into branch-accurate model features (VPA components/recommendations passed, in-place update/HA/cert-renewal/upgrade unknown) and rerank the next cloud probe. Produce `outputs/iteration79-vpa-runtime-model-split.md`, update `outputs/e2e-capability-model.json` and `outputs/input-expectation-knowledge-map.md`, validate the model. No staging/cloud probes.
+  depends_on: [app-routing-tls-source-hypothesis]
   attempts: 0
 
 ## References
@@ -750,8 +773,10 @@ Source-scope and execute the next ranked high-density runtime probe: Combined KE
 - outputs/input-expectation-knowledge-map.md
 - outputs/iteration65-virtualmachines-multisku-contract.md
 - outputs/iteration52-budget-checkpoint-removed.md
+- outputs/iteration79-vpa-runtime-model-split.md
 - outputs/iteration61-workload-autoscaler-staging.md
 - outputs/standalone-setup.md
+- outputs/iteration78-workload-autoscaler-runtime-staging.md
 - outputs/iteration73-capability-model-source-inventory-update.md
 - outputs/iteration26-pafthrottling-retry.md
 - outputs/scenario-catalog.md
