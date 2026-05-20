@@ -3,7 +3,6 @@
   "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
-  "compaction": true,
   "context_files": [
     "conversation-state.md"
   ],

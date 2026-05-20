@@ -3,7 +3,6 @@
   "description": "The Builder — turns design into working code, leads coder+QA team, applies philosophy during implementation",
   "domain": "implementation, feature decomposition, supervised execution",
   "model": "opus",
-  "compaction": true,
   "tools": [
     "coding",
     "agents",

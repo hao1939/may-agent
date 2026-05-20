@@ -3,7 +3,6 @@
   "description": "System architect — holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
   "domain": "system architecture, design philosophy, agent evolution, meta-loop orchestration",
   "model": "opus",
-  "compaction": true,
   "tools": [
     "coding",
     "agents",
