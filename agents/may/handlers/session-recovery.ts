@@ -1,8 +1,7 @@
 /**
  * session-recovery — Auto-resume failed sessions (Ambulance Protocol).
  *
- * Subscribes to canonical `session.completed` error/interrupted events, with
- * `session.failed` kept as a compatibility input.
+ * Subscribes to canonical `session.completed` error/interrupted events.
  * Two-tier classification:
  *   Tier 1: Digest classifier (structured understanding of what happened)
  *   Tier 2: classifyError fallback (string matching)
@@ -48,14 +47,10 @@ function emitSkip(ctx: HandlerContext, sessionId: string | null, reason: string,
   });
 }
 
-function triggerPayload(event: EventEnvelope): Record<string, unknown> {
+function sessionPayload(event: EventEnvelope): Record<string, unknown> {
   const raw = event.data;
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
-    const maybeEnvelope = raw as Record<string, unknown>;
-    if (maybeEnvelope.data && typeof maybeEnvelope.data === "object" && !Array.isArray(maybeEnvelope.data)) {
-      return maybeEnvelope.data as Record<string, unknown>;
-    }
-    return maybeEnvelope;
+    return raw as Record<string, unknown>;
   }
   return {};
 }
@@ -174,10 +169,6 @@ function reapStaleAutocloseSessions(ctx: HandlerContext): void {
       reason: "stale_immediate_no_assistant_activity",
     };
     ctx.sdk.emit("session.end", event);
-    ctx.sdk.emit("session.failed", {
-      ...event,
-      task: row.task ?? "",
-    });
     ctx.sdk.emit("handler.skipped", {
       handler: "session-recovery",
       sessionId: row.sessionId,
@@ -200,7 +191,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return;
     }
 
-    const payload = triggerPayload(event);
+    const payload = sessionPayload(event);
     const sessionId = typeof payload.sessionId === "string" ? payload.sessionId : "";
     const agent = typeof payload.agent === "string" ? payload.agent : "";
     const task = typeof payload.task === "string" ? payload.task : undefined;

@@ -24,13 +24,15 @@ describe("session-recovery handler", () => {
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.failed",
+      type: "session.completed",
       source: "runtime",
       owner: "agent:dev",
       timestamp: Date.now(),
       data: {
         sessionId: "s_failed",
         agent: "dev",
+        status: "error",
+        outcome: "error",
         error: "provider transient",
         task: "fix the bug",
       },
@@ -57,13 +59,15 @@ describe("session-recovery handler", () => {
     const handler = create(ctx, {} as any);
 
     await handler({
-      type: "session.failed",
+      type: "session.completed",
       source: "runtime",
       owner: "agent:dev",
       timestamp: Date.now(),
       data: {
         sessionId: "s_failed",
         agent: "dev",
+        status: "error",
+        outcome: "error",
         error: "logic failure",
         task: "fix the bug",
       },
@@ -98,5 +102,38 @@ describe("session-recovery handler", () => {
 
     expect(ctx.sdk.getDb).toHaveBeenCalled();
     expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("does not unwrap nested event.data.data payloads", async () => {
+    const ctx = makeCtx("requeue");
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "session.completed",
+      source: "runtime",
+      owner: "agent:dev",
+      timestamp: Date.now(),
+      data: {
+        data: {
+          sessionId: "s_nested",
+          agent: "dev",
+          status: "error",
+          outcome: "error",
+          error: "provider transient",
+          task: "fix the bug",
+        },
+      },
+    });
+
+    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
+      handler: "session-recovery",
+      reason: "session.completed is not recoverable",
+      eventType: "session.completed",
+      sessionId: null,
+    }));
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
+      sessionId: "s_nested",
+    }));
   });
 });

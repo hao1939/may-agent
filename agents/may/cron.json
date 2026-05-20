@@ -392,8 +392,7 @@
     "intervalMs": 300000,
     "description": "React to failed sessions by dispatching the session-recovery workflow; timer fallback auto-closes stale immediate sessions with no assistant activity.",
     "on": [
-      "session.completed",
-      "session.failed"
+      "session.completed"
     ],
     "context": [
       "projects/platform/project.md",
