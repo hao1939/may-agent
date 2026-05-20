@@ -387,6 +387,7 @@ export interface CronEntry {
   message?: string;
   enabled: boolean;
   description?: string;
+  context?: string[];
   agent?: string;
   handler?: CronHandlerSpec;
   timeoutMs?: number;

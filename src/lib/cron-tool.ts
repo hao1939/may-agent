@@ -45,6 +45,8 @@ export interface CronEntry {
   message?: string;
   enabled: boolean;
   description?: string;
+  /** Durable maintenance context for the loop this trigger serves. Local paths from app root. */
+  context?: string[];
   /** Agent that owns/runs this job. If no `handler` is set, spawns a dedicated agent instance. */
   agent?: string;
   /** Handler implementation: a named JS handler or a workflow-backed handler object. */
