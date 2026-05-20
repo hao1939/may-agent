@@ -70,7 +70,7 @@ The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsyste
 
 Resume-menu item 2 is complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` now makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
 
-The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. `outputs/iteration94-next-model-unknown-selection.md` ranked the post-VPA unknowns and selected Image Cleaner vulnerable-image erasure as the next non-gated runtime branch. The active task is to execute that source-preflighted staging probe and produce `outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md`; VPA cert renewal/upgrade, Workload Identity Windows, and OIDC post-delete cleanup remain later alternatives.
+The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. Image Cleaner vulnerable-image erasure passed in iteration95. The active task is `post-image-cleaner-unknown-selection`: select the next non-blocked model-unknown branch from VPA cert renewal/upgrade, Workload Identity Windows, OIDC post-delete cleanup, or other viable unknowns.
 
 ## Owner Review of Latest Comments
 - Reviewed `discussion.md` through the 2026-05-20 creative-audit comments; they remain proposal-only and no newer human instruction changed the current branch selection.
@@ -495,12 +495,20 @@ The local post-VPA selection artifact `outputs/iteration94-next-model-unknown-se
   depends_on: [next-model-unknown-selection]
   attempts: 1
 
+- id: post-image-cleaner-unknown-selection
+  status: open
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration96-post-image-cleaner-unknown-selection.md selecting the next non-blocked model-unknown branch after Image Cleaner vulnerable-image erasure passed. Start from outputs/input-expectation-knowledge-map.md, outputs/e2e-capability-model.json, outputs/iteration94-next-model-unknown-selection.md, and the current validator unknown list (20 unknowns). Rank VPA cert renewal/upgrade survival, Workload Identity Windows, OIDC post-delete cleanup, and at least two other viable unknowns by input paths covered, expectation paths checked, source/e2ev3 anchor, cost/risk, required access, and gating status. End with one concrete recommended branch, exact preflight reads for a later execution task, and expected model/knowledge-map update. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [image-cleaner-vulnerable-erasure-staging]
+  attempts: 0
+
 - id: image-cleaner-vulnerable-erasure-staging
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Execute the Image Cleaner vulnerable-image erasure staging probe selected by outputs/iteration94-next-model-unknown-selection.md. Start from outputs/iteration86-image-cleaner-runtime-source-gated-staging.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and the iteration94 preflight commands. Before creating any cluster, confirm from devbox source the vulnerable image constant, node/containerd run-command inspection path, eraser collector selector, and source wait budget. Then create a small staging cluster with Image Cleaner enabled, disable Image Cleaner, pull/prove the vulnerable image exists on nodes while disabled, re-enable Image Cleaner, wait for eraser collectors to complete, prove the vulnerable image is absent, clean up the resource group, and produce outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md with exact commands, raw evidence snippets, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if image-cleaner-vulnerable-image-erasure gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. Do not combine with Image Cleaner upgrade/restart survival, VPA/KEDA, Workload Identity/OIDC, App Routing, ManagedSystem, Node Restriction, bootstrap, VirtualMachines, or unrelated probes."
   depends_on: [vpa-residual-runtime-staging]
-  attempts: 0
+  attempts: 2
 
 ## References
 
