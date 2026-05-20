@@ -1,10 +1,9 @@
 ---
 id: platform
 owner: tech-lead
-status: paused
+status: waiting
 type: milestone
 priority: P0
-workflow: project
 iteration: 38
 ---
 
@@ -12,12 +11,19 @@ iteration: 38
 
 ## Goal
 
-Maintain and evolve the may-agent platform — runtime, SDK, web UI, container, and
-supporting tooling — that every other project under `projects/` depends on.
+Provide a stable, flexible infrastructure substrate for the May agent system:
+runtime, SDK, event/session/task execution, persistence, query/read models, web
+UI, container/build tooling, and test harnesses.
 
-This is a standing platform project. It stays `waiting` between concrete pushes
-and goes `active` only when there is a real signal: a failing platform metric,
-an unread comment, an architectural change request, or a scheduled milestone.
+Platform changes shared infrastructure contracts. Agent learning,
+self-improvement, evaluator calibration, and behavior evolution happen in
+separate projects that consume platform mechanisms instead of owning platform
+state directly.
+
+This is a standing platform project. It stays `waiting` between concrete
+infrastructure pushes and goes `active` only when there is a real platform
+signal: a failing platform metric, an unread comment, an architectural change
+request, or a scheduled infrastructure milestone.
 
 The project name (`platform`) describes the ongoing concern; the code repo
 (`may-agent`) lives underneath at `repos/may-agent/` with its own `.git`. This
@@ -36,6 +42,29 @@ discussion live here.
 Waiting: — No active work signals. All plan items complete, no new comments or failures.
 
 Resume when: a non-automated comment appears in discussion.md, a platform test fails, or a human/May directive arrives.
+
+## Scope Boundary
+
+Platform owns shared mechanisms, not agent behavior strategy.
+
+In scope:
+- Runtime, SDK, persistence, events, sessions, task dispatch, workflow runner
+  primitives, query/read models, web UI, container/build/test tooling.
+- Infra contract docs and migration cleanup when those shared contracts change.
+- Operator-facing observability that explains platform state.
+
+Out of scope:
+- Agent learning strategy, evaluator calibration, coaching policy, prompt
+  evolution, and self-improvement experiments.
+- Domain project planning, feature discovery, or project-specific heuristics.
+- Direct ownership of another project's plan, tasks, or conclusions.
+
+Those lanes should use platform-provided mechanisms — metrics, events,
+comments, project tasks, and SDK APIs — to request platform work. They should
+not hard-code platform internals or mutate platform project state directly.
+
+Related evolution lane: `projects/agent-system-evolution/project.md`.
+
 ## Plan
 - [x] Fix failing `sendSocketCommand` test (commit `6d577a42`)
 - [x] Verify projectIdOf/projectPathOf refactor (iter9)
