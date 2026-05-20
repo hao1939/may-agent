@@ -109,7 +109,7 @@ The next evaluator-learning task should produce the first bounded score batch
 inside `outputs/evaluator/`, then compare those heuristic scores against recent
 canonical evaluator verdicts before proposing rubric changes.
 
-## Plan
+## Tasks
 
 - [x] Establish a dedicated project boundary for agent-system evolution.
 - [ ] Inventory existing learning/evolution projects and decide which remain
