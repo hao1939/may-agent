@@ -292,7 +292,11 @@
       "project.nudge",
       "project.task.finished",
       "project.completed",
-      "project.blocked"
+      "project.blocked",
+      "project.health.finding",
+      "project.owner.incomplete",
+      "metric.breach",
+      "metric.recovered"
     ],
     "context": [
       "projects/platform/project.md",
@@ -668,9 +672,14 @@
   {
     "name": "daily-alert-review",
     "intervalMs": 86400000,
-    "message": "Run the daily alert review: query metric_alerts for last 24h, produce report at projects/daily-alert-review/outputs/YYYY-MM-DD-alert-review.md, send summary to human via Telegram. Check for systemic patterns and threshold calibration issues.",
     "enabled": true,
-    "agent": "may",
+    "handler": {
+      "workflow": "verify-wrap",
+      "agent": "may",
+      "task": "[cron:daily-alert-review] Run the daily alert review from the system-operations lane. Query metric_alerts for the last 24h plus unresolved older alerts; correlate metric.breach, metric.recovered, metric.alert_judged, and remediation sessions; write the report at projects/system-operations/outputs/YYYY-MM-DD-alert-review.md; send a concise summary to human via Telegram; call out noisy thresholds, missing owners, unresolved validation, and recurring systemic patterns.",
+      "projectId": "system-operations",
+      "timeoutMs": 900000
+    },
     "description": "Daily metric alert review and report generation",
     "context": [
       "projects/system-operations/project.md",

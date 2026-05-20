@@ -291,7 +291,6 @@ each agent can have a `cron.json` defining trigger entries.
 
 - **Workflow-backed handlers**: Run a workflow directly (`handler: { "workflow": "...", "agent": "...", "task": "..." }`)
 - **JS handlers**: Run deterministic in-process functions (`handler: "evaluate-sessions"`)
-- **Detached agent tasks**: Spawn an agent task in a separate OS process (`agent` + `message`)
 
 Handlers live in `agents/<name>/handlers/` and are auto-discovered.
 
