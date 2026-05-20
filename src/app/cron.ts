@@ -5,7 +5,8 @@
  * `trigger.<entry>` shortcuts invoke the same handler interface:
  * - `handler: "name"` runs a registered JS function in-process.
  * - `handler: { workflow, agent, task }` runs a workflow-backed handler.
- * - no `handler` + `agent`: compatibility path for detached agent tasks.
+ * - old `agent` + `message` entries are legacy detached tasks; new entries
+ *   should use workflow-backed handlers.
  *
  * Heartbeats are normal workflow-backed handlers.
  *

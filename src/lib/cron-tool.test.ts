@@ -83,10 +83,15 @@ describe("cron tool", () => {
     // Verify file contents
     const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toEqual({ name: "health", intervalMs: 60000, message: "check health", enabled: true });
+    expect(entries[0]).toEqual({
+      name: "health",
+      intervalMs: 60000,
+      handler: { workflow: "verify-wrap", agent: "may", task: "check health" },
+      enabled: true,
+    });
   });
 
-  it("add defaults new jobs to the owning agent executor when agentName is set", async () => {
+  it("add defaults new jobs to a workflow-backed handler for the owning agent", async () => {
     const agentCtx = makeAgentToolCtx("bob");
     try {
       await exec(agentCtx.tool, {
@@ -97,7 +102,12 @@ describe("cron tool", () => {
       });
 
       const entries: CronEntry[] = JSON.parse(readFileSync(agentCtx.configPath, "utf-8"));
-      expect(entries[0]).toMatchObject({ name: "follow-up", agent: "bob" });
+      expect(entries[0]).toMatchObject({
+        name: "follow-up",
+        handler: { workflow: "verify-wrap", agent: "bob", task: "check follow-up items" },
+      });
+      expect(entries[0].agent).toBeUndefined();
+      expect(entries[0].message).toBeUndefined();
     } finally {
       agentCtx.cleanup();
     }
@@ -165,7 +175,8 @@ describe("cron tool", () => {
 
     const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
     expect(entries[0].intervalMs).toBe(120000);
-    expect(entries[0].message).toBe("m"); // unchanged
+    expect(typeof entries[0].handler).toBe("object");
+    expect((entries[0].handler as { task: string }).task).toBe("m"); // unchanged
   });
 
   it("update modifies message", async () => {
@@ -174,7 +185,9 @@ describe("cron tool", () => {
 
     const entries: CronEntry[] = JSON.parse(readFileSync(ctx.configPath, "utf-8"));
     expect(entries[0].intervalMs).toBe(60000); // unchanged
-    expect(entries[0].message).toBe("new");
+    expect(typeof entries[0].handler).toBe("object");
+    expect((entries[0].handler as { task: string }).task).toBe("new");
+    expect(entries[0].message).toBeUndefined();
   });
 
   it("update rejects intervalMs below minimum", async () => {
