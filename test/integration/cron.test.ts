@@ -21,6 +21,27 @@ function nextTick(): Promise<void> {
 }
 
 describe("Cron event triggers", () => {
+  it("rejects detached agent-message entries without handlers", () => {
+    const { root, configPath, cleanup } = tempCronConfig([
+      {
+        name: "detached",
+        enabled: true,
+        intervalMs: 600_000,
+        agent: "may",
+        message: "old detached shape",
+      },
+    ]);
+    try {
+      const errors: string[] = [];
+      const cron = new Cron(configPath, {} as any, () => "", (msg) => errors.push(msg), root);
+
+      expect(cron.load()).toEqual([]);
+      expect(errors).toContain('Cron entry "detached" needs handler');
+    } finally {
+      cleanup();
+    }
+  });
+
   it("fires any cron entry via trigger.<entry-name> without per-entry on config", async () => {
     const { root, configPath, cleanup } = tempCronConfig([
       {
