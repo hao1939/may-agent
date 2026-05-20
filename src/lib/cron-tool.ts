@@ -42,7 +42,7 @@ export type CronHandlerSpec = string | WorkflowBackedHandler;
 export interface CronEntry {
   name: string;
   intervalMs?: number;
-  /** Legacy detached-agent prompt. New jobs should use handler.task instead. */
+  /** Deprecated config field. Scheduler does not treat message as a trigger mode. */
   message?: string;
   enabled: boolean;
   description?: string;

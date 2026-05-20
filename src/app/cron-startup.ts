@@ -72,16 +72,15 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
   }
 
   for (const [name, cron] of getAgentCrons()) {
-    cron.onFire((entry, executor) => {
+    cron.onFire((entry) => {
       const handler = typeof entry.handler === "string"
         ? entry.handler
         : entry.handler
           ? `workflow:${entry.handler.agent ? `${entry.handler.agent}/` : ""}${entry.handler.workflow}`
           : entry.name;
-      const label = executor === "handler" ? `handler -> ${handler}` : `agent -> ${entry.agent}`;
       bus.emit({
         type: "info",
-        message: `[cron] ${entry.name} fired (${label})`,
+        message: `[cron] ${entry.name} fired (handler -> ${handler})`,
       });
     });
 

@@ -5,8 +5,6 @@
  * `trigger.<entry>` shortcuts invoke the same handler interface:
  * - `handler: "name"` runs a registered JS function in-process.
  * - `handler: { workflow, agent, task }` runs a workflow-backed handler.
- * - old `agent` + `message` entries are legacy detached tasks; new entries
- *   should use workflow-backed handlers.
  *
  * Heartbeats are normal workflow-backed handlers.
  *
@@ -23,10 +21,7 @@ import { createHash } from "node:crypto";
 import { resolve, dirname } from "node:path";
 import type { EventBus, SystemEvent } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
-import { generateId } from "../lib/index.js";
-// Budget tiers now auto-resolved in manager.run() — import no longer needed here
 import { getDb } from "../lib/requests.js";
-import { spawnDetachedAgent } from "../lib/detached.js";
 import type { CronEntry, WorkflowBackedHandler } from "../lib/cron-tool.js";
 import type { EventEnvelope } from "../lib/handler-context.js";
 
@@ -35,10 +30,8 @@ import type { EventEnvelope } from "../lib/handler-context.js";
 /** A JS function that replaces the LLM for a specific cron job. */
 type CronHandler = (event?: EventEnvelope) => Promise<void>;
 
-type CronExecutor = "handler" | "agent";
-
 /** Callback when a job fires (for notifications). */
-type CronJobCallback = (entry: CronEntry, executor: CronExecutor) => void;
+type CronJobCallback = (entry: CronEntry) => void;
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
@@ -134,7 +127,6 @@ export class Cron {
    *  Per-entry cooldown = 75% of the entry's intervalMs (min 60s). */
   readonly defaultCooldownMs = 60_000;
 
-  private projectRoot: string;
   private persistDir: string;
 
   /** In-flight jobs: entry name → start timestamp. Replaces requests table overlap check. */
@@ -145,15 +137,14 @@ export class Cron {
 
   constructor(
     private configPath: string,
-    private manager: SubagentManager,
-    private getSessionId: () => string,
+    _manager: SubagentManager,
+    _getSessionId: () => string,
     private onError?: (msg: string) => void,
     projectRoot?: string,
     private notify?: (msg: string) => void,
     private emitEvent?: (event: SystemEvent) => void,
   ) {
-    this.projectRoot = projectRoot ?? resolve(dirname(configPath), "../..");
-    this.persistDir = resolve(this.projectRoot, ".state");
+    this.persistDir = resolve(projectRoot ?? resolve(dirname(configPath), "../.."), ".state");
   }
 
   registerHandler(jobName: string, handler: CronHandler): void {
@@ -249,8 +240,8 @@ export class Cron {
           this.onError?.(`Invalid cron entry: ${JSON.stringify(entry)}`);
           return false;
         }
-        if (!entry.handler && !entry.message && !entry.agent) {
-          this.onError?.(`Cron entry "${entry.name}" needs handler, message, or agent`);
+        if (!entry.handler) {
+          this.onError?.(`Cron entry "${entry.name}" needs handler`);
           return false;
         }
         const workflow = workflowHandler(entry.handler);
@@ -528,24 +519,16 @@ export class Cron {
       }
     }
 
-    const mode = this.resolveMode(entry);
-    if (!mode) return false;
+    if (!this.resolveMode(entry)) return false;
 
     // Manual trigger — always fire, no overlap check
-    switch (mode) {
-      case "handler":
-        this.fireHandler(entry, opts?.triggerEvent ?? {
-          type: `trigger.${entry.name}`,
-          source: "manual",
-          owner: `agent:${entryAgent(entry) || "may"}`,
-          timestamp: Date.now(),
-          data: { entry: entry.name },
-        });
-        break;
-      case "agent":
-        this.fireDetachedJob(entry);
-        break;
-    }
+    this.fireHandler(entry, opts?.triggerEvent ?? {
+      type: `trigger.${entry.name}`,
+      source: "manual",
+      owner: `agent:${entryAgent(entry) || "may"}`,
+      timestamp: Date.now(),
+      data: { entry: entry.name },
+    });
     return true;
   }
 
@@ -578,17 +561,15 @@ export class Cron {
   }
 
   /** Resolve the effective execution mode for an entry. */
-  private resolveMode(entry: CronEntry): CronExecutor | null {
+  private resolveMode(entry: CronEntry): boolean {
     if (entry.handler) {
       const handler = this.handlers.get(entry.name);
-      if (handler) return "handler";
+      if (handler) return true;
       this.onError?.(`Cron entry "${entry.name}" declares handler "${handlerDisplay(entry.handler)}" but it is not registered — skipping`);
-      return null;
+      return false;
     }
-    if (entry.agent) return "agent";
-
-    this.onError?.(`Cron entry "${entry.name}" has no handler and no agent — skipping`);
-    return null;
+    this.onError?.(`Cron entry "${entry.name}" has no handler — skipping`);
+    return false;
   }
 
   // ── Request-based state queries ─────────────────────────────────────
@@ -634,8 +615,7 @@ export class Cron {
   // ── Scheduling with resume ──────────────────────────────────────────
 
   private startEntry(entry: CronEntry): void {
-    const mode = this.resolveMode(entry);
-    if (!mode) return;
+    if (!this.resolveMode(entry)) return;
     if (!entry.intervalMs) return; // event-only subscription; triggerSubscribers fires it.
 
     const fire = () => {
@@ -649,23 +629,16 @@ export class Cron {
       // observable through metrics + escalations instead of being
       // enforced at the cron layer.
 
-      switch (mode) {
-        case "handler":
-          this.fireHandler(entry, {
-            type: "timer.tick",
-            source: "timer",
-            owner: `agent:${entryAgent(entry) || "may"}`,
-            timestamp: Date.now(),
-            data: { entry: entry.name },
-          });
-          break;
-        case "agent":
-          this.fireDetachedJob(entry);
-          break;
-      }
+      this.fireHandler(entry, {
+        type: "timer.tick",
+        source: "timer",
+        owner: `agent:${entryAgent(entry) || "may"}`,
+        timestamp: Date.now(),
+        data: { entry: entry.name },
+      });
     };
 
-    const delay = this.computeResumeDelay(entry, mode);
+    const delay = this.computeResumeDelay(entry);
 
     const startTimer = setTimeout(() => {
       this.pendingStartTimers.delete(entry.name);
@@ -682,7 +655,7 @@ export class Cron {
   }
 
   /** Compute the initial delay for an entry based on when it last ran. */
-  private computeResumeDelay(entry: CronEntry, _mode: string): number {
+  private computeResumeDelay(entry: CronEntry): number {
     const intervalMs = entry.intervalMs ?? this.defaultCooldownMs;
     const lastFire = this.getLastFireTime(entry.name);
     if (lastFire == null) {
@@ -713,7 +686,7 @@ export class Cron {
       return;
     }
 
-    this.onJobFire?.(entry, "handler");
+    this.onJobFire?.(entry);
     const startMs = Date.now();
     this.inflightJobs.set(entry.name, startMs);
     this.lastFireTimes.set(entry.name, startMs);
@@ -765,39 +738,4 @@ export class Cron {
       });
   }
 
-  // ── Detached agent job: spawn separate OS process ───────────────────
-
-  private fireDetachedJob(entry: CronEntry): void {
-    this.onJobFire?.(entry, "agent");
-
-    const sessionId = generateId("cron");
-    let parentSessionId: string | undefined;
-    try {
-      parentSessionId = this.getSessionId();
-    } catch {
-      /* no active parent session */
-    }
-
-    try {
-      const { pid } = spawnDetachedAgent({
-        projectRoot: this.projectRoot,
-        agentName: entry.agent ?? "may",
-        task: entry.message ?? "",
-        sessionId,
-        parentSessionId,
-      });
-
-      this.inflightJobs.set(entry.name, Date.now());
-      this.lastFireTimes.set(entry.name, Date.now());
-
-      // Detached jobs are IN_PROGRESS immediately — they complete when the
-      // process finishes and calls clearDetachedTask(), or get cleaned up
-      // as orphans on next restart.
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      // Track the failed spawn attempt
-      // Error tracked via onError/notify
-      this.onError?.(`Cron job "${entry.name}" detached spawn failed: ${errMsg}`);
-    }
-  }
 }
