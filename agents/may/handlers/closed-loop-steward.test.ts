@@ -103,7 +103,7 @@ describe("closed-loop-steward handler", () => {
     expect(task).toContain("none");
   });
 
-  it("runs may-owned triage even when routing an alert for another metric owner", async () => {
+  it("routes triage through may workflow discovery with the metric owner in the canonical trigger envelope", async () => {
     const stewardContext = makeStewardContext([
       {
         id: 123,
@@ -128,6 +128,13 @@ describe("closed-loop-steward handler", () => {
 
     expect(runWorkflow).toHaveBeenCalledTimes(1);
     expect(runWorkflow).toHaveBeenCalledWith("metric-alert-triage", expect.any(String), { source: "may" });
+    const task = runWorkflow.mock.calls[0][1] as string;
+    const triggerMatch = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
+    expect(triggerMatch).not.toBeNull();
+    const trigger = JSON.parse(triggerMatch?.[1] ?? "{}");
+    expect(trigger.data).toMatchObject({ type: "metric.breach", owner: "evaluator" });
+    expect(trigger.data.data).toMatchObject({ metricId: "evaluator.false-good-rate-sample" });
+    expect(trigger.data.data).not.toHaveProperty("owner");
     expect(runWorkflow).not.toHaveBeenCalledWith("closed-loop-steward", expect.anything(), { source: "may" });
     expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
       handler: "closed-loop-steward",

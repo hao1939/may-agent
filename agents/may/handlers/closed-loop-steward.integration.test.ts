@@ -144,9 +144,15 @@ describe("closed-loop-steward", () => {
 
     const triageWorkflow = workflows.find((w) => w.name === "metric-alert-triage");
     expect(triageWorkflow).toBeDefined();
-    expect(triageWorkflow!.source).toBe("arc");
+    expect(triageWorkflow!.source).toBe("may");
     expect(triageWorkflow!.task).toContain("missing metric.alert_judged event");
     expect(triageWorkflow!.task).toContain('"metricId": "arc.quality"');
+    const triggerMatch = triageWorkflow!.task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
+    expect(triggerMatch).not.toBeNull();
+    const trigger = JSON.parse(triggerMatch?.[1] ?? "{}");
+    expect(trigger.data).toMatchObject({ type: "metric.breach", owner: "arc" });
+    expect(trigger.data.data).toMatchObject({ metricId: "arc.quality" });
+    expect(trigger.data.data).not.toHaveProperty("owner");
     // When all alerts are routed to triage and no delivery failures remain,
     // the handler skips the main steward dispatch.
     const stewardWorkflow = workflows.find((w) => w.name === "closed-loop-steward");

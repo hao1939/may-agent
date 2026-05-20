@@ -250,7 +250,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const routedTriageCandidates = triageCandidates.slice(0, triageLimit);
     for (const candidate of routedTriageCandidates) {
       const task = buildTriageTask(candidate.alert, candidate.owner, candidate.reason);
-      ctx.sdk.runWorkflow("metric-alert-triage", task, { source: candidate.owner })
+      ctx.sdk.runWorkflow("metric-alert-triage", task, { source: "may" })
         .then((result) => {
           ctx.sdk.log("info", `[closed-loop-steward] Routed ${candidate.alert.metric_id} to metric-alert-triage for ${candidate.owner}: ${String((result as any)?.status ?? "done")}`);
           ctx.sdk.emit("handler.workflow_dispatched", {
