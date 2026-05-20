@@ -46,7 +46,7 @@ describe("May cron config design alignment", () => {
 
     expect(recovery).toBeDefined();
     expect(recovery?.on).toContain("session.completed");
-    expect(recovery?.on ?? []).not.toEqual(["session.failed"]);
+    expect(recovery?.on ?? []).not.toContain("session.failed");
   });
 
   it("routes escalations through canonical escalation.created events", () => {
