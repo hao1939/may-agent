@@ -1,8 +1,8 @@
 ---
 id: gym-quality-improvement
 owner: coach
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P1
 iteration: 50
 stop_reason: All infrastructure milestones met. M1=62% is confirmed ceiling (cognitive gaps). See Final Summary.

@@ -86,8 +86,8 @@ Out of scope:
 - `projects/platform/project.md` — infra substrate provider.
 - `projects/scout-second-brain-learning/project.md` — scout-specific learning lane.
 - `projects/ruflo-learning-loop/project.md` — paused external-methodology learning loop owned by arc.
-- `projects/master-worker-context-sharing/project.md` — master/worker delegation and context-transport reference.
-- `projects/eval-llm-lane-restoration/project.md` — LLM evaluation lane (infra reference).
+- `projects/master-worker-context-sharing/project.md` — closed split project; behavior/delegation lessons belong here, transport/runtime work belongs to platform.
+- `projects/eval-llm-lane-restoration/project.md` — closed evaluation-infra reference, watched by closed-loop reliability.
 - `projects/closed-loop-reliability/project.md` — operational closed-loop reliability reference.
 
 Archived evaluator lanes:

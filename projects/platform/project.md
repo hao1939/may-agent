@@ -63,6 +63,14 @@ not hard-code platform internals or mutate platform project state directly.
 
 Related evolution lane: `projects/agent-system-evolution/project.md`.
 
+Historical project references:
+- `projects/master-worker-context-sharing/project.md` — closed split project.
+  Platform owns any future master/worker transport, runtime loading, tool
+  envelope, or persistence changes that come from that evidence.
+- `projects/proof-of-life-dashboard/project.md` — closed presentation project.
+  Platform owns only shared web UI/runtime work; report content stays in
+  `projects/daily-alert-review/project.md`.
+
 ## Plan
 - [x] Fix failing `sendSocketCommand` test (commit `6d577a42`)
 - [x] Verify projectIdOf/projectPathOf refactor (iter9)
@@ -78,12 +86,12 @@ Related evolution lane: `projects/agent-system-evolution/project.md`.
 ## Tasks
 
 - id: ui-redesign-infra-fundamentals
-  status: ready
-  result: null
+  status: done
+  result: succeeded
   assignee: tech-lead
   goal: Redesign web UI to foreground infrastructure fundamentals (hao directive + codex design advice in discussion.md).
   depends_on: []
-  attempts: 0
+  attempts: 1
 
 ## Validation
 

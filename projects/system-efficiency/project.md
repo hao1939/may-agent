@@ -2,9 +2,8 @@
 id: system-efficiency
 owner: optimizer
 status: closed
-type: milestone
+type: archive
 priority: P1
-workflow: project
 iteration: 4
 stop_reason: DONE
 ---

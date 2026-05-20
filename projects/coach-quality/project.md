@@ -2,9 +2,8 @@
 id: coach-quality
 owner: coach
 status: closed
-type: milestone
+type: archive
 priority: P1
-workflow: project
 iteration: 50
 stop_reason: COMPLETE — target met (avg 0.70 vs ≥0.50 target). Hit iteration cap 50 but goal was achieved at iter ~19.
 ---

@@ -2,9 +2,8 @@
 id: agent-memory-learning
 owner: coach
 status: closed
-type: milestone
+type: archive
 priority: P2
-workflow: project
 iteration: 2
 ---
 

@@ -1,10 +1,9 @@
 ---
 id: v2-spec-coverage-buildout
 owner: may
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P2
-workflow: project
 iteration: 10
 ---
 

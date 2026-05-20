@@ -1,8 +1,8 @@
 ---
 id: evaluator-low-quality-rate-calibration
 owner: evaluator
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P1
 iteration: 6
 stop_reason: Completed. May approved the broad/substantive metric split, runtime code now treats the broad metric as dashboard-only, and the substantive metric is the primary quality alert.

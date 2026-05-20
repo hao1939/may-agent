@@ -2,9 +2,8 @@
 id: test-coverage
 owner: optimizer
 status: closed
-type: milestone
+type: archive
 priority: P2
-workflow: project
 iteration: 13
 ---
 

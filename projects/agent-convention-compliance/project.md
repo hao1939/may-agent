@@ -1,8 +1,8 @@
 ---
 id: agent-convention-compliance
 owner: coach
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P3
 iteration: 50
 stop_reason: All goals met — 98% compliance achieved with 96.1% floor. Maintenance mode.

@@ -1,8 +1,8 @@
 ---
 id: heartbeat-efficiency
 owner: tech-lead
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P1
 iteration: 1
 ---

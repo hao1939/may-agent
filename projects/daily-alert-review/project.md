@@ -4,10 +4,9 @@ owner: may
 status: waiting
 type: recurring
 priority: P1
-workflow: project
-iteration: 3
-stop_reason: Daily alert reviews are being produced successfully and sent via Telegram. The worker completed reviews for 2026-05-09 (56 alerts) and 2026-05-10 (39 alerts, ↓30%). The project goal is truncated but t
-resume_condition: next daily review cycle or human provides the full project goal/additional requirements.
+iteration: 6
+stop_reason: Daily alert review for 2026-05-20 produced and sent via Telegram. Cron job registered for daily automation. Resume when: next daily cycle (2026-05-21) or human feedback on report quality.
+resume_condition: next daily cycle (2026-05-21) or human feedback on report quality.
 ---
 
 # Project: Daily Alert Review
@@ -28,6 +27,7 @@ Produce a concise daily report and send it to human via Telegram.
 - `metric_alerts` table: `created_at` in last 24h
 - `events` table: `metric.breach`, `metric.recovered`, `metric.alert_judged`
 - `sessions` table: remediation sessions triggered by alerts
+- `projects/proof-of-life-dashboard/project.md`: closed historical project for proof-of-life presentation ideas; future digest/dashboard changes are handled here unless they require platform UI work.
 
 ## Report Format
 
@@ -50,15 +50,18 @@ Send via Telegram (use `message("human", report)`):
 ```
 
 ## Current State
-Waiting: Daily alert reviews are being produced successfully and sent via Telegram. The worker completed reviews for 2026-05-09 (56 alerts) and 2026-05-10 (39 alerts, down 30%). The project goal is truncated but the core work is functioning. Resume when: next daily review cycle or human provides the full project goal/additional requirements.
-## Plan
+Waiting: Daily alert review for 2026-05-20 produced and sent via Telegram. Cron job registered for daily automation. Resume when: next daily cycle (2026-05-21) or human feedback on report quality.
 
-1. Query `metric_alerts` for last 24h (both resolved and unresolved)
-2. For each alert, find related `metric.breach`, `metric.recovered`, `metric.alert_judged` events
-3. Check if a remediation session was triggered (sessions with source containing the metric id)
-4. Synthesize into the report format
-5. Send via Telegram
-6. Record observations in journal — patterns accumulate over iterations
+The old `proof-of-life-dashboard` project is folded into this lane as
+human-facing presentation context. Keep the daily review focused on the report
+and Telegram/digest workflow; request platform work only for shared UI/runtime
+changes.
+## Plan
+1. Query `metric_alerts` for last 24h alerts
+2. Correlate with breach/recovered/judged events and remediation sessions
+3. Synthesize into daily report, send via Telegram
+4. Register a cron job (interval ~24h) to ensure this runs daily without manual dispatch
+5. Record patterns in journal
 
 ## Validation
 
@@ -74,6 +77,7 @@ Waiting: Daily alert reviews are being produced successfully and sent via Telegr
 - outputs/2026-05-09.md
 - outputs/2026-05-09-status-tracker.md
 - outputs/2026-05-09-recommendations.md
+- outputs/2026-05-20-alert-review.md
 - outputs/2026-05-08-alert-review.md
 - outputs/2025-07-05-report.md
 - outputs/2026-05-08.md
@@ -83,3 +87,16 @@ Waiting: Daily alert reviews are being produced successfully and sent via Telegr
 - outputs/2025-01-05-report.md
 - outputs/2026-05-08-report.md
 - outputs/2026-05-09-report.md
+
+## Comments
+
+
+## Context
+- Project produces daily alert review reports sent via Telegram
+- Cron job registered for daily automation (self-sustaining)
+- Last successful run: 2026-05-20
+- Outputs are in .gitignore (by design, not a bug)
+- Goal includes: root cause, action taken, resolution status, threshold calibration, systemic patterns
+
+## Next Action
+Automated via cron. Next run produces 2026-05-21 alert review. No manual action needed unless human requests changes to format or thresholds.

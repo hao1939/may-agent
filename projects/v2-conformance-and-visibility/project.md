@@ -1,8 +1,8 @@
 ---
 id: v2-conformance-and-visibility
 owner: may
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P0
 iteration: 1
 ---

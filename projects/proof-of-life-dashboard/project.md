@@ -1,13 +1,11 @@
 ---
 id: proof-of-life-dashboard
 owner: tech-lead
-status: waiting
-type: milestone
+status: closed
+type: archive
 priority: P1
-workflow: project
 iteration: 4
-stop_reason: WAITING_ON_HUMAN
-resume_condition: Hao confirms the top-five metric selection or requests a specific dashboard/digest change.
+stop_reason: Folded into daily-alert-review as the human-facing proof-of-life/digest presentation lane; resume there if Hao requests a dashboard or digest change.
 ---
 
 # Project: Proof-of-Life Dashboard
@@ -26,6 +24,10 @@ Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that 
 - Waiting state: no implementation work should continue until Hao validates metric selection.
 
 ## Current State
+Closed historical project. Proof-of-life presentation work is now folded into
+`projects/daily-alert-review/project.md`; shared UI/runtime work should be
+requested through `projects/platform/project.md`.
+
 - `agents/may/workspace/tools/top5-metrics.ts` runs successfully with 🟢🟡🔴 + ↑↓→
 - **⚠️ `agents/may/handlers/daily-digest.ts` is MISSING** — file does not exist on disk (verified 2026-05-04). Digest was likely generated ad-hoc, not via a persistent handler. Last digest: 2026-04-30.
 - Cron entry registered in `agents/may/cron.json` (86400000ms interval)
@@ -33,7 +35,7 @@ Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that 
 - Metrics shown: Success Rate (100%), Eval Quality (0.43 🔴), Handler Health (100%), Error Rate (0%), Sessions (652)
 - "Tests" metric was replaced with "Handler Health" — uses real data
 - **Issue**: Eval Quality is 0.43 🔴 — this is a real system health signal, not a dashboard bug
-- M1-M3 complete. M4 (Hao feedback) is the remaining milestone.
+- M1-M3 complete. M4 (Hao feedback) transferred to `daily-alert-review`.
 - **v2 upgrades verified**: 24h window in digest mode, 7-day mini-history line under each metric
 - Dashboard is feature-complete — awaiting Hao's review of metric selection
 
@@ -43,13 +45,13 @@ Build a "top 5 at a glance" metrics dashboard for the proof-of-life digest that 
 - [x] M1: Select 5 key metrics (session success rate, eval quality, error rate, throughput, handler health)
 - [x] M2: Implement trend calculation (compare current vs prior 6h)
 - [x] M3: Integrate top5-metrics output into daily digest generation
-- [ ] M4: Get Hao feedback and iterate on metric selection
+- [x] M4: Transfer Hao feedback loop to `daily-alert-review`
 
 ### Next Actions
 - [x] Change Sessions metric to 24h window in daily digest context
 - [x] Add 7-day mini-history line under each metric
-- [ ] Await Hao feedback on metric selection (are these the RIGHT 5?)
-- [ ] Re-plan after M4
+- [x] Transfer future metric-selection feedback to `daily-alert-review`
+- [x] Stop this standalone project
 
 ## Validation
 - Hao confirms the selected top-5 metrics are useful at a glance, or requests changes.

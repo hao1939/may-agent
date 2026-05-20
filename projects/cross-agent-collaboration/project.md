@@ -2,7 +2,7 @@
 id: cross-agent-collaboration
 owner: optimizer
 status: closed
-type: milestone
+type: archive
 priority: P1
 iteration: 1
 stop_reason: CLOSED — Infrastructure complete, organic adoption failed. Context.md instructions don't change agent behavior (consistent with KE-002). Closed 2025-05-03.

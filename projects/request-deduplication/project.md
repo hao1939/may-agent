@@ -2,7 +2,7 @@
 id: request-deduplication
 owner: optimizer
 status: closed
-type: milestone
+type: archive
 priority: P0
 iteration: 1
 stop_reason: WAITING

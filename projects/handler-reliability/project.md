@@ -2,7 +2,7 @@
 id: handler-reliability
 owner: tech-lead
 status: closed
-type: milestone
+type: archive
 priority: P0
 iteration: 3
 ---

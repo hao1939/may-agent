@@ -4,10 +4,9 @@ owner: may
 status: waiting
 type: continuous
 priority: P1
-workflow: project
 iteration: 3
 stop_reason: Current P0/P1 runtime reliability vitals are green and remaining alerts have owners or human-governance dependencies. No concrete autonomous push remains right now.
-resume_condition: Reactivate when a P0/P1 runtime reliability vital breaches, a closed-loop alert lacks owner/judgment/action/validation, or an owning dependency such as evaluator-low-quality-rate-calibration leaves waiting/blocked and needs verification.
+resume_condition: Reactivate when a P0/P1 runtime reliability vital breaches, a closed-loop alert lacks owner/judgment/action/validation, or an absorbed watch item such as eval LLM coverage or finish-blocked unresolved sessions breaches again.
 ---
 
 # Project: Closed Loop Reliability
@@ -31,6 +30,11 @@ create a validation path.
 - `metric.recovered`: validates actual recovery when a metric returns in range.
 - Runtime reliability vitals (`agent.heartbeat-dark-count-2h`, `message.delivery-failed-count-1h`, `session.empty-assistant-stop-count-1h`, `evaluator.stale-running-session-count`) are primary signals that the loop itself is failing.
 - Repeated observation-only `DONE` runs while reliability signals are open are themselves a project failure.
+
+Absorbed watch items:
+- `projects/eval-llm-lane-restoration/project.md` — closed historical project; watch `eval.llm-coverage-lag-h` and `evaluation.deep_*` lifecycle gaps here.
+- `projects/finish-blocked-hygiene-reduction/project.md` — closed historical project; watch `session.finish-blocked-unresolved-count-24h` here.
+- `projects/empty-assistant-stop-runtime-retry/project.md` — closed historical project; watch `session.empty-assistant-stop-count-1h` here unless platform accepts a concrete runtime patch.
 
 ## Current State
 
@@ -95,6 +99,8 @@ intent. No actionable work remains for this project until a resume signal fires.
 - If `evaluator-low-quality-rate-calibration` leaves blocked/waiting, verify #197/#225 on the next metrics snapshot.
 - If a P0/P1 runtime reliability vital regresses, re-plan immediately.
 - If `project.blocked-count` stays open under the corrected blocker-only metric, audit the remaining blocked projects and nudge their owners.
+- If `eval.llm-coverage-lag-h` breaches 4h, or `evaluation.deep_dispatched` repeats without a later `evaluation.deep_recorded`/`evaluation.deep_failed`, open a concrete reliability task from the historical `eval-llm-lane-restoration` evidence.
+- If `session.finish-blocked-unresolved-count-24h` breaches, reopen the finish-blocked hygiene thread from its historical evidence and diagnose the new unresolved source pattern.
 
 ## Acceptance Criteria
 

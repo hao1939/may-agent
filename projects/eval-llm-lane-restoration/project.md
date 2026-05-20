@@ -1,13 +1,11 @@
 ---
 id: eval-llm-lane-restoration
 owner: dev
-status: waiting
-type: milestone
+status: closed
+type: archive
 priority: P0
-workflow: project
-iteration: 3
-stop_reason: all planned restoration/hardening milestones are complete and the project is awaiting May/human review. Resume when: `eval.llm-coverage-lag-h` breaches 4h again, `evaluation.deep_dispatched` repeats w
-resume_condition: `eval.llm-coverage-lag-h` breaches 4h again, `evaluation.deep_dispatched` repeats without a later `evaluation.deep_recorded`/`evaluation.deep_failed`, or the reviewer requests a specific follow-up.
+iteration: 5
+stop_reason: Folded into closed-loop-reliability as a metric-triggered watch item; reopen only if eval.llm coverage or deep-eval lifecycle metrics breach again.
 ---
 
 # Restore Non-Heuristic Evaluator Lane
@@ -26,27 +24,54 @@ Restore a safe non-heuristic/LLM-backed evaluation producer so `eval.llm-coverag
 - `standalone-eval` sessions stopped at 2026-05-06 14:18:37 UTC; `eval-poller` last completed at runtime timestamp 1778136761266, while `session-aftermath-scan` is current and writes heuristic rows.
 
 ## Current State
-Waiting: all planned restoration/hardening milestones are complete and the project is awaiting May/human review. Resume when: `eval.llm-coverage-lag-h` breaches 4h again, `evaluation.deep_dispatched` repeats without a later `evaluation.deep_recorded`/`evaluation.deep_failed`, or the reviewer requests a specific follow-up.
+Closed historical project. Runtime evidence is healthy and the ongoing watch
+has moved to `projects/closed-loop-reliability/project.md`. Reopen or create a
+new task there if `eval.llm-coverage-lag-h` breaches 4h, or if
+`evaluation.deep_dispatched` repeats without a later
+`evaluation.deep_recorded`/`evaluation.deep_failed`.
 
-- **I believe**: The non-heuristic lane is restored, durable in tracked source, bounded/asynchronous, and currently healthy: `eval.llm-coverage-lag-h.current = 0.04`, threshold `4`, latest non-heuristic evaluation `2026-05-13 04:48:17`, `nonheuristic_24h = 14`.
-- **I'm uncertain about**: Long-term recurrence behavior beyond the latest scan/snapshot cycle; the static smoke check exists, but the full runtime-coupled unit test still cannot run in this container because `/app/src` is unavailable.
-- **I'd change my mind if**: The smoke test fails, the cron/handler source disappears from tracked files, the metric breaches again, or trace events show dispatches with no eventual recorded/failed terminal event.
+1. **I believe**: The restored `eval-llm-scan` lane is live and functioning: latest non-heuristic evaluation is `2026-05-20 04:16:22`, `nonheuristic_24h=22`, and the metric is `0.63h < 4h`.
+2. **I'm uncertain about**: Whether the project workflow will correctly reconcile the stale `active` frontmatter/current-state wording without another worker loop; the project file currently says “Active” even though the evidence supports waiting/pending review.
+3. **I'd change my mind if**: The metric crosses 4h again, recent dispatches lack a terminal record/failure event, the cron entry or handler disappears from source, or the smoke/unit tests begin failing.
 
 ## Review answers
 
-1. **Is the goal closer?**  
+1. **Is the goal closer?**
+   Yes. The outcome metric is still below alert threshold: `eval.llm-coverage-lag-h.current = 0.63`, threshold `4`. The latest non-heuristic row advanced to `2026-05-20 04:16:22`, with `22` non-heuristic evaluations in the last 24h.
+
+2. **What did we learn?**
+   The lane is not merely present in source; it is actively recording again. The latest runtime events show `handler.started` → `evaluation.deep_recorded` → `handler.completed` for `eval-llm-scan` at `2026-05-20 04:16:22`, with handler duration `19ms`, which supports the bounded/non-timeout design.
+
+3. **Is the current milestone the right next step?**
+   No worker milestone is needed now. The completed milestones remain: **Design the smallest safe async lane**, **Define DB write contract**, **Implement a bounded pilot**, **Backstop timeout safety**, and **Validate liveness**.
+
+4. **Are we closing the loop?**
+   Yes. Recurrence prevention exists through the bounded async handler, cron registration, artifact validation before non-heuristic DB writes, trace events, and tests at `agents/may/handlers/eval-llm-scan.test.ts` / integration coverage.
+
+5. **Is it verified?**
+   Yes. Live DB evidence verifies both the metric and the producer:
+   - Metric row: `eval.llm-coverage-lag-h.current = 0.63`, threshold `4`, status `active`.
+   - Evaluation row aggregate: latest non-heuristic evaluation `2026-05-20 04:16:22`, `nonheuristic_24h = 22`.
+   - Event trail: `evaluation.deep_recorded` and `handler.completed` for `eval-llm-scan` at `2026-05-20 04:16:22`, duration `19ms`.
+   - Source/test files exist under `agents/may/handlers/eval-llm-scan.ts`, `agents/may/handlers/eval-llm-scan.test.ts`, and `agents/may/handlers/eval-llm-scan.integration.test.ts`.
+
+6. **What's blocking progress?**
+   Nothing is blocking implementation. The only remaining dependency is external review/monitoring: continue only if a resume condition fires or May/human requests a follow-up.
+## Review answers
+
+1. **Is the goal closer?**
    Yes. The actual outcome metric is restored below alert threshold: `eval.llm-coverage-lag-h.current = 0.04` against threshold `4`, with a fresh `evaluatedByHeuristic=0` row at `2026-05-13 04:48:17`.
 
-2. **What did we learn?**  
+2. **What did we learn?**
    The source-of-truth discrepancy from iteration 1 is resolved. The lane exists in tracked files: `agents/may/handlers/eval-llm-scan.ts`, `agents/may/cron.json`, `agents/shared/workflows/evaluator-deep-eval.ts`, and tests/smoke checks. The repeated dispatch symptom was explained by two-phase behavior after one failed deep-eval attempt: dispatch occurs first, artifact ingestion/DB write happens on a later scan.
 
-3. **Is the current milestone the right next step?**  
+3. **Is the current milestone the right next step?**
    No further worker milestone is needed right now. The milestones **Design the smallest safe async lane**, **Define DB write contract**, **Implement a bounded pilot**, **Backstop timeout safety**, and **Validate liveness** are complete enough for review.
 
-4. **Are we closing the loop?**  
+4. **Are we closing the loop?**
    Yes. This is no longer just symptom recovery: there is tracked cron registration, bounded async handler behavior, artifact validation before DB writes, trace events, and a static recurrence smoke check at `agents/test/eval-llm-scan-smoke.test.ts`.
 
-5. **Is it verified?**  
+5. **Is it verified?**
    Yes for the review threshold. Evidence:
    - DB metric check shows `eval.llm-coverage-lag-h.current = 0.04`.
    - DB latest non-heuristic check shows `latest_nonheuristic_utc = 2026-05-13 04:48:17`, `nonheuristic_24h = 14`.
@@ -54,7 +79,7 @@ Waiting: all planned restoration/hardening milestones are complete and the proje
    - Worker also documented successful smoke execution from `/app/agents`.
    - The remaining full unit test limitation is environmental: it imports missing `/app/src`, not a failure of the lane itself.
 
-6. **What's blocking progress?**  
+6. **What's blocking progress?**
    No external dependency is blocking implementation. The correct state is waiting for review because the project is already in `pending-review` and the live metric/source/test evidence supports closure.
 ## Plan
 
@@ -105,11 +130,16 @@ Follow-up validation found the expected next ingestion cycle completed: `evaluat
 - outputs/iteration-2-source-of-truth-hardening.md
 - outputs/iteration-1-restoration-evidence.md
 
-
 ## Context
 - `eval-llm-scan` is the restored non-heuristic evaluator lane and exists in tracked source at `agents/may/handlers/eval-llm-scan.ts`.
 - `agents/may/cron.json` contains an enabled `eval-llm-scan` job for agent `evaluator`, interval `1800000`, with bounded handler config.
 - The handler dispatches evaluator deep-eval work asynchronously, processes at most one candidate per scan, suppresses recent active deep-eval work, and validates artifacts before writing `evaluatedByHeuristic=0`, `skippedByJs=0` rows.
-- Static recurrence smoke coverage exists at `agents/test/eval-llm-scan-smoke.test.ts` and passed in the worker iteration.
-- Runtime verification on 2026-05-13 showed `eval.llm-coverage-lag-h.current=0.04`, latest non-heuristic evaluation `2026-05-13 04:48:17`, and `nonheuristic_24h=14`.
-- Project is pending review; reopen only if `eval.llm-coverage-lag-h` breaches 4h again or dispatch events repeat without later recorded/failed terminal events.
+- Test coverage exists at `agents/may/handlers/eval-llm-scan.test.ts` and `agents/may/handlers/eval-llm-scan.integration.test.ts`.
+- Runtime verification on 2026-05-20 showed `eval.llm-coverage-lag-h.current=0.63`, latest non-heuristic evaluation `2026-05-20 04:16:22`, and `nonheuristic_24h=22`.
+- Project is waiting for May/human review; reopen only if `eval.llm-coverage-lag-h` breaches 4h again, `evaluation.deep_dispatched` repeats without later recorded/failed terminal activity, or a reviewer requests a specific follow-up.
+
+## Comments
+
+
+## Next Action
+No worker action now. Monitor the existing metric/event resume conditions. If `eval.llm-coverage-lag-h` breaches 4h again or dispatches repeat without later `evaluation.deep_recorded`/`evaluation.deep_failed`, resume at Plan step 5, **Validate liveness**, by checking the latest non-heuristic evaluation timestamp, recent `eval-llm-scan` events, and cron/handler source before changing code.

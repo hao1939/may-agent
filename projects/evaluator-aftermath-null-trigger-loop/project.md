@@ -1,10 +1,9 @@
 ---
 id: evaluator-aftermath-null-trigger-loop
 owner: evaluator
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P1
-workflow: project
 iteration: 2
 ---
 

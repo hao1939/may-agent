@@ -2,9 +2,8 @@
 id: evaluation-revival
 owner: coach
 status: closed
-type: milestone
+type: archive
 priority: P0
-workflow: project
 iteration: 9
 ---
 

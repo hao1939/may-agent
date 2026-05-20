@@ -2,9 +2,8 @@
 id: agent-system-literacy
 owner: bob
 status: closed
-type: milestone
+type: archive
 priority: P1
-workflow: project
 iteration: 50
 stop_reason: "Safety cap: 50 iterations reached without resolution. 5/6 milestones done."
 ---

@@ -1,10 +1,9 @@
 ---
 id: empty-assistant-stop-runtime-retry
 owner: dev
-status: done
-type: milestone
+status: closed
+type: archive
 priority: P1
-workflow: project
 iteration: 0
 stop_reason: The alert recovered, but the live provider/session-runner loop that needs the bounded retry patch is outside the editable agents tree.
 resume_condition: Runtime owner provides access to the live session-runner implementation, lands the retry contract, or `session.empty-assistant-stop-count-1h` breaches again.

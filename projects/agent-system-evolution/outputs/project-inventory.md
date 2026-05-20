@@ -24,8 +24,8 @@ the evaluator learning/calibration lane.
 |---------|-------|--------|-------------|
 | scout-second-brain-learning | scout | waiting | Child — agent learning behavior |
 | ruflo-learning-loop | arc | paused | Child — external-methodology learning loop; keep independent until its falsifier trips |
-| master-worker-context-sharing | master | waiting | Reference — master/worker context transport and delegation protocol; platform-adjacent, not owned here |
-| eval-llm-lane-restoration | dev | waiting | Reference — evaluation infra, not evolution logic |
+| master-worker-context-sharing | master | closed | Split reference — behavior lessons here; transport/runtime work belongs to platform |
+| eval-llm-lane-restoration | dev | closed | Reference — evaluation infra watched by closed-loop reliability |
 | closed-loop-reliability | may | waiting | Reference — operational closed-loop reliability, not evolution logic |
 
 ### Independent lanes (closed/done, no action needed)

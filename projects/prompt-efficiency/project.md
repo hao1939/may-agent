@@ -2,7 +2,7 @@
 id: prompt-efficiency
 owner: optimizer
 status: closed
-type: milestone
+type: archive
 priority: P2
 iteration: 1
 ---

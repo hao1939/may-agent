@@ -1,11 +1,11 @@
 ---
 id: master-worker-context-sharing
 owner: master
-status: waiting
-type: continuous
+status: closed
+type: archive
 priority: P2
-workflow: project
 iteration: 6
+stop_reason: Split into platform transport/runtime concerns and agent-system-evolution delegation-behavior concerns; keep this folder as historical evidence.
 ---
 
 # Project: Master ⇄ cc_worker ⇄ codex_worker Context Sharing
@@ -50,22 +50,15 @@ Provenance signals (qualitative, watched in journal):
 - Did master cite worker findings in its reply, or paraphrase them away?
 
 ## Current State
-Blocked: 5 consecutive iterations without milestone progress. Approach needs rethinking.
-## Next Action
-## Next Action
-Phase 5: Live validation. Query the session DB on devbox for the most recent master agent session AFTER commit 6e584d1. Check whether the system message contains AGENTS.md content (e.g. "Delegation Protocol" or "originator_kind"). If yes, document in `outputs/live-validation.md`. If no, trace why loadAgent isn't picking it up for master. Use `ssh_exec` for all checks.
+Closed historical project. The original scope mixed platform transport/runtime
+work with agent delegation behavior. Future work is split:
 
-## Next Action
-## Next Action
-Phase 4: Wire AGENTS.md loading into the LLM agent runtime. Modify `src/core/runtime/llm-agent/runtime.ts` so that when assembling the system message, it checks for an `AGENTS.md` file in the agent's directory and prepends its content. This makes the delegation protocol actually affect master's behavior. Use `ssh_exec` for all file reads/writes (worker sandbox doesn't persist). Write a test confirming the loading works.
+- Platform: worker tool envelopes, runtime AGENTS.md loading, persistence, and
+  transport behavior belong in `projects/platform/project.md`.
+- Agent-system evolution: prompt/delegation behavior and quality signals belong
+  in `projects/agent-system-evolution/project.md`.
 
-## Next Action
-## Next Action
-Phase 3 validation: Verify commit 27e25a754 landed, then check if any post-commit master sessions show improved delegation (originator fields in worker prompts). If no sessions yet, run a live smoke test. Output findings to `outputs/delegation-quality-baseline.md`.
-
-## Next Action
-## Next Action
-Phase 3: Improve AGENTS.md with delegation schema. Read current AGENTS.md, then add: (1) destructive-request safety rules, (2) `originator_kind` and `originator_task` fields spec for worker prompts, (3) multi-turn correction handling guidance. Write the updated AGENTS.md and commit. Also save a copy to `outputs/agents-md-v2.md`.
+Use this folder as evidence only; do not run it as an active project.
 
 ## Plan
 ### Phase 1 — Transport (highest evidence, lowest risk)

@@ -2,9 +2,8 @@
 id: documentation-gen
 owner: coach
 status: closed
-type: milestone
+type: archive
 priority: P2
-workflow: project
 iteration: 50
 stop_reason: "Safety cap: 50 iterations reached."
 ---

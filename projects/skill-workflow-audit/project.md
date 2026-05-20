@@ -2,9 +2,8 @@
 id: skill-workflow-audit
 owner: coach
 status: closed
-type: continuous
+type: archive
 priority: P0
-workflow: project
 iteration: 50
 stop_reason: All 18 milestones complete, all 4 metrics at target. Closed by May.
 ---

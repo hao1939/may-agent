@@ -2,7 +2,7 @@
 id: retry-removal
 owner: tech-lead
 status: closed
-type: milestone
+type: archive
 priority: P1
 iteration: 1
 stop_reason: DONE
