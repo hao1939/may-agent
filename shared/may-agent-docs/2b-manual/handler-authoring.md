@@ -25,7 +25,8 @@ in `cron.json`:
 
 Write a TypeScript handler only when the handler must do deterministic infra
 work before deciding what to do. A TypeScript handler lives in
-`agents/<name>/handlers/` and exports a `create` function:
+`handlers/` beside the `cron.json` that registers it and exports a `create`
+function:
 
 ```typescript
 import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
@@ -69,6 +70,26 @@ collection in the workflow.
 
 Add an entry to your agent's `cron.json`. The filename is historical; each
 entry describes triggers plus the handler to run.
+
+The owner is the agent that owns that `cron.json`. For global agents this is
+`agents/<agent>/cron.json`; for project-local agents this is
+`projects/<project>/agents/<agent>/cron.json`. Named handlers resolve beside
+that file, so project-local automation stays inside the project:
+
+```text
+projects/aks-rp-e2e/
+  project.md
+  agents/
+    aks-explorer/
+      agent.json
+      cron.json
+      handlers/
+        managed-system-pool-watch.ts
+```
+
+Use a project-local handler when the trigger only has meaning for that one
+project. Use a global May/platform handler for shared project reconciliation,
+metric routing, escalation routing, and other infra-wide behavior.
 
 Named TypeScript handler:
 

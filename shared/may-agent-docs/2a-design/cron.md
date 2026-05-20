@@ -60,7 +60,7 @@ Workflow-backed handler:
   is an operator/control shortcut for manual firing; domain lifecycle events
   should use their canonical names such as `timer.tick` or
   `session.completed`.
-- `handler: "name"` — filename in `agents/<agent>/handlers/`
+- `handler: "name"` — filename in `handlers/` beside the owning `cron.json`
 - `handler: { workflow, agent, task }` — workflow-backed handler
 - `agent` + `message` without a handler — compatibility path for detached agent jobs
 - `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
@@ -79,6 +79,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
   };
 };
 ```
+
+## Handler Ownership
+
+A handler belongs to the trigger entry that registers it. In practice, that means
+it is scoped by the `cron.json` file it sits beside:
+
+| Scope | Trigger file | Named handler file | Use for |
+|-------|--------------|--------------------|---------|
+| Agent-owned | `agents/<agent>/cron.json` | `agents/<agent>/handlers/<name>.ts` | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
+| Project-owned | `projects/<project>/agents/<agent>/cron.json` | `projects/<project>/agents/<agent>/handlers/<name>.ts` | Automation that only makes sense inside that project boundary |
+
+Project-wide platform behavior, such as reconciling all projects or routing
+canonical escalation events, remains owned by a global agent such as May. A
+project-local handler is for project-specific automation, not for changing shared
+infra policy.
+
+Workflow-backed handlers follow the same ownership rule. The trigger entry owns
+the wake-up policy; the configured workflow owns the work.
 
 Use a TypeScript handler when the work is deterministic infra logic: metrics,
 query/projection, dedup, cooldown, state repair, reload/restart/shutdown, or

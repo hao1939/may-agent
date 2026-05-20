@@ -21,6 +21,14 @@ agents/<name>/
   workflows/              # Workflow definitions.
   last-session.md         # Generated runtime memory, not system prompt.
 
+projects/<project>/agents/<name>/
+  agent.json              # Same shape; agent is scoped to the project.
+  AGENTS.md
+  cron.json               # Optional project-local trigger entries.
+  handlers/               # Optional project-local handlers.
+  workflows/              # Optional project-local workflows.
+  workspace/
+
 shared/
   common-sense.md         # Shared always-loaded behavioral fundamentals.
   knowledge/              # Shared references, read on demand.
@@ -123,6 +131,11 @@ Do not put prose instructions in `agent.json`.
 2. Create `agents/<name>/AGENTS.md`.
 3. Optionally create `heartbeat.md`, `knowledge/INDEX.md`, `knowledge/*.md`, handlers, or workflows.
 4. Restart or use the runtime reload command.
+
+For a project-scoped agent, use the same shape under
+`projects/<project>/agents/<name>/`. Its cron entries and named handlers stay
+inside that project directory; use this for project-specific automation, not
+shared platform policy.
 
 ## Common Mistakes
 

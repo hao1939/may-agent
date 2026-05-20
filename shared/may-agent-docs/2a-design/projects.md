@@ -180,6 +180,20 @@ The owner sees the project goal, recent task outcomes, metric signals, and human
 comments. It decides whether to create next tasks, modify existing tasks, update
 the plan, change project status, or do nothing.
 
+For an `active` project, "no open tasks" is a planning trigger, not a successful
+terminal state. A successful owner loop must leave one of these machine-readable
+states:
+
+- Concrete next tasks exist (`ready`, `pending`, or `running`).
+- Frontmatter status is changed to `waiting`, `blocked`, `pending-review`,
+  `paused`, `done`, or `closed` with the reason represented in project state.
+- The owner escalated because it cannot choose the next step autonomously.
+
+When frontmatter remains `status: active` and every task is already done, the
+next owner pass should create tasks, choose a waiting/terminal state, or
+escalate. The handler emits `project.owner.incomplete` for this mismatch so the
+needed planning stays visible.
+
 ## Project-Local Agents
 
 A project-local agent lives inside the project it owns:
@@ -200,8 +214,13 @@ The agent name must still be globally unique after discovery. If a project is mo
 For project-local agents:
 
 - `agentDir`, workspace, knowledge, tools, and workflows resolve inside the project-local agent directory.
+- `cron.json` and named `handlers/` resolve inside the project-local agent directory.
 - Coding tools use the containing project directory as their root.
 - Shared infra remains available through the runtime image, but project work should stay in the mounted project.
+
+Project-local handlers are for automation that is meaningful only inside that
+project. Shared project lifecycle behavior, such as reconciling all active
+projects, remains a global May/platform handler.
 
 ## Project Handler
 

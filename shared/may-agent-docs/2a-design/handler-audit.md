@@ -11,22 +11,36 @@ timer/event/manual trigger -> handler -> workflow/code -> sessions/functions/met
 Handlers are bridges. They may do deterministic preflight and mechanical state
 projection, but judgment and repair work should live in workflows.
 
+## Ownership Model
+
+A handler is owned by the `cron.json` entry that registers it:
+
+- `agents/<agent>/cron.json` owns global agent handlers in
+  `agents/<agent>/handlers/`.
+- `projects/<project>/agents/<agent>/cron.json` owns project-local handlers in
+  `projects/<project>/agents/<agent>/handlers/`.
+
+This keeps project-specific automation inside the project boundary while shared
+infra behavior remains owned by a global agent such as May.
+
 ## Classification
 
-| Handler | Current role | Surface | Keep direct DB? | Next move |
-|---|---|---|---:|---|
-| Workflow-backed handler config | Generic timer/event to workflow bridge | `handler: { workflow, agent, task }` via `createWorkflowHandler` | no | Default for simple workflow dispatch. |
-| `run-workflow` | Legacy named bridge for old configs | `createWorkflowHandler` | no | Compatibility only; new configs should use workflow-backed handler objects. |
-| `session-aftermath-scan` | Fallback scan for unevaluated sessions | `sdk.query` + `runWorkflow` | no | Keep; it is already a bounded workflow dispatcher. |
-| `metrics-snapshot` | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
-| `coaching-consumer` | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
-| `project` | Project scanner, state mutator, workflow launcher | direct FS/cache projection + `sdk.query` + `runWorkflow` + durable trace events | temporarily | Keep DB write only for project cache projection; runtime context reads now use `sdk.query`. Split scanner/projection later if needed. |
-| `metric-alert-reactor` | Alert owner resolution, dedup, triage dispatch | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; preflight reads and triage workflow context are query-backed. |
-| `closed-loop-steward` | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; live context collection is query-backed and dispatch is workflow-backed. |
-| `eval-llm-scan` | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is now workflow-backed. Convert candidate reads to `sdk.query` later. |
-| `session-eval` | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
-| `session-recovery` | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Converge event-first bridge on `session.completed` with `outcome: "error" | "interrupted"`. Runtime does not emit live `session.failed`. Recovery action runs inside the `session-recovery` workflow. |
-| `escalation` | Session escalation routing | digest helpers + canonical escalation events + durable trace events | no | Keep direct while it only routes explicit escalations; blocked/failure session finishes now promote to `escalation.created`. |
+| Handler | Owner scope today | Current role | Surface | Keep direct DB? | Next move |
+|---|---|---|---|---:|---|
+| Workflow-backed handler config | Owner of the trigger entry | Generic timer/event to workflow bridge | `handler: { workflow, agent, task }` via `createWorkflowHandler` | no | Default for simple workflow dispatch. |
+| `run-workflow` | Retired | Legacy named bridge for old configs | n/a | no | Removed from active handlers; use workflow-backed handler objects. |
+| `session-aftermath-scan` | Evaluator entry in May cron | Fallback scan for unevaluated sessions | `sdk.query` + `runWorkflow` | no | Keep; it is already a bounded workflow dispatcher. |
+| `metrics-snapshot` | May/global | Deterministic metric projection | `getDb` + metrics service | yes | Keep direct; it is measurement, not judgment. |
+| `coaching-consumer` | May/global if enabled | File-based coaching queue projection | filesystem | yes | Keep direct until the coaching queue is replaced by metrics/events. |
+| `project` | May/global | Project scanner, state mutator, workflow launcher | direct FS/cache projection + `sdk.query` + `runWorkflow` + durable trace events | temporarily | Keep global because it reconciles all projects; project-specific automation should move to project-local handlers. |
+| `project-steward` | May/global | Read-only project health discovery | direct FS + project health events | no | Keep global; it observes all projects and emits evidence. |
+| `project-creative-audit` | May/global | Proposal-only semantic fallback for project issues | `runWorkflow` with project context | no | Keep global; it proposes findings, owner review applies changes. |
+| `metric-alert-reactor` | May/global | Alert owner resolution, dedup, triage dispatch | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; preflight reads and triage workflow context are query-backed. |
+| `closed-loop-steward` | May/global | Loop audit and retriage | `sdk.query` + `runWorkflow` + durable trace events | no | Keep; live context collection is query-backed and dispatch is workflow-backed. |
+| `eval-llm-scan` | Evaluator entry in May cron | Deep evaluator candidate selection and artifact validation | direct DB + `runWorkflow` + durable trace events | temporarily | Candidate/artifact bookkeeping is deterministic handler work; evaluator LLM work is workflow-backed. Convert candidate reads to `sdk.query` later. |
+| `session-eval` | Retired | Retired legacy evaluator dispatch | n/a | no | Removed. Use `evaluator-aftermath` event path plus `session-aftermath-scan` fallback. |
+| `session-recovery` | May/global | Terminal error/interruption recovery bridge | digest/classifier preflight + `runWorkflow` | no | Keep as runtime-level recovery, event-first on `session.completed` recoverable outcomes. |
+| `escalation` | May/global | Escalation routing | canonical escalation events + durable trace events | no | Keep direct while it only routes explicit escalations. |
 
 ## Rules
 
