@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 91
+iteration: 92
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -62,13 +62,13 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active with one bounded planning/hygiene task selected from the resume menu. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+Active with one bounded local selection task. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
 
-The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. A fresh owner-loop validator run on 2026-05-20 still exits 0 with 35 input variables, 67 expectation variables, 7 failing features, and 24 unknown features. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
+The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
 
-Resume-menu item 2 is now selected: add an explicit gated App Routing TLS follow-up tracker so the valid-input DefaultDomainCertificate TLS-secret failure does not fade into an untracked permanent failure. This is local planning/bookkeeping only: do not run staging or a customer-cluster-only App Routing rerun. The tracker should point back to `outputs/iteration81-app-routing-tls-owner-escalation.md` and make the allowed rerun triggers explicit: owner response, CCP/default-domain-svc diagnostic access, or a fixed/known-good build/configuration to validate.
+Resume-menu item 2 is complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` now makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
 
-The project is not globally blocked: the ManagedSystem migration-positive branch is gated, but the knowledge map has other high-value unknowns after this hygiene task. After the App Routing TLS tracker is written, return to the resume menu and pick either ManagedSystem SKU/image owner packet/source triage or the next non-blocked model-unknown selection artifact.
+The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. Resume-menu item 3 is now selected: produce a short local selection artifact for the next non-blocked model unknown before any cloud mutation.
 
 ## Owner Review of Latest Comments
 - Reviewed `discussion.md` through the 2026-05-20 creative-audit comment. The audit was proposal-only and did not change state itself.
@@ -109,19 +109,19 @@ The project is not globally blocked: the ManagedSystem migration-positive branch
 
 ## Decision
 
-Select resume-menu item 2 now. Create exactly one parser-visible task for an App Routing TLS gated follow-up tracker, because it is low-cost hygiene that prevents the valid-input DefaultDomainCertificate TLS failure from becoming an untracked permanent failure. No cloud run is selected in this owner loop.
+Resume-menu item 2 is complete. Select resume-menu item 3 now: choose the next non-blocked model unknown with a short local selection artifact. No cloud run is selected until that artifact names the branch, input/expectation paths, expected model update, and exact gating/non-goals.
 
 ## (a) Concrete output
 
-This owner-loop update is the concrete output: `project.md` now names the selected resume-menu item, records fresh validator evidence, and adds the single active parser-visible tracker task.
+`outputs/iteration91-app-routing-tls-gated-followup-tracker.md` is the completed hygiene artifact. `project.md` now marks the App Routing TLS tracker task done and creates the single next parser-visible local selection task.
 
 ## (b) What’s different
 
-The previous state was paused with no parser-visible next task. The new state is active with one local planning task that can complete without external access, while keeping both the ManagedSystem SKU/image mismatch and App Routing TLS diagnostic rerun behind explicit gates.
+The previous state selected an App Routing TLS tracker. The new state keeps App Routing TLS behind explicit owner/diagnostic/fixed-build gates and moves project execution to a non-blocked model-unknown selection step.
 
 ## (c) First step on resume
 
-Read this `## Current State`, then read `outputs/iteration81-app-routing-tls-owner-escalation.md`, `outputs/iteration80-app-routing-tls-source-hypothesis.md`, and `outputs/iteration70-app-routing-defaultdomain-tls-staging.md`. Produce `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` with gate conditions, owner questions, evidence links, allowed rerun triggers, and the next project state after the tracker is written. Do not run staging/cloud probes for this task.
+Read this `## Current State`, then read `outputs/input-expectation-knowledge-map.md`, `outputs/iteration75-model-driven-probe-selection.md`, and the current validator unknown list. Produce `outputs/iteration92-next-model-unknown-selection.md` choosing one bounded non-blocked branch such as Image Cleaner vulnerable-image erasure, Image Cleaner upgrade/restart survival, VPA residual runtime behavior, Windows workload identity token projection, or OIDC signing-key rotation/post-delete cleanup. Do not run staging/cloud probes for this selection task.
 
 ## Linked Context
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
@@ -137,6 +137,7 @@ Read this `## Current State`, then read `outputs/iteration81-app-routing-tls-own
 - `outputs/iteration79-vpa-runtime-model-split.md` — branch-accurate VPA runtime model split and next-probe reranking
 - `outputs/iteration80-app-routing-tls-source-hypothesis.md` — source-first comparison showing App Routing DefaultDomainCertificate TLS failure is not explained by malformed customer CR/input
 - `outputs/iteration81-app-routing-tls-owner-escalation.md` — owner escalation packet and diagnostic rerun gate for App Routing TLS
+- `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` — explicit App Routing TLS follow-up tracker with owner/diagnostic/fixed-build rerun gates and no-blind-rerun rule
 - `outputs/iteration82-post-escalation-next-probe-selection.md` — post-App-Routing ranking that selected Node Restriction
 - `outputs/iteration83-node-restriction-fullput-runtime-staging.md` — Node Restriction corrected full-PUT disable contract and runtime-default staging pass evidence
 - `outputs/iteration84-keda-disable-reenable-crud-staging.md` — KEDA disable/re-enable CRUD lifecycle staging pass evidence
@@ -206,12 +207,18 @@ Read this `## Current State`, then read `outputs/iteration81-app-routing-tls-own
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Execute the single active task `app-routing-tls-gated-followup-tracker`. Produce `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` as a local tracker that converts `outputs/iteration81-app-routing-tls-owner-escalation.md` into explicit gate/resume criteria. Do not retry the ManagedSystem migration-positive staging loop until the RP-selected ManagedSystem SKU/image mismatch is fixed or an owner provides an allowed SKU override, and do not run an App Routing staging rerun until the tracker gate is satisfied.
+Execute the single active task `next-model-unknown-selection`. Produce `outputs/iteration92-next-model-unknown-selection.md` as a local selection artifact for one bounded non-blocked model-unknown branch. Do not retry the ManagedSystem migration-positive staging loop until the RP-selected ManagedSystem SKU/image mismatch is fixed or an owner provides an allowed SKU override, and do not run an App Routing TLS staging rerun until one of the tracker gates in `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` is satisfied.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
+### 2026-05-20 — Completed App Routing TLS tracker; selected next model unknown
+- `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` records the valid-input DefaultDomainCertificate TLS-secret failure, owner questions, diagnostic data needed, allowed rerun triggers, and explicit no-blind-rerun rule.
+- App Routing TLS remains gated on owner response, CCP/default-domain-svc diagnostic access, fixed/known-good build/configuration, or source-proven chart/config mismatch; no customer-cluster-only rerun is selected.
+- Fresh capability-model validator run during tracker creation exited 0 with 35 input variables, 67 expectation variables, 7 failing features, and 24 unknown features.
+- The single active parser-visible task is now `next-model-unknown-selection` to choose a bounded non-blocked unknown branch before any cloud mutation.
+
 ### 2026-05-20 — Selected App Routing TLS tracker
 - Owner loop selected resume-menu item 2 and created the single active parser-visible task `app-routing-tls-gated-followup-tracker`.
 - This is local tracker/bookkeeping work only; App Routing staging rerun remains gated on owner response, CCP/default-domain-svc diagnostic access, or a fixed/known-good build/configuration.
@@ -455,10 +462,26 @@ Execute the single active task `app-routing-tls-gated-followup-tracker`. Produce
   dropped_reason: "Two checkpointed staging attempts preserved evidence and cleanup status but both failed in wait_pool before placement: RP selected Standard_D8pds_v5 (Arm64-only) with an x64 Ubuntu image. Dropped to avoid another long retry until the staging SKU/image default is fixed or an owner provides an allowed override; iteration86 remains the model evidence for managedsystem-disable-migration."
 
 - id: app-routing-tls-gated-followup-tracker
-  status: ready
+  status: done
+  result: succeeded
   assignee: aks-explorer
   goal: "Create outputs/iteration91-app-routing-tls-gated-followup-tracker.md as a local gated follow-up tracker for App Routing DefaultDomainCertificate TLS-secret provisioning. Start from outputs/iteration81-app-routing-tls-owner-escalation.md, outputs/iteration80-app-routing-tls-source-hypothesis.md, outputs/iteration70-app-routing-defaultdomain-tls-staging.md, and the current capability model validator summary. Record the failing valid-input contract, evidence links, owner questions, diagnostic data needed, allowed rerun triggers, explicit no-blind-rerun rule, and the project state/task recommendation after this tracker is complete. Do not run staging, az, kubectl, cluster creation, or cloud probes; this is tracker/bookkeeping only. Update project.md afterward to reflect the next correct state."
   depends_on: [managedsystem-disable-migration-checkpointed-rerun]
+  attempts: 1
+
+- id: next-model-unknown-selection
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration92-next-model-unknown-selection.md as a local selection artifact for the next non-blocked model-unknown branch. Start from outputs/input-expectation-knowledge-map.md, outputs/iteration75-model-driven-probe-selection.md, outputs/e2e-capability-model.json, and the current validator unknown list. Rank a small set of viable unknowns by input paths covered, expectation paths checked, source/e2ev3 anchor, cost/risk, required access, and gating/non-goals. End with one concrete recommended branch, exact first commands or preflight reads for a later execution task, and expected model/knowledge-map update. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [app-routing-tls-gated-followup-tracker]
+  attempts: 1
+
+- id: vpa-residual-runtime-staging
+  status: ready
+  assignee: aks-explorer
+  goal: "Execute the VPA residual runtime probe in staging as selected by outputs/iteration92-next-model-unknown-selection.md. Focus on in-place update behavior, Helm metadata/ownership, and HA/leader-election evidence. Start from outputs/iteration78-workload-autoscaler-runtime-staging.md (VPA components/recommendations pass), outputs/iteration79-vpa-runtime-model-split.md (branch split), and the iteration92 preflight commands. Produce outputs/iteration93-vpa-residual-runtime-staging.md with source preflight, exact devbox/staging commands, in-place update evidence, Helm chart metadata, leader-election evidence, cleanup status, and capability-model/knowledge-map updates if clear verdicts are reached. Do not combine with cert-renewal, upgrade-survival, App Routing, Image Cleaner, KEDA, or unrelated probes."
+  depends_on: [next-model-unknown-selection]
   attempts: 0
 
 ## References
@@ -491,6 +514,7 @@ Execute the single active task `app-routing-tls-gated-followup-tracker`. Produce
 ## Comments
 
 ## Artifacts
+- outputs/iteration91-app-routing-tls-gated-followup-tracker.md
 - outputs/iteration82-post-escalation-next-probe-selection.md
 - outputs/iteration66-virtualmachines-manual-scale-staging.md
 - outputs/iteration70-app-routing-defaultdomain-tls-staging.md
