@@ -18,6 +18,25 @@ describe("May cron config design alignment", () => {
     expect(invalidWorkflowHandlers).toEqual([]);
   });
 
+  it("does not use detached agent-message jobs for active May triggers", () => {
+    const cronPath = "/app/agents/may/cron.json";
+    if (!existsSync(cronPath)) return;
+
+    const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{
+      name?: string;
+      enabled?: boolean;
+      handler?: unknown;
+      agent?: string;
+      message?: string;
+    }>;
+    const detached = entries
+      .filter((entry) => entry.enabled !== false)
+      .filter((entry) => !entry.handler && (entry.agent || entry.message))
+      .map((entry) => entry.name);
+
+    expect(detached).toEqual([]);
+  });
+
   it("routes session recovery through session.completed, not only legacy session.failed", () => {
     const cronPath = "/app/agents/may/cron.json";
     if (!existsSync(cronPath)) return;
