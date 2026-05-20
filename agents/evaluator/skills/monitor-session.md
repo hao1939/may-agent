@@ -102,13 +102,13 @@ Each detector maps to a **MAST failure mode** (IBM/Berkeley taxonomy) where appl
 **Design**: Does NOT read the whole log file. Uses tail + filter (P110 constraint).
 
 ### 9. MISSING_RECEIPT — `HB#389 Adversarial Sycophancy`
-**Signal**: Agent claims "success" or "done" or "complete" but the session log contains no `[SIG: ...]` tag and no `ops_receipt_` artifact in tool outputs.
+**Signal**: Agent claims "success" or "done" or "complete" but no structural receipt can be found on any canonical surface: no `[SIG: ...]` tag in the session log, no `ops_receipt_` artifact in tool outputs, and no canonical `session.receipt` event for that `sessionId`.
 **Confidence**: 0.85.
-**Action**: `reject` — Any "success" claim without a corresponding execution receipt (`[SIG: ...]` or `ops_receipt_...`) is treated as an **unverified claim** and scored as a failure.
+**Action**: `reject` — Any "success" claim without a corresponding structural receipt (`[SIG: ...]`, `ops_receipt_...`, or canonical `session.receipt`) is treated as an **unverified claim** and scored as a failure.
 **Why**: Adversarial Judge research (arXiv:2603.12246) proves LLMs can be tricked by sycophancy — agents that self-praise or cite fake policies. Execution Receipts are the only verifiable artifact. Judgment alone is insufficient.
 **HB#389**: Rely *less* on Evaluator judgment, *more* on verifiable artifacts.
 
-**Evaluator mandate**: When scoring any session, grep the session log for `[SIG:` or `ops_receipt_`. If neither is present and the agent claims success, downgrade the quality score and tag `[FM-3.3/HB#389]`.
+**Evaluator mandate**: When scoring any session, first check canonical receipt surfaces: grep the session log for `[SIG:` or `ops_receipt_`, and when those are absent query canonical `events` for a `session.receipt` matching the sessionId. Only if all three are absent should quality be downgraded and tagged `[FM-3.3/HB#389]`.
 
 ### 10. PARTIAL_MASTERY — `HB#402 DPS Recovery Signal`
 **Signal**: `ERROR_LOG.jsonl` entry where `retry_count > 0` AND `status == "SUCCESS"`.
