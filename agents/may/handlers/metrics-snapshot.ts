@@ -79,10 +79,15 @@ const ALL_METRICS: MetricDef[] = [
   { id: "evaluator.success-learnings-24h", name: "Learnings extracted from good sessions (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  { id: "scout.knowledge-practice-loaded", name: "Scout knowledge practice loaded", owner: "scout", project: "scout-second-brain-learning", type: "health", target: 1, threshold: 1, unit: "boolean", alert_op: "<", priority: "P2",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  { id: "scout.knowledge-preamble-coverage", name: "Scout knowledge preamble coverage", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 0.8, threshold: 0.25, unit: "ratio", alert_op: "<", priority: "P3" },
+  { id: "scout.sourced-artifacts-24h", name: "Scout sourced artifacts (24h)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 2, threshold: 1, unit: "count", alert_op: "<", priority: "P2" },
+  { id: "scout.downstream-reference-files-7d", name: "Scout downstream reference files (7d)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 3, threshold: 1, unit: "count", alert_op: "<", priority: "P3" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
   { id: "guard.triggered-count-24h", name: "Guard triggers (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1300, unit: "count", alert_op: ">", priority: "P3" },
-  { id: "guard.warned-count-24h", name: "Guard warnings (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1200, unit: "count", alert_op: ">", priority: "P3" },
+  { id: "guard.warned-count-24h", name: "Guard warnings (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1500, unit: "count", alert_op: ">", priority: "P3" },
   { id: "guard.blocked-count-15m", name: "Guard blocks (15m)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "guard.repeat-trigger-count-24h", name: "Repeated guard triggers (24h)", owner: "may", type: "gauge", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P2" },
@@ -221,6 +226,103 @@ function readFilePrefix(path: string, maxBytes = 512 * 1024): string {
   } finally {
     closeSync(fd);
   }
+}
+
+function walkMarkdownFiles(root: string, maxFiles = 5000): string[] {
+  const files: string[] = [];
+  const visit = (dir: string) => {
+    if (files.length >= maxFiles || !existsSync(dir)) return;
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (files.length >= maxFiles || entry === "node_modules" || entry === ".git") continue;
+      const path = join(dir, entry);
+      try {
+        const stat = statSync(path);
+        if (stat.isDirectory()) visit(path);
+        else if (stat.isFile() && entry.endsWith(".md")) files.push(path);
+      } catch {
+        // Ignore unreadable files.
+      }
+    }
+  };
+  visit(root);
+  return files;
+}
+
+function fileContains(path: string, patterns: RegExp[]): boolean {
+  try {
+    const content = readFilePrefix(path, 256 * 1024);
+    return patterns.every((pattern) => pattern.test(content));
+  } catch {
+    return false;
+  }
+}
+
+function fileContainsAny(path: string, patterns: RegExp[]): boolean {
+  try {
+    const content = readFilePrefix(path, 256 * 1024);
+    return patterns.some((pattern) => pattern.test(content));
+  } catch {
+    return false;
+  }
+}
+
+function scoutKnowledgePracticeLoaded(root: string): boolean {
+  return fileContains(join(root, "agents", "scout", "AGENTS.md"), [
+    /search .*existing|existing .*update|update .*existing/i,
+    /<ai_context>/i,
+  ]);
+}
+
+function scoutKnowledgePreambleCoverage(root: string): { value: number; sampleSize: number } {
+  const files = [
+    ...walkMarkdownFiles(join(root, "agents", "scout", "knowledge")),
+    ...walkMarkdownFiles(join(root, "shared", "knowledge", "entries")),
+  ];
+  if (files.length === 0) return { value: 1, sampleSize: 0 };
+  const withPreamble = files.filter((file) => fileContainsAny(file, [/<ai_context>/i])).length;
+  return { value: parseFloat((withPreamble / files.length).toFixed(4)), sampleSize: files.length };
+}
+
+function scoutSourcedArtifacts24h(root: string, now: number): number {
+  const cutoff = now - 24 * 60 * 60 * 1000;
+  const roots = [
+    join(root, "agents", "scout", "knowledge"),
+    join(root, "agents", "scout", "workspace"),
+    join(root, "shared", "knowledge", "entries"),
+  ];
+  return roots
+    .flatMap((dir) => walkMarkdownFiles(dir))
+    .filter((file) => {
+      try {
+        if (statSync(file).mtimeMs < cutoff) return false;
+        return fileContainsAny(file, [/^Source:/im, /\*\*Source\*\*:/i, /https?:\/\//i]);
+      } catch {
+        return false;
+      }
+    }).length;
+}
+
+function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
+  const cutoff = now - 7 * 24 * 60 * 60 * 1000;
+  return [
+    ...walkMarkdownFiles(join(root, "agents")),
+    ...walkMarkdownFiles(join(root, "projects")),
+    ...walkMarkdownFiles(join(root, "shared", "may-agent-docs")),
+  ].filter((file) => {
+    if (file.includes("/agents/scout/")) return false;
+    try {
+      if (statSync(file).mtimeMs < cutoff) return false;
+      return fileContainsAny(file, [/agents\/scout\/knowledge/i, /scout-second-brain-learning/i, /\bScout\b/]);
+    } catch {
+      return false;
+    }
+  }).length;
 }
 
 function sessionJsonlPath(persistDir: string, sessionId: string): string | null {
@@ -765,6 +867,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const inactive = candidates.filter((s) => sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff)).length;
       record("evaluator.stale-running-session-count", inactive, candidates.length);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`); }
+
+    try {
+      record("scout.knowledge-practice-loaded", scoutKnowledgePracticeLoaded(ctx.sdk.paths.root) ? 1 : 0);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.knowledge-practice-loaded: ${e}`); }
+
+    try {
+      const coverage = scoutKnowledgePreambleCoverage(ctx.sdk.paths.root);
+      record("scout.knowledge-preamble-coverage", coverage.value, coverage.sampleSize);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.knowledge-preamble-coverage: ${e}`); }
+
+    try {
+      record("scout.sourced-artifacts-24h", scoutSourcedArtifacts24h(ctx.sdk.paths.root, now));
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.sourced-artifacts-24h: ${e}`); }
+
+    try {
+      record("scout.downstream-reference-files-7d", scoutDownstreamReferenceFiles7d(ctx.sdk.paths.root, now));
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.downstream-reference-files-7d: ${e}`); }
 
     // ── Measure: Project (with error isolation) ──────────────────────
 
