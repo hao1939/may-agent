@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-20T03:44:38Z",
+  "updatedAt": "2026-05-20T04:25:00Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -5268,11 +5268,22 @@
           "value": "true"
         }
       ],
-      "result": "unknown",
+      "result": "pass",
       "evidence": [
-        "e2ev3-handwritten-coverage-inventory"
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration83-node-restriction-fullput-runtime-staging"
       ],
-      "notes": "Source-derived full PUT/create-or-update intent: explicit true at create, then full PUT false should be rejected for k8s >=1.24. Iteration74 source investigation resolved iteration62 PATCH as wrong operation shape."
+      "notes": "Iteration83 corrected the operation shape: full ManagedCluster GET/PUT with securityProfile.nodeRestriction.enabled=true persisted on a Kubernetes 1.34 RBAC staging cluster, and a fresh full PUT setting enabled=false failed with BadRequest message \"Node restriction is required on version 1.24.0 or above.\" Iteration62 tag-only PATCH remains separate operation-shape evidence.",
+      "observedPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "true"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "true"
+        }
+      ]
     },
     {
       "id": "NodeRestriction_RESTPatch_Staging",
@@ -5819,7 +5830,7 @@
       "notes": "Current NAP evidence covers profile transitions only, not default Machines pool CRUD/cleanup."
     },
     {
-      "id": "NodeRestriction_RuntimeDefault_Source",
+      "id": "NodeRestriction_RuntimeDefault_Staging",
       "featureId": "node-restriction-runtime-default",
       "inputPath": [
         {
@@ -5837,11 +5848,18 @@
           "value": "true"
         }
       ],
-      "result": "unknown",
+      "result": "pass",
       "evidence": [
-        "e2ev3-handwritten-coverage-inventory"
+        "e2ev3-handwritten-coverage-inventory",
+        "iteration83-node-restriction-fullput-runtime-staging"
       ],
-      "notes": "Source-only: overlay helmvalues enables NodeRestriction for Kubernetes >=1.24/RBAC; no current execution artifact verifies runtime admission plugins."
+      "notes": "Iteration83 verified runtime default in staging on a CLI-created RBAC Kubernetes 1.34 cluster whose baseline ARM profile was omitted/null: a kubelet client certificate could authenticate to the API server but was forbidden to set node-restriction.kubernetes.io/nr83-probe on its own Node, with the specific error \"is not allowed to modify labels\", proving NodeRestriction admission behavior is active without relying on ARM profile echo.",
+      "observedPath": [
+        {
+          "variable": "nodeRestriction.runtimeAdmission.enabled",
+          "value": "true"
+        }
+      ]
     },
     {
       "id": "Iteration76_WorkloadIdentity_Linux_Runtime_Staging",
@@ -8735,6 +8753,104 @@
       ],
       "summary": "KEDA CRUD remains unknown because iteration78 intentionally did not disable/re-enable KEDA after the runtime scaling pass.",
       "nextAction": "Run a dedicated KEDA lifecycle toggle probe only if disable/re-enable coverage outranks other gaps."
+    },
+    {
+      "id": "iteration83-node-restriction-disable-contract-pass",
+      "featureId": "node-restriction-disable-contract",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "arm-rest"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "create-or-update-put"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "true"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "nodeRestriction.disableRejected",
+          "value": "true"
+        },
+        {
+          "variable": "nodeRestriction.errorShape.matches",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration83-node-restriction-fullput-runtime-staging"
+      ],
+      "testCases": [
+        "Node_Restriction"
+      ],
+      "summary": "Corrected staging full-PUT evidence passed: explicit enabled=true persisted on an RBAC Kubernetes 1.34 cluster, and a fresh full ManagedCluster PUT setting enabled=false returned BadRequest with \"Node restriction is required on version 1.24.0 or above.\" Final state remained enabled/not disabled.",
+      "nextAction": "Keep iteration62 tag-only PATCH as separate operation-shape evidence; no further disable-contract probe needed unless API version/source contract changes."
+    },
+    {
+      "id": "iteration83-node-restriction-runtime-default-pass",
+      "featureId": "node-restriction-runtime-default",
+      "status": "pass",
+      "contextPath": [
+        {
+          "variable": "observation.environment",
+          "value": "staging"
+        },
+        {
+          "variable": "observation.surface",
+          "value": "az-cli"
+        }
+      ],
+      "inputPath": [
+        {
+          "variable": "securityProfile.nodeRestriction.enabled",
+          "value": "auto"
+        },
+        {
+          "variable": "securityProfile.nodeRestriction.operation",
+          "value": "runtime-default"
+        }
+      ],
+      "expectationPath": [
+        {
+          "variable": "nodeRestriction.runtimeAdmission.enabled",
+          "value": "true"
+        }
+      ],
+      "observedPath": [
+        {
+          "variable": "nodeRestriction.runtimeAdmission.enabled",
+          "value": "true"
+        }
+      ],
+      "evidence": [
+        "iteration83-node-restriction-fullput-runtime-staging"
+      ],
+      "testCases": [
+        "NodeRestriction_RuntimeDefault_Staging"
+      ],
+      "summary": "Runtime default passed on a CLI-created RBAC Kubernetes 1.34 cluster with omitted/null ARM nodeRestriction profile: a kubelet client certificate was forbidden from setting a node-restriction.kubernetes.io/* label on its Node, showing NodeRestriction admission behavior is active by default.",
+      "nextAction": "If future work needs underlay certainty, collect kube-apiserver flags/chart values, but customer-visible runtime admission behavior is now passed for the >=1.24 RBAC default branch."
     }
   ],
   "evidence": [
@@ -8887,6 +9003,12 @@
       "kind": "source",
       "path": "outputs/iteration80-app-routing-tls-source-hypothesis.md",
       "summary": "Source-first App Routing DefaultDomainCertificate TLS analysis: iteration70 CR/input matched handwritten e2ev3 and source-visible CRD/controller requirements; failure remains observed fail and needs owner/CCP diagnostics rather than a probe-input correction."
+    },
+    {
+      "id": "iteration83-node-restriction-fullput-runtime-staging",
+      "kind": "artifact",
+      "path": "outputs/iteration83-node-restriction-fullput-runtime-staging.md",
+      "summary": "Staging evidence for Node Restriction: full ManagedCluster PUT enable persisted, full PUT disable on Kubernetes 1.34 failed with the expected BadRequest message, and a kubelet-identity restricted-label mutation was denied even though baseline ARM nodeRestriction profile was omitted/null."
     }
   ]
 }
