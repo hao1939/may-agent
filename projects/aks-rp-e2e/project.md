@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 97
+iteration: 98
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -63,69 +63,76 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active; the OIDC post-delete cleanup task is complete and the project has advanced to a bounded next non-gated unknown. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+Active; the post-OIDC local selection task is complete and the project has advanced to the next bounded non-gated execution branch. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
 
-`outputs/iteration97-oidc-post-delete-cleanup-staging.md` executed the source-gated OIDC default-enabled post-delete issuer cleanup probe in staging. The run passed: source preflight confirmed the `>=1.34` default-enabled OIDC branch, discovery/JWKS URL construction, source-expected post-delete HTTP `404`, 30m/30s wait budget, no-wait managed-cluster then resource-group delete shape, and no skip condition. A Kubernetes `1.34` cluster was created without explicit OIDC enablement and ARM defaulted `oidcIssuerProfile.enabled=true`; discovery and JWKS returned HTTP `200` before delete; source-equivalent no-wait delete requests succeeded; discovery and JWKS returned HTTP `404 WebContentNotFound` about 5m49s after delete start; cleanup reached `ResourceGroupNotFound`. The capability model was updated so `oidc-issuer-default-enabled-post-delete-cleanup` is `pass`; validator exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
+`outputs/iteration98-post-oidc-unknown-selection.md` ranked the remaining 19 model unknowns after the OIDC post-delete pass and selected **OIDC v1.33 explicit-enable discovery/JWKS runtime** (`oidc-issuer-v133-explicit-enable-runtime`) as the next branch. The selection was local only: no staging, `az`, `kubectl`, cluster creation, or cloud probe was run. A fresh capability-model validator run during this owner loop exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
 
-The current active task is now `post-oidc-unknown-selection`: locally rank the remaining non-gated model unknowns after the OIDC pass and select the next bounded execution branch, producing `outputs/iteration98-post-oidc-unknown-selection.md`. This is a selection/model task only: do not run staging, `az`, `kubectl`, cluster creation, or cloud probes in this task.
+The current active task is now `oidc-v133-explicit-enable-staging`: before any cluster mutation, source-preflight the exact `Scenario_OIDC_Issuer_v133` Kubernetes `1.33.x` selector, initial OIDC disabled/nil expectation, managed-cluster update shape, discovery/JWKS URL construction, post-enable expected response/key shape, and skip/feature-gate conditions. Then execute one bounded staging probe: create a small Kubernetes `1.33.x` cluster without explicit OIDC enablement, capture the pre-update ARM OIDC profile, enable OIDC via the source-equivalent update path, prove discovery/JWKS after enablement, clean up, update only `oidc-issuer-v133-explicit-enable-runtime` if clearly verdicted, and produce `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
+
+If source preflight or staging preflight shows Kubernetes `1.33.x` is unavailable, the explicit-enable API shape has changed, or the expected source semantics cannot be resolved, write a blocker artifact instead of creating a cluster or changing the model. In that case, the next likely fallback from iteration98 is `virtualmachines-mixed-sku-rest-scale`, but do not silently pivot inside the OIDC execution artifact.
+
+The latest completed OIDC cleanup artifact is `outputs/iteration97-oidc-post-delete-cleanup-staging.md`. It executed the source-gated OIDC default-enabled post-delete issuer cleanup probe in staging. The run passed: source preflight confirmed the `>=1.34` default-enabled OIDC branch, discovery/JWKS URL construction, source-expected post-delete HTTP `404`, 30m/30s wait budget, no-wait managed-cluster then resource-group delete shape, and no skip condition. A Kubernetes `1.34` cluster was created without explicit OIDC enablement and ARM defaulted `oidcIssuerProfile.enabled=true`; discovery and JWKS returned HTTP `200` before delete; source-equivalent no-wait delete requests succeeded; discovery and JWKS returned HTTP `404 WebContentNotFound` about 5m49s after delete start; cleanup reached `ResourceGroupNotFound`.
 
 The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
 
 Resume-menu item 2 is complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` now makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
 
-The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. Use `outputs/iteration96-post-image-cleaner-unknown-selection.md` as the latest ranking baseline, remove the now-passed OIDC post-delete branch, account for any newly changed model state, then choose the next concrete branch.
+The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. The next concrete frontier is the OIDC v1.33 explicit-enable branch selected in iteration98.
 
 ## Owner Review of Latest Comments
-- Reviewed `discussion.md`; the tail after the last read markers contains only older audit suggestions and no newer human instruction that supersedes the current model-driven branch selection.
+- Reviewed `discussion.md`; the tail after the last read marker contains no newer human instruction that supersedes the model-driven OIDC v1.33 branch selection.
 - The stale-state concern remains addressed: App Routing TLS has an explicit gated tracker, VPA residual runtime, Image Cleaner vulnerable-image erasure, and OIDC post-delete cleanup are complete.
 - ManagedSystem migration-positive and App Routing TLS remain gated; neither should be retried blindly.
 
 ## Review Questions
 
 1. **Is the goal closer?**  
-   Yes. Iteration97 converted OIDC default-enabled post-delete issuer cleanup from unknown to pass evidence and reduced model unknowns from 20 to 19.
+   Yes. Iteration98 converted the post-OIDC unknown queue into a concrete next branch: OIDC v1.33 explicit-enable discovery/JWKS runtime.
 
 2. **What did we learn?**  
-   On Kubernetes `1.34`, OIDC issuer defaults on without an explicit enable flag, discovery/JWKS are reachable before deletion, and issuer documents return the source-expected `404 WebContentNotFound` within the 30 minute source budget after source-equivalent no-wait cluster/resource-group deletion.
+   After removing the now-passed OIDC post-delete branch, the cheapest high-confidence non-gated residual is the separate Kubernetes `1.33.x` explicit-enable OIDC path. It covers a distinct input path from the already-passed Kubernetes `>=1.34` default-enabled discovery/JWKS and post-delete cleanup evidence.
 
 3. **Is the current milestone the right next step?**  
-   Yes. Since the selected OIDC branch is closed, the right next milestone is a bounded local selection pass over the remaining non-gated unknowns before any new cloud mutation.
+   Yes. The current active milestone is a source-preflighted staging execution task for `oidc-issuer-v133-explicit-enable-runtime`, with explicit blockers if `1.33.x` or source semantics are unavailable.
 
 4. **Are we closing the loop?**  
-   Yes. The parser-visible task block now has exactly one active task, `post-oidc-unknown-selection`, with a single durable output target and an explicit no-cloud constraint.
+   Yes. The parser-visible task block now has exactly one active task, `oidc-v133-explicit-enable-staging`, with a single durable output target and model-update rules.
 
 5. **Is it verified?**  
-   Yes. A fresh capability-model validator run exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features after the iteration97 model update.
+   Yes. `outputs/iteration98-post-oidc-unknown-selection.md` exists, and a fresh capability-model validator run exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
 
 6. **What’s blocking progress?**  
-   The project as a whole is not blocked. Specific branches remain gated or deprioritized: ManagedSystem migration-positive awaits a SKU/image fix or allowed override; App Routing TLS awaits owner diagnostics/fix; OIDC signing-key rotation needs a cheap trigger/source clarification; Windows Workload Identity and upgrade/cert-survival branches are viable but higher cost.
+   The project as a whole is not blocked. The OIDC v1.33 task may become blocked only if staging no longer offers Kubernetes `1.33.x`, if the source update path has changed, or if expected pre/post-enable semantics cannot be resolved before mutation.
 
 ## Resume Menu (ranked)
 
-1. **Select the next post-OIDC non-gated model unknown — current active task.**  
-   Produce `outputs/iteration98-post-oidc-unknown-selection.md` by reading the post-iteration97 model, `outputs/iteration96-post-image-cleaner-unknown-selection.md`, and current evidence/gates. Rank at least Workload Identity Windows, VirtualMachines mixed-SKU REST scale, VPA cert renewal, Image Cleaner upgrade/restart survival, bootstrap profile lifecycle, and OIDC signing-key rotation/v1.33 explicit-enable by coverage, source anchor, cost/risk, required access, and gating. End with one concrete recommended execution branch and exact source preflight reads.
+1. **Execute OIDC v1.33 explicit-enable discovery/JWKS runtime — current active task.**  
+   Produce `outputs/iteration99-oidc-v133-explicit-enable-staging.md`. Start from `outputs/iteration98-post-oidc-unknown-selection.md`, `outputs/iteration97-oidc-post-delete-cleanup-staging.md`, `outputs/iteration76-workload-identity-oidc-runtime-staging.md`, `outputs/iteration77-identity-runtime-model-consolidation.md`, `outputs/e2ev3-handwritten-coverage-inventory.md`, and the current model. Before any cluster creation, read devbox source for `Scenario_OIDC_Issuer_v133`, exact Kubernetes `1.33.x` selector, initial OIDC profile expectation, update payload/path, discovery/JWKS URL construction, expected post-enable response shape, and skip/feature-gate conditions.
 
-2. **If the ranking finds no plausible non-gated cloud branch, write a local blocker/escalation artifact.**  
-   Capture why each remaining unknown is gated or too risky, name the external owner/action needed, and set project status to waiting with a concrete resume trigger.
+2. **If OIDC v1.33 is blocked, write a local blocker artifact.**  
+   Capture exact evidence: source command/output, staging version availability or API-shape blocker, why no cluster was created or why the model cannot be changed, and the concrete resume trigger. Then update project state to select the next branch rather than silently pivoting in the same artifact.
 
-3. **Do not run gated branches blindly.**  
-   ManagedSystem migration-positive and App Routing TLS require their documented gate changes before rerun; OIDC signing-key rotation needs trigger/source clarification; VPA/Image Cleaner upgrade survival and Workload Identity Windows should be selected only when their cost/risk is explicitly accepted.
+3. **Next fallback if OIDC v1.33 cannot proceed: VirtualMachines mixed-SKU REST scale.**  
+   Iteration98 ranks `virtualmachines-mixed-sku-rest-scale` second. It is non-gated and source-anchored, but should get its own source preflight/execution task if selected.
+
+4. **Do not run gated branches blindly.**  
+   ManagedSystem migration-positive and App Routing TLS require their documented gate changes before rerun; OIDC signing-key rotation needs trigger/source clarification; VPA/Image Cleaner upgrade survival, bootstrap, and Windows Workload Identity should be selected only when their cost/risk is explicitly accepted.
 
 ## Decision
 
-`outputs/iteration97-oidc-post-delete-cleanup-staging.md` is complete and closes **OIDC default-enabled post-delete issuer cleanup** as pass. Proceed with one active parser-visible local selection task, `post-oidc-unknown-selection`, to choose the next non-gated unknown before any additional staging/cloud mutation.
+`outputs/iteration98-post-oidc-unknown-selection.md` is complete and selects **OIDC v1.33 explicit-enable discovery/JWKS runtime** as the next bounded non-gated execution branch. Proceed with one active parser-visible execution task, `oidc-v133-explicit-enable-staging`, for `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
 
 ## (a) Concrete output
 
-`outputs/iteration97-oidc-post-delete-cleanup-staging.md` is the completed staging evidence artifact. `project.md` now creates the single next parser-visible local selection task for `outputs/iteration98-post-oidc-unknown-selection.md`.
+`outputs/iteration98-post-oidc-unknown-selection.md` is the completed selection artifact. `project.md` now creates the single next parser-visible execution task for `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
 
 ## (b) What’s different
 
-The previous state had selected OIDC post-delete cleanup as an execution task. That branch is now executed and passed with model validation. The new state selects a local post-OIDC unknown-selection task based on the validated post-iteration97 model and keeps App Routing TLS and ManagedSystem migration-positive behind their existing gates.
+The previous state had selected a local post-OIDC unknown-ranking task. That task is now done and recommended OIDC v1.33 explicit-enable runtime because it is cheaper and more bounded than Windows, upgrade, bootstrap, or Machines branches while covering a distinct source-authored input path.
 
 ## (c) First step on resume
 
-Read this `## Current State`, then read `outputs/iteration97-oidc-post-delete-cleanup-staging.md`, `outputs/iteration96-post-image-cleaner-unknown-selection.md`, `outputs/e2e-capability-model.json`, and `outputs/input-expectation-knowledge-map.md`. Run the capability-model validator and use its current unknown list as the source of truth for `outputs/iteration98-post-oidc-unknown-selection.md`; do not create a cluster in the selection task.
+Read this `## Current State`, then read `outputs/iteration98-post-oidc-unknown-selection.md`, `outputs/iteration97-oidc-post-delete-cleanup-staging.md`, `outputs/iteration76-workload-identity-oidc-runtime-staging.md`, `outputs/iteration77-identity-runtime-model-consolidation.md`, `outputs/e2ev3-handwritten-coverage-inventory.md`, and `outputs/e2e-capability-model.json`. Run the capability-model validator, then perform the source preflight commands from iteration98 before any cluster creation.
 
 ## Linked Context
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
@@ -214,12 +221,17 @@ Read this `## Current State`, then read `outputs/iteration97-oidc-post-delete-cl
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-The OIDC post-delete cleanup staging artifact `outputs/iteration97-oidc-post-delete-cleanup-staging.md` is complete and model-validated. Next task: produce `outputs/iteration98-post-oidc-unknown-selection.md`, a local selection artifact that ranks the remaining 19 model unknowns after removing the now-passed OIDC post-delete branch and chooses the next bounded non-gated execution branch. Start with the post-iteration97 validator output, `outputs/iteration96-post-image-cleaner-unknown-selection.md`, `outputs/input-expectation-knowledge-map.md`, and the linked evidence for the highest-ranked residuals. Do not run staging, `az`, `kubectl`, cluster creation, or cloud probes in this selection task. Continue to keep ManagedSystem migration-positive and App Routing TLS behind their existing gates.
+The post-OIDC selection artifact `outputs/iteration98-post-oidc-unknown-selection.md` is complete and model-validated. Next task: execute `outputs/iteration99-oidc-v133-explicit-enable-staging.md`, a source-gated staging probe for `oidc-issuer-v133-explicit-enable-runtime`. Before any cluster creation, confirm from devbox source the exact `Scenario_OIDC_Issuer_v133` Kubernetes `1.33.x` selector, initial OIDC profile expectation, update shape, discovery/JWKS URL construction, expected response/key shape, and skip/feature-gate conditions. Then create one small Kubernetes `1.33.x` staging cluster without explicit OIDC enablement, capture pre-update state, enable OIDC through the source-equivalent update path, prove discovery/JWKS reachability, clean up, and update only that feature if clearly verdicted. Continue to keep ManagedSystem migration-positive and App Routing TLS behind their existing gates.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
+### 2026-05-20 — Selected OIDC v1.33 explicit-enable runtime after post-OIDC ranking
+- `outputs/iteration98-post-oidc-unknown-selection.md` ranked the 19 remaining model unknowns after the OIDC post-delete cleanup pass and selected `oidc-issuer-v133-explicit-enable-runtime` as the next bounded non-gated branch.
+- Fresh capability-model validator run during the owner loop exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
+- The next parser-visible task is `oidc-v133-explicit-enable-staging`; it must source-preflight exact v1.33 create/update/discovery/JWKS semantics before any cloud mutation and produce `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
+
 ### 2026-05-20 — Completed OIDC post-delete cleanup; selecting next unknown
 - `outputs/iteration97-oidc-post-delete-cleanup-staging.md` closed `oidc-issuer-default-enabled-post-delete-cleanup` as pass: Kubernetes `1.34` default-enabled OIDC discovery/JWKS were reachable before delete, source-equivalent no-wait cluster/resource-group deletion succeeded, discovery and JWKS returned `404 WebContentNotFound` within about 5m49s, and cleanup reached `ResourceGroupNotFound`.
 - Fresh capability-model validator run after iteration97 exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
@@ -285,7 +297,8 @@ The OIDC post-delete cleanup staging artifact `outputs/iteration97-oidc-post-del
 23. ✅ Execute Image Cleaner vulnerable-image erasure with source-gated staging evidence
 24. ✅ Select the next post-Image-Cleaner non-gated model unknown
 25. ✅ Execute OIDC default-enabled post-delete issuer cleanup with source-gated staging evidence
-26. ▶️ Select the next post-OIDC non-gated model unknown
+26. ✅ Select the next post-OIDC non-gated model unknown
+27. ▶️ Execute OIDC v1.33 explicit-enable discovery/JWKS runtime with source-gated staging evidence
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -530,10 +543,18 @@ The OIDC post-delete cleanup staging artifact `outputs/iteration97-oidc-post-del
   attempts: 2
 
 - id: post-oidc-unknown-selection
-  status: running
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Produce outputs/iteration98-post-oidc-unknown-selection.md selecting the next non-gated model-unknown branch after OIDC default-enabled post-delete cleanup passed. Start from outputs/iteration97-oidc-post-delete-cleanup-staging.md, outputs/iteration96-post-image-cleaner-unknown-selection.md, outputs/input-expectation-knowledge-map.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, and the current validator unknown list (19 unknowns). Rank Workload Identity Windows, VirtualMachines mixed-SKU REST scale, VPA cert renewal/upgrade survival, Image Cleaner upgrade/restart survival, bootstrap profile lifecycle, OIDC signing-key rotation/v1.33 explicit-enable, and any other viable non-gated unknowns by input paths covered, expectation paths checked, source/e2ev3 anchor, cost/risk, required access, and gating status. End with one concrete recommended branch, exact preflight reads for a later execution task, and expected model/knowledge-map update. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
   depends_on: [oidc-post-delete-cleanup-staging]
+  attempts: 1
+
+- id: oidc-v133-explicit-enable-staging
+  status: running
+  assignee: aks-explorer
+  goal: "Execute the OIDC v1.33 explicit-enable discovery/JWKS staging probe selected by outputs/iteration98-post-oidc-unknown-selection.md. Start from outputs/iteration98-post-oidc-unknown-selection.md, outputs/iteration97-oidc-post-delete-cleanup-staging.md, outputs/iteration76-workload-identity-oidc-runtime-staging.md, outputs/iteration77-identity-runtime-model-consolidation.md, outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, confirm from devbox source the exact Scenario_OIDC_Issuer_v133 Kubernetes 1.33.x selector, initial OIDC disabled/nil profile expectation, managed-cluster update path/payload for enabling OIDC, discovery and JWKS URL construction, expected post-enable HTTP/key/body shape, and any skip or feature-gate conditions. Then create one small Kubernetes 1.33.x staging cluster without explicit OIDC enablement, capture ARM OIDC profile before update, enable OIDC via the source-equivalent update path, capture ARM OIDC profile after update, prove discovery/JWKS reachability and key shape, clean up the resource group, and produce outputs/iteration99-oidc-v133-explicit-enable-staging.md with exact commands, raw evidence snippets, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if oidc-issuer-v133-explicit-enable-runtime gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If Kubernetes 1.33.x is unavailable or source semantics cannot be resolved, write a blocker artifact instead of changing the model. Do not combine with OIDC signing-key rotation, post-delete cleanup, Workload Identity Windows, VPA/KEDA, App Routing, ManagedSystem, Image Cleaner, VirtualMachines, Machines, bootstrap, or unrelated probes."
+  depends_on: [post-oidc-unknown-selection]
   attempts: 0
 
 - id: image-cleaner-vulnerable-erasure-staging
