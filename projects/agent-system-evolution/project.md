@@ -1,7 +1,7 @@
 ---
 id: agent-system-evolution
 owner: may
-status: waiting
+status: active
 type: milestone
 priority: P1
 iteration: 0
@@ -111,9 +111,23 @@ canonical evaluator verdicts before proposing rubric changes.
 
 ## Tasks
 
-- [x] Establish a dedicated project boundary for agent-system evolution.
-- [ ] Inventory existing learning/evolution projects and decide which remain independent lanes versus children/references of this umbrella.
-- [ ] Define the first accepted evolution task only after a real signal or explicit owner directive.
+- id: establish-boundary
+  goal: Establish a dedicated project boundary for agent-system evolution.
+  assignee: may
+  status: done
+  result: succeeded
+
+- id: inventory-projects
+  goal: Inventory existing learning/evolution projects and decide which remain independent lanes versus children/references of this umbrella.
+  assignee: may
+  status: pending
+  depends_on: []
+
+- id: first-evolution-task
+  goal: Define the first accepted evolution task only after a real signal or explicit owner directive.
+  assignee: may
+  status: pending
+  depends_on: [inventory-projects]
 
 ## Validation
 
