@@ -2,7 +2,7 @@
   "version": 1,
   "id": "aks-rp-e2e",
   "title": "AKS RP E2E Capability Model",
-  "updatedAt": "2026-05-19T22:05:00Z",
+  "updatedAt": "2026-05-20T03:44:38Z",
   "observationVariables": [
     {
       "id": "observation.environment",
@@ -4759,13 +4759,16 @@
       ],
       "result": "fail",
       "evidence": [
-        "iteration70-app-routing-defaultdomain-tls-staging"
+        "iteration70-app-routing-defaultdomain-tls-staging",
+        "iteration80-app-routing-tls-source-hypothesis"
       ],
       "diagnosis": {
         "kind": "tls-secret",
-        "summary": "DefaultDomainCertificate CR was accepted but never became Available and the requested default-domain-tls secret was not created; HTTPS 200 used nginx fake self-signed fallback certificate."
+        "summary": "DefaultDomainCertificate CR was accepted but never became Available and the requested default-domain-tls secret was not created; HTTPS 200 used nginx fake self-signed fallback certificate.",
+        "classification": "valid-input-owner-diagnostics-needed",
+        "sourceAnalysis": "iteration80 found iteration70 CR shape/name/namespace/target secret/wait ordering source-equivalent to handwritten e2ev3 and source-visible CRD/controller requirements; not classified as probe-input-wrong."
       },
-      "notes": "Failure is specifically TLS-secret provisioning; HTTP 200 with curl -k reached backend via nginx fake fallback certificate and is not managed TLS success."
+      "notes": "Failure is specifically valid-input TLS-secret provisioning: iteration80 source analysis found the CR/input source-equivalent to handwritten e2ev3. HTTP 200 with curl -k reached backend via nginx fake fallback certificate and is not managed TLS success; no customer-cluster-only blind rerun recommended."
     },
     {
       "id": "KEDA_ProfilePersistence_Staging",
@@ -8063,7 +8066,8 @@
         }
       ],
       "evidence": [
-        "iteration70-app-routing-defaultdomain-tls-staging"
+        "iteration70-app-routing-defaultdomain-tls-staging",
+        "iteration80-app-routing-tls-source-hypothesis"
       ],
       "testCases": [
         "AppRouting_DefaultDomain_TLS_Secret_Staging"
@@ -8071,9 +8075,11 @@
       "summary": "Fresh staging TLS follow-up reproduced the TLS-secret gap: DefaultDomainCertificate CR existed and was created, but did not become Available and default-domain-tls remained NotFound after about 28 minutes. HTTPS route returned 200 only via nginx fake self-signed fallback certificate, not the managed default-domain secret.",
       "diagnosis": {
         "kind": "tls-secret",
-        "summary": "DefaultDomainCertificate controller did not provision the requested Kubernetes TLS secret in the observed window."
+        "summary": "DefaultDomainCertificate controller did not provision the requested Kubernetes TLS secret in the observed window.",
+        "classification": "valid-input-owner-diagnostics-needed",
+        "sourceAnalysis": "iteration80 found iteration70 CR shape/name/namespace/target secret/wait ordering source-equivalent to handwritten e2ev3 and source-visible CRD/controller requirements; not classified as probe-input-wrong."
       },
-      "nextAction": "Escalate/investigate App Routing DefaultDomainCertificate controller provisioning path and logs/labels; repeat only after addon/RP owner identifies why default-domain-tls is not created."
+      "nextAction": "Escalate to App Routing/default-domain owner; rerun only with CCP app-routing-operator and underlay default-domain-svc diagnostics or after owner supplies a concrete precondition/fix."
     },
     {
       "id": "iteration76-workload-identity-linux-runtime-token-projection-pass",
@@ -8875,6 +8881,12 @@
       "kind": "artifact",
       "path": "outputs/iteration78-workload-autoscaler-runtime-staging.md",
       "summary": "2026-05-19 staging runtime evidence for combined workload autoscaler probe: KEDA create-time profile plus runtime controllers/CRDs/APIService and cron ScaledObject scaling; VPA create-time profile plus CRDs/webhook/deployments and recommendation generation. KEDA CRUD, KEDA upgrade, VPA in-place/HA/cert/upgrade/OS-matrix branches remain non-goals."
+    },
+    {
+      "id": "iteration80-app-routing-tls-source-hypothesis",
+      "kind": "source",
+      "path": "outputs/iteration80-app-routing-tls-source-hypothesis.md",
+      "summary": "Source-first App Routing DefaultDomainCertificate TLS analysis: iteration70 CR/input matched handwritten e2ev3 and source-visible CRD/controller requirements; failure remains observed fail and needs owner/CCP diagnostics rather than a probe-input correction."
     }
   ]
 }
