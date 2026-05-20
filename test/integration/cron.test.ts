@@ -38,14 +38,20 @@ describe("Cron event triggers", () => {
       cron.registerHandler("closed-loop-steward", handler);
       cron.subscribeToBus(bus);
 
-      bus.emit({ type: "trigger.closed-loop-steward", source: "test" } as any);
+      bus.emit({
+        type: "trigger.closed-loop-steward",
+        source: "test",
+        owner: "agent:may",
+        data: {},
+      } as any);
       await nextTick();
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0]?.[0]).toMatchObject({
         type: "trigger.closed-loop-steward",
-        source: "event",
-        entry: "closed-loop-steward",
+        source: "test",
+        owner: "agent:may",
+        data: {},
       });
     } finally {
       cleanup();
@@ -80,16 +86,12 @@ describe("Cron event triggers", () => {
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler.mock.calls[0]?.[0]).toMatchObject({
         type: "session.completed",
-        source: "event",
-        entry: "session-recovery",
+        source: "runtime",
+        owner: "agent:may",
         data: expect.objectContaining({
-          source: "runtime",
-          owner: "agent:may",
-          data: expect.objectContaining({
-            sessionId: "s_1",
-            agent: "dev",
-            error: "boom",
-          }),
+          sessionId: "s_1",
+          agent: "dev",
+          error: "boom",
         }),
       });
     } finally {

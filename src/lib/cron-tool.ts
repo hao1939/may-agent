@@ -28,6 +28,17 @@ export interface PreflightCheck {
   minLines?: number;
 }
 
+export interface WorkflowBackedHandler {
+  workflow: string;
+  agent?: string;
+  task: string;
+  includeEvent?: boolean;
+  projectId?: string;
+  timeoutMs?: number;
+}
+
+export type CronHandlerSpec = string | WorkflowBackedHandler;
+
 export interface CronEntry {
   name: string;
   intervalMs?: number;
@@ -36,8 +47,8 @@ export interface CronEntry {
   description?: string;
   /** Agent that owns/runs this job. If no `handler` is set, spawns a dedicated agent instance. */
   agent?: string;
-  /** JS handler name. If set, this job runs in-process instead of spawning an agent instance. */
-  handler?: string;
+  /** Handler implementation: a named JS handler or a workflow-backed handler object. */
+  handler?: CronHandlerSpec;
   /** Timeout for spawned job processes in ms (default: 600000 = 10 min). */
   timeoutMs?: number;
   /** Config passed to the handler's create() factory. Handler-specific. */
@@ -64,6 +75,12 @@ export interface CronEntry {
 
 function textResult(text: string): AgentToolResult<string> {
   return { content: [{ type: "text", text }], details: text };
+}
+
+function handlerLabel(handler: CronEntry["handler"]): string {
+  if (!handler) return "";
+  if (typeof handler === "string") return handler;
+  return `workflow:${handler.agent ? `${handler.agent}/` : ""}${handler.workflow}`;
 }
 
 const CronParams: TSchema = Type.Object({
@@ -165,7 +182,7 @@ export function createCronTool(opts: CronToolOptions): AgentTool {
             const prefix = e.enabled ? "" : "[DISABLED] ";
             const desc = e.description ? ` — ${e.description.slice(0, 50)}` : "";
             const cadence = e.intervalMs ? `every ${(e.intervalMs / 1000).toFixed(0)}s` : "event-only";
-            return `- ${prefix}${e.name}: ${cadence} → "${(e.message ?? e.handler ?? "").slice(0, 100)}"${desc}`;
+            return `- ${prefix}${e.name}: ${cadence} → "${(e.handler ? handlerLabel(e.handler) : e.message ?? "").slice(0, 100)}"${desc}`;
           });
           lines.push("", status);
           return textResult(lines.join("\n"));

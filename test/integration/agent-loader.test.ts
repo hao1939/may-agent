@@ -362,7 +362,81 @@ describe("agent loader boundaries", () => {
       const entries = generateAutoHeartbeats(agentsRoot);
 
       expect(entries.map((entry) => entry.name)).toEqual(["heartbeat-alpha"]);
-      expect(entries[0].handlerConfig).toMatchObject({ workflow: "alpha-heartbeat", agent: "alpha" });
+      expect(entries[0].handler).toMatchObject({ workflow: "alpha-heartbeat", agent: "alpha" });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("registers workflow-backed handler entries without handler files", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-workflow-handler-"));
+    try {
+      const handlers = new Map<string, unknown>();
+      const cron = {
+        getEntries: () => [{
+          name: "heartbeat-alpha",
+          enabled: true,
+          handler: {
+            workflow: "alpha-heartbeat",
+            agent: "alpha",
+            task: "[heartbeat] run alpha heartbeat",
+          },
+        }],
+        registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
+        setHandlerResolver: () => undefined,
+        triggerNow: () => false,
+      };
+
+      const result = await loadHandlersForAgentCrons({
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        projectsRoot: join(root, "projects"),
+        persistDir: join(root, ".state"),
+        projectRoot: root,
+        manager: {} as any,
+        bus: { emit: () => undefined } as any,
+        agentCrons: new Map([["alpha", cron as any]]),
+      });
+
+      expect(result.errors).toEqual([]);
+      expect(result.registered).toEqual(["alpha:heartbeat-alpha"]);
+      expect(handlers.has("heartbeat-alpha")).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("installs a dynamic resolver even when no handlers exist at startup", async () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-empty-resolver-"));
+    try {
+      const handlers = new Map<string, unknown>();
+      let resolver: ((entryName: string, entry: any) => Promise<boolean>) | undefined;
+      const cron = {
+        getEntries: () => [],
+        registerHandler: (name: string, handler: unknown) => handlers.set(name, handler),
+        setHandlerResolver: (fn: typeof resolver) => { resolver = fn; },
+        triggerNow: () => false,
+      };
+
+      await loadHandlersForAgentCrons({
+        agentsRoot: join(root, "agents"),
+        sharedRoot: join(root, "shared"),
+        projectsRoot: join(root, "projects"),
+        persistDir: join(root, ".state"),
+        projectRoot: root,
+        manager: {} as any,
+        bus: { emit: () => undefined } as any,
+        agentCrons: new Map([["alpha", cron as any]]),
+      });
+
+      expect(resolver).toBeDefined();
+      const resolved = await resolver!("heartbeat-alpha", {
+        name: "heartbeat-alpha",
+        enabled: true,
+        handler: { workflow: "alpha-heartbeat", agent: "alpha", task: "[heartbeat]" },
+      });
+      expect(resolved).toBe(true);
+      expect(handlers.has("heartbeat-alpha")).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

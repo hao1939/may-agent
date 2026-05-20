@@ -105,17 +105,12 @@ describe("runtime integration", () => {
     expect(handled).toHaveLength(1);
     expect(handled[0]).toMatchObject({
       type: "escalation.created",
-      source: "event",
-      entry: "escalation-reactor",
+      source: "agent:dev",
+      owner: "agent:may",
+      urgency: "high",
       data: {
-        type: "escalation.created",
-        source: "agent:dev",
-        owner: "agent:may",
-        urgency: "high",
-        data: {
-          escalationId: "esc_integration",
-          reason: "Need a decision",
-        },
+        escalationId: "esc_integration",
+        reason: "Need a decision",
       },
     });
   });

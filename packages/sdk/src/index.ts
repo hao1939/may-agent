@@ -370,6 +370,17 @@ export interface PreflightCheck {
   minLines?: number;
 }
 
+export interface WorkflowBackedHandler {
+  workflow: string;
+  agent?: string;
+  task: string;
+  includeEvent?: boolean;
+  projectId?: string;
+  timeoutMs?: number;
+}
+
+export type CronHandlerSpec = string | WorkflowBackedHandler;
+
 export interface CronEntry {
   name: string;
   intervalMs?: number;
@@ -377,7 +388,7 @@ export interface CronEntry {
   enabled: boolean;
   description?: string;
   agent?: string;
-  handler?: string;
+  handler?: CronHandlerSpec;
   timeoutMs?: number;
   handlerConfig?: Record<string, unknown>;
   lastModified?: string;
@@ -386,12 +397,14 @@ export interface CronEntry {
   on?: string[];
 }
 
-export interface TriggerEvent {
+export interface EventEnvelope {
   type: string;
-  source: "timer" | "event" | "manual";
-  entry: string;
-  data?: Record<string, unknown>;
-  timestamp: number;
+  source: string;
+  owner: string;
+  timestamp?: number;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  data: Record<string, unknown>;
 }
 
 export type ErrorClass = "infra" | "logic" | "abort" | "overflow";
@@ -434,11 +447,11 @@ export interface HandlerContext {
 }
 
 export interface HandlerModule {
-  create: (ctx: HandlerContext, entry: CronEntry) => (event?: TriggerEvent) => Promise<void>;
+  create: (ctx: HandlerContext, entry: CronEntry) => (event?: EventEnvelope) => Promise<void>;
 }
 
 type MaybePromise<T> = T | Promise<T>;
-type ValueResolver<T> = T | ((ctx: HandlerContext, event: TriggerEvent | undefined, entry: CronEntry) => MaybePromise<T>);
+type ValueResolver<T> = T | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
 
 export interface WorkflowHandlerOptions {
   workflow: ValueResolver<string>;
@@ -446,28 +459,28 @@ export interface WorkflowHandlerOptions {
   source?: ValueResolver<string | undefined>;
   projectId?: ValueResolver<string | undefined>;
   includeEvent?: boolean;
-  shouldRun?: (ctx: HandlerContext, event: TriggerEvent | undefined, entry: CronEntry) => boolean | Promise<boolean>;
+  shouldRun?: (ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => boolean | Promise<boolean>;
 }
 
 async function resolveValue<T>(
   value: ValueResolver<T>,
   ctx: HandlerContext,
-  event: TriggerEvent | undefined,
+  event: EventEnvelope | undefined,
   entry: CronEntry,
 ): Promise<T> {
   if (typeof value === "function") {
-    return (value as (ctx: HandlerContext, event: TriggerEvent | undefined, entry: CronEntry) => MaybePromise<T>)(ctx, event, entry);
+    return (value as (ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>)(ctx, event, entry);
   }
   return value;
 }
 
-function appendEvent(task: string, event: TriggerEvent | undefined): string {
+function appendEvent(task: string, event: EventEnvelope | undefined): string {
   if (!event) return task;
   return `${task}\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(event, null, 2)}\n\`\`\``;
 }
 
 export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerModule["create"] {
-  return (ctx: HandlerContext, entry: CronEntry) => async (event?: TriggerEvent) => {
+  return (ctx: HandlerContext, entry: CronEntry) => async (event?: EventEnvelope) => {
     if (options.shouldRun && !(await options.shouldRun(ctx, event, entry))) {
       ctx.sdk.log("info", `[workflow-handler:${entry.name}] skipped`);
       ctx.sdk.emit("handler.skipped", {

@@ -19,7 +19,7 @@ import {
   type CronEntry,
   type HandlerContext,
   type HandlerModule,
-  type TriggerEvent,
+  type EventEnvelope,
 } from "@may-agent/sdk";
 
 function projectIdFor(owner: string, projectName: string): string {
@@ -44,7 +44,7 @@ function updateTask(projectFile: string, taskId: string, patch: Parameters<typeo
 }
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
-  return async (_event?: TriggerEvent) => {
+  return async (_event?: EventEnvelope) => {
     const projectsRoot = ctx.sdk.paths.projects;
     if (!existsSync(projectsRoot)) return;
 

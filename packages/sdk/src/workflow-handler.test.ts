@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { createWorkflowHandler } from "./index.js";
-import type { CronEntry, HandlerContext, TriggerEvent } from "./index.js";
+import type { CronEntry, HandlerContext, EventEnvelope } from "./index.js";
 
 describe("createWorkflowHandler", () => {
   function context() {
@@ -26,10 +26,10 @@ describe("createWorkflowHandler", () => {
   }
 
   const entry: CronEntry = { name: "bridge", enabled: true, handler: "bridge" };
-  const event: TriggerEvent = {
+  const event: EventEnvelope = {
     type: "project.commented",
-    source: "event",
-    entry: "bridge",
+    source: "web-ui",
+    owner: "agent:may",
     data: { projectId: "p1" },
     timestamp: 123,
   };
@@ -80,10 +80,10 @@ describe("createWorkflowHandler", () => {
 
   it("passes session.completed event data through in trigger context", async () => {
     const { ctx, calls, emitted } = context();
-    const completedEvent: TriggerEvent = {
+    const completedEvent: EventEnvelope = {
       type: "session.completed",
-      source: "event",
-      entry: "evaluator-aftermath",
+      source: "runtime",
+      owner: "agent:dev",
       data: { sessionId: "s_done", agent: "dev", status: "done" },
       timestamp: 456,
     };

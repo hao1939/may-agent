@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { SubagentManager } from "../../lib/index.js";
-import type { HandlerContext, HandlerModule, TriggerEvent } from "../../lib/handler-context.js";
-import type { CronEntry } from "../../lib/cron-tool.js";
+import { createWorkflowHandler, SubagentManager } from "../../lib/index.js";
+import type { HandlerContext, HandlerModule, EventEnvelope } from "../../lib/handler-context.js";
+import type { CronEntry, WorkflowBackedHandler } from "../../lib/cron-tool.js";
 import { buildSessionHelpers } from "../../lib/runtime-ctx.js";
 import { buildAgentSDK } from "../../lib/sdk-impl.js";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
@@ -31,8 +31,6 @@ export async function loadHandlersForAgentCrons(
     const entries = cron.getEntries();
     const handlersNeeded = entries.filter((e) => e.handler);
 
-    if (handlersNeeded.length === 0) continue;
-
     const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, sharedRoot, projectsRoot, agentName });
     const sdk = buildAgentSDK({
       bus,
@@ -53,9 +51,21 @@ export async function loadHandlersForAgentCrons(
       ...sessionHelpers,
     };
 
+    for (const entry of handlersNeeded) {
+      const workflow = workflowHandler(entry);
+      if (!workflow) continue;
+      cron.registerHandler(entry.name, createWorkflowBackedHandler(ctx, entry, workflow));
+      registered.push(`${agentName}:${entry.name}`);
+      bus.emit({
+        type: "info",
+        message: `[handler] Registered ${agentName}:${entry.name} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
+      });
+    }
+
     const byFile = new Map<string, CronEntry[]>();
     for (const entry of handlersNeeded) {
-      const file = entry.handler!;
+      if (typeof entry.handler !== "string") continue;
+      const file = entry.handler;
       if (!byFile.has(file)) byFile.set(file, []);
       byFile.get(file)!.push(entry);
     }
@@ -96,6 +106,16 @@ export async function loadHandlersForAgentCrons(
 
     cron.setHandlerResolver(async (entryName: string, entry: CronEntry): Promise<boolean> => {
       if (!entry.handler) return false;
+      const workflow = workflowHandler(entry);
+      if (workflow) {
+        cron.registerHandler(entryName, createWorkflowBackedHandler(ctx, entry, workflow));
+        bus.emit({
+          type: "info",
+          message: `[handler] Dynamically registered ${agentName}:${entryName} → workflow:${workflow.agent ? `${workflow.agent}/` : ""}${workflow.workflow}`,
+        });
+        return true;
+      }
+      if (typeof entry.handler !== "string") return false;
 
       const modulePath = resolveHandlerModule(agentsRoot, agentName, entry.handler);
       if (!modulePath) {
@@ -137,6 +157,21 @@ export async function loadHandlersForAgentCrons(
   return { registered, errors };
 }
 
+function workflowHandler(entry: CronEntry): WorkflowBackedHandler | undefined {
+  const handler = entry.handler;
+  return handler && typeof handler === "object" && typeof handler.workflow === "string" ? handler : undefined;
+}
+
+function createWorkflowBackedHandler(ctx: HandlerContext, entry: CronEntry, handler: WorkflowBackedHandler) {
+  return createWorkflowHandler({
+    workflow: handler.workflow,
+    source: handler.agent ?? entry.agent ?? ctx.agentName,
+    projectId: handler.projectId,
+    task: handler.task,
+    includeEvent: handler.includeEvent,
+  })(ctx as any, entry as any);
+}
+
 function resolveHandlerModule(agentsRoot: string, agentName: string, handlerFile: string): string | null {
   const handlerDir = resolve(agentsRoot, agentName, "handlers");
   const jsPath = resolve(handlerDir, `${handlerFile}.js`);
@@ -148,7 +183,7 @@ function resolveHandlerModule(agentsRoot: string, agentName: string, handlerFile
 
 function createHotReloadHandler(modulePath: string, ctx: HandlerContext, entry: CronEntry) {
   const entrySnapshot = { ...entry };
-  return async (event?: TriggerEvent) => {
+  return async (event?: EventEnvelope) => {
     const freshMod = await importRuntimeModule<HandlerModule>(modulePath);
     if (typeof freshMod.create !== "function") {
       throw new Error(`Handler ${modulePath} no longer exports create()`);

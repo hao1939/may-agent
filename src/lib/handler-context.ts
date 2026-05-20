@@ -11,16 +11,15 @@ import type { DigestRow, DigestInput, DigestAction } from "./session-digest.js";
 import type { ErrorClass } from "./classify-error.js";
 import type { AgentSDK } from "./sdk.js";
 
-/**
- * TriggerEvent — passed to handlers on every invocation.
- * Timer ticks, bus events, and manual triggers are all events.
- */
-export interface TriggerEvent {
-  type: string;                           // "timer.tick" | "metric.breach" | etc.
-  source: "timer" | "event" | "manual";   // how it was triggered
-  entry: string;                          // cron entry name
-  data?: Record<string, unknown>;         // event payload (for bus events)
-  timestamp: number;
+/** Canonical event envelope delivered to handlers. */
+export interface EventEnvelope {
+  type: string;
+  source: string;
+  owner: string;
+  timestamp?: number;
+  urgency?: "low" | "normal" | "high" | "immediate";
+  ttl_ms?: number;
+  data: Record<string, unknown>;
 }
 
 /**
@@ -36,7 +35,7 @@ export interface HandlerContext {
   /** Name of the agent that owns this handler (e.g., "may") */
   agentName: string;
 
-  /** Trigger a cron entry immediately (reactive trigger). Returns true if fired/latched. */
+  /** Trigger an entry immediately (reactive trigger). Returns true if fired/latched. */
   triggerNow: (entryName: string) => boolean;
 
   // ── Session lifecycle (used by session-recovery, escalation) ──────
@@ -60,5 +59,5 @@ export interface HandlerContext {
  * The shape a handler module must export.
  */
 export interface HandlerModule {
-  create: (ctx: HandlerContext, entry: CronEntry) => (event?: TriggerEvent) => Promise<void>;
+  create: (ctx: HandlerContext, entry: CronEntry) => (event?: EventEnvelope) => Promise<void>;
 }
