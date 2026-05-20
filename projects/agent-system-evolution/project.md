@@ -1,7 +1,7 @@
 ---
 id: agent-system-evolution
 owner: may
-status: active
+status: waiting
 type: milestone
 priority: P1
 iteration: 0
@@ -58,9 +58,9 @@ No project should silently mutate another project's control plane.
 ## Current State
 
 Waiting: boundary project created to separate learning/evolution from platform
-infra. The former `evaluator-self-improvement` project has been merged here as
-the evaluator learning lane. No autonomous evolution task is currently accepted
-in this project.
+infra. Evaluator self-improvement, strategy-extractor calibration, and
+false-good calibration have been merged here as evaluator learning/calibration
+lanes. No autonomous evolution task is currently accepted in this project.
 
 Resume when: a human/May directive prioritizes agent-system evolution, a
 learning/evaluation metric breaches, or another project requests behavior
@@ -84,9 +84,15 @@ Out of scope:
 ## Related Projects
 
 - `projects/platform/project.md` — infra substrate provider.
-- `projects/evaluator-false-good-calibration/project.md` — evaluator calibration work.
 - `projects/scout-second-brain-learning/project.md` — scout-specific learning lane.
 - `projects/ruflo-learning-loop/project.md` — learning-loop work owned by arc.
+- `projects/eval-llm-lane-restoration/project.md` — LLM evaluation lane (infra reference).
+- `projects/closed-loop-reliability/project.md` — operational closed-loop reliability reference.
+
+Archived evaluator lanes:
+- `projects/_archive/evaluator-self-improvement/project.md`
+- `projects/_archive/evaluator-strategy-extractor-calibration/project.md`
+- `projects/_archive/evaluator-false-good-calibration/project.md`
 
 ## Evaluator Learning Lane
 
@@ -99,6 +105,8 @@ improve evaluator calibration and agent feedback.
 Artifacts:
 - `outputs/evaluator/signal-heuristics.md` — v1 unsupervised quality-signal heuristics.
 - `ui/evaluator-quality-panel/` — prototype quality panel for score batches.
+- `outputs/evaluator/strategy-extractor/` — positive strategy extraction calibration evidence and fixture.
+- `outputs/evaluator/false-good-calibration/` — false-good audit, hardening, replay, and review bundle.
 
 Missing first-batch outputs:
 - `outputs/evaluator/session-scores.jsonl`
@@ -109,6 +117,30 @@ The next evaluator-learning task should produce the first bounded score batch
 inside `outputs/evaluator/`, then compare those heuristic scores against recent
 canonical evaluator verdicts before proposing rubric changes.
 
+### Strategy Extractor Calibration
+
+Merged from `projects/evaluator-strategy-extractor-calibration`.
+
+The immediate fix is complete: modern assistant `content[].toolCall` records are
+covered by a regression fixture, and periodic strategy extraction is no longer
+stuck at all-zero positive output. Remaining backlog:
+
+- compact-success coverage,
+- optimization-noise ranking,
+- evaluator criteria/doc interpretation if later calibration requires it.
+
+### False-Good Calibration
+
+Merged from `projects/evaluator-false-good-calibration`.
+
+The merge-ready evidence bundle is complete: audit, hardening, focused tests,
+real-session replay, baseline counts, and post-merge watch query are preserved
+under `outputs/evaluator/false-good-calibration/`. Remaining watch item:
+
+- after evaluator aftermath hardening is merged/deployed, compare the same 24h
+  `evaluation.false_good` / `evaluation.reviewed` /
+  `evaluation.success_candidate` counts against the recorded baseline.
+
 ## Tasks
 
 - id: establish-boundary
@@ -118,15 +150,27 @@ canonical evaluator verdicts before proposing rubric changes.
   result: succeeded
 
 - id: inventory-projects
+  result: succeeded
+  attempts: 1
   goal: Inventory existing learning/evolution projects and decide which remain independent lanes versus children/references of this umbrella.
   assignee: may
-  status: pending
+  status: done
   depends_on: []
 
 - id: first-evolution-task
+  result: dropped
+  attempts: 2
   goal: Define the first accepted evolution task only after a real signal or explicit owner directive.
   assignee: may
-  status: pending
+  status: done
+  depends_on: [inventory-projects]
+
+- id: merge-evaluator-calibration-lanes
+  result: succeeded
+  attempts: 1
+  goal: Merge evaluator strategy-extractor and false-good calibration projects into the evaluator learning/calibration lane while preserving artifacts and archive redirects.
+  assignee: may
+  status: done
   depends_on: [inventory-projects]
 
 ## Validation
@@ -136,6 +180,7 @@ canonical evaluator verdicts before proposing rubric changes.
   comments, tasks, and SDK APIs.
 - Existing learning/evolution projects are reachable from this project.
 - Evaluator self-improvement artifacts are reachable under this project.
+- Evaluator strategy-extractor and false-good calibration artifacts are reachable under `outputs/evaluator/`.
 
 ## Journal
 
@@ -148,3 +193,8 @@ canonical evaluator verdicts before proposing rubric changes.
 - Moved evaluator signal heuristics to `outputs/evaluator/signal-heuristics.md`.
 - Moved the evaluator quality-panel prototype to `ui/evaluator-quality-panel/`.
 - Archived the old `projects/evaluator-self-improvement` project as a redirect.
+
+### 2026-05-20 — Merged evaluator calibration lanes
+- Moved strategy-extractor calibration artifacts to `outputs/evaluator/strategy-extractor/`.
+- Moved false-good calibration artifacts to `outputs/evaluator/false-good-calibration/`.
+- Archived the old evaluator calibration projects as redirects.
