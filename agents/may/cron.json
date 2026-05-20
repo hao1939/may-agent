@@ -14,6 +14,10 @@
     },
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/may/heartbeat.md",
+      "projects/system-operations/project.md"
     ]
   },
   {
@@ -33,6 +37,10 @@
     "offsetMs": 420000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/bob/heartbeat.md",
+      "projects/platform/project.md"
     ]
   },
   {
@@ -51,6 +59,10 @@
     "offsetMs": 840000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/optimizer/heartbeat.md",
+      "projects/agent-system-evolution/project.md"
     ]
   },
   {
@@ -70,6 +82,10 @@
     "offsetMs": 180000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/coach/heartbeat.md",
+      "projects/agent-system-evolution/project.md"
     ]
   },
   {
@@ -88,6 +104,10 @@
     "offsetMs": 600000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/evaluator/heartbeat.md",
+      "projects/agent-system-evolution/project.md"
     ]
   },
   {
@@ -103,7 +123,11 @@
       "timeoutMs": 1800000
     },
     "lastModified": "2026-04-19T18:00:00.000Z",
-    "offsetMs": 600000
+    "offsetMs": 600000,
+    "context": [
+      "agents/optimizer/workspace/todo.md",
+      "projects/agent-system-evolution/project.md"
+    ]
   },
   {
     "name": "heartbeat-tech-lead",
@@ -122,6 +146,10 @@
     "offsetMs": 600000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/tech-lead/heartbeat.md",
+      "projects/platform/project.md"
     ]
   },
   {
@@ -140,7 +168,11 @@
       "type": "new-entries-since",
       "path": ".state/human-inputs.jsonl",
       "stateKey": "reflect-last-checked"
-    }
+    },
+    "context": [
+      "agents/coach/workspace/reflect-prompt.md",
+      "projects/agent-system-evolution/project.md"
+    ]
   },
   {
     "name": "heartbeat-qa",
@@ -157,6 +189,10 @@
     "offsetMs": 1680000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/qa/heartbeat.md",
+      "projects/platform/project.md"
     ]
   },
   {
@@ -174,7 +210,10 @@
     "on": [
       "heartbeat.trigger"
     ],
-    "description": "Disabled: Kimi API 429 rate limit. Re-enable after topping up."
+    "description": "Disabled: Kimi API 429 rate limit. Re-enable after topping up.",
+    "context": [
+      "agents/amy-kimi/heartbeat.md"
+    ]
   },
   {
     "name": "common-sense-verify",
@@ -193,7 +232,11 @@
       "path": ".state/sessions/history",
       "stateKey": "common-sense-verify-last-checked"
     },
-    "offsetMs": 300000
+    "offsetMs": 300000,
+    "context": [
+      "shared/common-sense.md",
+      "projects/agent-system-evolution/project.md"
+    ]
   },
   {
     "name": "common-sense-infra",
@@ -207,7 +250,11 @@
     "intervalMs": 86400000,
     "enabled": false,
     "description": "Bob reviews common-sense infra gaps (daily). Routes through verify-wrap workflow.",
-    "offsetMs": 1200000
+    "offsetMs": 1200000,
+    "context": [
+      "shared/common-sense.md",
+      "projects/platform/project.md"
+    ]
   },
   {
     "name": "research-intake",
@@ -226,7 +273,11 @@
       "path": "agents/scout/workspace",
       "stateKey": "research-intake-scout"
     },
-    "offsetMs": 1800000
+    "offsetMs": 1800000,
+    "context": [
+      "agents/coach/heartbeat.md",
+      "projects/agent-system-evolution/project.md"
+    ]
   },
   {
     "name": "project",
@@ -242,6 +293,10 @@
       "project.task.finished",
       "project.completed",
       "project.blocked"
+    ],
+    "context": [
+      "projects/platform/project.md",
+      "shared/may-agent-docs/2a-design/projects.md"
     ]
   },
   {
@@ -259,6 +314,10 @@
       "project.task.finished",
       "project.completed",
       "project.blocked"
+    ],
+    "context": [
+      "projects/system-operations/project.md",
+      "shared/may-agent-docs/2a-design/projects.md"
     ]
   },
   {
@@ -278,6 +337,10 @@
     "on": [
       "project.blocked",
       "project.health.finding"
+    ],
+    "context": [
+      "projects/agent-system-evolution/project.md",
+      "shared/may-agent-docs/2a-design/projects.md"
     ]
   },
   {
@@ -290,6 +353,10 @@
     "intervalMs": 300000,
     "on": [
       "metric.breach"
+    ],
+    "context": [
+      "projects/system-operations/project.md",
+      "shared/may-agent-docs/2a-design/metrics.md"
     ]
   },
   {
@@ -306,7 +373,11 @@
       "alertLimit": 12,
       "deliveryFailureLimit": 12
     },
-    "offsetMs": 120000
+    "offsetMs": 120000,
+    "context": [
+      "projects/system-operations/project.md",
+      "shared/may-agent-docs/2a-design/metrics.md"
+    ]
   },
   {
     "name": "session-recovery",
@@ -319,6 +390,10 @@
     "on": [
       "session.completed",
       "session.failed"
+    ],
+    "context": [
+      "projects/platform/project.md",
+      "shared/may-agent-docs/2a-design/sessions.md"
     ]
   },
   {
@@ -335,7 +410,11 @@
     "on": [
       "session.completed"
     ],
-    "description": "Run evaluator aftermath workflow when a session ends."
+    "description": "Run evaluator aftermath workflow when a session ends.",
+    "context": [
+      "projects/agent-system-evolution/project.md",
+      "agents/evaluator/heartbeat.md"
+    ]
   },
   {
     "name": "session-aftermath-scan",
@@ -353,7 +432,11 @@
       "limit": 2,
       "maxConcurrent": 2,
       "timeoutMs": 900000
-    }
+    },
+    "context": [
+      "projects/agent-system-evolution/project.md",
+      "agents/evaluator/heartbeat.md"
+    ]
   },
   {
     "name": "eval-llm-scan",
@@ -368,7 +451,11 @@
       "fallbackDelayMs": 900000,
       "activeWindowMs": 1800000,
       "artifactLimit": 3
-    }
+    },
+    "context": [
+      "projects/agent-system-evolution/project.md",
+      "agents/evaluator/heartbeat.md"
+    ]
   },
   {
     "name": "escalation",
@@ -379,6 +466,10 @@
     "description": "Route canonical escalation.created events to their owner.",
     "on": [
       "escalation.created"
+    ],
+    "context": [
+      "projects/system-operations/project.md",
+      "shared/may-agent-docs/2a-design/escalation.md"
     ]
   },
   {
@@ -388,7 +479,11 @@
     "handler": "metrics-snapshot",
     "agent": "may",
     "enabled": true,
-    "description": "Measure handler health metrics every 5 minutes."
+    "description": "Measure handler health metrics every 5 minutes.",
+    "context": [
+      "projects/system-operations/project.md",
+      "shared/may-agent-docs/2a-design/metrics.md"
+    ]
   },
   {
     "name": "coaching-consumer",
@@ -398,7 +493,11 @@
     "agent": "may",
     "enabled": true,
     "description": "Scan recent evaluations every 6h and flag sessions needing coaching intervention. Writes recommendations to .state/coaching-queue/.",
-    "offsetMs": 1200000
+    "offsetMs": 1200000,
+    "context": [
+      "projects/agent-system-evolution/project.md",
+      "agents/coach/heartbeat.md"
+    ]
   },
   {
     "name": "heartbeat-amy",
@@ -414,6 +513,9 @@
     "offsetMs": 480000,
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/amy/heartbeat.md"
     ]
   },
   {
@@ -429,6 +531,10 @@
     },
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/scout/heartbeat.md",
+      "projects/scout-second-brain-learning/project.md"
     ]
   },
   {
@@ -443,7 +549,11 @@
       "task": "Explore arXiv for recent AI agent papers. Use this exact API base only: https://export.arxiv.org/api/query . Never use http://export.arxiv.org. Fetch with curl -sL, use sortOrder=descending (not desc), inspect the returned summary/abstract text before writing any Summary or Implication, and skip arXiv rather than guessing if this HTTPS endpoint is unreachable.",
       "timeoutMs": 600000
     },
-    "offsetMs": 0
+    "offsetMs": 0,
+    "context": [
+      "agents/scout/heartbeat.md",
+      "projects/scout-second-brain-learning/project.md"
+    ]
   },
   {
     "name": "scout-explore-hn",
@@ -457,7 +567,11 @@
       "task": "Explore Hacker News for AI agent discussions.",
       "timeoutMs": 600000
     },
-    "offsetMs": 900000
+    "offsetMs": 900000,
+    "context": [
+      "agents/scout/heartbeat.md",
+      "projects/scout-second-brain-learning/project.md"
+    ]
   },
   {
     "name": "scout-explore-xhs",
@@ -471,7 +585,11 @@
       "task": "Explore 小红书 (XHS) for Chinese AI community trends.",
       "timeoutMs": 600000
     },
-    "offsetMs": 1800000
+    "offsetMs": 1800000,
+    "context": [
+      "agents/scout/heartbeat.md",
+      "projects/scout-second-brain-learning/project.md"
+    ]
   },
   {
     "name": "scout-explore-github",
@@ -485,7 +603,11 @@
       "task": "Explore GitHub for trending AI agent repos and tools.",
       "timeoutMs": 600000
     },
-    "offsetMs": 2700000
+    "offsetMs": 2700000,
+    "context": [
+      "agents/scout/heartbeat.md",
+      "projects/scout-second-brain-learning/project.md"
+    ]
   },
   {
     "name": "scout-daily-digest",
@@ -499,7 +621,11 @@
       "task": "Compile today's research digest and send to Hao.",
       "timeoutMs": 300000
     },
-    "offsetMs": 0
+    "offsetMs": 0,
+    "context": [
+      "agents/scout/heartbeat.md",
+      "projects/scout-second-brain-learning/project.md"
+    ]
   },
   {
     "name": "heartbeat-dev",
@@ -514,6 +640,10 @@
     },
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/dev/heartbeat.md",
+      "projects/platform/project.md"
     ]
   },
   {
@@ -529,6 +659,10 @@
     },
     "on": [
       "heartbeat.trigger"
+    ],
+    "context": [
+      "agents/arc/heartbeat.md",
+      "projects/platform/project.md"
     ]
   },
   {
@@ -537,6 +671,10 @@
     "message": "Run the daily alert review: query metric_alerts for last 24h, produce report at projects/daily-alert-review/outputs/YYYY-MM-DD-alert-review.md, send summary to human via Telegram. Check for systemic patterns and threshold calibration issues.",
     "enabled": true,
     "agent": "may",
-    "description": "Daily metric alert review and report generation"
+    "description": "Daily metric alert review and report generation",
+    "context": [
+      "projects/system-operations/project.md",
+      "projects/daily-alert-review/project.md"
+    ]
   }
 ]

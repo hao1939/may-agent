@@ -62,6 +62,8 @@ Workflow-backed handler:
   `session.completed`.
 - `handler: "name"` — filename in `handlers/` beside the owning `cron.json`
 - `handler: { workflow, agent, task }` — workflow-backed handler
+- `context` — local docs/projects/agent files that explain why this trigger
+  exists and where maintenance/improvement should happen
 - `agent` + `message` without a handler — compatibility path for detached agent jobs
 - `type` — optional legacy field; current entries are jobs (`"job"` or omitted), not `"heartbeat"`
 
@@ -97,6 +99,21 @@ infra policy.
 
 Workflow-backed handlers follow the same ownership rule. The trigger entry owns
 the wake-up policy; the configured workflow owns the work.
+
+Each trigger entry should include a small `context` array. These are not loaded
+automatically into every run; they are durable pointers for humans and agents
+who need to maintain, debug, or improve the loop:
+
+```json
+{
+  "name": "metric-alert-reactor",
+  "handler": "metric-alert-reactor",
+  "context": [
+    "projects/system-operations/project.md",
+    "shared/may-agent-docs/2a-design/metrics.md"
+  ]
+}
+```
 
 Use a TypeScript handler when the work is deterministic infra logic: metrics,
 query/projection, dedup, cooldown, state repair, reload/restart/shutdown, or

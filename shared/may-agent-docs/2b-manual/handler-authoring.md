@@ -91,6 +91,24 @@ Use a project-local handler when the trigger only has meaning for that one
 project. Use a global May/platform handler for shared project reconciliation,
 metric routing, escalation routing, and other infra-wide behavior.
 
+Add `context` beside the handler config. Keep it to local paths that explain why
+the loop exists and where future maintenance belongs:
+
+```json
+{
+  "name": "project-steward",
+  "handler": "project-steward",
+  "context": [
+    "projects/system-operations/project.md",
+    "shared/may-agent-docs/2a-design/projects.md"
+  ],
+  "enabled": true
+}
+```
+
+The runtime does not auto-load these files into the handler. They are the
+feedback/evolution trail for humans and agents reviewing the job later.
+
 Named TypeScript handler:
 
 ```json
