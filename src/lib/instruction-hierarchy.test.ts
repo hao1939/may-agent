@@ -30,7 +30,7 @@ describe("Instruction Hierarchy (P84)", () => {
     agentDir = mkdtempSync(join(tmpdir(), "may-ih-agent-"));
     mkdirSync(join(agentDir, "knowledge"), { recursive: true });
     mkdirSync(join(agentDir, "workspace"), { recursive: true });
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
   });
 
   afterEach(() => {

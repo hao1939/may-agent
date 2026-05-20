@@ -55,7 +55,7 @@ describe("shallow heartbeat detection", () => {
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "shallow-hb-test-"));
-    manager = new SubagentManager({ persistDir: dir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir: dir });
   });
 
   afterEach(() => {

@@ -15,10 +15,8 @@ function createHarness(overrides: Partial<SubagentManager> = {}, projectRoot = m
   const manager = {
     status: () => [],
     cancel: () => {},
-    input: () => Promise.resolve({} as any),
-    steer: () => {},
+    send: () => {},
     resumeSession: () => "resumed",
-    resumeInterrupted: () => false,
     run: () => "new-session",
     ...overrides,
   } as unknown as SubagentManager;

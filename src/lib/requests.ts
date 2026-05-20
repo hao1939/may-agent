@@ -22,7 +22,3 @@ export {
   getWorkflowStepSessions,
 } from "./db/workflows.js";
 export type { WorkflowRunRecord } from "./db/workflows.js";
-
-// ErrorClass and classifyError are in classify-error.ts; re-export for backward compatibility.
-export type { ErrorClass } from "./classify-error.js";
-export { classifyError } from "./classify-error.js";

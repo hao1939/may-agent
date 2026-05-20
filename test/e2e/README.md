@@ -53,6 +53,7 @@ ls /tmp/may-e2e-*/
 | `e6-agent-call-chain` | `ctx.sdk.runAgent(target, task)` from a handler → child session with `kind=call`+`source=callAgent`, completion event observed; `sdk-quickstart.md § sdk.runAgent` | ✅ |
 | `e7-escalation-roundtrip` | `escalation.created` → `escalation.resolved` → resume_attempted/resume_failed; `needs_human` short-circuit; `sdk-quickstart.md § External Escalate`, `escalation.md` | ✅ |
 | `e8-project-comment-ui` | Served platform UI: index loads, top-level assets resolve, row click navigates to canonical id, comment form POSTs to `/api/projects/comment`, discussion.md appended, status flips. Replaces the manual `scripts/e2e-platform-comment.mjs`. Skipped on hosts without Chrome (set `E2E_NO_UI=1` to opt out). | ✅ |
+| `e9-session-auto-resume` | Cold (interrupted) session pre-seeded on disk → `steer` socket frame → unified `manager.resumeSession` primitive → fresh `session.start` event with the same sessionId. Regression test for the v2 single-resume-path refactor (`resumeInterrupted` no-op removed; `executeResume` is the single funnel). | ✅ |
 | `control-routing-e2e` | In-process socket frame routing; canonical `message.created` persistence/rejection plus legacy `fork` command translation | ✅ |
 | `telegram-reply-e2e` | In-process Telegram reply routing, proactive human messages, project comment nudges, session steering, slash-command normalization | ✅ |
 

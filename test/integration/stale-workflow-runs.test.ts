@@ -37,7 +37,7 @@ function makeStaleRun(runId: string, workflow = "test-wf"): WorkflowRunRecord {
 
 describe("stale workflow run cleanup", () => {
   it("resumeStaleSessions marks stale workflow runs as interrupted", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     insertWorkflowRun(persistDir, makeStaleRun("wr_stale_1"));
 
     manager.resumeStaleSessions();
@@ -50,7 +50,7 @@ describe("stale workflow run cleanup", () => {
   });
 
   it("resumeStaleSessions leaves completed workflow runs untouched", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     const run: WorkflowRunRecord = {
       ...makeStaleRun("wr_done"),
       status: "done",
@@ -67,7 +67,7 @@ describe("stale workflow run cleanup", () => {
   });
 
   it("resumeStaleSessions handles multiple stale workflow runs", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     insertWorkflowRun(persistDir, makeStaleRun("wr_a"));
     insertWorkflowRun(persistDir, makeStaleRun("wr_b"));
     insertWorkflowRun(persistDir, {
@@ -84,7 +84,7 @@ describe("stale workflow run cleanup", () => {
   });
 
   it("no-op when no workflow runs exist", () => {
-    const manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir });
     // Should not throw
     manager.resumeStaleSessions();
   });

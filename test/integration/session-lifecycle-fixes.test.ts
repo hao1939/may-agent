@@ -48,7 +48,7 @@ describe("Bug 3: handleCompletion error recovery", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-"));
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     registerAgent(manager);
   });
 
@@ -108,7 +108,7 @@ describe("session.start metadata", () => {
     const bus = new EventBus();
     const events: AgentEvent[] = [];
     bus.subscribe((event) => events.push(event));
-    const manager = new SubagentManager({ persistDir, bus, infraRetryMax: 0 });
+    const manager = new SubagentManager({ persistDir, bus });
     registerAgent(manager);
 
     const sessionId = manager.run("test-agent", "do something", {
@@ -164,7 +164,7 @@ describe("Bug 4: run() duplicate sessionId guard", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-"));
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     registerAgent(manager);
   });
 
@@ -207,7 +207,7 @@ describe("Bug 8: resumeSession restores parentAgentName", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-"));
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     registerAgent(manager, "parent-agent");
     registerAgent(manager, "child-agent");
   });
@@ -278,7 +278,7 @@ describe("Bug 10: callDepths cleanup", () => {
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-lifecycle-"));
-    manager = new SubagentManager({ persistDir, infraRetryMax: 0 });
+    manager = new SubagentManager({ persistDir });
     registerAgent(manager);
   });
 

@@ -79,12 +79,17 @@ export function attachDaemonEventSubscribers(opts: {
     () => manager,
   ));
   bus.subscribe(createAutoResume(
-    (sessionId, agent, _attempt) => {
-      const ok = manager.resumeInterrupted(sessionId);
-      if (ok) {
-        log("info", `[resume] Resumed ${agent} session ${sessionId}`);
-      } else {
-        log("warn", `[resume] Failed to resume ${sessionId}`);
+    (sessionId, agent, attempt) => {
+      try {
+        manager.resumeSession(
+          sessionId,
+          `[auto-resume] Session was interrupted after partial progress. Continue from where you left off. (attempt ${attempt + 1})`,
+          { source: "runtime:auto-resume" },
+        );
+        log("info", `[resume] Resumed ${agent} session ${sessionId} (attempt ${attempt + 1})`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log("warn", `[resume] Could not resume ${agent} session ${sessionId}: ${msg}`);
       }
     },
     (agent, _sessionId, reason) => {
