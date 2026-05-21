@@ -95,9 +95,10 @@ an explicit judgment. Do this before `finish()` whenever no fix/artifact is warr
 1. State the Approved queue disposition (`empty` or picked item) with the read/query evidence.
 2. Classify every pending inbox event in the finish summary or `completed_items` as acted,
    delegated, dismissed with reason, or escalated.
-3. State each owned project disposition (`paused/waiting` with resume trigger not met, or
-   active work taken). Do not issue extra project file reads unless the project state itself
-   is unclear or actionable.
+3. State each owned project disposition from the injected project list. For `closed` projects,
+   say `closed; resume trigger not met` (if a resume trigger is shown) and do **not** treat
+   them as paused blockers or re-poll them. Only read/update a project file when its injected
+   status is `active`, `blocked`, `paused`, or otherwise unclear/actionable.
 4. Include the current health evidence: `session.error-rate-6h`, `handler.success-rate`,
    unresolved metric alerts, and unmeasured metrics.
 5. Run and cite `cd /app/agents && git status --short`. If you wrote no files, say so and
@@ -108,6 +109,15 @@ an explicit judgment. Do this before `finish()` whenever no fix/artifact is warr
 6. Stop after the checklist. Avoid ad hoc multi-file reads or speculative shell probes after
    the canned checks; they have caused malformed-tool and schema-error failures without
    adding value.
+
+## Stale-Blocker Feedback Handling
+If the inbox contains `learning.feedback` with `project_context/stale-blocker-loop` but the
+heartbeat's owned-project list only contains `closed` projects with explicit resume triggers,
+treat that feedback as already addressed by the project state: record the event as acted by
+this disposition, do not reopen or re-poll the closed project, and only create new project
+context when a concrete resume trigger has actually fired. If a non-closed project is named
+or the resume condition is missing, update that project context with the latest blocker
+evidence and a concrete resume condition before finishing.
 
 ## DB and Shell Query Discipline
 Aftermath reviews repeatedly flag avoidable heartbeat friction from schema and tooling
