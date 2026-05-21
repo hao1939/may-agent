@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 105
+iteration: 111
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -17,6 +17,27 @@ Build a durable map between AKS input space and expected behavior space, then us
 
 Execution evidence still matters, but it is no longer the whole project goal. First build the knowledge map from existing handwritten e2ev3 cases, RP/e2ev3 source, AKS public APIs/docs, and existing run artifacts. After the current coverage state is clear, move to the advanced phase: discover unreached or surprising regions of the input/expectation space where AKS RP quality can improve.
 
+## Strategy Checkpoint
+
+The project purpose is now stable:
+
+1. **Learn** feature intent from Go e2ev3 source, API/spec, user docs, design
+   notes, implementation references, and existing evidence.
+2. **Ground** each feature with a reference packet so pass/fail judgment has a
+   source-of-truth bundle.
+3. **Experiment** with tracked lightweight TypeScript probes that reflect the
+   learned intent and emit structured evidence.
+4. **Replan** only after learning and single-case probes are solid: generate
+   high-density run plans and TS probes that combine compatible cases into one
+   AKS cluster lifecycle.
+5. **Measure** whether replanning helps through scenario density, expectation
+   density, new knowledge yield, cluster amortization, run-hour efficiency, and
+   diagnostic cleanliness.
+
+Do not jump straight from the knowledge map to a large combined run. The next
+phase should prove that reference-backed TS probes can honestly reproduce one
+learned case before using generated scripts to combine multiple cases.
+
 ## Core Strategy
 - Treat AKS behavior as two connected spaces:
   - **Input space:** API shape, request path, feature flags, cluster/nodepool/add-on/security/network/profile settings, environment, and operation type.
@@ -26,10 +47,53 @@ Execution evidence still matters, but it is no longer the whole project goal. Fi
 - Existing handwritten e2ev3 cases are the primary source for feature inference. They were written by AKS developers, so each case likely encodes a meaningful product contract, historical bug, boundary, or customer scenario. Do not guess feature importance when a handwritten case can tell us what developers already cared about.
 - Public API/spec is the best source for understanding AKS input space: resources, properties, operations, request shapes, allowed values, mutability, and constraints.
 - Public docs are the best source for understanding expectation space: intended behavior, user-visible contract, lifecycle, prerequisites, validation rules, and operational outcomes.
+- When a case fails, classify whether it is a test/probe issue, implementation issue, environment issue, or source/doc mismatch before changing the capability model. Design docs, API docs/specs, and user docs are the contract sources for that decision; current probe output alone is not enough.
+- Each feature should collect a reference packet: design docs, API/spec, user docs, Go e2ev3 source, useful implementation references, existing evidence, and known contradictions. That packet is the ground truth bundle used when judging probe results.
 - Staging probes and RP source are supporting knowledge sources. Execution is the final authority for observed behavior, but source/docs are valid inputs for building candidate paths and coverage hypotheses.
 - Start with one selected feature and make the process solid before generalizing. ManagedSystem Pool is the first worked example because it already has REST, CLI, standalone e2ev3, staging, positive, negative, and boundary evidence. The process should then be reusable for other features: infer feature intent from handwritten tests, enumerate input space from API/spec, enumerate expectation space from docs/tests/source, map evidence, find gaps, and plan the next high-density probe.
 - Optimize future runs for coverage density: prefer tests that cover multiple important input/expectation paths in one run, or that resolve a high-uncertainty gap in the map.
 - Do the dark-side discovery only after the baseline map is credible: first know what we cover, then deliberately search the regions we never reached.
+
+## Execution Strategy
+
+Use Go e2ev3 as the source of product intent, not the only execution vehicle.
+The project should learn from handwritten Go cases, then build lightweight
+TypeScript probes that directly call the same underlying AKS surfaces and write
+structured evidence.
+
+Phases:
+- **Learning:** extract scenario intent from Go e2ev3 source, public API/docs,
+  and existing artifacts into the capability model.
+- **Experimenting:** save reviewable TypeScript probes that map one learned
+  case or branch to explicit API/CLI/kubectl actions and expectation checks.
+- **Replanning:** after the first two phases are solid, generate high-density
+  run plans and TS probes that combine compatible cases in one cluster lifecycle.
+
+Accepted run plans and probes should be tracked under `run-plans/` and
+`probes/`. Runtime evidence stays under `outputs/`. This keeps the system
+auditable: future agents can inspect what the probe intended, what it actually
+ran, and whether its coverage claim was honest.
+
+Execution strategy details live in `execution/README.md`.
+
+## Test Efficiency Metrics
+
+The replanning goal is to reduce total AKS test execution time by increasing
+useful coverage per cluster lifecycle, without making failures ambiguous.
+
+Track:
+- **Scenario density:** unique scenario contracts covered per cluster lifecycle.
+- **Expectation density:** unique expectation paths verified per cluster
+  lifecycle.
+- **New knowledge yield:** new pass/fail/blocked judgments per run.
+- **Cluster amortization:** baseline cluster CRUD count minus actual cluster
+  CRUD count.
+- **Run-hour efficiency:** verified expectation paths per cluster-hour.
+- **Diagnostic cleanliness:** whether failures map clearly to one branch or
+  make the combined run ambiguous.
+
+Do not optimize density alone. A combined run is valuable only if it preserves
+clear diagnosis and honest evidence.
 
 ## Selected Feature Focus
 Use ManagedSystem Pool as the pattern for later feature work. The point is not
@@ -56,94 +120,59 @@ agent pools, and later dark-side discovery.
 ## Signals
 - knowledge.input-space-modeled: current capability model has 35 AKS input variables.
 - knowledge.expectation-space-modeled: current capability model has 67 expectation variables.
-- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 68 test-case evidence mappings; current validator has 7 failing features, 16 unknown features, and 0 blocked features.
+- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 68 test-case evidence mappings; current validator has 7 failing features, 12 unknown features, and 2 blocked features.
 - knowledge.source-inventory-modeled: `outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
 - e2e.existing-cases-cataloged: `outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
 - knowledge.public-api-candidates-started: `outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active; `outputs/iteration105-machines-agentpool-api-crud-staging.md` completed the first Machines AgentPool API CRUD attempt as a **blocked/inconclusive staging baseline**. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+Active; `outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md` completed the source-shaped `Scenario_ImageCleaner` upgrade/restart survival probe. `image-cleaner-upgrade-restart-survival` is now pass in `outputs/e2e-capability-model.json`; the final validator exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 12 unknown features, and 2 blocked features.
 
-`outputs/iteration105-machines-agentpool-api-crud-staging.md` located and read the exact handwritten `Scenario_MachinesAgentPool` source, extracted the source baseline shape, API/version ambiguity, custom feature/header requirements, Machines-mode agent-pool request, Machine create/get/update/list/delete request shapes, UltraSSD positive and negative paths, and cleanup shape. Staging feature preflight showed `AKSHTTPCustomFeatures`, `VMsAgentPoolPreview`, and `VMsAgentPoolAutoscalePreview` registered. Two bounded `westus2` baseline cluster create attempts using `Standard_D2s_v4`, Azure CNI overlay, and the preview custom header failed before any Machines agent-pool or Machine API CRUD operation ran (`mc=Failed pools=agentpool0:Failed`); cleanup reached `az group exists=false` / `ResourceGroupNotFound` for both resource groups. No capability-model update was made; `machines-agentpool-api-crud` remains `unknown` rather than pass/fail.
+The Image Cleaner survival run used eastus2 `Standard_D4_v3`, Kubernetes `1.33.11` -> source-equivalent least next-minor `1.34.0`, `--enable-image-cleaner --image-cleaner-interval-hours 168`, and a normal/non-Automatic cluster so source stop/start restart was required. It passed ARM state and Kubernetes component assertions after create, after upgrade, and after stop/start; cleanup reached `ResourceGroupNotFound`. Earlier false starts were cleaned up and documented: one used the highest patch `1.34.7` before source preflight clarified least-patch target behavior, and one hit a stop/start sequencing race before final convergence polling was added.
 
-The next parser-visible task is `machines-agentpool-api-crud-eastus2-retry`. It should keep the same source-derived scope and non-goals but retry only after verifying no leftover `mach105-*` resource groups and selecting a source-compatible, known-good staging baseline (prefer `eastus2` with `Standard_D2s_v4`, which worked in iteration103, or e2ev3's dynamic `sku.DefaultClaim`/availability-zone selection). If the baseline cluster succeeds, run the bounded Machines agent-pool and Machine CRUD/UltraSSD sequence from iteration105. If baseline creation, API-version availability, direct Machines API PUT, or SKU/location preflight blocks again, update `outputs/iteration105-machines-agentpool-api-crud-staging.md` or write a follow-up blocker section with exact command/output evidence and cleanup status rather than pivoting.
+`outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md` remains pass for source-shaped `Scenario_Autoscaled_VMs_CRUD`; the run used generated-client/source-equivalent `2026-03-02-preview`, `AKSHTTPCustomFeatures=Microsoft.ContainerService/VMsAgentPoolAutoscalePreview`, eastus2 `Standard_D2s_v4`, Kubernetes `1.33.11` -> `1.34.7`, and default pool `autoscaleap` type `VirtualMachines`.
 
-`outputs/iteration103-workload-identity-windows-token-projection-staging.md` executed the bounded Windows branch of `Scenario_WorkloadIdentity` in staging and **passed**. Source preflight confirmed the create-time OIDC/WI cluster shape, Windows admin profile, `wpool` Windows2022 node-pool request, `DefaultWindowsClaim` SKU semantics, service-account annotation/federated-credential subject and audience, Windows ServerCore 2022 PowerShell pod, webhook mutation expectations, projected token path, OIDC/JWKS validation behavior, skip/gates, and cleanup shape. Staging created a disposable `eastus2` cluster/resource group, used `Standard_D2s_v4` after proving source fallback `Standard_D2s_v3` was unavailable in the subscription, added a Ready Windows node, scheduled the labeled Windows pod, proved injected `AZURE_*` env vars and projected token file from inside the Windows container, decoded issuer/audience/subject claims matching the cluster issuer and service account, and cleanup reached `group_exists=false`.
+`vpa-cert-renewal-runtime-staging` remains complete and explicitly blocked for exact source-equivalent closure in `outputs/iteration107-vpa-cert-renewal-runtime-staging.md`. Do not rerun it until an AKS build/chart/environment has `kube-system/vpa-webhook-tls-reconciler`, or a source-owner/source update confirms the legacy `overlay-vpa-cert-webhook-check` job is the intended cert-renewal path.
 
-The capability model now marks both `virtualmachines-mixed-sku-rest-scale` and `workload-identity-runtime-token-projection-windows` as `pass`, with Windows evidence `iteration103-workload-identity-windows-token-projection-staging`. The existing CLI comma multi-SKU add/help mismatch remains a separate `fail`; OIDC signing-key rotation, VPA cert/upgrade branches, bootstrap profile lifecycle, App Routing Istio/TLS lifecycle, ManagedSystem residual runtime/constraints/reconcile, Autoscaled VMs CRUD/upgrade, Machines/NAP default pool cleanup, Node Restriction tag-only PATCH, and Image Cleaner upgrade/restart survival remain unknown non-goals until selected.
+`machines-agentpool-api-crud` remains blocked on missing staging subscription features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview`; do not rerun Machines CRUD or select NAP default Machines pool cleanup until those features are registered in subscription `26fe00f8-9173-4872-9134-bb1d2e00343a` or an equivalent source environment is provided.
 
-The selected next task may run staging only after the Machines source/API preflight is complete and source-equivalent. It must not combine NAP default Machines pool cleanup, VirtualMachines autoscaled VMs CRUD/upgrade, CLI comma-multi-SKU revalidation, App Routing TLS/Istio, ManagedSystem migration-positive/residuals, OIDC signing-key rotation, VPA cert/upgrade, Image Cleaner upgrade/restart, bootstrap ACR lifecycle, or unrelated probes.
+`outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md` completed the Image Cleaner survival execution task selected by iteration110. Preserve existing gates for VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH; do not rerun Image Cleaner survival unless source semantics or the target environment materially change.
 
-The latest completed OIDC artifact remains `outputs/iteration99-oidc-v133-explicit-enable-staging.md`. It executed the source-gated `Scenario_OIDC_Issuer_v133` branch in staging and **passed**: Kubernetes `1.33` started with OIDC disabled, a source-equivalent ARM full PUT enabled OIDC, discovery returned HTTP `200` with issuer/JWKS URI/RS256 shape, JWKS returned HTTP `200` with two RSA signing keys, and both disposable resource groups reached `ResourceGroupNotFound`. The capability model marks `oidc-issuer-v133-explicit-enable-runtime` pass; OIDC signing-key rotation remains a separate unknown/non-goal.
+## Current Phase
 
-The latest completed OIDC cleanup artifact is `outputs/iteration97-oidc-post-delete-cleanup-staging.md`. It executed the source-gated OIDC default-enabled post-delete issuer cleanup probe in staging and passed: Kubernetes `1.34` defaulted OIDC enabled, discovery/JWKS were reachable before delete, source-equivalent no-wait delete requests succeeded, discovery/JWKS returned HTTP `404 WebContentNotFound` about 5m49s after delete start, and cleanup reached `ResourceGroupNotFound`.
+Image Cleaner survival is complete. The next project move should not be another
+cloud probe by default. The next phase is to make the new execution strategy
+real with one reference-backed, reviewable TypeScript probe path.
 
-The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
+Recommended first experiment:
 
-Resume-menu item 2 remains complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
+1. Build a stable feature reference packet for ManagedSystem Pool, using the
+   existing ManagedSystem feature-standard artifacts as the draft source.
+2. Create a reviewable single-case run plan under `run-plans/`.
+3. Create an executable TypeScript probe under `probes/` that maps directly to
+   the reference packet and declares its failure-diagnosis rules.
+4. Run the probe when preflight is clean, then review whether the process and
+   result honestly reflect the learned Go test intent.
 
-The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, while Machines AgentPool API CRUD remains the selected execution branch after the westus2 baseline-create blocker; next progress should be a bounded eastus2/dynamic-SKU retry, not a feature pivot.
+Human review is asynchronous. Agents should leave reviewable artifacts, but
+they should not stop for review between plan/probe generation and execution.
+If local/reference/environment preflight is clean, continue into execution,
+evidence capture, cleanup, and self-review. If preflight or execution is
+blocked, record the blocker and cleanup status instead of waiting silently.
 
-## Owner Review of Latest Comments
-- Reviewed `discussion.md`; the tail after the last read marker contained no newer human instruction after `---read @iter103---`.
-- The stale-state concern remains addressed: App Routing TLS has an explicit gated tracker; VPA residual runtime, Image Cleaner vulnerable-image erasure, OIDC post-delete cleanup, OIDC v1.33 explicit-enable runtime, post-OIDC unknown selection, VirtualMachines mixed-SKU REST scale, Workload Identity Windows token projection, and post-Windows unknown selection are complete.
-- ManagedSystem migration-positive and App Routing TLS remain gated; neither should be retried blindly. The latest Machines AgentPool attempt produced a source/API preflight artifact plus a westus2 baseline-create blocker; the next non-gated work is a bounded eastus2/dynamic-SKU retry of the same Machines branch after confirming no leftover `mach105-*` resource groups.
-
-## Review Questions
-
-1. **Is the goal closer?**  
-   Yes. Iteration105 converted the Machines AgentPool unknown from a selected branch into a source-mapped, partially executed staging attempt with exact preflight, request shapes, run scripts, two baseline-create failures, and cleanup evidence. The Machine CRUD contract is still unproven, but the next retry is much narrower.
-
-2. **What did we learn?**  
-   `Scenario_MachinesAgentPool` uses a VMSS system pool plus Machines pools, Azure CNI overlay, `mode=Machines`-only pool PUTs, Machine create/get/update/list/delete, a positive UltraSSD machine, and a negative UltraSSD error substring. The known preview features are registered in staging, but two `westus2`/`Standard_D2s_v4` baseline creates failed at `mc=Failed pools=agentpool0:Failed` before Machines API calls.
-
-3. **Is the current milestone the right next step?**  
-   Yes, but refined: keep Machines AgentPool API CRUD as the selected branch and retry with a known-good `eastus2` or dynamic e2ev3 SKU/location baseline instead of pivoting to another unknown.
-
-4. **Are we closing the loop?**  
-   Yes. `machines-agentpool-api-crud-staging` now has a blocker/inconclusive artifact and should be marked done for this attempt; `project.md` contains a new pending parser-visible retry task scoped to the same Machines branch.
-
-5. **Is it verified?**  
-   Yes. `outputs/iteration105-machines-agentpool-api-crud-staging.md` records the source reads, staging feature registration, run workdirs, baseline create commands, `mc=Failed pools=agentpool0:Failed`, and cleanup. A local validator preflight exited 0; no model edit was made.
-
-6. **What’s blocking progress?**  
-   The project as a whole is not blocked. The current blocker is a staging baseline cluster provisioning failure in `westus2`; resume by retrying only the same Machines branch in a better baseline environment/SKU and recording exact cleanup evidence if it blocks again.
-
-## Resume Menu (ranked)
-
-1. **Retry Machines AgentPool API CRUD with a known-good baseline.**  
-   Start from `outputs/iteration105-machines-agentpool-api-crud-staging.md` and the reusable scripts in `agents/aks-explorer/workspace/iteration105-machines-probe*.sh`. First verify no leftover `mach105-*` resource groups. Then adjust only the baseline environment/SKU selection (prefer `eastus2` with `Standard_D2s_v4`, or use e2ev3 dynamic `sku.DefaultClaim`/availability-zone logic) and rerun the same bounded Machines branch. If the cluster reaches `Succeeded`, continue with source-shaped `machinesap0`/`machinesap1`, Machine create/get/update/list/delete, UltraSSD positive/negative checks, Machines pool delete, cleanup, and model update only on a clear verdict.
-
-2. **If the retry blocks, update the blocker evidence rather than pivoting.**  
-   If baseline creation, source API-version equivalence, custom feature/header availability, Machine API PUT, UltraSSD SKU/location availability, or cleanup blocks again, append/update `outputs/iteration105-machines-agentpool-api-crud-staging.md` (or create a follow-up iteration artifact) with exact command/output evidence, resource group names, and cleanup status. Do not silently pivot to NAP, VirtualMachines autoscaled CRUD, or another branch.
-
-3. **Keep completed identity/OIDC branches separate.**  
-   Do not re-run Windows token projection, Linux token projection, OIDC post-delete cleanup, OIDC v1.33 explicit-enable, or Workload Identity disable/re-enable lifecycle unless a future selection artifact explicitly justifies a new gap. OIDC signing-key rotation remains a separate unknown with unclear trigger.
-
-4. **Keep related VirtualMachines/Machines branches separate.**  
-   `virtualmachines-mixed-sku-rest-scale` is complete. Treat `virtualmachines-autoscaled-vms-crud`, Machines NAP default pool cleanup, and CLI comma-multi-SKU revalidation as separate candidates with their own cost/risk.
-
-5. **Do not run gated branches blindly.**  
-   ManagedSystem migration-positive and App Routing TLS/Istio require their documented gate changes before rerun; VPA/Image Cleaner upgrade survival and bootstrap ACR lifecycle should be selected only when their cost/risk is explicitly accepted.
-
-## Decision
-
-`outputs/iteration105-machines-agentpool-api-crud-staging.md` is complete as a blocked/inconclusive first attempt. Keep Machines AgentPool API CRUD selected, but proceed with the parser-visible `machines-agentpool-api-crud-eastus2-retry` task rather than redoing source discovery or pivoting.
-
-## (a) Concrete output
-
-`outputs/iteration105-machines-agentpool-api-crud-staging.md` is the completed source/preflight plus westus2 baseline-blocker artifact. `project.md` now contains a pending retry task for `machines-agentpool-api-crud-eastus2-retry`.
-
-## (b) What’s different
-
-The previous state had only selected Machines AgentPool API CRUD. The project now has source-derived request/expectation details, reusable probe scripts, two failed `westus2` baseline-create attempts, confirmed cleanup, and a narrower retry path using a better baseline location/SKU.
-
-## (c) First step on resume
-
-Read this `## Current State`, then read `outputs/iteration105-machines-agentpool-api-crud-staging.md` and inspect `agents/aks-explorer/workspace/iteration105-machines-probe-v2.sh`. Verify `az group exists` is `false` for the previous `mach105-*` resource groups, adjust the script to `eastus2` or e2ev3 dynamic SKU/location selection, run only the same Machines branch, and update the artifact/model only on clear evidence.
+This keeps the project on the agreed phase order: learn -> ground -> experiment
+-> replan.
 
 ## Linked Context
+- `execution/README.md` — phased learning/experimenting/replanning strategy for TS probes
+- `features/README.md` — stable feature reference-packet directory
+- `run-plans/README.md` — tracked reviewable run-plan directory
+- `probes/README.md` — tracked TypeScript probe directory
+- `probe-lib/README.md` — shared helper library directory for probes
+- `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
+- `run-plans/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
+- `probes/managedsystem-rest-add-existing.ts` — executable reference-backed probe
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
 - `tasks/managedsystem-pool/wave-01-feature-standard.yaml` — ManagedSystem Pool parallel feature-standard task wave
 - `outputs/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
@@ -223,8 +252,8 @@ Read this `## Current State`, then read `outputs/iteration105-machines-agentpool
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 52 judgments, 40 evidence references.
-- Current feature status: 39 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 16 unknown, 0 blocked.
+- Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 54 judgments, 43 evidence references.
+- Current feature status: 41 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 12 unknown, 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`).
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -235,16 +264,60 @@ Read this `## Current State`, then read `outputs/iteration105-machines-agentpool
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Execute `machines-agentpool-api-crud-eastus2-retry` and keep the same Machines AgentPool API CRUD branch selected. Start from `outputs/iteration105-machines-agentpool-api-crud-staging.md`, the reusable `agents/aks-explorer/workspace/iteration105-machines-probe-v2.sh`, and the current validated `outputs/e2e-capability-model.json`.
+Prepare the first reference-backed TS probe experiment, using ManagedSystem Pool
+as the worked feature. Produce:
 
-Before any new mutation, verify the prior `mach105-*` resource groups are gone. Then adjust only the baseline location/SKU selection (prefer `eastus2` with `Standard_D2s_v4`, or e2ev3 dynamic `sku.DefaultClaim`/availability-zone logic) and rerun the same source-shaped sequence. If baseline create succeeds, run `machinesap0`/`machinesap1`, Machine create/get/update/list/delete, UltraSSD positive/negative paths, cleanup, model update only on clear pass/fail evidence, and validator. If baseline/API/Machine/UltraSSD/cleanup blocks again, update the iteration105 artifact or write a follow-up blocker with exact commands and cleanup status.
+- `features/managedsystem-pool.yaml` or equivalent tracked reference packet,
+- one reviewable `run-plans/managedsystem-*.yaml`,
+- one executable `probes/managedsystem-*.ts` with the required probe header,
+  source references, contract references, coverage claims, and failure
+  diagnosis rules,
+- one execution evidence artifact under `outputs/`,
+- one self-review artifact explaining whether the probe process/result honestly
+  reflected the learned Go test intent.
 
-Do not combine this with NAP default Machines pool cleanup, VirtualMachines autoscaled VMs CRUD/upgrade, CLI comma-multi-SKU revalidation, App Routing TLS/Istio, ManagedSystem migration-positive/residuals, OIDC signing-key rotation, VPA cert/upgrade, Image Cleaner upgrade/restart, bootstrap ACR lifecycle, or unrelated probes.
+The agent does not need to stop for human review. It should run the probe after
+local/reference preflight succeeds. If credentials, capacity, API availability,
+or environment gates block execution, record a precise blocker and cleanup
+status instead of waiting silently.
+
+Known gates still apply: do not rerun VPA cert renewal until
+`vpa-webhook-tls-reconciler` exists or source clarifies the legacy job path; do
+not rerun Machines CRUD or NAP default Machines cleanup until
+`PutMachinePreview` and `DeleteSpecificMachinesPreview` are registered or an
+equivalent source environment is available; do not blind-rerun App Routing
+TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, or Node
+Restriction tag-only PATCH without their documented triggers.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
+### 2026-05-21 — Post-VirtualMachines autoscaled selection picked Image Cleaner survival
+- `outputs/iteration110-post-vmauto-unknown-selection.md` completed the local-only post-iteration109 selection loop. The validator exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 13 unknown features, and 2 blocked features.
+- The selection preserved blockers/gates for VPA cert renewal, Machines/Machine API/NAP cleanup, App Routing TLS/Istio, ManagedSystem branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH.
+- The selected next parser-visible task is `image-cleaner-upgrade-restart-survival-staging`, scoped to `image-cleaner-upgrade-restart-survival` with source preflight required before any cloud mutation and explicit non-goals for VPA/KEDA, bootstrap, identity/OIDC, VirtualMachines, Machines/NAP, App Routing, ManagedSystem, Node Restriction, and unrelated probes.
+
+### 2026-05-21 — Image Cleaner survival passed; shifted to TS probe strategy
+- `outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md` completed the Image Cleaner upgrade/restart survival probe and updated `image-cleaner-upgrade-restart-survival` to pass.
+- The capability-model validator exits 0 with 35 input variables, 67 expectation variables, 62 features, 41 pass, 7 fail, 12 unknown, and 2 blocked.
+- The next project phase is not another immediate cloud probe. It is to create the first reference-backed, reviewable TS probe path so later replanning can safely combine compatible cases into fewer AKS cluster lifecycles.
+
+### 2026-05-21 — VirtualMachines autoscaled VMs CRUD/upgrade passed
+- `outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md` completed the source-shaped `Scenario_Autoscaled_VMs_CRUD` probe. Source preflight found the plan has no `AKSAPIVersion()` override, so generated `awesome` clients use `2026-03-02-preview`; a false start with `2026-03-01` rejected `autoscale` as an unknown field and was cleaned up.
+- Successful staging run used eastus2, `Standard_D2s_v4`, Kubernetes `1.33.11` -> `1.34.7`, feature header `Microsoft.ContainerService/VMsAgentPoolAutoscalePreview`, default pool `autoscaleap` type `VirtualMachines`, autoscale update `1-3` then `3-5`, and ManagedCluster PUT upgrade. The final ARM state preserved autoscale `min=3/max=5`, nodeStatus count `3`, MC/AP versions `1.34.7`, and all three Kubernetes nodes were Ready with kubelet `v1.34.7`; cleanup reached `az group exists=false`.
+- `outputs/e2e-capability-model.json` now marks `virtualmachines-autoscaled-vms-crud` pass and validator exits 0 with 7 failing, 13 unknown, and 2 blocked features. Superseded by iteration110: the next action is Image Cleaner upgrade/restart survival preflight/probe, not another immediate VirtualMachines rerun.
+
+### 2026-05-21 — Selected VPA certificate renewal after Machines blocker
+- `outputs/iteration106-post-machines-blocker-unknown-selection.md` completed local-only post-Machines ranking. It ran the project validator successfully and recorded 7 failing, 15 unknown, and 1 blocked feature.
+- `machines-agentpool-api-crud` remains blocked on missing `Microsoft.ContainerService/PutMachinePreview` and `DeleteSpecificMachinesPreview` in staging subscription `26fe00f8-9173-4872-9134-bb1d2e00343a`; do not rerun Machines CRUD or NAP default Machines cleanup until those features or an equivalent source environment are available.
+- The selected next parser-visible task is `vpa-cert-renewal-runtime-staging`, scoped to `workload-autoscaler-vpa-cert-renewal-runtime` with source preflight required before any cloud mutation and explicit non-goals for upgrade survival, KEDA, Image Cleaner, VirtualMachines, bootstrap, identity/OIDC, App Routing, ManagedSystem, Machines, NAP, and Node Restriction.
+
+### 2026-05-21 — Machines AgentPool eastus2 retry blocked by Machine preview feature registration
+- `outputs/iteration105-machines-agentpool-api-crud-staging.md` now includes an iteration106 follow-up: no leftover `mach105-*` groups existed, eastus2/`Standard_D2s_v4` baseline cluster creation succeeded, `2026-05-02-preview` direct ARM was unavailable, and `2026-03-02-preview` Machines pool create succeeded with `mode=Machines`/`type=VirtualMachines`.
+- The first Machine PUT then failed with `PutMachinePreview` NotRegistered; fresh feature preflight also showed `DeleteSpecificMachinesPreview` NotRegistered. Both retry resource groups reached `ResourceGroupNotFound`.
+- `outputs/e2e-capability-model.json` now marks `machines-agentpool-api-crud` as blocked with evidence `iteration105-machines-agentpool-eastus2-retry-blocked`; validator exits 0 with 7 failing, 15 unknown, and 1 blocked feature. The next task is local `post-machines-blocker-unknown-selection`, not a blind Machines rerun.
+
 ### 2026-05-20 — Machines AgentPool API CRUD first attempt blocked at westus2 baseline
 - `outputs/iteration105-machines-agentpool-api-crud-staging.md` completed the source/API/custom-feature preflight and extracted the `Scenario_MachinesAgentPool` contract: VMSS system baseline, Machines pools, Machine create/get/update/list/delete, UltraSSD positive and negative paths, and cleanup shape.
 - Two `westus2` staging baseline creates failed before any Machines API call (`mc=Failed pools=agentpool0:Failed`); both `mach105-*` resource groups were verified deleted (`az group exists=false` / `ResourceGroupNotFound`).
@@ -347,7 +420,13 @@ Do not combine this with NAP default Machines pool cleanup, VirtualMachines auto
 29. ✅ Select the next post-VirtualMachines non-gated model unknown
 30. ✅ Execute Workload Identity Windows token projection with source-gated staging evidence
 31. ✅ Select the next post-Windows non-gated model unknown
-32. ▶️ Execute Machines AgentPool API CRUD with source/API-version-gated staging evidence
+32. ⚠️ Execute Machines AgentPool API CRUD with source/API-version-gated staging evidence — blocked on Machine preview feature registration
+33. ✅ Select the next non-gated unknown after the Machines feature-registration blocker
+34. ⚠️ Execute VPA certificate renewal runtime with source-gated staging evidence — blocked on missing source TLS-manager CronJob in staging
+35. ✅ Select the next non-gated unknown after the VPA cert-renewal source-equivalence blocker
+36. ✅ Execute VirtualMachines autoscaled VMs CRUD/upgrade with source-gated staging evidence
+37. ✅ Execute Image Cleaner upgrade/restart survival with source-gated staging evidence
+38. 🔄 Create, run, and self-review the first reference-backed TypeScript probe path
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -664,11 +743,66 @@ Do not combine this with NAP default Machines pool cleanup, VirtualMachines auto
   attempts: 2
 
 - id: machines-agentpool-api-crud-eastus2-retry
-  result: null
-  status: ready
+  result: failed
+  status: done
   assignee: aks-explorer
   goal: "Retry the same Machines AgentPool API CRUD branch after outputs/iteration105-machines-agentpool-api-crud-staging.md blocked at westus2 baseline cluster creation before any Machines API calls. Start from outputs/iteration105-machines-agentpool-api-crud-staging.md and agents/aks-explorer/workspace/iteration105-machines-probe-v2.sh. First verify no leftover mach105-* resource groups from iteration105. Reuse the source-derived Scenario_MachinesAgentPool request/expectation shapes and non-goals; do not redo broad selection. Adjust only the baseline environment/SKU selection, preferring eastus2 with Standard_D2s_v4 (known-good from iteration103) or e2ev3 dynamic sku.DefaultClaim/availability-zone logic. If the baseline cluster reaches Succeeded, execute the bounded source-shaped Machines sequence: source initial machinesap0 if needed, plan-created machinesap1, Machine create/get/update/list/delete, UltraSSD positive and negative path, Machines agent-pool delete, cleanup, and verdict table. Update outputs/e2e-capability-model.json only if machines-agentpool-api-crud gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If baseline creation, source API-version equivalence, custom headers/features, Machine API, UltraSSD SKU/location, or cleanup blocks again, append/update outputs/iteration105-machines-agentpool-api-crud-staging.md or create a follow-up artifact with exact command/output evidence and cleanup status instead of pivoting. Do not combine with machines-agentpool-nap-default-pool-cleanup, virtualmachines-autoscaled-vms-crud, VirtualMachines CLI comma multi-SKU revalidation, OIDC, ManagedSystem, App Routing, bootstrap, VPA, Image Cleaner, or unrelated probes."
   depends_on: [machines-agentpool-api-crud-staging]
+  attempts: 1
+
+- id: post-machines-blocker-unknown-selection
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration106-post-machines-blocker-unknown-selection.md selecting the next responsible non-gated model-unknown branch after Machines AgentPool API CRUD became blocked on missing Machine preview subscription features. Start from outputs/iteration105-machines-agentpool-api-crud-staging.md (including the iteration106 eastus2 retry follow-up), outputs/iteration104-post-wi-windows-unknown-selection.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and outputs/e2e-capability-model.json. Run the local capability-model validator and use the current lists of failing, blocked, and unknown features. Rank remaining viable unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, gating status, and expected model update. Treat machines-agentpool-api-crud as blocked until Microsoft.ContainerService/PutMachinePreview and Microsoft.ContainerService/DeleteSpecificMachinesPreview are registered or an equivalent source environment is provided; do not select a blind Machines rerun. End with either one concrete parser-visible execution task for the selected branch or a waiting/blocked project-state recommendation with explicit resume condition. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [machines-agentpool-api-crud-eastus2-retry]
+  attempts: 1
+
+- id: vpa-cert-renewal-runtime-staging
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Execute the VPA certificate renewal runtime staging probe selected by outputs/iteration106-post-machines-blocker-unknown-selection.md. Start from outputs/iteration106-post-machines-blocker-unknown-selection.md, outputs/iteration93-vpa-residual-runtime-staging.md, outputs/iteration79-vpa-runtime-model-split.md, outputs/iteration78-workload-autoscaler-runtime-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, run the local validator and confirm from devbox source the exact Scenario_Overlay_VPA cert-renewal branch/handler, Kubernetes version/cloud/OS/arch gates, VPA addon input shape, custom feature requirements if any, VPA webhook/secret names and labels, initial certificate shape, cert mutation payload, wait budgets, polling intervals, expected renewal/recovery criteria, post-renewal VPA deployment/webhook/workload checks, and cleanup shape. Then create only the minimal source-compatible VPA-enabled staging resources, execute the bounded cert-renewal mutation and wait loop, capture ARM state, Kubernetes secret/cert evidence before and after mutation, VPA deployment/webhook health, cleanup status, and produce outputs/iteration107-vpa-cert-renewal-runtime-staging.md with a verdict table. Update outputs/e2e-capability-model.json only if workload-autoscaler-vpa-cert-renewal-runtime gets clear pass/fail/blocker evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If source semantics, version gates, permissions, or staging capacity block a source-equivalent run, write a blocker artifact instead of changing scope. Do not combine with VPA upgrade survival, KEDA, Image Cleaner upgrade/restart, VirtualMachines autoscaled upgrade, bootstrap ACR lifecycle, Workload Identity/OIDC, App Routing, ManagedSystem, Machines, NAP, Node Restriction, or unrelated probes."
+  depends_on: [post-machines-blocker-unknown-selection]
+  attempts: 1
+
+- id: post-vpa-blocker-unknown-selection
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration108-post-vpa-blocker-unknown-selection.md selecting the next responsible non-gated model-unknown branch after VPA certificate renewal became blocked on missing source TLS-manager CronJob / source clarification. Start from outputs/iteration107-vpa-cert-renewal-runtime-staging.md, outputs/iteration106-post-machines-blocker-unknown-selection.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and outputs/e2e-capability-model.json. Run the local capability-model validator and use the current failing, blocked, and unknown feature lists. Rank remaining viable unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, gating status, and expected model update. Treat workload-autoscaler-vpa-cert-renewal-runtime as blocked until vpa-webhook-tls-reconciler exists or source clarification is provided; treat machines-agentpool-api-crud as blocked until PutMachinePreview and DeleteSpecificMachinesPreview are registered or equivalent environment is provided. End with one concrete parser-visible execution task or a waiting/blocked recommendation. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [vpa-cert-renewal-runtime-staging]
+  attempts: 1
+
+- id: virtualmachines-autoscaled-vms-crud-staging
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Execute the VirtualMachines autoscaled VMs CRUD and upgrade staging probe selected by outputs/iteration108-post-vpa-blocker-unknown-selection.md. Start from outputs/iteration108-post-vpa-blocker-unknown-selection.md, outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration65-virtualmachines-multisku-contract.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, run the local validator and confirm from devbox source the exact Scenario_Autoscaled_VMs_CRUD steps, baseline cluster/pool shape, API versions and/or CLI flags, request bodies, VM size/location/zone constraints, autoscale profile update sequence, persisted virtualMachinesProfile/profile/node assertions, source upgrade target logic, wait budgets, skip conditions, custom features/API availability checks, cleanup shape, and source-required health checks. Then create only the minimal source-equivalent staging resources, execute the bounded autoscale update sequence and source-required upgrade branch, capture request/response bodies, ARM state, profile/node assertions before and after upgrade, cleanup status, and produce outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md with a verdict table. Update outputs/e2e-capability-model.json only if virtualmachines-autoscaled-vms-crud gets clear pass/fail/blocker evidence, then run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json. If source/API-version/SKU/capacity/upgrade preflight blocks a source-equivalent run, write a blocker artifact instead of changing scope. Do not combine with Machines API CRUD, NAP default Machines pool cleanup, VirtualMachines CLI comma multi-SKU revalidation, completed mixed-SKU/manual/CLI checks beyond source-required setup sanity, OIDC/Workload Identity, App Routing, ManagedSystem, bootstrap, Image Cleaner, VPA/KEDA, Node Restriction, or unrelated probes."
+  depends_on: [post-vpa-blocker-unknown-selection]
+  attempts: 1
+
+- id: post-vmauto-unknown-selection
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration110-post-vmauto-unknown-selection.md selecting the next responsible non-gated model-unknown branch after outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md moved virtualmachines-autoscaled-vms-crud to pass. Start from outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, outputs/iteration108-post-vpa-blocker-unknown-selection.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, and outputs/input-expectation-knowledge-map.md. Run the local capability-model validator and rank remaining viable unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, access, gates, and expected model update. Preserve existing blockers and gates for VPA cert renewal, Machines/Machine API/NAP cleanup, App Routing TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task. End with one parser-visible execution task or a precise blocked/waiting recommendation."
+  depends_on: [virtualmachines-autoscaled-vms-crud-staging]
+  attempts: 1
+
+- id: image-cleaner-upgrade-restart-survival-staging
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Execute the Image Cleaner upgrade/restart survival staging probe selected by outputs/iteration110-post-vmauto-unknown-selection.md. Start from outputs/iteration110-post-vmauto-unknown-selection.md, outputs/iteration86-image-cleaner-runtime-source-gated-staging.md, outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, run the local validator and confirm from devbox source the exact Scenario_ImageCleaner step order, source-required versus source-skipped survival branches, Kubernetes version and upgrade target logic, restart/stop-start semantics, skip conditions, Image Cleaner enablement shape, interval value, feature/header/API requirements, expected ARM persisted state, component/resource assertions after create/upgrade/restart, whether vulnerable-image erasure is rechecked after survival, wait budgets, failure classification, and cleanup shape. Then create only the minimal source-equivalent staging resources, execute the bounded source upgrade branch and restart/stop-start branch only if source-supported, capture request/response bodies, ARM state, Kubernetes/resource assertions, wait outcomes, cleanup status, and produce outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md with a verdict table. Update outputs/e2e-capability-model.json only if image-cleaner-upgrade-restart-survival gets clear pass/fail/blocker evidence, then run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json. If source semantics, feature/API/version availability, SKU/capacity, restart/stop-start support, or cleanup blocks a source-equivalent run, write a blocker artifact instead of changing scope. Do not combine with VPA/KEDA, bootstrap, identity/OIDC, VirtualMachines, Machines/NAP, App Routing, ManagedSystem, Node Restriction, or unrelated probes."
+  depends_on: [post-vmauto-unknown-selection]
+  attempts: 1
+
+- id: managedsystem-reference-backed-ts-probe
+  status: running
+  assignee: aks-explorer
+  goal: "Create, execute, and self-review the first reference-backed TypeScript probe experiment. Use ManagedSystem Pool as the worked feature. Start from execution/README.md, features/README.md, run-plans/README.md, probes/README.md, outputs/managedsystem-pool-feature-standard.md, outputs/managedsystem-pool-feature-intent.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-evidence-state-matrix.md, outputs/managedsystem-pool-repro-pack.md, outputs/managedsystem-pool-related-context.md, outputs/e2e-capability-model.json, and the relevant Go e2ev3 source references already captured in the ManagedSystem artifacts. Produce a stable feature reference packet under features/, one reviewable run plan under run-plans/, and one executable TypeScript probe under probes/. The probe header must cite source Go paths, design/API/user-doc references or explicitly mark missing references, feature IDs, input paths, expectation paths, allowed execution surfaces, expected cluster lifecycle count, evidence outputs, and failure-diagnosis rules. After local/reference preflight succeeds, run the probe. Produce execution evidence under outputs/ and a self-review artifact explaining whether the probe process and result honestly reflected the learned Go test intent. If credentials, capacity, API availability, or environment gates block execution, record precise blocker evidence and cleanup status instead of waiting for human review."
+  depends_on: [image-cleaner-upgrade-restart-survival-staging]
   attempts: 0
 
 ## References
@@ -696,11 +830,19 @@ Do not combine this with NAP default Machines pool cleanup, VirtualMachines auto
 - Feature candidates should be selected subsets/intersections of input and expectation space, preferably anchored by solid developer-written e2ev3 checks.
 - Existing handwritten e2ev3 cases should be deep-dived and mapped into the feature matrix before being treated as the next run queue or before inventing new candidates from docs.
 - ManagedSystem Pool should become the first complete example of the boundary-mapping method before the method is applied broadly.
+- Feature pass/fail judgment should cite a feature reference packet or explicitly explain which ground-truth references are missing.
+- TypeScript probes and run plans must be reviewable, but they should not wait
+  for human approval by default. Agents should self-check preflight, execute
+  when safe, and then review whether the process/result honestly reflected the
+  source intent.
+- Replanning should optimize scenario/expectation density only after single-case TS probes prove they can produce honest structured evidence.
 - Dark-side discovery starts only after the baseline map can explain current coverage and name the important unknowns.
 
 ## Comments
 
 ## Artifacts
+- outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md
+- outputs/iteration106-post-machines-blocker-unknown-selection.md
 - outputs/iteration104-post-wi-windows-unknown-selection.md
 - outputs/iteration103-workload-identity-windows-token-projection-staging.md
 - outputs/iteration102-post-virtualmachines-unknown-selection.md
