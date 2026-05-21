@@ -103,3 +103,19 @@ Result: all three metrics returned `has_query=0`, `has_command=0`, and `current=
 ## Next Step
 
 Dev should either add a proper metric measurement path for `session.empty-assistant-stop-count-1h` plus the terminal-tool-use sibling class, or open an approved work item for the runtime owner if transcript-level detection cannot be implemented from the metric snapshotter alone.
+
+## 2026-05-21 Follow-up: Runtime Edge Reproduced as False-Done Session
+
+Evaluator routed a dev review request for May heartbeat `s_1779313236534_25`: the transcript ends with an assistant row whose text is empty and whose `stopReason` is `toolUse`, but no actual `toolCall` block follows. The session row and `session.end` event were still recorded as `status='done'`, `error=NULL`, `finishParams=NULL`, and summary text inherited from an earlier assistant turn (`"System is healthy... Let me check..."`).
+
+Evidence checked this heartbeat:
+
+- `agents/evaluator/workspace/aftermath/s_1779313236534_25.md` assigns dev a runtime/guard finding for the empty terminal `toolUse` turn recorded as done.
+- `sed -n '1,12p' .state/sessions/history/s_1779313236534_25/session.jsonl` showed the terminal assistant entry has `content:[{"type":"text","text":""}]`, `stopReason:"toolUse"`, and no tool call block.
+- `query_db` on `events` for `s_1779313236534_25` showed `session.end` had `finishParams:null`, `status:"done"`, and summary copied from the prior non-empty assistant text.
+- `query_db` on `sessions` showed the canonical row as `status='done'`, `error=NULL`, `outcome='done'`, `opCount=3`.
+- Current runtime code in `projects/platform/repos/may-agent/src/lib/manager.ts` only sets `errorText = "Agent ended without producing a response"` when there is no `finishParams` and no non-empty assistant text anywhere in the transcript. Because `extractLastAssistantText()` scans backward past the empty terminal assistant row, a stale earlier text masks the empty terminal provider contract violation.
+
+Current impact is not active in the last six-hour window (`status='error' AND error IS NULL` count is `0`), but the active health metrics `session.empty-assistant-stop-count-1h`, `session.first-turn-error-count-1h`, and `session.provider-error-count-1h` still have neither `source_query` nor `source_command`, so they remain poor regression detectors for this class.
+
+Recommended runtime-owner fix: before falling back to prior assistant text, inspect the final assistant message. If the final assistant has `stopReason='toolUse'` but contains no `toolCall` block, treat the session as a provider/runtime contract error (or retry once) instead of `done`. If the final assistant has only empty text with `stopReason='stop'`, keep the existing empty-assistant retry/error behavior. Add a regression test using the `s_1779313236534_25` shape: earlier assistant text, schema-error tool result, then empty terminal `toolUse` assistant with no tool call must not persist `status='done'` or emit a successful `session.end`.
