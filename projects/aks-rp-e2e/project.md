@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 98
+iteration: 105
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -56,83 +56,92 @@ agent pools, and later dark-side discovery.
 ## Signals
 - knowledge.input-space-modeled: current capability model has 35 AKS input variables.
 - knowledge.expectation-space-modeled: current capability model has 67 expectation variables.
-- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 66 test-case evidence mappings; current validator has 7 failing features, 19 unknown features, and 0 blocked features.
+- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 68 test-case evidence mappings; current validator has 7 failing features, 16 unknown features, and 0 blocked features.
 - knowledge.source-inventory-modeled: `outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
 - e2e.existing-cases-cataloged: `outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
 - knowledge.public-api-candidates-started: `outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active; the post-OIDC local selection task is complete and the project has advanced to the next bounded non-gated execution branch. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
+Active; `outputs/iteration105-machines-agentpool-api-crud-staging.md` completed the first Machines AgentPool API CRUD attempt as a **blocked/inconclusive staging baseline**. The legacy `aks-rp-e2e-iteration` workflow remains superseded; do not restart it.
 
-`outputs/iteration98-post-oidc-unknown-selection.md` ranked the remaining 19 model unknowns after the OIDC post-delete pass and selected **OIDC v1.33 explicit-enable discovery/JWKS runtime** (`oidc-issuer-v133-explicit-enable-runtime`) as the next branch. The selection was local only: no staging, `az`, `kubectl`, cluster creation, or cloud probe was run. A fresh capability-model validator run during this owner loop exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
+`outputs/iteration105-machines-agentpool-api-crud-staging.md` located and read the exact handwritten `Scenario_MachinesAgentPool` source, extracted the source baseline shape, API/version ambiguity, custom feature/header requirements, Machines-mode agent-pool request, Machine create/get/update/list/delete request shapes, UltraSSD positive and negative paths, and cleanup shape. Staging feature preflight showed `AKSHTTPCustomFeatures`, `VMsAgentPoolPreview`, and `VMsAgentPoolAutoscalePreview` registered. Two bounded `westus2` baseline cluster create attempts using `Standard_D2s_v4`, Azure CNI overlay, and the preview custom header failed before any Machines agent-pool or Machine API CRUD operation ran (`mc=Failed pools=agentpool0:Failed`); cleanup reached `az group exists=false` / `ResourceGroupNotFound` for both resource groups. No capability-model update was made; `machines-agentpool-api-crud` remains `unknown` rather than pass/fail.
 
-The current active task is now `oidc-v133-explicit-enable-staging`: before any cluster mutation, source-preflight the exact `Scenario_OIDC_Issuer_v133` Kubernetes `1.33.x` selector, initial OIDC disabled/nil expectation, managed-cluster update shape, discovery/JWKS URL construction, post-enable expected response/key shape, and skip/feature-gate conditions. Then execute one bounded staging probe: create a small Kubernetes `1.33.x` cluster without explicit OIDC enablement, capture the pre-update ARM OIDC profile, enable OIDC via the source-equivalent update path, prove discovery/JWKS after enablement, clean up, update only `oidc-issuer-v133-explicit-enable-runtime` if clearly verdicted, and produce `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
+The next parser-visible task is `machines-agentpool-api-crud-eastus2-retry`. It should keep the same source-derived scope and non-goals but retry only after verifying no leftover `mach105-*` resource groups and selecting a source-compatible, known-good staging baseline (prefer `eastus2` with `Standard_D2s_v4`, which worked in iteration103, or e2ev3's dynamic `sku.DefaultClaim`/availability-zone selection). If the baseline cluster succeeds, run the bounded Machines agent-pool and Machine CRUD/UltraSSD sequence from iteration105. If baseline creation, API-version availability, direct Machines API PUT, or SKU/location preflight blocks again, update `outputs/iteration105-machines-agentpool-api-crud-staging.md` or write a follow-up blocker section with exact command/output evidence and cleanup status rather than pivoting.
 
-If source preflight or staging preflight shows Kubernetes `1.33.x` is unavailable, the explicit-enable API shape has changed, or the expected source semantics cannot be resolved, write a blocker artifact instead of creating a cluster or changing the model. In that case, the next likely fallback from iteration98 is `virtualmachines-mixed-sku-rest-scale`, but do not silently pivot inside the OIDC execution artifact.
+`outputs/iteration103-workload-identity-windows-token-projection-staging.md` executed the bounded Windows branch of `Scenario_WorkloadIdentity` in staging and **passed**. Source preflight confirmed the create-time OIDC/WI cluster shape, Windows admin profile, `wpool` Windows2022 node-pool request, `DefaultWindowsClaim` SKU semantics, service-account annotation/federated-credential subject and audience, Windows ServerCore 2022 PowerShell pod, webhook mutation expectations, projected token path, OIDC/JWKS validation behavior, skip/gates, and cleanup shape. Staging created a disposable `eastus2` cluster/resource group, used `Standard_D2s_v4` after proving source fallback `Standard_D2s_v3` was unavailable in the subscription, added a Ready Windows node, scheduled the labeled Windows pod, proved injected `AZURE_*` env vars and projected token file from inside the Windows container, decoded issuer/audience/subject claims matching the cluster issuer and service account, and cleanup reached `group_exists=false`.
 
-The latest completed OIDC cleanup artifact is `outputs/iteration97-oidc-post-delete-cleanup-staging.md`. It executed the source-gated OIDC default-enabled post-delete issuer cleanup probe in staging. The run passed: source preflight confirmed the `>=1.34` default-enabled OIDC branch, discovery/JWKS URL construction, source-expected post-delete HTTP `404`, 30m/30s wait budget, no-wait managed-cluster then resource-group delete shape, and no skip condition. A Kubernetes `1.34` cluster was created without explicit OIDC enablement and ARM defaulted `oidcIssuerProfile.enabled=true`; discovery and JWKS returned HTTP `200` before delete; source-equivalent no-wait delete requests succeeded; discovery and JWKS returned HTTP `404 WebContentNotFound` about 5m49s after delete start; cleanup reached `ResourceGroupNotFound`.
+The capability model now marks both `virtualmachines-mixed-sku-rest-scale` and `workload-identity-runtime-token-projection-windows` as `pass`, with Windows evidence `iteration103-workload-identity-windows-token-projection-staging`. The existing CLI comma multi-SKU add/help mismatch remains a separate `fail`; OIDC signing-key rotation, VPA cert/upgrade branches, bootstrap profile lifecycle, App Routing Istio/TLS lifecycle, ManagedSystem residual runtime/constraints/reconcile, Autoscaled VMs CRUD/upgrade, Machines/NAP default pool cleanup, Node Restriction tag-only PATCH, and Image Cleaner upgrade/restart survival remain unknown non-goals until selected.
+
+The selected next task may run staging only after the Machines source/API preflight is complete and source-equivalent. It must not combine NAP default Machines pool cleanup, VirtualMachines autoscaled VMs CRUD/upgrade, CLI comma-multi-SKU revalidation, App Routing TLS/Istio, ManagedSystem migration-positive/residuals, OIDC signing-key rotation, VPA cert/upgrade, Image Cleaner upgrade/restart, bootstrap ACR lifecycle, or unrelated probes.
+
+The latest completed OIDC artifact remains `outputs/iteration99-oidc-v133-explicit-enable-staging.md`. It executed the source-gated `Scenario_OIDC_Issuer_v133` branch in staging and **passed**: Kubernetes `1.33` started with OIDC disabled, a source-equivalent ARM full PUT enabled OIDC, discovery returned HTTP `200` with issuer/JWKS URI/RS256 shape, JWKS returned HTTP `200` with two RSA signing keys, and both disposable resource groups reached `ResourceGroupNotFound`. The capability model marks `oidc-issuer-v133-explicit-enable-runtime` pass; OIDC signing-key rotation remains a separate unknown/non-goal.
+
+The latest completed OIDC cleanup artifact is `outputs/iteration97-oidc-post-delete-cleanup-staging.md`. It executed the source-gated OIDC default-enabled post-delete issuer cleanup probe in staging and passed: Kubernetes `1.34` defaulted OIDC enabled, discovery/JWKS were reachable before delete, source-equivalent no-wait delete requests succeeded, discovery/JWKS returned HTTP `404 WebContentNotFound` about 5m49s after delete start, and cleanup reached `ResourceGroupNotFound`.
 
 The latest ManagedSystem checkpointed rerun is `outputs/iteration88-managedsystem-disable-migration-checkpointed.md`. It confirmed no leftover `msmig*` resources from the interrupted iteration87 run, preserved checkpoint scripts/logs, and attempted two fresh staging adds. Both attempts failed in `wait_pool` before runtime placement because the RP selected `Standard_D8pds_v5` (Arm64-only) while using an x64 Ubuntu node image. Cleanup was requested and a later broad devbox resource check showed no `msmig` resource groups. The capability model remains intentionally unchanged; `managedsystem-disable-migration` remains `fail` on the clearer iteration86 runtime evidence.
 
-Resume-menu item 2 is complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` now makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
+Resume-menu item 2 remains complete: `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` makes the App Routing DefaultDomainCertificate TLS-secret branch explicitly gated. The allowed App Routing TLS rerun triggers are owner response, CCP/default-domain-svc diagnostic access, a fixed/known-good build/configuration, or a source-proven chart/config mismatch that can be verified live. Do not run a blind customer-cluster-only App Routing TLS rerun.
 
-The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, but the knowledge map has other high-value unknowns. The next concrete frontier is the OIDC v1.33 explicit-enable branch selected in iteration98.
+The project is not globally blocked: ManagedSystem migration-positive and App Routing TLS are gated, while Machines AgentPool API CRUD remains the selected execution branch after the westus2 baseline-create blocker; next progress should be a bounded eastus2/dynamic-SKU retry, not a feature pivot.
 
 ## Owner Review of Latest Comments
-- Reviewed `discussion.md`; the tail after the last read marker contains no newer human instruction that supersedes the model-driven OIDC v1.33 branch selection.
-- The stale-state concern remains addressed: App Routing TLS has an explicit gated tracker, VPA residual runtime, Image Cleaner vulnerable-image erasure, and OIDC post-delete cleanup are complete.
-- ManagedSystem migration-positive and App Routing TLS remain gated; neither should be retried blindly.
+- Reviewed `discussion.md`; the tail after the last read marker contained no newer human instruction after `---read @iter103---`.
+- The stale-state concern remains addressed: App Routing TLS has an explicit gated tracker; VPA residual runtime, Image Cleaner vulnerable-image erasure, OIDC post-delete cleanup, OIDC v1.33 explicit-enable runtime, post-OIDC unknown selection, VirtualMachines mixed-SKU REST scale, Workload Identity Windows token projection, and post-Windows unknown selection are complete.
+- ManagedSystem migration-positive and App Routing TLS remain gated; neither should be retried blindly. The latest Machines AgentPool attempt produced a source/API preflight artifact plus a westus2 baseline-create blocker; the next non-gated work is a bounded eastus2/dynamic-SKU retry of the same Machines branch after confirming no leftover `mach105-*` resource groups.
 
 ## Review Questions
 
 1. **Is the goal closer?**  
-   Yes. Iteration98 converted the post-OIDC unknown queue into a concrete next branch: OIDC v1.33 explicit-enable discovery/JWKS runtime.
+   Yes. Iteration105 converted the Machines AgentPool unknown from a selected branch into a source-mapped, partially executed staging attempt with exact preflight, request shapes, run scripts, two baseline-create failures, and cleanup evidence. The Machine CRUD contract is still unproven, but the next retry is much narrower.
 
 2. **What did we learn?**  
-   After removing the now-passed OIDC post-delete branch, the cheapest high-confidence non-gated residual is the separate Kubernetes `1.33.x` explicit-enable OIDC path. It covers a distinct input path from the already-passed Kubernetes `>=1.34` default-enabled discovery/JWKS and post-delete cleanup evidence.
+   `Scenario_MachinesAgentPool` uses a VMSS system pool plus Machines pools, Azure CNI overlay, `mode=Machines`-only pool PUTs, Machine create/get/update/list/delete, a positive UltraSSD machine, and a negative UltraSSD error substring. The known preview features are registered in staging, but two `westus2`/`Standard_D2s_v4` baseline creates failed at `mc=Failed pools=agentpool0:Failed` before Machines API calls.
 
 3. **Is the current milestone the right next step?**  
-   Yes. The current active milestone is a source-preflighted staging execution task for `oidc-issuer-v133-explicit-enable-runtime`, with explicit blockers if `1.33.x` or source semantics are unavailable.
+   Yes, but refined: keep Machines AgentPool API CRUD as the selected branch and retry with a known-good `eastus2` or dynamic e2ev3 SKU/location baseline instead of pivoting to another unknown.
 
 4. **Are we closing the loop?**  
-   Yes. The parser-visible task block now has exactly one active task, `oidc-v133-explicit-enable-staging`, with a single durable output target and model-update rules.
+   Yes. `machines-agentpool-api-crud-staging` now has a blocker/inconclusive artifact and should be marked done for this attempt; `project.md` contains a new pending parser-visible retry task scoped to the same Machines branch.
 
 5. **Is it verified?**  
-   Yes. `outputs/iteration98-post-oidc-unknown-selection.md` exists, and a fresh capability-model validator run exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
+   Yes. `outputs/iteration105-machines-agentpool-api-crud-staging.md` records the source reads, staging feature registration, run workdirs, baseline create commands, `mc=Failed pools=agentpool0:Failed`, and cleanup. A local validator preflight exited 0; no model edit was made.
 
 6. **What’s blocking progress?**  
-   The project as a whole is not blocked. The OIDC v1.33 task may become blocked only if staging no longer offers Kubernetes `1.33.x`, if the source update path has changed, or if expected pre/post-enable semantics cannot be resolved before mutation.
+   The project as a whole is not blocked. The current blocker is a staging baseline cluster provisioning failure in `westus2`; resume by retrying only the same Machines branch in a better baseline environment/SKU and recording exact cleanup evidence if it blocks again.
 
 ## Resume Menu (ranked)
 
-1. **Execute OIDC v1.33 explicit-enable discovery/JWKS runtime — current active task.**  
-   Produce `outputs/iteration99-oidc-v133-explicit-enable-staging.md`. Start from `outputs/iteration98-post-oidc-unknown-selection.md`, `outputs/iteration97-oidc-post-delete-cleanup-staging.md`, `outputs/iteration76-workload-identity-oidc-runtime-staging.md`, `outputs/iteration77-identity-runtime-model-consolidation.md`, `outputs/e2ev3-handwritten-coverage-inventory.md`, and the current model. Before any cluster creation, read devbox source for `Scenario_OIDC_Issuer_v133`, exact Kubernetes `1.33.x` selector, initial OIDC profile expectation, update payload/path, discovery/JWKS URL construction, expected post-enable response shape, and skip/feature-gate conditions.
+1. **Retry Machines AgentPool API CRUD with a known-good baseline.**  
+   Start from `outputs/iteration105-machines-agentpool-api-crud-staging.md` and the reusable scripts in `agents/aks-explorer/workspace/iteration105-machines-probe*.sh`. First verify no leftover `mach105-*` resource groups. Then adjust only the baseline environment/SKU selection (prefer `eastus2` with `Standard_D2s_v4`, or use e2ev3 dynamic `sku.DefaultClaim`/availability-zone logic) and rerun the same bounded Machines branch. If the cluster reaches `Succeeded`, continue with source-shaped `machinesap0`/`machinesap1`, Machine create/get/update/list/delete, UltraSSD positive/negative checks, Machines pool delete, cleanup, and model update only on a clear verdict.
 
-2. **If OIDC v1.33 is blocked, write a local blocker artifact.**  
-   Capture exact evidence: source command/output, staging version availability or API-shape blocker, why no cluster was created or why the model cannot be changed, and the concrete resume trigger. Then update project state to select the next branch rather than silently pivoting in the same artifact.
+2. **If the retry blocks, update the blocker evidence rather than pivoting.**  
+   If baseline creation, source API-version equivalence, custom feature/header availability, Machine API PUT, UltraSSD SKU/location availability, or cleanup blocks again, append/update `outputs/iteration105-machines-agentpool-api-crud-staging.md` (or create a follow-up iteration artifact) with exact command/output evidence, resource group names, and cleanup status. Do not silently pivot to NAP, VirtualMachines autoscaled CRUD, or another branch.
 
-3. **Next fallback if OIDC v1.33 cannot proceed: VirtualMachines mixed-SKU REST scale.**  
-   Iteration98 ranks `virtualmachines-mixed-sku-rest-scale` second. It is non-gated and source-anchored, but should get its own source preflight/execution task if selected.
+3. **Keep completed identity/OIDC branches separate.**  
+   Do not re-run Windows token projection, Linux token projection, OIDC post-delete cleanup, OIDC v1.33 explicit-enable, or Workload Identity disable/re-enable lifecycle unless a future selection artifact explicitly justifies a new gap. OIDC signing-key rotation remains a separate unknown with unclear trigger.
 
-4. **Do not run gated branches blindly.**  
-   ManagedSystem migration-positive and App Routing TLS require their documented gate changes before rerun; OIDC signing-key rotation needs trigger/source clarification; VPA/Image Cleaner upgrade survival, bootstrap, and Windows Workload Identity should be selected only when their cost/risk is explicitly accepted.
+4. **Keep related VirtualMachines/Machines branches separate.**  
+   `virtualmachines-mixed-sku-rest-scale` is complete. Treat `virtualmachines-autoscaled-vms-crud`, Machines NAP default pool cleanup, and CLI comma-multi-SKU revalidation as separate candidates with their own cost/risk.
+
+5. **Do not run gated branches blindly.**  
+   ManagedSystem migration-positive and App Routing TLS/Istio require their documented gate changes before rerun; VPA/Image Cleaner upgrade survival and bootstrap ACR lifecycle should be selected only when their cost/risk is explicitly accepted.
 
 ## Decision
 
-`outputs/iteration98-post-oidc-unknown-selection.md` is complete and selects **OIDC v1.33 explicit-enable discovery/JWKS runtime** as the next bounded non-gated execution branch. Proceed with one active parser-visible execution task, `oidc-v133-explicit-enable-staging`, for `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
+`outputs/iteration105-machines-agentpool-api-crud-staging.md` is complete as a blocked/inconclusive first attempt. Keep Machines AgentPool API CRUD selected, but proceed with the parser-visible `machines-agentpool-api-crud-eastus2-retry` task rather than redoing source discovery or pivoting.
 
 ## (a) Concrete output
 
-`outputs/iteration98-post-oidc-unknown-selection.md` is the completed selection artifact. `project.md` now creates the single next parser-visible execution task for `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
+`outputs/iteration105-machines-agentpool-api-crud-staging.md` is the completed source/preflight plus westus2 baseline-blocker artifact. `project.md` now contains a pending retry task for `machines-agentpool-api-crud-eastus2-retry`.
 
 ## (b) What’s different
 
-The previous state had selected a local post-OIDC unknown-ranking task. That task is now done and recommended OIDC v1.33 explicit-enable runtime because it is cheaper and more bounded than Windows, upgrade, bootstrap, or Machines branches while covering a distinct source-authored input path.
+The previous state had only selected Machines AgentPool API CRUD. The project now has source-derived request/expectation details, reusable probe scripts, two failed `westus2` baseline-create attempts, confirmed cleanup, and a narrower retry path using a better baseline location/SKU.
 
 ## (c) First step on resume
 
-Read this `## Current State`, then read `outputs/iteration98-post-oidc-unknown-selection.md`, `outputs/iteration97-oidc-post-delete-cleanup-staging.md`, `outputs/iteration76-workload-identity-oidc-runtime-staging.md`, `outputs/iteration77-identity-runtime-model-consolidation.md`, `outputs/e2ev3-handwritten-coverage-inventory.md`, and `outputs/e2e-capability-model.json`. Run the capability-model validator, then perform the source preflight commands from iteration98 before any cluster creation.
+Read this `## Current State`, then read `outputs/iteration105-machines-agentpool-api-crud-staging.md` and inspect `agents/aks-explorer/workspace/iteration105-machines-probe-v2.sh`. Verify `az group exists` is `false` for the previous `mach105-*` resource groups, adjust the script to `eastus2` or e2ev3 dynamic SKU/location selection, run only the same Machines branch, and update the artifact/model only on clear evidence.
 
 ## Linked Context
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
@@ -149,6 +158,11 @@ Read this `## Current State`, then read `outputs/iteration98-post-oidc-unknown-s
 - `outputs/iteration80-app-routing-tls-source-hypothesis.md` — source-first comparison showing App Routing DefaultDomainCertificate TLS failure is not explained by malformed customer CR/input
 - `outputs/iteration81-app-routing-tls-owner-escalation.md` — owner escalation packet and diagnostic rerun gate for App Routing TLS
 - `outputs/iteration91-app-routing-tls-gated-followup-tracker.md` — explicit App Routing TLS follow-up tracker with owner/diagnostic/fixed-build rerun gates and no-blind-rerun rule
+- `outputs/iteration99-oidc-v133-explicit-enable-staging.md` — OIDC v1.33 explicit-enable discovery/JWKS staging pass evidence
+- `outputs/iteration100-post-oidc-v133-unknown-selection.md` — post-OIDC v1.33 unknown-selection artifact selecting VirtualMachines mixed-SKU REST scale as the next non-gated branch
+- `outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md` — VirtualMachines mixed-SKU REST scale staging pass evidence for `Scenario_Mixed_SKU_Scale`
+- `outputs/iteration102-post-virtualmachines-unknown-selection.md` — post-VirtualMachines unknown-selection artifact selecting Workload Identity Windows token projection as the next non-gated branch
+- `outputs/iteration103-workload-identity-windows-token-projection-staging.md` — Workload Identity Windows token-projection staging pass evidence for `Scenario_WorkloadIdentity` Windows branch
 - `outputs/iteration92-next-model-unknown-selection.md` — local selection artifact that selected the focused VPA residual runtime probe
 - `outputs/iteration93-vpa-residual-runtime-staging.md` — VPA Helm, HA/leader-election, and in-place-update staging pass evidence
 - `outputs/iteration94-next-model-unknown-selection.md` — local selection artifact choosing Image Cleaner vulnerable-image erasure as the next non-gated runtime branch
@@ -209,8 +223,8 @@ Read this `## Current State`, then read `outputs/iteration98-post-oidc-unknown-s
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 62 feature mappings, 66 test-case evidence mappings, 50 judgments, 37 evidence references.
-- Current feature status: 36 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 19 unknown, 0 blocked.
+- Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 52 judgments, 40 evidence references.
+- Current feature status: 39 pass, 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 16 unknown, 0 blocked.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -221,16 +235,46 @@ Read this `## Current State`, then read `outputs/iteration98-post-oidc-unknown-s
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-The post-OIDC selection artifact `outputs/iteration98-post-oidc-unknown-selection.md` is complete and model-validated. Next task: execute `outputs/iteration99-oidc-v133-explicit-enable-staging.md`, a source-gated staging probe for `oidc-issuer-v133-explicit-enable-runtime`. Before any cluster creation, confirm from devbox source the exact `Scenario_OIDC_Issuer_v133` Kubernetes `1.33.x` selector, initial OIDC profile expectation, update shape, discovery/JWKS URL construction, expected response/key shape, and skip/feature-gate conditions. Then create one small Kubernetes `1.33.x` staging cluster without explicit OIDC enablement, capture pre-update state, enable OIDC through the source-equivalent update path, prove discovery/JWKS reachability, clean up, and update only that feature if clearly verdicted. Continue to keep ManagedSystem migration-positive and App Routing TLS behind their existing gates.
+Execute `machines-agentpool-api-crud-eastus2-retry` and keep the same Machines AgentPool API CRUD branch selected. Start from `outputs/iteration105-machines-agentpool-api-crud-staging.md`, the reusable `agents/aks-explorer/workspace/iteration105-machines-probe-v2.sh`, and the current validated `outputs/e2e-capability-model.json`.
+
+Before any new mutation, verify the prior `mach105-*` resource groups are gone. Then adjust only the baseline location/SKU selection (prefer `eastus2` with `Standard_D2s_v4`, or e2ev3 dynamic `sku.DefaultClaim`/availability-zone logic) and rerun the same source-shaped sequence. If baseline create succeeds, run `machinesap0`/`machinesap1`, Machine create/get/update/list/delete, UltraSSD positive/negative paths, cleanup, model update only on clear pass/fail evidence, and validator. If baseline/API/Machine/UltraSSD/cleanup blocks again, update the iteration105 artifact or write a follow-up blocker with exact commands and cleanup status.
+
+Do not combine this with NAP default Machines pool cleanup, VirtualMachines autoscaled VMs CRUD/upgrade, CLI comma-multi-SKU revalidation, App Routing TLS/Istio, ManagedSystem migration-positive/residuals, OIDC signing-key rotation, VPA cert/upgrade, Image Cleaner upgrade/restart, bootstrap ACR lifecycle, or unrelated probes.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
+### 2026-05-20 — Machines AgentPool API CRUD first attempt blocked at westus2 baseline
+- `outputs/iteration105-machines-agentpool-api-crud-staging.md` completed the source/API/custom-feature preflight and extracted the `Scenario_MachinesAgentPool` contract: VMSS system baseline, Machines pools, Machine create/get/update/list/delete, UltraSSD positive and negative paths, and cleanup shape.
+- Two `westus2` staging baseline creates failed before any Machines API call (`mc=Failed pools=agentpool0:Failed`); both `mach105-*` resource groups were verified deleted (`az group exists=false` / `ResourceGroupNotFound`).
+- No model update was made; `machines-agentpool-api-crud` remains `unknown`. The next parser-visible task is `machines-agentpool-api-crud-eastus2-retry`, scoped to the same branch with a known-good/dynamic baseline.
+
+### 2026-05-20 — Selected Machines AgentPool API CRUD after post-Windows ranking
+- `outputs/iteration104-post-wi-windows-unknown-selection.md` ranked the 16 remaining unknowns after Workload Identity Windows token projection and selected `machines-agentpool-api-crud` as the next non-gated branch.
+- Fresh capability-model validator run during this owner loop exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 16 unknown features, and 0 blocked features.
+- Superseded by iteration105: `machines-agentpool-api-crud-staging` is done/blocked and the next task is `machines-agentpool-api-crud-eastus2-retry`.
+
+### 2026-05-20 — Completed Workload Identity Windows token projection; selecting next unknown
+- `outputs/iteration103-workload-identity-windows-token-projection-staging.md` closed `workload-identity-runtime-token-projection-windows` as pass: source confirmed the `Scenario_WorkloadIdentity` Windows branch, staging created an OIDC/WI-enabled Azure CNI cluster with Windows profile and a Windows2022 pool, the Windows ServerCore pod was mutated by azure-wi webhook with expected env vars and projected token volume, the token decoded with matching issuer/audience/subject, and cleanup reached `group_exists=false`.
+- Fresh capability-model validator run after iteration103 exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 16 unknown features, and 0 blocked features.
+- Superseded by iteration104 completion: `post-wi-windows-unknown-selection` is now done and selected `machines-agentpool-api-crud-staging` as the next parser-visible task.
+
+### 2026-05-20 — Selected Workload Identity Windows token projection after VirtualMachines pass
+- `outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md` closed `virtualmachines-mixed-sku-rest-scale` as pass: source-equivalent REST/PUT transitions created a mixed-SKU VirtualMachines user pool, scaled through AgentPool PUT and ManagedCluster PUT paths, matched `virtualMachinesProfile.scale.manual[]` and `virtualMachineNodesStatus[]`, and cleaned up to `ResourceGroupNotFound`.
+- Fresh capability-model validator run after iteration101 exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 17 unknown features, and 0 blocked features.
+- `outputs/iteration102-post-virtualmachines-unknown-selection.md` ranked the remaining unknowns and selected `workload-identity-runtime-token-projection-windows` as the next bounded non-gated branch, using `Scenario_WorkloadIdentity` source intent plus iteration76 Linux pass and iteration77/85 identity context.
+- The next parser-visible task is `workload-identity-windows-token-projection-staging`; it must complete source and Windows capacity/SKU preflight before creating any cluster, and must not combine OIDC signing-key rotation, upgrade survival, or unrelated feature probes.
+
+### 2026-05-20 — Completed OIDC v1.33 explicit-enable runtime
+- `outputs/iteration99-oidc-v133-explicit-enable-staging.md` closed `oidc-issuer-v133-explicit-enable-runtime` as pass: source confirmed the `~1.33.x` explicit-enable path, staging Kubernetes `1.33` created without explicit OIDC persisted disabled/null issuer state, source-equivalent full PUT enabled OIDC, discovery and JWKS returned HTTP 200 with expected issuer/JWKS/two-RSA-key shape, and cleanup reached `ResourceGroupNotFound`.
+- Fresh capability-model validator run after iteration99 exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 18 unknown features, and 0 blocked features.
+- The next parser-visible work should be a post-iteration99 unknown-selection artifact; do not re-run OIDC v1.33 or silently pivot to VirtualMachines without that selection/preflight step.
+
 ### 2026-05-20 — Selected OIDC v1.33 explicit-enable runtime after post-OIDC ranking
 - `outputs/iteration98-post-oidc-unknown-selection.md` ranked the 19 remaining model unknowns after the OIDC post-delete cleanup pass and selected `oidc-issuer-v133-explicit-enable-runtime` as the next bounded non-gated branch.
 - Fresh capability-model validator run during the owner loop exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 19 unknown features, and 0 blocked features.
-- The next parser-visible task is `oidc-v133-explicit-enable-staging`; it must source-preflight exact v1.33 create/update/discovery/JWKS semantics before any cloud mutation and produce `outputs/iteration99-oidc-v133-explicit-enable-staging.md`.
+- Superseded by iteration99 completion: `oidc-v133-explicit-enable-staging` has now passed; continue with post-iteration99 unknown selection.
 
 ### 2026-05-20 — Completed OIDC post-delete cleanup; selecting next unknown
 - `outputs/iteration97-oidc-post-delete-cleanup-staging.md` closed `oidc-issuer-default-enabled-post-delete-cleanup` as pass: Kubernetes `1.34` default-enabled OIDC discovery/JWKS were reachable before delete, source-equivalent no-wait cluster/resource-group deletion succeeded, discovery and JWKS returned `404 WebContentNotFound` within about 5m49s, and cleanup reached `ResourceGroupNotFound`.
@@ -298,7 +342,12 @@ The post-OIDC selection artifact `outputs/iteration98-post-oidc-unknown-selectio
 24. ✅ Select the next post-Image-Cleaner non-gated model unknown
 25. ✅ Execute OIDC default-enabled post-delete issuer cleanup with source-gated staging evidence
 26. ✅ Select the next post-OIDC non-gated model unknown
-27. ▶️ Execute OIDC v1.33 explicit-enable discovery/JWKS runtime with source-gated staging evidence
+27. ✅ Execute OIDC v1.33 explicit-enable discovery/JWKS runtime with source-gated staging evidence
+28. ✅ Select and execute VirtualMachines mixed-SKU REST scale transitions with source-gated staging evidence
+29. ✅ Select the next post-VirtualMachines non-gated model unknown
+30. ✅ Execute Workload Identity Windows token projection with source-gated staging evidence
+31. ✅ Select the next post-Windows non-gated model unknown
+32. ▶️ Execute Machines AgentPool API CRUD with source/API-version-gated staging evidence
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -551,11 +600,44 @@ The post-OIDC selection artifact `outputs/iteration98-post-oidc-unknown-selectio
   attempts: 1
 
 - id: oidc-v133-explicit-enable-staging
-  status: running
+  status: done
+  result: succeeded
   assignee: aks-explorer
   goal: "Execute the OIDC v1.33 explicit-enable discovery/JWKS staging probe selected by outputs/iteration98-post-oidc-unknown-selection.md. Start from outputs/iteration98-post-oidc-unknown-selection.md, outputs/iteration97-oidc-post-delete-cleanup-staging.md, outputs/iteration76-workload-identity-oidc-runtime-staging.md, outputs/iteration77-identity-runtime-model-consolidation.md, outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, confirm from devbox source the exact Scenario_OIDC_Issuer_v133 Kubernetes 1.33.x selector, initial OIDC disabled/nil profile expectation, managed-cluster update path/payload for enabling OIDC, discovery and JWKS URL construction, expected post-enable HTTP/key/body shape, and any skip or feature-gate conditions. Then create one small Kubernetes 1.33.x staging cluster without explicit OIDC enablement, capture ARM OIDC profile before update, enable OIDC via the source-equivalent update path, capture ARM OIDC profile after update, prove discovery/JWKS reachability and key shape, clean up the resource group, and produce outputs/iteration99-oidc-v133-explicit-enable-staging.md with exact commands, raw evidence snippets, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if oidc-issuer-v133-explicit-enable-runtime gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If Kubernetes 1.33.x is unavailable or source semantics cannot be resolved, write a blocker artifact instead of changing the model. Do not combine with OIDC signing-key rotation, post-delete cleanup, Workload Identity Windows, VPA/KEDA, App Routing, ManagedSystem, Image Cleaner, VirtualMachines, Machines, bootstrap, or unrelated probes."
   depends_on: [post-oidc-unknown-selection]
-  attempts: 0
+  attempts: 1
+
+- id: post-oidc-v133-unknown-selection
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration100-post-oidc-v133-unknown-selection.md selecting the next non-gated model-unknown branch after OIDC v1.33 explicit-enable runtime passed. Start from outputs/iteration99-oidc-v133-explicit-enable-staging.md, outputs/iteration98-post-oidc-unknown-selection.md, outputs/input-expectation-knowledge-map.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, and the current validator unknown list (18 unknowns). Rank remaining viable unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, and gating status. End with one concrete recommended branch, exact preflight reads for a later execution task, and expected model/knowledge-map update. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [oidc-v133-explicit-enable-staging]
+  attempts: 1
+
+- id: virtualmachines-mixed-sku-rest-scale-staging
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Execute the VirtualMachines mixed-SKU REST scale transition staging probe selected by outputs/iteration100-post-oidc-v133-unknown-selection.md. Start from outputs/iteration100-post-oidc-v133-unknown-selection.md, outputs/iteration64-virtualmachines-agentpool-staging.md, outputs/iteration65-virtualmachines-multisku-contract.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, confirm from devbox source the exact Scenario_Mixed_SKU_Scale source steps, API version(s), baseline cluster shape, additional VirtualMachines pool create payload, AgentPool PUT vs ManagedCluster PUT scale transitions, expected virtualMachinesProfile.scale.manual[] arrays, node count/VM-size assertions, wait budgets, cleanup shape, feature gates, and SKU/location selection criteria. Then create only the minimal source-equivalent staging resources, execute the bounded REST/PUT mixed-SKU scale sequence, capture request/response bodies, ARM state, profile/node assertions, cleanup status, and produce outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md with a verdict table. Update outputs/e2e-capability-model.json only if virtualmachines-mixed-sku-rest-scale gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If source/API-version/SKU/preflight blocks a source-equivalent run, write a blocker artifact instead of changing the model. Do not combine with Machines API CRUD, NAP default Machines pool cleanup, VirtualMachines autoscaled VMs upgrade, CLI comma-multi-SKU revalidation, OIDC, ManagedSystem, App Routing, bootstrap, VPA, Image Cleaner, or unrelated probes."
+  depends_on: [post-oidc-v133-unknown-selection]
+  attempts: 1
+
+- id: post-virtualmachines-unknown-selection
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration102-post-virtualmachines-unknown-selection.md selecting the next non-gated model-unknown branch after VirtualMachines mixed-SKU REST scale passed. Start from outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration100-post-oidc-v133-unknown-selection.md, outputs/iteration76-workload-identity-oidc-runtime-staging.md, outputs/iteration77-identity-runtime-model-consolidation.md, outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md, outputs/input-expectation-knowledge-map.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, and the current validator unknown list (17 unknowns). Rank remaining viable unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, and gating status. End with one concrete recommended branch, exact preflight reads for a later execution task, and expected model/knowledge-map update. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [virtualmachines-mixed-sku-rest-scale-staging]
+  attempts: 1
+
+- id: workload-identity-windows-token-projection-staging
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Execute the Workload Identity Windows token-projection staging probe selected by outputs/iteration102-post-virtualmachines-unknown-selection.md. Start from outputs/iteration102-post-virtualmachines-unknown-selection.md, outputs/iteration76-workload-identity-oidc-runtime-staging.md, outputs/iteration77-identity-runtime-model-consolidation.md, outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, confirm from devbox source the exact Scenario_WorkloadIdentity Windows branch steps, create-time cluster shape, Windows admin profile, Windows node-pool creation request/CLI/API path, node size/count and wait budgets, federated identity credential and service-account subject/audience, Windows pod image/command, expected azure-wi env vars, projected token file path, token decode expectations, skip conditions, feature gates, cloud/environment gates, Windows SKU/location capacity constraints, and cleanup shape. Then create only the minimal source-equivalent staging resources, execute the bounded Windows token-projection check, capture command inputs, ARM state, Kubernetes object/pod evidence, decoded token issuer/audience/subject, cleanup status, and produce outputs/iteration103-workload-identity-windows-token-projection-staging.md with a verdict table. Update outputs/e2e-capability-model.json only if workload-identity-runtime-token-projection-windows gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If source/capacity/API preflight blocks a source-equivalent run, write a blocker artifact instead of changing the model. Do not combine with OIDC signing-key rotation, post-delete cleanup, v1.33 explicit-enable revalidation, Workload Identity disable/re-enable lifecycle, Linux token revalidation beyond setup sanity, upgrade survival, VPA/KEDA, App Routing, ManagedSystem, VirtualMachines, Machines, bootstrap, or unrelated probes."
+  depends_on: [post-virtualmachines-unknown-selection]
+  attempts: 1
 
 - id: image-cleaner-vulnerable-erasure-staging
   result: succeeded
@@ -564,6 +646,30 @@ The post-OIDC selection artifact `outputs/iteration98-post-oidc-unknown-selectio
   goal: "Execute the Image Cleaner vulnerable-image erasure staging probe selected by outputs/iteration94-next-model-unknown-selection.md. Start from outputs/iteration86-image-cleaner-runtime-source-gated-staging.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and the iteration94 preflight commands. Before creating any cluster, confirm from devbox source the vulnerable image constant, node/containerd run-command inspection path, eraser collector selector, and source wait budget. Then create a small staging cluster with Image Cleaner enabled, disable Image Cleaner, pull/prove the vulnerable image exists on nodes while disabled, re-enable Image Cleaner, wait for eraser collectors to complete, prove the vulnerable image is absent, clean up the resource group, and produce outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md with exact commands, raw evidence snippets, cleanup status, and a verdict table. Update outputs/e2e-capability-model.json only if image-cleaner-vulnerable-image-erasure gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. Do not combine with Image Cleaner upgrade/restart survival, VPA/KEDA, Workload Identity/OIDC, App Routing, ManagedSystem, Node Restriction, bootstrap, VirtualMachines, or unrelated probes."
   depends_on: [vpa-residual-runtime-staging]
   attempts: 2
+
+- id: post-wi-windows-unknown-selection
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration104-post-wi-windows-unknown-selection.md selecting the next non-gated model-unknown branch after Workload Identity Windows token projection passed. Start from outputs/iteration103-workload-identity-windows-token-projection-staging.md, outputs/iteration102-post-virtualmachines-unknown-selection.md, outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/input-expectation-knowledge-map.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, and the current validator unknown list (16 unknowns). Rank remaining viable unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, gating status, and expected model update. End with one concrete recommended branch, exact preflight reads for a later execution task, and explicit non-goals. Do not run staging, az, kubectl, cluster creation, or cloud probes in this selection task."
+  depends_on: [workload-identity-windows-token-projection-staging]
+  attempts: 1
+
+- id: machines-agentpool-api-crud-staging
+  result: failed
+  status: done
+  assignee: aks-explorer
+  goal: "Execute the Machines AgentPool API CRUD staging probe selected by outputs/iteration104-post-wi-windows-unknown-selection.md. Start from outputs/iteration104-post-wi-windows-unknown-selection.md, outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration102-post-virtualmachines-unknown-selection.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/e2e-capability-model.json. Before creating any cluster, confirm from devbox source the exact Scenario_MachinesAgentPool steps and non-goals, API versions for ManagedCluster/AgentPool/Machine operations, required custom feature headers/provider features, baseline cluster shape, Machines-mode agent-pool create request and expected persisted fields, Machine create/get/update/list/delete request/response shapes, unsupported UltraSSD negative path and expected error, skip conditions, SKU/location/zone constraints, preview API availability checks, wait budgets, and cleanup shape. Then create only the minimal source-equivalent staging resources, execute the bounded Machines-mode agent-pool and Machine API CRUD sequence, capture request/response bodies, ARM state, Machine API evidence, unsupported UltraSSD rejection evidence if source-required, cleanup status, and produce outputs/iteration105-machines-agentpool-api-crud-staging.md with a verdict table. Update outputs/e2e-capability-model.json only if machines-agentpool-api-crud gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If source/API-version/custom-feature/SKU/preflight blocks a source-equivalent run, write a blocker artifact instead of changing the model or pivoting. Do not combine with machines-agentpool-nap-default-pool-cleanup, virtualmachines-autoscaled-vms-crud, VirtualMachines CLI comma multi-SKU revalidation, OIDC, ManagedSystem, App Routing, bootstrap, VPA, Image Cleaner, or unrelated probes."
+  depends_on: [post-wi-windows-unknown-selection]
+  attempts: 2
+
+- id: machines-agentpool-api-crud-eastus2-retry
+  result: null
+  status: ready
+  assignee: aks-explorer
+  goal: "Retry the same Machines AgentPool API CRUD branch after outputs/iteration105-machines-agentpool-api-crud-staging.md blocked at westus2 baseline cluster creation before any Machines API calls. Start from outputs/iteration105-machines-agentpool-api-crud-staging.md and agents/aks-explorer/workspace/iteration105-machines-probe-v2.sh. First verify no leftover mach105-* resource groups from iteration105. Reuse the source-derived Scenario_MachinesAgentPool request/expectation shapes and non-goals; do not redo broad selection. Adjust only the baseline environment/SKU selection, preferring eastus2 with Standard_D2s_v4 (known-good from iteration103) or e2ev3 dynamic sku.DefaultClaim/availability-zone logic. If the baseline cluster reaches Succeeded, execute the bounded source-shaped Machines sequence: source initial machinesap0 if needed, plan-created machinesap1, Machine create/get/update/list/delete, UltraSSD positive and negative path, Machines agent-pool delete, cleanup, and verdict table. Update outputs/e2e-capability-model.json only if machines-agentpool-api-crud gets clear pass/fail evidence, then run cd /app/projects/aks-rp-e2e/capability-model && bun src/validate.ts ../outputs/e2e-capability-model.json. If baseline creation, source API-version equivalence, custom headers/features, Machine API, UltraSSD SKU/location, or cleanup blocks again, append/update outputs/iteration105-machines-agentpool-api-crud-staging.md or create a follow-up artifact with exact command/output evidence and cleanup status instead of pivoting. Do not combine with machines-agentpool-nap-default-pool-cleanup, virtualmachines-autoscaled-vms-crud, VirtualMachines CLI comma multi-SKU revalidation, OIDC, ManagedSystem, App Routing, bootstrap, VPA, Image Cleaner, or unrelated probes."
+  depends_on: [machines-agentpool-api-crud-staging]
+  attempts: 0
 
 ## References
 
@@ -595,6 +701,11 @@ The post-OIDC selection artifact `outputs/iteration98-post-oidc-unknown-selectio
 ## Comments
 
 ## Artifacts
+- outputs/iteration104-post-wi-windows-unknown-selection.md
+- outputs/iteration103-workload-identity-windows-token-projection-staging.md
+- outputs/iteration102-post-virtualmachines-unknown-selection.md
+- outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md
+- outputs/iteration100-post-oidc-v133-unknown-selection.md
 - outputs/iteration97-oidc-post-delete-cleanup-staging.md
 - outputs/iteration96-post-image-cleaner-unknown-selection.md
 - outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md
