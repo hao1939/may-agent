@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 116
+iteration: 117
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -120,20 +120,20 @@ agent pools, and later dark-side discovery.
 ## Signals
 - knowledge.input-space-modeled: current capability model has 35 AKS input variables.
 - knowledge.expectation-space-modeled: current capability model has 67 expectation variables.
-- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 68 test-case evidence mappings; current validator has 7 failing features, 11 unknown feature IDs, and 2 blocked features after iteration115.
+- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 68 test-case evidence mappings; current validator has 7 failing features, 10 unknown feature IDs, and 2 blocked features after iteration116.
 - knowledge.source-inventory-modeled: `outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
 - e2e.existing-cases-cataloged: `outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
 - knowledge.public-api-candidates-started: `outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active; the first reference-backed TypeScript probe path now exists and has been exercised. The stable ManagedSystem reference packet is `features/managedsystem-pool.yaml`, the reviewable run plan is `run-plans/managedsystem-rest-add-existing.yaml`, and the executable probe is `probes/managedsystem-rest-add-existing.ts`. The latest clean devbox run is captured in `outputs/iteration112-managedsystem-rest-add-existing-v2-managedsystem-rest-add-existing.md` and self-review in `outputs/iteration112-managedsystem-rest-add-existing-v2-managedsystem-rest-add-existing-self-review.md`.
+Active; four reference-backed TypeScript probe paths have now been exercised or built: ManagedSystem REST add-existing, VPA upgrade-survival, Bootstrap profile managed-ACR lifecycle, and Bootstrap profile BYO-ACR lifecycle. The BYO-ACR packet is `features/bootstrap-profile-byo-acr-lifecycle.yaml`, the run plan is `run-plans/bootstrap-profile-byo-acr-lifecycle.yaml`, and the probe is `probes/bootstrap-profile-byo-acr-lifecycle.ts`.
 
-The latest iteration112 v2 TS probe accepted the minimal ManagedSystem REST PUT and observed the expected REST add-existing/defaulting contract: `provisioningState=Succeeded`, `mode=ManagedSystem`, `type=VirtualMachines`, null/omitted top-level `vmSize`/`count`, and both CriticalAddonsOnly taints. Cleanup was verified with `az group exists -n msprobe-istingv2 -> false`. The probe also captured Kubernetes runtime objects as audit evidence, but it did not claim full runtime placement because the simple managed-system node-label check did not observe labelled nodes.
+`outputs/iteration117-bootstrap-byo-acr-lifecycle.md` is the latest durable outcome. It did not produce a product verdict: first execution showed a probe input gap (`InvalidContainerRegistryResourceId`: BYO ACR only allowed with custom VNet), the probe was corrected to mirror the source `CustomVnetMutator`, and v2 then reached source-shaped create inputs but AKS create stayed `Creating` past the 7200s wrapper timeout with no ARM `status.errordetail`; cleanup was verified to `az group exists=false`. The BYO branch remains unknown in `outputs/e2e-capability-model.json`, intentionally unchanged. The latest validator exits 0 with 35 input variables, 67 expectation variables, 62 feature mappings, 68 test-case evidence mappings, 7 failing feature IDs, 10 unknown feature IDs, and 2 blocked feature IDs.
 
-`outputs/iteration115-vpa-upgrade-survival-runtime.md` is the latest model-changing pass. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass in `outputs/e2e-capability-model.json`; the latest validator exits 0 with 35 input variables, 67 expectation variables, 62 feature mappings, 68 test-case evidence mappings, 55 judgments, 46 evidence references, 7 failing feature IDs, 11 unknown feature IDs, and 2 blocked feature IDs.
+`outputs/iteration116-bootstrap-managed-acr-lifecycle.md` is the latest model-changing pass. `bootstrap-profile-managed-acr-lifecycle` is pass in `outputs/e2e-capability-model.json`: the source-shaped Cache -> Direct -> Cache lifecycle assigned an AKS-managed ACR, succeeded nginx `PullAlways` image pulls in each phase, removed managed ACR/private endpoint/private DNS resources on Direct disable, re-enabled Cache with a new managed registry, and verified resource-group cleanup.
 
-The Image Cleaner survival run used eastus2 `Standard_D4_v3`, Kubernetes `1.33.11` -> source-equivalent least next-minor `1.34.0`, `--enable-image-cleaner --image-cleaner-interval-hours 168`, and a normal/non-Automatic cluster so source stop/start restart was required. It passed ARM state and Kubernetes component assertions after create, after upgrade, and after stop/start; cleanup reached `ResourceGroupNotFound`. Earlier false starts were cleaned up and documented: one used the highest patch `1.34.7` before source preflight clarified least-patch target behavior, and one hit a stop/start sequencing race before final convergence polling was added.
+The previous VPA upgrade-survival TS probe remains pass in `outputs/iteration115-vpa-upgrade-survival-runtime.md`: VPA profile enabled, components/recommendations passed before and after upgrade, Kubernetes upgraded from `1.34.7` to `1.35.4`, and cleanup reached `az group exists=false`. ManagedSystem REST add-existing remains pass in `outputs/iteration112-managedsystem-rest-add-existing-v2-managedsystem-rest-add-existing.md` for the minimal REST PUT/defaulting contract.
 
 `outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md` remains pass for source-shaped `Scenario_Autoscaled_VMs_CRUD`; the run used generated-client/source-equivalent `2026-03-02-preview`, `AKSHTTPCustomFeatures=Microsoft.ContainerService/VMsAgentPoolAutoscalePreview`, eastus2 `Standard_D2s_v4`, Kubernetes `1.33.11` -> `1.34.7`, and default pool `autoscaleap` type `VirtualMachines`.
 
@@ -141,17 +141,17 @@ The Image Cleaner survival run used eastus2 `Standard_D4_v3`, Kubernetes `1.33.1
 
 `machines-agentpool-api-crud` remains blocked on missing staging subscription features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview`; do not rerun Machines CRUD or select NAP default Machines pool cleanup until those features are registered in subscription `26fe00f8-9173-4872-9134-bb1d2e00343a` or an equivalent source environment is provided.
 
-`outputs/iteration116-post-vpa-ts-probe-selection.md` completed the post-VPA selection loop and chose `bootstrap-profile-managed-acr-lifecycle` as the next non-gated single-case reference-backed TypeScript probe. Preserve existing gates for VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH; do not rerun completed Image Cleaner/VPA/ManagedSystem TS probe branches unless source semantics, environment, or probe inputs materially change.
+The next plausible frontier is the separate `bootstrap-profile-byo-acr-lifecycle` branch. It was explicitly deferred until after the managed-ACR path because it adds customer ACR setup, role assignments, and registry switching; the managed-ACR probe now establishes the Bootstrap reference/probe pattern, while the capability model still lists BYO ACR lifecycle as unknown. Preserve existing gates for VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH; do not rerun completed Image Cleaner/VPA/ManagedSystem/Bootstrap managed-ACR branches unless source semantics, environment, or probe inputs materially change.
 
 ## Current Phase
 
-The reference-backed TypeScript probe pattern has now been exercised on two features. ManagedSystem REST add-existing proved the first worked example; iteration115 copied the refined diagnostics pattern to `workload-autoscaler-vpa-upgrade-survival-runtime` and produced a validator-backed pass with structured evidence, cleanup verification, and self-review.
+The reference-backed TypeScript probe pattern has now been exercised on four features/branches. ManagedSystem REST add-existing proved the first worked example; iteration115 copied the refined diagnostics pattern to `workload-autoscaler-vpa-upgrade-survival-runtime`; iteration116 copied it to `bootstrap-profile-managed-acr-lifecycle` and produced a validator-backed pass; iteration117 created the source-backed `bootstrap-profile-byo-acr-lifecycle` packet/run-plan/probe and drove it to a bounded blocker instead of a product verdict.
 
-`outputs/iteration116-post-vpa-ts-probe-selection.md` ranked the remaining unknowns after the VPA pass. The selected next experiment is `bootstrap-profile-managed-acr-lifecycle`, because it is a non-gated source-backed unknown with existing partial API-state evidence from iteration63 and clear missing runtime/lifecycle expectations: AKS-managed Cache registry assignment, image pull, Direct disable cleanup, and Cache re-enable.
+`outputs/iteration117-bootstrap-byo-acr-lifecycle.md` closes the initial BYO-ACR task as a durable blocked attempt, not as model evidence. It added source grounding for `Scenario_NetworkIsolatedCluster_Bootstrap_Profile_BYO_ACR`, created two public Premium BYO ACRs with cache rules, found and fixed the missing custom VNet input from `CustomVnetMutator`, then observed a source-shaped create remain `Creating` past the wrapper timeout with no ARM error detail. The probe has since been hardened to use `az aks create --no-wait`, explicit polling, ARM GET-on-timeout, and normal cleanup, with preflight3 passing.
 
-Next phase: create the Bootstrap managed-ACR single-case reference-backed TS probe using the same schema: feature packet, run plan, executable probe, local/source/environment preflight before cloud mutation, assertion `verdictImpact`, structured blocker extraction, bounded cleanup verification in JSON, short version capture, generated markdown, and self-review.
+Next phase: one bounded follow-up execution of the hardened BYO-ACR probe is allowed because the runner was materially changed to avoid losing structured evidence on long creates. Use a larger local wrapper timeout than the probe's `AKS_RP_E2E_CLUSTER_CREATE_WAIT_SECONDS` budget. If the hardened run reaches terminal create and lifecycle checks, update evidence/model only for clear source-backed pass/fail. If it again times out or remains `Creating` without `status.errordetail`, write structured blocker evidence, verify cleanup, keep `bootstrap-profile-byo-acr-lifecycle` unknown, and pivot to post-BYO unknown selection rather than blind reruns.
 
-Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim.
+Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim; after the hardened BYO follow-up, no further BYO rerun is allowed without a new source/environment/build signal.
 
 This keeps the project on the agreed phase order: learn -> ground -> experiment
 -> refine -> next single-case TS probe -> replan.
@@ -169,7 +169,16 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - `run-plans/vpa-upgrade-survival-runtime.yaml` — VPA upgrade-survival TS probe plan
 - `probes/vpa-upgrade-survival-runtime.ts` — executable VPA upgrade-survival probe
 - `outputs/iteration115-vpa-upgrade-survival-runtime.md` — VPA upgrade-survival pass summary and model update evidence
-- `outputs/iteration116-post-vpa-ts-probe-selection.md` — local selection artifact choosing Bootstrap managed-ACR lifecycle next
+- `features/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR reference packet
+- `run-plans/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR TS probe plan
+- `probes/bootstrap-profile-managed-acr-lifecycle.ts` — executable Bootstrap managed-ACR probe
+- `outputs/iteration116-bootstrap-managed-acr-lifecycle.md` — Bootstrap managed-ACR pass summary and model update evidence
+- `features/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR reference packet
+- `run-plans/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR TS probe plan
+- `probes/bootstrap-profile-byo-acr-lifecycle.ts` — executable Bootstrap BYO-ACR probe, hardened after the v2 timeout
+- `outputs/iteration117-bootstrap-byo-acr-lifecycle.md` — Bootstrap BYO-ACR initial blocked attempt and cleanup evidence
+- `outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md` — detailed BYO-ACR v2 create timeout blocker evidence
+- `outputs/iteration116-post-vpa-ts-probe-selection.md` — local selection artifact that chose the now-completed Bootstrap managed-ACR lifecycle probe
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
 - `tasks/managedsystem-pool/wave-01-feature-standard.yaml` — ManagedSystem Pool parallel feature-standard task wave
 - `outputs/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
@@ -249,8 +258,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 55 judgments, 46 evidence references.
-- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 11 unknown feature IDs, and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `workload-autoscaler-vpa-upgrade-survival-runtime` is now pass after iteration115.
+- Current deterministic summary: 35 AKS input variables, 67 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 56 judgments, 47 evidence references.
+- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 10 unknown feature IDs, and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115 and `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -261,29 +270,40 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Create the next single-case reference-backed TypeScript probe for `bootstrap-profile-managed-acr-lifecycle` using the refined diagnostics pattern from the ManagedSystem and VPA TS probes.
+Run one bounded follow-up execution of the hardened `bootstrap-profile-byo-acr-lifecycle` TypeScript probe, then either record a clear model-backed BYO lifecycle verdict or close the branch as blocked-for-now and replan to the next non-gated unknown.
 
 The task should:
 
-- start from `outputs/iteration116-post-vpa-ts-probe-selection.md`, `execution/README.md`, `outputs/e2e-capability-model.json`, `outputs/e2ev3-handwritten-coverage-inventory.md`, `outputs/input-expectation-knowledge-map.md`, and `outputs/iteration63-bootstrap-profile-staging.md`;
-- inspect the source-backed `Scenario_NetworkIsolatedCluster_Bootstrap_Profile_Managed_ACR` intent in devbox source before selecting exact inputs, feature/API/CLI requirements, image-pull assertion, registry cleanup signal, waits, and cleanup;
-- create or update a Bootstrap managed-ACR reference packet under `features/`;
-- produce a reviewable run plan under `run-plans/` and a TS probe under `probes/` before any cloud mutation;
-- use the refined evidence schema: assertion `verdictImpact`, structured blockers from ARM status/error detail, bounded cleanup verification in JSON, short version capture, and markdown generated from structured blocker/cleanup/model-impact fields;
-- execute only after local/source/environment preflight is clean, then produce structured evidence and self-review under `outputs/`;
-- update the capability model only for a clear source-backed pass/fail/blocker and only after the validator passes.
+- start from `outputs/iteration117-bootstrap-byo-acr-lifecycle.md`, `outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md`, `features/bootstrap-profile-byo-acr-lifecycle.yaml`, `run-plans/bootstrap-profile-byo-acr-lifecycle.yaml`, `probes/bootstrap-profile-byo-acr-lifecycle.ts`, `outputs/e2e-capability-model.json`, and `execution/README.md`;
+- run a quick preflight (`--preflight-only`) to confirm the hardened no-wait/polling/cleanup path is still clean;
+- execute the probe with a new run id and a local wrapper timeout larger than the probe's create wait budget (`AKS_RP_E2E_CLUSTER_CREATE_WAIT_SECONDS`, default 10800s), so structured JSON/markdown can be written if create remains stuck;
+- preserve the source-shaped BYO inputs from iteration117: custom VNet/subnet, two public Premium ACRs, `aks-managed-mcr` cache rules, Cache create with ACR0, AcrPull assignments, image-pull checks, Direct disable, Cache re-enable, and switch to ACR1;
+- if the run reaches terminal lifecycle assertions, update `outputs/e2e-capability-model.json` only for clear source-backed pass/fail evidence and run the validator;
+- if create again remains `Creating`, times out, or lacks ARM `status.errordetail`, produce/keep structured blocker evidence, verify resource-group cleanup including BYO ACR resources, leave `bootstrap-profile-byo-acr-lifecycle` unknown, and create a post-BYO unknown-selection task rather than rerunning BYO again.
 
-Do not include BYO ACR registry switching in this probe. Known gates still apply: do not rerun VPA cert renewal until `vpa-webhook-tls-reconciler` exists or source clarifies the legacy job path; do not rerun Machines CRUD or NAP default Machines cleanup until `PutMachinePreview` and `DeleteSpecificMachinesPreview` are registered or an equivalent source environment is available; do not blind-rerun App Routing TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, or Node Restriction tag-only PATCH without their documented triggers. Do not rerun completed ManagedSystem, VPA upgrade-survival, or Image Cleaner branches unless the probe input changes to answer a distinct coverage question.
+Do not infer BYO ACR behavior from the managed-ACR pass and do not combine this with another feature branch. Known gates still apply: do not rerun VPA cert renewal until `vpa-webhook-tls-reconciler` exists or source clarifies the legacy job path; do not rerun Machines CRUD or NAP default Machines cleanup until `PutMachinePreview` and `DeleteSpecificMachinesPreview` are registered or an equivalent source environment is available; do not blind-rerun App Routing TLS/Istio, ManagedSystem gated branches, OIDC signing-key rotation, or Node Restriction tag-only PATCH without their documented triggers. Do not rerun completed ManagedSystem, VPA upgrade-survival, Bootstrap managed-ACR, or Image Cleaner branches unless the probe input changes to answer a distinct coverage question.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
 
 ## Migration Notes
 
+### 2026-05-21 — Bootstrap BYO-ACR TS probe built; initial execution blocked on create timeout
+- `features/bootstrap-profile-byo-acr-lifecycle.yaml`, `run-plans/bootstrap-profile-byo-acr-lifecycle.yaml`, and `probes/bootstrap-profile-byo-acr-lifecycle.ts` now capture the source-backed `Scenario_NetworkIsolatedCluster_Bootstrap_Profile_BYO_ACR` branch: custom VNet, two public Premium BYO ACRs, `aks-managed-mcr` cache rules, AcrPull role assignments, Cache/Direct/Cache lifecycle, registry switch, and image-pull assertions.
+- `outputs/iteration117-bootstrap-byo-acr-lifecycle.md` records the initial blocked outcome. First execution surfaced the missing custom VNet input and was cleaned up; v2 used custom VNet and source-shaped ACR0 Cache create, but AKS remained `Creating` past the 7200s wrapper timeout with no ARM `status.errordetail`; cleanup reached `az group exists=false`.
+- The probe was hardened after the timeout to use `az aks create --no-wait`, explicit `az aks show` polling, ARM GET-on-timeout, structured `operation-timeout` blockers, and normal cleanup; `iteration117-preflight3` passed.
+- The next parser-visible task is a single hardened BYO follow-up run. If it again cannot reach a terminal product verdict, close BYO as blocked-for-now and pivot to post-BYO unknown selection; do not blind-rerun BYO without a new source/build/environment signal.
+- Existing gates remain in force for VPA cert renewal, Machines/Machine API/NAP cleanup, App Routing TLS/Istio, ManagedSystem residual branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH.
+
+### 2026-05-21 — Bootstrap managed-ACR TS probe passed; selected Bootstrap BYO-ACR lifecycle
+- `features/bootstrap-profile-managed-acr-lifecycle.yaml`, `run-plans/bootstrap-profile-managed-acr-lifecycle.yaml`, and `probes/bootstrap-profile-managed-acr-lifecycle.ts` completed the third reference-backed TS probe path.
+- `outputs/iteration116-bootstrap-managed-acr-lifecycle.md` records a pass for `bootstrap-profile-managed-acr-lifecycle`: Cache create assigned an AKS-managed ACR and image pull succeeded; Direct disable cleared `containerRegistryId`, image pull still succeeded, and managed ACR/private endpoint/private DNS cleanup was observed; Cache re-enable assigned a new managed registry and image pull succeeded; cleanup verified `az group exists=false`; validator exited 0.
+- Superseded by iteration117: the BYO packet/run-plan/probe now exist, and the next task is one hardened follow-up execution, not creating the BYO artifacts from scratch.
+
 ### 2026-05-21 — VPA upgrade-survival TS probe passed; selected Bootstrap managed-ACR lifecycle
 - `outputs/iteration115-vpa-upgrade-survival-runtime.md` and generated probe evidence completed the second reference-backed TS probe. The run passed `workload-autoscaler-vpa-upgrade-survival-runtime`: VPA components/recommendations passed before upgrade on Kubernetes `1.34.7`, cluster/nodepool upgraded to `1.35.4`, VPA components/recommendations passed again after upgrade, cleanup reached `az group exists=false`, and the capability-model validator exited 0.
 - `outputs/iteration116-post-vpa-ts-probe-selection.md` ranked remaining unknowns and selected `bootstrap-profile-managed-acr-lifecycle` as the next non-gated single-case TS probe. It must start from source grounding for `Scenario_NetworkIsolatedCluster_Bootstrap_Profile_Managed_ACR` and must not include BYO ACR registry switching.
-- Existing gates remain in force for VPA cert renewal, Machines/Machine API/NAP cleanup, App Routing TLS/Istio, ManagedSystem residual branches, OIDC signing-key rotation, and Node Restriction tag-only PATCH.
+- Superseded by later iteration116 Bootstrap managed-ACR pass: continue with the separate BYO-ACR lifecycle task, not another managed-ACR rerun.
 
 ### 2026-05-21 — Post-VirtualMachines autoscaled selection picked Image Cleaner survival
 - `outputs/iteration110-post-vmauto-unknown-selection.md` completed the local-only post-iteration109 selection loop. The validator exited 0 with 35 input variables, 67 expectation variables, 7 failing features, 13 unknown features, and 2 blocked features.
@@ -442,7 +462,8 @@ Do not include BYO ACR registry switching in this probe. Known gates still apply
 39. ✅ Review the first TS probe process and select the next bounded experiment/replan step
 40. ✅ Refine TS probe diagnostics and structured evidence locally before generalizing
 41. ✅ Create and execute the VPA upgrade-survival reference-backed TS probe
-42. 🔄 Create the Bootstrap managed-ACR lifecycle reference-backed TS probe
+42. ✅ Create and execute the Bootstrap managed-ACR lifecycle reference-backed TS probe
+43. 🔄 Create the Bootstrap BYO-ACR lifecycle reference-backed TS probe
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -848,10 +869,28 @@ Do not include BYO ACR registry switching in this probe. Known gates still apply
 
 
 - id: bootstrap-managed-acr-reference-backed-ts-probe
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Create the next single-case reference-backed TypeScript probe for bootstrap-profile-managed-acr-lifecycle using the refined diagnostics pattern from the ManagedSystem and VPA TS probes. Start from outputs/iteration116-post-vpa-ts-probe-selection.md, execution/README.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, and outputs/iteration63-bootstrap-profile-staging.md. Inspect devbox source for Scenario_NetworkIsolatedCluster_Bootstrap_Profile_Managed_ACR, especially test/e2ev3/sigs/security/networkisolatedcluster/plans/bootstrap_profile.go and handlers that validate bootstrap profile state, image pulls, managed ACR cleanup, and Cache re-enable, before selecting exact inputs, API/CLI requirements, waits, assertions, and cleanup. Create or update a Bootstrap managed-ACR reference packet under features/, produce a reviewable run plan under run-plans/ and a TS probe under probes/ before any cloud mutation, use assertion verdictImpact, structured blockers from ARM status/error detail, bounded cleanup verification in JSON, short version capture, and markdown generated from structured blocker/cleanup/model-impact fields. Execute only after local/source/environment preflight is clean, produce structured evidence and self-review under outputs/, and update the capability model only for clear source-backed pass/fail/blocker evidence with validator success. Do not include BYO ACR registry switching, App Routing, ManagedSystem, VPA/KEDA, Image Cleaner, Workload Identity/OIDC, VirtualMachines, Machines/NAP, Node Restriction, or unrelated probes."
   depends_on: [vpa-upgrade-survival-reference-backed-ts-probe]
+  attempts: 1
+
+- id: bootstrap-byo-acr-reference-backed-ts-probe
+  result: failed
+  status: done
+  assignee: aks-explorer
+  goal: "Create the next single-case reference-backed TypeScript probe for bootstrap-profile-byo-acr-lifecycle using the refined diagnostics pattern from the ManagedSystem, VPA, and Bootstrap managed-ACR TS probes. Start from outputs/iteration116-bootstrap-managed-acr-lifecycle.md, features/bootstrap-profile-managed-acr-lifecycle.yaml, run-plans/bootstrap-profile-managed-acr-lifecycle.yaml, probes/bootstrap-profile-managed-acr-lifecycle.ts, execution/README.md, outputs/e2e-capability-model.json, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/input-expectation-knowledge-map.md, outputs/public-api-input-expectation-expansion.md, and outputs/iteration63-bootstrap-profile-staging.md. Inspect devbox source for Scenario_NetworkIsolatedCluster_Bootstrap_Profile_BYO_ACR, especially test/e2ev3/sigs/security/networkisolatedcluster/plans/bootstrap_profile.go and helpers/handlers that create BYO ACRs, assign roles, validate bootstrap profile state, validate image pulls, disable/re-enable Cache, switch registries, and clean up ACR resources, before selecting exact inputs, API/CLI requirements, waits, assertions, and cleanup. Create or update a Bootstrap BYO-ACR reference packet under features/, produce a reviewable run plan under run-plans/ and a TS probe under probes/ before any cloud mutation, use assertion verdictImpact, structured blockers from ARM status/error detail, bounded cleanup verification in JSON for both AKS and BYO ACR resources, short version capture, and markdown generated from structured blocker/cleanup/model-impact fields. Execute only after local/source/environment preflight is clean, produce structured evidence and self-review under outputs/, and update the capability model only for clear source-backed pass/fail/blocker evidence with validator success. Do not infer BYO behavior from the managed-ACR pass and do not combine this with App Routing, ManagedSystem, VPA/KEDA, Image Cleaner, Workload Identity/OIDC, VirtualMachines, Machines/NAP, Node Restriction, or unrelated probes."
+  depends_on: [bootstrap-managed-acr-reference-backed-ts-probe]
+  attempts: 2
+  blocked_reason: "Initial BYO packet/run-plan/probe were produced and preflight passed. First execution exposed a missing source-required custom VNet input, then v2 with custom VNet remained Creating past the 7200s wrapper timeout with no ARM status.errordetail; cleanup verified false. Probe is now hardened for no-wait create/polling, so a single follow-up task is allowed."
+
+- id: bootstrap-byo-acr-hardened-followup
+  result: null
+  status: ready
+  assignee: aks-explorer
+  goal: "Run one bounded follow-up execution of the hardened bootstrap-profile-byo-acr-lifecycle TypeScript probe. Start from outputs/iteration117-bootstrap-byo-acr-lifecycle.md, outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md, features/bootstrap-profile-byo-acr-lifecycle.yaml, run-plans/bootstrap-profile-byo-acr-lifecycle.yaml, probes/bootstrap-profile-byo-acr-lifecycle.ts, execution/README.md, and outputs/e2e-capability-model.json. First run --preflight-only to confirm the no-wait create, explicit polling, ARM GET-on-timeout, structured blocker, and cleanup path remains clean. Then execute with a fresh run id and a local wrapper timeout larger than AKS_RP_E2E_CLUSTER_CREATE_WAIT_SECONDS so the probe can write structured JSON/markdown if create remains stuck. Preserve the source-shaped BYO inputs: custom VNet/subnet, two public Premium ACRs, aks-managed-mcr cache rules, Cache create with ACR0, AcrPull assignments, image-pull checks, Direct disable, Cache re-enable, and switch to ACR1. If the lifecycle reaches clear terminal assertions, update outputs/e2e-capability-model.json only for source-backed pass/fail and run the validator. If create remains Creating, times out, or lacks ARM status.errordetail again, produce structured blocker evidence, verify resource-group/BYO ACR cleanup, keep bootstrap-profile-byo-acr-lifecycle unknown, and update project.md with a post-BYO unknown-selection task rather than rerunning BYO. Do not combine with any other feature branch."
+  depends_on: [bootstrap-byo-acr-reference-backed-ts-probe]
   attempts: 0
 
 ## References
@@ -890,6 +929,8 @@ Do not include BYO ACR registry switching in this probe. Known gates still apply
 ## Comments
 
 ## Artifacts
+- outputs/iteration117-bootstrap-byo-acr-lifecycle.md
+- outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md
 - outputs/iteration116-post-vpa-ts-probe-selection.md
 - outputs/iteration115-vpa-upgrade-survival-runtime.md
 - outputs/iteration115-vpa-upgrade-survival-runtime-vpa-upgrade-survival-runtime.md
