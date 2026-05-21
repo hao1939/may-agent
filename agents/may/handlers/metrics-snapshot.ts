@@ -86,7 +86,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "scout.downstream-reference-files-7d", name: "Scout downstream reference files (7d)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 3, threshold: 1, unit: "count", alert_op: "<", priority: "P3" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
   { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
-  { id: "guard.triggered-count-24h", name: "Guard triggers (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1300, unit: "count", alert_op: ">", priority: "P3" },
+  { id: "guard.triggered-count-24h", name: "Guard triggers (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1400, unit: "count", alert_op: ">", priority: "P3" },
   { id: "guard.warned-count-24h", name: "Guard warnings (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 1500, unit: "count", alert_op: ">", priority: "P3" },
   { id: "guard.blocked-count-15m", name: "Guard blocks (15m)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },

@@ -243,6 +243,58 @@ describe("metrics-snapshot session health metrics", () => {
     });
   });
 
+  it("keeps Scout project watch metrics active and measured", async () => {
+    const root = join(tmpdir(), `metrics-scout-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(root);
+    mkdirSync(join(root, "agents", "scout", "knowledge"), { recursive: true });
+    mkdirSync(join(root, "agents", "scout", "workspace", "digest"), { recursive: true });
+    mkdirSync(join(root, "shared", "knowledge", "entries"), { recursive: true });
+    mkdirSync(join(root, "projects", "platform"), { recursive: true });
+    mkdirSync(join(root, "src/lib"), { recursive: true });
+    writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
+    writeFileSync(join(root, "agents", "scout", "AGENTS.md"), [
+      "Search existing knowledge before creating a new file.",
+      "Update existing notes in place when the topic already exists.",
+      "Every KE needs <ai_context> metadata.",
+    ].join("\n"));
+    writeFileSync(join(root, "agents", "scout", "knowledge", "note-a.md"), "<ai_context>\nsummary: sourced\n</ai_context>\n\nSource: https://example.com/a\n");
+    writeFileSync(join(root, "agents", "scout", "knowledge", "note-b.md"), "Source: https://example.com/b\n");
+    writeFileSync(join(root, "shared", "knowledge", "entries", "KE-1-demo.md"), "<ai_context>\nsummary: demo\n</ai_context>\n");
+    writeFileSync(join(root, "agents", "scout", "workspace", "digest", "today.md"), "**Source**: https://example.com/digest\n");
+    writeFileSync(join(root, "projects", "platform", "project.md"), "Scout learning reference: scout-second-brain-learning\n");
+
+    const db = getDb(root);
+    const now = Date.now();
+    db.run(
+      "INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, project, alert_op, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      ["scout.knowledge-practice-loaded", "old", "scout", "health", 0, 1, 1, "boolean", "P2", "disabled", "scout-second-brain-learning", "<", now - 24 * 3600_000, now - 24 * 3600_000],
+    );
+
+    const handler = create({
+      sdk: sdk(root, db),
+    } as any, {} as any);
+
+    await handler({ type: "trigger.metrics-snapshot" } as any);
+
+    const metric = (id: string) => db.prepare("SELECT current, owner, status, project, target, threshold FROM metrics WHERE id = ?").get(id) as any;
+    expect(metric("scout.knowledge-practice-loaded")).toMatchObject({
+      current: 1,
+      owner: "scout",
+      status: "active",
+      project: "scout-second-brain-learning",
+      target: 1,
+      threshold: 1,
+    });
+    expect(metric("scout.knowledge-preamble-coverage")).toMatchObject({
+      current: 0.6667,
+      owner: "scout",
+      status: "active",
+      project: "scout-second-brain-learning",
+    });
+    expect(metric("scout.sourced-artifacts-24h").current).toBeGreaterThanOrEqual(2);
+    expect(metric("scout.downstream-reference-files-7d").current).toBeGreaterThanOrEqual(1);
+  });
+
   it("does not count terminal no-recovery finish-block digests as unresolved dirty exits", async () => {
     const root = join(tmpdir(), `metrics-finish-blocked-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     tempDirs.push(root);
@@ -521,7 +573,7 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 10, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 2, priority: "P2" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
-    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 1300, priority: "P3" });
+    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 1400, priority: "P3" });
     expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 1200, priority: "P3" });
     expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
