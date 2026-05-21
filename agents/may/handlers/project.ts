@@ -16,10 +16,44 @@ import type { CronEntry } from "@may-agent/sdk";
 import {
   parseProjectTasks,
   planProjectTasks,
+  parseProjectMeta,
   updateProjectTaskFields,
   type PlannedProjectTask,
 } from "@may-agent/sdk";
 import type { ProjectInfo, HealthAction } from "../../../shared/lib/project-health.ts";
+
+const PROJECT_RECONCILER_METRICS = [
+  {
+    id: "project.reconcile.trigger-count",
+    name: "Project reconciler runs",
+    owner: "may",
+    type: "gauge" as const,
+    unit: "count",
+    priority: "P2" as const,
+    description: "One sample per project reconciler run; note identifies event or timer trigger.",
+  },
+  {
+    id: "project.reconcile.launched-count",
+    name: "Project reconciler launched actions",
+    owner: "may",
+    type: "gauge" as const,
+    unit: "count",
+    priority: "P2" as const,
+    description: "How many project tasks or owner loops this reconciler pass launched.",
+  },
+  {
+    id: "project.reconcile.event-latency-ms",
+    name: "Project event-to-reconcile latency",
+    owner: "may",
+    type: "health" as const,
+    target: 0,
+    threshold: 300_000,
+    unit: "ms",
+    alertOp: ">" as const,
+    priority: "P2" as const,
+    description: "Milliseconds from event timestamp to project reconciler handling. Normal event-driven path should be seconds.",
+  },
+];
 
 async function loadProjectHealth(root: string) {
   const hotLoadPath = resolve(root, "shared/lib/project-health.ts");
@@ -55,6 +89,11 @@ function taskSource(taskId: string): string {
 }
 
 const OWNER_SOURCE = "project-owner";
+const PROJECT_HEALTH_METRIC_IDS = new Set([
+  "project.health.finding-count",
+  "project.owner-judgment-needed-count",
+  "project.owner-incomplete-count",
+]);
 
 function taskIdFromSource(source: unknown): string | null {
   if (typeof source !== "string") return null;
@@ -66,6 +105,95 @@ function taskIdFromProjectTaskPrompt(task: unknown): string | null {
   if (typeof task !== "string") return null;
   const match = task.match(/^Task ID:\s*([^\s]+)\s*$/m);
   return match ? match[1] : null;
+}
+
+function projectPathFromProjectId(projectId: string): string | null {
+  const slug = projectId.split("/").pop()?.trim();
+  return slug ? `projects/${slug}` : null;
+}
+
+function projectPathFromProjectRef(projectRef: unknown): string | null {
+  if (typeof projectRef !== "string" || !projectRef.trim()) return null;
+  const normalized = normalizeProjectPath(projectRef);
+  if (!normalized) return null;
+  if (normalized.startsWith("projects/")) return normalized;
+  return projectPathFromProjectId(normalized) ?? `projects/${normalized}`;
+}
+
+function metricIdFromEvent(event: EventEnvelope | undefined): string | null {
+  const raw = event?.data?.metricId ?? event?.data?.metric_id;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
+function projectTargetsFromMetricSnapshot(ctx: HandlerContext, metricId: string): string[] {
+  try {
+    const db = ctx.sdk.getDb();
+    const rows = db.prepare(
+      "SELECT note FROM metric_snapshots WHERE metric_id = ? AND note IS NOT NULL ORDER BY measured_at DESC LIMIT 5",
+    ).all(metricId) as Array<{ note?: unknown }>;
+    const targets = new Set<string>();
+    for (const row of rows) {
+      if (typeof row.note !== "string" || !row.note.trim()) continue;
+      let note: Record<string, unknown>;
+      try {
+        note = JSON.parse(row.note) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+      const findings = Array.isArray(note.findings) ? note.findings : [];
+      for (const rawFinding of findings) {
+        if (!rawFinding || typeof rawFinding !== "object") continue;
+        const finding = rawFinding as Record<string, unknown>;
+        const explicitPath = normalizeProjectPath(finding.projectPath);
+        if (explicitPath) {
+          targets.add(explicitPath);
+          continue;
+        }
+        const projectId = typeof finding.projectId === "string" ? finding.projectId : "";
+        const path = projectPathFromProjectId(projectId);
+        if (path) targets.add(path);
+      }
+      if (targets.size > 0) break;
+    }
+    return [...targets];
+  } catch {
+    return [];
+  }
+}
+
+function projectTargetFromMetricRow(ctx: HandlerContext, metricId: string): string | null {
+  try {
+    const db = ctx.sdk.getDb();
+    const row = db.prepare("SELECT project FROM metrics WHERE id = ? LIMIT 1").get(metricId) as { project?: unknown } | null;
+    return projectPathFromProjectRef(row?.project);
+  } catch {
+    return null;
+  }
+}
+
+function projectTargetsFromEvent(ctx: HandlerContext, event: EventEnvelope | undefined): string[] {
+  const targets = new Set<string>();
+  const directPath = normalizeProjectPath(event?.data?.projectPath) ?? normalizeProjectPath(event?.data?.project);
+  if (directPath) targets.add(directPath);
+
+  const projectId = typeof event?.data?.projectId === "string" ? event.data.projectId : "";
+  const projectPath = projectPathFromProjectId(projectId);
+  if (projectPath) targets.add(projectPath);
+
+  const metricId = metricIdFromEvent(event);
+  if (metricId) {
+    const metricProjectTarget = projectTargetFromMetricRow(ctx, metricId);
+    if (metricProjectTarget) targets.add(metricProjectTarget);
+  }
+  if (metricId && PROJECT_HEALTH_METRIC_IDS.has(metricId)) {
+    for (const target of projectTargetsFromMetricSnapshot(ctx, metricId)) targets.add(target);
+  }
+
+  return [...targets];
+}
+
+function matchesAnyProjectTarget(project: ProjectInfo, targets: string[]): boolean {
+  return targets.length === 0 || targets.some((target) => matchesProjectTarget(project, target));
 }
 
 function projectMaxConcurrent(content: string): number {
@@ -82,10 +210,41 @@ function projectMaxTaskAttempts(content: string): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
 }
 
+function projectPolicy(content: string): "stable-watch" | "aggressive-push" | "standard" {
+  const meta = parseProjectMeta(content);
+  const raw = (meta.project_policy ?? meta.policy ?? "").trim().toLowerCase();
+  if (raw === "stable-watch" || raw === "aggressive-push") return raw;
+  return "standard";
+}
+
+function projectPolicyGuidance(policy: ReturnType<typeof projectPolicy>): string[] {
+  if (policy === "stable-watch") {
+    return [
+      "Policy posture: stable-watch.",
+      "Use solid evidence before creating new tasks.",
+      "When actionable platform signals are absent, set frontmatter `status: waiting` and record the current wait reason.",
+      "Prefer small, evidence-backed infrastructure pushes over speculative expansion.",
+    ];
+  }
+  if (policy === "aggressive-push") {
+    return [
+      "Policy posture: aggressive-push.",
+      "Actively inspect current evidence for the next frontier.",
+      "When a plausible path remains, create bounded next tasks and keep the project active.",
+      "Prefer forward progress through concrete tasks, probes, and verification loops.",
+    ];
+  }
+  return [
+    "Policy posture: standard.",
+    "Create tasks for actionable work.",
+    "When actionable signals are absent, set frontmatter `status: waiting` and record the current wait reason.",
+  ];
+}
+
 function buildProjectTaskPrompt(project: ProjectInfo, task: PlannedProjectTask): string {
   const deps = task.depends_on.length ? task.depends_on.join(", ") : "none";
   const runner = task.run ?? "agent";
-  return [
+  const lines = [
     "## Project Task",
     `Project: ${project.relPath}`,
     `Task ID: ${task.id}`,
@@ -105,20 +264,42 @@ function buildProjectTaskPrompt(project: ProjectInfo, task: PlannedProjectTask):
     "Use finish({ status: 'success', summary: '...' }) only when this task goal is met.",
     "Use partial when more work on the same task is useful.",
     "Use blocked or failure when owner judgment is needed.",
-  ].join("\n");
+  ];
+
+  if (task.context_files && task.context_files.length > 0) {
+    lines.push("");
+    lines.push("## Context Files");
+    lines.push("Read these files before acting:");
+    for (const f of task.context_files) lines.push(`- ${f}`);
+  }
+
+  if (task.success_criteria && task.success_criteria.length > 0) {
+    lines.push("");
+    lines.push("## Success Criteria");
+    for (const c of task.success_criteria) lines.push(`- ${c}`);
+  }
+
+  return lines.join("\n");
 }
 
 function buildProjectOwnerPrompt(project: ProjectInfo, reason: string): string {
+  const policy = projectPolicy(project.content);
   return [
     "## Project Owner Loop",
     `Project: ${project.relPath}`,
     `Owner: ${project.owner}`,
     `Reason: ${reason}`,
+    `Policy: ${policy}`,
     "",
     "## Context",
     `Read ${project.relPath}/project.md and related project files before changing state.`,
     "You own the project loop: assess current state, update tasks, replan, close, wait, or escalate.",
-    "Do not run the legacy project iteration workflow. Work through project.md tasks and normal agent/tool actions.",
+    "Use machine-readable frontmatter as the source of truth; treat Current State prose as supporting context.",
+    "Use project.md tasks and normal agent/tool actions as the project control surface.",
+    ...projectPolicyGuidance(policy),
+    "When frontmatter is `active` and all tasks are complete or the task list is empty, plan the next project step.",
+    "A successful finish leaves project.md in one of these states: concrete next tasks exist, frontmatter is `waiting` with the current wait reason, frontmatter is terminal, or the project has been escalated.",
+    "For discussion comments, inspect the tail after the last `---read @...---` marker. When that tail is fully handled, append a new read marker.",
     "",
     "## Finish Contract",
     "Use finish({ status: 'success', summary: '...' }) after project.md reflects the next correct state.",
@@ -128,6 +309,99 @@ function buildProjectOwnerPrompt(project: ProjectInfo, reason: string): string {
 function finishStatus(result: unknown): string {
   const finish = (result as { finishResult?: { status?: unknown } } | null)?.finishResult;
   return typeof finish?.status === "string" ? finish.status : "";
+}
+
+function projectReconcileNote(
+  event: EventEnvelope | undefined,
+  launched: number,
+  actionCount: number,
+  targetProject: string | null,
+): string {
+  return JSON.stringify({
+    trigger: event?.type ?? "timer.tick",
+    triggerSource: event ? "event" : "timer",
+    eventSource: event?.source ?? null,
+    projectPath: targetProject,
+    actions: actionCount,
+    launched,
+  });
+}
+
+function compactJson(value: unknown, limit = 700): string {
+  try {
+    const text = JSON.stringify(value);
+    return text.length > limit ? `${text.slice(0, limit - 3)}...` : text;
+  } catch {
+    return String(value).slice(0, limit);
+  }
+}
+
+function projectSignalReason(event: EventEnvelope | undefined): string | null {
+  if (!event) return null;
+  if (event.type === "project.health.finding") {
+    const code = typeof event.data?.code === "string" ? event.data.code : "project health finding";
+    const severity = typeof event.data?.severity === "string" ? event.data.severity : "unknown";
+    const message = typeof event.data?.message === "string" ? event.data.message : "";
+    return `project.health.finding ${code} (${severity}): ${message || compactJson(event.data)}`;
+  }
+  if (event.type === "project.owner.incomplete") {
+    const reason = typeof event.data?.reason === "string" ? event.data.reason : compactJson(event.data);
+    return `project.owner.incomplete: ${reason}`;
+  }
+  if (event.type === "metric.breach" || event.type === "metric.recovered") {
+    const metricId = metricIdFromEvent(event) ?? "unknown metric";
+    const current = event.data?.current;
+    const threshold = event.data?.threshold;
+    const target = event.data?.target;
+    const message = typeof event.data?.message === "string" ? event.data.message : "";
+    return `${event.type} ${metricId}: current=${current ?? "unknown"}, threshold=${threshold ?? "unknown"}, target=${target ?? "unknown"}${message ? `, message=${message}` : ""}`;
+  }
+  return null;
+}
+
+function isProjectSignalEvent(event: EventEnvelope | undefined, targetProjects: string[]): boolean {
+  if (!event) return false;
+  if (event.type === "project.health.finding" || event.type === "project.owner.incomplete") return true;
+  const metricId = metricIdFromEvent(event);
+  if (event.type !== "metric.breach" && event.type !== "metric.recovered") return false;
+  if (!metricId) return false;
+  return PROJECT_HEALTH_METRIC_IDS.has(metricId) || targetProjects.length > 0;
+}
+
+function recordProjectReconcileMetrics(
+  ctx: HandlerContext,
+  event: EventEnvelope | undefined,
+  now: number,
+  launched: number,
+  actionCount: number,
+  targetProject: string | null,
+): void {
+  try {
+    ctx.sdk.metrics.defineMany(PROJECT_RECONCILER_METRICS);
+    const note = projectReconcileNote(event, launched, actionCount, targetProject);
+    ctx.sdk.metrics.record("project.reconcile.trigger-count", 1, {
+      measuredAt: now,
+      measuredBy: "project-handler",
+      note,
+      sampleSize: actionCount,
+    });
+    ctx.sdk.metrics.record("project.reconcile.launched-count", launched, {
+      measuredAt: now,
+      measuredBy: "project-handler",
+      note,
+      sampleSize: actionCount,
+    });
+    if (event && typeof event.timestamp === "number") {
+      ctx.sdk.metrics.record("project.reconcile.event-latency-ms", Math.max(0, now - event.timestamp), {
+        measuredAt: now,
+        measuredBy: "project-handler",
+        note,
+      });
+    }
+    for (const metric of PROJECT_RECONCILER_METRICS) ctx.sdk.metrics.evaluate(metric.id);
+  } catch (e: any) {
+    ctx.sdk.log("info", `[project] Error recording reconciler metrics: ${e?.message ?? String(e)}`);
+  }
 }
 
 function workflowNameForTask(task: PlannedProjectTask): string | null {
@@ -270,6 +544,37 @@ function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unkn
   } catch { /* best-effort */ }
 }
 
+function emitOwnerIncompleteIfNoOpenWork(
+  ctx: HandlerContext,
+  project: ProjectInfo,
+  projectId: string,
+  sessionId: string | null,
+): boolean {
+  const latest = readFileSync(project.projectFile, "utf-8");
+  const meta = parseProjectMeta(latest);
+  if ((meta.status ?? "").toLowerCase() !== "active") return false;
+
+  const parsed = parseProjectTasks(latest);
+  if (parsed.errors.length > 0) return false;
+
+  const plan = planProjectTasks(parsed.tasks, {
+    activeTaskIds: activeProjectTaskIds(ctx, projectId),
+    maxConcurrent: projectMaxConcurrent(latest),
+  });
+  const noOpenWork = parsed.tasks.length === 0 || plan.allDone;
+  if (!noOpenWork) return false;
+
+  ctx.sdk.emit("project.owner.incomplete", {
+    projectId,
+    projectPath: project.relPath,
+    reason: "owner finished success while project remained active with no open tasks",
+    projectPolicy: projectPolicy(latest),
+    taskCount: parsed.tasks.length,
+    sessionId,
+  });
+  return true;
+}
+
 function launchProjectOwner(
   ctx: HandlerContext,
   project: ProjectInfo,
@@ -316,11 +621,15 @@ function launchProjectOwner(
 
   run
     .then((result: any) => {
+      const sessionId = result?.sessionId ?? null;
+      if (result?.status === "done" && finishStatus(result) === "success") {
+        emitOwnerIncompleteIfNoOpenWork(ctx, project, projectId, sessionId);
+      }
       ctx.sdk.emit("project.owner.finished", {
         projectId,
         projectPath: project.relPath,
         owner: project.owner,
-        sessionId: result?.sessionId ?? null,
+        sessionId,
         status: result?.status ?? "unknown",
         finishStatus: finishStatus(result) || null,
       });
@@ -352,9 +661,13 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const ph = await loadProjectHealth(ctx.sdk.paths.root);
     const now = Date.now();
     const healthState = ph.readHealthState(stateFile);
+    const targetProjects = projectTargetsFromEvent(ctx, event);
+    const targetProject = targetProjects[0] ?? null;
+    const projectSignal = isProjectSignalEvent(event, targetProjects);
 
     const projects = ph.scanAllProjects({ projectsRoot });
     if (projects.length === 0) {
+      recordProjectReconcileMetrics(ctx, event, now, 0, 0, targetProject);
       emitSkip(ctx, "No projects found.", { eventType: event?.type ?? "timer.tick" });
       return;
     }
@@ -366,7 +679,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Smart preflight: skip if all projects are blocked/waiting/closed and none have changed
     const hasActionable = projects.some(p => p.status === "active");
-    if (!hasActionable && event?.type !== "project.nudge" && event?.type !== "trigger.project") {
+    if (!hasActionable && event?.type !== "project.nudge" && event?.type !== "trigger.project" && !projectSignal) {
       const lastScan = healthState.lastFullScan || 0;
       const hasChanges = projects.some(p => {
         try {
@@ -379,6 +692,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         catch { return false; }
       });
       if (!hasChanges) {
+        recordProjectReconcileMetrics(ctx, event, now, 0, 0, targetProject);
         emitSkip(ctx, "Preflight skip: 0 actionable, no file changes since last scan", { eventType: event?.type ?? "timer.tick" });
         return;
       }
@@ -388,6 +702,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     try {
       const db = ctx.sdk.getDb();
       for (const p of projects) ph.upsertProject(db, p);
+      ph.pruneMissingProjectCache?.(db, ctx.sdk.paths.root, projects);
     } catch { /* best-effort */ }
 
     // Gather system context
@@ -440,17 +755,36 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // Diagnose each project
     const actions: Array<{ project: ProjectInfo; action: HealthAction }> = [];
-    const targetProject = normalizeProjectPath(event?.data?.projectPath);
-    const projectNudge = event?.type === "project.nudge" && !!targetProject;
+    const projectNudge = event?.type === "project.nudge" && targetProjects.length > 0;
     const commentNudge = projectNudge && event?.data?.comment === true;
-    const taskFinishedNudge = event?.type === "project.task.finished" && !!targetProject;
+    const taskFinishedNudge = event?.type === "project.task.finished" && targetProjects.length > 0;
+    const signalReason = projectSignalReason(event);
     for (const project of projects) {
-      if (targetProject && !matchesProjectTarget(project, targetProject)) continue;
-      const forceLaunch = event?.type === "trigger.project" || projectNudge || taskFinishedNudge;
-      actions.push({ project, action: ph.diagnoseProject(project, healthState, breachedMetrics, ownerRunningProjects, now, projects, forceLaunch) });
+      if (projectSignal && targetProjects.length === 0) continue;
+      if (!matchesAnyProjectTarget(project, targetProjects)) continue;
+      const forceLaunch = event?.type === "trigger.project" || projectNudge || taskFinishedNudge || projectSignal;
+      let action = ph.diagnoseProject(project, healthState, breachedMetrics, ownerRunningProjects, now, projects, forceLaunch);
+      if (
+        projectSignal
+        && action.type === "skip"
+        && signalReason
+        && !["closed", "done", "complete", "completed"].includes(project.status)
+        && !ownerRunningProjects.has(projectIdFor(project))
+      ) {
+        action = { type: "launch-owner", reason: signalReason, comment: "" };
+      } else if (projectSignal && action.type === "launch-owner" && signalReason) {
+        action = { ...action, reason: signalReason };
+      }
+      actions.push({ project, action });
     }
-    if (targetProject && actions.length === 0) {
-      emitSkip(ctx, `Target project not found: ${targetProject}`, { eventType: event?.type ?? "timer.tick", projectPath: targetProject });
+    if (projectSignal && targetProjects.length === 0) {
+      emitSkip(ctx, `Project signal had no project target: ${event?.type ?? "unknown"}`, {
+        eventType: event?.type ?? "timer.tick",
+        metricId: metricIdFromEvent(event),
+      });
+    }
+    if (targetProjects.length > 0 && actions.length === 0) {
+      emitSkip(ctx, `Target project not found: ${targetProjects.join(", ")}`, { eventType: event?.type ?? "timer.tick", projectPath: targetProjects.join(", ") });
     }
 
     // Log non-trivial actions
@@ -561,10 +895,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     healthState.lastFullScan = now;
     ph.writeHealthState(stateFile, healthState);
+    recordProjectReconcileMetrics(ctx, event, now, launched, actions.length, targetProject);
 
     if (launched > 0) {
-      const source = event?.source ?? "timer";
-      ctx.sdk.emit("metric", { name: source === "timer" ? "handler.project.timer-catches" : "handler.project.event-triggers", value: launched });
+      ctx.sdk.emit("metric", { name: event ? "handler.project.event-triggers" : "handler.project.timer-catches", value: launched });
       ctx.sdk.log("info", `[project] Launched ${launched} project action(s) [trigger: ${event?.type ?? "timer.tick"}]`);
     }
   };
