@@ -127,7 +127,11 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Active; `outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md` completed the source-shaped `Scenario_ImageCleaner` upgrade/restart survival probe. `image-cleaner-upgrade-restart-survival` is now pass in `outputs/e2e-capability-model.json`; the final validator exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 12 unknown features, and 2 blocked features.
+Active; the first reference-backed TypeScript probe path now exists and has been exercised. The stable ManagedSystem reference packet is `features/managedsystem-pool.yaml`, the reviewable run plan is `run-plans/managedsystem-rest-add-existing.yaml`, and the executable probe is `probes/managedsystem-rest-add-existing.ts`. Local/reference/environment preflight was clean on devbox; the actual run is captured in `outputs/iteration112-managedsystem-rest-add-existing-managedsystem-rest-add-existing.md` and self-review in `outputs/iteration112-managedsystem-rest-add-existing-managedsystem-rest-add-existing-self-review.md`.
+
+The iteration112 TS probe accepted the minimal ManagedSystem REST PUT and observed expected request/defaulting shape (`mode=ManagedSystem`, `type=VirtualMachines`, null/omitted top-level `vmSize`/`count`, and CriticalAddonsOnly taints), but the pool settled to `provisioningState=Failed` because staging/RP selected `Standard_D8pds_v5` with an x64 image: `Cannot create a VM of size 'Standard_D8pds_v5' because this VM size only supports a CPU Architecture of 'Arm64', but an image or disk with CPU Architecture 'x64' was given.` The probe therefore remains an environment-blocked execution artifact rather than new product pass/fail evidence; cleanup was verified with `az group exists -n msprobe-existing -> false`.
+
+`outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md` remains the latest model-changing pass. `image-cleaner-upgrade-restart-survival` is pass in `outputs/e2e-capability-model.json`; the final validator exits 0 with 35 input variables, 67 expectation variables, 7 failing features, 12 unknown features, and 2 blocked features.
 
 The Image Cleaner survival run used eastus2 `Standard_D4_v3`, Kubernetes `1.33.11` -> source-equivalent least next-minor `1.34.0`, `--enable-image-cleaner --image-cleaner-interval-hours 168`, and a normal/non-Automatic cluster so source stop/start restart was required. It passed ARM state and Kubernetes component assertions after create, after upgrade, and after stop/start; cleanup reached `ResourceGroupNotFound`. Earlier false starts were cleaned up and documented: one used the highest patch `1.34.7` before source preflight clarified least-patch target behavior, and one hit a stop/start sequencing race before final convergence polling was added.
 
@@ -141,25 +145,11 @@ The Image Cleaner survival run used eastus2 `Standard_D4_v3`, Kubernetes `1.33.1
 
 ## Current Phase
 
-Image Cleaner survival is complete. The next project move should not be another
-cloud probe by default. The next phase is to make the new execution strategy
-real with one reference-backed, reviewable TypeScript probe path.
+The first single-case, reference-backed TypeScript probe experiment is complete enough to evaluate the process: it produced reviewable source-grounded artifacts, executed automatically after clean preflight, emitted structured evidence, captured an environment blocker, and wrote a self-review without claiming unproven runtime expectations.
 
-Recommended first experiment:
+Next phase: local post-probe evaluation and replanning. Do **not** immediately rerun the same ManagedSystem probe while the known staging SKU/image blocker is unchanged. Instead, produce a review artifact that decides whether the TS probe process is good enough to generalize and selects the next bounded step: either refine probe ergonomics/diagnostics, create the next single-case TS probe for a non-gated feature, or define the first small high-density run plan. The evaluation should use the iteration112 evidence plus `execution/README.md`, `features/managedsystem-pool.yaml`, `run-plans/managedsystem-rest-add-existing.yaml`, and `probes/managedsystem-rest-add-existing.ts`.
 
-1. Build a stable feature reference packet for ManagedSystem Pool, using the
-   existing ManagedSystem feature-standard artifacts as the draft source.
-2. Create a reviewable single-case run plan under `run-plans/`.
-3. Create an executable TypeScript probe under `probes/` that maps directly to
-   the reference packet and declares its failure-diagnosis rules.
-4. Run the probe when preflight is clean, then review whether the process and
-   result honestly reflect the learned Go test intent.
-
-Human review is asynchronous. Agents should leave reviewable artifacts, but
-they should not stop for review between plan/probe generation and execution.
-If local/reference/environment preflight is clean, continue into execution,
-evidence capture, cleanup, and self-review. If preflight or execution is
-blocked, record the blocker and cleanup status instead of waiting silently.
+Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger such as a fixed ManagedSystem staging SKU/image default, an owner-provided override/environment, or a changed probe input that tests a distinct coverage claim.
 
 This keeps the project on the agreed phase order: learn -> ground -> experiment
 -> replan.
@@ -264,22 +254,16 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Prepare the first reference-backed TS probe experiment, using ManagedSystem Pool
-as the worked feature. Produce:
+Produce `outputs/iteration113-ts-probe-process-review-and-replan.md` as a local-only post-probe review/replan artifact. It should:
 
-- `features/managedsystem-pool.yaml` or equivalent tracked reference packet,
-- one reviewable `run-plans/managedsystem-*.yaml`,
-- one executable `probes/managedsystem-*.ts` with the required probe header,
-  source references, contract references, coverage claims, and failure
-  diagnosis rules,
-- one execution evidence artifact under `outputs/`,
-- one self-review artifact explaining whether the probe process/result honestly
-  reflected the learned Go test intent.
+- read the iteration112 ManagedSystem TS probe summary, JSON, and self-review;
+- inspect `execution/README.md`, `features/managedsystem-pool.yaml`, `run-plans/managedsystem-rest-add-existing.yaml`, and `probes/managedsystem-rest-add-existing.ts`;
+- judge whether the first TS probe path honestly reflected source intent, preserved diagnosis clarity, and emitted enough structured evidence;
+- identify concrete probe/process fixes, if any (for example timeout/polling, cleanup verification, environment-blocker extraction, evidence naming, or runtime-claim handling);
+- decide the next bounded project step: refine the ManagedSystem probe locally, create the next single-case reference-backed TS probe for a non-gated feature, or start the first small high-density run-plan design;
+- end by updating `project.md` with one parser-visible next task or a clear waiting/blocker state.
 
-The agent does not need to stop for human review. It should run the probe after
-local/reference preflight succeeds. If credentials, capacity, API availability,
-or environment gates block execution, record a precise blocker and cleanup
-status instead of waiting silently.
+Do not create another cloud resource for this review. Do not rerun the ManagedSystem REST add-existing probe until the staging SKU/image blocker has a material trigger or the probe input changes to answer a distinct coverage question.
 
 Known gates still apply: do not rerun VPA cert renewal until
 `vpa-webhook-tls-reconciler` exists or source clarifies the legacy job path; do
@@ -302,6 +286,11 @@ Restriction tag-only PATCH without their documented triggers.
 - `outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md` completed the Image Cleaner upgrade/restart survival probe and updated `image-cleaner-upgrade-restart-survival` to pass.
 - The capability-model validator exits 0 with 35 input variables, 67 expectation variables, 62 features, 41 pass, 7 fail, 12 unknown, and 2 blocked.
 - The next project phase is not another immediate cloud probe. It is to create the first reference-backed, reviewable TS probe path so later replanning can safely combine compatible cases into fewer AKS cluster lifecycles.
+
+### 2026-05-21 — First reference-backed TS probe executed and blocked on ManagedSystem SKU/image
+- `features/managedsystem-pool.yaml`, `run-plans/managedsystem-rest-add-existing.yaml`, and `probes/managedsystem-rest-add-existing.ts` now form the first reviewable reference-backed TS probe path.
+- `outputs/iteration112-managedsystem-rest-add-existing-managedsystem-rest-add-existing.md` and its JSON/self-review artifacts show clean devbox preflight and automatic execution. The minimal ManagedSystem REST PUT was accepted, but the pool failed when staging/RP selected Arm64-only `Standard_D8pds_v5` with an x64 image. Cleanup reached `az group exists=false`.
+- The parser-visible next task is local `ts-probe-process-review-and-replan`; do not rerun the same ManagedSystem cloud probe until the SKU/image blocker has a material trigger or a distinct input/coverage question.
 
 ### 2026-05-21 — VirtualMachines autoscaled VMs CRUD/upgrade passed
 - `outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md` completed the source-shaped `Scenario_Autoscaled_VMs_CRUD` probe. Source preflight found the plan has no `AKSAPIVersion()` override, so generated `awesome` clients use `2026-03-02-preview`; a false start with `2026-03-01` rejected `autoscale` as an unknown field and was cleaned up.
@@ -426,7 +415,8 @@ Restriction tag-only PATCH without their documented triggers.
 35. ✅ Select the next non-gated unknown after the VPA cert-renewal source-equivalence blocker
 36. ✅ Execute VirtualMachines autoscaled VMs CRUD/upgrade with source-gated staging evidence
 37. ✅ Execute Image Cleaner upgrade/restart survival with source-gated staging evidence
-38. 🔄 Create, run, and self-review the first reference-backed TypeScript probe path
+38. ✅ Create, run, and self-review the first reference-backed TypeScript probe path
+39. 🔄 Review the first TS probe process and select the next bounded experiment/replan step
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -799,10 +789,18 @@ Restriction tag-only PATCH without their documented triggers.
   attempts: 1
 
 - id: managedsystem-reference-backed-ts-probe
-  status: running
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Create, execute, and self-review the first reference-backed TypeScript probe experiment. Use ManagedSystem Pool as the worked feature. Start from execution/README.md, features/README.md, run-plans/README.md, probes/README.md, outputs/managedsystem-pool-feature-standard.md, outputs/managedsystem-pool-feature-intent.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-evidence-state-matrix.md, outputs/managedsystem-pool-repro-pack.md, outputs/managedsystem-pool-related-context.md, outputs/e2e-capability-model.json, and the relevant Go e2ev3 source references already captured in the ManagedSystem artifacts. Produce a stable feature reference packet under features/, one reviewable run plan under run-plans/, and one executable TypeScript probe under probes/. The probe header must cite source Go paths, design/API/user-doc references or explicitly mark missing references, feature IDs, input paths, expectation paths, allowed execution surfaces, expected cluster lifecycle count, evidence outputs, and failure-diagnosis rules. After local/reference preflight succeeds, run the probe. Produce execution evidence under outputs/ and a self-review artifact explaining whether the probe process and result honestly reflected the learned Go test intent. If credentials, capacity, API availability, or environment gates block execution, record precise blocker evidence and cleanup status instead of waiting for human review."
   depends_on: [image-cleaner-upgrade-restart-survival-staging]
+  attempts: 1
+
+- id: ts-probe-process-review-and-replan
+  status: ready
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration113-ts-probe-process-review-and-replan.md as a local-only post-probe review/replan artifact. Start from outputs/iteration112-managedsystem-rest-add-existing-managedsystem-rest-add-existing.md, outputs/iteration112-managedsystem-rest-add-existing-managedsystem-rest-add-existing.json, outputs/iteration112-managedsystem-rest-add-existing-managedsystem-rest-add-existing-self-review.md, execution/README.md, features/managedsystem-pool.yaml, run-plans/managedsystem-rest-add-existing.yaml, probes/managedsystem-rest-add-existing.ts, and outputs/e2e-capability-model.json. Judge whether the first reference-backed TS probe path honestly reflected source intent, preserved diagnosis clarity, emitted enough structured evidence, and revealed process fixes needed before generalizing. Decide one bounded next step: local probe/process refinement, the next single-case reference-backed TS probe for a non-gated feature, or the first small high-density run-plan design. Do not create cloud resources or rerun ManagedSystem REST add-existing unless the staging SKU/image blocker has a material trigger or the probe input changes to answer a distinct coverage question. End by updating project.md with the selected next parser-visible task or a clear waiting/blocker state."
+  depends_on: [managedsystem-reference-backed-ts-probe]
   attempts: 0
 
 ## References
