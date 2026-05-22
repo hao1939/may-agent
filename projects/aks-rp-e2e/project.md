@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 121
+iteration: 123
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -119,8 +119,8 @@ agent pools, and later dark-side discovery.
 
 ## Signals
 - knowledge.input-space-modeled: current capability model has 35 AKS input variables.
-- knowledge.expectation-space-modeled: current capability model has 67 expectation variables.
-- knowledge.feature-mapping-started: current capability model has 62 feature mappings and 68 test-case evidence mappings; current validator has 7 failing features, 10 unknown feature IDs, and 2 blocked features after iteration116.
+- knowledge.expectation-space-modeled: current capability model has 68 expectation variables.
+- knowledge.feature-mapping-started: current capability model has 61 feature mappings and 67 test-case evidence mappings; current validator has 7 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs after iteration122.
 - knowledge.source-inventory-modeled: `outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
 - e2e.existing-cases-cataloged: `outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
 - knowledge.public-api-candidates-started: `outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
@@ -129,7 +129,9 @@ agent pools, and later dark-side discovery.
 ## Current State
 Active; five reference-backed TypeScript probe paths have now been exercised or built: ManagedSystem REST add-existing, VPA upgrade-survival, Bootstrap profile managed-ACR lifecycle, Bootstrap profile BYO-ACR lifecycle, and OIDC default-enabled signing-key rotation.
 
-`outputs/iteration121-node-restriction-tag-only-patch-model-hygiene.md` is the latest model-changing artifact. It applies the `outputs/iteration120-node-restriction-tag-only-patch-shape.md` source/spec resolution locally: `node-restriction-tag-only-patch-shape` is now pass as non-contract operation-shape hygiene (`nodeRestriction.patchShape.nonContract=true`), not an execution-worthy unknown. `outputs/input-expectation-knowledge-map.md` now says ManagedCluster PATCH is `ManagedClusters_UpdateTags`/`TagsObject` only and should not be selected as a Node Restriction cloud PATCH probe unless swagger/RP source changes, an official generated client/CLI introduces a securityProfile PATCH path, or a human explicitly requests generic UpdateTags unknown-field handling. The validator exits 0 with 35 input variables, 68 expectation variables, 62 feature mappings, 68 test-case evidence mappings, 7 failing feature IDs, 8 unknown feature IDs, and 2 blocked feature IDs.
+`outputs/iteration122-vpa-runtime-rollup-model-hygiene.md` is the latest model-changing artifact. It retires the legacy `workload-autoscaler-vpa-runtime` roll-up as a non-execution aggregate instead of leaving it as a direct cloud-probe unknown. The concrete split VPA branches now carry the real state: components/recommendations, Helm release, HA/leader-election, in-place update, and upgrade survival are pass; cert renewal remains blocked on source-equivalent `vpa-webhook-tls-reconciler` availability or source-owner confirmation that the legacy `overlay-vpa-cert-webhook-check` job is intended. The validator exits 0 with 35 input variables, 68 expectation variables, 61 feature mappings, 67 test-case evidence mappings, 7 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs. `workload-autoscaler-vpa-runtime` is absent from the model's first-class feature/test/judgment IDs except for the iteration122 evidence note.
+
+`outputs/iteration121-node-restriction-tag-only-patch-model-hygiene.md` remains the latest Node Restriction hygiene artifact. It applies the `outputs/iteration120-node-restriction-tag-only-patch-shape.md` source/spec resolution locally: `node-restriction-tag-only-patch-shape` is now pass as non-contract operation-shape hygiene (`nodeRestriction.patchShape.nonContract=true`), not an execution-worthy unknown. `outputs/input-expectation-knowledge-map.md` now says ManagedCluster PATCH is `ManagedClusters_UpdateTags`/`TagsObject` only and should not be selected as a Node Restriction cloud PATCH probe unless swagger/RP source changes, an official generated client/CLI introduces a securityProfile PATCH path, or a human explicitly requests generic UpdateTags unknown-field handling.
 
 `outputs/iteration120-node-restriction-tag-only-patch-shape.md` remains the source/spec resolution artifact behind the model hygiene. It resolved `node-restriction-tag-only-patch-shape` locally as a non-contract/no-future-probe branch: public swagger models ManagedCluster PATCH as `ManagedClusters_UpdateTags` with a tag-only `TagsObject` body across checked API versions; prior RP source evidence decodes PATCH as `PatchRequestBody { Tags map[string]string }`; and the full Node Restriction disable validator/error contract belongs to full ManagedCluster PUT, already passed in iteration83.
 
@@ -147,7 +149,9 @@ The previous VPA upgrade-survival TS probe remains pass in `outputs/iteration115
 
 `machines-agentpool-api-crud` remains blocked on missing staging subscription features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview`; do not rerun Machines CRUD or select NAP default Machines pool cleanup until those features are registered in subscription `26fe00f8-9173-4872-9134-bb1d2e00343a` or an equivalent source environment is provided.
 
-The next plausible frontier is local VPA roll-up hygiene: `workload-autoscaler-vpa-runtime` is a legacy aggregate/source-intent pointer, not a direct execution branch. All concrete split branches are now represented separately (`components/recommendations`, `helm release`, `HA/leader-election`, `in-place update`, `upgrade survival` pass; `cert renewal` blocked on missing source-equivalent reconciler). The next task should either retire/reclassify the roll-up so it no longer appears as an execution-worthy unknown, or write a precise schema-compatible blocker if the model cannot express aggregate retirement cleanly. Preserve existing gates for BYO reruns, VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem gated branches, and Node Restriction cloud PATCH reruns; do not rerun completed Image Cleaner/VPA/OIDC/ManagedSystem/Bootstrap managed-ACR branches unless source semantics, environment, or probe inputs materially change.
+`outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md` is the latest ManagedSystem design artifact. It created `features/managedsystem-runtime-restrictions.yaml`, `run-plans/managedsystem-runtime-restrictions.yaml`, and `probes/managedsystem-runtime-restrictions.ts`, then kept cloud execution gated because iteration88 showed current ManagedSystem add can fail before runtime checks when RP selects an Arm64-only `Standard_D8pds_v5` with an x64 Ubuntu image. The design's local preflight was re-run in this owner loop as `outputs/iteration124-owner-loop-preflight-managedsystem-runtime-restrictions-design-preflight.md` / `.json`; reference preflight passed and no cloud mutation was performed.
+
+The next plausible frontier is local-only ManagedSystem single-pool constraint design. `managedsystem-single-pool-constraint` is a source/skill-intended ARM error-shape branch: after one ManagedSystem pool exists, a second minimal `{"properties":{"mode":"ManagedSystem"}}` add should be rejected because only one ManagedSystem pool is allowed per cluster. It still depends on a first ManagedSystem pool succeeding before any eventual cloud execution, but it is cheaper and less runtime-sensitive than VAP/add-on-placement checks and can be designed safely now. Preserve existing gates for BYO reruns, VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem cloud execution branches, and Node Restriction cloud PATCH reruns; do not rerun completed Image Cleaner/VPA/OIDC/ManagedSystem REST/Bootstrap managed-ACR branches unless source semantics, environment, or probe inputs materially change.
 
 ## Current Phase
 
@@ -155,9 +159,9 @@ The reference-backed TypeScript probe pattern has now been exercised on five fea
 
 `outputs/iteration119-oidc-rotation-oidc-signing-key-rotation.md` and `outputs/iteration119-oidc-signing-key-rotation-model-update.md` close the selected post-BYO OIDC frontier. The probe executed source-authored rotation cases `case_2`, `case_2_legacy`, `case_4`, `case_5`, `case_6`, `case_7`, `case_8`, and `case_1`; every case reached its expected JWKS key count and cleanup passed.
 
-Next phase: perform local VPA roll-up hygiene. The model still lists `workload-autoscaler-vpa-runtime` as unknown even though project selection artifacts repeatedly say it is not a direct execution target and concrete VPA split branches now carry the real pass/blocked state.
+Next phase: local-only ManagedSystem single-pool constraint design. The remaining non-gated model unknowns are ManagedSystem runtime restrictions, single-pool constraint, and reconcile preservation; Bootstrap BYO-ACR, Machines/NAP Machine cleanup, App Routing TLS/Istio, and VPA cert renewal remain gated or blocked. Runtime restrictions now has a reviewable but execution-gated plan, so the next bounded advance is to ground the second-pool rejection branch into a feature packet/run plan/probe skeleton before any cloud mutation.
 
-Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim; no further BYO rerun is allowed without a new source/environment/build signal, and the next VPA roll-up task is local-only.
+Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem runtime cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, and clear assertion boundaries.
 
 This keeps the project on the agreed phase order: learn -> ground -> experiment
 -> refine -> next single-case TS probe -> replan.
@@ -264,8 +268,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 68 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 57 judgments, 49 evidence references.
-- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 8 unknown feature IDs, and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, and `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121.
+- Current deterministic summary: 35 AKS input variables, 68 AKS state/behavior expectation variables, 61 feature mappings, 67 test-case evidence mappings, 56 judgments, 50 evidence references.
+- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 7 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -276,17 +280,17 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Perform local-only hygiene for the legacy `workload-autoscaler-vpa-runtime` roll-up.
+Perform local-only ManagedSystem single-pool constraint probe design.
 
 The task should:
 
-- start from `outputs/iteration79-vpa-runtime-model-split.md`, `outputs/iteration93-vpa-residual-runtime-staging.md`, `outputs/iteration107-vpa-cert-renewal-runtime-staging.md`, `outputs/iteration115-vpa-upgrade-survival-runtime.md`, `outputs/e2e-capability-model.json`, and `outputs/input-expectation-knowledge-map.md`;
-- determine whether `workload-autoscaler-vpa-runtime` should be retired as a non-execution aggregate, changed to a schema-compatible blocked aggregate because exact source closure waits on cert-renewal clarification, or replaced by a model note that points to the split VPA branches;
-- update `outputs/e2e-capability-model.json` and `outputs/input-expectation-knowledge-map.md` so the roll-up no longer appears as a plausible direct cloud-probe unknown;
-- run `cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json` and include the validator result in a short output artifact;
-- if the model schema makes clean retirement awkward, write a precise local blocker with the schema reason and propose the smallest schema-compatible representation.
+- start from `outputs/managedsystem-pool-feature-intent.md`, `outputs/managedsystem-pool-feature-standard.md`, `outputs/managedsystem-pool-api-doc-boundary.md`, `outputs/managedsystem-pool-evidence-state-matrix.md`, `outputs/managedsystem-pool-repro-pack.md`, `outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md`, `features/managedsystem-runtime-restrictions.yaml`, `run-plans/managedsystem-runtime-restrictions.yaml`, `probes/managedsystem-runtime-restrictions.ts`, `outputs/e2e-capability-model.json`, and `outputs/input-expectation-knowledge-map.md`;
+- inspect current devbox source for ManagedSystem second-pool rejection intent, especially `.claude/skills/test-managedsystem-pool/` scripts/skill text and any e2ev3/RP validation references that state only one ManagedSystem pool is allowed;
+- produce `outputs/iteration124-managedsystem-single-pool-constraint-probe-design.md` describing the accepted setup path, second-pool negative input path, expected rejection/error shape if source exposes it, execution gates, cleanup plan, and model impact rules;
+- create or update tracked `features/managedsystem-single-pool-constraint.yaml`, `run-plans/managedsystem-single-pool-constraint.yaml`, and `probes/managedsystem-single-pool-constraint.ts` only if the source contract is clear enough to make the eventual probe auditable;
+- run a local-only design/reference preflight for any new probe skeleton and capture its output under `outputs/`; run `cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json` if the capability model changes.
 
-Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this task. Preserve existing gates for BYO, VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem prereq-sensitive branches, and Node Restriction cloud PATCH reruns. Do not rerun completed ManagedSystem, VPA, OIDC, Bootstrap managed-ACR, Image Cleaner, or Node Restriction branches unless source semantics, environment, or probe inputs materially change.
+Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this task. Preserve the execution gate from iteration123/iteration88: no ManagedSystem cloud branch should run until a first ManagedSystem pool can be created safely or an owner provides a contract-safe SKU/image/defaulting path. Do not rerun completed ManagedSystem REST add-existing, VPA, OIDC, Bootstrap managed-ACR, Image Cleaner, or Node Restriction branches unless source semantics, environment, or probe inputs materially change.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -472,7 +476,9 @@ Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this
 44. ✅ Create and execute the OIDC signing-key rotation reference-backed TS probe
 45. ✅ Resolve Node Restriction tag-only PATCH source/spec shape before any cloud mutation
 46. ✅ Retire/reclassify Node Restriction tag-only PATCH as source-resolved/non-contract in the capability model
-47. 🔄 Retire/reclassify the legacy VPA runtime roll-up so split VPA branches drive future selection
+47. ✅ Retire/reclassify the legacy VPA runtime roll-up so split VPA branches drive future selection
+48. ✅ Design a source-safe ManagedSystem runtime-restrictions TS probe/run plan before any cloud mutation
+49. 🔄 Design a source-safe ManagedSystem single-pool constraint TS probe/run plan before any cloud mutation
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -936,10 +942,26 @@ Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this
   attempts: 1
 
 - id: vpa-runtime-rollup-model-hygiene
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Perform local-only hygiene for the legacy workload-autoscaler-vpa-runtime roll-up after the split VPA branch work. Start from outputs/iteration79-vpa-runtime-model-split.md, outputs/iteration93-vpa-residual-runtime-staging.md, outputs/iteration107-vpa-cert-renewal-runtime-staging.md, outputs/iteration115-vpa-upgrade-survival-runtime.md, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Decide whether the roll-up should be retired as a non-execution aggregate, marked blocked because exact source closure waits on VPA cert-renewal source/environment clarification, or represented by a schema-compatible note pointing to split branch features. Update outputs/e2e-capability-model.json and outputs/input-expectation-knowledge-map.md so this roll-up no longer appears as a direct cloud-probe unknown, run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json, and produce outputs/iteration122-vpa-runtime-rollup-model-hygiene.md with the exact edits and validator output. Do not run staging, az, kubectl, cluster creation, or cloud mutation."
   depends_on: [node-restriction-tag-only-patch-model-hygiene]
+  attempts: 1
+
+- id: managedsystem-runtime-restrictions-probe-design
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Design the next source-safe reference-backed TypeScript probe/run plan for managedsystem-runtime-restrictions before any cloud mutation. Start from outputs/managedsystem-pool-feature-standard.md, outputs/managedsystem-pool-feature-intent.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-evidence-state-matrix.md, outputs/managedsystem-pool-repro-pack.md, outputs/managedsystem-pool-related-context.md, outputs/iteration112-managedsystem-rest-add-existing-v2-managedsystem-rest-add-existing.md, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Inspect current devbox source for Scenario_ManagedSystem_AgentPool and related validators to identify the minimal input path, required Kubernetes runtime assertions (node labels/taints, VAP/VAPBinding, critical add-on placement/affinity, customer workload unschedulability), SKU/location/version/custom-feature gates, and cleanup constraints. Produce a feature/run-plan/probe design artifact under outputs/ and update or create tracked files under features/, run-plans/, and probes/ only if the source contract is clear. Do not run staging, az, kubectl, cluster creation, or cloud mutation; if the design cannot be made safe, produce a blocker artifact with exact missing source/environment facts and recommend whether single-pool or reconcile preservation should be designed first instead."
+  depends_on: [vpa-runtime-rollup-model-hygiene]
+  attempts: 1
+
+- id: managedsystem-single-pool-constraint-probe-design
+  status: ready
+  assignee: aks-explorer
+  goal: "Perform local-only ManagedSystem single-pool constraint probe design. Start from outputs/managedsystem-pool-feature-intent.md, outputs/managedsystem-pool-feature-standard.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-evidence-state-matrix.md, outputs/managedsystem-pool-repro-pack.md, outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md, features/managedsystem-runtime-restrictions.yaml, run-plans/managedsystem-runtime-restrictions.yaml, probes/managedsystem-runtime-restrictions.ts, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Inspect current devbox source for ManagedSystem second-pool rejection intent, especially .claude/skills/test-managedsystem-pool/ scripts/skill text and any e2ev3/RP validation references that state only one ManagedSystem pool is allowed. Produce outputs/iteration124-managedsystem-single-pool-constraint-probe-design.md describing the accepted setup path, second-pool negative input path, expected rejection/error shape if source exposes it, execution gates, cleanup plan, and model impact rules. Create or update features/managedsystem-single-pool-constraint.yaml, run-plans/managedsystem-single-pool-constraint.yaml, and probes/managedsystem-single-pool-constraint.ts only if the source contract is clear enough to make the eventual probe auditable. Run a local-only design/reference preflight for any new probe skeleton and capture its output under outputs/. Do not run staging, az, kubectl, cluster creation, or cloud mutation; preserve the iteration123/iteration88 ManagedSystem execution gate."
+  depends_on: [managedsystem-runtime-restrictions-probe-design]
   attempts: 0
 
 ## References
