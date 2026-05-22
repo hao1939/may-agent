@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 145
+iteration: 148
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -177,11 +177,17 @@ All three residual ManagedSystem unknowns and the full Machines/NAP default-pool
 
 ## Current Phase
 
-The reference-backed TypeScript probe pattern has now been exercised on six runtime/product branches and extended with several local design-gated skeletons. ManagedSystem REST add-existing, VPA upgrade-survival, Bootstrap profile managed-ACR lifecycle, OIDC signing-key rotation, and App Routing NGINX-to-Istio migration produced cloud pass evidence; Bootstrap BYO-ACR produced bounded blocker evidence; ManagedSystem runtime/single-pool/reconcile and Machines/NAP cleanup now have reviewable local designs but remain execution-gated.
+The reference-backed TypeScript probe pattern has now been exercised or built on six runtime/product branches and extended with several local design-gated skeletons. ManagedSystem REST add-existing, VPA upgrade-survival, Bootstrap profile managed-ACR lifecycle, OIDC signing-key rotation, and App Routing NGINX-to-Istio migration produced cloud pass evidence; Bootstrap BYO-ACR produced bounded blocker evidence; ManagedSystem runtime/single-pool/reconcile and Machines/NAP cleanup now have reviewable local designs but remain execution-gated.
 
-The generic App Routing NGINX-to-Istio migration probe has now passed in staging via the iteration137 explicitly gated execution. It preserved the non-default-domain boundary and does not claim or unblock the failed/default-domain TLS branches.
+The generic App Routing NGINX-to-Istio migration probe has passed in staging via the iteration137 explicitly gated execution. It preserved the non-default-domain boundary and does not claim or unblock the failed/default-domain TLS branches.
 
-Next phase: refresh the durable knowledge-map/project frontier after the iteration145 NAP rollout escalation packet. This is local consolidation only: update `outputs/input-expectation-knowledge-map.md` (and only source-inventory/model artifacts if evidence requires it) so the current App Routing migration pass, NAP split failure/escalation, no same-input eastus2 rerun gate, and remaining gated unknowns are reflected before selecting the next bounded task or a waiting state.
+The NAP cleanup no-Machine-CRUD split has failed in the selected staging eastus2 environment: iteration143 created a source-shaped NAP Auto cluster and persisted `nodeProvisioningProfile.mode=Auto` / `defaultNodePools=Auto`, but `aksmanagedap` was NotFound before Manual update; cleanup reached `az group exists=false` with no Machine CRUD or `deleteMachines` calls. Iteration144/145 triaged this as likely rollout/environment mismatch because checked-in `enable-managed-machine-agent-pool` and `regionallooper-reconcile-nap-cluster-enabled` rules do not enable staging eastus2. Do not blind-rerun the same eastus2 input unless owner/rollout/source/environment inputs materially change.
+
+`outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md` is the latest local reference packet. It closes the parser-visible VirtualMachines CLI comma multi-SKU packet task without cloud mutation: the failing boundary is specifically `az aks nodepool add --vm-set-type VirtualMachines --vm-sizes <sku1,sku2>` on the preview CLI surface, where help advertises a two-SKU comma-list but active `aks-preview` source rejects `len(--vm-sizes) != 1` before constructing the request. Adjacent product/API paths remain separate and passing: CLI add with one SKU, CLI manual-scale multiple single-size profiles, REST mixed manual `manual[]` profiles, CLI/REST single-size autoscale update, and autoscaled VMs CRUD/upgrade. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 56 evidence references, 8 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs.
+
+`outputs/iteration148-paf-throttling-source-precondition-reference-packet.md` is the latest local source/precondition packet. It classifies the current `paf-throttling` model fail as stale/ambiguous standalone evidence rather than a confirmed PAF product failure: the first run failed before PAF assertions because the devbox lacked the `akse2ehcp-e2e` MSI; the post-MSI retry reached the dedicated/OOM stress gate but `Verify PAF Objects` was skipped because no kube-apiserver OOMKilled/137 event appeared within the source timeout; later `AKSCapacityHeavyUsage` evidence is a standalone capacity gate. Do not rerun standalone/staging PAF until MSI/HCP access, eastus2/underlay capacity or owner-approved bypass, and the source `DedicatedOom` trigger/assertion path are confirmed.
+
+The next bounded local frontier is PAF model hygiene: reconcile `outputs/e2e-capability-model.json` with iteration148 by either reclassifying `paf-throttling` from fail to blocked/gated with the historical MSI/capacity/OOM evidence, or splitting the product assertion from environment/test-harness preconditions if that better preserves the model semantics. This is local-only and must run the capability-model validator; it must not run standalone/staging, `az`, `kubectl`, cluster creation, cloud mutation, Machine APIs, or `deleteMachines`.
 
 Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, sanitizer/request-shape evidence where applicable, and clear assertion boundaries. Machines/NAP Machine API cloud execution should wait for the Machine preview feature registrations or an equivalent source environment. App Routing migration execution is complete for the generic branch; preserve the checked-in gates and preflights for any future adjacent App Routing work.
 
@@ -290,7 +296,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
 - Current deterministic summary: 35 AKS input variables, 71 AKS state/behavior expectation variables, 63 feature mappings, 69 test-case evidence mappings, 58 judgments, 56 evidence references.
-- Current feature status from validator: 8 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), 7 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` is a design-only partial split after iteration131; it must not close the full NAP cleanup or Machines API CRUD branches. `app-routing-nginx-to-istio-migration` is pass after iteration137 as a generic AppRoutingIstio/Gateway branch; it does not close default-domain Istio, default-domain TLS lifecycle, or the failed TLS-secret provisioning branch. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
+- Current feature status from validator: 8 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), 7 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` is a failed partial split after iteration143; it must not close the full NAP cleanup or Machines API CRUD branches, and same-input staging eastus2 rerun is gated by iteration145 owner/rollout triggers. `app-routing-nginx-to-istio-migration` is pass after iteration137 as a generic AppRoutingIstio/Gateway branch; it does not close default-domain Istio, default-domain TLS lifecycle, or the failed TLS-secret provisioning branch. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -301,19 +307,13 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Refresh the durable knowledge map and next-frontier selection after the iteration145 NAP managed-machine-pool rollout escalation packet.
+Perform PAF throttling model hygiene locally.
 
-Start from `outputs/iteration145-nap-managed-machine-pool-rollout-escalation.md`, `outputs/iteration144-nap-aksmanagedap-absence-source-triage.md`, `outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md`, `outputs/iteration137-approuting-nginx-to-istio-migration-execution.md`, `outputs/iteration135-knowledge-map-refresh.md`, `outputs/e2e-capability-model.json`, and `outputs/input-expectation-knowledge-map.md`.
+Start from `outputs/iteration148-paf-throttling-source-precondition-reference-packet.md`, `outputs/e2e-capability-model.json`, `outputs/input-expectation-knowledge-map.md`, and the historical PAF artifacts cited by iteration148. Reconcile the model's stale `paf-throttling` fail/`msi.identity.provided=false` judgment with the post-MSI `DedicatedOom` precondition failure and later capacity-gate evidence. Either reclassify `paf-throttling` to blocked/gated with precise resume triggers, or split product assertion versus environment/test-harness preconditions if that is the cleaner model boundary.
 
-Produce `outputs/iteration146-post-nap-escalation-knowledge-map-refresh.md` and update `outputs/input-expectation-knowledge-map.md` so it reflects:
-- validator counts/status lists from the current model;
-- App Routing NGINX-to-Istio migration as pass, not future-only;
-- NAP cleanup split as fail for staging eastus2, with iteration145 owner/environment questions and no same-input rerun gate;
-- full source-equivalent NAP cleanup unknown/gated and Machines API CRUD blocked;
-- preserved gates for BYO-ACR, VPA cert renewal, App Routing default-domain TLS/Istio, ManagedSystem residual cloud execution, Node Restriction PATCH, and completed pass branches;
-- a ranked next-frontier recommendation that either selects one bounded parser-visible local task or recommends frontmatter `waiting` with explicit resume triggers if no honest bounded work remains.
+Produce `outputs/iteration149-paf-throttling-model-hygiene.md`, update `outputs/e2e-capability-model.json` and `outputs/input-expectation-knowledge-map.md` only if the model edit is made, and run `bun capability-model/src/validate.ts outputs/e2e-capability-model.json` before/after as applicable. Preserve the no-rerun gates from iteration148.
 
-Guardrails: local consolidation only; run the capability-model validator, but do not run `az`, `kubectl`, `--execute`, cluster creation, cloud mutation, Machine APIs, or `agentPools/deleteMachines`; do not edit model status unless a validator-backed evidence inconsistency is discovered and documented.
+Guardrails: local-only; do not run standalone/staging, `az`, `kubectl`, cluster creation, cloud mutation, Machine APIs, or `deleteMachines`.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -520,7 +520,10 @@ Guardrails: local consolidation only; run the capability-model validator, but do
 65. ⚠️ Execute the NAP cleanup no-Machine-CRUD gated rerun after hygiene — split branch failed: NAP Auto persisted but `aksmanagedap` was NotFound before Manual
 66. ✅ Triage the `aksmanagedap` absence against source/API expectations before any rerun
 67. ✅ Produce NAP managed-machine-pool rollout/environment escalation packet
-68. 🔄 Refresh the knowledge map and next-frontier selection after NAP escalation
+68. ✅ Refresh the knowledge map and next-frontier selection after NAP escalation
+69. ✅ Build the VirtualMachines CLI multi-SKU failure reference packet locally
+70. ✅ Build the PAF throttling source/precondition reference packet locally
+71. 🔄 Perform PAF throttling model hygiene locally
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1187,10 +1190,34 @@ Guardrails: local consolidation only; run the capability-model validator, but do
   attempts: 1
 
 - id: post-nap-escalation-knowledge-map-refresh
-  status: ready
+  status: done
+  result: succeeded
   assignee: aks-explorer
   goal: "Produce outputs/iteration146-post-nap-escalation-knowledge-map-refresh.md and refresh outputs/input-expectation-knowledge-map.md after the iteration145 NAP managed-machine-pool rollout escalation packet. Start from outputs/iteration145-nap-managed-machine-pool-rollout-escalation.md, outputs/iteration144-nap-aksmanagedap-absence-source-triage.md, outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md, outputs/iteration137-approuting-nginx-to-istio-migration-execution.md, outputs/iteration135-knowledge-map-refresh.md, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Run bun capability-model/src/validate.ts outputs/e2e-capability-model.json and quote current counts/status lists. Update the knowledge map so App Routing NGINX-to-Istio is pass, NAP no-Machine-CRUD cleanup is fail with iteration145 no same-input eastus2 rerun/escalation gates, full NAP cleanup remains unknown/gated, Machines API CRUD remains blocked, and all BYO/VPA/App Routing TLS/ManagedSystem/Node Restriction/completed-branch no-rerun gates are preserved. End with a ranked next-frontier recommendation that either creates one bounded parser-visible local task or recommends moving frontmatter to waiting with explicit resume triggers. Do not run az, kubectl, --execute, cluster creation, cloud mutation, Machine APIs, or deleteMachines; do not edit model status unless a validator-backed evidence inconsistency is discovered and documented."
   depends_on: [nap-managed-machine-pool-rollout-escalation-packet]
+  attempts: 1
+
+- id: virtualmachines-cli-multisku-failure-reference-packet-refresh
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md as a local/source-backed reference packet for virtualmachines-agentpool-cli-add-multi-sku after the post-NAP knowledge-map refresh. Start from outputs/iteration146-post-nap-escalation-knowledge-map-refresh.md, outputs/input-expectation-knowledge-map.md, outputs/iteration64-virtualmachines-agentpool-staging.md, outputs/iteration65-virtualmachines-multisku-contract.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, and outputs/e2e-capability-model.json. Reconcile the CLI comma multi-SKU failure with REST mixed-SKU/manual-profile passes, public swagger/source request shapes, and CLI help/serialization behavior; define the exact failing input boundary, adjacent passing paths, and whether the failure is CLI-surface-specific or a broader product contract. Do not run az, kubectl, cluster creation, cloud mutation, Machine APIs, or deleteMachines."
+  depends_on: [post-nap-escalation-knowledge-map-refresh]
+  attempts: 1
+
+- id: paf-throttling-source-precondition-reference-packet-refresh
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration148-paf-throttling-source-precondition-reference-packet.md as a local/source-backed packet for paf-throttling. Start from outputs/e2e-run-results-summary.md, outputs/first-e2e-run-results.md, outputs/underlay-debug-findings.md, outputs/iteration26-pafthrottling-retry.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/e2e-capability-model.json, and relevant source references for Scenario_PAFThrottling. Identify required MSI/underlay/capacity/DedicatedOom preconditions, source assertions, historical missing-identity and capacity evidence, whether the current model fail is product, environment/precondition, stale standalone evidence, or a gated blocker, and the exact non-cloud next unblock action or resume trigger. Do not run standalone/staging, az, kubectl, cluster creation, cloud mutation, Machine APIs, or deleteMachines; do not edit model status unless a validator-backed evidence inconsistency is discovered and documented."
+  depends_on: [virtualmachines-cli-multisku-failure-reference-packet-refresh]
+  attempts: 1
+
+- id: paf-throttling-model-hygiene
+  status: ready
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration149-paf-throttling-model-hygiene.md and reconcile outputs/e2e-capability-model.json with outputs/iteration148-paf-throttling-source-precondition-reference-packet.md. Run the validator, inspect the paf-throttling feature/test/judgment/evidence entries, then either reclassify paf-throttling from stale fail to blocked/gated with precise MSI/capacity/OOM resume triggers, or split the product assertion from environment/test-harness precondition branches if that better preserves model semantics. Update outputs/input-expectation-knowledge-map.md if model status/frontier text changes. Preserve no-rerun gates; do not run standalone/staging, az, kubectl, cluster creation, cloud mutation, Machine APIs, or deleteMachines."
+  depends_on: [paf-throttling-source-precondition-reference-packet-refresh]
   attempts: 0
 
 ## References
@@ -1229,6 +1256,8 @@ Guardrails: local consolidation only; run the capability-model validator, but do
 ## Comments
 
 ## Artifacts
+- outputs/iteration148-paf-throttling-source-precondition-reference-packet.md
+- outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md
 - outputs/iteration144-nap-aksmanagedap-absence-source-triage.md
 - outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md
 - outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun-machines-nap-default-pool-cleanup-no-machine-crud.md
