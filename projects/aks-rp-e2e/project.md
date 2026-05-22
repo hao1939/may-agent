@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 130
+iteration: 131
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -153,7 +153,7 @@ The previous VPA upgrade-survival TS probe remains pass in `outputs/iteration115
 
 `outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md` is the latest local source/design artifact. It grounds `Scenario_MachinesAgentPoolNAPEnabled`: create a system VMSS cluster with `nodeProvisioningProfile.mode=Auto`, expect default Machines pool `aksmanagedap` with `mode=Machines`/`type=VirtualMachines`, perform two-machine CRUD on that pool, set Karpenter NodePool CPU limits to `0`, update NAP to `Manual`, and assert `aksmanagedap` plus `aks-aksmanagedap` nodes disappear. The artifact decides the cleanup assertion is logically splittable from Machine CRUD, but not a source-equivalent verdict for the current model feature because `machines-agentpool-nap-default-pool-cleanup` includes `machinesApi.machine.crudSucceeded=true` and the source pipe runs Machine CRUD before cleanup. Do not run the full branch until `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered in staging subscription `26fe00f8-9173-4872-9134-bb1d2e00343a`, or an equivalent source environment is provided; a cleanup-only split needs a separate model/design task and must not claim the full branch.
 
-All three residual ManagedSystem unknowns and the Machines/NAP default-pool cleanup branch now have reviewable local designs but remain execution-gated. `outputs/iteration129-residual-split-model-selection.md` is the latest local selection artifact. It validates the current model (35 input variables, 68 expectation variables, 7 failing feature IDs, 7 unknown feature IDs, 2 blocked feature IDs), preserves all existing no-rerun gates, and selects one remaining honest local task before waiting: design a split NAP default Machines pool cleanup branch that intentionally excludes Machine subresource CRUD. The full `machines-agentpool-nap-default-pool-cleanup` source-equivalent branch remains gated by missing `PutMachinePreview`/`DeleteSpecificMachinesPreview` or equivalent source environment, but iteration129 found a plausible model-precision improvement in separating the cleanup assertion from the blocked Machine CRUD assertion. Preserve existing gates for BYO reruns, VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem cloud execution branches, and Node Restriction cloud PATCH reruns; do not rerun completed Image Cleaner/VPA/OIDC/ManagedSystem REST/Bootstrap managed-ACR branches unless source semantics, environment, or probe inputs materially change.
+All three residual ManagedSystem unknowns and the full Machines/NAP default-pool cleanup branch now have reviewable local designs but remain execution-gated. `outputs/iteration131-nap-cleanup-split-model-edit.md` is the latest model-changing artifact. It applied the iteration130 recommendation to `outputs/e2e-capability-model.json` by adding the partial `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` split as an explicit unknown design-only branch, with evidence links to iterations127/129/130. The validator exits 0 with 35 input variables, 68 expectation variables, 62 feature mappings, 68 test-case evidence mappings, 7 failing feature IDs, 8 unknown feature IDs, and 2 blocked feature IDs. The full `machines-agentpool-nap-default-pool-cleanup` source-equivalent branch remains gated by missing `PutMachinePreview`/`DeleteSpecificMachinesPreview` or equivalent source environment, and the new split cannot close `machines-agentpool-api-crud` or the full source-equivalent branch. Preserve existing gates for BYO reruns, VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem cloud execution branches, and Node Restriction cloud PATCH reruns; do not rerun completed Image Cleaner/VPA/OIDC/ManagedSystem REST/Bootstrap managed-ACR branches unless source semantics, environment, or probe inputs materially change.
 
 ## Current Phase
 
@@ -161,7 +161,7 @@ The reference-backed TypeScript probe pattern has now been exercised on five fea
 
 `outputs/iteration119-oidc-rotation-oidc-signing-key-rotation.md` and `outputs/iteration119-oidc-signing-key-rotation-model-update.md` close the selected post-BYO OIDC frontier. The probe executed source-authored rotation cases `case_2`, `case_2_legacy`, `case_4`, `case_5`, `case_6`, `case_7`, `case_8`, and `case_1`; every case reached its expected JWKS key count and cleanup passed.
 
-Next phase: local NAP cleanup split-model design. The remaining unknowns are Bootstrap BYO-ACR, App Routing TLS/Istio, ManagedSystem runtime restrictions, Machines/NAP Machine cleanup, ManagedSystem single-pool constraint, and ManagedSystem reconcile preservation, with VPA cert renewal and Machines API CRUD blocked. ManagedSystem runtime/single-pool/reconcile, Machines/NAP cleanup, App Routing default-domain Istio, Node Restriction PATCH shape, VPA roll-up, and BYO-ACR all now have reviewable local designs/hygiene artifacts or explicit gates. The next bounded advance is to produce the selected split-model/design artifact for `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`; if that split is not justified, or after it completes with no further local split worth doing, the project should move to paused/waiting with the explicit resume triggers from iteration129.
+Next phase: local generic AppRoutingIstio/Gateway source split research. The remaining unknowns are Bootstrap BYO-ACR, App Routing default-domain Istio/TLS lifecycle, ManagedSystem runtime restrictions, Machines/NAP full cleanup, ManagedSystem single-pool constraint, ManagedSystem reconcile preservation, and the newly modeled partial NAP cleanup no-Machine-CRUD split, with VPA cert renewal and Machines API CRUD blocked. ManagedSystem runtime/single-pool/reconcile, Machines/NAP cleanup, App Routing default-domain Istio, Node Restriction PATCH shape, VPA roll-up, and BYO-ACR all now have reviewable local designs/hygiene artifacts or explicit gates. The next bounded advance is to inspect handwritten meshless-Istio / managed Gateway API source for a distinct non-default-domain/non-managed-TLS AppRoutingIstio or Gateway branch; if no source-backed split is justified, move the project to paused/waiting with the explicit residual resume triggers from iterations129/130.
 
 Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, sanitizer/request-shape evidence where applicable, and clear assertion boundaries. Machines/NAP cloud execution should wait for the Machine preview feature registrations or an equivalent source environment.
 
@@ -270,8 +270,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 68 AKS state/behavior expectation variables, 61 feature mappings, 67 test-case evidence mappings, 56 judgments, 50 evidence references.
-- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 7 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
+- Current deterministic summary: 35 AKS input variables, 68 AKS state/behavior expectation variables, 62 feature mappings, 68 test-case evidence mappings, 56 judgments, 53 evidence references.
+- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 8 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` is a design-only partial split after iteration131; it must not close the full NAP cleanup or Machines API CRUD branches. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -282,16 +282,17 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Design the local NAP default Machines pool cleanup split model without Machine CRUD.
+Produce a local generic AppRoutingIstio/Gateway source-split research artifact.
 
 The task should:
 
-- start from `outputs/iteration129-residual-split-model-selection.md`, `outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md`, `outputs/e2e-capability-model.json`, and `outputs/input-expectation-knowledge-map.md`;
-- run `cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json` and use the current `machines-agentpool-nap-default-pool-cleanup` unknown plus `machines-agentpool-api-crud` blocked state as source-of-truth constraints;
-- decide whether to add/design a separate model feature such as `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`, with explicit input path, expectation path, non-goals, model relationship to the full source-equivalent branch, and execution gates;
-- preserve the Machine API gate for the full branch: no Machine API work until `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered in staging subscription `26fe00f8-9173-4872-9134-bb1d2e00343a`, or an equivalent source environment is provided;
-- preserve the project-wide no-rerun gates from iteration129, including no App Routing TLS/Istio cloud rerun, no ManagedSystem cloud execution, no BYO rerun, no VPA cert-renewal rerun, and no Node Restriction cloud PATCH rerun without their documented triggers;
-- produce `outputs/iteration130-machines-nap-default-pool-cleanup-split-model-design.md` with either a concrete schema/model-edit recommendation validated locally or a recommendation to move the project to paused/waiting with the residual resume triggers.
+- start from `outputs/iteration131-nap-cleanup-split-model-edit.md`, `outputs/iteration128-app-routing-istio-source-design.md`, `outputs/iteration129-residual-split-model-selection.md`, `outputs/e2e-capability-model.json`, `outputs/input-expectation-knowledge-map.md`, and `outputs/e2ev3-handwritten-coverage-inventory.md`;
+- run `cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json` and use the current `app-routing-default-domain-istio` / `app-routing-default-domain-tls-lifecycle` unknowns plus `app-routing-default-domain-tls-secret` fail as source-of-truth constraints;
+- inspect handwritten e2ev3 source for meshless-Istio / managed Gateway API / AppRoutingIstio scenarios that do **not** depend on `DefaultDomainCertificate default/default-domain-cert` or the managed default-domain TLS secret;
+- decide whether to design a separate generic AppRoutingIstio/Gateway branch, with explicit input path, expectation path, non-goals, relationship to the default-domain Istio/TLS branches, and execution gates;
+- preserve the App Routing TLS gate from iterations70/80/81/91/128: no blind customer-cluster-only default-domain TLS/Istio rerun until owner diagnostics, CCP/underlay diagnostic access, known fixed build/config, or source-proven live-verifiable precondition is available;
+- preserve all other project no-rerun gates from iterations129/130/131;
+- produce `outputs/iteration132-approuting-generic-istio-gateway-source-split.md` with either a concrete schema/model-edit recommendation validated locally or a recommendation to move the project to paused/waiting with the residual resume triggers from iterations129/130.
 
 Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this task.
 
@@ -1015,10 +1016,18 @@ Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this
   attempts: 1
 
 - id: machines-nap-default-pool-cleanup-split-model-design
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Produce outputs/iteration130-machines-nap-default-pool-cleanup-split-model-design.md as a local-only split-model/design artifact for a NAP default Machines pool cleanup branch that excludes Machine subresource CRUD. Start from outputs/iteration129-residual-split-model-selection.md, outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Run the capability-model validator and use machines-agentpool-nap-default-pool-cleanup unknown plus machines-agentpool-api-crud blocked as source-of-truth constraints. Decide whether to add/design a separate model feature such as machines-agentpool-nap-default-pool-cleanup-no-machine-crud, with explicit input path, expectation path, non-goals, model relationship to the full source-equivalent machines-agentpool-nap-default-pool-cleanup feature, and execution gates. Preserve the Machine API gate for the full source-equivalent branch and preserve all iteration129 no-rerun gates. Do not run staging, az, kubectl, cluster creation, or cloud mutation. End with either a concrete schema/model-edit recommendation validated locally or a recommendation to move the project to paused/waiting with the residual resume triggers."
   depends_on: [residual-split-model-selection]
+  attempts: 1
+
+- id: approuting-generic-istio-gateway-source-split
+  status: ready
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration132-approuting-generic-istio-gateway-source-split.md as a local-only source-split artifact for a possible generic AppRoutingIstio/Gateway API branch separate from default-domain managed TLS. Start from outputs/iteration131-nap-cleanup-split-model-edit.md, outputs/iteration128-app-routing-istio-source-design.md, outputs/iteration129-residual-split-model-selection.md, outputs/e2e-capability-model.json, outputs/input-expectation-knowledge-map.md, and outputs/e2ev3-handwritten-coverage-inventory.md. Run the capability-model validator and use app-routing-default-domain-istio/app-routing-default-domain-tls-lifecycle unknown plus app-routing-default-domain-tls-secret fail as constraints. Inspect handwritten meshless-Istio / managed Gateway API / AppRoutingIstio source for scenarios that do not depend on DefaultDomainCertificate or default-domain managed TLS. Decide whether to add/design a separate generic AppRoutingIstio/Gateway model branch, with explicit input path, expectation path, non-goals, relationship to default-domain Istio/TLS branches, and execution gates. Preserve App Routing TLS no-rerun gates and all other iteration129/130/131 gates. Do not run staging, az, kubectl, cluster creation, or cloud mutation. End with either a concrete schema/model-edit recommendation validated locally or a recommendation to move the project to paused/waiting with residual resume triggers."
+  depends_on: [machines-nap-default-pool-cleanup-split-model-design]
   attempts: 0
 
 ## References
@@ -1057,6 +1066,8 @@ Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this
 ## Comments
 
 ## Artifacts
+- outputs/iteration131-nap-cleanup-split-model-edit.md
+- outputs/iteration130-machines-nap-default-pool-cleanup-split-model-design.md
 - outputs/iteration129-residual-split-model-selection.md
 - outputs/iteration120-post-oidc-rotation-unknown-selection.md
 - outputs/iteration119-oidc-signing-key-rotation-model-update.md
