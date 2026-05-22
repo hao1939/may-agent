@@ -1,11 +1,11 @@
 ---
 id: agent-system-evolution
 owner: may
-status: active
+status: waiting
 type: milestone
 priority: P2
 iteration: 9
-last_checked: 2026-06-06
+last_checked: 2026-05-22
 max_concurrent: 2
 max_task_attempts: 2
 project_policy: maintenance
