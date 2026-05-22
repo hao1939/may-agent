@@ -1,13 +1,15 @@
 ---
 id: agent-system-evolution
 owner: may
-status: active
+status: waiting
 type: milestone
-priority: P1
+priority: P2
 iteration: 9
-project_policy: aggressive-push
+last_checked: 2026-06-04
 max_concurrent: 2
 max_task_attempts: 2
+project_policy: maintenance
+wait_reason: Shifted to maintenance posture per impact summary. All harness-level R&D exhausted; remaining value blocked on 4 stale platform requests (rubric patches, score-compression, pre-kill hook, auto-checkpoint). Reactivate when platform accepts a request or a new harness frontier emerges from signals.
 ---
 
 # Project: Agent System Evolution
@@ -493,22 +495,25 @@ under `outputs/evaluator/false-good-calibration/`. Remaining watch item:
   depends_on: []
 
 - id: convention-decay-detection
-  status: pending
-  attempts: 0
+  result: dropped
+  status: done
+  attempts: 2
   goal: Re-measure contract behavior compliance on 15 sessions from the last 48h; compare against the iteration-6 baseline (finish-contract 100%, delegation-memo 0%, graceful-degradation 0%); identify which contracts have improved since dispatch-fix and self-correction convention; flag any regressions.
   assignee: may
   depends_on: []
 
 - id: feedback-loop-amplification
-  status: pending
-  attempts: 0
+  result: succeeded
+  status: done
+  attempts: 1
   goal: Based on evaluator-feedback-loop-closure findings, design and implement a lightweight feedback-echo mechanism (e.g. injecting last-session evaluator critique into next-session context for same agent+project); validate on 5 sessions that agents reference prior feedback; draft convention if effective.
   assignee: may
   depends_on: []
 
 - id: harness-experiment-impact-summary
-  status: pending
-  attempts: 0
+  result: succeeded
+  status: done
+  attempts: 1
   goal: Produce a cumulative impact report for all 8 iterations of this R&D project; list each experiment, its finding, whether it was promoted to convention/contract/platform-request, and current adoption status; identify the 3 highest-value techniques and 3 that failed to stick; recommend project posture (continue aggressive-push, shift to maintenance, or close).
   assignee: may
   depends_on: []
