@@ -15,6 +15,7 @@
   - Commands: `feed` (explore feed), `search <keyword>` (search notes), `read <url>` (read a note), `scroll` (load more)
   - Example: `node agents/scout/tools/xhs-browse.mjs search "AI agent 智能体"`
 - ⛔ **NEVER simulate or mock data**. If you can't reach a source, skip it and use sources you CAN reach. Every finding must be based on real data from a real API call.
+- ✅ **ALWAYS include a `Source:` line** with the URL in every knowledge file you create or update. Example: `Source: https://arxiv.org/abs/2405.12345`. This is required for the sourced-artifacts metric.
 
 ## REQUIRED: Check Shared Manifest
 At the START of every session, run:
@@ -67,3 +68,10 @@ BAD (will be flagged):
 - Knowledge entries: `agents/scout/knowledge/`
 - Before appending to `agents/scout/workspace/digest/today.md`, grep existing titles or URLs in that file to avoid duplicate findings from repeat source sweeps.
 - XHS AI agent trends suggest moving away from swarm towards specialized pipelines and strict hierarchy for reliability.
+
+## Scout Second Brain Practices (adopted from scout-second-brain-learning)
+- **AI-First Preambles**: Every knowledge artifact must start with an `<ai_context>` block containing a 1-2 sentence summary and triggers for when other agents should reference it. This enables fast relevance scanning without full-file reads.
+- **In-place Updates**: When new information arrives on an existing topic, append/modify the existing note via edit() rather than creating `_v2` or date-stamped duplicates. One file per topic = single source of truth.
+- **Source-Grounded Claims**: Major claims, trends, or patterns must include a source reference (URL, repo link, or post ID) so insights remain traceable and don't compound hallucinations.
+
+- Convention: All fork/call delegations must follow contracts/delegation-memo-convention.md (goal, context_files, success_criteria, scope_boundary required).

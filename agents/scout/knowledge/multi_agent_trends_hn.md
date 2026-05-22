@@ -1,4 +1,10 @@
+<ai_context>
+Scout knowledge file: Multi-Agent Architecture Trends (HN Review)
+</ai_context>
+
 # Multi-Agent Architecture Trends (HN Review)
+
+Source: https://hn.algolia.com/api/v1/search?query=multi-agent (Hacker News API)
 
 ## Date: 2025-02-xx (Runtime)
 

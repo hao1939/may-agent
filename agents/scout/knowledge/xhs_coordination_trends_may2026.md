@@ -1,4 +1,10 @@
+<ai_context>
+Scout knowledge file: XHS Multi-Agent Coordination Trends (May 2026)
+</ai_context>
+
 # XHS Multi-Agent Coordination Trends (May 2026)
+
+Source: https://www.xiaohongshu.com/explore (XHS feed scan, May 2026)
 
 Based on recent scans of Chinese AI communities (XHS), several new architectural patterns are emerging for multi-agent systems:
 
