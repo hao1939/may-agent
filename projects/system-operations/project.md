@@ -1,11 +1,12 @@
 ---
 id: system-operations
 owner: may
-status: active
+status: waiting
 type: continuous
 priority: P1
-project_policy: maintenance
 iteration: 1
+project_policy: maintenance
+wait_reason: All tasks complete. Triggered by metric.recovered for project.health.finding-count — all finding-count alerts resolved, no action needed (self-referential reconciler metric). Will wake on next P0/P1 operational signal or daily heartbeat.
 ---
 
 # Project: System Operations
@@ -126,8 +127,9 @@ Absorbed watch items:
   goal: Verify heartbeat-coverage metric is measuring correctly
 
 - id: daily-ops-watch
-  attempts: 0
-  status: pending
+  result: succeeded
+  attempts: 1
+  status: done
   assignee: may
   goal: Ongoing ops monitoring via heartbeat — review alerts, route work, validate chains
 
