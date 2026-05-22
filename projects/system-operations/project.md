@@ -1,12 +1,10 @@
 ---
 id: system-operations
 owner: may
-status: waiting
+status: active
 type: continuous
 priority: P1
 iteration: 0
-stop_reason: Standing ops lane is healthy; run on daily cadence, explicit human request, or operational signal.
-resume_condition: Run on the next daily ops cycle, a P0/P1 reliability signal breach, an unresolved metric-alert chain, stale project/session evidence, local instance health issue, or human request.
 ---
 
 # Project: System Operations
@@ -74,6 +72,12 @@ signal -> owner -> judgment -> concrete operation -> validation signal
 If the chain is missing, route or create a concrete task. Do not mark an issue
 closed just because an owner was notified.
 
+Open alerts do not automatically make this project active. The normal metric
+owner path handles fresh alert judgment and validation. This ops lane wakes when
+a P0/P1 alert chain is unjudged, stale after judgment without recovery, or part
+of the daily ops review. Project-health metrics stay in the project reconciler
+path so the ops lane does not create a self-referential project-health finding.
+
 Absorbed watch items:
 - `projects/eval-llm-lane-restoration/project.md` — watch `eval.llm-coverage-lag-h` and `evaluation.deep_*` lifecycle gaps.
 - `projects/finish-blocked-hygiene-reduction/project.md` — watch `session.finish-blocked-unresolved-count-24h`.
@@ -104,7 +108,36 @@ Absorbed watch items:
 - `projects/finish-blocked-hygiene-reduction/project.md`
 - `projects/empty-assistant-stop-runtime-retry/project.md`
 
+## Tasks
+
+- id: judge-heartbeat-dark
+  status: pending
+  assignee: may
+  goal: "Judge heartbeat-coverage and dark-agents alerts (P0)"
+
+- id: investigate-status-mismatch
+  status: pending
+  assignee: may
+  goal: "Investigate status-reality-mismatch-count alert at 19 vs threshold 3 (P0)"
+
+- id: route-eval-coverage-lag
+  status: pending
+  assignee: may
+  goal: "Route eval.llm-coverage-lag-h to evaluator owner (P0)"
+
+- id: triage-stale-metrics
+  status: pending
+  assignee: may
+  goal: "Triage stale-active-metrics refresh failures (P1)"
+
 ## Journal
+
+### 2026-05-21 — First ops loop: alert chain judgment
+- 9 unresolved alerts, 4 P0 metrics breaching.
+- Heartbeat-coverage=0 and dark-agents=5: system appears freshly active (heartbeat events from evaluator+may just fired). Likely transient; task created to verify.
+- Status/reality mismatches=20: needs investigation — likely stale project frontmatter after consolidation.
+- eval.llm-coverage-lag owned by evaluator; routing awareness message.
+- Created 4 tasks to close the alert chains with judgment.
 
 ### 2026-05-20 — Created Ops Lane
 - Merged daily alert review and closed-loop reliability into one standing ops lane.
