@@ -4,7 +4,8 @@ owner: may
 status: active
 type: continuous
 priority: P1
-iteration: 0
+project_policy: maintenance
+iteration: 1
 ---
 
 # Project: System Operations
@@ -111,16 +112,32 @@ Absorbed watch items:
 ## Tasks
 
 - id: calibrate-status-reality-mismatch
-  status: pending
+  result: succeeded
+  attempts: 1
+  status: done
   assignee: may
   goal: Calibrate status-reality-mismatch threshold or fix stale data sources
 
 - id: verify-heartbeat-coverage
-  status: pending
+  result: succeeded
+  attempts: 1
+  status: done
   assignee: may
   goal: Verify heartbeat-coverage metric is measuring correctly
 
+- id: daily-ops-watch
+  attempts: 0
+  status: open
+  assignee: may
+  goal: Ongoing ops monitoring via heartbeat — review alerts, route work, validate chains
+
 ## Journal
+
+### 2026-05-28 — Ops heartbeat: resolved stale task state
+- All 3 red alerts trace to system-operations having done tasks but no open work.
+- Added standing `daily-ops-watch` task and set project_policy=maintenance.
+- agent-system-evolution already `waiting` in file; DB shows stale `active` — status-reality-mismatch (count=1) is expected until reconciler syncs.
+- scout.knowledge-preamble-coverage alert is owned by scout; no action needed here.
 
 ### 2025-05-22 — Task parser fix and alert judgment
 - Fixed task format from YAML-style to markdown checkboxes (parser error resolved).
