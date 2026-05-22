@@ -280,18 +280,18 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Perform local-only post-ManagedSystem-design unknown selection.
+Perform local-only Machines/NAP default-pool cleanup source/design.
 
 The task should:
 
-- start from `outputs/e2e-capability-model.json`, `outputs/input-expectation-knowledge-map.md`, `outputs/iteration118-bootstrap-byo-acr-hardened-followup.md`, `outputs/iteration120-post-oidc-rotation-unknown-selection.md`, `outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md`, `outputs/iteration124-managedsystem-single-pool-constraint-probe-design.md`, `outputs/iteration125-managedsystem-reconcile-preservation-probe-design.md`, `features/managedsystem-runtime-restrictions.yaml`, `features/managedsystem-single-pool-constraint.yaml`, `features/managedsystem-reconcile-preservation.yaml`, and the current validator output;
-- run `cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json` and use the current failing, blocked, and unknown feature lists as the selection source of truth;
-- rank remaining unknowns (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`) by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, execution gates, and expected model update;
-- preserve existing gates: no BYO rerun without new source/environment/build signal, no VPA cert renewal rerun until source-equivalent reconciler clarification, no Machines/NAP Machine cleanup until required Machine preview features or equivalent environment, no App Routing TLS/Istio blind rerun without owner/fixed-build/diagnostic trigger, no ManagedSystem cloud execution until first-pool setup is safe or an owner provides a contract-safe SKU/image/defaulting path, and no Node Restriction cloud PATCH rerun under current source/spec;
-- produce `outputs/iteration126-post-managedsystem-design-unknown-selection.md` with the ranking, selected next bounded task, exact preflight reads/commands for that task, and explicit non-goals;
-- update `project.md` afterward so either one concrete parser-visible next task exists, the project is waiting/blocked with an explicit resume trigger, or the project is terminal.
+- start from `outputs/iteration126-post-managedsystem-design-unknown-selection.md`, `outputs/e2e-capability-model.json`, `outputs/input-expectation-knowledge-map.md`, `outputs/e2ev3-handwritten-coverage-inventory.md`, `outputs/iteration105-machines-agentpool-api-crud-staging.md`, `outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md`, `outputs/iteration57-node-autoprovision-staging.md`, and `outputs/iteration58-node-autoprovision-followup.md`;
+- run `cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts outputs/e2e-capability-model.json` and use the current `machines-agentpool-nap-default-pool-cleanup` unknown plus `machines-agentpool-api-crud` blocked status as source-of-truth constraints;
+- inspect the handwritten e2ev3/source anchor for `Scenario_MachinesAgentPoolNAPEnabled` and related Machines/NAP helpers, especially the expected `nodeProvisioning.mode=Auto`, default Machines pool, transition/manual cleanup, API-version/custom-feature requirements, and cleanup assertions;
+- determine whether `nap.defaultMachinesPool.deletedOnManual` can be designed or later executed separately from full `machinesApi.machine.crudSucceeded`, or whether it is inseparable from the currently blocked Machine CRUD feature registrations;
+- preserve existing gates: no cloud execution for Machines/NAP Machine API work until `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered in staging subscription `26fe00f8-9173-4872-9134-bb1d2e00343a` or an equivalent source environment is provided; no BYO rerun, VPA cert renewal rerun, App Routing TLS/Istio blind rerun, ManagedSystem cloud execution, or Node Restriction cloud PATCH rerun without their documented triggers;
+- produce `outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md` with exact source evidence, input/expectation boundary, feature-registration/API gates, split-vs-inseparable decision, model-impact rules, and either an execution-gated run-plan/probe-design recommendation or a blocked recommendation with explicit resume trigger.
 
-Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this task. Do not rerun completed ManagedSystem REST add-existing, VPA, OIDC, Bootstrap managed-ACR, Image Cleaner, Node Restriction, or VirtualMachines branches unless source semantics, environment, or probe inputs materially change.
+Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this task. Do not rerun completed ManagedSystem REST add-existing, VPA, OIDC, Bootstrap managed-ACR, Image Cleaner, Node Restriction, VirtualMachines, NAP profile-only, or Machines baseline branches unless source semantics, environment, or probe inputs materially change.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -481,7 +481,8 @@ Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this
 48. ✅ Design a source-safe ManagedSystem runtime-restrictions TS probe/run plan before any cloud mutation
 49. ✅ Design a source-safe ManagedSystem single-pool constraint TS probe/run plan before any cloud mutation
 50. ✅ Design a source-safe ManagedSystem reconcile-preservation TS probe/run plan before any cloud mutation
-51. 🔄 Select the next bounded unknown after ManagedSystem residual branch designs
+51. ✅ Select the next bounded unknown after ManagedSystem residual branch designs
+52. 🔄 Design the Machines/NAP default Machines pool cleanup source boundary
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -977,10 +978,18 @@ Do not run staging, `az`, `kubectl`, cluster creation, or cloud mutation in this
   attempts: 1
 
 - id: post-managedsystem-design-unknown-selection
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Produce outputs/iteration126-post-managedsystem-design-unknown-selection.md selecting the next responsible bounded unknown after ManagedSystem runtime-restrictions, single-pool, and reconcile branches now have local execution-gated designs. Start from outputs/e2e-capability-model.json, outputs/input-expectation-knowledge-map.md, outputs/iteration118-bootstrap-byo-acr-hardened-followup.md, outputs/iteration120-post-oidc-rotation-unknown-selection.md, outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md, outputs/iteration124-managedsystem-single-pool-constraint-probe-design.md, outputs/iteration125-managedsystem-reconcile-preservation-probe-design.md, and current validator output. Rank remaining unknowns by source/e2ev3 anchor, input paths, expectation paths, cost/risk, required access, execution gates, and expected model update. Preserve gates for BYO, VPA cert renewal, Machines/NAP Machine API work, App Routing TLS/Istio, ManagedSystem cloud execution, and Node Restriction PATCH. Do not run staging, az, kubectl, cluster creation, or cloud mutation. End with one concrete parser-visible next task or a waiting/blocked recommendation with explicit resume trigger."
   depends_on: [managedsystem-reconcile-preservation-probe-design]
+  attempts: 1
+
+- id: machines-nap-default-pool-cleanup-source-design
+  status: pending
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md as a local-only source/design artifact for machines-agentpool-nap-default-pool-cleanup. Start from outputs/iteration126-post-managedsystem-design-unknown-selection.md, outputs/e2e-capability-model.json, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, outputs/iteration105-machines-agentpool-api-crud-staging.md, outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, outputs/iteration57-node-autoprovision-staging.md, and outputs/iteration58-node-autoprovision-followup.md. Run the local capability-model validator and use machines-agentpool-nap-default-pool-cleanup unknown plus machines-agentpool-api-crud blocked as source-of-truth constraints. Inspect the handwritten e2ev3/source anchor for Scenario_MachinesAgentPoolNAPEnabled and related Machines/NAP helpers to determine exact input path, expectation path, API versions, feature registrations, cleanup assertions, and whether nap.defaultMachinesPool.deletedOnManual can be split from full Machine CRUD. Preserve the Machine API cloud-execution gate: do not run staging, az, kubectl, cluster creation, or cloud mutation. End with either an execution-gated run-plan/probe-design recommendation or a blocked recommendation with explicit resume trigger: Microsoft.ContainerService/PutMachinePreview and Microsoft.ContainerService/DeleteSpecificMachinesPreview registered in staging subscription 26fe00f8-9173-4872-9134-bb1d2e00343a, or an equivalent source environment provided."
+  depends_on: [post-managedsystem-design-unknown-selection]
   attempts: 0
 
 ## References
