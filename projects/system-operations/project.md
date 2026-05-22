@@ -1,12 +1,12 @@
 ---
 id: system-operations
 owner: may
-status: waiting
+status: active
 type: continuous
 priority: P1
 iteration: 1
 project_policy: maintenance
-wait_reason: All tasks complete. Triggered by metric.recovered for project.health.finding-count — all finding-count alerts resolved, no action needed (self-referential reconciler metric). Will wake on next P0/P1 operational signal or daily heartbeat.
+wait_reason: Alert chains judged 2025-05-28T3. provider-error-count=11 recurring (5 alerts across multiple days); threshold=5 likely too low for normal ops — calibration task created. finding-count=1 self-referential. scout.knowledge-preamble-coverage owned by scout. Waiting on calibration task completion or next P0/P1 signal.
 ---
 
 # Project: System Operations
@@ -133,7 +133,22 @@ Absorbed watch items:
   assignee: may
   goal: Ongoing ops monitoring via heartbeat — review alerts, route work, validate chains
 
+- id: calibrate-provider-error-threshold
+  status: ready
+  assignee: may
+  goal: Evaluate whether provider-error-count-1h threshold=5 is too low for normal operations; raise to 10-12 or investigate root cause of chronic provider errors
+
 ## Journal
+
+### 2026-05-28 — Alert chain judgment round 3
+- provider-error-count=11 (threshold=5): Now fired 5 times across multiple days (values 6-11). This is a recurring pattern, not transient. Either the threshold is too low for normal ops or there's a chronic provider issue. Created calibration task.
+- finding-count=1: Self-referential (this project flagged by health check). Resolved by judgment here.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+
+### 2026-05-28 — Alert chain judgment (ops_alert_chain_needs_judgment)
+- project.health.finding-count=1: Self-referential finding (this project flagged for needing judgment). Resolved by providing judgment here.
+- session.provider-error-count-1h=6 (threshold=5): Transient spike; was 1 shortly before, then jumped to 6 and stayed flat. No structural issue. Will self-resolve as the 1h window rolls. No action unless it persists beyond next cycle.
+- Set project to waiting.
 
 ### 2026-05-28 — Ops heartbeat: resolved stale task state
 - All 3 red alerts trace to system-operations having done tasks but no open work.
