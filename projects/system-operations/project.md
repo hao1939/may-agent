@@ -127,7 +127,7 @@ Absorbed watch items:
 
 - id: daily-ops-watch
   attempts: 0
-  status: open
+  status: pending
   assignee: may
   goal: Ongoing ops monitoring via heartbeat — review alerts, route work, validate chains
 
