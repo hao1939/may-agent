@@ -5,7 +5,7 @@ status: waiting
 type: milestone
 priority: P2
 iteration: 9
-last_checked: 2026-06-04
+last_checked: 2026-06-05
 max_concurrent: 2
 max_task_attempts: 2
 project_policy: maintenance
