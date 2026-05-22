@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 141
+iteration: 143
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -163,7 +163,13 @@ All three residual ManagedSystem unknowns and the full Machines/NAP default-pool
 
 `outputs/iteration139-nap-cleanup-no-machine-crud-execution-implementation.md` is the latest local implementation artifact. It turns `probes/machines-nap-default-pool-cleanup-no-machine-crud.ts` from a design-only skeleton into an execution-gated probe for the split cleanup-only branch while preserving the no-Machine-CRUD boundary. Local verification passed: `bun probes/machines-nap-default-pool-cleanup-no-machine-crud.ts --check` exited 0, non-mutating `--run-id=iteration139-local` produced `blocked/execution-gated` artifacts with reference/validator/request-shape preflights `ok=true`, and `bun capability-model/src/validate.ts outputs/e2e-capability-model.json` exited 0. A fresh owner-loop rerun of `--check`, non-mutating `--run-id=iteration139-local-rerun`, and the validator also passed. The probe now has implemented future execution steps for NAP Auto create, `aksmanagedap` mode/type verification, Karpenter CPU limit `0`, Manual update, ARM/Kubernetes cleanup observation, diagnostics, failure classification, and whole-RG cleanup, but cloud mutation remains gated by a separate explicit execution task plus `--execute` and `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=machines-agentpool-nap-default-pool-cleanup-no-machine-crud`. It can update only `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`, never `machines-agentpool-api-crud` or the full source-equivalent `machines-agentpool-nap-default-pool-cleanup` branch.
 
-`outputs/iteration140-nap-cleanup-no-machine-crud-execution.md` is the latest execution artifact. The explicitly gated split NAP cleanup run was attempted with `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=machines-agentpool-nap-default-pool-cleanup-no-machine-crud`, and `Standard_D2s_v4`, after fixing the probe's mutation-gate constant to match the approved task gate. The run stopped safely before any resource creation: local reference/model/request-shape preflights passed, but read-only environment preflight could not prove `managedClusters/agentPools` API version from provider metadata (`versionCount=0`) and `az feature show Microsoft.ContainerService/NodeAutoProvisioningPreview` returned `FeatureNotFound`. No resource group was created, cleanup was not needed, and the model remains unchanged with `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` still unknown. The next useful step is local preflight hygiene: reconcile these preflight gates against prior iteration57/58 NAP staging passes and source/API evidence, so a future rerun is blocked only by real environment risk rather than provider metadata/GA-feature detection ambiguity.
+`outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md` is the latest local hygiene artifact. It classifies the iteration140 safe-stop gates as ambiguous rather than proven environment/product blockers: nested `managedClusters/agentPools` provider metadata can be absent even though parent `managedClusters` advertises `2026-03-02-preview` and source/prior AgentPools execution evidence grounds the route, while legacy `NodeAutoProvisioningPreview` can return `FeatureNotFound` despite iteration57/58 proving NAP Auto/create/update in the same staging subscription/region. The probe and run-plan now require auditable fallback proof paths: AgentPools fallback cites parent provider metadata plus source/generated-client/prior execution evidence, and `AKS_RP_E2E_ASSUME_NAP_FEATURE_GA=true` records explicit iteration57/58 evidence. Local verification passed (`--check`, non-mutating `--run-id=iteration141-local`, and validator exit 0); no cloud mutation or model update was performed.
+
+`outputs/iteration140-nap-cleanup-no-machine-crud-execution.md` remains the latest execution attempt. The explicitly gated split NAP cleanup run stopped safely before any resource creation when the old read-only preflights could not prove nested AgentPools provider metadata and the legacy NAP feature name returned `FeatureNotFound`; no cleanup was needed and the model remained unchanged.
+
+`outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md` is the latest cloud/model-changing artifact. After fixing the probe's devbox `az rest` execution-host issue by adding `--resource https://management.azure.com/`, the explicitly gated split NAP cleanup rerun passed preflights, created a source-shaped NAP Auto cluster in eastus2, and confirmed `nodeProvisioningProfile.mode=Auto` / `defaultNodePools=Auto`. The required source-shaped default Machines pool precondition failed before Manual update: ManagedCluster GET listed only `agentpool0`, and direct AgentPools GET for `aksmanagedap` returned `NotFound` / `GetAgentPool_NotFound_HCPServerError`. Cleanup reached `az group exists=false`, and no Machine CRUD or `deleteMachines` calls were made. `outputs/e2e-capability-model.json` now marks only the split `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` branch as fail; `machines-agentpool-api-crud` remains blocked and the full source-equivalent `machines-agentpool-nap-default-pool-cleanup` branch remains unknown/gated. Validator exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case evidence mappings, 8 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs.
+
+`outputs/iteration142-nap-cleanup-no-machine-crud-execution.md` is superseded by iteration143. It remains useful only as execution-host blocker evidence: the iteration141-hardened rerun created one NAP Auto cluster, then stopped because devbox `az rest` needed `--resource https://management.azure.com/`; cleanup reached `az group exists=false` and the model was unchanged.
 
 ## Current Phase
 
@@ -171,7 +177,7 @@ The reference-backed TypeScript probe pattern has now been exercised on six runt
 
 The generic App Routing NGINX-to-Istio migration probe has now passed in staging via the iteration137 explicitly gated execution. It preserved the non-default-domain boundary and does not claim or unblock the failed/default-domain TLS branches.
 
-Next phase: locally harden the split NAP cleanup probe's execution preflights before any rerun. Iteration140 proved the resource-mutation gates and no-Machine-CRUD request-shape boundary work, but its read-only environment checks stopped on two ambiguous gates: provider metadata did not list nested `managedClusters/agentPools` API versions, and the legacy `NodeAutoProvisioningPreview` feature name was absent even though iteration57/58 already proved NAP Auto create/update in the same staging subscription. The next task should produce a local artifact and probe/run-plan edits that define acceptable API-version and NAP-support proof paths, verify them without cloud mutation, and only then expose a future rerun command for the split branch.
+Next phase: source/API triage the iteration143 `aksmanagedap` absence before any same-branch rerun. Determine whether source `Scenario_MachinesAgentPoolNAPEnabled` still expects NAP Auto to create a visible `aksmanagedap` AgentPool in the current API/build, whether a custom feature/header/API-version/CLI flag was missing from the split TS probe, or whether the product behavior has regressed/changed. This is local investigation and escalation-packet work only: do not create another cluster or mutate cloud until the triage names a distinct coverage claim or corrected input.
 
 Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, sanitizer/request-shape evidence where applicable, and clear assertion boundaries. Machines/NAP Machine API cloud execution should wait for the Machine preview feature registrations or an equivalent source environment. App Routing migration execution is complete for the generic branch; preserve the checked-in gates and preflights for any future adjacent App Routing work.
 
@@ -279,8 +285,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 71 AKS state/behavior expectation variables, 63 feature mappings, 69 test-case evidence mappings, 57 judgments, 55 evidence references.
-- Current feature status from validator: 7 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`), 8 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` is a design-only partial split after iteration131; it must not close the full NAP cleanup or Machines API CRUD branches. `app-routing-nginx-to-istio-migration` is pass after iteration137 as a generic AppRoutingIstio/Gateway branch; it does not close default-domain Istio, default-domain TLS lifecycle, or the failed TLS-secret provisioning branch. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
+- Current deterministic summary: 35 AKS input variables, 71 AKS state/behavior expectation variables, 63 feature mappings, 69 test-case evidence mappings, 58 judgments, 56 evidence references.
+- Current feature status from validator: 8 fail (`app-routing-default-domain`, `paf-throttling`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), 7 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`), and 2 blocked (`workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` is a design-only partial split after iteration131; it must not close the full NAP cleanup or Machines API CRUD branches. `app-routing-nginx-to-istio-migration` is pass after iteration137 as a generic AppRoutingIstio/Gateway branch; it does not close default-domain Istio, default-domain TLS lifecycle, or the failed TLS-secret provisioning branch. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -291,24 +297,18 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Perform local-only preflight hygiene for the split `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` probe after the iteration140 safe stop.
+Triage the iteration143 NAP Auto `aksmanagedap` absence locally before any rerun.
 
-Start from `outputs/iteration140-nap-cleanup-no-machine-crud-execution.md`, `outputs/iteration140-nap-cleanup-no-machine-crud-execution-machines-nap-default-pool-cleanup-no-machine-crud.{json,md}`, `probes/machines-nap-default-pool-cleanup-no-machine-crud.ts`, `run-plans/machines-nap-default-pool-cleanup-no-machine-crud.yaml`, `features/machines-nap-default-pool-cleanup-no-machine-crud.yaml`, `outputs/iteration57-node-autoprovision-staging.md`, `outputs/iteration58-node-autoprovision-followup.md`, and `outputs/e2e-capability-model.json`. Produce `outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md` explaining which iteration140 preflight blockers are real versus ambiguous, and update the probe/run-plan only if the replacement gates remain read-only, auditable, and safe.
+Start from `outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md`, its generated JSON artifact, `outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md`, `outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md`, `probes/machines-nap-default-pool-cleanup-no-machine-crud.ts`, `run-plans/machines-nap-default-pool-cleanup-no-machine-crud.yaml`, `features/machines-nap-default-pool-cleanup-no-machine-crud.yaml`, and relevant devbox source for `Scenario_MachinesAgentPoolNAPEnabled`.
 
-Required local checks:
-```bash
-cd /app/projects/aks-rp-e2e
-bun probes/machines-nap-default-pool-cleanup-no-machine-crud.ts --check
-bun probes/machines-nap-default-pool-cleanup-no-machine-crud.ts --run-id=iteration141-local
-bun capability-model/src/validate.ts outputs/e2e-capability-model.json
-```
+Produce `outputs/iteration144-nap-aksmanagedap-absence-source-triage.md` with:
+- exact source expectation for `aksmanagedap` creation/GET and any feature headers, API versions, generated-client paths, or environment gates;
+- comparison of source shape versus the iteration143 TS probe inputs (`az aks create` flags, API version `2026-03-02-preview`, subscription/region/SKU, no Machine CRUD);
+- classification of the `aksmanagedap` NotFound as product regression, expected current behavior/source drift, missing input/feature/header, or inconclusive;
+- model-impact recommendation for the split fail and whether the full source-equivalent branch remains unknown;
+- a bounded next action: owner escalation, corrected distinct rerun input, or wait gate.
 
-Guardrails:
-- do not run `--execute`, `az group create`, `az aks create`, `az rest` mutations, `kubectl` mutations, cluster creation, or cloud cleanup in this task;
-- preserve the split boundary: no Machine PUT/GET/LIST/tag update, no `agentPools/deleteMachines`, no claim for `machines-agentpool-api-crud`, and no claim for the full source-equivalent `machines-agentpool-nap-default-pool-cleanup` branch;
-- if accepting `AKS_RP_E2E_ASSUME_NAP_FEATURE_GA=true`, require explicit evidence from iteration57/58 or current read-only CLI/API output and record the override in generated evidence;
-- replace the nested AgentPools API-version provider-metadata gate only with a documented proof path, such as source/swagger/generated-client evidence plus a request-shape check, not with an unchecked bypass;
-- do not update `outputs/e2e-capability-model.json` unless the validator or schema requires a non-product evidence reference; this is preflight hygiene, not product behavior evidence.
+Guardrails: no `--execute`, no `az aks create`, no cloud mutation, no Machine PUT/GET/LIST/tag update, no `agentPools/deleteMachines`, and no model status change unless the source/API evidence alone proves iteration143 was misclassified. Run the capability-model validator after any model edit; otherwise cite the current validator result.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -511,7 +511,9 @@ Guardrails:
 61. ✅ Create the NAP default Machines pool cleanup no-Machine-CRUD reference-backed TS probe design
 62. ✅ Implement the NAP cleanup no-Machine-CRUD execution-gated TS probe body locally
 63. ⚠️ Execute the NAP cleanup no-Machine-CRUD gated split probe — blocked before resource creation by ambiguous API-version/NAP feature preflights
-64. 🔄 Harden the NAP cleanup no-Machine-CRUD execution preflights locally
+64. ✅ Harden the NAP cleanup no-Machine-CRUD execution preflights locally
+65. ⚠️ Execute the NAP cleanup no-Machine-CRUD gated rerun after hygiene — split branch failed: NAP Auto persisted but `aksmanagedap` was NotFound before Manual
+66. 🔄 Triage the `aksmanagedap` absence against source/API expectations before any rerun
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1112,10 +1114,60 @@ Guardrails:
   blocked_reason: "outputs/iteration140-nap-cleanup-no-machine-crud-execution.md: explicit --execute run stopped before resource creation because read-only preflight could not prove nested managedClusters/agentPools API-version support from provider metadata and NodeAutoProvisioningPreview feature show returned FeatureNotFound. Local reference/validator/request-shape preflights passed, no Machine CRUD/deleteMachines calls were made, no resource group was created, cleanup was not needed, and the product model stayed unchanged."
 
 - id: nap-cleanup-no-machine-crud-preflight-hygiene
-  status: running
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Perform local-only preflight hygiene for probes/machines-nap-default-pool-cleanup-no-machine-crud.ts after the iteration140 safe stop. Start from outputs/iteration140-nap-cleanup-no-machine-crud-execution.md and its generated JSON/markdown, the probe/run-plan/feature packet, outputs/iteration57-node-autoprovision-staging.md, outputs/iteration58-node-autoprovision-followup.md, and outputs/e2e-capability-model.json. Determine whether the AgentPools API-version provider-metadata miss and NodeAutoProvisioningPreview FeatureNotFound are true environment blockers or ambiguous preflight checks given prior NAP staging passes. If safe, update the probe and run-plan with auditable read-only proof paths/explicit override handling, then run bun probes/machines-nap-default-pool-cleanup-no-machine-crud.ts --check, bun probes/machines-nap-default-pool-cleanup-no-machine-crud.ts --run-id=iteration141-local, and bun capability-model/src/validate.ts outputs/e2e-capability-model.json. Produce outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md with exact edits, verification evidence, and the future rerun gate. Do not run --execute or any cloud mutation; preserve no-Machine-CRUD and no-full-branch claims."
   depends_on: [nap-cleanup-no-machine-crud-gated-execution]
+  attempts: 1
+
+- id: nap-cleanup-no-machine-crud-gated-rerun-after-hygiene
+  result: failed
+  status: done
+  assignee: aks-explorer
+  goal: "Execute one bounded, explicitly gated staging rerun of probes/machines-nap-default-pool-cleanup-no-machine-crud.ts after iteration141 preflight hygiene. Start from outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md, outputs/iteration141-local-machines-nap-default-pool-cleanup-no-machine-crud.{json,md}, features/machines-nap-default-pool-cleanup-no-machine-crud.yaml, run-plans/machines-nap-default-pool-cleanup-no-machine-crud.yaml, and outputs/e2e-capability-model.json. Run only this split probe with --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=machines-agentpool-nap-default-pool-cleanup-no-machine-crud and AKS_RP_E2E_ASSUME_NAP_FEATURE_GA=true, using Standard_D2s_v4 unless a read-only preflight-backed override is recorded. Let read-only validator/reference/API/feature/SKU/CLI/kubectl/request-shape preflights stop the run before resource creation if unsafe, but require generated evidence to record the hardened AgentPools proof path and iteration57/58 NAP availability evidence. If execution proceeds, verify NAP Auto create/persistence, default pool aksmanagedap mode=Machines/type=VirtualMachines, Karpenter NodePool CPU limit 0, Manual update/persistence, ARM absence of aksmanagedap, Kubernetes absence of aks-aksmanagedap nodes, diagnostics, and whole-RG cleanup. Produce outputs/iteration142-nap-cleanup-no-machine-crud-execution.md with exact command, outcome/blocker, cleanup, failure classification, and model-impact recommendation. Update outputs/e2e-capability-model.json only for a clear source-shaped split pass/fail with bounded cleanup, then validate it. Do not call Machine PUT/GET/LIST/tag update or agentPools/deleteMachines; do not claim machines-agentpool-api-crud or the full source-equivalent machines-agentpool-nap-default-pool-cleanup branch; do not combine with unrelated branches."
+  depends_on: [nap-cleanup-no-machine-crud-preflight-hygiene]
+  attempts: 1
+  failure_reason: "outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md: after fixing the az rest --resource execution-host issue, hardened preflights passed and source-shaped NAP Auto create persisted mode=Auto/defaultNodePools=Auto, but the source-expected default Machines agent pool aksmanagedap returned NotFound before Manual cleanup assertions. Cleanup reached az group exists=false, no Machine API/deleteMachines calls were made, and outputs/e2e-capability-model.json now marks only the split no-Machine-CRUD branch fail."
+
+- id: local-gap-selection-knowledge-map-refresh
+  status: done
+  result: superseded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration143-local-gap-selection-knowledge-map-refresh.md and refresh outputs/input-expectation-knowledge-map.md from the current validated model after iteration142. Start from project.md, outputs/e2e-capability-model.json, outputs/input-expectation-knowledge-map.md, outputs/iteration137-approuting-nginx-to-istio-migration-execution.md, outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md, and outputs/iteration142-nap-cleanup-no-machine-crud-execution.md. Run bun capability-model/src/validate.ts outputs/e2e-capability-model.json and quote the current fail/unknown/blocked lists. Identify which remaining unknown/failing features are actionable without cloud mutation and which are gated by TLS owner diagnostics, Machine preview features, ManagedSystem cloud execution, BYO SKU/environment, or the NAP az-rest execution-host issue. Update the ranked next-frontier section of the knowledge map accordingly. Do not run az, kubectl, --execute, cluster creation, or cloud mutation."
+  depends_on: [nap-cleanup-no-machine-crud-gated-rerun-after-hygiene]
+  attempts: 0
+  dropped_reason: "Superseded by iteration143 model-changing NAP split failure and the more specific nap-aksmanagedap-absence-source-triage task."
+
+- id: managedsystem-cli-failure-reference-packet
+  status: done
+  result: dropped
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration144-managedsystem-cli-failure-reference-packet.md as a local/source-backed reference packet for managedsystem-pool-cli-create-cluster and managedsystem-pool-cli-add-existing. Start from outputs/iteration143-local-gap-selection-knowledge-map-refresh.md, outputs/iteration56-managedsystem-staging-refresh.md, outputs/20260519T1646Z-managedsystem-priority-staging.md, outputs/managedsystem-pool-api-doc-boundary.md, outputs/managedsystem-pool-feature-standard.md, features/managedsystem-pool.yaml, and relevant RP/e2ev3/CLI source references already captured in the ManagedSystem artifacts. Compare the failing CLI default payload fields against the passing minimal REST request shape, record exact accepted/rejected input paths and expected error-shape evidence, and recommend any capability-model or knowledge-map hygiene needed. Do not rerun CLI/staging or create cloud resources."
+  depends_on: [local-gap-selection-knowledge-map-refresh]
+  attempts: 0
+
+- id: virtualmachines-cli-multisku-failure-reference-packet
+  status: done
+  result: dropped
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration145-virtualmachines-cli-multisku-failure-reference-packet.md as a local/source-backed reference packet for virtualmachines-agentpool-cli-add-multi-sku. Start from outputs/iteration143-local-gap-selection-knowledge-map-refresh.md, outputs/iteration64-virtualmachines-agentpool-staging.md, outputs/iteration65-virtualmachines-multisku-contract.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, and outputs/e2e-capability-model.json. Reconcile the CLI comma multi-SKU failure with REST mixed-SKU/manual-profile passes, public swagger/source request shapes, and CLI help/serialization behavior; define the exact failing input boundary and adjacent passing paths. Do not run az, kubectl, cluster creation, or cloud mutation."
+  depends_on: [local-gap-selection-knowledge-map-refresh]
+  attempts: 0
+
+- id: paf-throttling-source-precondition-reference-packet
+  status: done
+  result: dropped
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration146-paf-throttling-source-precondition-reference-packet.md as a local-only reference packet for paf-throttling. Start from outputs/e2e-run-results-summary.md, outputs/iteration26-pafthrottling-retry.md if present, outputs/underlay-debug-findings.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and relevant devbox source for Scenario_PAFThrottling. Identify the required MSI/identity inputs, source assertions, historical missing-identity failure evidence, whether the current fail should be modeled as product failure, environment/precondition failure, or stale standalone evidence, and the exact non-cloud next unblock action if any. Do not run standalone/staging, az, kubectl, cluster creation, or cloud mutation."
+  depends_on: [local-gap-selection-knowledge-map-refresh]
+  attempts: 0
+
+- id: nap-aksmanagedap-absence-source-triage
+  status: pending
+  assignee: aks-explorer
+  goal: "Triage the iteration143 NAP Auto aksmanagedap absence locally before any rerun. Start from outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md and generated JSON, outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md, outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md, probes/machines-nap-default-pool-cleanup-no-machine-crud.ts, run-plans/machines-nap-default-pool-cleanup-no-machine-crud.yaml, features/machines-nap-default-pool-cleanup-no-machine-crud.yaml, outputs/e2e-capability-model.json, and relevant devbox source for Scenario_MachinesAgentPoolNAPEnabled. Produce outputs/iteration144-nap-aksmanagedap-absence-source-triage.md classifying whether aksmanagedap NotFound is product regression, source/API drift, missing input/feature/header, or inconclusive; include exact source/API evidence, model-impact recommendation, and bounded next action. Do not run --execute, az aks create, cloud mutation, Machine APIs, or deleteMachines."
+  depends_on: [nap-cleanup-no-machine-crud-gated-rerun-after-hygiene]
   attempts: 0
 
 ## References
@@ -1154,6 +1206,15 @@ Guardrails:
 ## Comments
 
 ## Artifacts
+- outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md
+- outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun-machines-nap-default-pool-cleanup-no-machine-crud.md
+- outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun-machines-nap-default-pool-cleanup-no-machine-crud.json
+- outputs/iteration142-nap-cleanup-no-machine-crud-execution.md
+- outputs/iteration142-nap-cleanup-no-machine-crud-execution-machines-nap-default-pool-cleanup-no-machine-crud.md
+- outputs/iteration142-nap-cleanup-no-machine-crud-execution-machines-nap-default-pool-cleanup-no-machine-crud.json
+- outputs/iteration141-nap-cleanup-no-machine-crud-preflight-hygiene.md
+- outputs/iteration141-local-machines-nap-default-pool-cleanup-no-machine-crud.md
+- outputs/iteration141-local-machines-nap-default-pool-cleanup-no-machine-crud.json
 - outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md
 - outputs/iteration136-local-app-routing-nginx-to-istio-migration.md
 - outputs/iteration136-local-app-routing-nginx-to-istio-migration.json
