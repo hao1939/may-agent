@@ -110,27 +110,24 @@ Absorbed watch items:
 
 ## Tasks
 
-- id: judge-heartbeat-dark
+- id: calibrate-status-reality-mismatch
   status: pending
   assignee: may
-  goal: "Judge heartbeat-coverage and dark-agents alerts (P0)"
+  goal: Calibrate status-reality-mismatch threshold or fix stale data sources
 
-- id: investigate-status-mismatch
+- id: verify-heartbeat-coverage
   status: pending
   assignee: may
-  goal: "Investigate status-reality-mismatch-count alert at 19 vs threshold 3 (P0)"
-
-- id: route-eval-coverage-lag
-  status: pending
-  assignee: may
-  goal: "Route eval.llm-coverage-lag-h to evaluator owner (P0)"
-
-- id: triage-stale-metrics
-  status: pending
-  assignee: may
-  goal: "Triage stale-active-metrics refresh failures (P1)"
+  goal: Verify heartbeat-coverage metric is measuring correctly
 
 ## Journal
+
+### 2025-05-22 — Task parser fix and alert judgment
+- Fixed task format from YAML-style to markdown checkboxes (parser error resolved).
+- Judged heartbeat/dark-agents alerts: system is active (6 agents with recent sessions), metric likely miscounting due to no `kind=heartbeat` sessions in DB.
+- Status-reality-mismatch=19: composite metric counting stale projects/metrics/sessions after consolidation. Need threshold recalibration or cleanup of stale data.
+- Routed eval.llm-coverage-lag-h (11.1h) to evaluator via message.
+- New tasks: calibrate mismatch threshold, verify heartbeat metric measurement.
 
 ### 2026-05-21 — First ops loop: alert chain judgment
 - 9 unresolved alerts, 4 P0 metrics breaching.
