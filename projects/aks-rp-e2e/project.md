@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 136
+iteration: 137
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -157,17 +157,17 @@ All three residual ManagedSystem unknowns and the full Machines/NAP default-pool
 
 `outputs/iteration135-knowledge-map-refresh.md` is the latest local consolidation artifact. It refreshed `outputs/input-expectation-knowledge-map.md` and `outputs/e2ev3-handwritten-coverage-inventory.md` from the post-iteration134 validated model, preserving the NAP cleanup split, VPA roll-up retirement, Node Restriction PATCH hygiene, and the generic App Routing NGINX-to-Istio branch. The validator exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case evidence mappings, 7 failing feature IDs, 9 unknown feature IDs, and 2 blocked feature IDs.
 
-`outputs/iteration134-approuting-nginx-to-istio-migration-probe-design.md` remains the latest App Routing migration design artifact. It created the reviewable generic/non-default-domain App Routing migration packet, run plan, and TypeScript probe skeleton (`features/app-routing-nginx-to-istio-migration.yaml`, `run-plans/app-routing-nginx-to-istio-migration.yaml`, `probes/app-routing-nginx-to-istio-migration.ts`) and local design-preflight evidence with `ok=true`. No cloud mutation was performed. The branch remains `unknown`; the next bounded frontier is to implement the probe's cloud-run body behind explicit `--execute` / `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-nginx-to-istio-migration` gates plus validator/API/feature/SKU/request-shape preflights, without executing it in the implementation task.
+`outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md` is the latest App Routing migration artifact. It turned `probes/app-routing-nginx-to-istio-migration.ts` from a design-preflight skeleton into an execution-capable probe while preserving the generic/non-default-domain boundary. Local verification passed: `bun probes/app-routing-nginx-to-istio-migration.ts --check` exited 0, `bun probes/app-routing-nginx-to-istio-migration.ts --run-id=iteration136-local` exited 0 with `status=blocked` / `diagnosis=execution-gated` and local reference/validator/request-shape preflights `ok=true`, and `bun capability-model/src/validate.ts outputs/e2e-capability-model.json` exited 0. The branch remains `unknown`; the next bounded frontier is a single explicitly gated execution run of that probe, starting with its read-only az/API/feature/SKU preflights and proceeding to cloud mutation only when `--execute` and `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-nginx-to-istio-migration` are set. This generic run must not claim default-domain Istio/TLS branches.
 
 ## Current Phase
 
 The reference-backed TypeScript probe pattern has now been exercised on five runtime/product branches and extended with several local design-gated skeletons. ManagedSystem REST add-existing, VPA upgrade-survival, Bootstrap profile managed-ACR lifecycle, and OIDC signing-key rotation produced cloud pass evidence; Bootstrap BYO-ACR produced bounded blocker evidence; ManagedSystem runtime/single-pool/reconcile, Machines/NAP cleanup, and App Routing NGINX-to-Istio migration now have reviewable local designs but remain execution-gated.
 
-The generic App Routing NGINX-to-Istio migration design is complete in iteration134. It preserves the non-default-domain boundary and encodes a future single-cluster source flow: NGINX HTTP Ingress baseline, enable Gateway API Standard plus AppRoutingIstio, create HTTP Gateway/HTTPRoute with GatewayClass `approuting-istio`, wait for `Gateway Programmed=True` plus address, flip traffic, delete Ingress, disable NGINX while preserving Istio, and assert continuous HTTP probes remain 2xx. It does not claim or unblock the failed/default-domain TLS branches.
+The generic App Routing NGINX-to-Istio migration probe is now implementation-ready after iteration136 local verification. It preserves the non-default-domain boundary and encodes a single-cluster source flow: NGINX HTTP Ingress baseline, enable Gateway API Standard plus AppRoutingIstio, create HTTP Gateway/HTTPRoute with GatewayClass `approuting-istio`, wait for `Gateway Programmed=True` plus address, flip traffic, delete Ingress, disable NGINX while preserving Istio, assert continuous HTTP probes remain 2xx, collect diagnostics, and verify cleanup. It does not claim or unblock the failed/default-domain TLS branches.
 
-Next phase: local execution implementation for the generic App Routing NGINX-to-Istio migration probe. The consolidated maps are now current after iteration135. The next bounded advance is to turn `probes/app-routing-nginx-to-istio-migration.ts` from a design-preflight skeleton into an execution-capable, gate-protected probe with source-shaped preflights, structured diagnostics, cleanup verification, and bounded model-impact rules, while still avoiding any cloud mutation during the implementation task.
+Next phase: one bounded, explicitly gated execution of `probes/app-routing-nginx-to-istio-migration.ts`. The run must start with the probe's read-only validator/reference/API/feature/SKU/request-shape preflights and only then create a resource group/cluster if both execution gates are present. If a preflight or environment gate fails, write blocker evidence and keep `app-routing-nginx-to-istio-migration` unknown. If the source-shaped claim path is reached, use the probe's model-impact rules to recommend pass/fail for that feature only after cleanup is bounded.
 
-Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, sanitizer/request-shape evidence where applicable, and clear assertion boundaries. Machines/NAP cloud execution should wait for the Machine preview feature registrations or an equivalent source environment. App Routing migration execution should wait for a future execution task that implements the cloud-run body behind the checked-in gates and preflights.
+Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, sanitizer/request-shape evidence where applicable, and clear assertion boundaries. Machines/NAP cloud execution should wait for the Machine preview feature registrations or an equivalent source environment. App Routing migration execution is now parser-visible as a single gated task; preserve the checked-in gates and preflights.
 
 This keeps the project on the agreed phase order: learn -> ground -> experiment -> refine -> next single-case TS probe -> replan.
 
@@ -285,19 +285,20 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Implement the execution-gated cloud body for the generic App Routing NGINX-to-Istio migration probe, but do **not** execute cloud mutation in this task.
+Execute one bounded, explicitly gated App Routing NGINX-to-Istio migration probe run, using the iteration136 implementation as the source of truth.
 
 The task should:
 
-- start from `outputs/iteration135-knowledge-map-refresh.md`, `outputs/iteration134-approuting-nginx-to-istio-migration-probe-design.md`, `features/app-routing-nginx-to-istio-migration.yaml`, `run-plans/app-routing-nginx-to-istio-migration.yaml`, `probes/app-routing-nginx-to-istio-migration.ts`, `outputs/e2e-capability-model.json`, and the current `outputs/input-expectation-knowledge-map.md` / `outputs/e2ev3-handwritten-coverage-inventory.md` App Routing split;
+- start from `outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md`, `outputs/iteration136-local-app-routing-nginx-to-istio-migration.{json,md}`, `outputs/iteration135-knowledge-map-refresh.md`, `features/app-routing-nginx-to-istio-migration.yaml`, `run-plans/app-routing-nginx-to-istio-migration.yaml`, `probes/app-routing-nginx-to-istio-migration.ts`, and `outputs/e2e-capability-model.json`;
 - preserve the generic/non-default-domain boundary: no `DefaultDomainCertificate`, no `default-domain-tls`, no `defaultDomain.enabled=true`, no generated `*.aksapp.io` hostname, no HTTPS Gateway listener, no Gateway `certificateRefs`, and no claims for `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, or failed `app-routing-default-domain-tls-secret`;
-- extend `probes/app-routing-nginx-to-istio-migration.ts` from design-preflight-only into an auditable execution-capable probe that still defaults to local preflight and only mutates cloud when both `--execute` and `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-nginx-to-istio-migration` are set;
-- implement bounded source-shaped preflights before any mutating command: capability-model validator exit 0, local reference preflight `ok=true`, API/request-shape check for `2026-03-02-preview` Gateway API/AppRoutingIstio fields, preview feature registration check for `Microsoft.ContainerService/ManagedGatewayAPIPreview` and `Microsoft.ContainerService/AppRoutingIstioGatewayAPIPreview` or a source-confirmed GA replacement, location/SKU feasibility using the current successful default `Standard_D2s_v4`, and a request-shape guard proving planned mutations contain no default-domain/TLS inputs;
-- implement the planned run body behind helper functions and structured evidence: create NGINX-only App Routing cluster, deploy hello-world Service/Deployment/Ingress, capture NGINX LB IP and baseline HTTP 2xx, run a direct-IP continuous HTTP prober with Host header, ARM PUT Gateway API Standard + AppRoutingIstio while preserving NGINX, apply HTTP Gateway/HTTPRoute, wait `Gateway Programmed=True` plus address, sanity-probe Gateway 2xx, flip prober to Gateway, delete Ingress, ARM PUT `webAppRouting.enabled=false` while preserving Gateway API/AppRoutingIstio, assert prober `total>0` and `bad=0`, capture diagnostics, and verify cleanup;
-- ensure failures are classified as preflight, setup, implementation/probe, environment, product expectation failure, or cleanup blocker, and ensure product model-impact rules stay bounded to `app-routing-nginx-to-istio-migration` only;
-- run local verification only: `bun probes/app-routing-nginx-to-istio-migration.ts --check`, a non-mutating design/preflight run with a new run id such as `iteration136-local`, and `bun capability-model/src/validate.ts outputs/e2e-capability-model.json`; do not run `--execute`, `az`, `kubectl`, cluster creation, or cloud mutation;
-- produce `outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md` summarizing exact code changes, local verification output, residual execution gates, expected future command, and cleanup/model-impact rules;
-- update `project.md` after implementation with the next correct state: either one bounded parser-visible task for a gated execution dry-run/live run if local verification is clean, or a blocker/waiting trigger if implementation cannot be made safe.
+- run the implemented probe with explicit gates only, for example:
+  `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-nginx-to-istio-migration AKS_RP_E2E_NODE_VM_SIZE=Standard_D2s_v4 bun probes/app-routing-nginx-to-istio-migration.ts --run-id=iteration137-approuting-nginx-to-istio-migration --execute`;
+- let the probe's read-only preflights run before any mutation: capability-model validator, local reference preflight, request-shape leak scan, `2026-03-02-preview` API availability, `ManagedGatewayAPIPreview` / `AppRoutingIstioGatewayAPIPreview` registration or explicit GA override, CLI flag availability, `Standard_D2s_v4` location/SKU feasibility, and Kubernetes version audit;
+- if any preflight fails, stop with blocker evidence in the probe output and do not edit the capability model;
+- if cloud execution proceeds, verify the planned source-shaped flow: NGINX-only App Routing cluster, hello-world Service/Deployment/Ingress, NGINX direct-IP HTTP 2xx, continuous Host-header prober, ARM PUT Gateway API Standard + AppRoutingIstio while preserving NGINX, HTTP Gateway/HTTPRoute, Gateway `Programmed=True` plus address, Gateway HTTP 2xx, prober flip to Gateway, Ingress deletion, ARM PUT `webAppRouting.enabled=false` while preserving AppRoutingIstio, final Gateway HTTP 2xx, prober `total>0` / `bad=0` / `ok=total`, diagnostics capture, and resource-group cleanup verification;
+- produce `outputs/iteration137-approuting-nginx-to-istio-migration-execution.md` summarizing the exact command, preflight result, cloud outcome or blocker, cleanup state, failure classification, and model-impact recommendation;
+- update `outputs/e2e-capability-model.json` only if the source-shaped claim path reaches a clear pass/fail with bounded cleanup, then run `bun capability-model/src/validate.ts outputs/e2e-capability-model.json` and quote the result;
+- update `project.md` after the run: close the execution task with pass/fail/blocked, preserve adjacent App Routing TLS/default-domain gates, and choose the next non-gated frontier or waiting trigger.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -495,7 +496,8 @@ The task should:
 56. ✅ Research and model a generic non-default-domain AppRoutingIstio/Gateway split
 57. ✅ Design the generic App Routing NGINX-to-Istio migration run plan/probe locally
 58. ✅ Refresh the consolidated knowledge map after App Routing migration design
-59. 🔄 Implement the execution-gated App Routing NGINX-to-Istio migration probe body locally
+59. ✅ Implement the execution-gated App Routing NGINX-to-Istio migration probe body locally
+60. 🔄 Execute one gated App Routing NGINX-to-Istio migration probe run
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1055,10 +1057,18 @@ The task should:
   attempts: 1
 
 - id: approuting-nginx-to-istio-migration-execution-implementation
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Implement the execution-gated cloud body for probes/app-routing-nginx-to-istio-migration.ts without running cloud mutation. Start from outputs/iteration135-knowledge-map-refresh.md, outputs/iteration134-approuting-nginx-to-istio-migration-probe-design.md, features/app-routing-nginx-to-istio-migration.yaml, run-plans/app-routing-nginx-to-istio-migration.yaml, probes/app-routing-nginx-to-istio-migration.ts, and outputs/e2e-capability-model.json. Preserve the generic/non-default-domain boundary: no DefaultDomainCertificate, no default-domain-tls, no defaultDomain.enabled=true, no generated aksapp.io hostname, no HTTPS Gateway listener, no Gateway certificateRefs, and no claims for default-domain Istio/TLS branches. Extend the probe so it still defaults to local preflight and only mutates cloud when both --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-nginx-to-istio-migration are set. Implement bounded validator/reference/API/request-shape/feature/SKU preflights plus source-shaped run steps, diagnostics, failure classification, cleanup verification, and model-impact rules for the future run. Run only local verification: bun probes/app-routing-nginx-to-istio-migration.ts --check, a non-mutating run such as bun probes/app-routing-nginx-to-istio-migration.ts --run-id=iteration136-local, and bun capability-model/src/validate.ts outputs/e2e-capability-model.json. Produce outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md with exact code changes, verification evidence, residual execution gates, expected future command, and cleanup/model-impact rules. Do not run --execute, az, kubectl, cluster creation, or cloud mutation."
   depends_on: [post-approuting-design-knowledge-map-refresh]
+  attempts: 1
+
+- id: approuting-nginx-to-istio-migration-gated-execution
+  status: pending
+  assignee: aks-explorer
+  goal: "Execute one bounded, explicitly gated App Routing NGINX-to-Istio migration probe run using probes/app-routing-nginx-to-istio-migration.ts. Start from outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md, outputs/iteration136-local-app-routing-nginx-to-istio-migration.{json,md}, features/app-routing-nginx-to-istio-migration.yaml, run-plans/app-routing-nginx-to-istio-migration.yaml, and outputs/e2e-capability-model.json. Preserve the generic/non-default-domain boundary: no DefaultDomainCertificate, no default-domain-tls, no defaultDomain.enabled=true, no generated aksapp.io hostname, no HTTPS Gateway listener, no Gateway certificateRefs, and no claims for default-domain Istio/TLS branches. Run with explicit gates only: --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=app-routing-nginx-to-istio-migration, using Standard_D2s_v4 unless a preflight-backed override is recorded. Let read-only validator/reference/API/feature/SKU/request-shape preflights stop the run before resource creation if unsafe. If execution proceeds, verify NGINX HTTP baseline, Gateway API Standard + AppRoutingIstio update, HTTP Gateway/HTTPRoute, Gateway Programmed=True/address, continuous prober total>0/bad=0/ok=total through Ingress deletion and NGINX disable, diagnostics, and cleanup. Produce outputs/iteration137-approuting-nginx-to-istio-migration-execution.md with exact command, outcome/blocker, cleanup, failure classification, and model-impact recommendation. Update outputs/e2e-capability-model.json only for a clear source-shaped pass/fail with bounded cleanup, then validate it."
+  depends_on: [approuting-nginx-to-istio-migration-execution-implementation]
   attempts: 0
 
 ## References
@@ -1097,6 +1107,9 @@ The task should:
 ## Comments
 
 ## Artifacts
+- outputs/iteration136-approuting-nginx-to-istio-migration-execution-implementation.md
+- outputs/iteration136-local-app-routing-nginx-to-istio-migration.md
+- outputs/iteration136-local-app-routing-nginx-to-istio-migration.json
 - outputs/iteration135-knowledge-map-refresh.md
 - outputs/iteration134-approuting-nginx-to-istio-migration-probe-design.md
 - outputs/iteration134-local-app-routing-nginx-to-istio-migration-design-preflight.md
