@@ -2,7 +2,7 @@
   "name": "dev",
   "description": "System debugger & metrics engineer \u2014 investigates failures, improves observability",
   "domain": "system reliability, metrics, debugging",
-  "model": "gpt-5.5",
+  "model": "opus",
   "tools": [
     "coding",
     "query_db",
