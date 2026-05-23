@@ -40,6 +40,27 @@ export function extractLastAssistantText(messages: AgentMessage[]): string | nul
   return null;
 }
 
+export function classifyTerminalAssistantFailure(messages: AgentMessage[]): string | undefined {
+  const last = messages[messages.length - 1] as any;
+  if (last?.role !== "assistant") return undefined;
+
+  const blocks = Array.isArray(last.content) ? last.content : [];
+  const hasText = blocks.some((block: any) => block?.type === "text" && String(block.text ?? "").trim());
+  const toolCalls = blocks.filter((block: any) => block?.type === "toolCall");
+  const stopReason = typeof last.stopReason === "string" ? last.stopReason : undefined;
+
+  if (stopReason === "toolUse" && toolCalls.length === 0 && !hasText) {
+    return "Agent ended on an empty tool-use assistant turn";
+  }
+  if (stopReason === "toolUse" && toolCalls.length > 0) {
+    return "Agent ended while waiting for tool results";
+  }
+  if (!hasText && toolCalls.length === 0) {
+    return "Agent ended with an empty assistant turn";
+  }
+  return undefined;
+}
+
 /** Truncate text to maxLen chars for prompt injection. */
 export function truncateForPrompt(text: string, maxLen: number): string {
   const oneLine = text.replace(/\n+/g, " ").replace(/\s+/g, " ").trim();
