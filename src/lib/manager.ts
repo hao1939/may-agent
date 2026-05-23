@@ -17,6 +17,7 @@ import { dirname, join } from "node:path";
 import {
   generateId,
   extractLastAssistantText,
+  classifyTerminalAssistantFailure,
   formatDuration,
 } from "./manager-utils.js";
 import { composeGuards, type BeforeToolCallHook } from "./tools/compose-guards.js";
@@ -1316,6 +1317,10 @@ export class SubagentManager {
     const messages = agent.state.messages as AgentMessage[];
     const finishParams = extractFinishParams(messages as any[]);
     const assistantText = extractLastAssistantText(messages);
+    const terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
+    if (!errorText && terminalAssistantFailure) {
+      errorText = terminalAssistantFailure;
+    }
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }

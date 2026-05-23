@@ -11,6 +11,7 @@ import { mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync } from "node:
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
+import { classifyTerminalAssistantFailure } from "../../src/lib/manager-utils.js";
 import { readSessionMeta, writeSessionMeta, ensureSessionDir, appendSessionMessage } from "../../src/lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
 import type { Model } from "@mariozechner/pi-ai";
@@ -41,6 +42,39 @@ function registerAgent(manager: SubagentManager, name = "test-agent") {
     apiKey: "fake-key",
   });
 }
+
+describe("terminal assistant failure classification", () => {
+  it("flags empty tool-use assistant turns as terminal failures", () => {
+    const reason = classifyTerminalAssistantFailure([
+      { role: "user", content: [{ type: "text", text: "do work" }] } as any,
+      { role: "assistant", stopReason: "toolUse", content: [{ type: "text", text: "" }] } as any,
+    ]);
+
+    expect(reason).toBe("Agent ended on an empty tool-use assistant turn");
+  });
+
+  it("flags pending tool calls as terminal failures", () => {
+    const reason = classifyTerminalAssistantFailure([
+      { role: "user", content: [{ type: "text", text: "do work" }] } as any,
+      {
+        role: "assistant",
+        stopReason: "toolUse",
+        content: [{ type: "toolCall", id: "call_1", name: "bash", arguments: { command: "echo hi" } }],
+      } as any,
+    ]);
+
+    expect(reason).toBe("Agent ended while waiting for tool results");
+  });
+
+  it("does not flag substantive final assistant text", () => {
+    const reason = classifyTerminalAssistantFailure([
+      { role: "user", content: [{ type: "text", text: "do work" }] } as any,
+      { role: "assistant", stopReason: "stop", content: [{ type: "text", text: "Done." }] } as any,
+    ]);
+
+    expect(reason).toBeUndefined();
+  });
+});
 
 describe("Bug 3: handleCompletion error recovery", () => {
   let persistDir: string;
