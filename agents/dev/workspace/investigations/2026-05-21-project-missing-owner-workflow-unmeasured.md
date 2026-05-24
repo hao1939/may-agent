@@ -1,47 +1,29 @@
-# project.missing-owner-workflow-count unmeasured
+# project.missing-owner-workflow-count unmeasured metric check
 
 ## Signal
 
-During the 2026-05-21 dev heartbeat, the active-metrics snapshot freshness check returned one active metric without a snapshot in the last hour:
+Dev heartbeat on 2026-05-21 found one active metric with no snapshot in the last hour:
 
-- `project.missing-owner-workflow-count` (`Project missing owner/workflow count`)
-
-The metric row is active and owned by `may`, but has no `source_query` or `source_command`, so the metrics-snapshot handler has no measurement recipe to run.
+- `project.missing-owner-workflow-count` — Active projects missing owner workflow
 
 ## Evidence
 
-- `query_db` unmeasured active metrics check returned `rowCount=1` with `id='project.missing-owner-workflow-count'`.
-- Metric inspection returned `owner='may'`, `status='active'`, `source_query=NULL`, `source_command=NULL`, `current=0`, `updated_at=1779256304421`.
-- A direct projects-table reality check returned zero active projects missing owner or workflow:
+- Unmeasured-metric query returned exactly this metric as active without a recent snapshot.
+- Metric metadata shows owner `may`, status `active`, current `0`, target `0`, threshold `0`, alert_op `>`, updated_at `1779256304421`.
+- Snapshot history shows last measurement at `1779256304421`, about `111.7h` before this heartbeat.
+- Metric definition has `source_query = NULL`, `source_command = NULL`, and `measure_interval = NULL`, so the generic metrics snapshot path has no recipe to measure it.
+- Source grep found historical review mentions only; no current source definition for `project.missing-owner-workflow-count` in `agents/may`, `shared`, or `projects` besides prior alert-review artifacts.
+- Direct project-table check found `rowCount=0` active projects with missing owner/workflow, so the stale metric value still matches current reality.
 
-```sql
-SELECT id, path, name, owner, status, workflow
-FROM projects
-WHERE status='active'
-  AND (owner IS NULL OR trim(owner)='' OR workflow IS NULL OR trim(workflow)='')
-ORDER BY updated_at DESC
-LIMIT 20;
-```
+## Judgment
 
-Result: `rowCount=0`.
+This is a May-owned metric definition gap, not an active dev-owned runtime failure. It should not block this heartbeat because current project health metrics are otherwise measuring successfully and no unresolved dev-owned alert is open.
 
-## Root Cause
+## Routed follow-up
 
-The metric is active but structurally unmeasurable because it lacks both measurement fields. This is a metric-definition issue, not evidence of current project data drift.
+May should choose one of:
 
-## Proposed Fix
+1. Add a real `source_query`/`source_command` and measurement interval for `project.missing-owner-workflow-count` if the metric is still needed.
+2. Retire/close the metric if project-steward/project-health metrics now supersede it.
 
-Have the metric owner register a safe `source_query` equivalent to:
-
-```sql
-SELECT COUNT(*) AS value
-FROM projects
-WHERE status='active'
-  AND (owner IS NULL OR trim(owner)='' OR workflow IS NULL OR trim(workflow)='');
-```
-
-Because `query_db` is read-only and metric registration is a runtime write, this heartbeat only records the finding. A future approved/dev task or May-owned metric maintenance pass should apply the metric definition safely.
-
-## Disposition
-
-No project was created: this is a one-metric maintenance gap with a clear owner (`may`) and no current project-data mismatch. Continue monitoring the unmeasured-metrics check; if this remains stale or spreads to multiple metrics, promote to an approved metric hygiene task.
+Dev should not mutate the runtime DB directly from heartbeat; metric registration/retirement must go through the safe writer path.
