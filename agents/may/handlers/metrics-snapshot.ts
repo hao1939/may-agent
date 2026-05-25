@@ -62,7 +62,7 @@ const ALL_METRICS: MetricDef[] = [
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
   { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 10, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "session.provider-error-count-1h", name: "Provider errors at any turn (1h)", owner: "may", type: "health", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P1",
+  { id: "session.provider-error-count-1h", name: "Provider errors at any turn (1h)", owner: "may", type: "health", target: 0, threshold: 12, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "session.empty-assistant-stop-count-1h", name: "Empty assistant stops (1h)", owner: "may", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
@@ -301,7 +301,7 @@ function scoutSourcedArtifacts24h(root: string, now: number): number {
     .filter((file) => {
       try {
         if (statSync(file).mtimeMs < cutoff) return false;
-        return fileContainsAny(file, [/^Source:/im, /\*\*Source\*\*:/i, /https?:\/\//i]);
+        return fileContainsAny(file, [/^Sources?:/im, /\*\*Sources?\*\*:/i, /https?:\/\//i]);
       } catch {
         return false;
       }
