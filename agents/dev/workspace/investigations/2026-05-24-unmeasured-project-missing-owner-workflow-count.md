@@ -27,7 +27,14 @@ May should either:
 
 Dev could not write the metric registration directly because heartbeat DB access is read-only and metric writes must go through the system event/write path.
 
+## 2026-05-25 Recurrence and Routing
+
+The 2026-05-25 dev heartbeat re-ran the canned unmeasured-metrics query and the metric-definition check. The same single active metric remains unmeasured, and the definition still has `owner='may'`, `source_query=NULL`, and `source_command=NULL`.
+
+Action: route this as a tracked May follow-up from the heartbeat finish payload (`new_items`) instead of only reclassifying it locally. This addresses the evaluator feedback that repeated no-action heartbeats should not stop at classification when a concrete owner-owned metric gap is visible.
+
 ## Evidence
 
 - `query_db` unmeasured-metrics check returned `project.missing-owner-workflow-count` as the only active metric without a snapshot in the last hour.
 - `query_db` metric-definition check returned one row for `project.missing-owner-workflow-count` with `owner='may'`, `source_query=NULL`, and `source_command=NULL`.
+- 2026-05-25 recheck returned the same single unmeasured active metric and the same May-owned definition with no measurement source.
