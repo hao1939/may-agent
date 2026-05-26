@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 158
+iteration: 165
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -208,6 +208,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `knowledge-map/views/` — generated status, graph, path-summary, and evidence views derived from the canonical model
 - `knowledge-map/deep-dives/managedsystem-pool.md` — worked deep feature example: sources, scenarios, input DAGs, expectations, verification, quality, risks, and improvement loop
 - `execution/README.md` — phased learning/experimenting/replanning strategy for TS probes
+- `execution/automation.md` — operating model for cron/supervisor triggers, always-on controller behavior, lane selection, execution gates, and agent compliance
+- `agents/aks-explorer/cron.json` — disabled project-local trigger template for regular learning, weekly replanning review, and manual verification wake-ups
 - `features/README.md` — stable feature reference-packet directory
 - `run-plans/README.md` — tracked reviewable run-plan directory
 - `probes/README.md` — tracked TypeScript probe directory
@@ -321,9 +323,9 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Continue normalized knowledge-map migration after `outputs/iteration159-vpa-cert-renewal-normalized-path-migration.md`. The canonical `knowledge-map/model.json` now has normalized `userScenarios`, `inputDags`, and `featurePaths` for the ManagedSystem worked example, App Routing NGINX-to-Istio migration (pass), NAP default Machines pool cleanup without Machine CRUD (fail), Bootstrap BYO ACR blocked preconditions, App Routing default-domain TLS-secret valid-input failure, PAF blocked preconditions, VirtualMachines CLI comma multi-SKU failure, and VPA certificate-renewal blocked reconciler path. Product/cloud execution remains externally gated, so the next safe frontier is another bounded local model-normalization task.
+Continue normalized knowledge-map migration after `outputs/iteration163-virtualmachines-cli-manual-scale-multiple-profiles-normalized-path-migration.md`. The canonical `knowledge-map/model.json` now has normalized `userScenarios`, `inputDags`, and `featurePaths` for the ManagedSystem worked example, App Routing NGINX-to-Istio migration (pass), NAP default Machines pool cleanup without Machine CRUD (fail), Bootstrap BYO ACR blocked preconditions, App Routing default-domain TLS-secret valid-input failure, PAF blocked preconditions, VirtualMachines CLI comma multi-SKU failure, VPA certificate-renewal blocked reconciler path, VirtualMachines mixed-SKU REST manual-profile scale (pass), VirtualMachines autoscaled default/system pool CRUD/upgrade (pass), VirtualMachines preview CLI single-SKU add plus single-SKU autoscale update (pass), and VirtualMachines preview CLI manual-scale multiple single-size profile add/delete (pass). Product/cloud execution remains externally gated, so the next safe frontier is another bounded local model-normalization task.
 
-Next parser-visible task: `virtualmachines-mixed-sku-rest-scale-normalized-path-migration`. Migrate `virtualmachines-mixed-sku-rest-scale` into normalized `userScenarios`, `inputDags`, and `featurePaths` using iteration101 plus adjacent iteration147/158 CLI multi-SKU contrast evidence. Preserve the REST mixed manual-profile pass boundary and do not collapse it with the CLI comma multi-SKU failure, CLI single-SKU add, manual-scale multiple single-size profile path, or autoscaled VMs CRUD/upgrade branches. Do not run cloud probes.
+Next parser-visible task: `approuting-default-domain-istio-normalized-path-migration`. Migrate `app-routing-default-domain-istio` into normalized `userScenarios`, `inputDags`, and `featurePaths` using the handwritten/source inventory plus `outputs/iteration128-app-routing-istio-source-design.md`, `outputs/iteration132-approuting-generic-istio-gateway-source-split.md`, `outputs/iteration137-approuting-nginx-to-istio-migration-execution.md`, `outputs/iteration157-approuting-tls-secret-normalized-path-migration.md`, `knowledge-map/model.json`, and generated views. Preserve the boundary: this is the default-domain Istio/Gateway API source branch and must remain distinct from the already-passing generic/non-default-domain NGINX-to-Istio migration and from the failed default-domain TLS-secret branch. Model expected behavior and current unknown/gated observations only; do not run cloud probes.
 
 Execution resume triggers still required for cloud/product probes:
 
@@ -558,7 +560,11 @@ Until a matching trigger exists, preserve the recorded gates for Machines/NAP, P
 80. ✅ Migrate PAF throttling blocked preconditions into normalized knowledge-map paths without cloud execution
 81. ✅ Migrate VirtualMachines CLI comma multi-SKU failure into normalized knowledge-map paths without cloud execution
 82. ✅ Migrate VPA cert-renewal blocked reconciler path into normalized knowledge-map paths without cloud execution
-83. ⏳ Migrate VirtualMachines mixed-SKU REST scale pass into normalized knowledge-map paths without cloud execution
+83. ✅ Migrate VirtualMachines mixed-SKU REST scale pass into normalized knowledge-map paths without cloud execution
+84. ✅ Migrate VirtualMachines autoscaled VMs CRUD/upgrade pass into normalized knowledge-map paths without cloud execution
+85. ✅ Migrate VirtualMachines CLI single-SKU add and single-SKU autoscale update pass paths into normalized knowledge-map paths without cloud execution
+86. ✅ Migrate VirtualMachines CLI manual-scale multiple single-size profiles into normalized knowledge-map paths without cloud execution
+87. ⏳ Migrate App Routing default-domain Istio/Gateway source branch into normalized knowledge-map paths without cloud execution
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1345,10 +1351,50 @@ Until a matching trigger exists, preserve the recorded gates for Machines/NAP, P
   attempts: 1
 
 - id: virtualmachines-mixed-sku-rest-scale-normalized-path-migration
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Produce outputs/iteration160-virtualmachines-mixed-sku-rest-scale-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for virtualmachines-mixed-sku-rest-scale. Start from outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md, outputs/iteration158-virtualmachines-cli-multisku-normalized-path-migration.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, knowledge-map/model.json, and knowledge-map/views/path-summary.json. Preserve the pass boundary: source-equivalent ARM REST mixed manual[] profile create/scale transitions passed, and this path must remain distinct from preview CLI comma multi-SKU failure, CLI single-SKU add, CLI manual-scale multiple single-size profiles, and autoscaled VMs CRUD/upgrade. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VirtualMachines cloud rerun."
   depends_on: [vpa-cert-renewal-normalized-path-migration]
+  attempts: 1
+
+- id: virtualmachines-autoscaled-vms-crud-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration161-virtualmachines-autoscaled-vms-crud-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for virtualmachines-autoscaled-vms-crud. Start from outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md, outputs/iteration158-virtualmachines-cli-multisku-normalized-path-migration.md, outputs/iteration160-virtualmachines-mixed-sku-rest-scale-normalized-path-migration.md, knowledge-map/model.json, knowledge-map/views/path-summary.json, and knowledge-map/views/status-summary.json. Preserve the pass boundary: source-authored Scenario_Autoscaled_VMs_CRUD creates a default/system type=VirtualMachines pool named autoscaleap, converts its virtualMachinesProfile.scale from manual to autoscale min/max, updates autoscale bounds, upgrades Kubernetes, and verifies autoscale profile plus node readiness before/after upgrade. Keep this path distinct from preview CLI comma multi-SKU failure, REST mixed manual[] profile scale, CLI single-SKU add, CLI manual-scale multiple single-size profiles, Machines API CRUD, and NAP cleanup. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VirtualMachines cloud rerun."
+  depends_on: [virtualmachines-mixed-sku-rest-scale-normalized-path-migration]
+  attempts: 1
+
+- id: virtualmachines-cli-single-sku-autoscale-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration162-virtualmachines-cli-single-sku-autoscale-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for virtualmachines-agentpool-cli-add-single-sku and virtualmachines-agentpool-cli-autoscale-update-single-sku. Start from outputs/iteration64-virtualmachines-agentpool-staging.md, outputs/iteration65-virtualmachines-multisku-contract.md, outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md, outputs/iteration158-virtualmachines-cli-multisku-normalized-path-migration.md, outputs/iteration161-virtualmachines-autoscaled-vms-crud-normalized-path-migration.md, knowledge-map/model.json, knowledge-map/views/path-summary.json, and knowledge-map/views/status-summary.json. Preserve the pass boundaries: preview CLI add with exactly one supported --vm-sizes value persists manual[0], and preview CLI autoscale enable/update persists one autoscale profile with one VM size/min/max. Keep both paths distinct from preview CLI comma multi-SKU failure, REST mixed manual[] profiles, CLI manual-scale multiple single-size profiles, autoscaled default/system pool CRUD/upgrade, Machines API CRUD, and NAP cleanup. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VirtualMachines cloud rerun."
+  depends_on: [virtualmachines-autoscaled-vms-crud-normalized-path-migration]
+  attempts: 1
+
+- id: virtualmachines-cli-manual-scale-multiple-profiles-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration163-virtualmachines-cli-manual-scale-multiple-profiles-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for virtualmachines-agentpool-cli-manual-scale-multiple-profiles. Start from outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md, outputs/iteration158-virtualmachines-cli-multisku-normalized-path-migration.md, outputs/iteration160-virtualmachines-mixed-sku-rest-scale-normalized-path-migration.md, outputs/iteration161-virtualmachines-autoscaled-vms-crud-normalized-path-migration.md, outputs/iteration162-virtualmachines-cli-single-sku-autoscale-normalized-path-migration.md, knowledge-map/model.json, knowledge-map/views/path-summary.json, and knowledge-map/views/status-summary.json. Preserve the pass boundary: preview CLI manual-scale add/delete creates and removes multiple single-size manual profile entries on a VirtualMachines User pool. Keep this path distinct from preview CLI comma multi-SKU nodepool add failure, CLI single-SKU add-only, CLI autoscale update, REST mixed manual[] profile scale, autoscaled default/system pool CRUD/upgrade, Machines API CRUD, and NAP cleanup. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VirtualMachines cloud rerun."
+  depends_on: [virtualmachines-cli-single-sku-autoscale-normalized-path-migration]
+  attempts: 1
+
+- id: approuting-default-domain-istio-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration164-approuting-default-domain-istio-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for app-routing-default-domain-istio. Start from outputs/e2ev3-handwritten-coverage-inventory.md, outputs/iteration128-app-routing-istio-source-design.md, outputs/iteration132-approuting-generic-istio-gateway-source-split.md, outputs/iteration137-approuting-nginx-to-istio-migration-execution.md, outputs/iteration157-approuting-tls-secret-normalized-path-migration.md, knowledge-map/model.json, knowledge-map/views/path-summary.json, and knowledge-map/views/status-summary.json. Preserve the unknown/gated default-domain boundary: this source branch is DefaultDomain + Istio/Gateway API and must remain distinct from the generic/non-default-domain NGINX-to-Istio migration pass and the default-domain TLS-secret failure. Model expected behavior and current unknown observations only; do not claim a product verdict or close adjacent App Routing branches. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, or any App Routing cloud rerun."
+  depends_on: [virtualmachines-cli-manual-scale-multiple-profiles-normalized-path-migration]
+  attempts: 1
+
+- id: approuting-default-domain-tls-lifecycle-normalized-path-migration
+  status: pending
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration165-approuting-default-domain-tls-lifecycle-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for app-routing-default-domain-tls-lifecycle. Start from outputs/e2ev3-handwritten-coverage-inventory.md, outputs/iteration70-app-routing-defaultdomain-tls-staging.md, outputs/iteration80-app-routing-tls-source-hypothesis.md, outputs/iteration81-app-routing-tls-owner-escalation.md, outputs/iteration91-app-routing-tls-gated-followup-tracker.md, outputs/iteration128-app-routing-istio-source-design.md, outputs/iteration157-approuting-tls-secret-normalized-path-migration.md, outputs/iteration164-approuting-default-domain-istio-normalized-path-migration.md, knowledge-map/model.json, knowledge-map/views/path-summary.json, and knowledge-map/views/status-summary.json. Preserve the unknown/gated default-domain TLS lifecycle boundary: model the source expected certificate rotation/post-upgrade/lifecycle behaviors and current unknown observations without reclassifying the already-failing initial TLS secret provisioning branch or claiming the default-domain Istio path. Link the rerun gate to owner diagnostics, fixed/known-good build/configuration, or a source-proven live-verifiable TLS-secret precondition. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, or any App Routing cloud rerun."
+  depends_on: [approuting-default-domain-istio-normalized-path-migration]
   attempts: 0
 
 ## References
