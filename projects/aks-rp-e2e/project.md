@@ -5,7 +5,7 @@ status: active
 type: milestone
 priority: P1
 project_policy: aggressive-push
-iteration: 152
+iteration: 158
 max_concurrent: 1
 max_task_attempts: 2
 ---
@@ -185,7 +185,11 @@ The NAP cleanup no-Machine-CRUD split has failed in the selected staging eastus2
 
 `outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md` is the latest local reference packet. It closes the parser-visible VirtualMachines CLI comma multi-SKU packet task without cloud mutation: the failing boundary is specifically `az aks nodepool add --vm-set-type VirtualMachines --vm-sizes <sku1,sku2>` on the preview CLI surface, where help advertises a two-SKU comma-list but active `aks-preview` source rejects `len(--vm-sizes) != 1` before constructing the request. Adjacent product/API paths remain separate and passing: CLI add with one SKU, CLI manual-scale multiple single-size profiles, REST mixed manual `manual[]` profiles, CLI/REST single-size autoscale update, and autoscaled VMs CRUD/upgrade. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 56 evidence references, 8 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs.
 
-`outputs/iteration151-managedsystem-single-pool-constraint-execution-implementation.md` is the latest local implementation artifact. It closes the single-pool implementation task without cloud mutation: `probes/managedsystem-single-pool-constraint.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-single-pool-constraint`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST boundary from iteration124/150: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, second ManagedSystem pool via the same minimal body with only the pool name changed, post-rejection agentPools list assertions, setup-failure vs second-pool-rejection classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-single-pool-constraint.ts --check`, non-mutating `--run-id=iteration151-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-single-pool-constraint` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
+`outputs/iteration153-managedsystem-runtime-restrictions-execution-implementation.md` is the latest local implementation artifact. It closes the runtime-restrictions implementation task without cloud mutation: `probes/managedsystem-runtime-restrictions.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-runtime-restrictions`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST setup boundary from iteration123/151/152: normal baseline cluster, exactly one ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, then runtime-only assertions for ManagedSystem node labels/taints, CoreDNS readiness/managed-system affinity, critical add-on placement/affinity, VAP/VAPBinding presence, customer nginx Pending/Unschedulable, temporary pod cleanup, setup-failure vs runtime-restrictions classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-runtime-restrictions.ts --check`, non-mutating `--run-id=iteration153-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-runtime-restrictions` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
+
+`outputs/iteration152-managedsystem-reconcile-preservation-execution-implementation.md` remains the reconcile-preservation implementation artifact. It closes the reconcile-preservation implementation task without cloud mutation: `probes/managedsystem-reconcile-preservation.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-reconcile-preservation`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the source-equivalent REST boundary from iteration125/151: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, managed-cluster GET sanitized with CleanManagedSystemPoolForPUT-equivalent rules so ManagedSystem profiles keep only `name`/`mode`/`count` and omit `type` plus read-only/default fields, no-op managed-cluster PUT, preservation assertions, setup-failure vs reconcile-preservation classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-reconcile-preservation.ts --check`, non-mutating `--run-id=iteration152-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0); an owner-loop rerun also passed with `--run-id=iteration152-local-gated-rerun`. The model remains unchanged and `managedsystem-reconcile-preservation` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
+
+`outputs/iteration151-managedsystem-single-pool-constraint-execution-implementation.md` remains the single-pool implementation artifact. It closes the single-pool implementation task without cloud mutation: `probes/managedsystem-single-pool-constraint.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-single-pool-constraint`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST boundary from iteration124/150: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, second ManagedSystem pool via the same minimal body with only the pool name changed, post-rejection agentPools list assertions, setup-failure vs second-pool-rejection classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-single-pool-constraint.ts --check`, non-mutating `--run-id=iteration151-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-single-pool-constraint` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
 
 `outputs/iteration150-managedsystem-cli-failure-reference-packet.md` remains the latest ManagedSystem CLI failure reference packet. It closes the ManagedSystem CLI create/add failure refresh without cloud mutation: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` fail because the preview CLI sends ordinary/default node-pool fields (`OSTypeCasePreserved`, `availabilityProfile`, `count`, `networkProfile`, `osType`, `scaleSetPriority`, `workloadRuntime`, and add-specific `scaleDownMode`) that RP rejects for ManagedSystem pools. The accepted adjacent path remains the minimal ARM REST add-existing body `{"properties":{"mode":"ManagedSystem"}}`, proven by iteration56/20260519/iteration112. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 7 failing feature IDs, 7 unknown feature IDs, and 3 blocked feature IDs. Do not rerun the same CLI failure unless a new `aks-preview`/Azure CLI version, CLI source fix, or owner request gives a material trigger.
 
@@ -198,11 +202,17 @@ Human review remains asynchronous. Agents should continue to leave reviewable ar
 This keeps the project on the agreed phase order: learn -> ground -> experiment -> refine -> next single-case TS probe -> replan.
 
 ## Linked Context
+- `knowledge-map/README.md` — normalized knowledge-map model, visualization contract, and human/LLM update protocol
+- `knowledge-map/feature-workflow.md` — repeatable deeper/wider workflow for turning one feature into model-backed knowledge
+- `knowledge-map/model.json` — canonical accepted knowledge model; prefer this over legacy generated summaries under `outputs/`
+- `knowledge-map/views/` — generated status, graph, path-summary, and evidence views derived from the canonical model
+- `knowledge-map/deep-dives/managedsystem-pool.md` — worked deep feature example: sources, scenarios, input DAGs, expectations, verification, quality, risks, and improvement loop
 - `execution/README.md` — phased learning/experimenting/replanning strategy for TS probes
 - `features/README.md` — stable feature reference-packet directory
 - `run-plans/README.md` — tracked reviewable run-plan directory
 - `probes/README.md` — tracked TypeScript probe directory
 - `probe-lib/README.md` — shared helper library directory for probes
+- `outputs/iteration155-knowledge-map-normalization.md` — local review aligning current project findings to the normalized scenario/DAG/behavior model
 - `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
 - `run-plans/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
 - `probes/managedsystem-rest-add-existing.ts` — executable reference-backed probe
@@ -311,11 +321,22 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Implement the next bounded local probe step: `managedsystem-reconcile-preservation-execution-implementation`. This should turn `probes/managedsystem-reconcile-preservation.ts` from a design/preflight skeleton into an execution-capable but still gated probe for the `managedsystem-reconcile-preservation` unknown. Preserve the source-equivalent boundary from `outputs/iteration125-managedsystem-reconcile-preservation-probe-design.md`: create/add exactly one ManagedSystem pool through the proven minimal REST agentPools PUT, GET the managed cluster, apply `CleanManagedSystemPoolForPUT`-equivalent sanitizer evidence to keep only ManagedSystem pool `name`/`mode`/`count` and omit/clear `type` plus read-only/default fields, issue a no-op managed-cluster PUT, then verify the ManagedSystem pool remains present with `mode=ManagedSystem` and `type=VirtualMachines`.
+Continue normalized knowledge-map migration after `outputs/iteration159-vpa-cert-renewal-normalized-path-migration.md`. The canonical `knowledge-map/model.json` now has normalized `userScenarios`, `inputDags`, and `featurePaths` for the ManagedSystem worked example, App Routing NGINX-to-Istio migration (pass), NAP default Machines pool cleanup without Machine CRUD (fail), Bootstrap BYO ACR blocked preconditions, App Routing default-domain TLS-secret valid-input failure, PAF blocked preconditions, VirtualMachines CLI comma multi-SKU failure, and VPA certificate-renewal blocked reconciler path. Product/cloud execution remains externally gated, so the next safe frontier is another bounded local model-normalization task.
 
-Expected durable output: `outputs/iteration152-managedsystem-reconcile-preservation-execution-implementation.md`, plus necessary edits to `probes/managedsystem-reconcile-preservation.ts` and/or `run-plans/managedsystem-reconcile-preservation.yaml`. Verification should include `bun probes/managedsystem-reconcile-preservation.ts --check`, a non-mutating local run that exits with `status=blocked` / execution-gated evidence and records sanitizer/request-shape evidence, and `bun capability-model/src/validate.ts outputs/e2e-capability-model.json`.
+Next parser-visible task: `virtualmachines-mixed-sku-rest-scale-normalized-path-migration`. Migrate `virtualmachines-mixed-sku-rest-scale` into normalized `userScenarios`, `inputDags`, and `featurePaths` using iteration101 plus adjacent iteration147/158 CLI multi-SKU contrast evidence. Preserve the REST mixed manual-profile pass boundary and do not collapse it with the CLI comma multi-SKU failure, CLI single-SKU add, manual-scale multiple single-size profile path, or autoscaled VMs CRUD/upgrade branches. Do not run cloud probes.
 
-Guardrails remain: do not run standalone/staging PAF, `az`, `kubectl`, `--execute`, cluster creation, cloud mutation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes in this implementation task. ManagedSystem cloud execution remains gated by explicit operator execution plus the iteration88 SKU/image/defaulting gate note; PAF remains external/source-owner gated by MSI/HCP access, target capacity or owner-approved bypass, and confirmed `DedicatedOom` trigger/assertion semantics.
+Execution resume triggers still required for cloud/product probes:
+
+1. ManagedSystem owner/operator authorizes a cloud execution window and supplies `--execute`, the branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared.
+2. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
+3. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
+4. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
+5. VPA cert-renewal source/environment ambiguity is resolved.
+6. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
+7. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
+8. A human explicitly requests a different bounded local model-hygiene/reference-packet task.
+
+Until a matching trigger exists, preserve the recorded gates for Machines/NAP, PAF, App Routing default-domain TLS/Istio, Bootstrap BYO-ACR cloud reruns, VPA cert renewal, Node Restriction PATCH, same-input NAP eastus2, and ManagedSystem cloud probes. Do not run `az`, `kubectl`, `--execute`, standalone/staging, cluster creation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes without the relevant trigger and branch-specific gates.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -528,7 +549,16 @@ Guardrails remain: do not run standalone/staging PAF, `az`, `kubectl`, `--execut
 71. ✅ Perform PAF throttling model hygiene locally
 72. ✅ Build a ManagedSystem CLI failure reference packet locally
 73. ✅ Implement the ManagedSystem single-pool constraint execution-gated TS probe body locally
-74. ⏳ Implement the ManagedSystem reconcile-preservation execution-gated TS probe body locally
+74. ✅ Implement the ManagedSystem reconcile-preservation execution-gated TS probe body locally
+75. ✅ Implement the ManagedSystem runtime-restrictions execution-gated TS probe body locally
+76. ✅ Perform post-ManagedSystem implementation frontier selection locally
+77. ✅ Migrate App Routing NGINX-to-Istio and NAP cleanup split into normalized knowledge-map paths
+78. ✅ Migrate Bootstrap BYO ACR lifecycle into normalized knowledge-map paths without cloud execution
+79. ✅ Migrate App Routing default-domain TLS-secret into normalized knowledge-map paths without cloud execution
+80. ✅ Migrate PAF throttling blocked preconditions into normalized knowledge-map paths without cloud execution
+81. ✅ Migrate VirtualMachines CLI comma multi-SKU failure into normalized knowledge-map paths without cloud execution
+82. ✅ Migrate VPA cert-renewal blocked reconciler path into normalized knowledge-map paths without cloud execution
+83. ⏳ Migrate VirtualMachines mixed-SKU REST scale pass into normalized knowledge-map paths without cloud execution
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1243,10 +1273,82 @@ Guardrails remain: do not run standalone/staging PAF, `az`, `kubectl`, `--execut
   attempts: 1
 
 - id: managedsystem-reconcile-preservation-execution-implementation
-  status: running
+  result: succeeded
+  status: done
   assignee: aks-explorer
   goal: "Produce outputs/iteration152-managedsystem-reconcile-preservation-execution-implementation.md and turn probes/managedsystem-reconcile-preservation.ts into an execution-capable but still gated TypeScript probe for the managedsystem-reconcile-preservation unknown. Start from outputs/iteration125-managedsystem-reconcile-preservation-probe-design.md, features/managedsystem-reconcile-preservation.yaml, run-plans/managedsystem-reconcile-preservation.yaml, probes/managedsystem-reconcile-preservation.ts, outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md, outputs/iteration124-managedsystem-single-pool-constraint-probe-design.md, outputs/iteration151-managedsystem-single-pool-constraint-execution-implementation.md, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Preserve the source-equivalent REST boundary: first ManagedSystem pool via minimal agentPools PUT, managed-cluster GET sanitized with CleanManagedSystemPoolForPUT-equivalent rules, no-op managed-cluster PUT, and final preservation assertions. Implement explicit preflight/safety gates, sanitizer diff/request-shape evidence proving ManagedSystem pool PUT fields keep only name/mode/count and omit or clear type/read-only/default fields, setup-failure vs reconcile-preservation classification, diagnostics, and whole-resource-group cleanup scaffolding. Cloud mutation must remain disabled unless --execute, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-reconcile-preservation, and a concrete AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE are present, and even then the run artifact must record why the iteration88 SKU/image/defaulting gate is cleared. Verify locally with bun probes/managedsystem-reconcile-preservation.ts --check, a non-mutating local run that writes blocked/execution-gated artifacts, and bun capability-model/src/validate.ts outputs/e2e-capability-model.json. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or ManagedSystem cloud probes in this task."
   depends_on: [managedsystem-single-pool-constraint-execution-implementation]
+  attempts: 2
+
+- id: managedsystem-runtime-restrictions-execution-implementation
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration153-managedsystem-runtime-restrictions-execution-implementation.md and turn probes/managedsystem-runtime-restrictions.ts into an execution-capable but still gated TypeScript probe for the managedsystem-runtime-restrictions unknown. Start from outputs/iteration123-managedsystem-runtime-restrictions-probe-design.md, features/managedsystem-runtime-restrictions.yaml, run-plans/managedsystem-runtime-restrictions.yaml, probes/managedsystem-runtime-restrictions.ts, outputs/iteration112-managedsystem-rest-add-existing-v2-managedsystem-rest-add-existing.md, outputs/iteration151-managedsystem-single-pool-constraint-execution-implementation.md, outputs/iteration152-managedsystem-reconcile-preservation-execution-implementation.md, outputs/e2e-capability-model.json, and outputs/input-expectation-knowledge-map.md. Preserve the clean REST setup boundary: normal baseline cluster, one ManagedSystem pool via minimal agentPools PUT {properties:{mode:ManagedSystem}}, then runtime-only assertions for ManagedSystem nodes/taints, CoreDNS readiness and managed-system affinity, critical add-on placement/affinity, VAP/VAPBinding presence, and customer nginx Pending/Unschedulable. Implement explicit preflight/safety gates, request-shape and assertion-plan evidence, setup-failure vs runtime-restriction classification, diagnostics, temporary pod cleanup, and whole-resource-group cleanup scaffolding. Cloud mutation must remain disabled unless --execute, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-runtime-restrictions, and a concrete AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE are present, and even then the run artifact must record why the iteration88 SKU/image/defaulting gate is cleared. Verify locally with bun probes/managedsystem-runtime-restrictions.ts --check, a non-mutating local run that writes blocked/execution-gated artifacts, and bun capability-model/src/validate.ts outputs/e2e-capability-model.json. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, reconcile PUT, second ManagedSystem pool, ManagedSystem delete/migration, or ManagedSystem cloud probes in this implementation task."
+  depends_on: [managedsystem-reconcile-preservation-execution-implementation]
+  attempts: 1
+
+- id: post-managedsystem-implementation-frontier-selection
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration154-post-managedsystem-implementation-frontier-selection.md after all three residual ManagedSystem execution-gated probe implementations. Start from outputs/iteration151-managedsystem-single-pool-constraint-execution-implementation.md, outputs/iteration152-managedsystem-reconcile-preservation-execution-implementation.md, outputs/iteration153-managedsystem-runtime-restrictions-execution-implementation.md, outputs/input-expectation-knowledge-map.md, outputs/e2ev3-handwritten-coverage-inventory.md, and outputs/e2e-capability-model.json. Run bun capability-model/src/validate.ts outputs/e2e-capability-model.json, quote current fail/unknown/blocked lists, refresh the knowledge map/frontier if needed to show that ManagedSystem runtime/single-pool/reconcile are execution-capable but still cloud-gated, and recommend either moving the project to waiting/paused with explicit resume triggers or creating one next bounded local reference-packet/model-hygiene task. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or ManagedSystem cloud probes."
+  depends_on: [managedsystem-runtime-restrictions-execution-implementation]
+  attempts: 1
+
+- id: normalized-path-migration-app-routing-nap
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration156-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for app-routing-nginx-to-istio-migration and machines-agentpool-nap-default-pool-cleanup-no-machine-crud. Preserve branch boundaries: App Routing migration is generic/non-default-domain only, and NAP cleanup no-Machine-CRUD cannot close Machines API CRUD or full NAP cleanup. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or ManagedSystem cloud probes."
+  depends_on: [post-managedsystem-implementation-frontier-selection]
+  attempts: 1
+
+- id: bootstrap-byo-acr-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Migrate bootstrap-profile-byo-acr-lifecycle into normalized knowledge-map structure. Start from outputs/iteration117-bootstrap-byo-acr-lifecycle.md, outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md, outputs/iteration118-bootstrap-byo-acr-hardened-followup.md, features/bootstrap-profile-byo-acr-lifecycle.yaml, run-plans/bootstrap-profile-byo-acr-lifecycle.yaml, probes/bootstrap-profile-byo-acr-lifecycle.ts, knowledge-map/README.md, and knowledge-map/model.json. Add or update userScenarios, inputDags, and featurePaths so the BYO ACR Cache/Direct/Cache lifecycle is represented with expected behavior, observed blocked/precondition evidence, and no product mismatch claim. Run bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any Bootstrap BYO cloud rerun."
+  depends_on: [normalized-path-migration-app-routing-nap]
+  attempts: 1
+
+- id: approuting-tls-secret-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration157-approuting-tls-secret-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for app-routing-default-domain-tls-secret. Preserve the valid-input boundary from iterations70/80/81/91: DefaultDomainCertificate CR shape was source-equivalent, TLS secret provisioning mismatched, HTTPS 200 used nginx fallback cert, and rerun remains owner/diagnostic-gated. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any App Routing cloud rerun."
+  depends_on: [bootstrap-byo-acr-normalized-path-migration]
+  attempts: 1
+
+- id: paf-throttling-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Migrate paf-throttling into normalized knowledge-map structure. Start from outputs/iteration148-paf-throttling-source-precondition-reference-packet.md, outputs/iteration149-paf-throttling-model-hygiene.md, outputs/first-e2e-run-results.md, outputs/underlay-debug-findings.md, outputs/iteration26-pafthrottling-retry.md, outputs/e2e-capability-model.json, knowledge-map/README.md, and knowledge-map/model.json. Add or update userScenarios, inputDags, and featurePaths so MSI/HCP access, target capacity or owner-approved bypass, and the source-owner/source-confirmed DedicatedOom trigger/assertion path are represented as blocked preconditions/behavior, without claiming a PAF product assertion failure. Run bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any PAF rerun."
+  depends_on: [approuting-tls-secret-normalized-path-migration]
+  attempts: 1
+
+- id: virtualmachines-cli-multisku-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration158-virtualmachines-cli-multisku-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for virtualmachines-agentpool-cli-add-multi-sku. Start from outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md, outputs/iteration64-virtualmachines-agentpool-staging.md, outputs/iteration65-virtualmachines-multisku-contract.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, knowledge-map/README.md, knowledge-map/model.json, and knowledge-map/views/status-summary.json. Preserve the narrow CLI/help-contract boundary: preview az nodepool add with --vm-set-type VirtualMachines and comma multi-SKU --vm-sizes fails before persistence, while CLI single-SKU add, manual multiple single-size profiles, REST mixed manual profiles, and autoscaled VMs CRUD/upgrade remain adjacent passing paths. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VirtualMachines cloud rerun."
+  depends_on: [paf-throttling-normalized-path-migration]
+  attempts: 1
+
+- id: vpa-cert-renewal-normalized-path-migration
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration159-vpa-cert-renewal-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for workload-autoscaler-vpa-cert-renewal-runtime. Start from outputs/iteration107-vpa-cert-renewal-runtime-staging.md, outputs/iteration122-vpa-runtime-rollup-model-hygiene.md, knowledge-map/model.json, and knowledge-map/views/path-summary.json. Preserve the source-equivalent blocked boundary: VPA baseline components were ready and source-shaped near-expiry vpa-tls-certs mutation recovered only via legacy overlay-vpa-cert-webhook-check, but kube-system/vpa-webhook-tls-reconciler was NotFound so the source VerifyVpaCertRenewal branch remains blocked until that CronJob exists or a source owner confirms the legacy path as intended. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VPA cloud rerun."
+  depends_on: [virtualmachines-cli-multisku-normalized-path-migration]
+  attempts: 1
+
+- id: virtualmachines-mixed-sku-rest-scale-normalized-path-migration
+  status: ready
+  assignee: aks-explorer
+  goal: "Produce outputs/iteration160-virtualmachines-mixed-sku-rest-scale-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for virtualmachines-mixed-sku-rest-scale. Start from outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md, outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md, outputs/iteration158-virtualmachines-cli-multisku-normalized-path-migration.md, outputs/iteration66-virtualmachines-manual-scale-staging.md, outputs/iteration109-virtualmachines-autoscaled-vms-crud-staging.md, knowledge-map/model.json, and knowledge-map/views/path-summary.json. Preserve the pass boundary: source-equivalent ARM REST mixed manual[] profile create/scale transitions passed, and this path must remain distinct from preview CLI comma multi-SKU failure, CLI single-SKU add, CLI manual-scale multiple single-size profiles, and autoscaled VMs CRUD/upgrade. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, cloud mutation, Machine APIs, deleteMachines, or any VirtualMachines cloud rerun."
+  depends_on: [vpa-cert-renewal-normalized-path-migration]
   attempts: 0
 
 ## References
@@ -1285,6 +1387,8 @@ Guardrails remain: do not run standalone/staging PAF, `az`, `kubectl`, `--execut
 ## Comments
 
 ## Artifacts
+- outputs/iteration157-approuting-tls-secret-normalized-path-migration.md
+- outputs/iteration156-normalized-path-migration.md
 - outputs/iteration148-paf-throttling-source-precondition-reference-packet.md
 - outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md
 - outputs/iteration144-nap-aksmanagedap-absence-source-triage.md
