@@ -1,0 +1,68 @@
+[
+  {
+    "name": "aks-rp-e2e-regular-learning",
+    "type": "job",
+    "intervalMs": 3600000,
+    "enabled": false,
+    "description": "Wake aks-rp-e2e for safe regular learning work only: source inventory, spec extraction, model validation, and generated views. No cloud mutation.",
+    "handler": {
+      "workflow": "aks-rp-e2e-iteration",
+      "agent": "aks-explorer",
+      "task": "project: /app/projects/aks-rp-e2e\nagent: aks-explorer\ngoal: Run the regular learning lane only. Read project.md, knowledge-map/README.md, and execution/automation.md. Process at most one safe non-cloud model/spec/source-inventory task, validate the knowledge map, regenerate views if needed, and write evidence/status. Do not run az, kubectl, --execute, staging, standalone, cluster creation, or cloud mutation.\nmaxIterations: 1\nreviewEvery: 1",
+      "timeoutMs": 1800000
+    },
+    "offsetMs": 300000,
+    "on": [
+      "trigger.aks-rp-e2e-regular-learning"
+    ],
+    "context": [
+      "projects/aks-rp-e2e/project.md",
+      "projects/aks-rp-e2e/knowledge-map/README.md",
+      "projects/aks-rp-e2e/execution/automation.md"
+    ]
+  },
+  {
+    "name": "aks-rp-e2e-weekly-replan-review",
+    "type": "job",
+    "intervalMs": 604800000,
+    "enabled": false,
+    "description": "Review stale unknown paths and replanning candidates. Proposal/model work only unless a tracked run plan is already explicitly gated.",
+    "handler": {
+      "workflow": "aks-rp-e2e-iteration",
+      "agent": "aks-explorer",
+      "task": "project: /app/projects/aks-rp-e2e\nagent: aks-explorer\ngoal: Review replanning candidates and stale unknown normalized paths. Read project.md, knowledge-map/views/path-summary.json, run-plans/README.md, and execution/automation.md. Produce one bounded proposal, model hygiene update, or next-action artifact. Do not run cloud probes unless project.md already names a ready gated verification task with explicit owner authorization.\nmaxIterations: 1\nreviewEvery: 1",
+      "timeoutMs": 1800000
+    },
+    "offsetMs": 900000,
+    "on": [
+      "trigger.aks-rp-e2e-weekly-replan-review"
+    ],
+    "context": [
+      "projects/aks-rp-e2e/project.md",
+      "projects/aks-rp-e2e/knowledge-map/views/path-summary.json",
+      "projects/aks-rp-e2e/run-plans/README.md",
+      "projects/aks-rp-e2e/execution/automation.md"
+    ]
+  },
+  {
+    "name": "aks-rp-e2e-verification-signal",
+    "type": "job",
+    "enabled": false,
+    "description": "Manual/event trigger for one ready verification run plan. It is intentionally not interval-based.",
+    "handler": {
+      "workflow": "aks-rp-e2e-iteration",
+      "agent": "aks-explorer",
+      "task": "project: /app/projects/aks-rp-e2e\nagent: aks-explorer\ngoal: Process one ready regular verification lane item from project.md. Require a feature packet, run plan, probe check, clean preflight, explicit probe-specific cloud mutation gate if mutating, cleanup plan, and named evidence files. If any gate is missing, write a blocker or next-action artifact instead of executing.\nmaxIterations: 1\nreviewEvery: 1",
+      "timeoutMs": 3600000
+    },
+    "on": [
+      "trigger.aks-rp-e2e-verification-signal"
+    ],
+    "context": [
+      "projects/aks-rp-e2e/project.md",
+      "projects/aks-rp-e2e/execution/automation.md",
+      "projects/aks-rp-e2e/run-plans/README.md",
+      "projects/aks-rp-e2e/probes/README.md"
+    ]
+  }
+]
