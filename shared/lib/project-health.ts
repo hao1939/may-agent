@@ -66,6 +66,18 @@ export interface HealthState {
   projects: Record<string, ProjectHealthEntry>;
 }
 
+/** Hard minimum cooldown that even forceLaunch respects (prevents tight error loops). */
+const HARD_MIN_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+export function launchHardCooldownReason(entry: ProjectHealthEntry | undefined, now: number): string | null {
+  if (!entry) return null;
+  const sinceLastLaunch = now - (entry.lastLaunch || 0);
+  if (entry.lastLaunch && sinceLastLaunch < HARD_MIN_COOLDOWN_MS) {
+    return `hard cooldown (${Math.round((HARD_MIN_COOLDOWN_MS - sinceLastLaunch) / 60_000)}min remaining)`;
+  }
+  return null;
+}
+
 function launchRateLimitReason(entry: ProjectHealthEntry | undefined, now: number): string | null {
   if (!entry) return null;
 
@@ -182,7 +194,7 @@ export function diagnoseProject(
       }
     } catch {}
     if (hasUnread) {
-      const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
+      const limited = forceLaunch ? launchHardCooldownReason(entry, now) : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
       return { type: "launch-owner", reason: "closed but has unread comments — reopening", comment: "" };
     }
@@ -206,7 +218,7 @@ export function diagnoseProject(
       }
     } catch {}
     if (hasUnread) {
-      const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
+      const limited = forceLaunch ? launchHardCooldownReason(entry, now) : launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
       return { type: "launch-owner", reason: `${status} with unread comments`, comment: "" };
     }
@@ -214,7 +226,7 @@ export function diagnoseProject(
     const resumeAfter = parseResumeAfter(project.content);
     if (resumeAfter !== null) {
       if (now >= resumeAfter) {
-        const limited = forceLaunch ? null : launchRateLimitReason(entry, now);
+        const limited = forceLaunch ? launchHardCooldownReason(entry, now) : launchRateLimitReason(entry, now);
         if (limited) return { ...skip, reason: limited };
         return { type: "launch-owner", reason: `${status} resume_after is due`, comment: "" };
       }
@@ -261,6 +273,10 @@ export function diagnoseProject(
     if (!forceLaunch) {
       const limited = launchRateLimitReason(entry, now);
       if (limited) return { ...skip, reason: limited };
+    } else {
+      // Even forceLaunch respects hard minimum cooldown to prevent tight error loops
+      const hardLimited = launchHardCooldownReason(entry, now);
+      if (hardLimited) return { ...skip, reason: hardLimited };
     }
 
     return { type: "launch-owner", reason: forceLaunch ? "manual project trigger" : "active project needs work", comment: "" };
@@ -373,4 +389,24 @@ export function upsertProject(db: any, project: ProjectInfo): void {
       [id, project.relPath, name, project.owner, project.status, type, workflow, iteration, priority, done, total, mtime]
     );
   } catch { /* best-effort */ }
+}
+
+/** Remove stale top-level project cache rows after project folders move/vanish. */
+export function pruneMissingProjectCache(db: any, root: string, projects: ProjectInfo[]): number {
+  const livePaths = new Set(projects.map((project) => project.relPath));
+  let deleted = 0;
+  try {
+    const rows = db.prepare(
+      "SELECT id, path FROM projects WHERE path LIKE 'projects/%' AND path NOT LIKE 'projects/_archive/%'",
+    ).all() as Array<{ id: string; path: string }>;
+    for (const row of rows) {
+      if (livePaths.has(row.path)) continue;
+      if (existsSync(join(root, row.path, "project.md"))) continue;
+      db.run("DELETE FROM projects WHERE id = ?", [row.id]);
+      deleted += 1;
+    }
+  } catch {
+    return deleted;
+  }
+  return deleted;
 }
