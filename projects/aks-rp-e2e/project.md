@@ -4,11 +4,11 @@ owner: aks-explorer
 status: closed
 type: milestone
 priority: P1
-iteration: 182
+iteration: 186
 max_concurrent: 1
 max_task_attempts: 2
 project_policy: aggressive-push
-wait_reason: external execution/source triggers required after normalized knowledge-map migration completed; iteration182 confirmed validator clean, no uncovered paths, no unhandled discussion, and no open parser-visible tasks
+wait_reason: iteration186 confirmed no unread discussion comments and no external execution/source trigger; waiting before any next bounded task or cloud mutation
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -128,11 +128,11 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Waiting on external execution/source triggers after completing the normalized knowledge-map migration. The owner-loop iteration182 audit kept the project at `status: waiting`, found no active parser-visible tasks (`project.md` has 115 `done` tasks and zero open tasks), confirmed no unhandled discussion tail after `---read @iter181---`, and verified the current model/views remain clean. The latest substantive artifact, `outputs/iteration177-machines-nap-full-normalized-path-migration.md`, migrated the final two features that lacked normalized `featurePaths`: `machines-agentpool-api-crud` and full `machines-agentpool-nap-default-pool-cleanup`. Fresh validation still passes with `bun capability-model/src/validate.ts knowledge-map/model.json`; `knowledge-map/views/path-summary.json` contains 63 paths, and `knowledge-map/views/status-summary.json` has `uncoveredFeatureIds=[]`, so there is no remaining parser-visible local normalization frontier. The latest owner decision is recorded in `outputs/iteration182-owner-loop-waiting-status-confirmation.md`.
+Iteration185 owner-loop reconciliation handled the duplicate unread Hao resume comments after `---read @iter184---`. They repeated the already-completed iteration183 request to replan selected ManagedSystem knowledge paths `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.mode-immutability`, and `path.managedsystem.delete-existing`; no new execution authorization, source/build/rollout signal, feature-registration signal, environment/capacity unblock, or distinct local model-hygiene request was present. The project remains `status: waiting` because the human resume request is complete: those paths share `compatibleGroupKey=managedsystem.add-existing-minimal-rest.single-cluster`, and `run-plans/managedsystem-add-immutability-delete-combined.yaml` combines them into one planned AKS cluster lifecycle: baseline normal cluster, minimal ARM REST ManagedSystem add, mode-mutation rejection check, ManagedSystem pool delete, and resource-group cleanup verification. `probes/managedsystem-add-immutability-delete-combined.ts` implements the reviewable TypeScript probe with path-specific verdicts and explicit non-goals for CLI default-payload, runtime isolation, single-pool, reconcile, disable-migration, and unrelated branches. Local verification passed with `bun probes/managedsystem-add-immutability-delete-combined.ts --check --run-id=iteration183-local-check-v2`; the generated artifact reports 10 assertions and 0 failures, no cloud mutation, and `no-product-model-change`. Fresh owner-loop validation also confirmed the iteration183 deliverables exist and `bun capability-model/src/validate.ts knowledge-map/model.json` passes with `uncoveredFeatureIds=[]`. The replan decision is recorded in `outputs/iteration183-managedsystem-combined-replan.md`; waiting-state reconciliations are recorded in `outputs/iteration184-owner-loop-status-reconciliation.md` and `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`.
 
-Current non-pass frontier is gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
+Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
-The project should remain `waiting` until one of the resume triggers below is available or a human explicitly asks for a new bounded local model-hygiene/reference-packet task. Do not create another same-branch cloud rerun task solely because the project woke up.
+The project should remain gated after the local replan. The new combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. Do not create another same-branch cloud rerun task solely because the project woke up.
 
 ## Current Phase
 
@@ -174,6 +174,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `probes/README.md` — tracked TypeScript probe directory
 - `probe-lib/README.md` — shared helper library directory for probes
 - `outputs/iteration155-knowledge-map-normalization.md` — local review aligning current project findings to the normalized scenario/DAG/behavior model
+- `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md` — owner-loop reconciliation that handled duplicate ManagedSystem replan resume comments without queuing new work
 - `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
 - `run-plans/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
 - `probes/managedsystem-rest-add-existing.ts` — executable reference-backed probe
@@ -282,18 +283,19 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-No active parser-visible task is queued. The project remains `waiting` because normalized local model migration is complete (`knowledge-map/views/status-summary.json` reports `uncoveredFeatureIds=[]`) and the remaining non-pass frontier requires external execution/source triggers rather than another local same-branch task. Iteration182 rechecked this state: 115 parser-visible tasks are done, zero tasks are open, the validator exits 0, `knowledge-map/views/status-summary.json` still reports `uncoveredFeatureIds=[]`, the path-summary view still has 63 paths, and there is no unhandled discussion tail after the latest read marker. The only project-control change needed was refreshing the frontmatter iteration/wait reason and recording the owner decision in `outputs/iteration182-owner-loop-waiting-status-confirmation.md`.
+Status is `waiting`. No active parser-visible task is queued, and iteration185 found that the only unread human instructions were duplicate ManagedSystem replan resume comments already satisfied by iteration183. No concrete external execution/source trigger was present. The human-requested ManagedSystem replan is complete: `run-plans/managedsystem-add-immutability-delete-combined.yaml` and `probes/managedsystem-add-immutability-delete-combined.ts` now combine `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.mode-immutability`, and `path.managedsystem.delete-existing` into one planned cluster lifecycle with path-specific diagnosis and cleanup evidence. Local verification passed with `bun probes/managedsystem-add-immutability-delete-combined.ts --check --run-id=iteration183-local-check-v2`, and the canonical model validator passed with `bun capability-model/src/validate.ts knowledge-map/model.json`; iteration185 revalidated that the deliverables exist and the validator still passes. The local replan artifact is `outputs/iteration183-managedsystem-combined-replan.md`; owner-loop waiting reconciliations are `outputs/iteration184-owner-loop-status-reconciliation.md` and `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`.
 
 Resume only when one of these triggers exists:
 
-1. ManagedSystem owner/operator authorizes a cloud execution window and supplies `--execute`, the branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared.
-2. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
-3. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
-4. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
-5. VPA cert-renewal source/environment ambiguity is resolved.
-6. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
-7. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
-8. A human explicitly requests a different bounded local model-hygiene/reference-packet task.
+1. ManagedSystem owner/operator authorizes execution of the new combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the ManagedSystem SKU/image/defaulting gate is cleared.
+2. ManagedSystem owner/operator authorizes another ManagedSystem cloud probe and supplies that branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value plus a concrete gate note.
+3. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
+4. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
+5. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
+6. VPA cert-renewal source/environment ambiguity is resolved.
+7. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
+8. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
+9. A human explicitly requests a different bounded local model-hygiene/reference-packet/replanning task.
 
 Until a matching trigger exists, preserve the recorded gates for Machines/NAP, PAF, App Routing default-domain TLS/Istio, Bootstrap BYO-ACR cloud reruns, VPA cert renewal, Node Restriction PATCH, same-input NAP eastus2, and ManagedSystem cloud probes. Do not run `az`, `kubectl`, `--execute`, standalone/staging, cluster creation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes without the relevant trigger.
 
@@ -535,7 +537,7 @@ Until a matching trigger exists, preserve the recorded gates for Machines/NAP, P
 98. ✅ Migrate Workload Autoscaler KEDA/VPA profile and runtime branches into normalized knowledge-map paths without cloud execution
 99. ✅ Migrate security-profile Image Cleaner and Node Restriction branches into normalized knowledge-map paths without cloud execution
 100. ✅ Migrate Machines API CRUD and full NAP default Machines pool cleanup into normalized knowledge-map paths without cloud execution
-101. ⏸️ Wait for an external execution/source trigger before queuing the next bounded task — confirmed by iteration181 owner loop
+101. ⏸️ Wait for an external execution/source trigger before queuing the next bounded task — reconfirmed by iteration185 owner loop after duplicate ManagedSystem replan resume comments were handled by the iteration183 deliverables
 
 ## Tasks
 - id: managedsystem-pool-priority-test
