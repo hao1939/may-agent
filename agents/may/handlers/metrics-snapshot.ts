@@ -142,6 +142,7 @@ const RETIRED_METRIC_IDS = [
   "capability.journal-reference-rate",
   "capability.message-conversation-close-rate",
   "capability.trend-7d",
+  "project.missing-owner-workflow-count",
 ];
 
 /** Snapshot retention: keep 30 days of history */
@@ -301,7 +302,7 @@ function scoutSourcedArtifacts24h(root: string, now: number): number {
     .filter((file) => {
       try {
         if (statSync(file).mtimeMs < cutoff) return false;
-        return fileContainsAny(file, [/^Sources?:/im, /\*\*Sources?\*\*:/i, /https?:\/\//i]);
+        return fileContainsAny(file, [/^Sources?:/im, /\*\*Sources?:?\*\*:?/i, /https?:\/\//i]);
       } catch {
         return false;
       }
@@ -755,7 +756,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try {
       const total = count(
-        "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
+        `SELECT COUNT(*) as c
+         FROM evaluations
+         WHERE createdAt > ?
+           AND agent NOT IN ('evaluator', 'judge')
+           AND verdict != 'skipped'`,
         twentyFourH,
       );
       const needsImprovementOrLowScore = count(
@@ -763,6 +768,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          FROM evaluations
          WHERE createdAt > ?
            AND agent NOT IN ('evaluator', 'judge')
+           AND verdict != 'skipped'
            AND (verdict IN ('needs_improvement', 'low_quality') OR quality < 0.4 OR efficiency < 0.4)`,
         twentyFourH,
       );
@@ -771,7 +777,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     try {
       const total = count(
-        "SELECT COUNT(*) as c FROM evaluations WHERE createdAt > ? AND agent NOT IN ('evaluator', 'judge')",
+        `SELECT COUNT(*) as c
+         FROM evaluations
+         WHERE createdAt > ?
+           AND agent NOT IN ('evaluator', 'judge')
+           AND verdict != 'skipped'`,
         twentyFourH,
       );
       const substantiveLowQuality = count(
@@ -780,6 +790,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          LEFT JOIN sessions s ON s.sessionId = e.sessionId
          WHERE e.createdAt > ?
            AND e.agent NOT IN ('evaluator', 'judge')
+           AND e.verdict != 'skipped'
            AND (
              s.status IN ('error', 'interrupted')
              OR lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
