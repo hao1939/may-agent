@@ -4,11 +4,11 @@ owner: aks-explorer
 status: closed
 type: milestone
 priority: P1
-iteration: 188
+iteration: 190
 max_concurrent: 1
 max_task_attempts: 2
 project_policy: aggressive-push
-wait_reason: iteration188 handled the unread narrower ManagedSystem rest-add-existing resume by verifying existing path/spec coverage and hardening the single-path probe gates; no execution/source trigger remains
+close_reason: Project permanently blocked on Azure CLI availability. 1730+ error sessions spinning on health checks. Closing to stop resource waste. Reopen when credentialed Azure execution host is provided.
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -128,11 +128,13 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Iteration188 owner-loop confirmation handled the unread discussion tail after `---read @iter186---`: a narrower human resume request for only `path.managedsystem.rest-add-existing.minimal-rest`, a UI endpoint latency check that explicitly said not to start cloud work, and a creative-audit status/wait contradiction note. The selected single path is already covered by `run-plans/managedsystem-rest-add-existing.yaml` / `probes/managedsystem-rest-add-existing.ts` and is also included in the newer combined plan `run-plans/managedsystem-add-immutability-delete-combined.yaml` with compatible `path.managedsystem.mode-immutability` and `path.managedsystem.delete-existing` in one planned cluster lifecycle. Iteration188 hardened the older single-path probe so it is now non-mutating by default and requires `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-rest-add-existing`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` before any cloud mutation. Local verification passed with `bun probes/managedsystem-rest-add-existing.ts --check --run-id=iteration188-local-check-v2`; the generated artifact reports no cloud mutation, `execution-gated` status, and `no-product-model-change`. Fresh canonical validation passed with `bun capability-model/src/validate.ts knowledge-map/model.json` and `uncoveredFeatureIds=[]`. The iteration188 decision is recorded in `outputs/iteration188-managedsystem-single-path-safety-hardening.md`; prior combined-replan/waiting artifacts remain `outputs/iteration183-managedsystem-combined-replan.md`, `outputs/iteration184-owner-loop-status-reconciliation.md`, `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`, `outputs/iteration186-owner-loop-duplicate-resume-reconciliation.md`, and `outputs/iteration187-owner-loop-waiting-status-confirmation.md`.
+Iteration190 owner-loop handled the unread discussion tail after `---read @iter189---`: a new human request narrowed the selected live run to `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest`. The requested replan command exited 0 and produced distinct two-path live-selected artifacts under `outputs/replans/live-selected/`: `replan.managedsystem.mode-immutability__managedsystem.rest-add-existing.minimal-rest.json` and `.ts`. Metrics were baseline cluster CRUD 2, replanned cluster CRUD 1, cluster CRUD saved 1, behavior assertions 5, expectation density 5, and diagnostic-clean group count 1. A non-mutating dry-run sanity check exited 0 and canonical model validation passed with `uncoveredFeatureIds=[]`. The required auth gate then failed before any mutation: `az account get-access-token --resource https://management.azure.com/ -o json` returned exit 127 with `/bin/bash: line 4: az: command not found`. Live execution did not start, so there is no elapsed cloud run time, cleanup status, or failed product assertion. The blocker is recorded in `outputs/iteration190-live-selected-two-path-blocker.md`.
+
+Iteration189 had already handled the prior four-path replan request for `path.managedsystem.mode-immutability`, `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.cli-create-default-payload`, and `path.managedsystem.cli-add-default-payload`: it added `test-specs/managedsystem-cli-create-default-payload.json`, `test-specs/managedsystem-cli-add-default-payload.json`, index entries, `run-plans/managedsystem-cli-rest-combined.yaml`, and `probes/managedsystem-cli-rest-combined.ts`. Local verification passed with `bun probes/managedsystem-cli-rest-combined.ts --check --run-id=iteration189-local-check`, and canonical validation passed with `bun capability-model/src/validate.ts knowledge-map/model.json`. The four-path live execution was also blocked before mutation because local `az` was unavailable; see `outputs/iteration189-managedsystem-cli-rest-combined-replan.md` and `outputs/iteration189-live-selected-execution-blocker.md`.
 
 Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
-The project should remain gated after the local replan. The new combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. Do not create another same-branch cloud rerun task solely because the project woke up.
+The project is now waiting on an execution environment unblock. Resume the two-path live selected run only when Azure CLI is available in the project workspace and `az account get-access-token --resource https://management.azure.com/ -o json` succeeds, or when the owner provides an approved credentialed execution host/path and that same auth gate succeeds there. Do not fake auth or create another same-branch cloud rerun task solely because the project woke up. The new CLI+REST combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. The older add/immutability/delete combined probe remains separately gated with `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`.
 
 ## Current Phase
 
@@ -175,6 +177,12 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `probe-lib/README.md` — shared helper library directory for probes
 - `outputs/iteration155-knowledge-map-normalization.md` — local review aligning current project findings to the normalized scenario/DAG/behavior model
 - `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md` — owner-loop reconciliation that handled duplicate ManagedSystem replan resume comments without queuing new work
+- `outputs/iteration189-managedsystem-cli-rest-combined-replan.md` — CLI+REST ManagedSystem combined replan for CLI create/add default-payload negative paths plus REST add and mode immutability
+- `outputs/iteration189-live-selected-execution-blocker.md` — four-path live-selected execution blocker showing artifact regeneration succeeded but local `az` is unavailable for the required ARM token gate
+- `outputs/iteration190-live-selected-two-path-blocker.md` — two-path live-selected execution blocker for ManagedSystem mode immutability plus REST add-existing; regeneration succeeded, auth gate failed because `az` is unavailable
+- `outputs/replans/live-selected/` — regenerated live-selected replan JSON/TS artifacts for the four-path and two-path ManagedSystem selections
+- `run-plans/managedsystem-cli-rest-combined.yaml` — gated combined plan for the selected CLI+REST ManagedSystem paths
+- `probes/managedsystem-cli-rest-combined.ts` — execution-gated TypeScript probe for the selected CLI+REST ManagedSystem paths
 - `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
 - `run-plans/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
 - `probes/managedsystem-rest-add-existing.ts` — executable reference-backed probe
@@ -283,21 +291,23 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Status is `waiting`. No active parser-visible task is queued, and iteration188 handled the unread discussion tail after `---read @iter186---`: the single-path ManagedSystem rest-add-existing replan request is satisfied by the existing single-path plan/probe and the newer combined plan, the single-path probe has been hardened to require explicit mutation gates, the UI latency-check comment required no project/cloud action, and the audit status contradiction is resolved by frontmatter `status: waiting`. Local verification passed with `bun probes/managedsystem-rest-add-existing.ts --check --run-id=iteration188-local-check-v2`, and the canonical model validator passed again with `bun capability-model/src/validate.ts knowledge-map/model.json`. The iteration188 artifact is `outputs/iteration188-managedsystem-single-path-safety-hardening.md`; the prior combined replan remains `outputs/iteration183-managedsystem-combined-replan.md`.
+Status is `waiting`. No active parser-visible task is queued. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `outputs/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `outputs/iteration190-live-selected-two-path-blocker.md`.
 
 Resume only when one of these triggers exists:
 
-1. ManagedSystem owner/operator authorizes execution of the new combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the ManagedSystem SKU/image/defaulting gate is cleared.
-2. ManagedSystem owner/operator authorizes another ManagedSystem cloud probe and supplies that branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value plus a concrete gate note.
-3. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
-4. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
-5. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
-6. VPA cert-renewal source/environment ambiguity is resolved.
-7. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
-8. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
-9. A human explicitly requests a different bounded local model-hygiene/reference-packet/replanning task.
+1. Azure CLI is available in the project workspace and `az account get-access-token --resource https://management.azure.com/ -o json` succeeds for the two-path live selected run, or the owner provides an approved credentialed execution host/path where the same auth gate succeeds.
+2. ManagedSystem owner/operator authorizes execution of the CLI+REST combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the ManagedSystem SKU/image/defaulting gate is cleared.
+3. ManagedSystem owner/operator authorizes the older add/immutability/delete combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete ManagedSystem gate note.
+4. ManagedSystem owner/operator authorizes another ManagedSystem cloud probe and supplies that branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value plus a concrete gate note.
+5. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
+6. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
+7. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
+8. VPA cert-renewal source/environment ambiguity is resolved.
+9. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
+10. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
+11. A human explicitly requests a different bounded local model-hygiene/reference-packet/replanning task.
 
-Until a matching trigger exists, preserve the recorded gates for Machines/NAP, PAF, App Routing default-domain TLS/Istio, Bootstrap BYO-ACR cloud reruns, VPA cert renewal, Node Restriction PATCH, same-input NAP eastus2, and ManagedSystem cloud probes. Do not run `az`, `kubectl`, `--execute`, standalone/staging, cluster creation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes without the relevant trigger.
+Until a matching trigger exists, preserve the recorded gates for Machines/NAP, PAF, App Routing default-domain TLS/Istio, Bootstrap BYO-ACR cloud reruns, VPA cert renewal, Node Restriction PATCH, same-input NAP eastus2, and ManagedSystem cloud probes. Do not run `kubectl`, `--execute`, standalone/staging, cluster creation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes without the relevant trigger. It is acceptable to rerun the owner-specified non-mutating `az account get-access-token` gate only when `az` becomes available or an approved credentialed host/path is supplied.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -540,6 +550,32 @@ Until a matching trigger exists, preserve the recorded gates for Machines/NAP, P
 101. ⏸️ Wait for an external execution/source trigger before queuing the next bounded task — reconfirmed by iteration187 owner loop after no unread discussion comments, no active parser-visible tasks, and fresh model validation
 
 ## Tasks
+- id: managedsystem-live-selected-two-path-execution-blocker
+  result: failed
+  status: done
+  assignee: aks-explorer
+  goal: "Handled the unread iteration190 live-run request for path.managedsystem.mode-immutability and path.managedsystem.rest-add-existing.minimal-rest by regenerating outputs/replans/live-selected artifacts, running a non-mutating dry-run sanity check, validating knowledge-map/model.json, and attempting the required ARM token gate. The auth gate failed before mutation because az is not installed in the project workspace (exit 127: /bin/bash: line 4: az: command not found). Live execution did not start. Resume only when Azure CLI is available and az account get-access-token succeeds, or an approved credentialed execution host/path is provided."
+  depends_on: [managedsystem-cli-rest-combined-replan]
+  attempts: 1
+  blocked_reason: "Project workspace still lacks the az executable required by the owner-specified auth gate; see outputs/iteration190-live-selected-two-path-blocker.md."
+
+- id: managedsystem-cli-rest-combined-replan
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  goal: "Handled the unread iteration189 human resume request for path.managedsystem.mode-immutability, path.managedsystem.rest-add-existing.minimal-rest, path.managedsystem.cli-create-default-payload, and path.managedsystem.cli-add-default-payload. Added CLI default-payload test specs, updated test-specs/index.json, produced run-plans/managedsystem-cli-rest-combined.yaml and probes/managedsystem-cli-rest-combined.ts, ran local dry-run verification with bun probes/managedsystem-cli-rest-combined.ts --check --run-id=iteration189-local-check, and validated knowledge-map/model.json. No cloud mutation was run; execution remains gated by --execute, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined, and a concrete AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE."
+  depends_on: [managedsystem-combined-replan]
+  attempts: 1
+
+- id: managedsystem-live-selected-execution-blocker
+  result: failed
+  status: done
+  assignee: aks-explorer
+  goal: "Handled the unread live-run request by regenerating outputs/replans/live-selected artifacts and attempting the required ARM token gate. The auth gate failed before mutation because az is not installed in the project workspace (exit 127: /bin/bash: line 1: az: command not found). Live execution did not start. Resume only when Azure CLI is available and az account get-access-token succeeds, or an approved credentialed execution host is provided."
+  depends_on: [managedsystem-cli-rest-combined-replan]
+  attempts: 1
+  blocked_reason: "Project workspace lacks the az executable required by the owner-specified auth gate; see outputs/iteration189-live-selected-execution-blocker.md."
+
 - id: managedsystem-pool-priority-test
   status: done
   result: succeeded
