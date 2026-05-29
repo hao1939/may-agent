@@ -84,9 +84,9 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
 function terminalBridgeCandidates(projectRoot: string): string[] {
   return [
     process.env.MAY_TERMINAL_BRIDGE || "",
-    resolve(process.cwd(), "src", "app", "http", "terminal-bridge.cjs"),
-    resolve(projectRoot, "src", "app", "http", "terminal-bridge.cjs"),
-    resolve(projectRoot, "projects", "platform", "repos", "may-agent", "src", "app", "http", "terminal-bridge.cjs"),
+    resolve(process.cwd(), "packages", "terminal", "bin", "terminal-bridge.cjs"),
+    resolve(projectRoot, "packages", "terminal", "bin", "terminal-bridge.cjs"),
+    resolve(projectRoot, "projects", "platform", "repos", "may-agent", "packages", "terminal", "bin", "terminal-bridge.cjs"),
   ].filter(Boolean);
 }
 

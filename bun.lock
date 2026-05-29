@@ -8,6 +8,7 @@
         "@mariozechner/pi-agent-core": "^0.70.6",
         "@mariozechner/pi-ai": "^0.70.6",
         "@may-agent/sdk": "workspace:*",
+        "@may-agent/terminal": "workspace:*",
         "@xterm/addon-fit": "^0.11.0",
         "@xterm/xterm": "^6.0.0",
         "better-sqlite3": "^12.8.0",
@@ -32,6 +33,13 @@
     "packages/sdk": {
       "name": "@may-agent/sdk",
       "version": "0.1.0",
+    },
+    "packages/terminal": {
+      "name": "@may-agent/terminal",
+      "version": "0.1.0",
+      "dependencies": {
+        "node-pty": "^1.1.0",
+      },
     },
     "packages/webui": {
       "name": "@may-agent/webui",
@@ -152,6 +160,8 @@
     "@may-agent/control": ["@may-agent/control@workspace:packages/control"],
 
     "@may-agent/sdk": ["@may-agent/sdk@workspace:packages/sdk"],
+
+    "@may-agent/terminal": ["@may-agent/terminal@workspace:packages/terminal"],
 
     "@may-agent/webui": ["@may-agent/webui@workspace:packages/webui"],
 
