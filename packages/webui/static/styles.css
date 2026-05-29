@@ -226,7 +226,6 @@
   .terminal-mount .xterm { height: 100%; }
   .terminal-mount .xterm-viewport { background-color: #0b0f14 !important; }
   .terminal-mount .xterm-screen { background-color: #0b0f14; }
-  .terminal-mount .xterm-rows { line-height: 1.36; }
   .terminal-disabled { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; max-width: 720px; }
   .terminal-disabled h2 { font-size: 16px; margin-bottom: 8px; }
   .terminal-disabled p { color: var(--fg2); margin-bottom: 12px; }
