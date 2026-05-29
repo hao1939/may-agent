@@ -60,7 +60,7 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
-  { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 10, unit: "count", alert_op: ">", priority: "P1",
+  { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "session.provider-error-count-1h", name: "Provider errors at any turn (1h)", owner: "may", type: "health", target: 0, threshold: 12, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
