@@ -21,9 +21,9 @@ import { extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
+import { createTerminalManager } from "@may-agent/terminal";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js";
-import { createTerminalManager } from "./terminal-manager.js";
 
 // ── Public API ────────────────────────────────────────────────────────
 

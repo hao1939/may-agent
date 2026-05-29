@@ -18,6 +18,9 @@
       ],
       "@may-agent/sdk/testing": [
         "packages/sdk/src/testing.ts"
+      ],
+      "@may-agent/terminal": [
+        "packages/terminal/src/manager.ts"
       ]
     },
     "ignoreDeprecations": "6.0"
