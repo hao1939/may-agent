@@ -104,7 +104,9 @@ function connectTerminal(profileId) {
     cursorBlink: true,
     cursorStyle: 'block',
     convertEol: true,
-    scrollback: 5000,
+    // tmux owns scrollback. xterm scrollback records tmux repaint/status escape
+    // sequences and makes old content look malformed when scrolling locally.
+    scrollback: 0,
     fontFamily: '"JetBrains Mono", "Cascadia Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace',
     fontSize: 14,
     fontWeight: 400,
