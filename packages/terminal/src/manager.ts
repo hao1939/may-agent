@@ -68,8 +68,8 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
     {
       id: "codex",
       label: "Codex",
-      description: "Interactive Codex CLI session with container-local approval and sandbox bypass enabled.",
-      command: "bash -lc 'source /usr/local/bin/setup-codex-config.sh; cd \"${PROJECT_ROOT:-/app}\"; exec codex --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app'",
+      description: "Interactive Codex CLI session with container-local approval/sandbox bypass and session resume enabled.",
+      command: "bash -lc 'source /usr/local/bin/setup-codex-config.sh; cd \"${PROJECT_ROOT:-/app}\"; codex resume --last --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app || exec codex --dangerously-bypass-approvals-and-sandbox --cd \"${PROJECT_ROOT:-/app}\" --add-dir /app'",
       cwd: root,
     },
     {
