@@ -35,8 +35,7 @@ export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes
 for d in /home/hao/.nvm/versions/node/*/bin; do [ -d "$d" ] && export PATH="$d:$PATH" && break; done
 
 # Codex CLI config (route through litellm)
-mkdir -p "${HOME}/.codex"
-cp /etc/codex/config.toml "${HOME}/.codex/config.toml"
+source /usr/local/bin/setup-codex-config.sh
 
 # Ensure mount roots are writable by mayagent (uid 1000) without walking the
 # whole state tree on every boot. Recursive chown makes restarts scale with

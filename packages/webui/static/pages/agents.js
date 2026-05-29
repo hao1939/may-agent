@@ -68,7 +68,7 @@ async function renderAgentDetail(name) {
     <button onclick="routeTo('/agents')" style="padding:4px 10px;background:var(--bg3,#222);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">← All agents</button>
     <span style="color:${dotColor};font-size:14px">●</span>
     <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
-    ${summary && summary.model ? `<span style="font-size:11px;color:var(--fg2);background:var(--bg3,#222);padding:2px 7px;border-radius:8px">${esc(summary.model)}</span>` : ''}
+    ${summary && summary.model ? `<span class="model-chip">${esc(summary.model)}</span>` : ''}
     <button onclick="verbHeartbeatNow('${esc(name)}', event)" title="Trigger a heartbeat for ${esc(name)} now" style="margin-left:auto;padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">♥ heartbeat-now</button>
     <button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>
   </div>`;
@@ -360,4 +360,3 @@ async function loadAgentOverview(name) {
     body.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load overview: ${esc(e.message)}</div>`;
   }
 }
-

@@ -28,7 +28,7 @@ async function loadAgentsTab() {
       html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <span style="color:${dotColor};font-size:12px">●</span>
         <span style="font-weight:600;font-size:15px">${esc(a.name)}</span>
-        ${a.model ? `<span style="margin-left:auto;font-size:10px;color:var(--fg2);background:var(--bg3,#222);padding:2px 6px;border-radius:8px">${esc(a.model)}</span>` : ''}
+        ${a.model ? `<span class="model-chip" style="margin-left:auto;font-size:10px">${esc(a.model)}</span>` : ''}
       </div>`;
 
       // Description.

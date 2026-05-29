@@ -23,5 +23,6 @@ services:
       - /home/hao/litellm/github_copilot:/app/.copilot:ro
     environment:
       - INSTANCE=${INSTANCE:-background}
+      - MAY_WEB_TERMINAL=${MAY_WEB_TERMINAL:-1}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
       - CONTEXT_LEARN_AGENTS=coder,may,bob,coach,optimizer,tech-lead
