@@ -17,7 +17,7 @@ let _currentProjectDetail = null;
 
 // ── Router ────────────────────────────────────────────────────────────
 // Hash routes: #/ #/agents #/agents/<name> #/projects #/projects/:id
-//              #/metrics #/metrics/<id> #/learning #/sessions/:id
+//              #/metrics #/metrics/<id> #/learning #/terminal[/<profile>] #/sessions/:id
 //              #/knowledge #/knowledge/<sub-path> #/system
 // Legacy bare names (#dashboard, #chat, #metrics, #events) still work via aliases.
 const LEGACY_TAB_ALIAS = {
@@ -26,7 +26,7 @@ const LEGACY_TAB_ALIAS = {
 };
 
 function parseHash() {
-  const raw = location.hash.replace(/^#\/?/, '');
+  const raw = location.hash.replace(/^#\/?/, '').split('?')[0];
   if (!raw) return { tab: 'live', params: {} };
   const segs = raw.split('/').filter(Boolean);
   const head = segs[0];
@@ -36,6 +36,7 @@ function parseHash() {
   if (head === 'agents') return { tab: 'agents', params: { name: segs[1] || null } };
   if (head === 'metrics') return { tab: 'metrics', params: { id: segs.slice(1).join('/') || null } };
   if (head === 'learning') return { tab: 'learning', params: {} };
+  if (head === 'terminal') return { tab: 'terminal', params: { profileId: segs[1] ? decodeURIComponent(segs[1]) : null } };
   if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).join('/') || '' } };
   if (head === 'system') return { tab: 'system', params: {} };
   if (head === 'live') return { tab: 'live', params: {} };
@@ -92,6 +93,7 @@ function render() {
   //   knowledge → #knowledge
   //   system → #events (events + runtime; metrics moved out)
   const inAgentChat = tab === 'agents' && !!params.name;
+  document.body.classList.toggle('terminal-mode', tab === 'terminal');
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
   document.getElementById('agents').classList.toggle('hidden', tab !== 'agents');
@@ -100,6 +102,7 @@ function render() {
   // #metrics pane now serves the dedicated Metrics tab. System tab no longer renders it.
   document.getElementById('metrics').classList.toggle('hidden', tab !== 'metrics');
   document.getElementById('learning').classList.toggle('hidden', tab !== 'learning');
+  document.getElementById('terminal').classList.toggle('hidden', tab !== 'terminal');
   document.getElementById('events').classList.toggle('hidden', tab !== 'system');
   // Tab highlight
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
@@ -125,6 +128,7 @@ function render() {
   }
   if (tab === 'metrics') loadMetricsTab();
   if (tab === 'learning') loadLearning();
+  if (tab === 'terminal') initTerminalPage(params.profileId || null);
   if (tab === 'system') loadEvents();
   if (tab === 'projects') {
     // Project id deep-link: #/projects/<id>
@@ -291,4 +295,3 @@ function timeAgo(ts) {
   if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
   return Math.floor(diff/86400000) + 'd ago';
 }
-

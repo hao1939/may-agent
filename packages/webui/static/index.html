@@ -5,9 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>may-agent</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="vendor/xterm/xterm.css">
 
 <script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
 <script>if (window.marked) marked.setOptions({ breaks: true });</script>
+<script src="vendor/xterm/xterm.js"></script>
+<script src="vendor/xterm/addon-fit.js"></script>
 </head>
 <body>
 <div id="global-error" style="display:none;background:var(--red);color:white;padding:8px 16px;font-size:12px;position:fixed;top:0;left:0;right:0;z-index:999"></div>
@@ -20,6 +23,7 @@
     <div class="tab" data-tab="metrics" data-route="/metrics">Metrics</div>
     <div class="tab" data-tab="learning" data-route="/learning">Learning</div>
     <div class="tab" data-tab="knowledge" data-route="/knowledge">Knowledge</div>
+    <div class="tab" data-tab="terminal" data-route="/terminal">Terminal</div>
     <div class="tab" data-tab="system" data-route="/system">System</div>
     <!-- Sessions are reachable through deep-links (#/sessions/:id) and parent surfaces. -->
   </div>
@@ -116,6 +120,10 @@
     <div id="learning-content"></div>
   </div>
 
+  <div id="terminal" class="hidden">
+    <div id="terminal-content"></div>
+  </div>
+
   <div id="projects" class="hidden">
     <div id="projects-content"></div>
   </div>
@@ -138,6 +146,7 @@
 <script src="pages/agents.js"></script>
 <script src="pages/chat.js"></script>
 <script src="pages/learning.js"></script>
+<script src="pages/terminal.js"></script>
 <script src="pages/knowledge.js"></script>
 <script src="pages/projects.js"></script>
 <script src="pages/system.js"></script>
