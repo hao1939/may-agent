@@ -22,6 +22,7 @@ WORKDIR /build
 COPY package.json bun.lock ./
 COPY packages/sdk/package.json packages/sdk/package.json
 COPY packages/control/package.json packages/control/package.json
+COPY packages/terminal/package.json packages/terminal/package.json
 COPY packages/webui/package.json packages/webui/package.json
 RUN bun install --frozen-lockfile
 
@@ -96,7 +97,7 @@ RUN npm install -g @anthropic-ai/claude-code@latest @openai/codex@latest
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=builder /build/node_modules/node-pty /app/node_modules/node-pty
-COPY src/app/http/terminal-bridge.cjs /app/src/app/http/terminal-bridge.cjs
+COPY packages/terminal/bin/terminal-bridge.cjs /app/packages/terminal/bin/terminal-bridge.cjs
 
 # Copy the default May Agent project UI for image-only runs. Local compose
 # mounts /app from the host, so the host project tree is the source of truth.
@@ -114,7 +115,7 @@ COPY container/supervisord.conf /etc/supervisord.conf
 
 # Copy entrypoints and helpers
 COPY container/entrypoint.sh container/start-chrome.sh container/setup-codex-config.sh /usr/local/bin/
-COPY container/may-console.cjs /usr/local/bin/may-console
+COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/may-console
 
 # Create user for uid 1000 (SSH requires a passwd entry)
