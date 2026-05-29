@@ -31,6 +31,7 @@ interface TerminalSession {
 
 const DEFAULT_COLS = 120;
 const DEFAULT_ROWS = 32;
+const TMUX_SOCKET = "may-web";
 
 function enabledFromEnv(): boolean {
   return /^(1|true|yes|on)$/i.test(process.env.MAY_WEB_TERMINAL || "");
@@ -142,6 +143,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     const child = spawn("node", [bridge, JSON.stringify({
       profileId,
       tmuxName,
+      tmuxSocket: TMUX_SOCKET,
       command: profile.command,
       cwd: profile.cwd,
       cols: Number.isFinite(cols) ? cols : DEFAULT_COLS,
@@ -257,7 +259,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       sessions.delete(profileId);
     }
     if (existsSync("/usr/bin/tmux") || existsSync("/bin/tmux") || existsSync("/usr/local/bin/tmux")) {
-      spawnSync("tmux", ["kill-session", "-t", sanitizeTmuxName(profile.id)], { stdio: "ignore" });
+      spawnSync("tmux", ["-L", TMUX_SOCKET, "kill-session", "-t", sanitizeTmuxName(profile.id)], { stdio: "ignore" });
     }
   }
 
