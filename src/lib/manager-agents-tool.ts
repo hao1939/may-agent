@@ -185,14 +185,36 @@ interface AgentsToolParamsType {
   scope?: "parent" | "origin" | "root" | "workflow";
 }
 
-function appendContextFiles(task: string, contextFiles?: string[]): string {
-  if (!contextFiles || contextFiles.length === 0) return task;
-  return [
-    task,
+function appendContextFiles(task: string, contextFiles?: string[], successCriteria?: string[]): string {
+  const parts = [task];
+
+  if (contextFiles && contextFiles.length > 0) {
+    parts.push(
+      "",
+      "Context files the receiving agent must read before acting:",
+      ...contextFiles.map((file) => `- ${file}`),
+    );
+  }
+
+  if (successCriteria && successCriteria.length > 0) {
+    parts.push(
+      "",
+      "Success criteria (verify each before finishing):",
+      ...successCriteria.map((c) => `- ${c}`),
+    );
+  }
+
+  // Delegation-memo convention reminder
+  parts.push(
     "",
-    "Context files the receiving agent must read before acting:",
-    ...contextFiles.map((file) => `- ${file}`),
-  ].join("\n");
+    "## Delegation Memo",
+    "This task follows the delegation-memo convention. The receiving agent MUST:",
+    "1. Read all context_files before acting.",
+    "2. Verify each success criterion with evidence in finish().",
+    "3. Stay within scope — finish as 'blocked' if out-of-scope work is needed.",
+  );
+
+  return parts.join("\n");
 }
 
 /**
@@ -272,7 +294,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             const lineage = getCallerLineage(parentSid);
 
             // Sync call: blocks until done
-            const task = appendContextFiles(params.task, params.context_files);
+            const task = appendContextFiles(params.task, params.context_files, params.success_criteria);
             const result = await manager.callAgent(params.agent, task, {
               parentSessionId: parentSid,
               workflowRunId: lineage.workflowRunId,
@@ -289,7 +311,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.agent || !(params.task || params.message)) {
               return textResult(JSON.stringify({ error: "'fork' requires 'agent' and 'task'" }));
             }
-            const forkTask = appendContextFiles(params.task || params.message!, params.context_files);
+            const forkTask = appendContextFiles(params.task || params.message!, params.context_files, params.success_criteria);
             // Guard: reject if target matches a tool in caller's toolset
             const callerAgentRun = getCallerAgentName?.();
             if (callerAgentRun) {
