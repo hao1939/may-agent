@@ -75,6 +75,18 @@ describe("May cron config design alignment", () => {
     expect(triggerSubscriptions).toEqual([]);
   });
 
+  it("reruns project steward after project owner completion", () => {
+    const cronPath = "/app/agents/may/cron.json";
+    if (!existsSync(cronPath)) return;
+
+    const entries = JSON.parse(readFileSync(cronPath, "utf-8")) as Array<{ name?: string; on?: string[] }>;
+    const projectSteward = entries.find((entry) => entry.name === "project-steward");
+
+    expect(projectSteward).toBeDefined();
+    expect(projectSteward?.on).toContain("project.task.finished");
+    expect(projectSteward?.on).toContain("project.owner.finished");
+  });
+
   it("declares reachable maintenance context for every trigger entry", () => {
     const cronPath = "/app/agents/may/cron.json";
     if (!existsSync(cronPath)) return;

@@ -62,6 +62,8 @@ describe("project task parsing", () => {
         run: "agent",
         depends_on: [],
         attempts: 0,
+        context_files: [],
+        success_criteria: [],
       },
       {
         id: "score-b",
@@ -72,6 +74,8 @@ describe("project task parsing", () => {
         run: null,
         depends_on: [],
         attempts: 1,
+        context_files: [],
+        success_criteria: [],
       },
       {
         id: "analyze",
@@ -82,6 +86,8 @@ describe("project task parsing", () => {
         run: null,
         depends_on: ["score-a", "score-b"],
         attempts: 0,
+        context_files: [],
+        success_criteria: [],
       },
     ]);
   });
