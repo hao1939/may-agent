@@ -4,6 +4,9 @@ FROM node:22-bookworm-slim AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    g++ \
+    make \
+    python3 \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -34,6 +37,7 @@ RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bubblewrap \
     ca-certificates \
     curl \
     git \
@@ -43,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     socat \
     supervisor \
+    tmux \
     unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -84,16 +89,22 @@ WORKDIR /app
 
 # Install CLI agent tools (claude-code, codex) — used as worker agents
 # They route through litellm proxy for model access
-RUN npm install -g @anthropic-ai/claude-code @openai/codex 2>/dev/null || true
+RUN npm install -g @anthropic-ai/claude-code@latest @openai/codex@latest
 
 # Copy compiled runtime tools from builder. The service runs from the standalone
 # may-agent binary, but agent/operator commands and docs assume `bun` exists.
 COPY --from=builder /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
+COPY --from=builder /build/node_modules/node-pty /app/node_modules/node-pty
+COPY src/app/http/terminal-bridge.cjs /app/src/app/http/terminal-bridge.cjs
 
 # Copy the default May Agent project UI for image-only runs. Local compose
 # mounts /app from the host, so the host project tree is the source of truth.
 COPY packages/webui/static/ /app/projects/platform/ui/
+RUN mkdir -p /app/projects/platform/ui/vendor/xterm
+COPY --from=builder /build/node_modules/@xterm/xterm/lib/xterm.js /app/projects/platform/ui/vendor/xterm/xterm.js
+COPY --from=builder /build/node_modules/@xterm/xterm/css/xterm.css /app/projects/platform/ui/vendor/xterm/xterm.css
+COPY --from=builder /build/node_modules/@xterm/addon-fit/lib/addon-fit.js /app/projects/platform/ui/vendor/xterm/addon-fit.js
 
 # CLI agent configs (codex needs config.toml to route through litellm)
 COPY container/codex-config.toml /etc/codex/config.toml
@@ -102,8 +113,9 @@ COPY container/codex-config.toml /etc/codex/config.toml
 COPY container/supervisord.conf /etc/supervisord.conf
 
 # Copy entrypoints and helpers
-COPY container/entrypoint.sh container/start-chrome.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh
+COPY container/entrypoint.sh container/start-chrome.sh container/setup-codex-config.sh /usr/local/bin/
+COPY container/may-console.cjs /usr/local/bin/may-console
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/may-console
 
 # Create user for uid 1000 (SSH requires a passwd entry)
 RUN useradd -u 1000 -d /app/.state -s /bin/bash mayagent 2>/dev/null || true
