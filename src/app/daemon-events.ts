@@ -172,4 +172,54 @@ export function attachDaemonEventSubscribers(opts: {
       } as any);
     }
   });
+
+  // ── Structural Receipt Persistence ──────────────────────────────────
+  // When finish(success) is accepted, persist a session.receipt event so
+  // evaluator audits can find it without parsing assistant prose.
+  bus.subscribe((event) => {
+    if (event.type !== "session.end") return;
+    const info = eventData(event) as any;
+    const fp = info.finishParams;
+    if (!fp || fp.status !== "success") return;
+
+    // Build evidence array from verification_evidence + deliverables
+    const evidence: Array<{ kind: string; ref: string; note: string }> = [];
+    if (Array.isArray(fp.verification_evidence)) {
+      for (const ev of fp.verification_evidence) {
+        if (typeof ev === "string" && ev.trim()) {
+          evidence.push({ kind: "command", ref: ev.trim(), note: "verification evidence from finish()" });
+        }
+      }
+    }
+    if (Array.isArray(fp.deliverables)) {
+      for (const d of fp.deliverables) {
+        if (d && typeof d.path === "string") {
+          evidence.push({ kind: "file", ref: d.path, note: d.description ?? "deliverable" });
+        }
+      }
+    }
+    if (Array.isArray(fp.completed_items)) {
+      for (const item of fp.completed_items) {
+        if (typeof item === "string" && item.trim()) {
+          evidence.push({ kind: "task", ref: item.trim(), note: "completed item" });
+        }
+      }
+    }
+
+    bus.emit({
+      type: "session.receipt",
+      source: "runtime:finish",
+      owner: `agent:${info.agent}`,
+      timestamp: Date.now(),
+      data: {
+        type: "session.receipt",
+        sessionId: info.sessionId,
+        owner: info.agent,
+        status: "success",
+        summary: fp.summary ?? "",
+        evidence,
+        createdAt: new Date().toISOString(),
+      },
+    } as any);
+  });
 }

@@ -2515,6 +2515,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     // Other on-disk files (NOT in prompt). Useful for context but not auto-loaded.
     // Includes commonly-named convention files; agent decides when to read them.
+    // last-eval.md: auto-generated evaluation feedback; inject into prompt so agents see it.
+    const lastEval = readFile(join(agentDir, "last-eval.md"), "last-eval.md", "evaluation feedback");
+    if (lastEval) promptFiles.push({ ...lastEval, source: "evaluation feedback (auto-generated)" });
+
     const otherCandidates = ["DOMAIN.md", "heartbeat.md", "context.md", "TOOLS.md", "LESSONS.md"];
     for (const f of otherCandidates) {
       const file = readFile(join(agentDir, f), f, "on-disk only");
