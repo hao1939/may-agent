@@ -61,8 +61,8 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
     {
       id: "claude",
       label: "Claude",
-      description: "Interactive Claude Code CLI session with container-local permission bypass enabled.",
-      command: "bash -lc 'cd \"${PROJECT_ROOT:-/app}\"; exec claude --dangerously-skip-permissions --permission-mode bypassPermissions --add-dir /app'",
+      description: "Interactive Claude Code CLI session with container-local permission bypass and session resume enabled.",
+      command: "bash -lc 'cd \"${PROJECT_ROOT:-/app}\"; exec claude --continue --dangerously-skip-permissions --permission-mode bypassPermissions --add-dir /app'",
       cwd: root,
     },
     {
