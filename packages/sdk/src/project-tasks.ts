@@ -13,6 +13,8 @@ export interface ProjectTask {
   run: string | null;
   depends_on: string[];
   attempts: number;
+  context_files: string[];
+  success_criteria: string[];
 }
 
 export interface ProjectTaskParseResult {
@@ -113,6 +115,8 @@ function emptyTask(fields: Record<string, string>): ProjectTask {
     run: parseResult(fields.run),
     depends_on: parseList(fields.depends_on ?? "[]"),
     attempts: parseAttempts(fields.attempts),
+    context_files: parseList(fields.context_files ?? "[]"),
+    success_criteria: parseList(fields.success_criteria ?? "[]"),
   };
 }
 
