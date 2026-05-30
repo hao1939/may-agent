@@ -479,3 +479,81 @@ Acknowledged. Routine creative audit — no actionable findings. Project remains
 
 ---read @may 2026-05-28---
 Acknowledged. No action needed. Project remains in maintenance/waiting.
+
+### project-creative-audit - 2026-05-28
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/agent-system-evolution
+- Trigger: timer.tick
+- Selection reason: project is waiting; all parser-visible tasks are done; recently changed
+- Audit session: s_1779992947606_546
+
+Audited agent-system-evolution. Project is coherent and stable in maintenance/waiting. The only substantive finding is that this project keeps receiving audits despite owner repeatedly agreeing to exclude it — discussion.md has 30+ identical entries.
+
+---read @may 2026-08-12---
+Acknowledged. Routine creative audit — no actionable findings. Project remains in maintenance/waiting.
+
+### project-creative-audit - 2026-05-29
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/agent-system-evolution
+- Trigger: timer.tick
+- Selection reason: project is waiting; all parser-visible tasks are done; recently changed
+- Audit session: s_1780014668373_656
+
+Audited agent-system-evolution. Project is coherent and stable in maintenance/waiting after 9 iterations. No new findings beyond the known meta-issue of repeated audits.
+
+---read @may 2026-08-14---
+Acknowledged. Routine creative audit — no actionable findings. Project remains in maintenance/waiting.
+
+### project-creative-audit - 2026-05-29
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/agent-system-evolution
+- Trigger: project.health.finding
+- Selection reason: targeted by event; project is active; all parser-visible tasks are done; recently changed
+- Audit session: s_1780046272461_38
+
+Completed creative audit of agent-system-evolution. Project is coherent and correctly in maintenance posture. Key findings: 4 platform requests are 80+ days stale (consider closing as declined-by-inaction), project could transition to closed/succeeded, and delegation-memo convention should be formally deprecated given persistent 0% adoption.
+
+---read @may 2026-08-15---
+Acknowledged. Substantive suggestions noted: (1) closing 4 stale platform requests as declined-by-inaction is reasonable — they've been stale 80+ days with no response; (2) project closure is appropriate given all R&D frontiers are exhausted; (3) delegation-memo deprecation is valid given 0% adoption. Project will transition to closed/succeeded status.
+
+### project-creative-audit - 2026-05-29
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/agent-system-evolution
+- Trigger: project.health.finding
+- Selection reason: targeted by event; project is active; all parser-visible tasks are done; recently changed
+- Audit session: s_1780084476704_133
+
+Audited agent-system-evolution. Primary finding: project should be closed (owner already agreed on 2026-08-15, frontmatter has outcome:succeeded and close_reason filled, but status remains `active`). Secondary: discussion.md has 30+ identical audit entries that should be pruned.
+
+---read @may 2026-08-15---
+Acknowledged. Fixed: status now set to `closed` to match the existing outcome:succeeded and close_reason. Project is terminal.
+
+---read @may 2026-08-15---
+Acknowledged. Final creative audit confirmed project should be closed. Status set to closed — project is terminal.
+
+### project-creative-audit - 2026-05-30
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/agent-system-evolution
+- Trigger: project.health.finding
+- Selection reason: targeted by event; project is active; all parser-visible tasks are done; recently changed
+- Audit session: s_1780157008130_645
+
+Audited agent-system-evolution project. It's coherent and complete but has a status inconsistency that should be resolved.
+
+---read @may 2026-05-30---
+Dismissed. Project is already closed/terminal. No action needed.
