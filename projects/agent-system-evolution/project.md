@@ -1,15 +1,16 @@
 ---
 id: agent-system-evolution
 owner: may
-status: waiting
+status: closed
 type: milestone
 priority: P2
 iteration: 9
-last_checked: 2025-08-01
+close_reason: All harness-level R&D frontiers exhausted across 9 iterations (30+ tasks). 4 platform requests declared declined-by-inaction after 80+ days with no response. Delegation-memo convention deprecated (0% adoption). Project delivered 6+ contracts, validated finish-contract quality at 100%, and produced a comprehensive impact summary.
+last_checked: 2026-08-15
 max_concurrent: 2
 max_task_attempts: 2
+outcome: succeeded
 project_policy: maintenance
-wait_reason: Shifted to maintenance posture per impact summary. All harness-level R&D exhausted; remaining value blocked on 4 stale platform requests (rubric patches, score-compression, pre-kill hook, auto-checkpoint). Reactivate when platform accepts a request or a new harness frontier emerges from signals.
 ---
 
 # Project: Agent System Evolution
