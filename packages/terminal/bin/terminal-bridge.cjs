@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 const pty = require("node-pty");
 const { spawnSync } = require("node:child_process");
+const { createHash } = require("node:crypto");
 
 const config = JSON.parse(process.argv[2] || "{}");
 const cols = Number.isFinite(config.cols) ? config.cols : 120;
 const rows = Number.isFinite(config.rows) ? config.rows : 32;
+const profileId = String(config.profileId || "");
 const tmuxName = String(config.tmuxName || "may-web-shell");
 const cwd = String(config.cwd || process.cwd());
 const command = String(config.command || "bash -i");
 const tmuxSocket = String(config.tmuxSocket || "may-web");
+const commandHash = createHash("sha256").update(command).digest("hex").slice(0, 16);
 
 function send(frame) {
   process.stdout.write(JSON.stringify(frame) + "\n");
@@ -16,6 +19,32 @@ function send(frame) {
 
 function tmux(args) {
   return spawnSync("tmux", ["-L", tmuxSocket, ...args], { stdio: "ignore" });
+}
+
+function tmuxText(args) {
+  return spawnSync("tmux", ["-L", tmuxSocket, ...args], { encoding: "utf8" });
+}
+
+function tmuxEnvironmentValue(name) {
+  const result = tmuxText(["show-environment", "-t", tmuxName, name]);
+  if (result.status !== 0) return null;
+  const text = String(result.stdout || "").trim();
+  const prefix = `${name}=`;
+  return text.startsWith(prefix) ? text.slice(prefix.length) : null;
+}
+
+function markTmuxSession() {
+  if (profileId) tmux(["set-environment", "-t", tmuxName, "MAY_TERMINAL_PROFILE_ID", profileId]);
+  tmux(["set-environment", "-t", tmuxName, "MAY_TERMINAL_COMMAND_HASH", commandHash]);
+}
+
+function existingTmuxSessionIsCurrent() {
+  const existing = tmux(["has-session", "-t", tmuxName]);
+  if (existing.status !== 0) return false;
+
+  const actualProfileId = tmuxEnvironmentValue("MAY_TERMINAL_PROFILE_ID");
+  const actualCommandHash = tmuxEnvironmentValue("MAY_TERMINAL_COMMAND_HASH");
+  return actualProfileId === profileId && actualCommandHash === commandHash;
 }
 
 function configureTmux() {
@@ -33,7 +62,11 @@ function configureTmux() {
 
 function ensureTmuxSession() {
   const existing = tmux(["has-session", "-t", tmuxName]);
-  if (existing.status !== 0) {
+  if (existing.status === 0 && !existingTmuxSessionIsCurrent()) {
+    tmux(["kill-session", "-t", tmuxName]);
+  }
+
+  if (!existingTmuxSessionIsCurrent()) {
     const created = tmux([
       "new-session",
       "-d",
@@ -45,6 +78,8 @@ function ensureTmuxSession() {
     ]);
     if (created.status !== 0) {
       send({ type: "error", message: `Unable to create tmux session: ${tmuxName}` });
+    } else {
+      markTmuxSession();
     }
   }
 }
