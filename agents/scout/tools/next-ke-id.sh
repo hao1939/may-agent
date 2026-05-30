@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 agents_root="$(cd -- "$script_dir/../.." && pwd)"
-entries_dir="${1:-$agents_root/shared/knowledge/entries}"
+entries_dir="${1:-$(cd -- "$agents_root/.." && pwd)/shared/knowledge/entries}"
 
 if [[ ! -d "$entries_dir" ]]; then
   echo "ERROR: knowledge entries directory not found: $entries_dir" >&2
