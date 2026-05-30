@@ -32,7 +32,7 @@ Reduce recurring evaluator-owned `session-aftermath-scan` 300s timeouts without 
 ## Tasks
 - id: watch-next-scan-signal
   status: done
-  result: May reduced `agents/may/handlers/session-aftermath-scan.ts` `DEFAULT_LIMIT` from 2 to 1, and the following 24h runtime window showed 178 starts / 177 completes / 0 failures with max completed runtime 239093ms.
+  result: succeeded
   assignee: evaluator
   goal: Recheck runtime events for `session-aftermath-scan` after the next May-side handler change or on the next timeout recurrence, then either reactivate/escalate or close the project.
   run: agent
