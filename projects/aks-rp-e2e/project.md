@@ -8,7 +8,6 @@ iteration: 186
 max_concurrent: 1
 max_task_attempts: 2
 project_policy: aggressive-push
-wait_reason: iteration186 confirmed no unread discussion comments and no external execution/source trigger; waiting before any next bounded task or cloud mutation
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
