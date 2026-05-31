@@ -58,6 +58,21 @@ function configureTmux() {
   for (const args of options) {
     tmux(args);
   }
+
+  // tmux's default WheelUpPane binding enters copy-mode with a top-right
+  // "[n/total]" indicator. Hide it so xterm does not render the transient
+  // marker over pane text during browser wheel scroll.
+  tmux([
+    "bind-key",
+    "-T",
+    "root",
+    "WheelUpPane",
+    "if-shell",
+    "-F",
+    "#{||:#{pane_in_mode},#{mouse_any_flag}}",
+    "send-keys -M",
+    "copy-mode -eH",
+  ]);
 }
 
 function ensureTmuxSession() {
