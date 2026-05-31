@@ -104,8 +104,9 @@ function connectTerminal(profileId) {
     cursorBlink: true,
     cursorStyle: 'block',
     convertEol: true,
-    // tmux owns scrollback. xterm scrollback records tmux repaint/status escape
-    // sequences and makes old content look malformed when scrolling locally.
+    // tmux owns scrollback. The bridge overrides tmux's wheel binding to hide
+    // the copy-mode position indicator, so xterm should not also keep a local
+    // scrollback of tmux repaint escape sequences.
     scrollback: 0,
     fontFamily: '"JetBrains Mono", "Cascadia Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace',
     fontSize: 14,
