@@ -1,7 +1,7 @@
 ---
 id: aks-rp-e2e
 owner: aks-explorer
-status: waiting
+status: active
 type: milestone
 priority: P1
 iteration: 190
@@ -127,6 +127,8 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
+Project App V2 task-tree execution is active. Coverage gap analysis is complete in `evidence/outputs/coverage-gap-analysis.md`: all 63 features have testCases, 4 are blocked with no execution evidence, 11 have unknown results, 7 have failing results, and 57 of 63 features currently have only one testCase. The current ready local leaf is `failure-triage` in `tasks/tree.json`; it should classify the 7 failing testCases as real bugs, stale expectations, or environment/test-surface issues. This is safe local analytical work with no cloud, staging, kubectl, or Azure auth gate.
+
 Iteration190 owner-loop handled the unread discussion tail after `---read @iter189---`: a new human request narrowed the selected live run to `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest`. The requested replan command exited 0 and produced distinct two-path live-selected artifacts under `decisions/replans/live-selected/`: `replan.managedsystem.mode-immutability__managedsystem.rest-add-existing.minimal-rest.json` and `.ts`. Metrics were baseline cluster CRUD 2, replanned cluster CRUD 1, cluster CRUD saved 1, behavior assertions 5, expectation density 5, and diagnostic-clean group count 1. A non-mutating dry-run sanity check exited 0 and canonical model validation passed with `uncoveredFeatureIds=[]`. The required auth gate then failed before any mutation: `az account get-access-token --resource https://management.azure.com/ -o json` returned exit 127 with `/bin/bash: line 4: az: command not found`. Live execution did not start, so there is no elapsed cloud run time, cleanup status, or failed product assertion. The blocker is recorded in `evidence/outputs/iteration190-live-selected-two-path-blocker.md`.
 
 Iteration189 had already handled the prior four-path replan request for `path.managedsystem.mode-immutability`, `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.cli-create-default-payload`, and `path.managedsystem.cli-add-default-payload`: it added `scenarios/test-specs/managedsystem-cli-create-default-payload.json`, `scenarios/test-specs/managedsystem-cli-add-default-payload.json`, index entries, `scenarios/run-plans/managedsystem-cli-rest-combined.yaml`, and `probes/managedsystem-cli-rest-combined.ts`. Local verification passed with `bun probes/managedsystem-cli-rest-combined.ts --check --run-id=iteration189-local-check`, and canonical validation passed with `bun model/tools/src/validate.ts model/knowledge-map/model.json`. The four-path live execution was also blocked before mutation because local `az` was unavailable; see `evidence/outputs/iteration189-managedsystem-cli-rest-combined-replan.md` and `evidence/outputs/iteration189-live-selected-execution-blocker.md`.
@@ -292,6 +294,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
+Run the ready `failure-triage` leaf from `tasks/tree.json`. It should read `evidence/outputs/coverage-gap-analysis.md` and `model/knowledge-map/model.json`, produce `evidence/outputs/failure-triage.md`, and classify the seven failing testCases with evidence-backed rationale. After it is accepted, the engine should roll up the parent and create/continue the next local analytical task if the project still has useful safe work.
+
 Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/outputs/iteration190-live-selected-two-path-blocker.md`.
 
 The project execution engine should first run the blocked-frontier review tasks in `tasks/tree.json`. Those tasks must decide whether current blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. If safe local work exists, create ready child tasks and continue. If only external gates remain, record the exact resume condition and keep the relevant task blocked.
@@ -324,16 +328,15 @@ The detailed historical migration log was archived when Project App V2 task-tree
 - Current domain evidence: `evidence/outputs/`, `model/knowledge-map/`, `scenarios/`, and `probes/`
 
 ## Plan
-Current project execution is driven by the breadth-first task tree. The engine selects ready leaf tasks from `tasks/tree.json`, verifies claims before acceptance, rolls up parent state, and keeps going until truly blocked, gated, complete, or budget-limited.
+Current project execution is driven by the breadth-first task tree. The engine selects ready leaf tasks from `tasks/tree.json`, verifies claims before acceptance, rolls up parent state, creates parent-review or blocked-review tasks when audit/replan is needed, and keeps going until truly blocked, gated, complete, or interrupted by an infra budget guard.
 
 Blocked is not a passive stop state. When the ready frontier is empty, the engine creates or runs blocked-review tasks that inspect whether blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. The project should wait only after that review confirms no safe local unblock, split, correction, or evidence-gathering task remains.
 
-## Tasks
-The legacy parser-visible task list was archived to keep this file readable.
+Workers should not edit `tasks/tree.json` directly. A worker produces a claim and evidence for one leaf; the engine owns task updates, parent rollup, review-task creation, and continuation events. If a wake slice ends while ready work remains, the engine emits another `project.execution.requested` event so the project stays active.
 
-- Current task tree: `tasks/tree.json`
-- Task rules: `tasks/README.md`
-- Archived legacy task list: `.app/archive/project-pre-v2-task-engine.md#tasks`
+The project watcher is enabled through `.app/app.ts`: the `regular-learning` schedule emits `project.tick` every hour, and the app converts that tick into the same `project.execution.requested` event used by comments, steering, and the `advance-project`/`watch` actions. The project-local trigger in `.app/agents/aks-explorer/cron.json` consumes that event and runs the task-tree workflow.
+
+## Tasks
 
 ## References
 
@@ -382,10 +385,10 @@ Use the domain workspace indexes instead of a copied artifact ledger in this run
 - Full legacy artifact ledger: `.app/archive/project-pre-v2-task-engine.md#artifacts`
 
 ## Active Task
-- id: blocked-frontier-review
-- status: ready
+- id: project-frontier-replan-4
+- status: active
 - source: tasks/tree.json
-- outputs: evidence/outputs/blocked-frontier-review.md
+- outputs: evidence/outputs/project-frontier-replan-4.md
 
 ## Task Index
 - tasks/README.md
