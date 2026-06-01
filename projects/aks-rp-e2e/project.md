@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 194
+iteration: 198
 max_concurrent: 1
 max_task_attempts: 2
 project_app: v2
@@ -1465,27 +1465,38 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   attempts: 1
 
 - id: app-routing-http-reach-fail-hypothesis
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P2
   goal: "Analyze the app-routing default-domain-http-reachability fail path. Read outputs/iteration69-app-routing-defaultdomain-traffic-staging.md, outputs/iteration70-app-routing-defaultdomain-tls-staging.md, outputs/iteration80-app-routing-tls-source-hypothesis.md, outputs/iteration81-app-routing-tls-owner-escalation.md, knowledge-map/model.json, and relevant App Routing feature/path data. Document root-cause hypothesis: is the default-domain HTTP path actually failing or is it only the TLS branch? If HTTP is genuinely failing, classify as product bug vs test gap vs environment issue. Produce outputs/iteration195-app-routing-http-reach-fail-hypothesis.md with hypothesis, evidence citations, and a test-spec if a distinct HTTP failure exists. Do not run cloud probes."
   depends_on: [machines-nap-full-normalized-path-migration]
-  attempts: 0
+  attempts: 1
 
 - id: pass-path-expectation-density-enrichment
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P3
   goal: "Enrich thin pass paths that have fewer than 3 behavioral expectations. Inspect knowledge-map/model.json for pass-status features with sparse expectation coverage. Use feature packets under features/, API specs, public docs, and existing evidence artifacts to add concrete behavioral expectations to at least 5 paths, raising each to 4+ expectations. Update knowledge-map/model.json, validate with bun capability-model/src/validate.ts knowledge-map/model.json, regenerate views, and produce outputs/iteration196-pass-path-expectation-density-enrichment.md. Do not run cloud probes."
   depends_on: [app-routing-http-reach-fail-hypothesis]
-  attempts: 0
+  attempts: 1
 
 - id: nap-full-cleanup-test-spec-creation
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P3
   goal: "Create a test-spec for the full NAP cleanup path (machines-agentpool-nap-default-pool-cleanup) that captures expected behavior and known failure modes. Read outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md, outputs/iteration130-machines-nap-default-pool-cleanup-split-model-design.md, outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md, outputs/iteration144-nap-aksmanagedap-absence-source-triage.md, outputs/iteration145-nap-managed-machine-pool-rollout-escalation.md, and knowledge-map/model.json. Produce outputs/iteration197-nap-full-cleanup-test-spec.md with: scenario intent from source, input DAG, expected behavior sequence including Machine CRUD, known blockers (feature registration, rollout gates), and explicit execution prerequisites that must be met before a probe can run. Do not run cloud probes."
   depends_on: [app-routing-http-reach-fail-hypothesis]
+  attempts: 1
+
+- id: feature-learning-queue-refresh
+  status: pending
+  assignee: aks-explorer
+  priority: P2
+  goal: "Rebuild the prioritized AKS feature-learning queue from the current model state. Inspect outputs/e2e-capability-model.json for unknown/blocked/failing features, review outputs/iteration82-post-escalation-next-probe-selection.md and outputs/iteration75-model-driven-probe-selection.md for prior ranking logic, check devbox /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for any new or changed handwritten cases since the last inventory, and review public AKS API changelog or new preview features. Produce outputs/iteration198-feature-learning-queue-refresh.md ranking the top 5-8 features by: learning value (unknown > blocked > enrichable pass), local-work feasibility (no cloud gate), source availability, and model coverage gap. For each candidate, state the next concrete task type (reference packet, test-spec, probe implementation, or execution gate check). Update Current State in project.md to reflect the new queue."
+  depends_on: [nap-full-cleanup-test-spec-creation]
   attempts: 0
 
 ## References
