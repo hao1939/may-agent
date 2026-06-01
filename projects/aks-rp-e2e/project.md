@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 199
+iteration: 203
 max_concurrent: 1
 max_task_attempts: 2
 project_app: v2
@@ -1510,27 +1510,90 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   attempts: 1
 
 - id: keda-profile-state-reference-packet
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P2
   goal: "Create a reference packet for workload-autoscaler-keda-profile-state. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for KEDA/workload-autoscaler scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration84-keda-disable-reenable-crud-staging.md, outputs/iteration78-workload-autoscaler-runtime-staging.md, outputs/e2e-capability-model.json, and knowledge-map/model.json. Produce features/workload-autoscaler-keda-profile-state.yaml with source-derived intent, input paths, expectation paths, evidence links, non-goals, and execution gates. Run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts knowledge-map/model.json to confirm no regression. Do not run cloud probes."
   depends_on: [feature-learning-queue-refresh]
-  attempts: 0
+  attempts: 1
 
 - id: vpa-profile-state-reference-packet
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P2
   goal: "Create a reference packet for workload-autoscaler-vpa-profile-state. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for VPA/workload-autoscaler scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration93-vpa-residual-runtime-staging.md, outputs/iteration79-vpa-runtime-model-split.md, outputs/e2e-capability-model.json, and knowledge-map/model.json. Produce features/workload-autoscaler-vpa-profile-state.yaml with source-derived intent, input paths, expectation paths, evidence links, non-goals, and execution gates. Run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts knowledge-map/model.json to confirm no regression. Do not run cloud probes."
   depends_on: [feature-learning-queue-refresh]
-  attempts: 0
+  attempts: 1
 
 - id: image-cleaner-state-interval-reference-packet
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P2
   goal: "Create a reference packet for image-cleaner-state-interval. Read devbox source under /home/hayua/rp/test/e2ev3/ for Image Cleaner scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md, outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md, outputs/e2e-capability-model.json, and knowledge-map/model.json. Produce features/image-cleaner-state-interval.yaml with source-derived intent, input paths, expectation paths, evidence links, non-goals, and execution gates. Run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts knowledge-map/model.json to confirm no regression. Do not run cloud probes."
   depends_on: [feature-learning-queue-refresh]
+  attempts: 1
+
+- id: managedsystem-runtime-restrictions-test-spec
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Create a test-spec for managedsystem-runtime-restrictions. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for ManagedSystem runtime restriction scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration88-managedsystem-disable-migration-checkpointed.md, knowledge-map/model.json, and outputs/e2e-capability-model.json. Produce outputs/iteration199-managedsystem-runtime-restrictions-test-spec.md with: scenario intent from source, input DAG, expected behavior sequence, known blockers, and explicit execution prerequisites. Validate model with bun capability-model/src/validate.ts knowledge-map/model.json. Do not run cloud probes."
+  depends_on: [image-cleaner-state-interval-reference-packet]
+  attempts: 1
+
+- id: managedsystem-single-pool-constraint-test-spec
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Create a test-spec for managedsystem-single-pool-constraint. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for ManagedSystem single-pool constraint scenarios, outputs/iteration198-feature-learning-queue-refresh.md, knowledge-map/model.json, and outputs/e2e-capability-model.json. Produce outputs/iteration200-managedsystem-single-pool-constraint-test-spec.md with: scenario intent from source, input DAG, expected behavior sequence, known blockers, and explicit execution prerequisites. Validate model with bun capability-model/src/validate.ts knowledge-map/model.json. Do not run cloud probes."
+  depends_on: [image-cleaner-state-interval-reference-packet]
+  attempts: 1
+
+- id: managedsystem-reconcile-preservation-test-spec
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Create a test-spec for managedsystem-reconcile-preservation. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for ManagedSystem reconcile preservation scenarios, outputs/iteration198-feature-learning-queue-refresh.md, knowledge-map/model.json, and outputs/e2e-capability-model.json. Produce outputs/iteration201-managedsystem-reconcile-preservation-test-spec.md with: scenario intent from source, input DAG, expected behavior sequence, known blockers, and explicit execution prerequisites. Validate model with bun capability-model/src/validate.ts knowledge-map/model.json. Do not run cloud probes."
+  depends_on: [image-cleaner-state-interval-reference-packet]
+  attempts: 1
+
+- id: managedsystem-disable-migration-gate-check
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P3
+  goal: "Perform an execution gate check for managedsystem-disable-migration. Read outputs/iteration87-managedsystem-disable-migration-runtime-staging.md, outputs/iteration88-managedsystem-disable-migration-checkpointed.md, outputs/iteration198-feature-learning-queue-refresh.md, and knowledge-map/model.json. Investigate whether the prior fail trigger (SKU/image/defaulting gate) has been resolved by checking devbox source changes, feature registration state, or environment updates. Produce outputs/iteration202-managedsystem-disable-migration-gate-check.md with: current gate status, evidence of change or no-change, and recommended next action (rerun, wait, or close). Do not run cloud probes."
+  depends_on: [image-cleaner-state-interval-reference-packet]
+  attempts: 1
+
+- id: iteration203-model-enrichment-from-new-packets
+  status: ready
+  assignee: aks-explorer
+  priority: P2
+  goal: "Enrich knowledge-map/model.json with the new reference packets and test-specs from iterations 197-202. Read features/workload-autoscaler-keda-profile-state.yaml, features/workload-autoscaler-vpa-profile-state.yaml, features/image-cleaner-state-interval.yaml, outputs/iteration197-nap-full-cleanup-test-spec.md, outputs/iteration199-managedsystem-runtime-restrictions-test-spec.md, outputs/iteration200-managedsystem-single-pool-constraint-test-spec.md, outputs/iteration201-managedsystem-reconcile-preservation-test-spec.md, outputs/iteration202-managedsystem-disable-migration-gate-check.md, and knowledge-map/model.json. Add or update feature entries, input paths, expectation paths, and evidence references for all newly-created packets. Validate with bun capability-model/src/validate.ts knowledge-map/model.json. Produce outputs/iteration203-model-enrichment-from-new-packets.md summarizing changes. Do not run cloud probes."
+  depends_on: [managedsystem-disable-migration-gate-check]
+  attempts: 0
+
+- id: iteration204-feature-learning-queue-refresh-v2
+  status: ready
+  assignee: aks-explorer
+  priority: P2
+  goal: "Rebuild the prioritized AKS feature-learning queue from the updated model state after iteration 203 enrichment. Follow the same method as iteration 198 (outputs/iteration198-feature-learning-queue-refresh.md): inspect model for unknown/blocked/failing features, check devbox source for new/changed cases, and rank the top 5-8 features by learning value, local-work feasibility, source availability, and model coverage gap. Produce outputs/iteration204-feature-learning-queue-refresh-v2.md with the ranked queue and concrete next task type per candidate. Update Current State in project.md."
+  depends_on: [iteration203-model-enrichment-from-new-packets]
+  attempts: 0
+
+- id: iteration205-keda-profile-state-probe-design
+  status: ready
+  assignee: aks-explorer
+  priority: P2
+  goal: "Design a TypeScript probe for workload-autoscaler-keda-profile-state. Read features/workload-autoscaler-keda-profile-state.yaml, outputs/iteration84-keda-disable-reenable-crud-staging.md, outputs/iteration78-workload-autoscaler-runtime-staging.md, and knowledge-map/model.json. Produce probes/workload-autoscaler-keda-profile-state.ts implementing the reference packet scenarios with path-specific verdicts. Include a run-plan at run-plans/workload-autoscaler-keda-profile-state.yaml. Local preflight with --check must pass. Produce outputs/iteration205-keda-profile-state-probe-design.md documenting the design and preflight result. Do not run cloud probes."
+  depends_on: [iteration203-model-enrichment-from-new-packets]
   attempts: 0
 
 ## References
