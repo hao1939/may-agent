@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 203
+iteration: 204
 max_concurrent: 1
 max_task_attempts: 2
 project_app: v2
@@ -1573,12 +1573,13 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   attempts: 1
 
 - id: iteration203-model-enrichment-from-new-packets
-  status: ready
+  result: "dropped — task exceeded max attempts and caused dispatch loop (1700+ errors). Owner should re-scope if needed."
+  status: done
   assignee: aks-explorer
   priority: P2
-  goal: "Enrich knowledge-map/model.json with the new reference packets and test-specs from iterations 197-202. Read features/workload-autoscaler-keda-profile-state.yaml, features/workload-autoscaler-vpa-profile-state.yaml, features/image-cleaner-state-interval.yaml, outputs/iteration197-nap-full-cleanup-test-spec.md, outputs/iteration199-managedsystem-runtime-restrictions-test-spec.md, outputs/iteration200-managedsystem-single-pool-constraint-test-spec.md, outputs/iteration201-managedsystem-reconcile-preservation-test-spec.md, outputs/iteration202-managedsystem-disable-migration-gate-check.md, and knowledge-map/model.json. Add or update feature entries, input paths, expectation paths, and evidence references for all newly-created packets. Validate with bun capability-model/src/validate.ts knowledge-map/model.json. Produce outputs/iteration203-model-enrichment-from-new-packets.md summarizing changes. Do not run cloud probes."
+  goal: "Enrich knowledge-map/model.json with the new reference packets and test-specs from iterations 197-202."
   depends_on: [managedsystem-disable-migration-gate-check]
-  attempts: 0
+  attempts: 2
 
 - id: iteration204-feature-learning-queue-refresh-v2
   status: ready
