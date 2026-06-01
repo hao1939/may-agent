@@ -1,13 +1,15 @@
 ---
 id: aks-rp-e2e
 owner: aks-explorer
-status: closed
+status: active
 type: milestone
 priority: P1
-iteration: 186
+iteration: 194
 max_concurrent: 1
 max_task_attempts: 2
+project_app: v2
 project_policy: aggressive-push
+runtime_control_plane: .app
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -127,6 +129,10 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
+Project App V2 task-tree execution has been reframed around the AKS feature-learning system instead of recent incidents. The root now decomposes into `aks-learning-system` and `execution-engine-audit`. Under `aks-learning-system`, the durable work areas are `knowledge-model-maintenance`, `feature-inventory-and-queue`, `feature-learning-loop`, `cross-feature-synthesis`, and `human-directed-maintenance`.
+
+The current ready leaf is `feature-learning-queue-refresh`. Its job is to rebuild the prioritized AKS feature-learning queue and create the next concrete feature task under the repeated loop: reference packet, input-space enumeration, expectation-space enumeration, evidence/test mapping, gap analysis, test-spec/probe design, execution gate/evidence, model update, and feature closeout.
+
 Iteration185 owner-loop reconciliation handled the duplicate unread Hao resume comments after `---read @iter184---`. They repeated the already-completed iteration183 request to replan selected ManagedSystem knowledge paths `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.mode-immutability`, and `path.managedsystem.delete-existing`; no new execution authorization, source/build/rollout signal, feature-registration signal, environment/capacity unblock, or distinct local model-hygiene request was present. The project remains `status: waiting` because the human resume request is complete: those paths share `compatibleGroupKey=managedsystem.add-existing-minimal-rest.single-cluster`, and `run-plans/managedsystem-add-immutability-delete-combined.yaml` combines them into one planned AKS cluster lifecycle: baseline normal cluster, minimal ARM REST ManagedSystem add, mode-mutation rejection check, ManagedSystem pool delete, and resource-group cleanup verification. `probes/managedsystem-add-immutability-delete-combined.ts` implements the reviewable TypeScript probe with path-specific verdicts and explicit non-goals for CLI default-payload, runtime isolation, single-pool, reconcile, disable-migration, and unrelated branches. Local verification passed with `bun probes/managedsystem-add-immutability-delete-combined.ts --check --run-id=iteration183-local-check-v2`; the generated artifact reports 10 assertions and 0 failures, no cloud mutation, and `no-product-model-change`. Fresh owner-loop validation also confirmed the iteration183 deliverables exist and `bun capability-model/src/validate.ts knowledge-map/model.json` passes with `uncoveredFeatureIds=[]`. The replan decision is recorded in `outputs/iteration183-managedsystem-combined-replan.md`; waiting-state reconciliations are recorded in `outputs/iteration184-owner-loop-status-reconciliation.md` and `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`.
 
 Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
@@ -282,21 +288,13 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Status is `waiting`. No active parser-visible task is queued, and iteration185 found that the only unread human instructions were duplicate ManagedSystem replan resume comments already satisfied by iteration183. No concrete external execution/source trigger was present. The human-requested ManagedSystem replan is complete: `run-plans/managedsystem-add-immutability-delete-combined.yaml` and `probes/managedsystem-add-immutability-delete-combined.ts` now combine `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.mode-immutability`, and `path.managedsystem.delete-existing` into one planned cluster lifecycle with path-specific diagnosis and cleanup evidence. Local verification passed with `bun probes/managedsystem-add-immutability-delete-combined.ts --check --run-id=iteration183-local-check-v2`, and the canonical model validator passed with `bun capability-model/src/validate.ts knowledge-map/model.json`; iteration185 revalidated that the deliverables exist and the validator still passes. The local replan artifact is `outputs/iteration183-managedsystem-combined-replan.md`; owner-loop waiting reconciliations are `outputs/iteration184-owner-loop-status-reconciliation.md` and `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`.
+Execute the active task tree children under `project-frontier-replan-7`:
 
-Resume only when one of these triggers exists:
+1. **`app-routing-http-reach-fail-hypothesis`** (active, P2): Analyze the app-routing default-domain-http-reachability fail path — document root-cause hypothesis, check if existing evidence reveals a product bug vs test gap, and create a test-spec.
+2. **`pass-path-expectation-density-enrichment`** (ready, P3): Enrich thin pass paths (<3 behavioral expectations) from feature packets, API specs, or existing evidence. Target: raise at least 5 paths to 4+ expectations.
+3. **`nap-full-cleanup-test-spec-creation`** (ready, P3): Create a test-spec for the full NAP cleanup path that captures expected behavior and known failure modes.
 
-1. ManagedSystem owner/operator authorizes execution of the new combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the ManagedSystem SKU/image/defaulting gate is cleared.
-2. ManagedSystem owner/operator authorizes another ManagedSystem cloud probe and supplies that branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value plus a concrete gate note.
-3. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
-4. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
-5. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
-6. VPA cert-renewal source/environment ambiguity is resolved.
-7. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
-8. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
-9. A human explicitly requests a different bounded local model-hygiene/reference-packet/replanning task.
-
-Until a matching trigger exists, preserve the recorded gates for Machines/NAP, PAF, App Routing default-domain TLS/Istio, Bootstrap BYO-ACR cloud reruns, VPA cert renewal, Node Restriction PATCH, same-input NAP eastus2, and ManagedSystem cloud probes. Do not run `az`, `kubectl`, `--execute`, standalone/staging, cluster creation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes without the relevant trigger.
+All three are safe local/domain work with no cloud dependency. Cloud-gated resume triggers remain unchanged for ManagedSystem live execution, App Routing TLS, Machines API, NAP, VPA cert renewal, Bootstrap BYO-ACR, and PAF.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -1465,6 +1463,30 @@ Until a matching trigger exists, preserve the recorded gates for Machines/NAP, P
   goal: "Produce outputs/iteration177-machines-nap-full-normalized-path-migration.md and update knowledge-map/model.json plus generated knowledge-map/views by adding normalized userScenarios, inputDags, and featurePaths for the remaining full Machines/NAP branches that do not yet have featurePaths: machines-agentpool-api-crud and machines-agentpool-nap-default-pool-cleanup. Start from outputs/iteration105-machines-agentpool-api-crud-staging.md, outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md, outputs/iteration130-machines-nap-default-pool-cleanup-split-model-design.md, outputs/iteration131-nap-cleanup-split-model-edit.md, outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md, outputs/iteration144-nap-aksmanagedap-absence-source-triage.md, outputs/iteration145-nap-managed-machine-pool-rollout-escalation.md, outputs/iteration146-post-nap-escalation-knowledge-map-refresh.md, knowledge-map/model.json, knowledge-map/views/path-summary.json, and knowledge-map/views/status-summary.json. Preserve branch boundaries: machines-agentpool-api-crud must remain blocked on missing Machine preview feature registrations or equivalent source environment; full machines-agentpool-nap-default-pool-cleanup must remain unknown/source-equivalent gated because it includes Machine CRUD and NAP managed Machines pool cleanup; machines-agentpool-nap-default-pool-cleanup-no-machine-crud must remain a separate failed split path and must not close either full branch. Validate with bun capability-model/src/validate.ts knowledge-map/model.json and regenerate knowledge-map/views. Do not run az, kubectl, --execute, standalone/staging, cluster creation, Machine APIs, deleteMachines, cloud mutation, or any Machines/NAP cloud rerun."
   depends_on: [security-profile-normalized-path-migration]
   attempts: 1
+
+- id: app-routing-http-reach-fail-hypothesis
+  status: ready
+  assignee: aks-explorer
+  priority: P2
+  goal: "Analyze the app-routing default-domain-http-reachability fail path. Read outputs/iteration69-app-routing-defaultdomain-traffic-staging.md, outputs/iteration70-app-routing-defaultdomain-tls-staging.md, outputs/iteration80-app-routing-tls-source-hypothesis.md, outputs/iteration81-app-routing-tls-owner-escalation.md, knowledge-map/model.json, and relevant App Routing feature/path data. Document root-cause hypothesis: is the default-domain HTTP path actually failing or is it only the TLS branch? If HTTP is genuinely failing, classify as product bug vs test gap vs environment issue. Produce outputs/iteration195-app-routing-http-reach-fail-hypothesis.md with hypothesis, evidence citations, and a test-spec if a distinct HTTP failure exists. Do not run cloud probes."
+  depends_on: [machines-nap-full-normalized-path-migration]
+  attempts: 0
+
+- id: pass-path-expectation-density-enrichment
+  status: ready
+  assignee: aks-explorer
+  priority: P3
+  goal: "Enrich thin pass paths that have fewer than 3 behavioral expectations. Inspect knowledge-map/model.json for pass-status features with sparse expectation coverage. Use feature packets under features/, API specs, public docs, and existing evidence artifacts to add concrete behavioral expectations to at least 5 paths, raising each to 4+ expectations. Update knowledge-map/model.json, validate with bun capability-model/src/validate.ts knowledge-map/model.json, regenerate views, and produce outputs/iteration196-pass-path-expectation-density-enrichment.md. Do not run cloud probes."
+  depends_on: [app-routing-http-reach-fail-hypothesis]
+  attempts: 0
+
+- id: nap-full-cleanup-test-spec-creation
+  status: ready
+  assignee: aks-explorer
+  priority: P3
+  goal: "Create a test-spec for the full NAP cleanup path (machines-agentpool-nap-default-pool-cleanup) that captures expected behavior and known failure modes. Read outputs/iteration127-machines-nap-default-pool-cleanup-source-design.md, outputs/iteration130-machines-nap-default-pool-cleanup-split-model-design.md, outputs/iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun.md, outputs/iteration144-nap-aksmanagedap-absence-source-triage.md, outputs/iteration145-nap-managed-machine-pool-rollout-escalation.md, and knowledge-map/model.json. Produce outputs/iteration197-nap-full-cleanup-test-spec.md with: scenario intent from source, input DAG, expected behavior sequence including Machine CRUD, known blockers (feature registration, rollout gates), and explicit execution prerequisites that must be met before a probe can run. Do not run cloud probes."
+  depends_on: [app-routing-http-reach-fail-hypothesis]
+  attempts: 0
 
 ## References
 
