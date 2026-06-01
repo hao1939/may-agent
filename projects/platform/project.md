@@ -1,12 +1,12 @@
 ---
 id: platform
 owner: tech-lead
-status: active
+status: waiting
 type: milestone
 priority: P0
 iteration: 39
 project_policy: stable-watch
-wait_reason:
+wait_reason: All tasks complete; finding-count metric recovered; no actionable platform signal
 ---
 
 # Project: platform
@@ -41,7 +41,7 @@ discussion live here.
 - Build / test failures in `repos/may-agent/` (`bun test`, `bun run check`)
 
 ## Current State
-Active — structural receipt persistence requested by agent-system-evolution (iter39). Implementing closeout receipt path per contract.
+Waiting — all iter39 tasks complete. Triaged 4 escalated platform requests from agent-system-evolution: 2 rejected (evaluator calibration is out of scope), 2 deferred (no failing platform metric). No active platform signal.
 
 ## Scope Boundary
 
@@ -97,11 +97,12 @@ Historical project references:
   attempts: 1
 
 - id: structural-receipt-persistence
-  status: ready
+  result: succeeded
+  status: done
   assignee: tech-lead
   goal: Persist a structural session.receipt when finish(success) is accepted, visible in canonical session history/read models. Contract: projects/agent-system-evolution/contracts/structural-receipt-contract.md
   depends_on: []
-  attempts: 0
+  attempts: 1
 
 ## Validation
 
