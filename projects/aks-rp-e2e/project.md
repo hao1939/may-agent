@@ -1573,7 +1573,7 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   attempts: 1
 
 - id: iteration203-model-enrichment-from-new-packets
-  result: "dropped — task exceeded max attempts and caused dispatch loop (1700+ errors). Owner should re-scope if needed."
+  result: dropped
   status: done
   assignee: aks-explorer
   priority: P2
