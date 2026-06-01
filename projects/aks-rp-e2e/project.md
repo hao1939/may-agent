@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 198
+iteration: 199
 max_concurrent: 1
 max_task_attempts: 2
 project_app: v2
@@ -131,7 +131,16 @@ agent pools, and later dark-side discovery.
 ## Current State
 Project App V2 task-tree execution has been reframed around the AKS feature-learning system instead of recent incidents. The root now decomposes into `aks-learning-system` and `execution-engine-audit`. Under `aks-learning-system`, the durable work areas are `knowledge-model-maintenance`, `feature-inventory-and-queue`, `feature-learning-loop`, `cross-feature-synthesis`, and `human-directed-maintenance`.
 
-The current ready leaf is `feature-learning-queue-refresh`. Its job is to rebuild the prioritized AKS feature-learning queue and create the next concrete feature task under the repeated loop: reference packet, input-space enumeration, expectation-space enumeration, evidence/test mapping, gap analysis, test-spec/probe design, execution gate/evidence, model update, and feature closeout.
+The feature-learning queue was refreshed at iteration 198 (see `outputs/iteration198-feature-learning-queue-refresh.md`). The prioritized next tasks are:
+1. **Reference packet:** `workload-autoscaler-keda-profile-state` (unknown, no cloud gate, source-backed)
+2. **Reference packet:** `workload-autoscaler-vpa-profile-state` (unknown, no cloud gate, source-backed)
+3. **Reference packet:** `image-cleaner-state-interval` (unknown, no cloud gate, source-backed)
+4. **Test-spec:** `managedsystem-runtime-restrictions` (unknown, source-backed)
+5. **Test-spec:** `managedsystem-single-pool-constraint` (unknown, source-backed)
+6. **Test-spec:** `managedsystem-reconcile-preservation` (unknown, source-backed)
+7. **Execution gate check:** `managedsystem-disable-migration` (fail, needs trigger investigation)
+
+The current ready leaf is the first queue item: create a reference packet for `workload-autoscaler-keda-profile-state` by reading devbox source plans.
 
 Iteration185 owner-loop reconciliation handled the duplicate unread Hao resume comments after `---read @iter184---`. They repeated the already-completed iteration183 request to replan selected ManagedSystem knowledge paths `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.mode-immutability`, and `path.managedsystem.delete-existing`; no new execution authorization, source/build/rollout signal, feature-registration signal, environment/capacity unblock, or distinct local model-hygiene request was present. The project remains `status: waiting` because the human resume request is complete: those paths share `compatibleGroupKey=managedsystem.add-existing-minimal-rest.single-cluster`, and `run-plans/managedsystem-add-immutability-delete-combined.yaml` combines them into one planned AKS cluster lifecycle: baseline normal cluster, minimal ARM REST ManagedSystem add, mode-mutation rejection check, ManagedSystem pool delete, and resource-group cleanup verification. `probes/managedsystem-add-immutability-delete-combined.ts` implements the reviewable TypeScript probe with path-specific verdicts and explicit non-goals for CLI default-payload, runtime isolation, single-pool, reconcile, disable-migration, and unrelated branches. Local verification passed with `bun probes/managedsystem-add-immutability-delete-combined.ts --check --run-id=iteration183-local-check-v2`; the generated artifact reports 10 assertions and 0 failures, no cloud mutation, and `no-product-model-change`. Fresh owner-loop validation also confirmed the iteration183 deliverables exist and `bun capability-model/src/validate.ts knowledge-map/model.json` passes with `uncoveredFeatureIds=[]`. The replan decision is recorded in `outputs/iteration183-managedsystem-combined-replan.md`; waiting-state reconciliations are recorded in `outputs/iteration184-owner-loop-status-reconciliation.md` and `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`.
 
@@ -1492,11 +1501,36 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   attempts: 1
 
 - id: feature-learning-queue-refresh
-  status: pending
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P2
   goal: "Rebuild the prioritized AKS feature-learning queue from the current model state. Inspect outputs/e2e-capability-model.json for unknown/blocked/failing features, review outputs/iteration82-post-escalation-next-probe-selection.md and outputs/iteration75-model-driven-probe-selection.md for prior ranking logic, check devbox /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for any new or changed handwritten cases since the last inventory, and review public AKS API changelog or new preview features. Produce outputs/iteration198-feature-learning-queue-refresh.md ranking the top 5-8 features by: learning value (unknown > blocked > enrichable pass), local-work feasibility (no cloud gate), source availability, and model coverage gap. For each candidate, state the next concrete task type (reference packet, test-spec, probe implementation, or execution gate check). Update Current State in project.md to reflect the new queue."
   depends_on: [nap-full-cleanup-test-spec-creation]
+  attempts: 1
+
+- id: keda-profile-state-reference-packet
+  status: pending
+  assignee: aks-explorer
+  priority: P2
+  goal: "Create a reference packet for workload-autoscaler-keda-profile-state. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for KEDA/workload-autoscaler scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration84-keda-disable-reenable-crud-staging.md, outputs/iteration78-workload-autoscaler-runtime-staging.md, outputs/e2e-capability-model.json, and knowledge-map/model.json. Produce features/workload-autoscaler-keda-profile-state.yaml with source-derived intent, input paths, expectation paths, evidence links, non-goals, and execution gates. Run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts knowledge-map/model.json to confirm no regression. Do not run cloud probes."
+  depends_on: [feature-learning-queue-refresh]
+  attempts: 0
+
+- id: vpa-profile-state-reference-packet
+  status: pending
+  assignee: aks-explorer
+  priority: P2
+  goal: "Create a reference packet for workload-autoscaler-vpa-profile-state. Read devbox source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/ for VPA/workload-autoscaler scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration93-vpa-residual-runtime-staging.md, outputs/iteration79-vpa-runtime-model-split.md, outputs/e2e-capability-model.json, and knowledge-map/model.json. Produce features/workload-autoscaler-vpa-profile-state.yaml with source-derived intent, input paths, expectation paths, evidence links, non-goals, and execution gates. Run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts knowledge-map/model.json to confirm no regression. Do not run cloud probes."
+  depends_on: [feature-learning-queue-refresh]
+  attempts: 0
+
+- id: image-cleaner-state-interval-reference-packet
+  status: pending
+  assignee: aks-explorer
+  priority: P2
+  goal: "Create a reference packet for image-cleaner-state-interval. Read devbox source under /home/hayua/rp/test/e2ev3/ for Image Cleaner scenarios, outputs/iteration198-feature-learning-queue-refresh.md, outputs/iteration95-image-cleaner-vulnerable-erasure-staging.md, outputs/iteration111-image-cleaner-upgrade-restart-survival-staging.md, outputs/e2e-capability-model.json, and knowledge-map/model.json. Produce features/image-cleaner-state-interval.yaml with source-derived intent, input paths, expectation paths, evidence links, non-goals, and execution gates. Run cd /app/projects/aks-rp-e2e && bun capability-model/src/validate.ts knowledge-map/model.json to confirm no regression. Do not run cloud probes."
+  depends_on: [feature-learning-queue-refresh]
   attempts: 0
 
 ## References
