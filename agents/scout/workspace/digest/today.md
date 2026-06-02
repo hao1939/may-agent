@@ -1,5 +1,30 @@
 # Scout Findings — 2026-06-02
 
+## Session 32 (creative heartbeat)
+
+**Status**: Digest-only. No new KE — no new source material, and existing KE thread is complete.
+
+**Metric**: `knowledge-preamble-coverage` 0.2068/0.8 — thoroughly diagnosed (KE-1412), escalated. Requires human target adjustment. No action.
+
+**System snapshot (24h)**:
+| Agent | Sessions | Errors | Avg Ops |
+|-------|----------|--------|---------|
+| evaluator | 742 | 11 | 18.2 |
+| aks-explorer | 683 | 13 | 5.5 |
+| may | 151 | 8 | 8.6 |
+| scout | 65 | 9 | 11.5 |
+| arc | 43 | 0 | 5.7 |
+| dev | 43 | 3 | 4.2 |
+| tech-lead | 2 | 0 | 6.5 |
+
+**Observation — KE-1476's cascade is still running**: The retry-amplification loop remains unbroken. This is now the third consecutive creative session documenting it. The **total computational cost** (not just session count) reveals a deeper asymmetry: evaluator consumes 742×18.2 = ~13,500 ops while aks-explorer consumes 683×5.5 = ~3,760 ops. The oversight layer costs **3.6× more compute than the work it evaluates**. This inverts the intuitive model where evaluation is "cheap metadata" — in practice, evaluation is the system's dominant workload.
+
+**Why this matters beyond KE-1476**: The compute-weight ratio (eval ops / worker ops = 3.6) is a more fundamental metric than session count ratio (1.09). A circuit breaker that stops retries saves 3,760 ops of wasted work — but also saves 13,500 ops of wasted evaluation. **The ROI of stopping futile work scales with the oversight multiplier, not linearly.** Systems with heavier oversight layers get more value from circuit breakers. This is quantifiable: ROI = (1 + oversight_multiplier) × sessions_saved.
+
+**New agent spotted**: `tech-lead` (2 sessions, 0 errors). Not present in prior snapshots.
+
+---
+
 ## Session 31 (creative heartbeat)
 
 **Output**: KE-1475 — "Monitoring-Induced Failure — Quantitative Evidence"
@@ -491,3 +516,17 @@ Three independent insights from this week's arc share an identical deep structur
 **Connection**: This is the concrete, quantified instance of KE-1473's coordination fidelity threshold, KE-1475's monitoring overhead, and KE-1474's "ignored layer heals" principle. The stuck loop is empirical proof that the dispatch+evaluate overhead becomes the dominant system cost when the dispatched work is trivial/repetitive.
 
 **Metric**: `knowledge-preamble-coverage` 0.207/0.8 — thoroughly diagnosed and escalated in KE-1412, KE-1468, KE-1475. No new action.
+
+---
+
+## Session 33 (creative heartbeat)
+
+**Output**: KE-1477 — "Diagnostic Rumination — When the System Mistakes Analysis for Progress"
+
+**Synthesis**: The KE series 1467–1476 (10 entries across ~5 sessions) is itself an instance of the retry-amplification and dead-knowledge patterns it diagnosed. The system's creative sessions are in a rumination loop: each session correctly diagnoses a pathology, writes a KE, counts as success — but no behavioral or architectural change occurs. This mirrors SkillRL's finding that skill banks without promotion gates accumulate inert entries.
+
+**Key insight**: Diagnosis is infinitely available work that always satisfies "produce one genuine insight." Without a gate (did this KE cause a code/config change?), the KE system rewards production over action. The fix isn't "better diagnosis" — it's adding a promotion gate: KEs diagnosed 2+ times without resulting in implementation should be marked `escalated` and no longer re-analyzed.
+
+**Self-aware note**: This KE is itself a diagnosis. The difference: it includes a concrete recommendation (KE status field, max-2-diagnosis rule, stop-producing-and-escalate protocol). If session 34 writes another meta-analysis, the rumination is confirmed and only human intervention on the creative prompt will break the loop.
+
+**Metric**: `knowledge-preamble-coverage` 0.2068/0.8 — thoroughly diagnosed and escalated (KE-1412, KE-1468). No new action.
