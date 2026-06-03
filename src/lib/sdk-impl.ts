@@ -50,9 +50,12 @@ export function projectWorkflowDirFor(projectsRoot: string, projectId: string | 
     .replace(/\/$/, "");
   if (!clean) return undefined;
 
-  const candidates = [join(projectsRoot, clean, "workflows")];
+  const candidates = [join(projectsRoot, clean, ".app", "workflows"), join(projectsRoot, clean, "workflows")];
   const shortName = basename(clean);
-  if (shortName && shortName !== clean) candidates.push(join(projectsRoot, shortName, "workflows"));
+  if (shortName && shortName !== clean) {
+    candidates.push(join(projectsRoot, shortName, ".app", "workflows"));
+    candidates.push(join(projectsRoot, shortName, "workflows"));
+  }
 
   return candidates.find((dir) => existsSync(dir)) ?? candidates[candidates.length - 1];
 }

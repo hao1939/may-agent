@@ -1734,6 +1734,78 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function handleProjectTasks(url: URL): Response {
+    const path = url.searchParams.get("path");
+    if (!path) return json({ error: "path required" }, 400);
+    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
+
+    const projectDir = resolveProjectDir(path);
+    const treePath = resolve(projectDir, "tasks", "tree.json");
+    if (treePath !== projectDir && !treePath.startsWith(`${projectDir}/`)) {
+      return json({ error: "Access denied" }, 403);
+    }
+
+    if (!existsSync(treePath)) {
+      return json({
+        available: false,
+        path,
+        treePath: "tasks/tree.json",
+        reason: "Project does not expose a v2 task tree yet.",
+      });
+    }
+
+    try {
+      const tree = JSON.parse(readFileSync(treePath, "utf-8")) as {
+        updated_at?: string;
+        active_task_id?: string | null;
+        active_task_ids?: string[];
+        max_concurrent?: number;
+        root_task_id?: string;
+        tasks?: Record<string, {
+          id: string;
+          parent_id?: string | null;
+          status?: string;
+          kind?: string;
+          priority?: string;
+          owner?: string;
+          goal?: string;
+          children?: string[];
+          outputs?: string[];
+          gates?: string[];
+          gate_status?: string;
+          blocker?: string;
+          conflict_scope?: string[] | string;
+          verification?: { verdict?: string; ts?: string };
+          attempts?: unknown[];
+        }>;
+      };
+      const tasks = tree.tasks ?? {};
+      const statusCounts: Record<string, number> = {};
+      const kindCounts: Record<string, number> = {};
+      for (const task of Object.values(tasks)) {
+        const status = task.status ?? "unknown";
+        const kind = task.kind ?? "work";
+        statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+        kindCounts[kind] = (kindCounts[kind] ?? 0) + 1;
+      }
+      return json({
+        available: true,
+        path,
+        treePath: "tasks/tree.json",
+        updated_at: tree.updated_at ?? null,
+        root_task_id: tree.root_task_id ?? "project",
+        active_task_id: tree.active_task_id ?? null,
+        active_task_ids: tree.active_task_ids ?? [],
+        max_concurrent: tree.max_concurrent ?? null,
+        statusCounts,
+        kindCounts,
+        tasks,
+      });
+    } catch (e) {
+      return json({ available: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  }
+
   /**
    * GET /api/projects/detail?path=<projectPath> — dense rollup for the
    * project detail page header. Replaces the operator's eyeballing of
@@ -2751,6 +2823,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
+      if (url.pathname === "/api/projects/tasks") return handleProjectTasks(url);
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/lineage") return handleProjectLineage(url);
       if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);

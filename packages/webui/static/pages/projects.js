@@ -233,6 +233,7 @@ async function showProjectDetail(path) {
   const defaultProjectTab = 'project';
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
   html += `<button class="tab-btn active" onclick="switchProjectTab(this,'project')" style="background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);padding:8px 16px;cursor:pointer;font-size:13px">Project</button>`;
+  html += `<button class="tab-btn" onclick="switchProjectTab(this,'kanban')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Kanban</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'journal')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Journal</button>`;
   html += `<button class="tab-btn" onclick="switchProjectTab(this,'discussion')" style="background:none;border:none;border-bottom:2px solid transparent;color:var(--fg2);padding:8px 16px;cursor:pointer;font-size:13px">Discussion</button>`;
   const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
@@ -280,6 +281,7 @@ async function loadProjectTab(tab) {
   const el = document.getElementById('project-tab-content');
   if (!el) return;
   try {
+    el.classList.remove('md-rendered');
     if (tab === 'project') {
       const res = await fetch(`/api/projects/content?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
@@ -300,6 +302,9 @@ async function loadProjectTab(tab) {
       else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No discussion yet'; }
     } else if (tab === 'learning') {
       await renderProjectLearning(el);
+    } else if (tab === 'kanban') {
+      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
+      await renderProjectKanban(el);
     } else if (tab === 'lineage') {
       const res = await fetch(`/api/projects/lineage?path=${encodeURIComponent(_projectDetailPath)}`);
       const data = await res.json();
