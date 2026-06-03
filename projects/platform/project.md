@@ -1,12 +1,15 @@
 ---
 id: platform
 owner: tech-lead
-status: waiting
+status: active
 type: milestone
 priority: P0
-iteration: 39
-project_policy: stable-watch
-wait_reason: All tasks complete; finding-count metric recovered; no actionable platform signal
+iteration: 40
+project_app: v2
+project_policy: signal-driven
+runtime_control_plane: .app
+task_tree: tasks/tree.json
+wait_reason: all tasks complete — waiting for next platform signal (failing metric, unread comment, or owner push)
 ---
 
 # Project: platform
@@ -25,7 +28,8 @@ state directly.
 This is a standing platform project. It stays `waiting` between concrete
 infrastructure pushes and goes `active` only when there is a real platform
 signal: a failing platform metric, an unread comment, an architectural change
-request, or a scheduled infrastructure milestone.
+request, a scheduled infrastructure milestone, or an owner-directed platform
+adoption task.
 
 The project name (`platform`) describes the ongoing concern; the code repo
 (`may-agent`) lives underneath at `repos/may-agent/` with its own `.git`. This
@@ -41,7 +45,11 @@ discussion live here.
 - Build / test failures in `repos/may-agent/` (`bun test`, `bun run check`)
 
 ## Current State
-Waiting — all iter39 tasks complete. Triaged 4 escalated platform requests from agent-system-evolution: 2 rejected (evaluator calibration is out of scope), 2 deferred (no failing platform metric). No active platform signal.
+Active — Project App V2 is being adopted by the platform project as the second
+proving project after `aks-rp-e2e`. The runtime control plane lives in `.app/`,
+the canonical task tree lives in `tasks/tree.json`, and the shared platform web
+UI owns the generic Project Kanban projection. Project-local `/ui` surfaces
+remain domain-specific.
 
 ## Scope Boundary
 
@@ -83,7 +91,11 @@ Historical project references:
 - [x] Implement Logs + API session inspector view (iter25-26)
 - [x] Codify hygiene discipline (trigger-driven, not scheduled) — see "Hygiene discipline" section below; evidence in `proposals/2026-05-20-legacy-cleanup-resume-path.md`
 - [x] Redesign web UI to foreground infrastructure fundamentals (iter38 — hao directive + codex design advice in discussion.md)
-- [ ] Implement structural receipt persistence at successful session closeout (iter39 — contract in projects/agent-system-evolution/contracts/structural-receipt-contract.md)
+- [x] Implement structural receipt persistence at successful session closeout (iter39 — contract in projects/agent-system-evolution/contracts/structural-receipt-contract.md)
+- [x] Add Project App V2 runtime control-plane files under `.app/` (iter40)
+- [x] Add canonical platform v2 task tree at `tasks/tree.json` (iter40)
+- [x] Verify and roll up shared Project Kanban in the platform web UI (iter40)
+- [ ] Re-verify 2 test failures flagged by creative audit (iter40)
 - [ ] Wait for signal — failing platform metric, unread comment, or owner push
 
 ## Tasks
@@ -103,6 +115,29 @@ Historical project references:
   goal: Persist a structural session.receipt when finish(success) is accepted, visible in canonical session history/read models. Contract: projects/agent-system-evolution/contracts/structural-receipt-contract.md
   depends_on: []
   attempts: 1
+
+- id: verify-project-kanban-rollup
+  result: succeeded
+  status: done
+  assignee: tech-lead
+  goal: Verify shared Project Kanban in the platform web UI correctly renders task tree from tasks/tree.json.
+  depends_on: []
+  attempts: 1
+
+- id: fix-persistent-test-failures
+  result: succeeded
+  status: done
+  assignee: tech-lead
+  goal: Investigate and fix the 2 unique test failures flagged across multiple audit cycles.
+  depends_on: []
+  attempts: 2
+
+- id: verify-test-failures-audit-finding
+  status: pending
+  assignee: tech-lead
+  goal: Re-verify the 2 test failures flagged by project-creative-audit (verify-after-write guard missing module, project-health force-cooldown assertion). Confirm whether they are real regressions or stale audit artifacts.
+  depends_on: []
+  attempts: 0
 
 ## Validation
 
