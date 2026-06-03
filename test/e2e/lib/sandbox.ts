@@ -236,7 +236,9 @@ export async function buildSandbox(spec: SandboxSpec = {}): Promise<Sandbox> {
     SHARED_ROOT: sharedRoot,
     STATE_DIR: stateDir,
     INSTANCE: instance,
+    DAEMON_INSTANCE: instance,
     AGENT: interfaceAgent,
+    DAEMON_AGENT: interfaceAgent,
     // Make sure no telegram bot tries to start.
     TELEGRAM_BOT_TOKEN: "",
     TELEGRAM_CHAT_ID: "",

@@ -38,9 +38,12 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
     if (!entry.isDirectory()) continue;
     if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
     const projectDir = resolve(projectsRoot, entry.name);
-    const agentsRoot = resolve(projectDir, "agents");
-    if (!existsSync(resolve(projectDir, "project.md")) || !existsSync(agentsRoot)) continue;
-    agents.push(...listAgentDirectoriesInRoot(agentsRoot, { projectId: entry.name, projectDir }));
+    const hasProjectFrame = existsSync(resolve(projectDir, "project.md")) || existsSync(resolve(projectDir, ".app", "project.md"));
+    if (!hasProjectFrame) continue;
+    for (const agentsRoot of [resolve(projectDir, "agents"), resolve(projectDir, ".app", "agents")]) {
+      if (!existsSync(agentsRoot)) continue;
+      agents.push(...listAgentDirectoriesInRoot(agentsRoot, { projectId: entry.name, projectDir }));
+    }
   }
   return agents;
 }
