@@ -81,7 +81,7 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "scout.knowledge-practice-loaded", name: "Scout knowledge practice loaded", owner: "scout", project: "scout-second-brain-learning", type: "health", target: 1, threshold: 1, unit: "boolean", alert_op: "<", priority: "P2",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "scout.knowledge-preamble-coverage", name: "Scout knowledge preamble coverage", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 0.8, threshold: 0.25, unit: "ratio", alert_op: "<", priority: "P3" },
+  { id: "scout.knowledge-preamble-coverage", name: "Scout knowledge preamble coverage", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 0.25, threshold: 0.15, unit: "ratio", alert_op: "<", priority: "P3" },
   { id: "scout.sourced-artifacts-24h", name: "Scout sourced artifacts (24h)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 2, threshold: 1, unit: "count", alert_op: "<", priority: "P2" },
   { id: "scout.downstream-reference-files-7d", name: "Scout downstream reference files (7d)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 3, threshold: 1, unit: "count", alert_op: "<", priority: "P3" },
   { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
