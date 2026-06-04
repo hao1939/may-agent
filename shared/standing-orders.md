@@ -16,9 +16,9 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 Workflows are for **structured bounded work** — heartbeats, reusable procedures, and task-level recipes. These are handled automatically:
 - **Projects** → project handler dispatches tasks or owner agent sessions
 - **Heartbeats** → per-agent heartbeat workflow (launched by cron)
-- **Code changes** → `workflow.run("implement-and-review", ...)` or `workflow.run("verified-coder", ...)`
+- **Code changes** → `workflow.run("implement-and-verify", ...)` (shared workhorse) or `workflow.run("verified-coder", ...)` (tech-lead variant)
 
-**Dispatching work to other agents:** Use `agents.fork()` — it's fire-and-forget, doesn't block you. The session is tracked in the DB. Don't use `workflow.run("freestyle-wrap", ...)` for dispatch — it blocks your session until the work finishes.
+**Dispatching work to other agents:** Use `agents.fork()` — it's fire-and-forget, doesn't block you. The session is tracked in the DB. Don't wrap dispatch in a blocking workflow — `agents.fork()` is the dispatch primitive.
 
 - **Applies to**: all agents
 - **Reason**: Fork is the correct dispatch mechanism. Workflows are for process structure, not dispatch tracking.
@@ -34,7 +34,7 @@ Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to h
 - **Reason**: Hard caps force-close productive sessions. Agents repeatedly re-added budget language because they see real waste — but the fix is owner review, not caps. If you see runaway sessions, report them to May.
 
 ### [ORDER-009] Guard system changes require review (2026-04-15)
-Adding, removing, or modifying guards in `compose-guards.ts` affects every session. These changes must be reviewed by May (gatekeeper) before merging. The review-branch QA process should flag `compose-guards.ts` changes for May's attention.
+Adding, removing, or modifying guards in `agents/shared/guards/` (loaded by `agents/shared/guards/loader.ts`) affects every session. These changes must be reviewed by May (gatekeeper) before merging. The review-branch QA process should flag guard changes for May's attention.
 - **Applies to**: all
 - **Reason**: cost-limit-guard was wired in at 200 calls without review, blocking agents mid-session. System-scope changes need gatekeeper review.
 
