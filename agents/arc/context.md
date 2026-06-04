@@ -20,10 +20,10 @@ is no mandatory write/edit count or tool-call quota.
 - Design docs: `shared/may-agent-docs/2a-design/` (the system's architecture)
 - Core principles: `shared/may-agent-docs/1-principles/core-principles.md`
 - Common sense: `shared/common-sense.md`
-- Session patterns: read via bun:sqlite readonly, e.g.
-  `bun -e "const {Database}=require('bun:sqlite'); const db=new Database('.state/may.db',{readonly:true}); console.log(db.prepare('SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status').all())"`
-- Metrics: same pattern with `SELECT * FROM metrics WHERE status='active'`
-- Use `query_db` for read-only DB inspection.
+- Session patterns: use `query_db` tool, e.g.
+  `query_db({ "sql": "SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status" })`
+- Metrics: `query_db({ "sql": "SELECT * FROM metrics WHERE status='active'" })`
+- `query_db` is the canonical read-only DB tool (KE-434). Do NOT use `bun:sqlite` or `sqlite3`.
 - Agent configs: `agents/*/SOUL.md`, `agents/*/context.md`
 
 ## How to Discover Work
