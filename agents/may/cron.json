@@ -1,11 +1,21 @@
 [
   {
+    "name": "db-retention",
+    "type": "job",
+    "intervalMs": 86400000,
+    "handler": "db-retention",
+    "agent": "may",
+    "enabled": true,
+    "description": "Daily DB retention: DELETE events >7d, sessions >14d, snapshots >30d, then VACUUM if significant. Keeps DB under control.",
+    "context": []
+  },
+  {
     "name": "heartbeat",
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
     "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
-    "lastModified": "2026-04-19T18:30:00.000Z",
+    "lastModified": "2026-05-26T00:10:30.227Z",
     "handler": {
       "workflow": "may-heartbeat",
       "agent": "may",
@@ -316,6 +326,7 @@
     "on": [
       "project.nudge",
       "project.task.finished",
+      "project.owner.finished",
       "project.completed",
       "project.blocked"
     ],
@@ -432,10 +443,10 @@
       "agent": "evaluator",
       "backfillHours": 3,
       "fallbackDelayMs": 420000,
-      "limit": 2,
-      "maxConcurrent": 2,
-      "timeoutMs": 900000
+      "limit": 1,
+      "maxConcurrent": 2
     },
+    "timeoutMs": 900000,
     "context": [
       "projects/agent-system-evolution/project.md",
       "agents/evaluator/heartbeat.md"
@@ -683,6 +694,21 @@
     "context": [
       "projects/system-operations/project.md",
       "projects/daily-alert-review/project.md"
+    ]
+  },
+  {
+    "name": "feedback-echo-sync",
+    "intervalMs": 3600000,
+    "handler": {
+      "workflow": "verify-wrap",
+      "agent": "may",
+      "task": "Run feedback-echo sync: execute `bun agents/shared/feedback-echo.ts` to update all agents' last-eval.md files from latest evaluations. Then check 1-2 recent sessions to see if agents are reading the file."
+    },
+    "enabled": true,
+    "description": "Hourly sync of evaluator feedback into agent last-eval.md files",
+    "context": [
+      "agents/shared/feedback-echo.ts",
+      "projects/agent-system-evolution/project.md"
     ]
   }
 ]
