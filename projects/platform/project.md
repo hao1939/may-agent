@@ -1,7 +1,7 @@
 ---
 id: platform
 owner: tech-lead
-status: active
+status: waiting
 type: milestone
 priority: P0
 iteration: 40
@@ -95,7 +95,7 @@ Historical project references:
 - [x] Add Project App V2 runtime control-plane files under `.app/` (iter40)
 - [x] Add canonical platform v2 task tree at `tasks/tree.json` (iter40)
 - [x] Verify and roll up shared Project Kanban in the platform web UI (iter40)
-- [ ] Re-verify 2 test failures flagged by creative audit (iter40)
+- [x] Re-verify 2 test failures flagged by creative audit (iter40)
 - [ ] Wait for signal — failing platform metric, unread comment, or owner push
 
 ## Tasks
@@ -133,11 +133,12 @@ Historical project references:
   attempts: 2
 
 - id: verify-test-failures-audit-finding
-  status: pending
+  result: succeeded
+  status: done
   assignee: tech-lead
   goal: Re-verify the 2 test failures flagged by project-creative-audit (verify-after-write guard missing module, project-health force-cooldown assertion). Confirm whether they are real regressions or stale audit artifacts.
   depends_on: []
-  attempts: 0
+  attempts: 1
 
 ## Validation
 
