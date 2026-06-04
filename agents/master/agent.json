@@ -5,5 +5,8 @@
   "model": "opus",
   "tools": [
     "finish"
+  ],
+  "contextFiles": [
+    "agents/master/last-eval.md"
   ]
 }

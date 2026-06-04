@@ -8,5 +8,8 @@
     "coding",
     "scrape",
     "finish"
+  ],
+  "contextFiles": [
+    "agents/amy/last-eval.md"
   ]
 }

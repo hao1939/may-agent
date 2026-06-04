@@ -8,5 +8,8 @@
     "workflow",
     "checkpoint",
     "finish"
+  ],
+  "contextFiles": [
+    "agents/qa/last-eval.md"
   ]
 }

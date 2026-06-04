@@ -10,5 +10,8 @@
     "workflow",
     "checkpoint",
     "finish"
+  ],
+  "contextFiles": [
+    "agents/optimizer/last-eval.md"
   ]
 }

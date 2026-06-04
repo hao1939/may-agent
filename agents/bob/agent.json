@@ -1,6 +1,6 @@
 {
   "name": "bob",
-  "description": "System architect — holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
+  "description": "System architect \u2014 holds the blueprint, designs agent cooperation and evolution, reviews designs, stewards philosophy, drives meta-loop",
   "domain": "system architecture, design philosophy, agent evolution, meta-loop orchestration",
   "model": "opus",
   "tools": [
@@ -11,5 +11,8 @@
     "checkpoint",
     "workflow",
     "finish"
+  ],
+  "contextFiles": [
+    "agents/bob/last-eval.md"
   ]
 }

@@ -11,5 +11,8 @@
     "checkpoint",
     "finish"
   ],
-  "memoryLimit": 10
+  "memoryLimit": 10,
+  "contextFiles": [
+    "agents/coach/last-eval.md"
+  ]
 }

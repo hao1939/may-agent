@@ -1,10 +1,11 @@
 {
   "name": "may",
-  "description": "Hao's Deputy — handles tasks, orchestrates agents, maintains the system",
+  "description": "Hao's Deputy \u2014 handles tasks, orchestrates agents, maintains the system",
   "domain": "may-agent coordination",
   "model": "opus",
   "context_files": [
-    "conversation-state.md"
+    "conversation-state.md",
+    "agents/may/last-eval.md"
   ],
   "tools": [
     "coding",

@@ -1,6 +1,6 @@
 {
   "name": "tech-lead",
-  "description": "The Builder — turns design into working code, leads coder+QA team, applies philosophy during implementation",
+  "description": "The Builder \u2014 turns design into working code, leads coder+QA team, applies philosophy during implementation",
   "domain": "implementation, feature decomposition, supervised execution",
   "model": "opus",
   "tools": [
@@ -10,5 +10,8 @@
     "workflow",
     "checkpoint",
     "finish"
+  ],
+  "contextFiles": [
+    "agents/tech-lead/last-eval.md"
   ]
 }
