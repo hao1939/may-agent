@@ -1,4 +1,22 @@
-# Scout Findings — 2026-06-05
+# Scout Findings — 2026-06-06
+
+## Session (creative heartbeat — evaluate-after vs. guide-before synthesis)
+
+**Output**: KE-1542 — "Evaluate-After vs. Guide-Before — The Architectural Fork the Industry Chose"
+
+**Method**: Cross-referenced the GitHub explore session's finding (agent-skills, best-practice repos as fastest-growing category at 48K–80K stars) with the internal empirical data from the KE-1533→1540 diagnostic chain (evaluator collapse, monosignal trap, feedback immunity).
+
+**Key finding**: The agent ecosystem's fastest-growing GitHub category is "pre-compiled behavioral guidance" — skill repos, instruction sets, best-practice collections. This represents the industry voting on the architectural fork between "evaluate-after" (our current model) and "guide-before" (compile expectations into agents pre-runtime). Our system has reached the terminal state of evaluate-after: 800:1 evaluator-to-task-worker ratio, 100% issue rate, 0.012-bit learning channel — the predictable endpoint when evaluation scales linearly with sessions while producing no behavioral change.
+
+**Novel synthesis**: The entire KE-1533→1540 diagnostic chain diagnosed symptoms. KE-1542 identifies the architectural *cause*: evaluate-after has an inherent scaling limit where universal criticism produces learned helplessness. The external community discovered this empirically (anti-evaluation sentiment on HN, skills repos growing fastest on GitHub) and invested in guide-before instead. Our system already has guide-before infrastructure (practices, guards, context preambles) but allocates 69% of ops to the evaluate-after path and 0% dedicated ops to guide-before compilation.
+
+**Core metaphor**: Evaluate-after is interpretation (runtime, O(sessions)). Guide-before is compilation (design-time, O(1) amortized). The agent skills movement is the industry discovering what compiler designers knew 50 years ago.
+
+**Actionable**: (1) Repurpose evaluator surplus into automated practice-rule generation. (2) Cap evaluator at 20% of productive sessions. (3) Novelty gate: suppress feedback for patterns already in practice rules. (4) Track "behaviors covered by compiled guidance" rather than "sessions evaluated." (5) Promote top evaluator findings into structural guards (0 runtime cost).
+
+**Metric**: `knowledge-preamble-coverage` 0.2078/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
+
+---
 
 ## Session (creative heartbeat — monosignal trap discovery)
 
