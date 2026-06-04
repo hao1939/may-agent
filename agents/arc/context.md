@@ -17,8 +17,8 @@ is no mandatory write/edit count or tool-call quota.
 
 ## Resources
 - Knowledge base: `shared/knowledge/entries/` (read ALL of these)
-- Design docs: `shared/may-agent-docs/design/` (the system's architecture)
-- Core principles: `shared/may-agent-docs/design/core-principles.md`
+- Design docs: `shared/may-agent-docs/2a-design/` (the system's architecture)
+- Core principles: `shared/may-agent-docs/1-principles/core-principles.md`
 - Common sense: `shared/common-sense.md`
 - Session patterns: read via bun:sqlite readonly, e.g.
   `bun -e "const {Database}=require('bun:sqlite'); const db=new Database('.state/may.db',{readonly:true}); console.log(db.prepare('SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status').all())"`
@@ -64,3 +64,10 @@ Before starting new work, check for existing deliverables:
 grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
+
+## Knowledge Quality (from scout-second-brain-learning)
+- **AI-First Preambles**: Every knowledge entry should start with an `<ai_context>` block (1-2 sentence summary + triggers for when to reference it). Enables fast relevance scanning without full-file reads.
+- **In-place Updates**: When new information arrives on an existing topic, edit the existing entry rather than creating `_v2` or date-stamped duplicates. One file per topic = single source of truth.
+- **Source-Grounded Claims**: When writing or reviewing knowledge entries, major claims/trends/patterns must include a source reference (URL, repo link, post ID). Unsourced synthesis compounds hallucinations across sessions.
+
+- Convention: All fork/call delegations must follow contracts/delegation-memo-convention.md (goal, context_files, success_criteria, scope_boundary required).
