@@ -116,12 +116,12 @@ contradicts the shared convention.
 Every heartbeat, pick ONE of these areas and check for staleness:
 - `shared/common-sense.md` — does it reference frozen agents or removed systems?
 - `shared/standing-orders.md` — still accurate?
-- `shared/may-agent-docs/design/*.md` — contradicts current behavior?
+- `shared/may-agent-docs/2a-design/*.md` — contradicts current behavior?
 - `shared/knowledge/entries/` — any entries no longer true?
 - Active agent SOUL.md/context.md — references outdated tools or systems?
 
 If you find stale content:
-1. **Lane check first.** If the file is in `shared/knowledge/entries/`, `shared/may-agent-docs/design/`, or `agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — out-of-lane edits are silently stashed by the heartbeat wrapper and discarded (KE-450, KE-451). Write a proposal in `agents/arc/workspace/proposals/` and a KE entry describing the staleness.
+1. **Lane check first.** If the file is in `shared/knowledge/entries/`, `shared/may-agent-docs/2a-design/`, or `agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — out-of-lane edits are silently stashed by the heartbeat wrapper and discarded (KE-450, KE-451). Write a proposal in `agents/arc/workspace/proposals/` and a KE entry describing the staleness.
 2. Write a knowledge entry explaining what changed and why.
 3. If the fix requires human decision, write a proposal in `agents/arc/workspace/proposals/`.
 
@@ -131,7 +131,7 @@ Run **both** of these:
 1. `git -C /app/agents status --short`
 2. `git -C /app/agents ls-files -v | awk '$1 ~ /^[a-z]/'`
 
-For (1): the guard is **paths arc edited this session**, not every dirty path. The worktree is shared with concurrent agents; other agents' `last-session.md`, runtime-updated files, and unrelated agent project docs may be dirty as steady-state noise (KE-912 — and the 2026-05-09 evaluator P2 to arc citing 11 unrelated dirty agent files is exactly this false positive). Only act on paths **this** session wrote/edited. For those paths: every one must start with `arc/`, `shared/knowledge/entries/`, `shared/may-agent-docs/design/`, or an `owner: arc` shared project. If anything else is in *your* edit set, revert it (`git -C /app/agents checkout -- <path>`) before finishing — otherwise the stash sweep discards it and you'll end the session believing a fix landed when it didn't (KE-449 → KE-450). Do **not** revert ambient dirt you didn't create; that's another agent's lane and reverting it is the actual hygiene violation.
+For (1): the guard is **paths arc edited this session**, not every dirty path. The worktree is shared with concurrent agents; other agents' `last-session.md`, runtime-updated files, and unrelated agent project docs may be dirty as steady-state noise (KE-912 — and the 2026-05-09 evaluator P2 to arc citing 11 unrelated dirty agent files is exactly this false positive). Only act on paths **this** session wrote/edited. For those paths: every one must start with `arc/`, `shared/knowledge/entries/`, `shared/may-agent-docs/2a-design/`, or an `owner: arc` shared project. If anything else is in *your* edit set, revert it (`git -C /app/agents checkout -- <path>`) before finishing — otherwise the stash sweep discards it and you'll end the session believing a fix landed when it didn't (KE-449 → KE-450). Do **not** revert ambient dirt you didn't create; that's another agent's lane and reverting it is the actual hygiene violation.
 
 For (2): the output must be **empty**. Any line returned is a tracked file with `assume-unchanged` (`h`) or `skip-worktree` (`S`) set, meaning git is silently filtering edits to that path — `git status` will lie about it (KE-744). If the output is non-empty, **do not trust any file content read** during this session for those paths; cross-check against `git show :<path>` (the index blob) before publishing claims that depend on file content.
 
