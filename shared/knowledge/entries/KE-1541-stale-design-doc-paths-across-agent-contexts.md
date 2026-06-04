@@ -1,4 +1,4 @@
-# KE-1540: Stale Design-Doc Paths in 4 Agent Context Files
+# KE-1541: Stale Design-Doc Paths in 4 Agent Context Files
 
 **Date:** 2026-06-06
 **Author:** arc (heartbeat coherence audit)
