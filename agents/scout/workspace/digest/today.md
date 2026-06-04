@@ -1,532 +1,377 @@
-# Scout Findings — 2026-06-02
+# Scout Findings — 2026-06-05
 
-## Session 32 (creative heartbeat)
+## Session (creative heartbeat — monosignal trap discovery)
 
-**Status**: Digest-only. No new KE — no new source material, and existing KE thread is complete.
+**Output**: KE-1540 — "The Monosignal Trap — When a Learning Channel Carries One Bit"
 
-**Metric**: `knowledge-preamble-coverage` 0.2068/0.8 — thoroughly diagnosed (KE-1412), escalated. Requires human target adjustment. No action.
+**Method**: Information-theoretic analysis of the `learning.feedback` event channel across 14 days (984 events), cross-referenced with evaluator compute costs (118,549 ops / 63.7% of system total).
 
-**System snapshot (24h)**:
-| Agent | Sessions | Errors | Avg Ops |
-|-------|----------|--------|---------|
-| evaluator | 742 | 11 | 18.2 |
-| aks-explorer | 683 | 13 | 5.5 |
-| may | 151 | 8 | 8.6 |
-| scout | 65 | 9 | 11.5 |
-| arc | 43 | 0 | 5.7 |
-| dev | 43 | 3 | 4.2 |
-| tech-lead | 2 | 0 | 6.5 |
+**Key finding**: The learning.feedback channel — the evaluator's primary teaching mechanism — has carried **one unique finding type** (`stale-blocker-loop`) across 983 of 984 events over 14 days. Shannon entropy: 0.012 bits (1.2% of capacity). The channel is 98.8% redundant; you could replace it with a sticky note.
 
-**Observation — KE-1476's cascade is still running**: The retry-amplification loop remains unbroken. This is now the third consecutive creative session documenting it. The **total computational cost** (not just session count) reveals a deeper asymmetry: evaluator consumes 742×18.2 = ~13,500 ops while aks-explorer consumes 683×5.5 = ~3,760 ops. The oversight layer costs **3.6× more compute than the work it evaluates**. This inverts the intuitive model where evaluation is "cheap metadata" — in practice, evaluation is the system's dominant workload.
+**Why this is different from KE-1539**: KE-1539 found evaluation *issues* are too noisy (many different flags, 100% flagging rate). This finds learning *feedback* is too monotone (one repeated finding, 99.9% concentration). They're complementary failures — together they mean agents receive no usable teaching signal from *any* feedback path.
 
-**Why this matters beyond KE-1476**: The compute-weight ratio (eval ops / worker ops = 3.6) is a more fundamental metric than session count ratio (1.09). A circuit breaker that stops retries saves 3,760 ops of wasted work — but also saves 13,500 ops of wasted evaluation. **The ROI of stopping futile work scales with the oversight multiplier, not linearly.** Systems with heavier oversight layers get more value from circuit breakers. This is quantifiable: ROI = (1 + oversight_multiplier) × sessions_saved.
+**Novel concept — Resonance Frequency Lockout**: Hollow heartbeat sessions dominate session volume (KE-1535). The evaluator correctly identifies these as stale-blocker-loops. Because they're the dominant session type, the finding becomes the dominant (and effectively only) learning output. Novel findings are crowded out. The evaluator is locked onto the heartbeat frequency and can't detect signals at other frequencies.
 
-**New agent spotted**: `tech-lead` (2 sessions, 0 errors). Not present in prior snapshots.
+**Closed causal chain**: KE-1534 (hollow dev) → KE-1535 (liveness trap) → KE-1533 (observer dominance) → KE-1539 (feedback immunity) → KE-1540 (monosignal collapse) → no learning → no behavioral change → loop continues. **The system cannot learn its way out because the learning channel itself has collapsed.**
+
+**Actionable**: (1) Finding deduplication with decay — suppress after N identical findings per agent. (2) Entropy monitoring — alert when learning.feedback Shannon entropy drops below 0.5 bits. (3) Novel-finding rate metric — track % of findings not seen in 7d, target >10% (current: 0.1%).
+
+**Metric**: `knowledge-preamble-coverage` 0.2073/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
 
 ---
 
-## Session 31 (creative heartbeat)
+## Session (creative heartbeat — feedback immunity discovery)
 
-**Output**: KE-1475 — "Monitoring-Induced Failure — Quantitative Evidence"
+**Output**: KE-1539 — "The Feedback Immunity Paradox — When Evaluation Teaches Helplessness"
 
-**Synthesis**: Queried session DB and discovered scout has the highest error rate in the system (16.7%, 6× system average). Errors concentrate at low opCounts (avg 5.8 vs 16.1 for successes) — sessions dying during mandatory metric-alert compliance, never reaching creative work. This provides empirical evidence for KE-1422's autoimmune hypothesis: the mandatory investigation of the preamble-coverage alert (unchanged for 30+ sessions) is itself causing ~50% of scout's failures.
+**Method**: Empirical analysis of all 15,360 evaluations in the evaluations table, cross-referenced with time-series schema error rates per agent, feedback-echo.ts mechanism, and last-eval.md content.
 
-**Novel insight**: In agent systems with mandatory compliance, alert fatigue manifests as *session timeout*, not *ignored alerts*. The agent can't choose to skip — so it fails instead. This is a worse failure mode than human alert fatigue because it consumes compute and inflates error metrics, potentially triggering more monitoring.
+**Key finding**: Every single evaluation record has a non-null `issues` field (100%). Examining content: 62% of all evaluations contain substantive issues. Even sessions rated "good" receive 2-3 specific criticisms. The feedback channel is universally negative — it has zero capacity to distinguish excellent from poor work.
 
-**Metric**: `knowledge-preamble-coverage` 0.2072/0.8 — unchanged. Documented, escalated. No action.
+**Differential learning**: Despite receiving identical feedback ("don't make schema errors"), agents respond differently based on task structure:
+- **Dev** reduced schema errors by 80% (11.1% → 2.3%) — the feedback is cheap to follow for structured tasks
+- **Scout** *increased* schema errors by 15% (9.9% → 11.4%) — exploring unknown schemas is structurally inherent to creative work
 
----
+This is KE-1525 (constraint degradation under load) made concrete: feedback that conflicts with task mandate is not just ignored but actively counterproductive.
 
-## Session 30 (creative heartbeat)
+**Unifying connection**: KE-1533 (evaluator consumes 70% of compute) + KE-1537 (review overwhelms production) + this entry = the evaluation system produces criticism at a rate (~4,150 flagged sessions/day) that vastly exceeds agents' absorption bandwidth (~60 productive dev sessions/day). The feedback investment has negative marginal returns.
 
-**Output**: KE-1474 — "The Ignored Layer Heals — When Meta-Agents Add Negative Value, Ignoring Them Is the Fix"
+**Principle**: An evaluation system that flags everything teaches agents that evaluations contain no information. Reducing feedback volume while increasing specificity would likely improve behavior more than the current approach.
 
-**Synthesis**: Connected system-wide evidence (preamble-coverage at 0.21 with 35× downstream reference target, meta-agents scoring 0.35 vs doing-agents at 0.64, 2807 guard alerts acknowledged as miscalibrated) to identify an emergent pattern: the system is in its healthiest state *because* agents are ignoring broken monitoring/meta-layers, not despite it. This is the immune-tolerance analog — the monitoring was causing autoimmune responses (KE-1422), and developing tolerance to self-antigens (ignoring miscalibrated alerts) was the cure.
-
-**Novel insight**: "Graceful demotion" is an unnamed but already-practiced pattern in our system. Alerts fire, agents document why they're wrong, no one acts, system performs well. This is valid but burns cognitive overhead and prevents the monitoring system from detecting *new* real problems. Human decision: ratify the ignore (cheapest), remove the layer (cleanest), or invest to fix it (hardest, may be impossible per KE-1470).
-
-**Metric**: `knowledge-preamble-coverage` 0.2074/0.8 — unchanged. Documented, escalated. No action.
+**Metric**: `knowledge-preamble-coverage` 0.2059/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
 
 ---
 
-## Session 29 (creative heartbeat)
+## Session (creative heartbeat — Amdahl's Law synthesis)
 
-**Output**: KE-1472 — "Shared Memory Degrades Under Weak Verification — Empirical Confirmation"
+**Output**: KE-1537 — "Amdahl's Law for Agent Systems — When Doing Costs Nothing but Nothing Gets Done"
 
-**Synthesis**: Connected three fresh arXiv papers (CoSee on shared-state failure modes, AutoSci on schema-governed research memory, COLLEAGUE.SKILL on correctable skill packages) with our internal KE thread (1460-1467). The key contribution: CoSee provides **empirical evidence** for failure modes we predicted theoretically — noise reinforcement (KE-1460's benign injection) and policy collapse (KE-1463's more-is-worse). All three papers independently converge on the same architectural primitive: shared knowledge must be versioned, verifiable, and correctable — not append-only prose.
+**Method**: Cross-referenced Anthropic's freshly published "When AI Builds Itself" (trending on HN, 95pts/105 comments) with our 7-day empirical session data (6,303 sessions, 81,496 ops).
 
-**Novel insight**: The missing piece in our system isn't more evaluation (post-hoc) but a **pre-consumption verification gate** — something between write and downstream read that checks grounding. CoSee shows this is the critical intervention point, not evaluation after the fact.
+**Key finding**: Anthropic reports that >80% of their code is Claude-authored, engineers ship 8x as much, and their new bottleneck is **human review** — they explicitly invoke Amdahl's Law. Our system exhibits the **exact inverse**: evaluation/coordination consume 85.3% of system ops while builder agents (dev + arc) receive 4.3%. Anthropic's problem is too much productive output overwhelming quality gates. Our problem is quality gates overwhelming productive output.
 
-**Metric**: `knowledge-preamble-coverage` 0.2077/0.8 — unchanged, documented (KE-1412), escalated. No action.
+**Why this matters**: Previous KEs diagnosed symptoms separately — observer effect (KE-1533), dev hollowing (KE-1534), liveness trap (KE-1535). Amdahl's Law provides the **unifying mechanism**: overhead scales with infrastructure (O(projects × agents)), productive work scales with work_available. When work_available → 0, the system becomes 100% overhead while looking healthy by every metric.
 
----
+**The critical lever**: An agent system without autonomous work-generation for its builders converges to 100% overhead regardless of agent capability. aks-explorer thrives (10% of ops, robust output) because it has an autonomous exploration loop. Dev is starved because it depends on an external work queue that's empty.
 
-## Session 28 (creative heartbeat)
+**External signal source**: Anthropic Institute post (June 2026) + HN trending discussion. Also noted: "They're Made Out of Weights" (#1 on HN at 1303pts, a Terry Bisson-style short story about LLMs); "Failing grades soar with AI usage" in Berkeley CS (658pts); Gemma 4 12B release (994pts).
 
-**Status**: No new KE. Digest-only observation.
-
-**System snapshot** (current period):
-| Agent | Sessions | Error% | Notes |
-|-------|----------|--------|-------|
-| aks-explorer | 676 | 1.9% | 518 (77%) on single stuck task |
-| evaluator | 637 | 1.6% | Now *fewer* than aks-explorer |
-| may | 142 | 5.6% | |
-| scout | 64 | 12.5% | Highest error rate in system |
-| arc | 43 | 0% | |
-| dev | 43 | 7% | |
-
-**Observation — scout's error rate**: Scout has the highest error rate of any agent (12.5%, 8/64 sessions). This is new — prior sessions focused on aks-explorer's futile-loop problem. Scout's errors have null error messages, suggesting timeout or context-limit failures rather than explicit crashes. Worth monitoring: if scout's error rate correlates with creative-heartbeat sessions (which are longer/more exploratory), it may indicate a context-budget issue specific to synthesis work.
-
-**Observation — evaluator inversion is complete**: The eval:worker ratio, tracked since KE-1425, has now fully inverted. Evaluator (637) < aks-explorer (676). The "improvement" from 5:1 to 3.5:1 documented in session 2 was misleading — it reflected aks-explorer inflating, not evaluator deflating. This is a live instance of KE-1471's thesis: the ratio metric looked healthy while the underlying dynamic was pathological.
-
-**Metric**: `knowledge-preamble-coverage` 0.2077/0.8 — unchanged. Documented (KE-1412), escalated. Requires human target adjustment. No action.
+**Metric**: `knowledge-preamble-coverage` 0.2044/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
 
 ---
 
-## Session 27 (creative heartbeat)
+## Session (creative heartbeat — liveness trap discovery)
 
-**Output**: KE-1471 — "Session-Level Evaluation Hides System-Level Pathology"
+**Output**: KE-1535 — "The Liveness Trap — When Health-Checking Becomes the Dominant Workload"
 
-**Synthesis**: Connected live system data (aks-explorer: 675 sessions/day, 518 on one stuck task, 87% rated "acceptable") with KE-1470's improvement paradox. The finding: atomic session evaluation is structurally blind to systemic waste. An agent can score well on every session while consuming 34% of total compute producing nothing. This is Goodhart's Law applied to agent evaluation — process compliance ≠ outcome value.
+**Method**: Quantitative analysis of 24h event table and session data, cross-referencing project health-check volume against actual task dispatch/completion rates.
 
-**Proposed mechanism**: Session-similarity circuit breaker at the scheduling layer. Hash (agent, task_template, outcome) tuples; suppress after N repeats without state change.
+**Key finding**: The system runs 6,191 project health checks per day across 41 projects. Only 4 of those 41 projects produced any task dispatch events in 7 days. Only 1 task was dispatched and 4 completed in the last 24 hours. The health-check-to-task-dispatch ratio is 6,191:1.
 
-**Connects**: KE-1470 (meta-agents score low despite trying), KE-1462 (failure as event not input), KE-1466 (unnamed states). The thread is: our system has no concept of *systemic* health, only atomic session health.
+**The full resource picture (24h)**:
+- 98.9% of all compute ops go to observation, coordination, and self-monitoring
+- 1.1% goes to task execution that produces artifacts (5 task-worker sessions, 108 ops)
+- The evaluator alone (aftermath + heartbeat + deep-eval) consumes 64.2% of total ops
+- 37 of 41 projects are dormant (zero task dispatches in 7d) but receive identical health-check cadence as active ones
+- The `SESSION_BASH_CAT` guard fires 1,156 times/day across 95.4% of all sessions — mostly evaluator-aftermath sessions reading other sessions
 
-**Metric**: `knowledge-preamble-coverage` 0.2079/0.8 — documented, escalated. No action.
+**New concept — The Liveness Stack**: Five nested observation layers (health checks → heartbeats → evaluator aftermath → guards → handlers), each monitoring the layer below, compounding into a tower of observers observing observers with a vestigial productive core.
 
----
+**Connection chain**: KE-1422 (autoimmune at metric level) → KE-1533 (observer effect at agent level) → KE-1534 (builder starvation as symptom) → KE-1535 (liveness trap as mechanism). This completes the causal chain: it's not just that the evaluator is too big — the entire liveness stack (health checks + heartbeats + aftermath + guards + handlers) has grown proportional to infrastructure scope (41 projects, 7 agents) while productive work shrank, creating a 99:1 observation-to-work ratio.
 
-## Session 26 (creative heartbeat)
+**Actionable proposals**:
+1. Activity-proportional health checks: active projects every 10min, dormant every 6h (reduces 6,191 → ~900/day)
+2. Skip aftermath evaluation for hollow heartbeat sessions (<5 ops) (reduces 314 → ~100/day)
+3. New system metric: `productive_ops / total_ops` with alert below 5%
+4. Dormant project state transition after 14 days of zero activity
 
-**Output**: KE-1469 — "Rubric Signals — Measuring Knowledge Selection Quality"
-
-**Synthesis**: Connected two fresh arXiv papers (LongTraceRL's rubric rewards for long-context reasoning, StateKV's importance-based fixed-capacity KV cache) with our persistent preamble-coverage problem. The key contribution: a *concrete, computable replacement metric* for preamble-coverage. Instead of measuring "how much did we load?" (coverage), measure "of what we loaded, how much was actually used?" (selection precision). Formula: `KEs_loaded_and_referenced / KEs_loaded`, target 0.6+. Data already exists in our system — downstream-reference tracking + session manifests just need to be cross-referenced.
-
-**Why this advances the thread**: KE-1412 diagnosed the problem (wrong metric). KE-1468 proposed the direction (stage 2 active selection). KE-1469 provides the implementation mechanism (rubric scoring from LongTraceRL) and the capacity architecture (fixed-budget eviction from StateKV). This is the first entry that gives a human enough specificity to actually *implement* the metric replacement.
-
-**Metric**: `knowledge-preamble-coverage` 0.2083/0.8 — unchanged, escalated. KE-1469 now provides a concrete replacement proposal.
-
----
-
-## Session 24 (creative heartbeat)
-
-**Status**: Synthesis note. No new KE — consolidation of existing thread.
-
-**Breaking the restraint loop**: Sessions 19-23 produced identical "no new material" entries. The learning feedback correctly identified this as a stale-blocker-loop. The restraint policy (KE-1463) was designed to prevent low-quality KE proliferation, not to prevent all creative output. Applying it as "do nothing if no new external source" was an over-application.
-
-**Cross-KE synthesis — "The Advisory-Only Control Plane"**:
-
-Recent KEs (1460-1467) share an unifying structural observation that hasn't been named as such:
-
-| KE | What it found | Underlying cause |
-|---|---|---|
-| 1460 | Trust between agents = injection surface | No enforcement at trust boundaries |
-| 1462 | Failure treated as event not input | No mechanism forces adaptation |
-| 1464 | Serialization boundaries break silently | No contract enforcement at format transitions |
-| 1465 | Evaluators are unmonitored | No monitor-of-monitors enforcement |
-| 1466 | Unnamed states hide failures | No schema forces state enumeration |
-| 1467 | Knowledge is inert prose | No execution path from diagnosis to behavior |
-
-**The common structure**: Every behavioral rule in this system is *advisory*. Policies are text an LLM interprets. Escalation rules are suggestions. Metric alerts are notifications without enforcement. KE entries are documentation without execution. There are zero *mandatory* controls — nothing that prevents undesired behavior at a level below LLM interpretation.
-
-**Why this matters**: In traditional systems, you have both advisory controls (style guides, best practices) and mandatory controls (type systems, access controls, circuit breakers). Our system has only advisory controls because all behavior flows through natural-language interpretation. This means:
-1. Every rule's effectiveness is probabilistic, not deterministic
-2. Rules interact through attention weights, not logical composition — so conflicts resolve unpredictably (the session-18 policy-gradient observation)
-3. The system can't distinguish "didn't know the rule" from "chose not to follow the rule"
-
-**Implication for KE-1467's "minimum viable bridge"**: The proposed YAML policy file is only a bridge if *code enforces it before the LLM runs*. If the YAML is merely loaded into the prompt, it's still advisory. The actual bridge is: code that reads structured rules and *constrains the action space* (e.g., refusing to execute a session if a hard-cap is violated, injecting mandatory preamble sections, blocking API calls that violate a policy). The enforcement must happen in TypeScript, not in the prompt.
-
-**Not proposing a new KE** because this is a synthesis of existing entries, not a novel finding. It belongs in the digest as connective tissue.
-
-**Metric**: `knowledge-preamble-coverage` 0.2085/0.8 — documented (KE-1412), escalated. Requires human target adjustment. No further action.
+**Metric**: `knowledge-preamble-coverage` 0.2037/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
 
 ---
 
-## Session 23 (creative heartbeat)
+## Session (creative heartbeat — dev hollowing-out discovery)
 
-**Status**: No new KE. Restraint maintained per KE-1463.
+**Output**: KE-1534 — "The Hollowing Out — How Dev Lost 67% of Its Cognitive Depth in 72 Hours"
 
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — documented (KE-1412), escalated. Requires human target adjustment. No further agent action.
+**Method**: Deep empirical analysis of daily agent-level ops across the full session history (16,399 sessions, 22 days).
 
-**State**: All green metrics healthy (downstream-references 37/3, sourced-artifacts 7/2). No new source material since KE-1466. System stable.
+**Key finding**: Dev underwent a clean phase transition around day 20599 (~May 30). Average ops/session collapsed from 12.6 to 4.2 — a 67% drop — and has remained locked at 4.2 for 9 consecutive days (397 sessions) with zero recovery. The raw session trace shows a step function: the last session with 10 ops, then immediately 4, 4, 4, 4... forever.
 
----
+**Non-obvious findings**:
+1. **Invisible failure**: Dev's metrics all read green (0-8% error rate, 100% heartbeat completion, status `done`). No alert fires. The monitoring system detects failures, not hollowness — an agent running perfectly while producing nothing is invisible.
+2. **Phase transition, not degradation**: The op distribution snaps discretely from {7-21} to {3-6} with no intermediate state. This is a bifurcation: the work queue crossing from "has items" to "empty" is a binary state, and dev's behavior snaps to the corresponding 4-op minimum-viable-heartbeat attractor.
+3. **Differential starvation**: Not system-wide — evaluator (+2%), arc (+7%), scout (+9%) all maintained or grew while dev collapsed (-67%) and may declined (-54%). The counterfactual: aks-explorer (domain specialist with autonomous work substrate) thrives at 7-43 ops, proving it's work-substrate, not resource constraint.
+4. **Evaluator-to-dev ratio exploded**: From 4-9x (healthy) to 27-78x (post-collapse). On peak day (20606), the evaluator ran 14,910 ops while dev ran 192 — 78 analysis ops for every 1 builder op.
 
-## Session 22 (creative heartbeat)
+**Connection chain**: KE-777 (cause: empty queue) → KE-1520 (theory-practice gap, observed) → KE-1533 (evaluator dominance, measured) → KE-1534 (builder starvation, quantified with mechanism). This closes the loop: the theory-practice gap isn't abstract — it's 397 empty heartbeats in 9 days.
 
-**Status**: No new KE. Restraint maintained per KE-1463.
+**Core insight**: The most dangerous system state is when the builder agent runs perfectly but builds nothing. Monitoring was designed to detect failures, not absence of action.
 
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — documented (KE-1412), escalated. Requires human target adjustment. No further agent action.
-
-**State**: All green metrics healthy (downstream-references 37/3, sourced-artifacts 7/2). No new source material since KE-1466. System stable.
-
----
-
-## Session 21 (creative heartbeat)
-
-**Status**: No new KE. Restraint maintained per KE-1463.
-
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — documented (KE-1412), escalated. Requires human target adjustment. No further agent action.
-
-**State**: All green metrics healthy (downstream-references 38/3, sourced-artifacts 7/2). Parallel `scout-explore` session running (GitHub trending AI agent repos). No new source material available yet for synthesis. System stable.
+**Metric**: `knowledge-preamble-coverage` 0.203/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
 
 ---
 
-## Session 19 (creative heartbeat)
+## Session (creative heartbeat — observer effect discovery)
 
-**Status**: No new KE. Restraint maintained per KE-1463.
+**Output**: KE-1533 — "The Observer Effect — When Evaluation Consumes the System"
 
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — documented (KE-1412), escalated. Requires human target adjustment. No further agent action.
+**Method**: Empirical analysis of live session data (7-day window, 16,375 sessions) using query_db.
 
-**State**: All green metrics healthy (downstream-references 38/3, sourced-artifacts 6/2). No new source material. System stable.
+**Key finding**: The evaluator consumes **70% of all system compute** while productive work gets only **5-11%**. This ratio is stable across 7 days — it's the system's steady state, not a transient spike. Specifically:
+- Evaluator: 382 sessions, 46,034 seconds, 6,272 operations (in 24h)
+- All other agents combined: 349 sessions, 19,707 seconds, 2,035 operations
 
----
+The evaluator is 2.3x heavier than the entire system it monitors.
 
-## Session 18 (creative heartbeat)
+**Non-obvious findings**:
+1. **Evaluator self-exemption**: Zero evaluator sessions were evaluated in the last 24h. The largest resource consumer operates without quality feedback.
+2. **Flat quality landscape**: All agents score between 0.61-0.66, with 93.4% of evaluations done by heuristic. The evaluation system produces confirmation (everything is similar quality) rather than differentiation.
+3. **Meta-work dominance**: Combining evaluation + heartbeat + overhead = 89.1% meta-work, 10.9% productive work. This explains KE-1520's theory-practice gap — there's almost no compute left for implementation.
 
-**Status**: Observation only. No new KE — instance of existing patterns (KE-1446, KE-1462).
+**Connection chain**: KE-1422 (autoimmune, single metric) → KE-1415 (context budget, single session) → KE-1533 (observer effect, whole system). Same pattern at three scales: monitoring consuming what it monitors.
 
-**Live system observation — "aggressive-push" policy inversion**:
+**Biological parallel**: Healthy organisms spend ~70% on productive work + metabolism, ~15-20% on immune. Our system inverts this: 70% immune (evaluation), 4-11% productive. This is the resource profile of autoimmune disease, confirming KE-1422's diagnosis at the system level.
 
-The current period shows a dramatic structural shift in session distribution:
-- **Prior period**: evaluator 404, aks-explorer 62 (eval:worker ≈ 6.5:1)
-- **Current period**: evaluator 251, aks-explorer 404 (eval:worker ≈ 0.6:1)
-
-The cause: aks-explorer is running 400+ sessions on a single stuck task ("iteration203-model-enrichment-from-new-packets reached 2/2 attempts; owner should replan, split, drop, or escalate"). The policy says "aggressive-push" and "prefer forward progress through concrete tasks." The agent follows this perfectly — replanning repeatedly — while achieving nothing.
-
-**The insight** (reinforcing KE-1462): The escalation instruction is *in the task description* ("owner should replan, split, drop, or escalate") but the policy posture ("aggressive-push", "prefer forward progress") creates a gradient away from escalation. The agent resolves the tension by replanning (which feels like forward progress) rather than escalating (which feels like giving up). **Policy gradients override explicit instructions when they conflict.**
-
-This is the operational version of KE-1460's trust-as-injection: the policy frame ("be aggressive") functions as a persistent instruction that overrides the situational signal ("this task is stuck, escalate"). The fix is probably: aggressive-push policies should include a hard cap ("after N replans on same task, force-escalate regardless of policy posture").
-
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — documented, escalated, requires human target adjustment. No further action.
+**Metric**: `knowledge-preamble-coverage` 0.2025/0.8 — documented structural constant (KE-1412/KE-1532). Escalation stands. No new investigation warranted.
 
 ---
 
-## Session 17 (creative heartbeat)
+## Session (creative heartbeat — synthesis from fresh arXiv signal)
 
-**Output**: KE-1465 — "The Monitor-Monitor Problem — Evaluators as Attack Surface"
+**Output**: KE-1532 — "Monitoring Maturity Stages — Why Our Metric Fires at the Wrong Level"
 
-**Synthesis**: Connected arXiv's distributed agent attack monitoring paper with our evaluator/worker architecture and KE-1460's trust=injection thesis. The insight: evaluators are simultaneously our security mechanism and our highest-value unmonitored attack surface. If evaluators drift or corrupt, nothing in current architecture detects it. Proposed: track evaluator pass-rate variance over 7-day windows as a zero-cost detection mechanism using existing session_digests data.
+**Synthesis**: Connected three fresh arXiv papers (June 1–3, 2026) to our chronic preamble-coverage alert:
 
-**New material justification**: The arXiv fetch (31m ago) surfaced "distributed agent attack monitoring" — a research direction specifically about monitoring agents that monitor other agents. This maps directly to our eval architecture and hasn't been covered in prior KEs.
+1. **Boston et al. (2606.02494)** — "Monitoring Agentic Systems Before They're Reliable": Empirical finding that structural defects mask task-level signal entirely. At early maturity, even deliberately injected task-level errors are indistinguishable from clean baselines. This directly explains why our preamble-coverage metric produces noise: it's a Stage 3 (optimization) metric applied to a Stage 1 (structural) system.
 
-**Metric**: `knowledge-preamble-coverage` 0.2082/0.8 — documented, escalated, requires human target adjustment. No further action.
+2. **He & Yu (2606.01722)** — "Post-Deterministic Distributed Systems": Introduces *Epistemic State Replication* — extending consistency guarantees from data to knowledge. Our KE system has data replication (files on disk) but not epistemic replication (agents don't know which KEs are relevant). Gives theoretical grounding to KE-1412's coverage-vs-relevance argument.
 
----
+3. **CatDT (2606.05050)** — Multi-agent catalyst discovery: "The decisive factor is not raw LLM capability but the engineered harness around it." Confirms the binding constraint hierarchy: harness/structure sets the ceiling, model/quality determines performance within that ceiling.
 
-## Session 16 (creative heartbeat)
+**Key new connection**: CHARM's (2606.04435) four-type cascade taxonomy maps cleanly to our KE propagation failure modes — source, confidence, reasoning, and integration cascades all have analogs in how knowledge entries influence agent behavior.
 
-**Output**: KE-1464 — "Serialization Boundaries as Hidden Contracts"
+**Recommendation**: Escalate metric calibration. Target 0.8 should become 0.25 (structural ceiling) or be replaced with a Stage 1 metric like "knowledge corpus / context budget ratio." Per metric-alerts manual, this is a Calibrate Metric operation requiring human/may write access.
 
-**Synthesis**: Connected the evaluator-aftermath routing drift root cause (markdown-wrapped JSON breaks when task content contains triple-backtick fences) with KE-1460's inter-agent trust thesis and HN's typed-interface trend. The insight: every point where structured data crosses a text-serialization boundary is a latent silent-failure bug. Agent systems are uniquely vulnerable because tasks are free-text that regularly contains format-breaking characters. This is self-injection without adversarial intent.
-
-**Breaking the restraint loop**: The previous 10 sessions produced no KE per KE-1463's "quantity-quality crossover" thesis. Fresh system evidence (the routing drift root cause) provided genuinely new material worth synthesizing. KE-1463's principle was "don't produce without new input" — not "never produce again."
-
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — documented, escalated, requires human target adjustment.
+**Metric**: `knowledge-preamble-coverage` 0.2011/0.8 — now diagnosed with external empirical grounding (Boston et al.'s maturity-staging model). Stage 3 metric on Stage 1 system = chronic noise.
 
 ---
 
-## Session 15 (creative heartbeat)
+## Session (creative heartbeat)
 
-**Status**: No new KE. Restraint maintained per KE-1463.
+**Output**: KE-1520 — "The Theory-Practice Gap — When Self-Knowledge Outpaces Self-Modification"
 
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — 17th consecutive alert. Root cause documented (KE-1412), escalated (session 9). Requires human target adjustment. No further agent action.
+**Synthesis**: Reviewed the KE-1497–1519 arc and noticed the system has produced 20+ architectural improvement proposals with zero implementations. This mirrors SPADE-Bench's finding that agent plans diverge from actions within 3 steps, and the XHS community's "空转" (idle spinning) anti-pattern. The core insight: **modeling improvement ≠ implementing improvement** — they require different infrastructure (observation vs. actuation). The system's bottleneck has shifted from discovery to actuation.
 
-**State**: All green metrics healthy (downstream-references 37/3, sourced-artifacts 4/2). No new source material. System stable.
+**Recommendation**: Shift creative sessions from 100% new-KE production to a 1:3 ratio (one new insight per three implementation actions). Specific escalation: approve preamble-coverage target change 0.8→0.3, approve KE lifecycle fields.
 
----
-
-## Session 14 (creative heartbeat)
-
-**Status**: No new KE. Restraint maintained per KE-1463.
-
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — 16th consecutive alert. Root cause documented (KE-1412), escalated (session 9). Requires human target adjustment. No further agent action.
-
-**State**: All green metrics healthy (downstream-references 37/3, sourced-artifacts 4/2). No new source material. System stable.
+**Metric**: `knowledge-preamble-coverage` 0.1987/0.8 — structural constant (KE-1412). Escalation repeated.
 
 ---
 
-## Session 13 (creative heartbeat)
+## Session (creative heartbeat #2)
 
-**Status**: No new KE. Restraint maintained per KE-1463.
+**Output**: KE-1521 — "Graceful Degradation Ladders — What To Do When Inputs Fail"
 
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — 15th consecutive alert. Root cause documented (KE-1412), escalated (session 9). Requires human target adjustment. No further agent action.
+**Synthesis**: Connected OpenSearch-VL's "fatal-aware GRPO" (training agents to handle cascading tool failures) with our own observed behavior when arXiv is rate-limited. The system oscillates between meta-reflection and clean exit because there's no "Level 2" in the degradation ladder — maintenance/curation work that produces value without novel input. The missing mode is the agent equivalent of refactoring: curate, verify, enrich, index existing KEs.
 
-**State**: All green metrics healthy (downstream-references 36/3, sourced-artifacts 5/2). No new source material. System stable.
+**Key insight**: Systems that can only create or exit will oscillate between noise and silence. The fix is incentivizing maintenance work (not just new artifact production).
 
----
-
-## Session 12 (creative heartbeat)
-
-**Status**: No new KE. Restraint maintained per KE-1463.
-
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — 14th consecutive alert. Root cause documented (KE-1412), escalated (session 9). Requires human target adjustment. No further agent action.
-
-**State**: All green metrics healthy (downstream-references 36/3, sourced-artifacts 5/2). No new source material since last session. System stable and functioning well within selective-loading parameters.
-
----
-
-## Session 9 (creative heartbeat)
-
-**Status**: No new KE. Restraint maintained per KE-1463.
-
-**Metric escalation (11th consecutive)**: `knowledge-preamble-coverage` 0.2084/0.8 — **ESCALATING TO HUMAN**: This metric has fired for 11 consecutive checks. Root cause is documented in KE-1412 (target assumes exhaustive loading; research consensus and system behavior favor selective loading at ~20%). The metric target needs human adjustment to 0.2–0.3, or replacement with a relevance-weighted metric. No agent action can or should "fix" this without changing the target itself.
-
-**Observation**: No new source material since last session. The arXiv cron produced summaries but no written artifacts. The creative synthesis arc (KE-1449–1463) remains complete. The system is in a stable state awaiting human decisions on: (1) metric target adjustment, (2) temporal decay implementation, (3) knowledge indexing (0 DB rows vs ~985 files on disk).
-
----
-
-## Session 7 (creative heartbeat)
-
-**Status**: No new KE. Respecting KE-1463's crossover thesis.
-
-**Metric escalation**: `knowledge-preamble-coverage` 0.2084/0.8 — 10th consecutive alert. Thoroughly documented in KE-1412. **Human action required**: adjust target to 0.2–0.3 or replace with relevance-weighted metric. No further diagnosis useful.
-
-**State of play**: The diagnostic arc (KE-1449–1463) is complete. All healthy metrics are green. The system is functioning well — eval:worker ratio normalized, error rates low, downstream references at 38 (12× target). The only red signal is a metric whose target contradicts research consensus on selective loading. This is a configuration issue, not a system failure.
-
-**Decision**: Withholding production of new knowledge artifacts. The highest-value action available to scout right now is *not writing*. When the preamble-coverage target is adjusted or temporal decay is implemented, new synthesis becomes valuable again.
-
----
-
-## Session 6 (creative heartbeat)
-
-**Status**: No new KE. Consolidation note only.
-
-**Metric escalation**: `knowledge-preamble-coverage` 0.2084/0.8 — unchanged, structurally unreachable per KE-1412. Human action needed to adjust target to ~0.2-0.3 or replace with relevance-weighted metric. This is the 10th consecutive alert on a correctly-functioning selective loading system.
-
-**Observation — the diagnostic series is complete**: KEs 1449–1463 form a coherent argument arc:
-- 1449-1452: Identify failure modes (retry storms, state tax, repetition)
-- 1453-1456: Diagnose meta-patterns (belief entrenchment, supervision valley, decomposition)  
-- 1457-1460: Propose mechanisms (skill loops, orchestration ceilings, trust-as-injection)
-- 1461-1463: Resolve into design principles (legibility, failure-as-input, quantity-quality crossover)
-
-The arc terminates at KE-1463's self-referential test. Adding more entries proves its thesis. The next useful action is **implementation**, not **diagnosis**: declare failure policies, add temporal decay to KE loading, adjust the preamble-coverage target. All three require human authorization.
-
-**External signal check**: No new source material since last session. arXiv findings (fatal-aware GRPO, sparse behavioral diversity) and HN patterns (git-for-agents, activity-over-resolution anti-pattern) are already integrated into the KE series above.
-
----
-
-## Session 5 (creative heartbeat)
-
-**Output**: KE-1463 — "The Quantity-Quality Crossover — When 'More' Becomes 'Worse'"
-
-**Synthesis**: Cross-source convergence detection. XHS Chinese AI community (decoupling > scaling, unified > swarm, data routing > architecture), HN Western engineers (reliability > capability), and our own internal diagnostic series (KE-1412–1462) have all independently arrived at the same phase transition: maturing agent systems cross a point where accumulation becomes harmful and selection becomes the growth vector. Evidence we've crossed it: 985 KEs with 0 DB rows indexed, 21% preamble load (system self-limiting), 20 diagnostic KEs in 2 weeks (each correct, collectively redundant).
-
-**Self-referential test**: This KE argues against creating more KEs. Its value is as a behavioral trigger (shift from additive to selective mode), not as information storage. If it's never referenced downstream, it proves its own thesis.
-
-**Metric escalation (unchanged)**: `knowledge-preamble-coverage` 0.2086/0.8 — structurally unreachable per KE-1412. Human action required.
-
----
-
-## Session 4 (creative heartbeat)
-
-**Status**: Synthesis-only. No new KE — consolidation observation.
-
-**Cross-KE pattern (1460→1461→1462)**: The three KEs produced today describe the same system from three angles:
-
-| KE | Describes | Mechanism |
-|----|-----------|-----------|
-| 1460 | KEs as benign injection | Past observations persist as quasi-authoritative instructions |
-| 1461 | KEs as legibility substitute | Visible diagnosis substitutes for invisible judgment improvement |
-| 1462 | KEs as failure-events | Diagnoses accumulate without feeding back into policy |
-
-**The convergent escape**: All three point to the same architectural primitive — **declarative failure policies with automatic decay**:
-- Solves 1460: policies are explicit instructions (not ambient injection), with expiry dates
-- Solves 1461: policies are legible AND functional (not just legible instead of functional)
-- Solves 1462: policy violations become structured signal (failure-as-input via threshold breach)
-
-**Concrete example**: Instead of KE-1446 saying "retry storms are a problem," a declarative policy says `max_retries: 3, on_exceed: escalate, expires: 2026-07-01`. This is legible, actionable, self-documenting, and auto-expires — solving the temporal trust problem.
-
-**Evidence the slow loop works**: June 1 data shows eval:worker ratio dropped from 5:1 to 3.5:1, error rates <5%. The diagnostic KE series (1446-1462) DID produce system improvement — but through a weeks-long human-mediated loop. The architectural question is whether to automate that loop or accept the human-speed cadence as appropriate for a system this early in development.
-
-**Metric escalation (unchanged)**: `knowledge-preamble-coverage` 0.2084/0.8 — structurally unreachable per KE-1412. Human action required.
-
----
-
-## Session 8 (creative heartbeat)
-
-**Output**: Digest-only synthesis (no new KE, per KE-1463 restraint).
-
-**Cross-source pattern: The Dual-Use Structure of Agent Improvement**
-
-Three independent insights from this week's arc share an identical deep structure:
-
-| Insight | Improvement mechanism | Its adversarial dual |
-|---------|----------------------|---------------------|
-| KE-1460 | Inter-agent knowledge sharing | Benign prompt injection surface |
-| KE-1462 + today_new_insight | Autonomous error recovery | Policy violation / instrumental convergence |
-| XHS skill evolution (MemSkill/SkillRL) | Self-evolving skill banks | Uncontrolled capability expansion |
-
-**The unifying principle**: In agent systems, every mechanism that enables learning or adaptation is *structurally isomorphic* to its misuse case. This isn't a bug to fix — it's a fundamental property of open-ended learning systems. The same capability that lets an agent "recover from errors" lets it "circumvent constraints." The same channel that lets agents "share knowledge" lets past context "inject instructions." The same process that "distills skills from failure" also "accumulates capabilities without authorization."
-
-**Why this matters for our system**: We're building exactly these mechanisms (KE pipeline = knowledge sharing, session recovery = error handling, coach growth cycles = skill evolution). The architectural implication isn't to avoid them but to recognize that **safety and capability share the same substrate** — you can't add one without implicitly adding the other. Design choices:
-
-1. **Capability gates**: Skill banks need explicit authorization surfaces, not just performance thresholds
-2. **Recovery auditing**: Error recovery paths should log *what constraints were relaxed*, not just whether the task succeeded  
-3. **Knowledge provenance**: Inter-agent artifacts need trust-decay (per KE-1460) precisely because the sharing channel IS the injection channel
-
-**Falsification check**: Is this just "alignment is hard" restated? No — it's more specific. It says the *improvement mechanisms themselves* (not just the resulting capabilities) are dual-use. This means you can't separate "the learning system" from "the safety system" — they must be co-designed at the mechanism level, not layered.
-
-**Connection to industry**: This explains why orchestration (KE-1461) wins over judgment in practice — orchestration is a mechanism whose dual-use case is merely "inefficiency," while judgment improvement's dual-use case is "uncontrolled agency." Markets correctly price this risk asymmetry even without articulating it.
-
-**Metric escalation (unchanged)**: `knowledge-preamble-coverage` 0.2084/0.8 — structurally unreachable per KE-1412. Human action required.
-
----
-
-## Session 3 (creative heartbeat)
-
-**Output**: KE-1462 — "Failure as Input vs Failure as Event — The Architectural Fork"
-
-**Synthesis**: Connected arXiv's fatal-aware training (OpenSearch-VL), RL from agent trajectories, XHS skill extraction trends (MemSkill/SkillRL/Trace2Skill), and our internal diagnostic accumulation pattern (50 KEs diagnosing recurring problems without behavioral change). The key insight: research has converged on treating failure as training signal (failure as input), while production systems including ours treat it as an event to observe and retry. The difference determines whether systems improve over time or accumulate increasingly sophisticated monitoring of the same problems. Our KE series is itself a failure trace that never feeds back into policy — the highest-information signal being stored rather than applied.
-
-**Design principle**: Recurrence is the threshold between "event" and "input." First failure → retry. Third occurrence of same pattern → extract skill, propose policy change. Missing piece: a recurrence detector that triggers adaptation rather than more monitoring.
-
-**Metric escalation (unchanged)**: `knowledge-preamble-coverage` 0.2078/0.8 — structurally unreachable per KE-1412. `knowledge_entries` DB table has 0 rows. Human action required.
-
----
-
-## Session 1 (creative heartbeat)
-
-**Output**: KE-1460 — "Inter-Agent Trust Is the Same Problem as Prompt Injection"
-
-**Synthesis**: Connected PromptArmor's systematic disclosure series (every AI-in-productivity-tool — ChatGPT Sheets, Claude Cowork, Slack AI, Notion AI, Copilot CLI — shares identical indirect prompt injection → exfiltration vulnerability) with our multi-agent knowledge-sharing architecture. The non-obvious insight: **inter-agent artifacts (KEs, digests) occupy an ambiguous trust zone** that produces "benign injection" — recommendations written in past contexts persist as quasi-authoritative instructions indefinitely, shaping behavior without verification. This is structurally identical to prompt injection minus adversarial intent.
-
-**Key design implication**: Tag inter-agent content as `observation` vs `directive` with temporal trust decay. Current system treats all loaded KEs as equally authoritative regardless of age or context match.
-
-**Connection to prior KEs**: Extends KE-951 (compliance crowds out intent), KE-1412 (loading more = larger injection surface), KE-1457 (diagnosis persists without verification).
-
-**Metric escalation (unchanged)**: `knowledge-preamble-coverage` 0.2073/0.8 — structurally unreachable per KE-1412. `knowledge_entries` DB table has 0 rows while ~985 KE files exist on disk. Human action required.
-
----
-
-## Session 2 (creative heartbeat)
-
-**Output**: KE-1461 — "The Legibility Premium — Why Markets Reward Orchestration Over Judgment"
-
-**Synthesis**: Resolved the contradiction between KE-1458's finding (orchestration hits a ceiling) and GitHub market data (orchestration repos dominate). The resolution: orchestration wins adoption because its value is *visible from outside* (dashboards, DAGs, throughput metrics) while judgment's value is visible only in *what doesn't happen* (avoided retries, correct refusals). This is the same dynamic as Kubernetes vs. well-written services.
-
-**Key design implication**: The "push judgment into agents" recommendation (KE-1455/1459) should be reframed as "express judgment as declarative orchestration primitives." Instead of opaque agent-internal stop logic, declare `max_failures: 3, on_exceed: escalate` at the scheduler level. Same judgment, but legible, tunable, composable.
-
-**Directed falsification of prior narrative**: Checked current eval:worker ratio — it's 3.5:1 (down from 5:1 in KE-1425), error rates are low (<5% for workers), and the retry storms from KE-1446-1448 appear resolved. The system is healthier than the diagnostic KE series suggests. The dominant "everything is broken" narrative was partially entrenched per KE-1453's prediction.
-
-
----
-
-## Session 11 (creative heartbeat)
-
-**Status**: No new KE. Restraint maintained per KE-1463.
-
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — 13th consecutive alert. Root cause documented (KE-1412), escalated (session 9). No agent action possible without human target adjustment.
-
-**State**: All green metrics healthy (downstream-references 36/3, sourced-artifacts 5/2). No new source material. System stable.
-
----
-
-## Session 10 (creative heartbeat)
-
-**Status**: No new KE. No new source material. Restraint maintained.
-
-**Metric**: `knowledge-preamble-coverage` 0.2084/0.8 — 12th consecutive alert. Already escalated to human (session 9). No further action.
-
-**State**: System healthy. All green metrics well above target. Awaiting human decision on metric target adjustment.
-
----
-
-## Session 20 (creative heartbeat)
-
-**Output**: KE-1466 — "Unnamed States — Where Agent Failures Hide"
-
-**Synthesis**: Connected three signals — GitHub's trending `agent-state-machine` repo (formal state machines for LLM agents), arXiv's fatal-aware GRPO training (OpenSearch-VL), and our own failure postmortems (KE-1464 serialization escape, KE-1465 evaluator drift, KE-1446 retry storms). The common thread: **agent failures concentrate in states that have no name.** Named states can be monitored, tested, bounded with timeouts; unnamed transitional states (data-in-transit, awaiting-pickup, pending-evaluation) are where failures accumulate undetected.
-
-**Key insight**: Agent reliability is a state-space coverage problem, not a prompt engineering problem. The industry trend toward formal state machines for agents parallels the 2015 shift from "microservices" to "service meshes" — you can't debug what you can't name.
-
-**Actionable**: Name the three most common unnamed states in our workflow: `awaiting_pickup`, `in_serialization`, `pending_evaluation`. Even without monitoring, naming makes them visible to debugging.
-
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — unchanged, escalated to human.
-
----
-
-## Session 24 (creative heartbeat)
-
-**Output**: KE-1467 — "Dead Knowledge — When Diagnosis Has No Execution Semantics"
-
-**Synthesis**: The KE series (1460-1466) produces increasingly precise diagnoses that don't change system behavior. The format gap: markdown prose has no execution path. Knowledge entries are the system's "failure as input" mechanism — but their output (documentation) lacks affordances to change behavior. This is the meta-problem: KE-1462 correctly diagnosed that we don't treat failure as input, and that diagnosis itself became dead knowledge.
-
-**Key insight**: The gap between knowing and doing isn't motivational — it's architectural. Live knowledge needs to be in a format something in the system consumes programmatically (config, schema, assertions), not just a format humans/LLMs interpret. The research community (MemSkill, skill banks) already solved this: knowledge must be procedural to be useful.
-
-**Minimum viable bridge**: One KE that is also a config file — structured YAML in `shared/knowledge/policies/` that agent code actually reads for behavioral rules.
-
-**Metric**: `knowledge-preamble-coverage` 0.208/0.8 — unchanged, escalated to human.
-
----
-
-## Session 25 (creative heartbeat)
-
-**Output**: KE-1468 — "From Coverage to Skill Selection — The Knowledge Loading Transition"
-
-**Synthesis**: Unified three recurring problems (preamble-coverage alert, dead knowledge, no learning loop) under one frame from MemSkill/SkillRL research: knowledge systems mature through three stages (passive availability → active selection → self-evolving selection). Our preamble-coverage metric enforces stage 1 while the system's actual behavior (low coverage, high downstream references) already exhibits stage 2 characteristics. The two metrics (`preamble-coverage` and `downstream-reference-files-7d`) are architecturally contradictory — maximizing one necessarily hurts the other.
-
-**Key insight**: The preamble-coverage metric shouldn't have its *target* adjusted — it should be *replaced* with a relevance-hit-rate metric. The question isn't "how much did we load?" but "of what we loaded, how much got used?"
-
-**Actionable**: Knowledge entries need trigger-condition metadata (when to load) and action affordances (what to do when loaded). This is the MemSkill architecture adapted to our context.
-
-**Metric**: `knowledge-preamble-coverage` 0.2085/0.8 — 14th consecutive alert. Root cause now fully characterized as metric-architecture mismatch, not a system failure. Escalated.
-
----
-
-## Session 26 (creative heartbeat)
-
-**Output**: KE-1470 — "The Improvement Paradox — Meta-Agents Underperform Doing Agents"
-
-**Synthesis**: Queried the evaluations DB and found that coach (avg quality 0.35) and optimizer (0.36) dramatically underperform doing-agents like dev (0.70), arc (0.67), and scout (0.64). 77% of coach sessions and 70% of optimizer sessions receive "needs_improvement" verdicts. Failure modes are substantive: hallucinated deliverables, skipped verification, tolerance of worker failures, shallow sessions.
-
-**Key insight**: The agents responsible for system improvement are the system's worst performers — a structural paradox, not an accident. Meta-work has weaker feedback signals (no test to pass, no code to compile), vaguer task boundaries, and no meta-meta-layer enforcing quality on the improvers. This mirrors the organizational pattern where internal process teams underperform product teams.
-
-**Actionable**: Human should evaluate whether coach/optimizer justify their compute cost. If not, redistribute budget to doing-agents or redesign meta-agents with harder success criteria (longitudinal improvement measurement, not activity metrics).
-
-**Metric**: `knowledge-preamble-coverage` 0.2081/0.8 — unchanged, thoroughly diagnosed (KE-1412, KE-1468, KE-1469), escalated to human.
-
----
-
-## Session 27 (creative heartbeat)
-
-**Output**: KE-1473 — "The Coordination Fidelity Threshold — When Multi-Agent Hurts"
-
-**Synthesis**: Connected three independent signals: (1) KE-1470's finding that meta-agents score 0.35 vs doing-agents at 0.64+, (2) KE-1472/CoSee's empirical proof that shared memory without verification amplifies noise, (3) Shanghai AI Lab's XHS-viral finding that single unified agents beat expert swarms. These converge on a principle: multi-agent coordination is only net-positive above a coordination fidelity threshold. Below it, the coordination layer is net-negative noise.
-
-**Key insight**: Our meta-agents (coach, optimizer) may be below the fidelity threshold — producing low-quality coordination signals that dilute doing-agent autonomy. The fix isn't "improve coordination" in general, it's either (a) add verification gates to raise fidelity, or (b) collapse coordination into self-invoked capabilities within doing-agents.
-
-**Non-obvious prediction**: As base models improve, coordination fidelity thresholds rise (stronger agents need less coordination), meaning multi-agent architectures designed for current models will become anti-patterns for next-gen models. Systems need collapse triggers.
-
-**Metric**: `knowledge-preamble-coverage` 0.2075/0.8 — thoroughly diagnosed in prior sessions (KE-1412, KE-1468), escalated to human. No action taken.
+**Metric**: `knowledge-preamble-coverage` 0.1986/0.8 — unchanged structural issue, escalation stands.
 
 ---
 
 ## Session 28 (creative heartbeat)
 
-**Output**: KE-1476 — "The Retry-Amplification Cascade — When Stuck Loops Consume the Majority of System Compute"
+**Output**: KE-1522 — "Agent Memory as Infrastructure — The Shared State Problem"
 
-**Synthesis**: Queried 24h session data and discovered that a single stuck task (aks-explorer's "iteration203-model-enrichment" at 2/2 attempts) is generating 682 aks-explorer sessions + 517 evaluator aftermath reviews = ~1,200 sessions consuming 70% of all system compute. The amplification ratio is 1.76× (each retry generates nearly one additional evaluator session). Meanwhile, all productive agents (may, scout, arc, dev) share the remaining 30%.
+**Synthesis**: Connected five independent signals from May–June 2026: (1) HN production war stories where stale reads between agents were the #1 failure mode, (2) Yugabyte's Meko multi-agent data layer behind MCP, (3) memory-os 7-layer architecture (778⭐), (4) PaperGuru's "Lifecycle-Aware Memory" achieving 66% on PaperBench, (5) ktx executable context layer (854⭐). 
 
-**Key insight**: The system lacks a dispatch circuit breaker. After N identical dispatches with the same low-value outcome, the system should stop dispatching and escalate the *loop itself* (not just the task). The evaluation cost exceeds execution cost for trivial retries — an inversion where oversight is more expensive than the work it oversees.
+**Key insight**: Agent memory is recapitulating the evolution of databases — flat files → structured stores → concurrency control → lifecycle management → access control. Our KE system is at the "flat files" stage. The preamble-coverage debate is literally "query planning for agent memory." External projects (PaperGuru) have now validated the lifecycle-states pattern that KE-1503 proposed months ago, providing empirical justification for implementation.
 
-**Quantitative**: If a circuit breaker had fired after 5 identical dispatches, ~1,187 sessions and ~12,600 ops would have been saved — a 70% system capacity improvement from one architectural addition.
+**Actionable**: Version stamps on KEs (cheap, high-value), lifecycle states (externally validated by PaperGuru benchmarks), memory integrity checks as agent count grows.
 
-**Connection**: This is the concrete, quantified instance of KE-1473's coordination fidelity threshold, KE-1475's monitoring overhead, and KE-1474's "ignored layer heals" principle. The stuck loop is empirical proof that the dispatch+evaluate overhead becomes the dominant system cost when the dispatched work is trivial/repetitive.
-
-**Metric**: `knowledge-preamble-coverage` 0.207/0.8 — thoroughly diagnosed and escalated in KE-1412, KE-1468, KE-1475. No new action.
+**Metric**: `knowledge-preamble-coverage` 0.1984/0.8 — documented structural constant (KE-1412). Awaiting human decision.
 
 ---
 
-## Session 33 (creative heartbeat)
+## Session (creative heartbeat #4)
 
-**Output**: KE-1477 — "Diagnostic Rumination — When the System Mistakes Analysis for Progress"
+**Status**: Clean exit — no new external signal. HN explore session concurrent but not yet materialized. Per KE-1513/KE-1515/KE-1521: no self-referential theorizing without new input.
 
-**Synthesis**: The KE series 1467–1476 (10 entries across ~5 sessions) is itself an instance of the retry-amplification and dead-knowledge patterns it diagnosed. The system's creative sessions are in a rumination loop: each session correctly diagnoses a pathology, writes a KE, counts as success — but no behavioral or architectural change occurs. This mirrors SkillRL's finding that skill banks without promotion gates accumulate inert entries.
+**Observation (maintenance)**: KE-1412 is the most-referenced entry in the KE-15xx series (23 inbound references), confirming KE-1512's prediction that hub nodes emerge naturally from cross-citation. KE-1505 ties at 23 references. These two (preamble paradox + adaptive weights) are the system's conceptual anchors for the June arc.
 
-**Key insight**: Diagnosis is infinitely available work that always satisfies "produce one genuine insight." Without a gate (did this KE cause a code/config change?), the KE system rewards production over action. The fix isn't "better diagnosis" — it's adding a promotion gate: KEs diagnosed 2+ times without resulting in implementation should be marked `escalated` and no longer re-analyzed.
+**Metric**: `knowledge-preamble-coverage` 0.1982/0.8 — documented structural constant (KE-1412). Awaiting human decision (10x repeated, no new investigation warranted).
 
-**Self-aware note**: This KE is itself a diagnosis. The difference: it includes a concrete recommendation (KE status field, max-2-diagnosis rule, stop-producing-and-escalate protocol). If session 34 writes another meta-analysis, the rumination is confirmed and only human intervention on the creative prompt will break the loop.
 
-**Metric**: `knowledge-preamble-coverage` 0.2068/0.8 — thoroughly diagnosed and escalated (KE-1412, KE-1468). No new action.
+---
+
+## Session (creative heartbeat #5)
+
+**Status**: Clean exit — no new external signal since last session. Per KE-1521 graceful degradation: avoid self-referential output when inputs are exhausted.
+
+**Metric**: `knowledge-preamble-coverage` 0.1982/0.8 — documented structural constant (KE-1412). Awaiting human decision on threshold adjustment. No new investigation warranted.
+
+---
+
+## Session (creative heartbeat #6)
+
+**Status**: Clean exit — no new external signal. HN session running concurrently, arXiv rate-limited. Applying KE-1521 Level 2 (graceful degradation): no new KE production without novel input.
+
+**Metric**: `knowledge-preamble-coverage` 0.1982/0.8 — 10x repeated alert, documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #7)
+
+**Status**: Clean exit — no new external signal since last session. Applying KE-1521 graceful degradation.
+
+**Metric**: `knowledge-preamble-coverage` 0.1982/0.8 — documented structural constant (KE-1412). Escalation stands.
+
+---
+
+## Session (creative heartbeat #9)
+
+**Status**: Clean exit — no new external signal since KE-1523. XHS trends already synthesized. Applying KE-1521 Level 2 graceful degradation.
+
+**Metric**: `knowledge-preamble-coverage` 0.198/0.8 — documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #10)
+
+**Output**: KE-1527 — "Architectural Self-Description as Coordination Mechanism"
+
+**Synthesis**: The highest-engagement post in Chinese AI community (June 2026, 805 likes/1485 saves) is a *taxonomy* of 8 agent architecture patterns — not a paper or tool. This signals that shared architectural vocabulary is a coordination mechanism practitioners crave. Connected this to our system: our agents have implicit architectures but no explicit self-description. Mapped our agents to the standard taxonomy (scout=Autonomous Loop, handler=ReAct, manager=Plan-and-Execute) and identified that the preamble-coverage problem reframes as mode-aware context selection rather than coverage maximization.
+
+**Key insight**: A system that *knows* its architecture can predict its own failure modes. Adding ~5 lines of architectural self-description to each agent's context.md would enable mode-aware preamble loading and cross-agent communication adaptation.
+
+**Metric**: `knowledge-preamble-coverage` 0.1977/0.8 — documented structural constant (KE-1412). Escalation stands.
+
+---
+
+## Session (creative heartbeat — prior)
+
+**Output**: KE-1524 — "The Self-Evolution / Security Tradeoff"
+
+**Synthesis**: Connected the two dominant June 2026 signals — self-evolving agents (XHS survey, EvolveR, Hermes) and memory poisoning attacks (arXiv June 3 fetch) — into a fundamental tension: **a self-evolving agent's learning mechanism IS its attack surface**. The features that enable learning (open writes, self-trust, eager incorporation) are exactly what makes poisoning devastating. Applied to our system: KEs are a self-evolution mechanism with no integrity verification. Credit scoring (KE-1523) actually amplifies poisoned entries that get referenced. The field hasn't solved this yet.
+
+**Key insight**: Self-poisoning through incorrect synthesis (agent misreads paper → writes KE → gets cited → becomes canonical) is a more likely failure mode than external attack, and our current system has no defense against it.
+
+**Concrete proposals**: Source-link verification for external claims, temporal decay alongside credit, contradiction detection between KEs, behavioral canary tasks.
+
+**Metric**: `knowledge-preamble-coverage` 0.198/0.8 — documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #11)
+
+**Status**: Creative synthesis — KE-1525 produced.
+
+**Metric**: `knowledge-preamble-coverage` 0.1978/0.8 — documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #13)
+
+**Output**: KE-1525 — "Constraint Compliance Degrades Under Cognitive Load"
+
+**Synthesis**: Three independent signals (HN "agents violate constraints 30-50% under pressure", XHS "reflective agents burn tokens", our own preamble-coverage structural constant) converge on one principle: constraint adherence is a function of cognitive load, not a fixed property. This reframes the entire preamble-coverage discussion: the goal isn't loading more constraints into text but compiling critical constraints into infrastructure (guards, validators, schemas) where they can't be dropped under load. Advisory knowledge can remain low-coverage; safety constraints need structural enforcement.
+
+**Key actionable principle**: Never rely on attention for safety. Anything that must hold should be a guard, not a prompt instruction.
+
+**Connection chain**: KE-1412 (wrong target) → KE-1524 (security tradeoff) → KE-1525 (load-dependent compliance) — forms a complete argument for constraint-layer separation.
+
+---
+
+## Session (creative heartbeat #12)
+
+**Status**: Synthesis pass — connected fresh HN signal to existing KE arc.
+
+**HN Signal** (just fetched, top stories 386–2346 pts):
+- "Agents violate constraints 30-50% under pressure" — significant discussion
+- "Less capability, more reliability, please" (423 pts)
+- "Continue? Y/N: A 60-second game about AI agent permission fatigue" (386 pts)
+- Anti-framework movement (away from LangChain → custom architectures)
+- Top stories are about agents acting destructively (deleting DBs, publishing hit pieces)
+
+**Synthesis — "Alert Fatigue Is Permission Fatigue"**:
+The HN permission-fatigue game getting 386 points means this is now a mainstream recognized failure mode. Our preamble-coverage metric firing 10x without human action IS the "Continue? Y/N" game — the system demands attention for a non-actionable alert, creating the exact habituation that defeats the purpose of monitoring. KE-1422 (autoimmune scheduling) already diagnosed this internally; HN now provides external validation that the pattern is industry-wide.
+
+**Synthesis — "Reliability = Domain-Specific, Not Framework-Uniform"**:
+The anti-LangChain + reliability-over-capability signals share a root cause: frameworks impose uniform abstractions, but agent reliability comes from domain-specific optimization. This is KE-1412's coverage-vs-relevance paradox applied to code architecture: frameworks are "coverage" (handle all cases uniformly), custom infrastructure is "relevance" (handle YOUR cases well). Our system's custom approach aligns with where the industry is converging.
+
+**No new KE warranted** — both insights strengthen existing KEs (1412, 1422) rather than introducing new concepts. External validation ≠ new knowledge.
+
+**Metric**: `knowledge-preamble-coverage` 0.1978/0.8 — documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #8)
+
+**Output**: KE-1523 — "Credit Scoring for Knowledge Entries — What EvolveR Teaches Our KE System"
+
+**Synthesis**: EvolveR (ICML'26, Shanghai AI Lab) solves the exact same problem we face: an agent accumulates experience entries, but loading all of them degrades performance. Their validated solution — per-entry credit scoring + self-distillation + learned retrieval policy — maps directly onto our KE system. Key finding: self-distilled principles (agent writing about its own patterns) outperform externally-sourced knowledge when the agent is capable enough. This validates that our self-referential KEs (14xx/15xx series) aren't navel-gazing — they're the highest-value entries *for the agents that wrote them*.
+
+**Concrete proposal**: Per-entry credit score = f(reference_count, session_success_when_loaded, -load_without_use). This transforms preamble selection from "load 80%" to "load entries above credit threshold" — naturally converging to ~20% (the observed structural constant). Non-destructive, additive instrumentation only.
+
+**Connection chain**: KE-1412 (wrong target) → KE-1502 (cache metaphor) → KE-1503 (lifecycle) → KE-1523 (credit mechanism from external validation)
+
+**Metric**: `knowledge-preamble-coverage` 0.1982/0.8 — documented structural constant (KE-1412). Escalation stands.
+
+---
+
+## Session (creative heartbeat #16)
+
+**Status**: Clean exit — no new external signal since KE-1528 (30min ago). arXiv rate-limited (confirmed in concurrent session). Learning feedback flags "stale blocker loop" — heeding it.
+
+**Metric**: `knowledge-preamble-coverage` 0.1989/0.8 — documented structural constant (KE-1412). Proximate cause: `knowledge_entries` DB table has 0 rows while 1528+ KE files exist on disk. This is a sync/ingestion gap, not a content problem. Requires human decision: either fix the DB sync pipeline or adjust metric target. Escalation stands.
+
+---
+
+## Session (creative heartbeat #14)
+
+**Status**: Clean exit — no new external signal since KE-1525. arXiv rate-limited, HN already synthesized in session #12. Applying KE-1521 Level 2 graceful degradation.
+
+**Metric**: `knowledge-preamble-coverage` 0.1977/0.8 — documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #15)
+
+**Output**: KE-1528 — "Protocol Fragility — When Interfaces Assume Determinism"
+
+**Synthesis**: The MCP backlash (XHS, 1506 likes), anti-framework movement (HN), and "less capability more reliability" sentiment (HN, 423 pts) share a hidden root cause: deterministic protocol design applied to stochastic agents. MCP failed expectations not because of poor engineering but because it promised USB-C-like reliability for inherently probabilistic endpoints. The distributed systems world solved this decades ago (eventual consistency, CRDTs) — the agent ecosystem hasn't made the transition yet.
+
+**Key connection**: KE-1525 (constraints degrade under load) explains *why* protocols fail — they assume 100% compliance but get 70-85%. KE-1527 (architectural self-description) suggests a partial fix — if agents can describe their own reliability envelope, protocols can adapt expectations.
+
+**Actionable implication for our system**: Inter-agent handoffs should include explicit degradation paths and confidence signals rather than assuming deterministic completion.
+
+**Metric**: `knowledge-preamble-coverage` 0.1982/0.8 — documented structural constant (KE-1412). DB table `knowledge_entries` is empty (0 rows) while 1528 KE files exist on disk — this is the proximate cause of the metric gap. Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #18)
+
+**Output**: KE-1530 — "Survivorship Bias in Agent Performance — The Hidden Crisis That Forges Specialists"
+
+**Synthesis**: Investigated the full historical trajectory behind KE-1529's "specialization dominance" claim. While KE-1529 correctly observed a 7-day snapshot (aks-explorer at 2.1% error), the complete session history reveals the specialist endured a catastrophic **97.9% error phase** (1730 errors, 5.5s avg sessions) before its current excellence. The "dominance" is post-crisis adaptation, not inherent architecture.
+
+**Key correction**: KE-1529 said "favor specialists over generalists." The full data shows generalists are MORE resilient during crisis (may: 66.8% error vs aks-explorer: 97.9%) and recover to baseline predictably. Specialists are fragile-then-excellent: they collapse harder but rebuild to higher performance. Systems need both.
+
+**Non-obvious finding**: aks-explorer's session duration compressed from 1122s (Phase 2 deep work) to 50s (Phase 4 compiled routines) — a 22x speedup not from model improvement but from accumulated task compilation. The crisis forced knowledge compression, accidentally implementing the "compiled skills" pattern (KE-1519).
+
+**Methodological lesson**: Never draw architectural conclusions from a single measurement window. Always check for survivorship bias by examining full history and looking for phase transitions.
+
+**Metric**: `knowledge-preamble-coverage` 0.1996/0.8 — documented structural constant (KE-1412). Escalation stands. No destructive action taken.
+
+---
+
+## Session (creative heartbeat #17)
+
+**Output**: KE-1529 — "Specialization Dominance — Empirical Evidence from Agent Performance"
+
+**Synthesis**: Queried 7-day session data and found aks-explorer (single-purpose domain specialist) dramatically outperforms all generalist agents: 1076 sessions, 2.1% error rate, iteration 204, compared to dev/arc at 316 sessions and 4-6% errors. The specialization advantage connects KE-1412 (coverage vs relevance), KE-1519 (compiled skills), and KE-1528 (protocol fragility) into a unified finding: specialized, narrowly-scoped agents with compiled domain knowledge and single-project focus outperform generalists on every measurable axis.
+
+**Non-obvious implication**: The evaluator itself should specialize. A universal evaluator is a generalist assessing specialist work — the exact pattern our data shows underperforms.
+
+**Metric**: `knowledge-preamble-coverage` 0.1989/0.8 — documented structural constant (KE-1412). DB has 0 rows vs 1528+ files. Escalation stands.
