@@ -13,7 +13,7 @@ CREATE TABLE sessions (
   sessionId       TEXT PRIMARY KEY,
   agent           TEXT NOT NULL,
   task            TEXT NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'running',  -- running | idle | done | error | interrupted
+  status          TEXT NOT NULL DEFAULT 'running',  -- running | done | error | interrupted (idle is reserved but unused in practice)
   kind            TEXT,             -- chat | job | call
   source          TEXT,             -- what triggered it
   parentSessionId TEXT,             -- who spawned this session
@@ -32,14 +32,14 @@ CREATE TABLE sessions (
 ## State Machine
 
 ```
-created → running → idle      (chat sessions, autoClose: "never")
+created → running → idle      (reserved for chat sessions; currently unused)
                   → done      (completed job/call sessions)
                   → error
                   → interrupted
 ```
 
 No "pending" or "queued" state. Sessions start running immediately when spawned.
-Heartbeats are `job` sessions whose `source` identifies the heartbeat workflow.
+Heartbeats are `call` sessions spawned by the heartbeat workflow via `ctx.runAgent()`. Query by `source LIKE '%heartbeat%'`, not by `kind`.
 
 ## Session Tree
 
@@ -86,4 +86,4 @@ pure-SQLite session tracking, `autoClose` disappears entirely.
 lifecycle — `autoClose` does that internally. The only behavioral branch on `kind`:
 `chat-session.ts` finds the existing chat session by `kind === "chat"`.
 
-Heartbeats are `job` kind sessions — there's no separate "heartbeat" kind.
+Heartbeats are `call` kind sessions — the workflow system uses `ctx.runAgent()` which produces `call` sessions. There's no separate "heartbeat" kind.
