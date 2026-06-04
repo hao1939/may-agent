@@ -18,7 +18,7 @@ A **project-centered, event-based autonomous agent system** where:
   `active` means push now; `waiting` means watch until a resume signal makes
   work actionable again.
 - **Metrics are signals.** Typed metrics measure progress toward project goals and system health. Metrics do not judge or decide; they signal what may need attention.
-- **Heartbeats are agency.** A heartbeat is the recurring moment when an agent has the chance to be autonomous: read context, decide what's worth doing, act, record. Heartbeats are how ownership manifests. See `design/heartbeat.md`.
+- **Heartbeats are agency.** A heartbeat is the recurring moment when an agent has the chance to be autonomous: read context, decide what's worth doing, act, record. Heartbeats are how ownership manifests. See `heartbeat.md`.
 - Agents are role/responsibility/context scopes — accountability boundaries that own a domain.
 - Everything is an event: timers, metric changes, messages, session completions.
 - Workflows relieve agents from orchestration decisions.
@@ -599,8 +599,8 @@ The current direction is not "more infra logic." It is fewer execution paths:
 
 Mechanical infra code may still call manager/runtime internals directly, but
 new judgment/action paths should follow the handler-to-workflow convention. See
-`design/system-boundary.md` for the design and
-`design/system-boundary-tracker.md` for the implementation tracker.
+`system-boundary.md` for the design and
+`system-boundary-tracker.md` for the implementation tracker.
 
 ### Runtime Code Shape
 

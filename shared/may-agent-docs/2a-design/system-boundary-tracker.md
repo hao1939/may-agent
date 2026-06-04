@@ -797,7 +797,7 @@ Second slice, 2026-05-11:
   - `manual/workflow-authoring.md` lists current reusable shared patterns
     (`project`, `metric-alert-triage`, `implement-and-verify`) instead of
     advertising `master-worker`.
-  - `design/events.md` describes `project.iteration` as default
+  - `events.md` describes `project.iteration` as default
     `project` output plus legacy compatibility shape.
 - Test fixture for normal project scanning now uses `workflow: project` so tests
   do not keep teaching the legacy workflow as the normal active case.
