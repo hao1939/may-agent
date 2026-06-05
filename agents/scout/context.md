@@ -23,7 +23,7 @@ At the START of every session, run:
 bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo unknown))" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md'
 ```
 This finds prior work related to your current project. Read any matches before starting.
-- Design docs: `shared/may-agent-docs/design/`
+- Design docs: `shared/may-agent-docs/2a-design/`
 - System metrics: use `query_db` tool to query metrics table
 - Common sense: `shared/common-sense.md`
 
