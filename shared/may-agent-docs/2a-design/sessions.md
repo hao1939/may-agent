@@ -25,7 +25,7 @@ CREATE TABLE sessions (
   error           TEXT,             -- ⚠️ universally NULL due to db-writer race (KE-1558); use meta.json on disk for error text
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
-  stepLabel       TEXT              -- migration-added workflow step label
+  stepLabel       TEXT              -- workflow step label (in practice, always equals `agent` when non-null)
 );
 ```
 
@@ -50,8 +50,14 @@ Root (May heartbeat)
   └── fork("bob", task)                ← new root (async, returns immediately)
 ```
 
-- **call** = synchronous, parent waits, child is linked via `parentSessionId`
-- **fork** = asynchronous, returns sessionId, new session tree
+- **call** = synchronous, parent waits, child linked via `workflowRunId` (not `parentSessionId`)
+- **fork** = asynchronous, returns sessionId, child linked via `parentSessionId`
+
+**Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
+workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
+`parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
+(kind=`chat`) sessions. Verified 2026-06-11: 0 of 2,685+ `call` sessions have a
+non-null `parentSessionId`; all 10 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
 
