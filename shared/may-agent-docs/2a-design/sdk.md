@@ -117,31 +117,52 @@ For event subscriptions, event-specific fields stay inside `event.data`.
 
 ## WorkflowSDK
 
-Workflows get an extended interface:
+Workflows get an extended interface. **Note:** there are two `WorkflowResult`
+shapes in the codebase. Workflow `.ts` files (via `WorkflowContext`) see the
+**internal** shape; SDK consumers (handlers calling `sdk.runWorkflow()`) see
+the **external** shape. The mapping happens in `sdk-impl.ts`.
+
+**Internal** (what `ctx.done()` and `ctx.escalate()` return inside a workflow):
+```typescript
+type WorkflowResult =
+  | { type: "done"; summary: string }
+  | { type: "escalate"; reason: string; context?: unknown };
+```
+
+**External** (what `sdk.runWorkflow()` returns to handlers):
+```typescript
+interface WorkflowResult {
+  status: "done" | "escalated";
+  summary: string;
+  runId?: string;
+}
+```
+
+Workflow context interface (what workflow `execute()` functions receive):
 
 ```typescript
-interface WorkflowSDK extends AgentSDK {
+interface WorkflowContext {
   task: string;
   agent: string;
-  done(summary: string, opts?: { deliverables?, contextUpdates?, nextSteps? }): WorkflowResult;
-  escalate(reason: string, context?: WorkflowEscalationContext): WorkflowResult;
+  done(summary: string): WorkflowResult;          // internal shape, no opts
+  escalate(reason: string, context?: unknown): WorkflowResult;  // internal shape
+  // ... plus runAgent, runWorkflow, emit, query, getDb, etc.
 }
-
-type WorkflowEscalationContext = {
-  owner?: string; // used only if a boundary promotes this result; boundary default is "agent:may"
-  requestedAction?: string;
-  evidence?: Record<string, unknown>;
-  severity?: "P0" | "P1" | "P2" | "P3";
-  [key: string]: unknown; // compact workflow-specific context is allowed
-};
 ```
+
+The external `WorkflowSDK` interface (from `sdk.ts`) extends `AgentSDK` and
+adds `done(summary, opts?: DoneOpts)` with optional deliverables/contextUpdates/
+nextSteps. This is available when using `buildWorkflowSDK()` but **not** in the
+`WorkflowContext` passed to workflow `execute()` functions (KE-1561).
 
 Workflow escalation is intentionally simpler than the general SDK helper because
 workflow execution is synchronous. `ctx.escalate(...)` returns a terminal
 `WorkflowResult` immediately. It does not automatically emit
-`escalation.created` or wake another owner. The caller/boundary decides whether
-the local escalated result should be handled locally, persisted as workflow
-trace, or promoted into an external owner-routed escalation event.
+`escalation.created` or wake another owner. The `context` parameter is
+`unknown` — there is no structured `WorkflowEscalationContext` type in the
+runtime. The caller/boundary decides whether the local escalated result should
+be handled locally, persisted as workflow trace, or promoted into an external
+owner-routed escalation event.
 
 `runAgent` and `runWorkflow` should share option semantics where possible:
 source, project/session parentage, timeout, request id, and trace metadata. The
