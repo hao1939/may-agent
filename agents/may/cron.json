@@ -7,19 +7,22 @@
     "agent": "may",
     "enabled": true,
     "description": "Daily DB retention: DELETE events >7d, sessions >14d, snapshots >30d, then VACUUM if significant. Keeps DB under control.",
-    "context": []
+    "context": [
+      "agents/may/handlers/db-retention.ts",
+      "projects/platform/project.md"
+    ]
   },
   {
     "name": "heartbeat",
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
+    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-05-26T00:10:30.227Z",
     "handler": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
@@ -35,7 +38,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -58,7 +61,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": {
       "workflow": "optimizer-heartbeat",
@@ -80,7 +83,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -103,7 +106,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "description": "Evaluator heartbeat — calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
+    "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
     "notifyBrief": true,
     "handler": {
       "workflow": "evaluator-heartbeat",
@@ -144,7 +147,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -231,7 +234,7 @@
     "handler": {
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md.",
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md.",
       "timeoutMs": 900000
     },
     "intervalMs": 14400000,
@@ -596,7 +599,7 @@
     "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore 小红书 (XHS) for Chinese AI community trends.",
+      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for Chinese AI community trends.",
       "timeoutMs": 600000
     },
     "offsetMs": 1800000,
@@ -702,7 +705,8 @@
     "handler": {
       "workflow": "verify-wrap",
       "agent": "may",
-      "task": "Run feedback-echo sync: execute `bun agents/shared/feedback-echo.ts` to update all agents' last-eval.md files from latest evaluations. Then check 1-2 recent sessions to see if agents are reading the file."
+      "task": "Run feedback-echo sync: execute `bun agents/shared/feedback-echo.ts` to update all agents' last-eval.md files from latest evaluations. Then check 1-2 recent sessions to see if agents are reading the file.",
+      "timeoutMs": 600000
     },
     "enabled": true,
     "description": "Hourly sync of evaluator feedback into agent last-eval.md files",
