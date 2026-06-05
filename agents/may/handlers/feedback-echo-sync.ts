@@ -18,12 +18,16 @@ import { join } from "node:path";
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: EventEnvelope) => {
     const scriptPath = join(process.cwd(), "agents/shared/feedback-echo.ts");
-    const bunPath = join(process.cwd(), ".state/.bun/bin/bun");
+    // Use the runtime's own bun binary — the old hardcoded .state/.bun/bin/bun
+    // path doesn't exist and caused spawn to hang or timeout at 300s.
+    const bunPath = process.execPath || "/usr/local/bin/bun";
 
     return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
       const proc = spawn(bunPath, [scriptPath], {
         cwd: process.cwd(),
-        timeout: 30_000,
         stdio: ["ignore", "pipe", "pipe"],
       });
 
@@ -33,29 +37,49 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       proc.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
       proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
 
-      proc.on("close", (code) => {
-        if (code === 0) {
-          const updatedCount = (stdout.match(/Updated/g) || []).length;
-          ctx.sdk.emit("handler.completed", {
-            handler: "feedback-echo-sync",
-            summary: `Updated ${updatedCount} agent last-eval.md files`,
-          });
-          resolve();
-        } else {
+      // Manual timeout — Node/Bun spawn timeout option is unreliable
+      const timer = setTimeout(() => {
+        proc.kill("SIGKILL");
+        settle(() => {
           ctx.sdk.emit("handler.failed", {
             handler: "feedback-echo-sync",
-            error: `Exit code ${code}: ${stderr.slice(0, 200)}`,
+            error: "Process killed after 30s timeout",
           });
-          reject(new Error(`feedback-echo.ts exited with code ${code}: ${stderr.slice(0, 200)}`));
+          reject(new Error("feedback-echo.ts killed after 30s timeout"));
+        });
+      }, 30_000);
+
+      proc.on("close", (code) => {
+        clearTimeout(timer);
+        if (code === 0) {
+          const updatedCount = (stdout.match(/Updated/g) || []).length;
+          settle(() => {
+            ctx.sdk.emit("handler.completed", {
+              handler: "feedback-echo-sync",
+              summary: `Updated ${updatedCount} agent last-eval.md files`,
+            });
+            resolve();
+          });
+        } else {
+          settle(() => {
+            ctx.sdk.emit("handler.failed", {
+              handler: "feedback-echo-sync",
+              error: `Exit code ${code}: ${stderr.slice(0, 200)}`,
+            });
+            reject(new Error(`feedback-echo.ts exited with code ${code}: ${stderr.slice(0, 200)}`));
+          });
         }
       });
 
       proc.on("error", (err) => {
-        ctx.sdk.emit("handler.failed", {
-          handler: "feedback-echo-sync",
-          error: err.message,
+        clearTimeout(timer);
+        settle(() => {
+          ctx.sdk.emit("handler.failed", {
+            handler: "feedback-echo-sync",
+            error: err.message,
+          });
+          reject(err);
         });
-        reject(err);
       });
     });
   };
