@@ -703,17 +703,9 @@
   {
     "name": "feedback-echo-sync",
     "intervalMs": 3600000,
-    "handler": {
-      "workflow": "verify-wrap",
-      "agent": "may",
-      "task": "Run feedback-echo sync: execute `bun agents/shared/feedback-echo.ts` to update all agents' last-eval.md files from latest evaluations. Then check 1-2 recent sessions to see if agents are reading the file.",
-      "timeoutMs": 600000
-    },
+    "handler": "feedback-echo-sync",
     "enabled": true,
-    "description": "Hourly sync of evaluator feedback into agent last-eval.md files",
-    "context": [
-      "agents/shared/feedback-echo.ts",
-      "projects/agent-system-evolution/project.md"
-    ]
+    "description": "Hourly sync of evaluator feedback into agent last-eval.md files (direct handler, no LLM session)",
+    "lastModified": "2026-06-05T17:09:42.095Z"
   }
 ]
