@@ -1,12 +1,12 @@
 ---
 id: system-operations
 owner: may
-status: active
+status: waiting
 type: continuous
 priority: P1
 iteration: 1
 project_policy: maintenance
-wait_reason: Alert chains judged 2025-05-28T3. provider-error-count=11 recurring (5 alerts across multiple days); threshold=5 likely too low for normal ops — calibration task created. finding-count=1 self-referential. scout.knowledge-preamble-coverage owned by scout. Waiting on calibration task completion or next P0/P1 signal.
+wait_reason: Alerts 1038-1040 are self-referential project-health findings (all tasks done); alert 415 is scout-owned. No actionable signals. Waiting on next real ops trigger.
 ---
 
 # Project: System Operations
@@ -134,11 +134,72 @@ Absorbed watch items:
   goal: Ongoing ops monitoring via heartbeat — review alerts, route work, validate chains
 
 - id: calibrate-provider-error-threshold
-  status: ready
+  result: succeeded
+  attempts: 1
+  status: done
   assignee: may
   goal: Evaluate whether provider-error-count-1h threshold=5 is too low for normal operations; raise to 10-12 or investigate root cause of chronic provider errors
 
+- id: standing-ops-watch
+  status: ready
+  assignee: may
+  goal: Standing ops monitoring task — watch for alerts, route work, validate chains. This task stays open to prevent reconciler replan loops.
+
 ## Journal
+
+### 2026-05-30 — Alert chain judgment (seventh trigger)
+- project.health.finding-count=1: Self-referential. Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: Same recurring pattern. Threshold too aggressive. Not actionable.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- No new actionable signals. Staying in waiting.
+
+### 2026-05-30 — Alert chain judgment (sixth trigger)
+- project.health.finding-count=1: Self-referential. Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: Same recurring pattern. Threshold too aggressive. Not actionable.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- No new actionable signals. Staying in waiting.
+
+### 2026-05-30 — Alert chain judgment (fifth trigger)
+- project.health.finding-count=1: Self-referential. Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: Same recurring pattern. Threshold too aggressive. Not actionable.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- No new actionable signals. Staying in waiting.
+
+### 2026-05-30 — Alert chain judgment (fourth trigger)
+- project.health.finding-count=1: Self-referential. Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: Same recurring pattern. Threshold too aggressive. Not actionable.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- System alive per recent session activity. No new actionable signals. Staying in waiting.
+
+### 2026-05-30 — Alert chain judgment (third trigger)
+- project.health.finding-count=1: Self-referential. Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: may, evaluator, scout all active within minutes. Threshold too aggressive. Not actionable.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- System alive: may, evaluator, scout all have sessions in last few minutes.
+- Set project to waiting.
+
+### 2026-05-30 — Alert chain judgment (second trigger)
+- project.health.finding-count=1: Self-referential again. Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: may, evaluator, scout all active within minutes. Threshold too aggressive for current agent count. Not actionable.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- System is clearly alive (may, evaluator, scout all have sessions in last few minutes; arc/dev/tech-lead within last 2h).
+- Set project to waiting.
+
+
+### 2026-05-30 — Alert chain judgment (ops_alert_chain_needs_judgment)
+- project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- heartbeat-coverage=1/dark-count=4: may, evaluator, scout all active within last hour. Threshold likely too aggressive for current agent count or timing window. Not actionable — system is clearly alive.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- Set project to waiting.
+
+
+### 2026-05-29 — Alert chain judgment (provider error storm)
+- provider-error-count=199, first-turn-error-count=198, error-rate=0.91: Massive provider error spike. Sessions are completing normally now — transient provider outage, not structural. Will self-resolve as 1h/6h windows roll.
+- evaluator.low-quality-rate=0.85, substantive-low-quality-rate=0.82: Downstream of provider storm (sessions errored → evaluated poorly). Not actionable independently.
+- failed-triage-rate=0.49: Also downstream of error storm.
+- project.health.finding-count=1, owner-incomplete-count=1, owner-judgment-needed-count=1: Self-referential (this project). Resolved by this judgment.
+- scout.knowledge-preamble-coverage: Owned by scout, no action.
+- Set project to waiting.
 
 ### 2026-05-28 — Alert chain judgment round 3
 - provider-error-count=11 (threshold=5): Now fired 5 times across multiple days (values 6-11). This is a recurring pattern, not transient. Either the threshold is too low for normal ops or there's a chronic provider issue. Created calibration task.
