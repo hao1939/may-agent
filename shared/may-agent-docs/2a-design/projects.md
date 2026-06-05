@@ -18,6 +18,29 @@ All projects live at: `projects/<name>/project.md` under the app root
 
 Shared across agents — any agent can own/advance a project. A project may also carry its own local agents under `projects/<name>/agents/<agent>/`. Project-local agents are discovered like global agents but their coding/read/write root is the project directory, so the same runtime works whether `PROJECTS_ROOT` contains one project or many.
 
+## Project Directory Layout
+
+A minimal project is a single `project.md`. Larger standing projects may split
+ancillary content into sibling files for readability:
+
+```text
+projects/<name>/
+  project.md          # required — identity, metadata, goal, plan, tasks, journal
+  discussion.md       # async comments between agents/humans
+  journal.md          # optional split-out of ## Journal for large histories
+  tasks.md            # optional split-out of ## Tasks for high-task-volume projects
+  outputs/            # deliverables produced by the project
+  proposals/          # design proposals awaiting review
+  workflows/          # project-specific workflow scripts
+  repos/              # links or checkouts of related code repositories
+  agents/             # project-local agents (see below)
+```
+
+When a split-out file exists (e.g. `journal.md`), it is the canonical source
+for that section. The corresponding `## Journal` heading in `project.md` may
+remain as a pointer or recent-entries summary but must not contradict the
+split-out file.
+
 ## Project File Format
 
 Project metadata is machine-readable YAML frontmatter. Keep owner and status in
@@ -139,7 +162,26 @@ Optional project frontmatter:
 ```yaml
 max_concurrent: 3
 max_task_attempts: 2
+project_policy: standard
 ```
+
+### Project Policy
+
+`project_policy` controls project posture while keeping the same reconciler
+mechanics for every project.
+
+Supported policies:
+
+| Policy | Owner posture | Good fit |
+|--------|---------------|----------|
+| `stable-watch` | Create new tasks from solid evidence. When actionable signals are absent, set `status: waiting` with the current wait reason. | Shared infrastructure and projects where churn is costly, such as `platform`. |
+| `aggressive-push` | Actively inspect current evidence for the next frontier. When a plausible path remains, create bounded next tasks and keep the project active. | Discovery or execution projects that should keep advancing, such as `aks-rp-e2e`. |
+| `maintenance` | React to incoming signals (regressions, comments, health findings) but do not proactively seek new frontiers. Keep `waiting` unless a signal makes work necessary. | Mature infrastructure or closed-scope projects that should not accumulate speculative tasks. |
+| `standard` | Create tasks for actionable work; wait when actionable signals are absent. | Default posture for ordinary projects. |
+
+Use policy to choose threshold, not mechanics. The handler still uses the same
+event queue, task parser, owner singleflight, lifecycle events, and fallback
+scan for every project.
 
 ### Task Dependencies
 
@@ -180,9 +222,9 @@ The owner sees the project goal, recent task outcomes, metric signals, and human
 comments. It decides whether to create next tasks, modify existing tasks, update
 the plan, change project status, or do nothing.
 
-For an `active` project, "no open tasks" is a planning trigger, not a successful
-terminal state. A successful owner loop must leave one of these machine-readable
-states:
+For an `active` project, "no open tasks" is a policy-driven planning trigger,
+not a successful terminal state. A successful owner loop must leave one of these
+machine-readable states:
 
 - Concrete next tasks exist (`ready`, `pending`, or `running`).
 - Frontmatter status is changed to `waiting`, `blocked`, `pending-review`,
@@ -190,9 +232,11 @@ states:
 - The owner escalated because it cannot choose the next step autonomously.
 
 When frontmatter remains `status: active` and every task is already done, the
-next owner pass should create tasks, choose a waiting/terminal state, or
-escalate. The handler emits `project.owner.incomplete` for this mismatch so the
-needed planning stays visible.
+next owner pass applies `project_policy`: `stable-watch` projects usually choose
+waiting unless evidence supports a task; `aggressive-push` projects usually
+create the next bounded task when a plausible frontier remains. The handler
+emits `project.owner.incomplete` for this mismatch so the needed planning stays
+visible.
 
 ## Project-Local Agents
 
@@ -222,6 +266,226 @@ Project-local handlers are for automation that is meaningful only inside that
 project. Shared project lifecycle behavior, such as reconciling all active
 projects, remains a global May/platform handler.
 
+## Project-as-App
+
+Status: historical design context. For new implementation work, use
+`project-app-v2.md`: `.app/app.ts` owns project behavior, activation happens
+through canonical events, and there is no generic `/api/projects/action`
+endpoint. The `app.yaml` design below is not the current target.
+
+A project is both a **context container** (goal, scope, knowledge, state) and a
+**capability surface** (functions it exposes, events it consumes and produces,
+work it drives autonomously). The existing event bus, cron scheduler, and
+reconciler form the runtime — the project-app declares what it plugs into that
+runtime.
+
+### Mental Model
+
+```text
+Project  = context container (goal, scope, knowledge, state)
+App      = capability surface (cron jobs, event handlers, workflows, tools)
+Infra    = existing event bus + cron + reconciler that chains everything together
+```
+
+The project-app does not run its own event loop. The existing infrastructure IS
+the event loop. The project-app declares:
+
+1. **What events I consume** — handlers fire, I do work
+2. **What functions I expose** — other agents/projects can call my workflows
+3. **What events I produce** — downstream projects/handlers react
+4. **What I explore on schedule** — cron drives periodic deepening
+
+Outputs are inputs to something else. The system stays alive because project-apps
+chain through the shared event bus.
+
+### Relationship to Project-Local Agents
+
+Projects with a full local agent (like `aks-rp-e2e/agents/aks-explorer/`) already
+have app behavior via their agent's `cron.json`, handlers, and workflows. That
+pattern remains valid and is the canonical exemplar.
+
+`app.yaml` provides the same capability surface for projects that do not need a
+full agent identity — lighter-weight project-apps that run workflows under an
+existing agent (typically `may` or the project owner agent) rather than requiring
+their own agent directory.
+
+### app.yaml
+
+A project declares its app behavior in `projects/<name>/app.yaml`:
+
+```yaml
+# projects/<name>/app.yaml
+
+# What this project-app provides and runs
+functions:
+  workflows:
+    - name: explore-frontier
+      description: "Discover new coverage gaps"
+      agent: may                         # which agent runs it (default: project owner)
+      schedule: "0 9 * * *"             # optional cron expression
+      on: [coverage.gap.detected]       # optional event triggers
+      context:                          # files loaded into session context
+        - projects/<name>/project.md
+        - projects/<name>/knowledge-map/README.md
+      timeout_ms: 1800000
+    - name: generate-report
+      description: "Produce weekly coverage report"
+      schedule: "0 8 * * 1"
+
+  tools: []  # future: project-exposed tools discoverable by other agents
+
+# Autonomous exploration configuration
+exploration:
+  push_policy: balanced   # explore-heavy | serve-heavy | balanced
+
+# Resource constraints
+budget:
+  sessions_per_day: 10
+  tokens_per_day: 500000
+  max_concurrent: 2
+
+# Safety boundaries
+guardrails:
+  scope_boundary: project.md            # cannot explore outside declared scope
+  require_review_for:
+    - shared state mutations
+    - new tool registration
+```
+
+Fields:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `functions.workflows` | yes | Workflows this project-app runs, with schedule and/or event triggers |
+| `functions.tools` | no | Tools exposed to the system (future) |
+| `exploration.push_policy` | no | How aggressively the app explores (`explore-heavy`, `serve-heavy`, `balanced`) |
+| `budget.sessions_per_day` | no | Max autonomous sessions per calendar day |
+| `budget.tokens_per_day` | no | Max output tokens per calendar day |
+| `budget.max_concurrent` | no | Max simultaneous sessions (default: from project frontmatter or 2) |
+| `guardrails` | no | Constraints on autonomous behavior |
+
+### Reconciler as App Supervisor
+
+The project reconciler remains the single authority over project lifecycle. Its
+role evolves from pure task dispatcher to app supervisor:
+
+```text
+Before: reconciler = read project.md → dispatch tasks → wait
+After:  reconciler = read project.md + app.yaml → manage lifecycle of a running app
+```
+
+The reconciler:
+
+| Concern | Reconciler's role |
+|---------|-------------------|
+| "Should this project-app be running?" | Owns the decision — only registers app when `status: active` |
+| "What does it do when running?" | Reads `app.yaml`, registers cron entries + event subscriptions |
+| "Has it exceeded its budget?" | Tracks sessions/tokens per day, enforces caps |
+| "Does it need owner judgment?" | Same triggers as today (all tasks done, attempts exceeded, etc.) |
+| "Should it stop?" | Unregisters everything when status flips to waiting/closed/paused |
+
+Lifecycle flow:
+
+```text
+1. Reconciler pass reads projects/<name>/app.yaml
+2. Project status is "active" → register cron jobs + event subscriptions
+3. Cron fires → session dispatcher checks budget → launches session
+4. Session runs declared workflow, produces events
+5. Reconciler reacts to project.session.finished:
+   - Budget remaining? Let app keep running
+   - Budget exhausted? Flip to waiting, unregister cron
+   - Owner judgment needed? Launch owner session
+6. Status flipped to waiting/paused/closed → unregister all cron + subscriptions
+```
+
+New lifecycle events:
+
+| Event | Meaning |
+|-------|---------|
+| `project.app.registered` | App cron/subscriptions wired into the runtime |
+| `project.app.suspended` | Budget exhausted or status flipped — app stopped |
+| `project.app.budget-exhausted` | Specific budget breach (sessions or tokens) |
+
+### Budget Model
+
+Per-project budget is tracked in the DB:
+
+```sql
+CREATE TABLE project_budget (
+  project_id TEXT NOT NULL,
+  date TEXT NOT NULL,           -- YYYY-MM-DD
+  sessions_used INTEGER DEFAULT 0,
+  tokens_used INTEGER DEFAULT 0,
+  PRIMARY KEY (project_id, date)
+);
+```
+
+The session dispatcher increments counters before launching. When a counter
+would exceed the declared budget, the dispatcher refuses the session and emits
+`project.app.budget-exhausted`. The reconciler then flips the project to
+`status: waiting` with `wait_reason: "budget exhausted, resets tomorrow"`.
+
+Budget resets daily. No carryover — unused budget does not accumulate.
+
+### Migration Path
+
+Projects already using the project-local-agent pattern (full agent directory with
+`cron.json`) do not need `app.yaml`. Their existing setup is the heavyweight
+equivalent — `app.yaml` is for projects that want app behavior without the
+overhead of a dedicated agent identity.
+
+To migrate a project to project-as-app:
+
+1. Add `app.yaml` declaring workflows, schedule, and budget.
+2. Ensure workflows exist in `projects/<name>/workflows/`.
+3. Set project status to `active` — the reconciler handles registration.
+
+### Project UI Requests
+
+Project UIs should not call a generic project action API. A browser request that
+starts project work is just another event:
+
+```json
+{
+  "type": "project.action.requested",
+  "source": "web-ui",
+  "owner": "agent:aks-explorer",
+  "data": {
+    "projectPath": "projects/aks-rp-e2e",
+    "action": "replan",
+    "params": {
+      "selectedPathIds": ["path.managedsystem.rest-add-existing.minimal-rest"]
+    }
+  }
+}
+```
+
+The HTTP adapter accepts the event, the project app or project handler decides
+what it means, and runtime intent validation decides what can actually run.
+Read-only project state should come from artifacts or explicit view endpoints,
+not hidden HTTP function calls in the runtime adapter.
+
+### Existing Exemplar
+
+`projects/aks-rp-e2e/` is the canonical project-as-app, using the full
+project-local-agent pattern:
+
+```text
+projects/aks-rp-e2e/
+  project.md                              # context: goal, scope, plan
+  agents/aks-explorer/
+    agent.json                            # agent identity
+    cron.json                             # 3 scheduled capabilities
+    workflows/aks-rp-e2e-iteration.ts     # the work
+  knowledge-map/                          # domain knowledge
+  execution/                              # execution state
+```
+
+Its cron entries demonstrate the pattern: scheduled exploration (hourly learning),
+periodic review (weekly replan), and event-triggered verification — all gated by
+`enabled: true/false` and event triggers, with the reconciler managing the
+project's overall lifecycle.
+
 ## Project Handler
 
 `agents/may/handlers/project.ts` is an event-driven reconciler with a
@@ -239,8 +503,60 @@ projects, remains a global May/platform handler.
   `project-task:*` sessions must not block project-level replanning.
 - Resumes waiting-like projects when unread comments or due `resume_after`
   make work actionable.
+- Emits project health findings when a waiting project's own contract watch
+  metrics are disabled, missing, or stale, because the wait condition is then
+  not observable. Contract metrics are read from `resume_condition`,
+  `wait_reason`, and `## Watch Conditions`, not every metric mentioned in
+  background notes.
+- Reruns after `project.owner.finished` so project-health metrics recover as
+  soon as an owner replans, waits, closes, or escalates. The timer remains only
+  a fallback for missed events and direct file edits.
+- Wakes the system-operations lane for unjudged or stale P0/P1 alert chains;
+  fresh metric-owner judgment and validation stay in the metric owner path.
+  Project-health metric alerts are excluded here because the project reconciler
+  is their typed owner handler.
 - Escalates true blockers after cooldown.
 - Syncs project files into the DB cache for metrics and UI.
+
+## Reconciler Observability
+
+We know the project loop is working by measuring outcomes, not just handler
+activity:
+
+- `project.owner.dispatched` proves an event or fallback scan reached owner
+  judgment.
+- `project.owner.finished` records the owner session result.
+- `project.owner.incomplete` records the specific design breach where an owner
+  finished successfully but the project still has `status: active` with no open
+  tasks.
+- `project.health.checked` carries `projectPolicy`, status, task counts, and
+  finding count for every scanned project.
+- `project.health.finding` carries `projectPolicy` and finding evidence so
+  policy-specific behavior can be inspected without splitting handlers.
+- Project-health `metric.breach` / `metric.recovered` events remain normal
+  metric events owned by `may`. May registers the project handler as the typed
+  auto-handler for known project metrics, so the original metric event can wake
+  project reconciliation with metric id/current/threshold context before generic
+  metric-alert triage is considered.
+- `project.reconcile.trigger-count` records each project reconciler pass with a
+  note identifying event vs timer, event type, target project, action count, and
+  launched count.
+- `project.reconcile.launched-count` records how many task or owner sessions a
+  reconciler pass launched.
+- `project.reconcile.event-latency-ms` records milliseconds from event timestamp
+  to reconciler handling. It alerts above 5 minutes because the normal
+  event-driven path should not wait for the fallback scan.
+- `project.owner-incomplete-count` counts active projects with no open work.
+  This should normally be zero. A nonzero value means the owner loop needs to
+  replan, set waiting/blocked/terminal state, or escalate.
+- `project.owner-judgment-needed-count` counts projects needing owner judgment
+  for deterministic reasons such as repeated task attempts, all tasks done, or
+  no tasks.
+
+Latency should be read from event timestamps: project event to
+`project.owner.dispatched` or task dispatch should be seconds in the normal
+event-driven path. The 30-minute timer is only a fallback for missed events,
+direct file edits, and process recovery.
 
 ## E2E Behavior Contracts
 
@@ -300,9 +616,9 @@ CREATE TABLE projects (
   owner TEXT,
   status TEXT DEFAULT 'active',
   type TEXT DEFAULT 'milestone',
-  priority TEXT,
-  workflow TEXT,
+  workflow TEXT DEFAULT 'project',
   iteration INTEGER DEFAULT 0,
+  priority TEXT,
   milestones_done INTEGER DEFAULT 0,
   milestones_total INTEGER DEFAULT 0,
   updated_at INTEGER
