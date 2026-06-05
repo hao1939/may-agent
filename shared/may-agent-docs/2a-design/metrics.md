@@ -115,16 +115,53 @@ until they become necessary for keeping the loop running.
 
 ### Additional Built-In Metrics
 
-These are measured but not in the prioritized tables above:
+These are measured but not in the prioritized tables above.
 
+**Handler / Infrastructure:**
 - `handler.completed-count` — completions in 6h
 - `handler.failed-count` — failures in 6h
 - `handler.p95-duration` — 95th percentile handler duration in 6h
 - `handler.fires-per-hour` — handler starts in 1h
+- `infra.bus.event-count-1h` — total event bus events in 1h (volume indicator)
+- `infra.bus.subscriber-failed-count-1h` — event bus subscriber failures in 1h
+- `infra.messages.delivery-rate` — inter-agent message delivery success rate
+- `infra.persist.db-size-mb` — SQLite DB file size in MB
+- `infra.sessions.active-count` — currently running sessions
+
+**Evaluator:**
 - `evaluator.aftermath-coverage-rate-3h` — aftermath pipeline liveness, not a north-star quality goal
+- `evaluator.false-good-rate-sample` — reviewed good sessions overturned (24h); quality control on the evaluator itself
+- `evaluator.meaningful-review-rate-24h` — fraction of evaluations that are substantive (24h)
+- `evaluator.success-candidates-24h` — good sessions marked for learning extraction (24h)
+- `evaluator.success-learnings-24h` — learnings extracted from good sessions (24h)
+- `evaluator.triage-closure-rate-24h` — fraction of failed sessions triaged and closed (24h)
+
+**Guard:**
+- `guard.blocked-count-15m` — guard blocks in 15m window
+- `guard.repeat-trigger-count-24h` — repeated guard triggers (same rule, same session) in 24h
+- `guard.triggered-count-24h` — total guard triggers in 24h (watch-only)
+- `guard.warned-count-24h` — total guard warnings in 24h (watch-only)
+
+**Project:**
 - `project.active-count` — observable count of projects currently pushing; not a health target by itself
 - `project.blocked-count` — true blocked projects only
 - `project.stale-active-count`
+- `project.invalid-format-count` — projects with invalid `project.md` format
+- `project.reconcile.event-latency-ms` — latency from project event to reconciler action
+- `project.reconcile.launched-count` — reconciler-launched actions
+- `project.reconcile.trigger-count` — reconciler invocations
+
+**Scout:**
+- `scout.downstream-reference-files-7d` — files referencing scout knowledge (7d)
+- `scout.knowledge-practice-loaded` — whether scout knowledge practice is loaded (boolean)
+- `scout.knowledge-preamble-coverage` — fraction of KE entries with preamble coverage
+- `scout.sourced-artifacts-24h` — scout-sourced artifacts (24h)
+
+**Session:**
+- `session.empty-assistant-stop-count-1h` — sessions ending with empty assistant response (1h)
+- `session.finish-blocked-uncommitted-count-24h` — finish blocked by uncommitted changes (24h raw count)
+- `session.finish-blocked-unresolved-count-24h` — unresolved finish-blocked dirty exits (24h strict)
+- `session.provider-error-count-1h` — provider errors at any turn (1h)
 
 ### Retired From Active Alerting
 
@@ -175,7 +212,9 @@ metrics-snapshot handler
   -> records values to metrics + metric_snapshots
   -> custom metric section runs source_query/source_command metrics
   -> alerts are represented in metric_alerts
-  -> metric-alert-reactor handles metric.breach events or unresolved alerts
+  -> metric.breach wakes the metric owner path
+  -> owner auto-handlers handle known metric patterns
+  -> metric-alert-reactor is the generic fallback for unhandled alerts
 ```
 
 `project-steward` is another producer for project health signals. It scans
@@ -183,15 +222,29 @@ project docs/tasks read-only, emits `project.health.checked` and
 `project.health.finding`, and records/evaluates project metrics such as
 `project.health.finding-count`, `project.task-parser-error-count`, and
 `project.owner-judgment-needed-count`. Active projects with no tasks are owner
-judgment findings, not missing workflow findings. The repair path is still the
-normal metric/heartbeat/closed-loop path; the steward does not mutate project
-files.
+judgment findings, not missing workflow findings. The steward does not mutate
+project files.
 
-The usual path is project/context-driven: agents see metric state and unresolved
-alerts, read the relevant project context when one exists, and decide what the
-signal means. `metric-alert-reactor` forks an owner directly only for P0
-breaches; lower-priority alerts remain visible for heartbeat/project/steward
-handling.
+Project-health metric alerts follow the owner auto-handler convention. The
+metrics are owned by `may`; May's project handler is the typed auto-handler for
+known project metrics (`project.health.finding-count`,
+`project.owner-judgment-needed-count`, and `project.owner-incomplete-count`).
+Those metric events wake project reconciliation with the original metric
+context. Generic metric-alert triage is the fallback for unhandled or unknown
+metrics, not the first consumer for known project reconciliation signals.
+
+Waiting projects may depend on project-scoped watch metrics. Metrics named in
+the project's wait/watch contract (`resume_condition`, `wait_reason`, or
+`## Watch Conditions`) must stay active and fresh enough to make the wait
+condition observable. The project-steward treats disabled, missing, or stale
+owner-scoped contract metrics as project health findings so the project owner
+can repair the watch or revise the wait condition. Historical notes and weak
+signals outside that contract do not make the project active by themselves.
+
+The usual path is owner/context-driven: agents see metric state and unresolved
+alerts, known owner auto-handlers can act first, and the generic alert reactor
+only handles the remaining cases. `metric-alert-reactor` forks an owner directly
+only for P0 or unhandled P1/P2 alerts after the configured grace period.
 
 Agents handling an alert must follow
 [manual/metric-alerts.md](../2b-manual/metric-alerts.md): judge the alert, choose one
