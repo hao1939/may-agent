@@ -147,6 +147,10 @@ These are measured but not in the prioritized tables above.
 - `project.blocked-count` — true blocked projects only
 - `project.stale-active-count`
 - `project.invalid-format-count` — projects with invalid `project.md` format
+- `project.health.finding-count` — project-steward health findings (active projects with structural issues)
+- `project.owner-incomplete-count` — active projects with no open work (steward signal)
+- `project.owner-judgment-needed-count` — project tasks needing owner judgment (steward signal)
+- `project.task-parser-error-count` — project task parser errors (steward signal)
 - `project.reconcile.event-latency-ms` — latency from project event to reconciler action
 - `project.reconcile.launched-count` — reconciler-launched actions
 - `project.reconcile.trigger-count` — reconciler invocations
