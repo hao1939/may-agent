@@ -110,22 +110,43 @@ transitions. Events use `source: "tool"` and `guard: "beforeToolCall"`
 (not the individual guard name — the specific guard is identifiable only
 from the `reason` field text).
 
-Active tool-level guards:
+Active tool-level guards (as of 2026-06-05, from `manager.ts buildGuards()`):
+- **empty-args-guard**: Catches empty/missing argument objects.
+- **tool-schema-guard**: Catches common tool parameter misuse patterns
+  (e.g., C1.1 Edit-Without-Read, C7.1 Hallucinated Path).
+- **path-hallucination-guard**: Detects references to non-existent paths
+  in bash commands. Fires `PATH_HALLUCINATION` signals.
+- **completeness-guard**: Agent-specific completeness checks.
+- **finish-guard**: Validates evidence in `finish(success)` calls.
+- **commit-guard**: Warns/blocks at `finish()` when agent has uncommitted
+  changes or is about to commit files outside its lane. Fires
+  `uncommitted files` and `finish() uncommitted` signals.
+- **read-dedup-guard**: Warns/blocks when an agent reads the same file
+  repeatedly within a session. Fires `READ_DEDUP` signals.
 - **session-read-guard**: Warns against reading raw `session.jsonl` files
   (30–300KB). Fires `SESSION_READ`, `SESSION_BASH_CAT`, `SESSION_BASH_GREP`
   signals depending on the access method.
-- **commit-guard**: Warns/blocks at `finish()` when agent has uncommitted
-  changes or is about to commit files outside its lane.
-- **finish-guard**: Validates evidence in `finish(success)` calls.
-- **tool-schema-guard**: Catches common tool parameter misuse patterns.
+- **scrape-dedup-guard**: Deduplicates repeated web scraping of the same URL.
+
+**Not in `beforeToolCall` but active via tool internals:**
+- **cross-edit-guard**: Prevents agents from modifying other agents'
+  protected files. Wired directly into `edit.ts` and `write.ts` tool
+  implementations (not via `composeGuards`).
+
+**Defined but not wired in:**
+- **verification-depth-guard**: Validates meaningful post-write
+  verification in `finish(success)` sessions. File exists but
+  `createVerificationDepthGuard()` is not called from `buildGuards()`.
 
 **Volume note:** Tool-level guards generate the majority of guard events
 because they fire per tool call. Guard noise composition shifts over
 time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
-falsified KE-1564). As of 2026-06-09: uncommitted-files warnings are
-the dominant trigger (~33%), SESSION_BASH_CAT ~20%, SESSION_READ ~9%.
-Total: ~1,300/day.
+falsified KE-1564). As of 2026-06-05: uncommitted-files warnings are
+the dominant trigger (~53%, combining "Uncommitted files" 446 + "finish()
+uncommitted" 285), SESSION_BASH_CAT ~20%, SESSION_READ ~9%, READ_DEDUP
+~6%, PATH_HALLUCINATION ~4%, SESSION_BASH_GREP ~2%.
+Total: ~1,350/day.
 
 ### Known issue: guard name conflation
 
