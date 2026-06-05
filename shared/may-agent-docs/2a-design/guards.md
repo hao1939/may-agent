@@ -112,16 +112,20 @@ from the `reason` field text).
 
 Active tool-level guards:
 - **session-read-guard**: Warns against reading raw `session.jsonl` files
-  (30–300KB). Dominant trigger (~96% of all guard events, ~1,250/day).
+  (30–300KB). Fires `SESSION_READ`, `SESSION_BASH_CAT`, `SESSION_BASH_GREP`
+  signals depending on the access method.
 - **commit-guard**: Warns/blocks at `finish()` when agent has uncommitted
   changes or is about to commit files outside its lane.
 - **finish-guard**: Validates evidence in `finish(success)` calls.
 - **tool-schema-guard**: Catches common tool parameter misuse patterns.
 
-**Volume note:** Tool-level guards generate ~50× more events than
-workflow guards because they fire per tool call. The session-read-guard
-alone accounts for the vast majority. See KE-1252 (alert fatigue),
-KE-1362 (monoculture pattern), KE-1564 (composition shift) for analysis.
+**Volume note:** Tool-level guards generate the majority of guard events
+because they fire per tool call. Guard noise composition shifts over
+time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
+KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
+falsified KE-1564). As of 2026-06-09: uncommitted-files warnings are
+the dominant trigger (~33%), SESSION_BASH_CAT ~20%, SESSION_READ ~9%.
+Total: ~1,300/day.
 
 ### Known issue: guard name conflation
 
