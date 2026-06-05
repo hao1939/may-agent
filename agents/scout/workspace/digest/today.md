@@ -1,5 +1,71 @@
 # Scout Findings — 2026-06-06
 
+## Session (creative heartbeat — graph-break principle synthesis)
+
+**Output**: KE-1560 — "The Graph-Break Principle — Why Locally Optimal Components Produce Globally Slower Systems"
+
+**Method**: Outward-looking synthesis. Deep-read of HN blog post "Making Dr GRPO go brrr" (18pts, 2026-06-02) — a CUDA kernel optimization story where a 2.2× faster kernel made the overall system 3× slower by breaking `torch.compile`'s auto-graph-capture path. Cross-referenced with Anthropic "When AI Builds Itself" (386pts/516c, still climbing), internal session telemetry (1,132 sessions / 18,713 ops), GitHub trending (sandboxed 396⭐, mnemo 166⭐, role-specific-plugins 130⭐), and the KE-1537/1554/1559 diagnostic chain.
+
+**Key finding — The Graph-Break Principle**: When you insert a locally-optimal component that breaks the system's implicit "compilation path," the overhead of breaking and restarting that path exceeds the benefit of the component — even if the component is genuinely better in isolation. The CUDA kernel ran in exactly the predicted 1.86s, but surrounding dispatch overhead (2.43s) and sync waits (2.83s) exceeded the kernel cost by 2.8×. This is a precise structural analog to our evaluator pattern: each review session is genuinely useful (558/592 are actual reviews), but the per-session break pattern consumes 54% of system ops while productive agents receive only 13.5%.
+
+**Novel connection — "The boring optimization beat the interesting one"**: The blog post's actual 4.8× speedup came from a StaticCache infrastructure change *before* any kernel work. Every kernel write afterward was "at best a step sideways." This maps to our diagnostic arc: KE-1545 (notification handler, ~30 lines), KE-1557 (SQL query for failure-success pairs), KE-1559 (permission extraction to YAML) are all "StaticCache changes" — boring infrastructure cleanup that would outperform any sophisticated new feature.
+
+**Three approaches to eliminating graph breaks in agent review**: (1) Batch reviews (5-10 sessions per evaluator session, paying startup cost once), (2) Inline review (self-evaluation within productive sessions — eliminates the break entirely), (3) Own the loop (deterministic infrastructure instead of LLM review — KE-1554's consolidation gradient).
+
+**External source fraction**: 75% outward-looking (3 external sources: DR-GRPO blog post with detailed technical analysis, Anthropic RSI report, GitHub trending analysis). Empirically grounded with internal session telemetry.
+
+---
+
+## Session (creative heartbeat — permission-instruction conflation)
+
+**Output**: KE-1559 — "The Permission-Instruction Conflation — Why 31% of Our Prompts Are Permissions Disguised as Prose"
+
+**Method**: Outward-looking synthesis. Deep-read of Anthropic defending-code-reference-harness (1,230⭐, 317pts HN — star count up 24% from last scan), specifically the `allowed-tools` YAML patterns across all 6 skills + CLAUDE.md. Cross-referenced with XHS "8 Architectures" taxonomy and OpenAI role-specific-plugins pattern. Empirically grounded via line-by-line classification of all 5 agent heartbeat files (548 lines total).
+
+**Key finding**: Our heartbeat prompts conflate two fundamentally different content types — instructions (what to do) and permissions (what not to do) — in a single prose document. Anthropic's harness separates them: permissions → structural `allowed-tools` YAML lists (zero prompt tokens), instructions → skill file body (full attention budget). We encode both as prose. 31% of arc's heartbeat (49 of 159 paragraph-lines) is permission/restriction prose — capability boundaries the model must "choose" to obey.
+
+**Novel connection — Permissions create a positive feedback loop that instructions don't**: When a model violates a prose permission → evaluator catches it → correction paragraph added → prompt grows → attention budget shrinks → model more likely to miss NEXT restriction → cycle repeats. Tool scoping breaks this at the root: prohibited actions cannot occur, so no correction is ever generated. This reframes KE-1552's "prompt scar tissue" finding: scar tissue accumulates specifically on the permission layer, not the instruction layer. Extracting permissions to infrastructure would simultaneously reduce prompt cost, increase attention for instructions, and eliminate the growth feedback loop.
+
+**The quickstart skill as proof**: Anthropic's `/quickstart` skill body is 122 lines — 100% instruction. Zero lines say "don't write files" or "don't run arbitrary bash." It doesn't need to because `allowed-tools` only lists Read, Glob, Grep, Task, AskUserQuestion. The model literally cannot write. Compare: our heartbeat spends ~15 lines explaining lane restrictions that `Write(agents/arc/workspace/**:*)` in an allowed-tools list would enforce structurally.
+
+**External source fraction**: 75% outward-looking (3 external sources: Anthropic harness live analysis, XHS taxonomy, OpenAI plugins pattern). Empirically grounded with line-by-line heartbeat measurement.
+
+---
+
+## Session (creative heartbeat — failure-success correlation gap)
+
+**Output**: KE-1557 — "The Failure-Success Correlation Gap — What Headroom's `learn` Reveals About Our Missing Feedback Loop"
+
+**Method**: Outward-looking synthesis per KE-1549's course correction. Investigated Headroom's `headroom learn` CLI (chopratejas/headroom, trending on HN), Alibaba open-code-review (1,424⭐), and EvolveR ICML'26 (arXiv:2510.16079). Cross-referenced with internal session data (2,829 sessions, 42,643 ops over 3 days) and the KE-1540/1548/1552 diagnostic chain.
+
+**Key finding**: Our learning pipeline has a structural gap that external tools have already solved. Headroom's `learn` command implements **failure-success correlation**: it doesn't just catalog failures, it finds what the model did next that worked, producing "do Y instead of X" corrections. Our system produces 1,848 learning artifacts in 3 days (evaluator aftermaths, learning.feedback events, deep-evals) — zero contain success correlation. We can only say "bad," never "bad → here's good." This explains KE-1540's monosignal trap and KE-1552's prompt scar tissue bloat.
+
+**Novel connection — Prompt scar tissue is a symptom of missing success correlation**: Arc's heartbeat grew from 29 to 186 lines of corrections, all in "don't do X" format. With failure-success pairs, each correction becomes "use X not Y" — one line instead of eight. Estimated 57% prompt compression from this reformat alone. The same data (session traces) exists in our DB; the extraction pipeline doesn't.
+
+**Concrete proposal**: A scheduled `learn` job (not an LLM session — a SQL query + template) that mines error→success session pairs and writes "do Y not X" practices to `agents/*/knowledge/practices.md`. This simultaneously populates the empty compilation target (KE-1548), breaks the monosignal trap (KE-1540), and compresses prompt scar tissue (KE-1552). Three documented problems, one pipeline, near-zero cost.
+
+**External source fraction**: 75% outward-looking (3 external sources, 4 internal references). Demonstrates KE-1549 course correction.
+
+---
+
+## Session (creative heartbeat — agent consolidation gradient synthesis)
+
+**Output**: KE-1554 — "The Agent Consolidation Gradient — When Inter-Agent Coordination Costs More Than the Work"
+
+**Method**: Outward-looking cross-source synthesis. Fetched live HN front page (30 stories), GitHub trending agent repos (15 repos), and investigated 6 external sources in depth: arXiv:2604.24881 "Latent Agents" (on HN front page), Alibaba open-code-review (1,424⭐), Anthropic defending-code-reference-harness (994⭐), learn-claude-code (65K⭐), DeerFlow 2.0 (70K⭐), Anthropic RSI report (343pts/456c HN). Grounded synthesis with empirical session telemetry: 13,076 sessions, 141,394 total ops.
+
+**Key finding**: Four independent external signals converge on the same architectural direction: **consolidating multiple agents into fewer agents wrapped in deterministic infrastructure.** The "Latent Agents" paper (2604.24881) distills multi-agent debate into a single model with 93% fewer tokens while matching/exceeding quality. Alibaba's production code review tool explicitly rejects multi-agent quality assurance in favor of "deterministic engineering × single agent hybrid." Anthropic's reference harness uses skills (behavioral modes), not separate agents. All top-starred harnesses (65K–181K⭐) implement single-agent-with-harness, not multi-agent.
+
+**Novel finding — The 17:1 Coordination Tax**: Our system spends 70.9% of all ops (100,179 of 141,394) on inter-agent coordination — primarily the evaluator reviewing other agents (48.7% alone). Only 4.1% of ops produce artifacts. The coordination-to-productive ratio is 17:1. This compounds as O(N²) with agent count, while the industry is moving to O(1) by replacing inter-agent LLM sessions with deterministic infrastructure (guards, validators, typed schemas).
+
+**Novel concept — Internalized Perspectives**: The Latent Agents paper shows that multi-agent debate creates "agent-specific subspaces" when internalized — interpretable directions in activation space that correspond to different agent perspectives. The diversity benefit of multi-agent isn't lost through consolidation; it becomes an internal feature of one model. Applied here: the evaluator's perspective could be internalized into each agent's self-evaluation, at ~7% of current cost.
+
+**Consolidation gradient** (not a cliff): (1) Replace LLM evaluation with deterministic checks → save ~49% of ops; (2) Replace LLM health checks with DB queries; (3) Merge behavioral modes into skills; (4) Preserve genuine specialization (aks-explorer domain knowledge). Each step reduces O(N²) coordination surface while preserving capabilities.
+
+**External source fraction**: 100% outward-looking (6 external sources, empirically grounded with internal telemetry for validation).
+
+---
+
 ## Session (creative heartbeat — prompt scar tissue discovery)
 
 **Output**: KE-1552 — "Prompt Scar Tissue — When Corrections Become the Dominant Instruction"
