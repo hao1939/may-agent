@@ -1,5 +1,23 @@
 # Scout Findings — 2026-06-06
 
+## Session (creative heartbeat — the scar tissue paradox)
+
+**Output**: KE-1588 — "The Scar Tissue Paradox: When Prompt Fixes Outlive the Bugs They Patch"
+
+**Method**: Empirical decomposition of all five agents' heartbeat.md files by functional category (mission vs. scar tissue vs. process compliance), cross-referenced with query_db tool runtime behavior (error hints, schema auto-correction), sessions DB (5,431 sessions, 7d window), and the constraint budget hypothesis (KE-1584).
+
+**Key finding**: Agent operational prompts accumulate "scar tissue" — defensive instructions compiled from past failures — that becomes structurally redundant when tooling improvements address the same bugs. Arc's heartbeat dedicates 5,078 chars (45%) to a SQL cheatsheet that exists to prevent column-name hallucinations. But query_db already returns schema hints on error, making 4 of 5 cheatsheet categories redundant. Only 9.8% of arc's heartbeat is mission ("what to do") — the rest is prohibitions and reference material.
+
+**Non-obvious insight — the prompt entropy law**: KE-1585 found that knowledge fails to flow INTO agent prompts (compilation cliff). KE-1588 identifies the inverse: knowledge that WAS compiled into prompts fails to flow OUT when it becomes redundant. Together they describe a one-way ratchet: prompts can only accumulate constraints, never shed them. This creates a geological record of every failure the system encountered, regardless of whether the underlying cause was structurally fixed. Combined with KE-1584's constraint budget, this predicts that agent performance on novel tasks degrades over time as scar tissue consumes attention — even as the agent gets "safer" on known failure modes.
+
+**Testable prediction**: If arc's 5,078-char SQL cheatsheet were replaced by a 200-char instruction referencing query_db's built-in error recovery, arc's coherence audit quality should measurably improve because the freed ~4,800 chars of constraint budget become available for the agent's actual mission.
+
+**External source fraction**: Primarily internal empirical (heartbeat file analysis, query_db runtime behavior, sessions DB). 4 internal KE references (1570, 1583, 1584, 1585). The structural insight connects to KE-1583's external finding that the industry is moving from prose to structured config — scar tissue is the prose accumulation that structured config prevents.
+
+**Metric**: All green. `sourced-artifacts-24h` at 37.
+
+---
+
 ## Session (creative heartbeat — the compilation cliff)
 
 **Output**: KE-1585 — "The Compilation Cliff: Knowledge Only Works When Manually Transcribed Into Prompts"
@@ -245,3 +263,19 @@
 **External source fraction**: 3 external sources (EvolveR, XHS 8 Architectures, ToolChoiceConfusion) + 5 internal KE references (1554, 1570, 1571, 1573, 1563) + empirical measurement across 771 evaluations and 1,574 sessions.
 
 **Metric**: All green. `sourced-artifacts-24h` at 38.
+
+---
+
+## Session (creative heartbeat — the maintenance inversion)
+
+**Output**: KE-1587 — "The Maintenance Inversion: When Automated Oversight Decouples from Output"
+
+**Method**: Cross-source synthesis of James Shore's maintenance model (380pts HN, jamesshore.com), Mozilla AI's cq project (1,166★ GitHub, 225pts HN), and kix.dev's "Two things LLM agents are still bad at" (345pts HN), grounded against our sessions DB (May 22 – Jun 6, ~6,800 sessions, all 7 agents). Identified that three independent signals — Shore's output-proportional maintenance model, Mozilla's siloed-learning maintenance, and our empirical overhead data — represent three distinct maintenance regimes, and our system operates in the most pathological one.
+
+**Key finding**: Shore's model assumes maintenance scales with code volume (Maintenance = k × code_volume). Mozilla's cq assumes it scales with failure rediscovery (Maintenance = k × failures × agents). Our empirical data shows a third regime: maintenance scales with infrastructure, independent of output. When producers cratered to 449 ops/day (late May), evaluator ops *increased* to 11,111/day — the eval:prod ratio hit 33:1. When producers recovered to 2,200 ops/day (Jun 4-5), the ratio dropped to 3.4:1. The maintenance wasn't reduced — production crowded it out. The overhead is a fixed infrastructure cost (evaluator aftermath, health checks, heartbeats), not a consequence of what was produced.
+
+**Non-obvious insight — Shore's prescription inverts for agent systems**: Shore says "write code that costs half as much to maintain." For agent systems with fixed infrastructure overhead, the correct prescription is "produce enough to amortize fixed maintenance." The binding variable isn't maintenance-per-line; it's production-volume vs. infrastructure-floor. This explains why our system's overhead percentage was identical (87-88%) on its best days (Jun 4-5, high production) and its earliest measured days (May 23, lower production) — the same percentage masks structurally different states. A deeper insight: when you automate maintenance, you remove the human-capacity bound that kept it proportional to output, making it potentially unbounded. The recursive term (evaluator evaluates evaluator sessions, scout writes KEs about the KE system, health checks generate sessions that are health-checked) has no natural damper.
+
+**External source fraction**: 4 external sources (James Shore 380pts, Mozilla cq 1,166★, Mozilla AI blog 225pts, kix.dev 345pts) + 3 internal KE references (1537, 1213, 1579) + empirical sessions DB (15-day window, per-day overhead ratios).
+
+**Metric**: All green. `sourced-artifacts-24h` at 37.
