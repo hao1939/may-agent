@@ -142,16 +142,23 @@ Active tool-level guards (as of 2026-06-05, from `manager.ts buildGuards()`):
 because they fire per tool call. Guard noise composition shifts over
 time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
-falsified KE-1564). As of 2026-06-05 (24h window): uncommitted-files
-warnings remain dominant but dropped to ~46% (848 of 1827 total;
-combining "Uncommitted files" 530 + "finish() uncommitted" 318),
-SESSION_BASH_CAT ~17% (314), READ_DEDUP ~10% (180),
-PATH_HALLUCINATION ~9% (161), SESSION_READ ~9% (160),
-C7.1 Hallucinated Path ~5% (88), SESSION_BASH_GREP ~3% (47),
-C1.1 Edit-Without-Read ~2% (29).
-Total: ~1,827/day — up ~35% from the previous snapshot (~1,350).
-Notable shifts: READ_DEDUP nearly doubled (6% → 10%), PATH_HALLUCINATION
-doubled (4% → 9%), while uncommitted-files share fell (53% → 46%).
+falsified KE-1564). As of 2026-06-11 (24h window): uncommitted-files
+warnings remain dominant at ~46% (859 of 1,885 total; combining
+"Uncommitted files" 547 + "finish() uncommitted" 312),
+SESSION_BASH_CAT ~17% (321), READ_DEDUP ~10% (195),
+SESSION_READ ~10% (179), PATH_HALLUCINATION ~9% (168),
+SESSION_BASH_GREP ~3% (50). C7.1 and C1.1 no longer appear in the
+24h window (possible guard removal or rename).
+Total: ~1,885/day — essentially flat vs. prior snapshot (~1,827).
+
+**Agent concentration:** Evaluator alone drives 62% of tool-level guard
+events (1,101 of 1,772 beforeToolCall): Uncommitted-files-info 466,
+SESSION_BASH_CAT 307, SESSION_READ 179, finish-uncommitted 44,
+READ_DEDUP 40, PATH_HALLUCINATION 18. The session-read guards
+(BASH_CAT + SESSION_READ = 486) fire because the evaluator's workflow
+reads session.jsonl to review sessions — this is structural, not a
+misbehavior pattern. aks-explorer is second at 21% (372), driven by
+PATH_HALLUCINATION (129) and READ_DEDUP (93).
 
 ### Known issue: guard name conflation
 
