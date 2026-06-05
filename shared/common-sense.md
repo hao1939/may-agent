@@ -35,7 +35,7 @@ Workflows enforce process so you can focus on the work. The core workflow is `pr
 
 **Metric projects:** Add a `## Metrics` section to declare target metrics. Format: `- metric.id: target > 0.7, baseline 0.29`. The evaluator checks metric movement on completion.
 
-**Dispatching work**: Use `agents.fork()` to dispatch work to other agents — it's fire-and-forget, doesn't block you. For code changes, use `workflow.run("implement-and-review", ...)`.
+**Dispatching work**: Use `agents.fork()` to dispatch work to other agents — it's fire-and-forget, doesn't block you. For code changes, use `workflow.run("implement-and-verify", ...)`.
 
 Inside a workflow step, the workflow may override your available tools and process.
 

@@ -34,7 +34,7 @@ Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to h
 - **Reason**: Hard caps force-close productive sessions. Agents repeatedly re-added budget language because they see real waste — but the fix is owner review, not caps. If you see runaway sessions, report them to May.
 
 ### [ORDER-009] Guard system changes require review (2026-04-15)
-Adding, removing, or modifying guards in `agents/shared/guards/` (loaded by `agents/shared/guards/loader.ts`) affects every session. These changes must be reviewed by May (gatekeeper) before merging. The review-branch QA process should flag guard changes for May's attention.
+Adding, removing, or modifying guards in `shared/guards/` (loaded by `shared/guards/loader.ts`) affects every session. These changes must be reviewed by May (gatekeeper) before merging. The review-branch QA process should flag guard changes for May's attention.
 - **Applies to**: all
 - **Reason**: cost-limit-guard was wired in at 200 calls without review, blocking agents mid-session. System-scope changes need gatekeeper review.
 
