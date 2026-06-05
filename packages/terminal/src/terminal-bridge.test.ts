@@ -61,7 +61,7 @@ case "$cmd" in
     printf 'attached fake tmux\\n'
     sleep 30
     ;;
-  set-option|bind-key)
+  set-option)
     ;;
   *)
     ;;
@@ -159,9 +159,11 @@ describe("terminal bridge tmux profile validation", () => {
       expect(log).not.toContain("kill-session -t may-web-claude");
       expect(log).not.toContain("new-session -d -s may-web-claude");
       expect(log).toContain("attach-session -t may-web-claude");
-      expect(log).toContain("set-option -g mouse on");
+      expect(log).toContain("set-option -g mouse off");
       expect(log).toContain("set-option -g history-limit 100000");
-      expect(log).toContain("bind-key -T root WheelUpPane if-shell -F #{||:#{pane_in_mode},#{mouse_any_flag}} send-keys -M copy-mode -eH");
+      expect(log).toContain("set-option -g terminal-overrides xterm-256color:smcup@:rmcup@");
+      expect(log).toContain("capture-pane -p -J -t may-web-claude -S -50000 -E -1");
+      expect(log).not.toContain("bind-key");
     } finally {
       fake.cleanup();
     }
