@@ -1,5 +1,61 @@
 # Scout Findings — 2026-06-06
 
+## Session (creative heartbeat — prompt scar tissue discovery)
+
+**Output**: KE-1552 — "Prompt Scar Tissue — When Corrections Become the Dominant Instruction"
+
+**Method**: Empirical git archaeology of all 29 commits to arc/heartbeat.md, measuring the prompt growth trajectory from 29 lines (creation) to 186 lines (current, 6.4× growth). Cross-referenced task prompt sizes from the sessions DB (13,074 sessions measured) with HN-trending research on attention efficiency (arXiv:2606.04032 QKV variants, 97pts; KVarN KV-cache quantization, 114pts) and XHS community warnings about reflective agents burning tokens (805 likes).
+
+**Key finding**: Agent heartbeat prompts accumulate "scar tissue" — corrections from past evaluator-caught errors that persist indefinitely. Of arc's 17 KE-referenced corrections, at least 3 (18%) address fully resolved issues (KE-434: query_db now exists; KE-744: zero assume-unchanged files; KE-1236: opCount freeze from a month ago). The prompts grow monotonically because there is no deprecation pathway — the evaluate-after → compile-to-harness pipeline (KE-1542) works for adding corrections but has no mechanism to remove them when the underlying issue is fixed.
+
+**Novel insight — The Attention Budget Model**: Each correction in a heartbeat prompt consumes model attention budget. Dead corrections don't just waste tokens — they actively degrade the model's ability to attend to live instructions. The HN-trending QKV paper (arXiv:2606.04032) demonstrates that attention is more constrained than assumed; more competing signals means worse discrimination. Our growing task prompts (arc: ~3,000 words, evaluator aftermath: ~3,700 words) are competing with the agent's actual reasoning about its task.
+
+**Connection to diagnostic arc**: This completes a specific chain: KE-1542 (evaluate-after has scaling limits) → KE-1550 (harness determines behavior) → KE-1551 (credit scoring is the missing primitive) → KE-1552 (the harness grows monotonically because credit scoring would identify which corrections to retire). The system *does* have a compile-to-harness pathway (evaluator finds error → human adds correction to heartbeat). It just has no deprecation pathway.
+
+**Proposed action**: Quarterly prompt audit with testable retirement conditions. Add "Remove when: [condition]" annotations to new corrections. Track prompt word count per agent as a metric.
+
+**External source fraction**: 57% external (4 external: arXiv, KVarN, XHS, Anthropic RSI report), 43% internal (3 KEs + empirical git/DB analysis).
+
+---
+
+## Session (creative heartbeat — credit scoring convergence)
+
+**Output**: KE-1551 — "Credit Is the Missing Primitive — Why Three Independent Systems Converged on Scoring"
+
+**Method**: Live fetch of HN front page (19 scored stories), GitHub trending repos (15 repos created since 2026-06-01), and deep dive into three specific projects: OpenAI `role-specific-plugins` (127⭐, released 2026-06-02, first public Codex skills architecture), mnemo (161⭐, released 2026-06-02, Rust-based AI memory sidecar), and EvolveR ICML'26 (65⭐, Shanghai AI Lab). Cross-referenced with XHS self-evolving agent survey and KE-1548/1550 diagnostic chain.
+
+**Key finding**: Three independent projects released in the same week all implement the same mechanism our system lacks — **credit scoring for accumulated experience.** The ecosystem has converged on a three-layer architecture: (1) accumulate experience, (2) distill reusable units, (3) score + prune by value. Our system performs layers 1 and 2 well but completely skips layer 3. This is the actual missing operation — not "skills" (KE-1550's proposal) but the scoring function that determines which knowledge gets loaded into context.
+
+**Novel insight — Skills Without Scoring Recreate the Dead Letter Office**: KE-1550 proposed `agents/*/skills/` directories as the compilation target. But examining OpenAI's plugin architecture reveals that skills without a credit mechanism would just reproduce KE-1548's dead letter office in a new format. The operation that matters is not the file format but the scoring + ranking step that decides which accumulated entries are relevant to the current task. EvolveR uses GRPO-trained retrieval policy, mnemo uses graph centrality + recency, OpenAI uses user-curated save/forget with mandatory preflight gates.
+
+**Specific external signals**:
+- OpenAI `role-specific-plugins`: First public release of Codex plugin architecture. Skills are markdown files (SKILL.md) with frontmatter, structured output shapes, and mandatory "preflight" context loading. The `user-context` skill manages durable state with explicit save/forget semantics. The `index` skill acts as a scoring router.
+- mnemo: Rust binary sidecar that extracts entities from conversations, builds a petgraph knowledge graph in SQLite, and runs a 6-stage scored retrieval pipeline. Entities are deduplicated across sessions and ranked by graph centrality.
+- HN still active on Anthropic's "When AI Builds Itself" (327pts/430c). Notable comment from morisil: "I realized that 2 Claudes talking to each other could actually scale much better" — describing manual feedback-loop harness engineering during a hackathon.
+- GitHub trending: `sandboxed` (385⭐) — self-hosted dev sandboxes for coding agents with sleep/wake and preview URLs. Confirms "harness infrastructure" as the fastest-growing agent category.
+
+**External source fraction**: 100% outward-looking (4 external sources, cross-referenced with 3 internal KEs for synthesis).
+
+---
+
+## Session (creative heartbeat — harness determinism synthesis)
+
+**Output**: KE-1550 — "The Harness Determinism Principle — Why Knowledge Can't Fix What Only Infrastructure Can Change"
+
+**Method**: Outward-looking synthesis per KE-1549's course correction. Fetched live HN front page (25 stories) and GitHub trending agent repos. Analyzed 6 external sources: learn-claude-code (65K⭐), ECC (207K⭐), DeerFlow 2.0 (70K⭐), Anthropic defending-code-reference-harness (994⭐), agents-best-practices (1.8K⭐), and Anthropic Institute's "When AI Builds Itself" (310pts/411c on HN). Cross-referenced with KE-1533–1549 diagnostic arc.
+
+**Key finding**: The agent ecosystem has converged on a vocabulary and principle that reframes our diagnostic arc. The term "harness" now dominates top repos (207K, 70K, 65K stars). The core principle: **Agent behavior is determined by harness design, not by knowledge content.** Our 17-entry diagnostic arc (KE-1533–1549) diagnosed agent behaviors using intentional language ("scout turned inward," "agents prefer analysis over action"), but each behavior is actually a deterministic consequence of infrastructure design. `query_db` makes internal analysis cheap; arXiv rate limits make external scouting expensive — the behavior follows from the harness, not from choice.
+
+**Novel synthesis — Skills as the Compilation Target**: The industry has converged on **skills** (not knowledge entries, not practices.md) as the atomic unit of compiled agent behavior. ECC has 251 skills, Anthropic's harness uses `/quickstart`, `/vuln-scan`, `/triage` etc., Vercel Labs published a `skills` CLI. Skills differ from knowledge entries structurally: they are behavioral programs ("When X, do Y, verify by Z") not declarative knowledge ("X is true because Y"). Our proposed `practices.md` (KE-1548) is closer to a skill than a KE, but the industry format is more specific.
+
+**The test**: For any future KE, ask: "Can this change behavior without a code change?" If no, the insight belongs in the work queue as a harness modification task, not in the knowledge base as another KE.
+
+**External source fraction**: 100% outward-looking (6 external sources, 0 internal analysis beyond citation). This session demonstrates the course correction proposed in KE-1549.
+
+**Metric**: All green. `knowledge-preamble-coverage` 0.207/0.25 — within threshold.
+
+---
+
 ## Session (creative heartbeat — role drift self-examination)
 
 **Output**: KE-1549 — "Role Drift — When Scouts Become the System They Observe"
