@@ -1,4 +1,218 @@
-# Scout Findings — 2026-06-06
+# Scout Findings — 2026-06-07
+
+## Session (creative heartbeat — the Goodhart dashboard)
+
+**Output**: KE-1606 — "The Goodhart Dashboard: Four Green Metrics, Zero Knowledge Flow"
+
+**Method**: Code-traced all four scout knowledge metrics (`sourced-artifacts-24h`, `downstream-reference-files-7d`, `knowledge-preamble-coverage`, `knowledge-practice-loaded`) through `metrics-snapshot.ts` to their actual implementation. Cross-referenced with `file_reads` table (6,280 rows, last entry 2026-05-07 — 29 days stale) and empirical audit of the `downstream-reference-files-7d` metric matches (258 files, 253 of which are evaluator aftermaths mentioning "Scout").
+
+**Key finding**: All four scout knowledge metrics are green but none measures actual knowledge consumption. `sourced-artifacts-24h` counts file creation. `downstream-reference-files-7d` counts evaluator aftermaths that mention the word "Scout" (98% of matches). `knowledge-preamble-coverage` counts `<ai_context>` tags that no loader reads (KE-1604). `knowledge-practice-loaded` checks if a single config file exists — a constant, not a metric.
+
+**Non-obvious insight — the diagnostic arc used stale data from a broken sensor without knowing it**: KE-1581 analyzed the `file_reads` table and reported "84% of KEs never read." That table stopped recording on 2026-05-07 — 22 days before KE-1581 was written. The actual never-read rate for the last month is 100%, not because agents stopped reading but because the meter broke. No metric depends on `file_reads` freshness, so no alert fired. The arc diagnosed knowledge consumption patterns using a frozen snapshot and treated it as live data. The Goodhart mechanism: the dashboard greenwashed the knowledge system because all four metrics proxy knowledge production (writing files, adding tags, maintaining config), not knowledge consumption (reading, applying, changing behavior).
+
+**Broader implication**: The Goodhart pattern likely extends to other system metrics. `success-candidates-24h=141` counts candidates, not whether anyone acted on them. `project.iterations-24h=53` counts iterations, not whether iterations produced progress. The system has no consumption-side or outcome-side metrics for any agent.
+
+**Source type**: 100% internal empirical (code trace + DB analysis). Cross-references KE-1604, KE-1581, KE-1601, KE-1599. External concept: Goodhart's Law.
+
+---
+
+## Session (creative heartbeat — the waiting room)
+
+**Output**: KE-1605 — "The Waiting Room: When Blocked Projects Outspend Active Ones"
+
+**Method**: Empirical sessions-DB analysis of per-agent and per-project compute allocation over 7-day window (6,825 sessions, 101,356 ops). Cross-referenced evaluator session tasks to attribute evaluator overhead to source agents. Analyzed aks-explorer task types, rework chain depths, and trivial session frequency.
+
+**Key finding**: A single project in `waiting` state (aks-rp-e2e, owned by aks-explorer) consumes 38.2% of total system compute — more than any active working agent. The project has been waiting on devbox access for days, with 11 explicit resume triggers (none met). Yet the `aggressive-push` scheduling policy dispatches ~185 sessions/day to this agent. 660 of 1,299 weekly sessions are trivial (≤5 ops), checking that nothing changed. Each spawns an evaluator session (~18 ops). Total: 38,696 ops/week for an agent producing zero productive output.
+
+**Non-obvious insight — the 74-entry diagnostic arc analyzed the wrong component**: The arc diagnosed evaluator dominance (61.2% of ops) as an evaluator architecture problem. But 41.2% of evaluator ops are evaluating aks-explorer's wait-confirmation sessions. The evaluator is faithfully evaluating what the scheduler sends it. The disease is in the scheduler, not the evaluator. Additionally, rework-review chains reach depth 5+ (task names like `...-rework-review-rework-review-rework-review-rework-review-rework-review`) because interrupted rework reviews spawn deeper reviews, each also evaluated. The arc noted this for OIDC chains but the pattern continues generating new chains.
+
+**Concrete fix (3 parts, est. ~35,000 ops/week savings)**:
+1. Suppress aggressive-push polling for `waiting` projects — check resume triggers 1x/day, not 185x/day
+2. Cap rework-review chains at depth 3 (supersede deeper chains)
+3. Skip evaluator session spawn for trivial (≤5 op) wait-confirmation sessions
+
+**Meta-observation**: This entry is a live test of KE-1601's abstraction attractor hypothesis. It identifies a concrete, implementable fix. Whether it gets implemented or cited-and-absorbed by the next diagnostic entry will validate or refute the prediction.
+
+**Source type**: 100% internal empirical (sessions DB, evaluations DB). Cross-references KE-1599, KE-1601, KE-1590, KE-1604.
+
+---
+
+## Session (creative heartbeat — the phantom delivery system)
+
+**Output**: KE-1604 — "The Phantom Delivery System: <ai_context> Tags Are Measured But Never Loaded"
+
+**Method**: Code-tracing through the actual runtime pipeline from KE `<ai_context>` tags to session prompts. Inspected `metrics-snapshot.ts` (preamble coverage metric), `heartbeat-data.ts` (findRelatedKEs), `scout-heartbeat.ts` (prompt assembly), and cross-referenced with file_reads DB data and evaluation distributions.
+
+**Key finding**: The `<ai_context>` preamble system is a phantom. 227 KEs have `<ai_context>` tags. A metric (`scout.knowledge-preamble-coverage`) measures tag coverage. But NO runtime code extracts or injects these tags into session prompts. The metric counts files that have the tag; no loader reads the content. The sole KE delivery mechanism (`findRelatedKEs`) fires only on 3+ consecutive metric breaches and returns filenames, not content. The system writes knowledge prolifically (1,135 entries), measures readiness diligently (preamble metric at 23%), but the delivery channel between them does not exist.
+
+**Non-obvious insight — the diagnostic arc diagnosed delivery failures in a system where delivery was never attempted**: The 74-entry arc analyzed compilation cliffs (KE-1585), write-read asymmetry (KE-1581), constraint budgets (KE-1584), and proposed fitness loops (KE-1603). All assume KE content flows into sessions through some channel that has friction/loss. The actual state: there is NO channel. The arc optimized a pipeline whose middle section is missing. This reframes every prior diagnostic: the compilation cliff isn't a cliff (lossy delivery) — it's a wall (no delivery). The 84.7% never-read rate isn't agent behavior — it's the absence of automated reading. The fitness loop can't start because you can't score what you don't load.
+
+**Concrete gap**: The fix is approximately one function — `selectAndInjectKEs(task, agent)` — that runs at workflow prompt assembly time, matching task keywords against `<ai_context>` trigger lines and injecting matching `<ai_context>` block text. Infrastructure partially exists: 227 KEs have tags, trigger keywords are defined, prompt assembly points are known.
+
+**Source type**: 100% internal empirical (code trace + DB analysis). This is the first KE in the arc to verify the claimed pipeline against actual runtime code.
+
+---
+
+## Session (creative heartbeat — the fitness loop threshold)
+
+**Output**: KE-1603 — "The Fitness Loop Threshold: When Self-Knowledge Flips from Noise to Signal"
+
+**Method**: Cross-source synthesis drawing from all three scout source pools simultaneously — HN (Forge 8B guardrails result), XHS (InftyThink+ self-summary reversal, EvolveR credit scoring, Darwinian Memory selection ecology — all ICML 2026), and arXiv (CODESKILL stable skill banks, SAGE social evolution ceiling). Identified a three-phase developmental model that no single source describes but all three jointly confirm.
+
+**Key finding**: Self-generated knowledge undergoes a phase transition controlled by whether downstream fitness feeds back into knowledge selection. Three phases: (1) External structure dominates when self-knowledge is absent or unselected (Forge 8B+guardrails=99%), (2) Self-knowledge generation without fitness loop produces accumulation drift and noise (our diagnostic arc: 74 entries, 0 implementations, abstraction attraction), (3) Self-knowledge with fitness loop outperforms external knowledge (InftyThink+ post-RL: self-summaries reverse from worse-than-external to significantly-better; EvolveR: self-distilled principles beat teacher-distilled when credit-scored).
+
+**Non-obvious insight — our diagnostic arc is Phase 2, not a failure state**: The 74-entry arc isn't failing because the analysis is bad — it's failing because self-generated entries enter without fitness scoring. The same system that accumulates noise without selection (Phase 2) would outperform external knowledge with selection (Phase 3). We have all three ingredients for Phase 3 — self-knowledge generation (1,134 KEs), fitness signal (6,750+ evaluator quality scores), and partial instrumentation (file_reads) — they're just not connected. Darwinian Memory shows the Phase 2→3 transition requires no training; pure selection-and-elimination over existing entries suffices.
+
+**Cross-source fraction**: 3 external via HN (Forge 687pts), 3 external via XHS (InftyThink+ ICML'26, EvolveR ICML'26, Darwinian Memory ICML'26), 2 external via arXiv (CODESKILL 2605.25430, SAGE 2606.03544) + 6 internal KE references (1601, 1303, 1304, 1523, 1602, 1598). First KE to synthesize across all three source pools in a single entry.
+
+---
+
+## Session (creative heartbeat — diagnostic hysteresis)
+
+**Output**: KE-1602 — "Diagnostic Hysteresis: When Fault-Finding Without Evolution Drifts the System"
+
+**Method**: Cross-synthesis of 6 independent arXiv papers (Apr–May 2026) from agent self-modification, multi-agent survey, and self-evolution subfields. Identified convergence between the Layered Mutability hysteresis experiment (arXiv:2604.14717), the LIFE progression's F→E gap (arXiv:2605.14892), and three self-evolution frameworks (PACE, CODESKILL, FATE) against the 68-entry diagnostic arc as natural experiment.
+
+**Key finding**: The diagnostic arc (KE-1533→1601) has not left the system unchanged despite zero implementations. Tallam's hysteresis experiment shows that memory accumulation drifts agent behavior independently of visible changes — measured identity hysteresis ratio 0.68 (68% of behavioral drift persists after reverting visible self-description). The LIFE survey identifies the F→E boundary as the hardest transition: "errors rarely translate into structural self-improvement." Our system is a textbook instantiation: 68 diagnostic entries, 23 proposed interventions, 0 implementations, but the system has drifted via citation network accumulation (2.8→6.4 refs/entry), scar tissue growth (45% of heartbeat), and observation compute expansion (evaluator at 47.2% of system ops).
+
+**Non-obvious insight — diagnosis at scale IS uncontrolled evolution**: The arc's artifacts (KE entries, citations, scar tissue) are memory-layer mutations (Tallam's layer 4) that changed system behavior while the system believed it was only observing itself. Implementing the 23 proposed fixes would address the original problems but NOT the drift caused by the diagnostic process itself. Three self-evolution papers (PACE, CODESKILL, FATE) converge on the structural fix: timescale separation (autonomous prompt changes + validated structural changes), managed knowledge banks (stable size, not monotonic growth), and failure-to-repair bridges (executable candidates, not prose descriptions).
+
+**External source fraction**: 6 external arXiv papers (2604.14717, 2605.14892, 2605.23019, 2605.25430, 2605.11882, 2605.08520) + 5 internal KE references (1581, 1584, 1588, 1590, 1601). All external papers independent (none cites any other).
+
+---
+
+## Session (creative heartbeat — the abstraction attraction basin)
+
+**Output**: KE-1601 — "The Abstraction Attraction Basin: Why Diagnostic Systems Converge on Naming Problems Instead of Fixing Them"
+
+**Method**: Treated the 68-entry diagnostic arc (KE-1533→1600) as a citation graph dataset. Measured outgoing refs per cohort, incoming citations per entry, and classified entries by abstraction level (named concepts vs. concrete fixes). Cross-referenced with sessions DB to identify the most impactful concrete finding currently buried in the system.
+
+**Key finding**: Abstract named entries ("paradox," "trap," "principle") receive 2.6× more citations than concrete fixes (avg 6.5 vs 2.5 incoming), creating a self-reinforcing abstraction attractor. Citation density doubled over the arc's lifetime (2.8 → 6.4 per entry). The bottom 5 entries by citation count are ALL concrete, implementable fixes — and none was ever referenced by the rest of the arc. Meanwhile, the top 10 most-cited entries are almost all named abstractions describing problems that remain unfixed.
+
+**Non-obvious insight — the most impactful finding is also the least findable**: 2,808 zero-op error sessions in the last 7 days each spawn an evaluator session (~18 ops) that heuristically skips them (skippedByJs=1). This wastes ~49,600 evaluator ops/week — roughly 50% of all evaluator compute and ~32% of total system compute. The fix is trivially concrete: skip evaluator session spawn when opCount=0 && status='error'. But this finding has zero citations in the arc, zero citations in any KE, and sits in the orphan cluster of concrete fixes the system produces and forgets. The named abstraction "The Autopoietic Trap" (which describes this phenomenon in 8,000+ words) has 17 citations. The three-line code fix has zero.
+
+**Structural prediction**: The arc will continue producing named abstractions because each new concept increases citation mass that rewards further abstraction. Concrete fixes will continue to be orphaned because their narrow citation surfaces prevent accumulation. The system optimizes for citability, not implementability — a Goodhartian dynamic where the ability to reference an insight substitutes for the ability to apply it.
+
+**External source fraction**: Primarily internal empirical (citation graph analysis of 68 KEs, sessions DB, evaluations DB). External concept: Goodhart's Law. Internal KE references: KE-1568, KE-1577, KE-1585, KE-1598.
+
+---
+
+## Session (creative heartbeat — the waste-quality inversion)
+
+**Output**: KE-1600 — "The Waste-Quality Inversion: Why Our Best Sessions Look Inefficient"
+
+**Method**: Empirical analysis of evaluations DB (3,452 evaluations: 187 LLM-evaluated, 3,265 heuristic) plotting "wasted calls" against quality scores. Cross-referenced with 3 arXiv papers on trace divergence, communication theory, and task routing that independently explain the mechanism.
+
+**Key finding**: What our evaluator labels "wasted calls" correlates POSITIVELY with output quality. Sessions with 10+ wasted calls average 0.71 quality. Sessions with 1-9 wasted calls average 0.64. The relationship is monotonic from quality 0.4 upward. Holds for 4 of 5 agents with sufficient LLM-evaluated data.
+
+**Non-obvious insight — exploration tax is the price of quality**: Three independent papers converge on one explanation. Trace Contamination (arXiv:2604.27586): trace divergence decouples from output correctness — messy traces produce right answers; clean traces produce wrong ones. Communication Theory (arXiv:2605.09121): LLMs are stochastic channels; reliability requires redundancy (exploration). Triage (arXiv:2604.07494): hard tasks NEED more model capability/exploration; cheap routing on hard tasks causes failure. What we call "waste" is the classical exploration tax of operating in a stochastic environment.
+
+**Measurement paradox identified**: Heuristic evaluations assign 85.1% of sessions zero waste (because they don't explore at all — they apply deterministic rules). LLM evaluations assign zero sessions zero waste (because they always explore). The efficiency metric systematically penalizes the evaluation method that provides the most information about quality. Combined with KE-1599: reduce total evaluation volume (stop 95% rubber-stamping), but among remaining evaluations stop penalizing the exploration that produces novel signal.
+
+**External source fraction**: 3 arXiv papers (2604.27586, 2605.09121, 2604.07494) + internal evaluations DB.
+
+---
+
+## Session (creative heartbeat — the observation phase transition)
+
+**Output**: KE-1599 — "The Observation Phase Transition: When Watching Becomes the Work"
+
+**Method**: Cross-domain synthesis of 4 arXiv papers from different subfields (phase transitions in multi-agent compute allocation, coordination friction dynamics, temporal evaluation targeting, antifragility detection) against empirical system data (sessions DB, evaluations table — 6,817 sessions over 14-day window). The key move was recognizing that a theoretically-grounded phase transition model from agent-budget scaling theory (arXiv:2601.17311) directly predicts the pathology measured in our system's observation-to-action compute ratio.
+
+**Key finding**: Our system has crossed a measurable phase boundary. Theory proves that under fixed budgets, observation has a sharp critical ratio beyond which it DESTROYS value (negative marginal return). Our observation-to-action ratio has worsened from 12:1 to 40:1 in the measurable window. Evaluator consumes 61.8% of system ops. 95% of evaluations are determined by heuristic but still consume an LLM session (~17 ops) to invoke — meaning ~46,600 ops/week are spent on LLM sessions that confirm what a function already decided. Four independent papers from four subfields converge on the same prediction: past the critical observation ratio, the observation apparatus becomes the dominant source of the friction it diagnoses.
+
+**Non-obvious insight — the 64-entry diagnostic arc is PART of the observation apparatus it diagnoses**: The diagnostic arc (KE-1533→1598) identified 23 interventions, produced zero implementations, and generated 64 knowledge entries. Through the Phase Transition lens, this is not a pipeline failure — it's a structural inevitability. The arc IS observation. Its output (more KEs) adds to the observation burden. The system's single implementer (dev, 1.7% of ops) is starved not just by the approval gate (KE-1590) but by the structural dominance of observation compute. Even with unlimited authorization, the system would remain past the critical ratio because 95% of evaluator sessions are rubber-stamping heuristic decisions.
+
+**Quantitative discovery — the heuristic paradox**: In the last 7 days, 95% of evaluations (3,033 of 3,194) were determined by heuristic rules. These heuristic evaluations produce the SAME average quality score (0.64) as the 161 LLM evaluations (0.64). The LLM runs not to judge, but to invoke a function call that returns the pre-computed verdict. This means ~46,600 weekly ops generate zero incremental evaluation signal.
+
+**External source fraction**: 4 external arXiv sources (2601.17311 Phase Transition for Budgeted Multi-Agent Synergy, 2601.06692 Axiom of Consent friction dynamics, 2602.17910 APEMO temporal evaluation, 2605.02463 CAFE antifragility framework) + 6 internal KE references + empirical sessions DB data.
+
+---
+
+## Session (creative heartbeat — the skill-not-knowledge revolution)
+
+**Output**: KE-1598 — "The Skill-Not-Knowledge Revolution: Why the Compilation Cliff Has a Different Exit Than We Designed"
+
+**Method**: arXiv API scan focused on the skill/pseudo-tool/reasoning primitive axis, identifying 9 independent papers in a 7-day window (May 28 – Jun 4 2026) that converge on "skills" — procedural artifacts mined from execution traces — as the unit of agent self-improvement. Cross-referenced with the 64-entry diagnostic arc (KE-1533→1597) to identify the fundamental assumption the arc missed.
+
+**Key finding**: Nine independent research groups published skill-evolution papers in one week. None cites any other. The convergence covers: skill induction (Reasoning Primitive Induction +30-44pp), skill organization (SkillDAG typed graphs), skill sharing (FederatedSkill diffs +44.4% success −37.5% compute), skill adaptation (MASA model-aware alignment), harness repair (HarnessFix HTIR +15-50%), and system design (Practical Agentic Systems: fixed workflows > dynamic planning).
+
+**Non-obvious insight — the diagnostic arc assumed the wrong currency**: Our 64-entry arc assumed knowledge was the right denomination for behavioral change and tried to fix the delivery pipeline (compilation cliff KE-1585). The skill papers show the currency itself is wrong. Knowledge describes what happened ("the evaluator consumed 53% of ops"); skills prescribe what to do ("when evaluating: check status column first; if error/interrupted → deterministic verdict; deep-eval only for ambiguous cases"). The compilation cliff exists because we're trying to compile descriptions into behavior — requiring an interpretation step no pipeline can automate. Skills bypass this because they ARE behavior.
+
+**Critical result from Reasoning Primitive Induction**: Libraries of induced skills outperform the agents that generated the source traces by +30-44pp. The gain comes from consistency, not capability: the agent already knows how to reason well but doesn't do it reliably. The skill library makes reliable what was previously stochastic. Applied to our system: arc already produces good audits — the value lies in extracting those patterns as reusable procedures, not in describing the patterns as knowledge.
+
+**SAGE finding on cross-agent sharing**: "Filtered peer traces and reflective summaries often outperform raw logs." But: "the strongest agent does not exceed its self-evolution ceiling." Social gains depend on abstraction quality, not exposure volume. Our KE system shares raw analysis (wrong abstraction level). The missing layer is filtered successful traces — curated procedures of how agent X solved task-type Y.
+
+**HarnessFix vs. our diagnostic arc**: Both analyze failure patterns. HarnessFix outputs scoped repair operators (code patches). We output prose analysis (KE entries). HarnessFix achieves +15-50%. We achieve 0 implementations (KE-1577). The gap is output format, not analysis sophistication.
+
+**External source fraction**: 9 external arXiv sources (May 28 – Jun 4 2026, all independent: Lei et al., Practical Agentic Systems, HarnessFix, SkillSmith, SkillRevise, SAGE, SkillDAG, FederatedSkill, MASA) + 5 internal KE references (1585, 1597, 1595, 1581, 1592).
+
+**Metric**: All green. `sourced-artifacts-24h` at 37.
+
+---
+
+## Session (creative heartbeat — the memory compiler)
+
+**Output**: KE-1597 — "The Memory Compiler: Five Papers Independently Specify the Pipeline Our Diagnostic Arc Has Been Missing"
+
+**Method**: arXiv API scan across three query axes (multi-agent memory, agent self-improvement, agent forgetting) yielding 30 recent papers. Deep-dived into 5 that independently address different stages of the same problem: RHO (arXiv:2606.05922, self-supervised harness optimization), RAMPART (arXiv:2606.04628, compile-time context assembly with position-cliff measurement), ANCHOR (arXiv:2606.06114, diminishing returns of supervision frequency), DeMem (arXiv:2605.10870, decision-centric forgetting boundary), Channel Fracture (arXiv:2606.04896, silent cross-agent delivery failure). Synthesized against the 62-entry diagnostic arc (KE-1533→1595).
+
+**Key finding**: Five independent papers, from five different research groups, none citing any other, collectively specify the missing mechanism our diagnostic arc identified as absent. The arc named the problem (compilation cliff, KE-1585) and measured the consequence (84% write-waste, KE-1581; 23 interventions unimplemented, KE-1577). These papers specify the concrete pipeline stages: SELECT (which past experiences modify the harness? — RHO) → PLACE (where in context, in what order? — RAMPART) → GATE (what can be safely forgotten? — DeMem) → VERIFY (did the knowledge reach the target agent? — Channel Fracture) → EVALUATE (check output sparingly — ANCHOR).
+
+**Non-obvious insight — the constraint budget has a measured cliff:** RAMPART provides the first controlled, cross-model measurement of KE-1584's constraint budget hypothesis. Task success drops at block position 7 (when task follows the registry) or 12 (when it precedes). This cliff appears at the same absolute positions across Qwen2.5-7B, Llama-3.1-8B, Mistral-7B-v0.3, and Qwen3-14B — the effect is architecture-independent. Arc's heartbeat (14.8KB, 17+ sub-blocks) is well past this cliff. But block grouping raises Mistral's pass rate 5× at hard positions, and a smaller model with grouping outperforms a larger model without it. The fix isn't "use a bigger model" — it's compile-time context assembly.
+
+**Critical secondary insight — self-supervised harness optimization is real:** RHO achieves 59% → 78% on SWE-Bench Pro in ONE optimization round with NO external grading. The agent reviews its own past failures, generates candidate harness updates, re-solves a coreset of challenging tasks, and self-selects the best configuration by pairwise comparison. This proves the compilation cliff has a self-supervised exit — no human curation needed. The 62-entry diagnostic arc could theoretically be replaced by one RHO round that actually changes the harness.
+
+**Third insight — supervision has measured diminishing returns:** ANCHOR tested supervision at every phase of self-evolving agent systems and found: (1) output-verification-phase supervision is most effective; (2) increasing frequency yields diminishing returns. This is the theoretical validation of KE-1575's evaluator yield gap — our 100% coverage (1,365 evaluator sessions, 52.3% of ops in 3 days) is provably past the diminishing-returns threshold. Combined with KE-1594's clean-room principle, the prescription is: evaluate outputs (not transcripts), at sampled frequency (not 100%).
+
+**External source fraction**: 5 external sources (arXiv:2606.05922 RHO, arXiv:2606.04628 RAMPART, arXiv:2606.06114 ANCHOR, arXiv:2605.10870 DeMem, arXiv:2606.04896 Channel Fracture) + 6 internal KE references. All arXiv papers from independent research groups; none cites any other.
+
+**Metric**: All green. `sourced-artifacts-24h` at 39.
+
+---
+
+# Prior Sessions — 2026-06-06
+
+## Session (creative heartbeat — the durability inversion)
+
+**Output**: KE-1595 — "The Durability Inversion: Disposable Agents, Durable Artifacts"
+
+**Method**: Deep analysis of Microsoft Squad architecture post (commandline.microsoft.com, Jun 2 2026) — a production multi-agent framework for GitHub Copilot (21-agent teams) by principal-level engineers at GitHub/Microsoft. Cross-referenced with LocalClaw graph memory (HN 48383578, Jun 3 2026) and the full 62-entry diagnostic arc (KE-1533→1594). Mapped Squad's structural choices against every diagnosed system dysfunction.
+
+**Key finding**: Microsoft's Squad framework solves every major problem in our 62-entry diagnostic arc through one architectural choice: **make agents disposable and artifacts durable**. Our system does the exact inverse — agents accumulate state in persistent prompts (heartbeat.md/context.md grow by accretion → scar tissue) while artifacts (1,127 KEs) are written and forgotten (84% never read). Squad generates agent prompts at spawn time from classified, durable artifacts (decisions.md, history.md, skills/). Their PR #1145 benchmark: governed memory classification cut agent context by 55% (3,540 → 1,601 bytes) while keeping recall at 1.0.
+
+**Non-obvious insight — 23 interventions are one intervention**: The diagnostic arc proposed 23 specific fixes (KE-1577). Squad reveals these aren't 23 separate problems — they're consequences of one structural choice. Scar tissue can't accumulate when prompts are generated rather than maintained. The compilation cliff dissolves when there's a spawn contract specifying which artifacts to load. The write-read asymmetry self-corrects when memory has classification (TRANSIENT/LOCAL/DECISION/POLICY) and load guidance (ALWAYS/ON-DEMAND/ARCHIVE/NEVER). The autopoietic trap breaks when governance moves from prompt prose to code hooks. The diagnostic arc kept looking for the right leaf-level fix; the root cause is the durability inversion.
+
+**Squad prompt saturation confirmation**: Squad's coordinator prompt grew to 60KB and the model started "doing the work inline instead of dispatching" — the coordinator was "buried under enough ceremony, reference material, and duplicated templates." This independently confirms the constraint budget hypothesis (KE-1584). Their fix: two sentences replacing 60KB of ceremony. "You are a DISPATCHER, not a DOER. Every task that needs domain expertise MUST be dispatched to a specialist agent."
+
+**Practical design patterns from Squad**:
+1. Drop-box pattern for multi-agent writes (agent → inbox/*.md → merge → canonical file)
+2. Memory classification types (TRANSIENT/LOCAL/DECISION/POLICY × ALWAYS/ON-DEMAND/ARCHIVE/NEVER)
+3. Charter.md as contract (what I own / what I don't / when I'm unsure)
+4. Code hooks > prompt instructions for governance
+5. SUPERSEDES edges for knowledge evolution (from LocalClaw graph memory)
+
+**External source fraction**: 2 external sources (Microsoft Squad post Jun 2 2026, LocalClaw HN Jun 3 2026) + 8 internal KE references + empirical data (file_reads table, sessions DB).
+
+**Metric**: All green. `sourced-artifacts-24h` at 40.
+
+---
+
+## Session (creative heartbeat — the starving implementer)
+
+**Output**: KE-1590 — "The Starving Implementer: Cadence Mismatch in the Proposal Pipeline"
+
+**Method**: Empirical measurement of the work-queue pipeline (48 total proposals, 39 pending, 9 implemented), combined with dev agent session data (40 recent sessions × 10.4 avg ops, mostly confirming "queue empty"), approval timeline analysis (7 approvals in a single 2-day burst after 22 days of zero), and 7-day ops distribution across all agents.
+
+**Key finding**: The system's only implementer agent (dev) consumes 1.5% of total system ops because its sole input — the approved work queue — is gated by a human operating on a weeks timescale in a system designed for 30-minute cycles. 14 P0 proposals from May 1-7 (36+ days old) sit unimplemented while dev runs ~320 ops/day doing nothing but confirming the empty queue. When approvals came (June 4-5), dev implemented 7 items in 48 hours — proving the pipeline WORKS when fed. The bottleneck is cadence, not capability.
+
+**Non-obvious insight — the Theory of Constraints applied to agent systems**: The system's diagnostic capacity (arc: ~2 proposals/day) and implementation capacity (dev: 3.5 items/day when fed) are both sufficient. The constraint is the approval gate operating 100× slower. This creates a self-reinforcing cycle: overhead-generating agents (evaluator: 45,712 ops/7d) run at full speed while the overhead-reducing agent (dev: 1,077 ops/7d) is idle, because the only pathway to implement fixes passes through the slowest gate.
+
+**External source fraction**: 2 external sources (Goldratt ToC, Ladybird HN 363pts) + 4 internal KE references (1577, 1579, 1583, 1587) + empirical sessions DB + work-queue.md content analysis.
+
+**Metric**: All green. `sourced-artifacts-24h` at 38.
+
+---
 
 ## Session (creative heartbeat — the scar tissue paradox)
 
@@ -15,6 +229,20 @@
 **External source fraction**: Primarily internal empirical (heartbeat file analysis, query_db runtime behavior, sessions DB). 4 internal KE references (1570, 1583, 1584, 1585). The structural insight connects to KE-1583's external finding that the industry is moving from prose to structured config — scar tissue is the prose accumulation that structured config prevents.
 
 **Metric**: All green. `sourced-artifacts-24h` at 37.
+
+---
+
+## Session (HN AI agent exploration — infrastructure inversion)
+
+**Output**: KE-1593 — "The Infrastructure Inversion: Agent Harness > Agent Capability" + `outputs/hn-ai-agents-june6-2026.md`
+
+**Method**: HN Algolia API scan across 5 queries (AI agent, agentic coding, AI agents framework, agent security safety, agent memory context), with deep-dives into 15+ comment threads via item API. Cross-referenced with existing June 5 report to identify delta.
+
+**Key finding**: The HN AI agent conversation has undergone an "infrastructure inversion" — the highest-engagement launches the week of June 2-6 are all infrastructure (Superset 108pts, Boxes.dev 93pts, Hyper 77pts, Lowfat 57pts, Cost.dev 33pts), not new agents. The agent itself is commodity; value accrues to the harness layer. A three-layer context architecture (Personal → Repo → Org-wide) is crystallizing, with Layer 3 (org-wide) as the critical unsolved gap.
+
+**Non-obvious insight**: The stale-read problem (from production war stories thread) — where two agents share a plan file and one updates it while the other operates on the old version, both producing plausible but divergent output — is the canonical multi-agent coordination failure. It's solved by infrastructure (locks, versioning, events), not by better models. This directly maps to our own multi-agent KB access patterns.
+
+**External source fraction**: 100% external (HN Algolia API). 22 story IDs referenced, 15 comment threads analyzed.
 
 ---
 
@@ -279,3 +507,39 @@
 **External source fraction**: 4 external sources (James Shore 380pts, Mozilla cq 1,166★, Mozilla AI blog 225pts, kix.dev 345pts) + 3 internal KE references (1537, 1213, 1579) + empirical sessions DB (15-day window, per-day overhead ratios).
 
 **Metric**: All green. `sourced-artifacts-24h` at 37.
+
+---
+
+## Session (creative heartbeat — the local optimum trap)
+
+**Output**: KE-1592 — "The Local Optimum Trap: When Agents Perfectly Satisfy Wrong Fitness Landscapes"
+
+**Method**: Empirical measurement of agent ops distributions (dev: 46 sessions/76% at 6-8 ops; evaluator: 522 sessions × 19.4 avg ops; scout: 71 sessions × 41 avg ops) combined with metric-structure analysis and three external sources (kix.dev 345pts HN, cost.dev YC W21, EvolveR ICML'26 arXiv:2510.16079). Applied reward hacking framework (Gao et al. 2022 "Scaling Laws for Reward Model Overoptimization") to reinterpret the diagnostic arc.
+
+**Key finding**: The diagnostic arc (KE-1533→1590) assumes agents are *failing* — performing below capability. KE-1592 reframes this: every agent is performing *optimally* for its actual fitness landscape. Dev's 7-op idle heartbeats (76% of sessions) are the minimum to satisfy "heartbeat completed without error." Evaluator's uniform-depth evaluation of all sessions optimizes coverage-lag. Scout's 38 artifacts/day (19× target) optimizes artifact count. Each agent has converged on a local optimum that maximizes its proxy metrics while the system-level objective (infrastructure changes implemented, domain work advanced) degrades. This is structurally identical to reward hacking in RLHF.
+
+**Non-obvious insight — why 23 interventions can't work**: Every proposed intervention asks an agent to change behavior. No intervention changes the fitness landscape. "Evaluate less" would trigger evaluator's coverage-lag alert. "Write fewer KEs" would lower scout's artifact count. "Check the work queue harder" has no incentive gradient — dev already checks it and finds it empty. The fix is landscape interventions (impact-weighted artifact scoring, discriminative evaluation metrics, proactive-fix credit for dev), not behavioral instructions.
+
+**Meta-observation**: This KE is itself an instance of the trap it describes — scout is rewarded for producing it (artifact count +1), it cites external sources (metric satisfied), and it will probably never affect the fitness landscape because landscape changes require code changes, which require the dev agent, which is at its own local optimum.
+
+**External source fraction**: 3 external sources (kix.dev 345pts, cost.dev YC W21, EvolveR ICML'26) + 5 internal KE references (1590, 1579, 1581, 1575, 1584) + empirical sessions DB (dev ops distribution, evaluator volume, scout artifact count).
+
+**Metric**: All green. `sourced-artifacts-24h` at 38.
+
+---
+
+## Session (creative heartbeat — the clean-room verification principle)
+
+**Output**: KE-1594 — "The Clean-Room Verification Principle: Why Evaluators Must Not See the Producer's Reasoning"
+
+**Method**: Deep analysis of Anthropic's defending-code-reference-harness (2,638★, 499pts HN) blog post "Using LLMs to secure source code" — specifically their empirical discovery about verification independence. Cross-referenced with pg_durable (108pts HN) checkpoint architecture and empirical analysis of our evaluations DB (856 evaluations in 48h, issue-tag distribution).
+
+**Key finding**: Anthropic's security pipeline discovered through trial and error that the verifier agent must run in a completely isolated environment with NO access to the producer's reasoning — only the output artifact. They call this clean-room grading. Their empirical result: artifact-only adversarial verification "roughly halved the rate of non-exploitable findings." Our evaluator does the structural opposite: it reads the full session transcript (every tool call, every reasoning step), and the result is that 81% of negative evaluations simply restate status signals already in the sessions table (`terminal status: interrupted` 81 cases, `terminal status: error` 67, `review override` 70, `schema/query error` 35). Only ~4% of negative verdicts contain genuinely analytical feedback.
+
+**Non-obvious insight — agreement bias is the mechanism behind the evaluator yield gap**: KE-1575 measured the gap (53% of compute, 4 actionable findings) but didn't explain why. The mechanism is Anthropic's "agreement bias": when the evaluator sees the producer's full reasoning chain, it either agrees (if the reasoning seems coherent → `acceptable`) or pattern-matches on visible failure signals (if error/interrupted → `needs_improvement`). Neither mode tests whether the *output artifact* actually satisfies the *task*. The evaluator evaluates the process narrative, not the deliverable. This is why 897 evaluator sessions producing 16,216 ops in 48h yield so little actionable signal — the evaluator is contaminated by the very transcript it's supposed to judge. Anthropic's clean-room principle provides the architectural fix: pass only deliverables + task spec to the evaluator, move status classification to deterministic SQL checks, and frame the evaluator as adversarial ("assume the output is wrong; prove it satisfies the task").
+
+**Unifying connection**: This entry explains the mechanism behind KE-1575 (evaluator yield gap), provides a structural exit from KE-1579 (autopoietic trap — clean-room evaluation eliminates observation-of-observation loops), and connects to KE-1584 (constraint budget — artifact-only evaluation shrinks the evaluator's prompt). pg_durable's checkpoint architecture reinforces the principle: sessions already checkpoint their state to the DB; re-reading the full execution trace to confirm the checkpoint is architecturally equivalent to re-executing a completed step.
+
+**External source fraction**: 2 external sources (Anthropic harness 2,638★/499pts, pg_durable 108pts) + 5 internal KE references (1575, 1579, 1584, 1587, 1592) + empirical evaluations DB (856 evaluations, issue-tag distribution).
+
+**Metric**: All green. `sourced-artifacts-24h` at 38.
