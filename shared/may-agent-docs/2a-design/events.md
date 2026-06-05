@@ -521,11 +521,11 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event, including errored/interrupted sessions |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ⚠️ live; see consumer status below |
-| `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ⚠️ live but no dedicated subscriber |
+| `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ❌ 0 rows in events table; emitter may have been removed or is dormant |
 | `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live |
 | `message.created` | message-bus emitter on agent-to-agent message create | ✅ live, low volume |
 | `escalation.created` | `sdk.escalate`; blocked/failure session boundary promotion; boundary promotion of a workflow `ctx.escalate` result is the intended path when routing is needed | ✅ canonical event; workflow `ctx.escalate` itself is local and should not emit this event |
-| `escalation.resolved` | owner sessions/handlers may emit it when they have a disposition | ✅ persisted as a canonical event and handled by escalation lifecycle for session resume |
+| `escalation.resolved` | owner sessions/handlers may emit it when they have a disposition | ❌ **no emitter exists** — 0 rows in events table; escalation lifecycle handler not implemented (KE-1242) |
 | `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings |
 
 Note: `session.completed` is translated from `session.end` in daemon event
@@ -543,8 +543,8 @@ SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() *
 |---|---|---|
 | `session-recovery` | target: `session.completed` where `outcome` is `error` or `interrupted` | Converge on `session.completed` for real-time recovery, with the 5-min timer fallback scanning missed terminal errors. |
 | `evaluator-aftermath` | `session.completed` | ✅ wired; `session-aftermath-scan` remains the 7-minute fallback |
-| `escalation` | `escalation.created` | ⚠️ owner routing still depends on subscribed handlers/workflows |
-| `escalation-lifecycle` | `escalation.resolved`, `escalation.dismissed` | ✅ resumes the source session for terminal outcomes; `needs_human` waits for the human child escalation |
+| `escalation` | `escalation.created` | ✅ routes to owner via message; emits `escalation.routed` |
+| `escalation-lifecycle` | `escalation.resolved`, `escalation.dismissed` | ❌ **no handler exists** — no `.ts` file implements this; `escalation.resolved` has 0 rows in events table (KE-1242) |
 | `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
 | (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781 |
 | `context-learn` | `context-learn` | ❌ replaced by timer-driven `context-learn-poller` |
