@@ -84,9 +84,56 @@ type GuardTriggeredEvent = {
 
 Target invariant: every guard trigger emits `guard.triggered`.
 
-Current gap: tool-level guards and workflow-level guards should converge on the
-same event shape when practical. Workflow guard triggers are already uniformly
-queryable as events and metrics.
+## Two-Tier Guard Architecture
+
+Guards operate at two levels, both emitting `guard.triggered` events:
+
+### Tier 1: Workflow Guards (`shared/guards/*.ts`)
+
+Loaded by `shared/guards/loader.ts`. Fire on workflow step transitions
+(`step_done`, `step_started`, etc.). Each guard exports
+`guard: WorkflowGuard` with a `handle()` method. Returns demands
+(`warn`, `block`, `run_step`). Events use `source: "workflow"` and the
+guard's own name in the `guard` field.
+
+Active workflow guards (as of 2026-06-07):
+`auto-test`, `build-check`, `cost-limit`, `finish-guard`,
+`hallucinated-path`, `knowledge-entry-overwrite`, `milestone-quality`,
+`no-secret-leak`, `rbe-primer`, `read-before-edit`, `vae-primer`.
+(`verify-after-write` is disabled.)
+
+### Tier 2: Tool-Level Guards (`src/lib/tools/*.ts`)
+
+Composed by `compose-guards.ts` and wired into the `beforeToolCall` hook
+in `manager.ts`. Fire on **every tool invocation**, not workflow
+transitions. Events use `source: "tool"` and `guard: "beforeToolCall"`
+(not the individual guard name — the specific guard is identifiable only
+from the `reason` field text).
+
+Active tool-level guards:
+- **session-read-guard**: Warns against reading raw `session.jsonl` files
+  (30–300KB). Dominant trigger (~96% of all guard events, ~1,250/day).
+- **commit-guard**: Warns/blocks at `finish()` when agent has uncommitted
+  changes or is about to commit files outside its lane.
+- **finish-guard**: Validates evidence in `finish(success)` calls.
+- **tool-schema-guard**: Catches common tool parameter misuse patterns.
+
+**Volume note:** Tool-level guards generate ~50× more events than
+workflow guards because they fire per tool call. The session-read-guard
+alone accounts for the vast majority. See KE-1252 (alert fatigue),
+KE-1362 (monoculture pattern), KE-1564 (composition shift) for analysis.
+
+### Known issue: guard name conflation
+
+Tool-level guards all emit `guard: "beforeToolCall"` instead of their
+specific name. To distinguish them, query the `reason` field:
+```sql
+-- Find session-read-guard triggers specifically
+SELECT COUNT(*) FROM events
+WHERE event_type = 'guard.triggered'
+  AND json_extract(data, '$.guard') = 'beforeToolCall'
+  AND json_extract(data, '$.reason') LIKE 'SESSION_READ%';
+```
 
 ## Ownership
 
