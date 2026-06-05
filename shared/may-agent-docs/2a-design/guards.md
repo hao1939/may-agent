@@ -142,11 +142,16 @@ Active tool-level guards (as of 2026-06-05, from `manager.ts buildGuards()`):
 because they fire per tool call. Guard noise composition shifts over
 time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
-falsified KE-1564). As of 2026-06-05: uncommitted-files warnings are
-the dominant trigger (~53%, combining "Uncommitted files" 446 + "finish()
-uncommitted" 285), SESSION_BASH_CAT ~20%, SESSION_READ ~9%, READ_DEDUP
-~6%, PATH_HALLUCINATION ~4%, SESSION_BASH_GREP ~2%.
-Total: ~1,350/day.
+falsified KE-1564). As of 2026-06-05 (24h window): uncommitted-files
+warnings remain dominant but dropped to ~46% (848 of 1827 total;
+combining "Uncommitted files" 530 + "finish() uncommitted" 318),
+SESSION_BASH_CAT ~17% (314), READ_DEDUP ~10% (180),
+PATH_HALLUCINATION ~9% (161), SESSION_READ ~9% (160),
+C7.1 Hallucinated Path ~5% (88), SESSION_BASH_GREP ~3% (47),
+C1.1 Edit-Without-Read ~2% (29).
+Total: ~1,827/day — up ~35% from the previous snapshot (~1,350).
+Notable shifts: READ_DEDUP nearly doubled (6% → 10%), PATH_HALLUCINATION
+doubled (4% → 9%), while uncommitted-files share fell (53% → 46%).
 
 ### Known issue: guard name conflation
 
@@ -195,7 +200,11 @@ Start small:
 - `guard.triggered-count-24h`
 - `guard.warned-count-24h`
 - `guard.blocked-count-15m`
-- `guard.repeat-trigger-count-24h`
+- `guard.repeat-trigger-count-24h` — **⚠ non-functional** (reads 0).
+  Wired to `action='skipped_duplicate'`, an action value the guard
+  runtime never emits. The actual repeat-trigger signal (N≥3
+  `guard.triggered` events sharing the same `sessionId` in 24h) is
+  invisible to this metric. See KE-1246 for root cause and proposed fix.
 
 Later metrics can be added only when necessary, for example
 `guard.recovered-after-warning-rate` or `guard.false-positive-rate`.
