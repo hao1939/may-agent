@@ -10,7 +10,7 @@ Understanding the system helps you work WITH it, not against it.
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
 ### Projects
-Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `projects/<name>/project.md`. The project file is your memory across sessions. (See `shared/may-agent-docs/manual/agent-convention.md` for the canonical layout. Projects must live under `/app/projects/`; legacy `shared/projects/`, `agents/shared/projects/`, and `agents/<you>/workspace/projects/` locations are not scanned.)
+Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `projects/<name>/project.md`. The project file is your memory across sessions. (See `shared/may-agent-docs/2b-manual/agent-convention.md` for the canonical layout. Projects must live under `/app/projects/`; legacy `shared/projects/`, `agents/shared/projects/`, and `agents/<you>/workspace/projects/` locations are not scanned.)
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
@@ -20,6 +20,9 @@ Work arrives as tasks. Simple tasks just get done. For complex work that spans m
 - `done` = finished
 
 **Project comments:** Anyone can append suggestions to a project's `## Comments` section. The owner reads and uses judgment — comments are input, not instructions.
+
+### Evaluator Feedback (Learning Loop)
+If `agents/<you>/last-eval.md` exists, read it at session start. It contains the evaluator's critique of your most recent session. Adapt your approach to avoid repeating flagged issues. Acknowledge relevant feedback in your plan.
 
 ### Heartbeats (Autonomy)
 Periodically you wake up for self-directed work. This is YOUR time — observe, judge, act. Nobody tells you what to do. Explore problems, test ideas, push things forward.
@@ -74,10 +77,10 @@ Standard locations — follow these, don't invent alternatives:
 | Your knowledge | `agents/<you>/knowledge/` |
 | Shared knowledge | `shared/knowledge/` |
 | Knowledge essentials | `shared/knowledge-essentials.md` |
-| Architecture docs | `shared/may-agent-docs/architecture/` |
-| Design docs | `shared/may-agent-docs/design/` |
-| Metrics | `metrics` table (read via bun:sqlite readonly) |
-| Sessions | `sessions` table (read via bun:sqlite readonly) |
+| Architecture docs | `shared/may-agent-docs/2a-design/` |
+| Design docs | `shared/may-agent-docs/2a-design/` |
+| Metrics | `metrics` table (read via `query_db` tool) |
+| Sessions | `sessions` table (read via `query_db` tool) |
 | Gym scenarios | `gym/scenarios/` |
 
 ## Environment
@@ -110,3 +113,23 @@ Use the `query_db` tool for read-only database inspection. It uses the runtime `
 Example: `query_db({ "sql": "SELECT agent, COUNT(*) c FROM sessions GROUP BY agent" })`
 
 Never open the DB **read-write** from bash — a second writer races the in-process connection and can corrupt the WAL. To write data, use `emit()` events; the system handles writes safely.
+
+### Schema footguns (top recurrences as of 2026-05-08)
+
+When you guess column names, you guess wrong. Most-flagged mistakes:
+
+- `events.data` (TEXT/JSON) — **NOT** `payload`. Parse with
+  `json_extract(data, '$.field')`.
+- `events.timestamp` (unix ms) — **NOT** `created_at`.
+- `events` has no `agent` or `event_id` column — use `id`, parse
+  `data` JSON for agent/source.
+- `metrics.updated_at` — **NOT** `lastUpdated`.
+- `metrics.current` — **NOT** `value` or `current_value`.
+- There is **no `config` table** — config is the `metrics.config`
+  TEXT column.
+- `sessions.opCount` — **NOT** `turns`.
+- `sessions.status` ∈ `{done, error, interrupted, running}` —
+  **NOT** `'completed'`.
+
+If you hit `no such column` or `no such table`, the `query_db` tool
+echoes the real schema in its error hint. Use it. Don't guess again.
