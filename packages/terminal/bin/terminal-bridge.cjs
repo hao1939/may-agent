@@ -12,6 +12,7 @@ const cwd = String(config.cwd || process.cwd());
 const command = String(config.command || "bash -i");
 const tmuxSocket = String(config.tmuxSocket || "may-web");
 const commandHash = createHash("sha256").update(command).digest("hex").slice(0, 16);
+const preloadHistoryLines = 50000;
 
 function send(frame) {
   process.stdout.write(JSON.stringify(frame) + "\n");
@@ -49,30 +50,29 @@ function existingTmuxSessionIsCurrent() {
 
 function configureTmux() {
   const options = [
-    ["set-option", "-g", "mouse", "on"],
+    ["set-option", "-g", "mouse", "off"],
     ["set-option", "-g", "history-limit", "100000"],
     ["set-option", "-g", "focus-events", "on"],
     ["set-option", "-g", "escape-time", "10"],
+    // Let xterm own scrollback. Without this, tmux attach enters the terminal
+    // alternate screen, where xterm has no normal scrollback to scroll.
+    ["set-option", "-g", "terminal-overrides", "xterm-256color:smcup@:rmcup@"],
   ];
 
   for (const args of options) {
     tmux(args);
   }
+}
 
-  // tmux's default WheelUpPane binding enters copy-mode with a top-right
-  // "[n/total]" indicator. Hide it so xterm does not render the transient
-  // marker over pane text during browser wheel scroll.
-  tmux([
-    "bind-key",
-    "-T",
-    "root",
-    "WheelUpPane",
-    "if-shell",
-    "-F",
-    "#{||:#{pane_in_mode},#{mouse_any_flag}}",
-    "send-keys -M",
-    "copy-mode -eH",
-  ]);
+function preloadTmuxHistory() {
+  const result = spawnSync(
+    "tmux",
+    ["-L", tmuxSocket, "capture-pane", "-p", "-J", "-t", tmuxName, "-S", `-${preloadHistoryLines}`, "-E", "-1"],
+    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
+  );
+  if (result.status !== 0) return;
+  const text = String(result.stdout || "").replace(/\s+$/u, "");
+  if (text) send({ type: "data", data: `${text}\n` });
 }
 
 function ensureTmuxSession() {
@@ -101,6 +101,7 @@ function ensureTmuxSession() {
 
 ensureTmuxSession();
 configureTmux();
+preloadTmuxHistory();
 
 const term = pty.spawn("tmux", [
   "-L",

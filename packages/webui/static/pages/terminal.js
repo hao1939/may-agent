@@ -104,10 +104,10 @@ function connectTerminal(profileId) {
     cursorBlink: true,
     cursorStyle: 'block',
     convertEol: true,
-    // tmux owns scrollback. The bridge overrides tmux's wheel binding to hide
-    // the copy-mode position indicator, so xterm should not also keep a local
-    // scrollback of tmux repaint escape sequences.
-    scrollback: 0,
+    // xterm/browser owns scrollback and selection. tmux is used only to keep
+    // the process alive across reconnects; its mouse/copy-mode UX is disabled
+    // in the bridge so browser copy/paste remains predictable.
+    scrollback: 50000,
     fontFamily: '"JetBrains Mono", "Cascadia Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace',
     fontSize: 14,
     fontWeight: 400,
