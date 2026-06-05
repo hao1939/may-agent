@@ -6,7 +6,7 @@
 Event = something that happened at a point in time (immutable, append-only)
 ```
 
-Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table remains append-only and is the audit trail.
+Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table is effectively append-only today and serves as the audit trail, though it carries reserved mutable columns (`status`, `handled_by`, `result`, `reason`, `retry_count`) for future inbox-ack and retry patterns — see DDL and row mapping below.
 
 ## Schema
 
@@ -36,32 +36,49 @@ stored event keeps the original human owner.
 
 Persistent row mapping:
 
-| Event envelope field | `events` row |
-|----------------------|--------------|
-| `type` | `event_type` |
-| `source` | `source` |
-| `owner` | `owner` |
-| `urgency` | `urgency` |
-| `ttl_ms` | `ttl_ms` |
-| `timestamp` | `timestamp` |
-| `data` | `data` JSON |
+| Event envelope field | `events` row | Notes |
+|----------------------|--------------|-------|
+| `type` | `event_type` | |
+| `source` | `source` | |
+| `owner` | `owner` | |
+| `urgency` | `urgency` | |
+| `ttl_ms` | `ttl_ms` | |
+| `timestamp` | `timestamp` | |
+| `data` | `data` JSON | |
+| *(infra only)* | `status` | Default `'pending'`; reserved for future ack |
+| *(infra only)* | `handled_by` | Reserved; no writer yet |
+| *(infra only)* | `result` | Reserved; no writer yet |
+| *(infra only)* | `reason` | Reserved; no writer yet |
+| *(infra only)* | `retry_count` | Default 0; reserved |
 
-Effective query schema. Some columns may be added by migrations after the base
-`CREATE TABLE`; agents should rely on the event/query surfaces instead of
-assuming the original DDL is complete.
+Effective query schema (verified 2026-06-06 against live DDL). The base
+`CREATE TABLE` defined the first 6 columns; the remainder were added by
+migrations. Agents should rely on this effective schema, not hand-copy base DDL.
 
 ```sql
 CREATE TABLE events (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_type TEXT NOT NULL,    -- dot-separated: "handler.completed"
-  source     TEXT,             -- who emitted it
-  owner      TEXT,             -- responsible owner / inbox route
-  data       TEXT,             -- event-specific JSON payload
-  timestamp  INTEGER NOT NULL,
-  ttl_ms     INTEGER,          -- auto-expire after this duration
-  urgency    TEXT DEFAULT 'normal'
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type   TEXT NOT NULL,       -- dot-separated: "handler.completed"
+  source       TEXT,                -- who emitted it
+  owner        TEXT,                -- responsible owner / inbox route
+  data         TEXT,                -- event-specific JSON payload
+  timestamp    INTEGER NOT NULL,
+  -- migration-added columns below this line:
+  status       TEXT DEFAULT 'pending',  -- event processing status
+  handled_by   TEXT,                -- reserved; no writer yet
+  result       TEXT,                -- reserved; no writer yet
+  reason       TEXT,                -- reserved; no writer yet
+  retry_count  INTEGER DEFAULT 0,  -- reserved; retry logic not yet implemented
+  ttl_ms       INTEGER,            -- auto-expire after this duration
+  urgency      TEXT DEFAULT 'normal'
 );
 ```
+
+> **Note on mutable columns:** `status`, `handled_by`, `result`, `reason`, and
+> `retry_count` were added for future inbox-ack and retry patterns. As of
+> 2026-06-06, no production code path writes to these columns — all 183k+ rows
+> have `status='pending'` and the other four are NULL/0. The columns are
+> reserved infrastructure; do not invent a parallel ack mechanism (see KE-568).
 
 ## Event Types
 
@@ -334,6 +351,13 @@ a separate boolean for the same decision.
 }
 
 {
+  type: "project.action.requested",
+  source: "web-ui",
+  owner: "agent:aks-explorer",
+  data: { projectPath: "projects/aks-rp-e2e", action: "replan", params: { selectedPathIds: ["path.managedsystem.rest-add-existing.minimal-rest"] } }
+}
+
+{
   type: "guard.triggered",
   source: "workflow",
   owner: "agent:may",
@@ -341,9 +365,9 @@ a separate boolean for the same decision.
 }
 ```
 
-`project.comment.created`, `project.iteration`, `project.task.dispatched`,
-`project.task.finished`, `project.status_changed`, `telegram.reply`,
-`guard.triggered`, and `tool.executed` follow the same
+`project.comment.created`, `project.action.requested`, `project.iteration`,
+`project.task.dispatched`, `project.task.finished`, `project.status_changed`,
+`telegram.reply`, `guard.triggered`, and `tool.executed` follow the same
 envelope rule. `guard.triggered` is an unreviewed detector signal. It is useful
 evidence for triage, metrics, and evaluator review, but it is not proof of agent
 fault. A reviewed guard outcome may later produce `learning.feedback`; raw guard
@@ -490,7 +514,8 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `handler.started` | cron runner on every handler invocation | ✅ live |
 | `handler.completed` | cron runner at handler success | ✅ live |
 | `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted |
-| `project.iteration` | `agents/may/handlers/project.ts` when launching a project action; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live owner-loop signal; not the task lifecycle event |
+| `project.iteration` | `agents/may/handlers/project.ts` when launching a project owner loop; legacy `master-worker.ts` can emit historical/compatibility shape | ⚠️ live owner-loop signal; not the task lifecycle event |
+| `project.action.requested` | intended HTTP/UI event ingress for project UI requests; no accepted producer until `POST /api/events` lands | ❌ intended |
 | `project.task.dispatched` | `agents/may/handlers/project.ts` when dispatching a ready `## Tasks` item to its assignee | ✅ live for task-driven projects |
 | `project.task.finished` | `agents/may/handlers/project.ts` when the task session resolves or throws | ✅ live for task-driven projects |
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event, including errored/interrupted sessions |
