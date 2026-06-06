@@ -5,6 +5,7 @@ let terminal = null;
 let fitAddon = null;
 let terminalSocket = null;
 let terminalResizeObserver = null;
+let terminalReplayWrites = 0;
 
 function initTerminalPage(requestedProfileId) {
   const host = document.getElementById('terminal-content');
@@ -116,6 +117,7 @@ function disposeTerminalClient() {
     terminal = null;
   }
   fitAddon = null;
+  terminalReplayWrites = 0;
 }
 
 function connectTerminal(profileId) {
@@ -185,6 +187,12 @@ function connectTerminal(profileId) {
     let frame;
     try { frame = JSON.parse(event.data); } catch { frame = { type: 'data', data: String(event.data) }; }
     if (frame.type === 'data') terminal.write(frame.data || '');
+    else if (frame.type === 'replay') {
+      terminalReplayWrites++;
+      terminal.write(frame.data || '', () => {
+        terminalReplayWrites = Math.max(0, terminalReplayWrites - 1);
+      });
+    }
     else if (frame.type === 'ready') {
       if (status) {
         const profile = activeTerminalProfile();
@@ -207,6 +215,7 @@ function connectTerminal(profileId) {
     if (status) status.textContent = 'Disconnected';
   };
   terminal.onData(data => {
+    if (terminalReplayWrites > 0) return;
     if (terminalSocket?.readyState === WebSocket.OPEN) {
       terminalSocket.send(JSON.stringify({ type: 'input', data }));
     }
