@@ -74,6 +74,12 @@ export interface CronEntry {
    * E.g., ["project.commented", "workflow.blocked"] fires the handler when these events occur.
    */
   on?: string[];
+  /**
+   * Maximum concurrent handler invocations for this entry.
+   * Defaults to 1. Use only for event-driven handlers that are idempotent or
+   * route each event to an independently leased unit of work.
+   */
+  maxConcurrentTriggers?: number;
 }
 
 function textResult(text: string): AgentToolResult<string> {
