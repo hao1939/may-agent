@@ -122,7 +122,7 @@ describe("terminal manager", () => {
       await delay(20);
 
       const replayed = secondSocket.frames
-        .filter((frame: any) => frame.type === "data")
+        .filter((frame: any) => frame.type === "replay")
         .map((frame: any) => frame.data)
         .join("");
       expect(replayed).toContain("before refresh\n");
@@ -154,11 +154,11 @@ describe("terminal manager", () => {
 
       const firstAfterReplay = firstSocket.frames
         .slice(firstFrameCount)
-        .filter((frame: any) => frame.type === "data")
+        .filter((frame: any) => frame.type === "replay")
         .map((frame: any) => frame.data)
         .join("");
       const secondReplay = secondSocket.frames
-        .filter((frame: any) => frame.type === "data")
+        .filter((frame: any) => frame.type === "replay")
         .map((frame: any) => frame.data)
         .join("");
 

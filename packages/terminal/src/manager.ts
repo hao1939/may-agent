@@ -303,7 +303,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       pid: session.ptyPid ?? session.child.pid,
     }));
     if (session.replayBuffer) {
-      socket.send(JSON.stringify({ type: "data", data: session.replayBuffer }));
+      socket.send(JSON.stringify({ type: "replay", data: session.replayBuffer }));
     }
   }
 
