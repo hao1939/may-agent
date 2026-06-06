@@ -1,4 +1,4 @@
-import { isRecord } from "./event-envelope.js";
+import { buildCanonicalEventEnvelope, isRecord, normalizeEventOwner } from "./event-envelope.js";
 
 export const SOCKET_CONTROL_TYPES = new Set(["subscribe", "status"]);
 
@@ -16,7 +16,7 @@ const UNSUPPORTED_SOCKET_FRAME_TYPES = new Set([
 ]);
 
 export function isSocketCommandType(type: string): boolean {
-  return type.startsWith("trigger.") || type === "session.cancel.requested";
+  return type.startsWith("trigger.");
 }
 
 function isCanonicalEventType(type: string): boolean {
@@ -38,6 +38,105 @@ function socketEvent(command: string, event: Record<string, unknown>): SocketFra
   return message ? { kind: "error", command, message } : { kind: "event", command, event };
 }
 
+function nonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function shortcutSource(frame: Record<string, unknown>, fallback = "socket"): string {
+  return nonEmptyString(frame.source) ?? fallback;
+}
+
+function shortcutOwner(frame: Record<string, unknown>, fallback: unknown = "may"): string {
+  return normalizeEventOwner(frame.owner, fallback);
+}
+
+function shortcutMessage(frame: Record<string, unknown>, primary = "message"): string | null {
+  return nonEmptyString(frame[primary]) ?? nonEmptyString(frame.content) ?? nonEmptyString(frame.task);
+}
+
+function canonicalShortcutEvent(
+  originalCommand: string,
+  eventType: string,
+  frame: Record<string, unknown>,
+  data: Record<string, unknown>,
+  defaults: { source?: string; owner?: unknown; urgency?: string } = {},
+): SocketFrame {
+  return socketEvent(originalCommand, buildCanonicalEventEnvelope(eventType, {
+    source: shortcutSource(frame, defaults.source ?? "socket"),
+    owner: shortcutOwner(frame, defaults.owner ?? "may"),
+    ...(defaults.urgency ? { urgency: defaults.urgency } : {}),
+    data,
+  }));
+}
+
+function normalizeHumanShortcutFrame(cmdType: string, frame: Record<string, unknown>): SocketFrame | null {
+  switch (cmdType) {
+    case "input": {
+      const message = shortcutMessage(frame);
+      if (!message) return { kind: "error", command: cmdType, message: "input requires string field 'message'" };
+      const agent = nonEmptyString(frame.agent) ?? "may";
+      return canonicalShortcutEvent(cmdType, "chat.start.requested", frame, {
+        agent,
+        message,
+        channel: shortcutSource(frame),
+      }, { owner: agent });
+    }
+    case "steer": {
+      const sessionId = nonEmptyString(frame.sessionId);
+      const message = shortcutMessage(frame);
+      if (!sessionId) return { kind: "error", command: cmdType, message: "steer requires string field 'sessionId'" };
+      if (!message) return { kind: "error", command: cmdType, message: "steer requires string field 'message'" };
+      return canonicalShortcutEvent(cmdType, "session.steer.requested", frame, { sessionId, message });
+    }
+    case "session.cancel.requested": {
+      if (isRecord(frame.data)) return socketEvent(cmdType, frame);
+      const sessionId = nonEmptyString(frame.sessionId);
+      if (!sessionId) return { kind: "error", command: cmdType, message: "session.cancel.requested requires string field 'sessionId'" };
+      const reason = nonEmptyString(frame.reason);
+      return canonicalShortcutEvent(cmdType, "session.cancel.requested", frame, {
+        sessionId,
+        ...(reason ? { reason } : {}),
+      }, { urgency: "high" });
+    }
+    case "cancel_all": {
+      const reason = nonEmptyString(frame.reason) ?? "human requested cancel all";
+      return canonicalShortcutEvent(cmdType, "session.cancel_all.requested", frame, { reason }, { urgency: "high" });
+    }
+    case "reload":
+      return canonicalShortcutEvent(cmdType, "runtime.reload.requested", frame, {
+        ...(nonEmptyString(frame.reason) ? { reason: nonEmptyString(frame.reason) } : {}),
+      });
+    case "restart":
+      return canonicalShortcutEvent(cmdType, "runtime.restart.requested", frame, {
+        ...(nonEmptyString(frame.reason) ? { reason: nonEmptyString(frame.reason) } : {}),
+      }, { urgency: "high" });
+    case "shutdown":
+      return canonicalShortcutEvent(cmdType, "runtime.shutdown.requested", frame, {
+        ...(nonEmptyString(frame.reason) ? { reason: nonEmptyString(frame.reason) } : {}),
+      }, { urgency: "high" });
+    case "fork": {
+      const agent = nonEmptyString(frame.agent);
+      const message = shortcutMessage(frame);
+      const opts = isRecord(frame.opts) ? frame.opts : {};
+      if (agent && message && opts.kind === "chat") {
+        return canonicalShortcutEvent(cmdType, "chat.start.requested", {
+          ...frame,
+          source: shortcutSource(opts, shortcutSource(frame)),
+        }, {
+          agent,
+          message,
+          channel: shortcutSource(opts, shortcutSource(frame)),
+          forceNew: true,
+          ...(nonEmptyString(opts.requestId) ? { requestId: nonEmptyString(opts.requestId) } : {}),
+        }, { owner: agent });
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
+}
+
 export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFrame {
   const cmdType = frame.type;
   if (typeof cmdType !== "string" || !cmdType.trim()) {
@@ -51,6 +150,9 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
   if (UNSUPPORTED_SOCKET_FRAME_TYPES.has(cmdType)) {
     return { kind: "error", command: cmdType, message: `Unsupported socket frame type: ${cmdType}` };
   }
+
+  const normalizedShortcut = normalizeHumanShortcutFrame(cmdType, frame);
+  if (normalizedShortcut) return normalizedShortcut;
 
   return socketEvent(cmdType, frame);
 }
