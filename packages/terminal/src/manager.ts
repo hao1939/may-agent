@@ -26,8 +26,8 @@ interface TerminalSession {
   child: ChildProcessWithoutNullStreams;
   ptyPid?: number;
   clients: Set<TerminalSocket>;
-  replayRequests: TerminalSocket[];
   stdoutBuffer: string;
+  replayBuffer: string;
   idleTimer?: ReturnType<typeof setTimeout>;
   idleUntil?: number;
 }
@@ -36,6 +36,7 @@ const DEFAULT_COLS = 120;
 const DEFAULT_ROWS = 32;
 const DEFAULT_IDLE_TTL_MS = 10 * 60 * 1000;
 const TMUX_SOCKET = "may-web";
+const MAX_REPLAY_BUFFER_BYTES = 8 * 1024 * 1024;
 
 function enabledFromEnv(): boolean {
   return /^(1|true|yes|on)$/i.test(process.env.MAY_WEB_TERMINAL || "");
@@ -228,9 +229,26 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       profile,
       child,
       clients: new Set(),
-      replayRequests: [],
       stdoutBuffer: "",
+      replayBuffer: "",
     };
+
+    function rememberOutput(data: string): void {
+      session.replayBuffer += data;
+      if (session.replayBuffer.length > MAX_REPLAY_BUFFER_BYTES) {
+        session.replayBuffer = session.replayBuffer.slice(-MAX_REPLAY_BUFFER_BYTES);
+      }
+    }
+
+    function broadcastData(data: string): void {
+      rememberOutput(data);
+      const frame = { type: "data", data };
+      for (const client of session.clients) {
+        try {
+          client.send(JSON.stringify(frame));
+        } catch {}
+      }
+    }
 
     child.stdout.on("data", (chunk: Buffer) => {
       session.stdoutBuffer += chunk.toString();
@@ -245,15 +263,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
           frame = { type: "data", data: line + "\n" };
         }
         if (frame.type === "ready" && typeof frame.pid === "number") session.ptyPid = frame.pid;
-        if (frame.type === "replay") {
-          const replayClient = session.replayRequests.shift();
-          if (replayClient) {
-            try {
-              replayClient.send(JSON.stringify({ type: "data", data: frame.data || "" }));
-            } catch {}
-          }
-          continue;
-        }
+        if (frame.type === "data") rememberOutput(String(frame.data || ""));
         for (const client of session.clients) {
           try {
             client.send(JSON.stringify(frame));
@@ -264,12 +274,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
 
     child.stderr.on("data", (chunk: Buffer) => {
       const data = chunk.toString();
-      const frame = { type: "data", data };
-      for (const client of session.clients) {
-        try {
-          client.send(JSON.stringify(frame));
-        } catch {}
-      }
+      broadcastData(data);
     });
 
     child.on("close", (code, signal) => {
@@ -297,15 +302,15 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       profile: session.profile,
       pid: session.ptyPid ?? session.child.pid,
     }));
-    session.replayRequests.push(socket);
-    session.child.stdin.write(JSON.stringify({ type: "replay" }) + "\n");
+    if (session.replayBuffer) {
+      socket.send(JSON.stringify({ type: "data", data: session.replayBuffer }));
+    }
   }
 
   function detach(profileId: string, socket: TerminalSocket): void {
     const session = sessions.get(profileId);
     if (!session) return;
     session.clients.delete(socket);
-    session.replayRequests = session.replayRequests.filter((client) => client !== socket);
     if (session.clients.size === 0) {
       scheduleIdleClose(profileId, session);
     }
