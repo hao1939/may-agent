@@ -2,7 +2,7 @@ import { connect, Socket, type NetConnectOpts } from "node:net";
 import { resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { isSocketCommandType } from "./protocol.js";
-import { buildCanonicalEventEnvelope } from "./event-envelope.js";
+import { buildCanonicalEventEnvelope, normalizeEventOwner } from "./event-envelope.js";
 
 export interface SocketResponse {
   type: "ok" | "error" | "status";
@@ -215,7 +215,16 @@ export function sendDaemonInput(
   source = "control",
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
-  return sendSocketCommand(endpoint, { type: "input", message, source }, opts);
+  return sendDaemonEvent(endpoint, {
+    type: "chat.start.requested",
+    source,
+    owner: "agent:may",
+    data: {
+      agent: "may",
+      message,
+      channel: source,
+    },
+  }, opts);
 }
 
 export function sendAgentMessage(
@@ -225,5 +234,14 @@ export function sendAgentMessage(
   source = "control",
   opts?: { timeoutMs?: number },
 ): Promise<SocketResponse> {
-  return sendDaemonInput(endpoint, `@${agent} ${message}`, source, opts);
+  return sendDaemonEvent(endpoint, {
+    type: "chat.start.requested",
+    source,
+    owner: normalizeEventOwner(agent),
+    data: {
+      agent,
+      message,
+      channel: source,
+    },
+  }, opts);
 }

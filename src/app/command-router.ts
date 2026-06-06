@@ -27,6 +27,15 @@ function eventData(event: unknown): Record<string, unknown> {
   return isRecord(event.data) ? event.data : event;
 }
 
+function eventSource(event: unknown, fallback = "human"): string {
+  if (!isRecord(event)) return fallback;
+  return typeof event.source === "string" && event.source.trim() ? event.source.trim() : fallback;
+}
+
+function nonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 /**
  * Routes human/control input from console, socket, Telegram, and the event bus.
  *
@@ -170,6 +179,100 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
     bus.emit({ type: "info", message: "[cmd] Input ignored (no chat session). Use --chat for interactive mode." });
   }
 
+  function handleSteer(sessionId: unknown, message: unknown, source?: string): void {
+    const targetSid = nonEmptyString(sessionId);
+    const steerText = nonEmptyString(message);
+    if (!targetSid || !steerText) return;
+    try {
+      const sessions = manager.status();
+      const target = sessions.find((s) => s.sessionId === targetSid);
+      if (target) {
+        // Idle or running — send() handles both: it enqueues the user
+        // turn for the next agent loop iteration (idle: wakes up;
+        // running: queued for mid-flight delivery).
+        manager.send(targetSid, steerText);
+      } else {
+        try {
+          manager.resumeSession(targetSid, steerText, { source: source ?? "human" });
+          log("info", `[steer] Resumed cold session ${targetSid}`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          log("error", `[steer] ${msg}`);
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      log("error", `[steer] ${msg}`);
+    }
+  }
+
+  function cancelAllRunningSessions(): void {
+    for (const s of manager.status()) {
+      if (s.status === "running") manager.cancel(s.sessionId);
+    }
+    bus.emit({ type: "info", message: "[cmd] Cancelled all running sessions" });
+  }
+
+  function handleChatStart(event: unknown): void {
+    const data = eventData(event);
+    const message = nonEmptyString(data.message);
+    if (!message) return;
+    const agent = nonEmptyString(data.agent) ?? "may";
+    const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
+    const forceNew = data.forceNew === true;
+    const chatSession = options.getChatSession();
+    if (chatSession && agent === "may" && !forceNew) {
+      chatSession.handleInput(message, source);
+      return;
+    }
+
+    bus.emit({
+      type: "message.created",
+      source,
+      owner: normalizeEventOwner(agent),
+      urgency: "immediate",
+      data: {
+        from: source,
+        to: agent,
+        content: message,
+        intent: "chat.start",
+        priority: "P0",
+      },
+    } as any);
+    const sessionId = manager.run(agent, message, {
+      kind: "chat",
+      requestId: nonEmptyString(data.requestId) ?? undefined,
+    });
+    log("info", `[chat.start] Started ${agent} chat session: ${sessionId}`);
+  }
+
+  function handleFork(event: any): void {
+    if (!("agent" in event) || !("task" in event)) return;
+    bus.emit({
+      type: "message.created",
+      source: event.opts?.source || "socket",
+      owner: normalizeEventOwner(event.agent),
+      urgency: "immediate",
+      data: {
+        from: event.opts?.source || "socket",
+        to: event.agent,
+        content: event.task,
+        intent: "fork",
+        priority: "P0",
+      },
+    } as any);
+    const chatSession = options.getChatSession();
+    if (chatSession && event.agent === "may") {
+      chatSession.handleInput(event.task, "socket");
+    } else {
+      const sessionId = manager.run(event.agent, event.task, {
+        kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
+        requestId: event.opts?.requestId,
+      });
+      log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
+    }
+  }
+
   const unsubscribe = bus.subscribe((event) => {
     switch (event.type) {
       case "input":
@@ -177,40 +280,29 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         handleInput(event.message, event.source);
         break;
       case "steer": {
-        const targetSid = event.sessionId;
-        if (!targetSid || typeof event.message !== "string") break;
-        const steerText = event.message;
-        try {
-          const sessions = manager.status();
-          const target = sessions.find((s) => s.sessionId === targetSid);
-          if (target) {
-            // Idle or running — send() handles both: it enqueues the user
-            // turn for the next agent loop iteration (idle: wakes up;
-            // running: queued for mid-flight delivery).
-            manager.send(targetSid, steerText);
-          } else {
-            try {
-              manager.resumeSession(targetSid, steerText, { source: event.source ?? "human" });
-              log("info", `[steer] Resumed cold session ${targetSid}`);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              log("error", `[steer] ${msg}`);
-            }
-          }
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          log("error", `[steer] ${msg}`);
-        }
+        handleSteer(event.sessionId, event.message, event.source);
         break;
       }
+      case "session.steer.requested": {
+        const data = eventData(event);
+        handleSteer(data.sessionId, data.message, eventSource(event));
+        break;
+      }
+      case "chat.start.requested":
+        handleChatStart(event);
+        break;
       case "cancel":
         if (event.sessionId) manager.cancel(event.sessionId);
         break;
-      case "session.cancel.requested":
-        if (event.sessionId) manager.cancel(event.sessionId);
+      case "session.cancel.requested": {
+        const data = eventData(event);
+        const sessionId = nonEmptyString(data.sessionId);
+        if (sessionId) manager.cancel(sessionId);
         break;
+      }
       case "cancel_all":
-        handleInput("cancel all");
+      case "session.cancel_all.requested":
+        cancelAllRunningSessions();
         break;
       case "project.comment.created":
         {
@@ -224,39 +316,18 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
         }
         break;
       case "fork":
-        if ("agent" in event && "task" in event) {
-          bus.emit({
-            type: "message.created",
-            source: (event as any).opts?.source || "socket",
-            owner: normalizeEventOwner((event as any).agent),
-            urgency: "immediate",
-            data: {
-              from: (event as any).opts?.source || "socket",
-              to: (event as any).agent,
-              content: (event as any).task,
-              intent: "fork",
-              priority: "P0",
-            },
-          } as any);
-          const chatSession = options.getChatSession();
-          if (chatSession && event.agent === "may") {
-            chatSession.handleInput(event.task, "socket");
-          } else {
-            const sessionId = manager.run(event.agent, event.task, {
-              kind: (event.opts?.kind as "chat" | "job" | "call" | undefined) ?? "job",
-              requestId: event.opts?.requestId,
-            });
-            log("info", `[fork] Started ${event.agent} session: ${sessionId}`);
-          }
-        }
+        handleFork(event);
         break;
       case "reload":
+      case "runtime.reload.requested":
         void options.reload();
         break;
       case "restart":
+      case "runtime.restart.requested":
         options.restart();
         break;
       case "shutdown":
+      case "runtime.shutdown.requested":
         options.shutdown();
         break;
     }

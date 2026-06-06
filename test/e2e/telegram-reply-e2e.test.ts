@@ -102,9 +102,9 @@ describe("telegram reply e2e", () => {
     });
 
     const bus = new EventBus();
-    const inputs: string[] = [];
+    const chatStarts: string[] = [];
     bus.subscribe((event: any) => {
-      if (event.type === "input") inputs.push(String(event.message ?? ""));
+      if (event.type === "chat.start.requested") chatStarts.push(String(event.data?.message ?? ""));
     });
 
     const bot = attachTelegramBot({
@@ -116,17 +116,17 @@ describe("telegram reply e2e", () => {
     });
 
     await waitFor(() => {
-      expect(inputs).toHaveLength(1);
-      expect(inputs[0]).toContain("[User replying to Telegram message]");
-      expect(inputs[0]).toContain("Project needs attention");
-      expect(inputs[0]).toContain("User says: show details");
+      expect(chatStarts).toHaveLength(1);
+      expect(chatStarts[0]).toContain("[User replying to Telegram message]");
+      expect(chatStarts[0]).toContain("Project needs attention");
+      expect(chatStarts[0]).toContain("User says: show details");
     });
 
     activeSessionId = "s_test_reply";
     bus.emit(sessionStart({
       sessionId: activeSessionId,
       agent: "may",
-      task: inputs[0],
+      task: chatStarts[0],
       trigger: "chat",
       firedAt: Date.now(),
       kind: "chat",
@@ -139,7 +139,7 @@ describe("telegram reply e2e", () => {
       summary: "Actual May answer with the requested details.",
       durationMs: 10,
       status: "done",
-      task: inputs[0],
+      task: chatStarts[0],
     }) as any);
 
     await waitFor(() => {
@@ -397,7 +397,7 @@ describe("telegram reply e2e", () => {
     const inputs: any[] = [];
     const replies: any[] = [];
     bus.subscribe((event: any) => {
-      if (event.type === "steer") steers.push(event);
+      if (event.type === "session.steer.requested") steers.push(event);
       if (event.type === "input") inputs.push(event);
       if (event.type === "telegram.reply") replies.push(event);
     });
@@ -413,11 +413,11 @@ describe("telegram reply e2e", () => {
     await waitFor(() => {
       expect(steers).toHaveLength(1);
       expect(steers[0]).toMatchObject({
-        type: "steer",
-        sessionId: "s_reply_target",
+        type: "session.steer.requested",
         source: "telegram",
+        data: { sessionId: "s_reply_target" },
       });
-      expect(String(steers[0].message)).toContain("continue with the smaller plan");
+      expect(String(steers[0].data?.message)).toContain("continue with the smaller plan");
       expect(inputs).toHaveLength(0);
       expect(replies.some((event) => event.data?.enriched === true && event.data?.hasSessionCtx === true)).toBe(true);
       expect(sentMessages.some((m) => m.text.includes("Reply sent to session s_reply_target"))).toBe(true);
@@ -464,11 +464,13 @@ describe("telegram reply e2e", () => {
     await waitFor(() => {
       expect(events).toContainEqual({
         type: "session.cancel.requested",
-        sessionId: "s_active_telegram",
         source: "telegram",
+        owner: "agent:may",
+        urgency: "high",
+        data: { sessionId: "s_active_telegram" },
       });
-      expect(events).toContainEqual({ type: "reload", source: "telegram" });
-      expect(events).toContainEqual({ type: "shutdown", source: "telegram" });
+      expect(events).toContainEqual({ type: "runtime.reload.requested", source: "telegram", owner: "agent:may", data: {} });
+      expect(events).toContainEqual({ type: "runtime.shutdown.requested", source: "telegram", owner: "agent:may", urgency: "high", data: {} });
       expect(events.some((event) => event.type === "input")).toBe(false);
     });
 

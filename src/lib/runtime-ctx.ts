@@ -49,7 +49,7 @@ export interface RuntimeCtxOptions {
 }
 
 function isSocketCommandType(type: string): boolean {
-  return type.startsWith("trigger.") || type === "session.cancel.requested";
+  return type.startsWith("trigger.");
 }
 
 function runtimeEventEnvelope(event: { type: string; [key: string]: unknown }, agentName: string): { type: string; [key: string]: unknown } {

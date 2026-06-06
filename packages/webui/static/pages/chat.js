@@ -41,6 +41,26 @@ let chatAutoScroll = true;
 let feedAutoScroll = true;
 let feedItems = [];
 
+function eventOwner(agent) {
+  const value = String(agent || 'may').trim() || 'may';
+  return value.startsWith('agent:') || value.startsWith('human:') ? value : 'agent:' + value;
+}
+
+function currentSessionAgent() {
+  const session = activeSessions.find(s => s.sessionId === currentSessionId);
+  return session?.agent || currentAgentChat || 'may';
+}
+
+function sendIntent(type, ownerAgent, data, extra) {
+  ws.send(JSON.stringify({
+    type,
+    source: 'web-ui',
+    owner: eventOwner(ownerAgent),
+    ...(extra || {}),
+    data,
+  }));
+}
+
 function toggleChatScroll() {
   chatAutoScroll = !chatAutoScroll;
   const btn = document.getElementById('scroll-toggle');
@@ -557,7 +577,7 @@ function sendChat() {
   if (currentSessionId) {
     // Steer the selected session (works for running, idle, and — via 3b
     // cold-resume — done/error/interrupted sessions too).
-    ws.send(JSON.stringify({ type: 'steer', sessionId: currentSessionId, message: msg }));
+    sendIntent('session.steer.requested', currentSessionAgent(), { sessionId: currentSessionId, message: msg });
   } else if (currentAgentChat) {
     // Telegram-style: agent chat with no session yet. POST spawns one.
     const newParam = forceNewAgentChat ? '?new=true' : '';
@@ -573,7 +593,7 @@ function sendChat() {
     }).catch(e => toast('Failed: ' + e.message));
   } else {
     // Chat mode — input to the interface agent
-    ws.send(JSON.stringify({ type: 'input', message: msg }));
+    sendIntent('chat.start.requested', 'may', { agent: 'may', message: msg, channel: 'web-ui' });
   }
   input.value = '';
 }
