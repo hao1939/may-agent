@@ -142,26 +142,25 @@ Active tool-level guards (as of 2026-06-05, from `manager.ts buildGuards()`):
 because they fire per tool call. Guard noise composition shifts over
 time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
-falsified KE-1564). As of 2026-06-14 (24h window): uncommitted-files
-warnings remain dominant at ~49% (880 of 1,790 total; combining
-"Uncommitted files" 528 + "finish() uncommitted" 352),
-SESSION_BASH_CAT ~18% (324), PATH_HALLUCINATION ~10% (182),
-SESSION_READ ~10% (184), READ_DEDUP ~3% (55, dropped from ~10%),
-SESSION_BASH_GREP ~3% (47). C7.1 and C1.1 no longer appear in the
-24h window (possible guard removal or rename).
-Total: ~1,790/day — slight decline from prior snapshot (~1,885).
-READ_DEDUP's decline (10% → 3%) suggests the read-dedup guard is
-either being respected more often or firing less due to behavior change.
+falsified KE-1564).
 
-**Agent concentration:** Evaluator alone drives 62% of tool-level guard
-events (1,113 of 1,790 beforeToolCall): Uncommitted-files-info 478,
-SESSION_BASH_CAT 311, SESSION_READ 184, finish-uncommitted 46,
-SESSION_BASH_GREP 43, PATH_HALLUCINATION 17, READ_DEDUP 3. The
-session-read guards (BASH_CAT + SESSION_READ = 495) fire because the
-evaluator's workflow reads session.jsonl to review sessions — this is
-structural, not a misbehavior pattern. aks-explorer is second at 19%
-(332). READ_DEDUP dropped sharply for both evaluator (40→3) and
-aks-explorer (93→unk), suggesting dedup behavior improved system-wide.
+As of **2026-06-14** (24h window): uncommitted-files warnings were
+dominant at ~49% (880 of 1,790), with SESSION_BASH_CAT ~18%,
+PATH_HALLUCINATION ~10%, SESSION_READ ~10%, READ_DEDUP ~3%.
+
+**Update 2026-07-06** (24h window, ~1,939 tool-level triggers): guard
+composition has collapsed to a **single signal** — 100% of tool-level
+(`beforeToolCall`) triggers are commit-guard "uncommitted files" warnings
+at `finish()`. SESSION_BASH_CAT, SESSION_READ, PATH_HALLUCINATION, and
+READ_DEDUP no longer appear in the tool-level event stream. The
+`hallucinated-path` and `read-before-edit` workflow guards still fire
+(101 and 20 triggers respectively in 24h), but these use `source:
+"workflow"`, not `source: "tool"`. Total guard events: ~1,939 tool +
+~121 workflow = ~2,060/day. The monoculture pattern (KE-1362) has
+reached its logical extreme: a single guard type generates all tool-level
+noise. This is structural — every session that calls `finish()` with
+dirty worktree files triggers it, regardless of whether those files are
+the agent's own deliverables.
 
 ### Known issue: guard name conflation
 
