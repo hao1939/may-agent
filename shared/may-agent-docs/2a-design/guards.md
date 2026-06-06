@@ -149,15 +149,17 @@ dominant at ~49% (880 of 1,790), with SESSION_BASH_CAT ~18%,
 PATH_HALLUCINATION ~10%, SESSION_READ ~10%, READ_DEDUP ~3%.
 
 **Update 2026-07-06** (24h window, ~1,939 tool-level triggers): guard
-composition has collapsed to a **single signal** — 100% of tool-level
-(`beforeToolCall`) triggers are commit-guard "uncommitted files" warnings
-at `finish()`. SESSION_BASH_CAT, SESSION_READ, PATH_HALLUCINATION, and
-READ_DEDUP no longer appear in the tool-level event stream. The
-`hallucinated-path` and `read-before-edit` workflow guards still fire
-(101 and 20 triggers respectively in 24h), but these use `source:
-"workflow"`, not `source: "tool"`. Total guard events: ~1,939 tool +
-~121 workflow = ~2,060/day. The monoculture pattern (KE-1362) has
-reached its logical extreme: a single guard type generates all tool-level
+composition previously collapsed to a single signal. **Correction
+2026-08-03** (24h window, ~1,858 tool-level triggers): composition has
+**diversified again** — uncommitted-files warnings are ~50% (934),
+SESSION_BASH_CAT ~18% (333), PATH_HALLUCINATION ~12% (221),
+SESSION_READ ~11% (201), READ_DEDUP ~2% (35). The `hallucinated-path`
+and `read-before-edit` workflow guards also fire (109 and 20 triggers
+in 24h), using `source: "workflow"`. Total guard events: ~1,858 tool +
+~129 workflow ≈ ~1,987/day. The monoculture pattern (KE-1362) has
+reversed — all five tool-level guard types are active again. The prior
+"100% single signal" observation was either a transient state or a
+measurement artifact. Total count remains near the 2,000/day threshold
 noise. This is structural — every session that calls `finish()` with
 dirty worktree files triggers it, regardless of whether those files are
 the agent's own deliverables.
