@@ -164,6 +164,15 @@ noise. This is structural — every session that calls `finish()` with
 dirty worktree files triggers it, regardless of whether those files are
 the agent's own deliverables.
 
+**Update 2026-06-08** (24h window, ~1,611 tool-level triggers):
+composition remains stable — uncommitted-files ~53% (849),
+SESSION_BASH_CAT ~19% (300), SESSION_READ ~13% (211),
+PATH_HALLUCINATION ~8% (130), READ_DEDUP ~6% (95),
+SESSION_BASH_GREP ~2% (26). Workflow guards: hallucinated-path 53,
+read-before-edit 7. Total: ~1,672/day. Diversity is persistent, not
+transient — the monoculture pattern (KE-1362) is definitively falsified
+across 3+ days of measurement (KE-1626).
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
