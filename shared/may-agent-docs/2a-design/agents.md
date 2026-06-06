@@ -15,15 +15,15 @@
 const result = await sdk.runAgent("tech-lead", task);
 
 // parallel calls
-const [dev, qa] = await Promise.all([
+const [devResult, scoutResult] = await Promise.all([
   sdk.runAgent("dev", task),
-  sdk.runAgent("qa", review),
+  sdk.runAgent("scout", review),
 ]);
 
 // message (async notification — delivered at next heartbeat)
-sdk.message("bob", "Review this design");
-// emits canonical message.created with owner: "agent:bob"
-// and data: { from: agent, to: "bob", content: "...", priority: "P2" }
+sdk.message("arc", "Review this design");
+// emits canonical message.created with owner: "agent:arc"
+// and data: { from: agent, to: "arc", content: "...", priority: "P2" }
 ```
 
 ## Session Tree
@@ -34,8 +34,8 @@ call creates children; fork creates independent sessions:
   Root (May heartbeat)
     ├── call("tech-lead", task)         ← child (blocks)
     │     └── call("dev", task)         ← grandchild
-    ├── call("qa", review)             ← child
-    └── fork("scout", task)            ← independent (non-blocking)
+    ├── call("scout", review)          ← child
+    └── fork("evaluator", task)        ← independent (non-blocking)
 ```
 
 ## Context Passing
