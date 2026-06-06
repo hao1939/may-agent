@@ -2369,7 +2369,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {
     if (!sessionId) return json({ error: "sessionId required" }, 400);
-    const result = await sendDaemonFrame({ type: "session.cancel.requested", sessionId, source: "web-ui" });
+    const result = await sendDaemonFrame({
+      type: "session.cancel.requested",
+      source: "web-ui",
+      owner: "agent:may",
+      urgency: "high",
+      data: { sessionId },
+    });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId });
   }
@@ -2380,11 +2386,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     try { body = await req.json() as { content?: string }; } catch { return json({ error: "invalid json" }, 400); }
     const content = (body.content ?? "").trim();
     if (!content) return json({ error: "content required" }, 400);
-    // Use 'steer' — command-router routes to manager.send() for both idle
-    // and running sessions (send() enqueues the user turn; the agent picks
-    // it up on the next loop iteration whether currently active or idle).
-    // Cold (interrupted) sessions go through manager.resumeSession().
-    const result = await sendDaemonFrame({ type: "steer", sessionId, message: content });
+    // The daemon owns active/idle/cold routing: active/idle sessions receive
+    // manager.send(); terminal-but-resumable sessions attempt resumeSession().
+    const result = await sendDaemonFrame({
+      type: "session.steer.requested",
+      source: "web-ui",
+      owner: "agent:may",
+      data: { sessionId, message: content },
+    });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, sessionId, deliveredAt: Date.now() });
   }
@@ -2651,16 +2660,24 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const resolveResp = handleAgentDefaultSession(agentName);
       const resolved = await resolveResp.json() as { agent: string; sessionId: string | null };
       if (resolved.sessionId) {
-        const result = await sendDaemonFrame({ type: "steer", sessionId: resolved.sessionId, message: content });
+        const result = await sendDaemonFrame({
+          type: "session.steer.requested",
+          source: "web-ui",
+          owner: normalizeEventOwner(agentName),
+          data: { sessionId: resolved.sessionId, message: content },
+        });
         if (!result.ok) return json({ error: result.error }, 503);
         return json({ ok: true, agent: agentName, sessionId: resolved.sessionId, deliveredAt: Date.now(), spawned: false });
       }
     }
 
-    // No prior session — spawn one. Use 'fork' command which routes through
-    // manager.run() and is the canonical way to start a fresh agent session
-    // from outside the runtime.
-    const result = await sendDaemonFrame({ type: "fork", agent: agentName, task: content, opts: { kind: "chat", source: "web-ui" } });
+    // No prior session — request a create-or-bind chat start from the daemon.
+    const result = await sendDaemonFrame({
+      type: "chat.start.requested",
+      source: "web-ui",
+      owner: normalizeEventOwner(agentName),
+      data: { agent: agentName, message: content, channel: "web-ui", forceNew },
+    });
     if (!result.ok) return json({ error: result.error }, 503);
     return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
   }

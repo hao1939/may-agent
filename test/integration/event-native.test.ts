@@ -118,19 +118,30 @@ describe("event-native: events table", () => {
     expect(existing.length).toBe(1); // Found → skip duplicate
   });
 
-  it("persists adapter command events for runtime traceability", () => {
+  it("persists canonical human control intents for runtime traceability", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);
 
-    writer.handler({ type: "reload", source: "telegram" } as any);
-    writer.handler({ type: "cancel_all", source: "telegram" } as any);
-    writer.handler({ type: "steer", sessionId: "s_trace", message: "continue", source: "telegram" } as any);
+    writer.handler({ type: "runtime.reload.requested", source: "telegram", owner: "agent:may", data: {} } as any);
+    writer.handler({
+      type: "session.cancel_all.requested",
+      source: "telegram",
+      owner: "agent:may",
+      urgency: "high",
+      data: { reason: "human requested cancel all" },
+    } as any);
+    writer.handler({
+      type: "session.steer.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: { sessionId: "s_trace", message: "continue" },
+    } as any);
 
     const rows = db.prepare(
       "SELECT event_type, source, data FROM events ORDER BY id ASC",
     ).all() as Array<{ event_type: string; source: string | null; data: string }>;
 
-    expect(rows.map((row) => row.event_type)).toEqual(["reload", "cancel_all", "steer"]);
+    expect(rows.map((row) => row.event_type)).toEqual(["runtime.reload.requested", "session.cancel_all.requested", "session.steer.requested"]);
     expect(rows.map((row) => row.source)).toEqual(["telegram", "telegram", "telegram"]);
     expect(JSON.parse(rows[2].data)).toMatchObject({ sessionId: "s_trace", message: "continue" });
   });

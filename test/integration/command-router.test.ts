@@ -96,6 +96,71 @@ describe("command router", () => {
     h.router.close();
   });
 
+  it("resumes cold sessions for canonical session.steer.requested events", () => {
+    const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
+    const h = createHarness({
+      status: () => [],
+      resumeSession: (sessionId: string, message: string, opts?: { source?: string }) => {
+        resumed.push({ sessionId, message, source: opts?.source });
+        return sessionId;
+      },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "session.steer.requested",
+      source: "web-ui",
+      owner: "agent:may",
+      data: { sessionId: "s_cold", message: "follow up" },
+    });
+
+    expect(resumed).toEqual([{ sessionId: "s_cold", message: "follow up", source: "web-ui" }]);
+    h.router.close();
+  });
+
+  it("routes canonical chat.start.requested for May through the active chat session", () => {
+    const handled: Array<{ message: string; source?: string }> = [];
+    const h = createHarness();
+    h.setChatSession({
+      handleInput: (message: string, source?: string) => handled.push({ message, source }),
+    } as unknown as ChatSession);
+
+    h.bus.emit({
+      type: "chat.start.requested",
+      source: "may-console",
+      owner: "agent:may",
+      data: { agent: "may", message: "please review", channel: "may-console" },
+    });
+
+    expect(handled).toEqual([{ message: "please review", source: "may-console" }]);
+    h.router.close();
+  });
+
+  it("starts a chat session for canonical chat.start.requested when no chat session is bound", () => {
+    const runs: Array<{ agent: string; task: string; kind?: string; requestId?: string }> = [];
+    const h = createHarness({
+      run: (agent: string, task: string, opts?: { kind?: string; requestId?: string }) => {
+        runs.push({ agent, task, kind: opts?.kind, requestId: opts?.requestId });
+        return "s_new";
+      },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "chat.start.requested",
+      source: "cli",
+      owner: "agent:dev",
+      data: { agent: "dev", message: "investigate", channel: "cli", requestId: "r1" },
+    });
+
+    expect(runs).toEqual([{ agent: "dev", task: "investigate", kind: "chat", requestId: "r1" }]);
+    expect(h.emitted).toContainEqual(expect.objectContaining({
+      type: "message.created",
+      source: "cli",
+      owner: "agent:dev",
+      data: expect.objectContaining({ to: "dev", content: "investigate", intent: "chat.start" }),
+    }));
+    h.router.close();
+  });
+
   it("ignores input and steer commands that do not use the canonical message field", () => {
     const handled: Array<{ message: string; source?: string }> = [];
     const resumed: Array<{ sessionId: string; message: string; source?: string }> = [];
@@ -214,6 +279,35 @@ describe("command router", () => {
     h.bus.emit({ type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" });
 
     expect(cancelled).toEqual(["s_1"]);
+    h.router.close();
+  });
+
+  it("handles canonical session.cancel.requested and session.cancel_all.requested", () => {
+    const cancelled: string[] = [];
+    const h = createHarness({
+      status: () => [
+        { sessionId: "s_1", agent: "dev", status: "running", task: "", runtime: "codex" },
+        { sessionId: "s_2", agent: "dev", status: "idle", task: "", runtime: "codex" },
+      ],
+      cancel: (sessionId: string) => { cancelled.push(sessionId); },
+    } as Partial<SubagentManager>);
+
+    h.bus.emit({
+      type: "session.cancel.requested",
+      source: "web-ui",
+      owner: "agent:may",
+      urgency: "high",
+      data: { sessionId: "s_0" },
+    });
+    h.bus.emit({
+      type: "session.cancel_all.requested",
+      source: "web-ui",
+      owner: "agent:may",
+      urgency: "high",
+      data: { reason: "test" },
+    });
+
+    expect(cancelled).toEqual(["s_0", "s_1"]);
     h.router.close();
   });
 });

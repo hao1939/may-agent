@@ -129,7 +129,7 @@ describe("socket frame normalization", () => {
     });
   });
 
-  it("passes direct command/event frames through without aliasing fields", () => {
+  it("normalizes legacy human socket shortcuts into canonical intent events", () => {
     expect(normalizeSocketFrame({ type: "trigger.metrics-snapshot", forced: true })).toEqual({
       kind: "event",
       command: "trigger.metrics-snapshot",
@@ -138,13 +138,59 @@ describe("socket frame normalization", () => {
     expect(normalizeSocketFrame({ type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" })).toEqual({
       kind: "event",
       command: "session.cancel.requested",
-      event: { type: "session.cancel.requested", sessionId: "s_1", source: "web-ui" },
+      event: {
+        type: "session.cancel.requested",
+        source: "web-ui",
+        owner: "agent:may",
+        urgency: "high",
+        data: { sessionId: "s_1" },
+      },
     });
     expect(normalizeSocketFrame({ type: "input", message: "hello", source: "socket" })).toEqual({
       kind: "event",
       command: "input",
-      event: { type: "input", message: "hello", source: "socket" },
+      event: {
+        type: "chat.start.requested",
+        source: "socket",
+        owner: "agent:may",
+        data: { agent: "may", message: "hello", channel: "socket" },
+      },
     });
+    expect(normalizeSocketFrame({ type: "steer", sessionId: "s_1", message: "continue", source: "web-ui" })).toEqual({
+      kind: "event",
+      command: "steer",
+      event: {
+        type: "session.steer.requested",
+        source: "web-ui",
+        owner: "agent:may",
+        data: { sessionId: "s_1", message: "continue" },
+      },
+    });
+    expect(normalizeSocketFrame({ type: "cancel_all", source: "web-ui" })).toEqual({
+      kind: "event",
+      command: "cancel_all",
+      event: {
+        type: "session.cancel_all.requested",
+        source: "web-ui",
+        owner: "agent:may",
+        urgency: "high",
+        data: { reason: "human requested cancel all" },
+      },
+    });
+    expect(normalizeSocketFrame({ type: "restart", source: "web-ui" })).toEqual({
+      kind: "event",
+      command: "restart",
+      event: {
+        type: "runtime.restart.requested",
+        source: "web-ui",
+        owner: "agent:may",
+        urgency: "high",
+        data: {},
+      },
+    });
+  });
+
+  it("keeps non-chat fork compatibility frames flat", () => {
     expect(normalizeSocketFrame({ type: "fork", agent: "dev", task: "investigate", opts: { kind: "job", source: "web-ui" } })).toEqual({
       kind: "event",
       command: "fork",
@@ -152,11 +198,16 @@ describe("socket frame normalization", () => {
     });
   });
 
-  it("does not alias content/message fields at the socket boundary", () => {
+  it("normalizes legacy content/task aliases only for supported human shortcuts", () => {
     expect(normalizeSocketFrame({ type: "input", content: "hello" })).toEqual({
       kind: "event",
       command: "input",
-      event: { type: "input", content: "hello" },
+      event: {
+        type: "chat.start.requested",
+        source: "socket",
+        owner: "agent:may",
+        data: { agent: "may", message: "hello", channel: "socket" },
+      },
     });
     expect(normalizeSocketFrame({ type: "fork", agent: "dev", message: "investigate" })).toEqual({
       kind: "event",

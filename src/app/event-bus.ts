@@ -25,14 +25,24 @@ export type AgentCommand =
     }
   | { type: "input"; sessionId?: string; message: string; source?: string }
   | { type: "steer"; sessionId?: string; message: string; source?: string }
+  | { type: "chat.start.requested"; source: string; owner: string; data: { agent?: string; message: string; channel?: string; channelThreadId?: string; forceNew?: boolean; requestId?: string } }
+  | { type: "session.steer.requested"; source: string; owner: string; data: { sessionId: string; message: string } }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
   | { type: "resume"; sessionId: string }
   | { type: "session.cancel.requested"; sessionId: string; source?: string }
+  | { type: "session.cancel.requested"; source: string; owner: string; urgency?: string; data: { sessionId: string; reason?: string } }
+  | { type: "session.cancel_all.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }
   | { type: "project.comment.created"; source?: string; owner: string; data: { projectPath: string; comment: string; author?: string } };
 
 /** Management commands (to core / supervisord) */
-export type ManagementCommand = { type: "reload" } | { type: "restart" } | { type: "shutdown" };
+export type ManagementCommand =
+  | { type: "reload" }
+  | { type: "restart" }
+  | { type: "shutdown" }
+  | { type: "runtime.reload.requested"; source: string; owner: string; data: { reason?: string } }
+  | { type: "runtime.restart.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }
+  | { type: "runtime.shutdown.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } };
 
 /** Observation events (from core) */
 export type SessionEvent =

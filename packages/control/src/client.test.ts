@@ -1,6 +1,6 @@
 import { Duplex } from "node:stream";
 import { describe, expect, it } from "bun:test";
-import { daemonSocketPath, emitDaemonEvent, sendDaemonEvent, type SocketEndpoint } from "./client.js";
+import { daemonSocketPath, emitDaemonEvent, sendAgentMessage, sendDaemonEvent, sendDaemonInput, type SocketEndpoint } from "./client.js";
 
 function okEndpoint(): SocketEndpoint {
   return () => {
@@ -154,6 +154,28 @@ describe("emitDaemonEvent", () => {
     expect(JSON.parse(writes[0] ?? "")).toEqual({
       type: "trigger.metrics-snapshot",
       source: "control",
+    });
+  });
+
+  it("sends human chat helpers as canonical chat.start.requested intents", async () => {
+    const writes: string[] = [];
+
+    await expect(sendDaemonInput(captureEndpoint(writes), "hello May", "cli"))
+      .resolves.toMatchObject({ type: "ok", command: "chat.start.requested" });
+    await expect(sendAgentMessage(captureEndpoint(writes), "dev", "fix it", "cli"))
+      .resolves.toMatchObject({ type: "ok", command: "chat.start.requested" });
+
+    expect(JSON.parse(writes[0] ?? "")).toEqual({
+      type: "chat.start.requested",
+      source: "cli",
+      owner: "agent:may",
+      data: { agent: "may", message: "hello May", channel: "cli" },
+    });
+    expect(JSON.parse(writes[1] ?? "")).toEqual({
+      type: "chat.start.requested",
+      source: "cli",
+      owner: "agent:dev",
+      data: { agent: "dev", message: "fix it", channel: "cli" },
     });
   });
 });

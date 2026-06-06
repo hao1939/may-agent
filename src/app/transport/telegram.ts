@@ -174,6 +174,49 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return true;
   }
 
+  function emitChatStart(message: string, source = "telegram"): void {
+    bus.emit({
+      type: "chat.start.requested",
+      source,
+      owner: normalizeEventOwner(opts.interfaceAgent),
+      data: {
+        agent: opts.interfaceAgent,
+        message,
+        channel: "telegram",
+        channelThreadId: pendingChatId ?? undefined,
+      },
+    } as any);
+  }
+
+  function emitSessionSteer(sessionId: string, message: string, owner?: string): void {
+    bus.emit({
+      type: "session.steer.requested",
+      source: "telegram",
+      owner: normalizeEventOwner(owner ?? opts.interfaceAgent),
+      data: { sessionId, message },
+    } as any);
+  }
+
+  function emitSessionCancel(sessionId: string): void {
+    bus.emit({
+      type: "session.cancel.requested",
+      source: "telegram",
+      owner: normalizeEventOwner(opts.interfaceAgent),
+      urgency: "high",
+      data: { sessionId },
+    } as any);
+  }
+
+  function emitCancelAll(): void {
+    bus.emit({
+      type: "session.cancel_all.requested",
+      source: "telegram",
+      owner: normalizeEventOwner(opts.interfaceAgent),
+      urgency: "high",
+      data: { reason: "human requested cancel all" },
+    } as any);
+  }
+
   // ── Incoming message handling ────────────────────────────────────
 
   function isAllowed(chatId: number): boolean {
@@ -252,12 +295,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
             if (await handleTelegramCommand(text, chatIdStr, route.sessionId)) {
               return;
             }
-            bus.emit({
-              type: "steer",
-              sessionId: route.sessionId,
-              message: enrichedText,
-              source: "telegram",
-            } as any);
+            emitSessionSteer(route.sessionId, enrichedText, route.owner);
             await sendMessage(chatIdStr, `Reply sent to session ${route.sessionId}.`, undefined, {
               eventType: "telegram.reply",
               agent: route.owner || opts.interfaceAgent,
@@ -319,7 +357,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // All input goes through the unified handler (enriched if reply)
     const finalMessage = replyToMsgId ? enrichedText : inputMessage;
-    bus.emit({ type: "input", message: finalMessage, source: "telegram" } as any);
+    emitChatStart(finalMessage);
   }
 
   async function handleTelegramCommand(text: string, chatIdStr: string, targetSessionId?: string): Promise<boolean> {
@@ -346,26 +384,37 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     if (command === "/cancel") {
       if (rest[0]?.toLowerCase() === "all") {
-        bus.emit({ type: "cancel_all", source: "telegram" } as any);
+        emitCancelAll();
         return true;
       }
 
       const sessionId = targetSessionId || outbound.getRootChatSessionId() || getSessionId();
       if (sessionId) {
-        bus.emit({ type: "session.cancel.requested", sessionId, source: "telegram" } as any);
+        emitSessionCancel(sessionId);
       } else {
-        bus.emit({ type: "cancel_all", source: "telegram" } as any);
+        emitCancelAll();
       }
       return true;
     }
 
     if (command === "/reload") {
-      bus.emit({ type: "reload", source: "telegram" } as any);
+      bus.emit({
+        type: "runtime.reload.requested",
+        source: "telegram",
+        owner: normalizeEventOwner(opts.interfaceAgent),
+        data: {},
+      } as any);
       return true;
     }
 
     if (command === "/close") {
-      bus.emit({ type: "shutdown", source: "telegram" } as any);
+      bus.emit({
+        type: "runtime.shutdown.requested",
+        source: "telegram",
+        owner: normalizeEventOwner(opts.interfaceAgent),
+        urgency: "high",
+        data: {},
+      } as any);
       return true;
     }
 
