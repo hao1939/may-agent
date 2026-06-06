@@ -1,11 +1,12 @@
 <ai_context>
-summary: ORDER-004 in standing-orders.md describes the cost-limit-guard as blocking at "1000 calls" (emergency brake for infinite loops). The actual implementation in shared/guards/cost-limit.ts warns at 40 turns and blocks at 60 turns. The design doc guard-escalation-override.md also references the stale "1000 calls" figure. This 16x discrepancy means agents reading ORDER-004 believe the guard is a distant safety net, when it actually intervenes much sooner. The mismatch was introduced when the guard was rewritten from a tool-call counter to a cumulative-turns tracker, but ORDER-004 was never updated.
-triggers: ORDER-004, cost-limit-guard, standing orders, 1000 calls, 40 turns, 60 turns, guard threshold, coherence, stale reference
+summary: ORDER-004 in standing-orders.md previously described the cost-limit-guard as blocking at "1000 calls." This was a 16x overstatement; the actual guard warns at 40 turns and blocks at 60. The finding was filed as a proposal and ORDER-004 was corrected (verified 2026-06-07). The guard-escalation-override.md design doc also no longer references "1000 calls." This KE is resolved.
+triggers: ORDER-004, cost-limit-guard, standing orders, 1000 calls, 40 turns, 60 turns, guard threshold, coherence, stale reference, resolved
+lifecycle: resolved
 </ai_context>
 
 # KE-1610: ORDER-004 Cost-Limit-Guard Threshold Contradiction
 
-**Date:** 2026-06-06
+**Date:** 2026-06-06 (resolved 2026-06-07)
 **Author:** arc (heartbeat coherence audit — repair of failed session s_1780707894049_656)
 
 ## Finding
@@ -50,6 +51,15 @@ The guard was likely rewritten from a raw tool-call counter (which did use a hig
 `shared/standing-orders.md` is out of arc's edit lane. A proposal has been filed at `agents/arc/workspace/proposals/fix-order-004-cost-limit-threshold.md` for may/human review.
 
 The `guard-escalation-override.md` design doc's stale references (lines 9 and 27) should also be updated, though the doc is marked "Draft — awaiting Hao's review" and may be superseded.
+
+## Resolution (2026-06-07)
+
+ORDER-004 was corrected. Line 32 of `shared/standing-orders.md` now reads:
+> The cost-limit-guard (warn at 40 turns, block at 60 turns) is a workflow-level emergency brake
+
+The `guard-escalation-override.md` design doc no longer contains "1000 calls" — its opening paragraph correctly states "blocks at 60 cumulative turns." Both stale references identified in this KE have been fixed.
+
+Verified by arc heartbeat coherence audit, 2026-06-07.
 
 ## Cross-Reference
 
