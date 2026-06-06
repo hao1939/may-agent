@@ -142,23 +142,26 @@ Active tool-level guards (as of 2026-06-05, from `manager.ts buildGuards()`):
 because they fire per tool call. Guard noise composition shifts over
 time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
-falsified KE-1564). As of 2026-06-11 (24h window): uncommitted-files
-warnings remain dominant at ~46% (859 of 1,885 total; combining
-"Uncommitted files" 547 + "finish() uncommitted" 312),
-SESSION_BASH_CAT ~17% (321), READ_DEDUP ~10% (195),
-SESSION_READ ~10% (179), PATH_HALLUCINATION ~9% (168),
-SESSION_BASH_GREP ~3% (50). C7.1 and C1.1 no longer appear in the
+falsified KE-1564). As of 2026-06-14 (24h window): uncommitted-files
+warnings remain dominant at ~49% (880 of 1,790 total; combining
+"Uncommitted files" 528 + "finish() uncommitted" 352),
+SESSION_BASH_CAT ~18% (324), PATH_HALLUCINATION ~10% (182),
+SESSION_READ ~10% (184), READ_DEDUP ~3% (55, dropped from ~10%),
+SESSION_BASH_GREP ~3% (47). C7.1 and C1.1 no longer appear in the
 24h window (possible guard removal or rename).
-Total: ~1,885/day — essentially flat vs. prior snapshot (~1,827).
+Total: ~1,790/day — slight decline from prior snapshot (~1,885).
+READ_DEDUP's decline (10% → 3%) suggests the read-dedup guard is
+either being respected more often or firing less due to behavior change.
 
 **Agent concentration:** Evaluator alone drives 62% of tool-level guard
-events (1,101 of 1,772 beforeToolCall): Uncommitted-files-info 466,
-SESSION_BASH_CAT 307, SESSION_READ 179, finish-uncommitted 44,
-READ_DEDUP 40, PATH_HALLUCINATION 18. The session-read guards
-(BASH_CAT + SESSION_READ = 486) fire because the evaluator's workflow
-reads session.jsonl to review sessions — this is structural, not a
-misbehavior pattern. aks-explorer is second at 21% (372), driven by
-PATH_HALLUCINATION (129) and READ_DEDUP (93).
+events (1,113 of 1,790 beforeToolCall): Uncommitted-files-info 478,
+SESSION_BASH_CAT 311, SESSION_READ 184, finish-uncommitted 46,
+SESSION_BASH_GREP 43, PATH_HALLUCINATION 17, READ_DEDUP 3. The
+session-read guards (BASH_CAT + SESSION_READ = 495) fire because the
+evaluator's workflow reads session.jsonl to review sessions — this is
+structural, not a misbehavior pattern. aks-explorer is second at 19%
+(332). READ_DEDUP dropped sharply for both evaluator (40→3) and
+aks-explorer (93→unk), suggesting dedup behavior improved system-wide.
 
 ### Known issue: guard name conflation
 
