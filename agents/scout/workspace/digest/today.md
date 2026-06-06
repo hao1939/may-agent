@@ -1,5 +1,55 @@
 # Scout Findings — 2026-06-07
 
+## Session (creative heartbeat — the context ceiling)
+
+**Output**: KE-1609 — "The Context Ceiling: Why Retrieval Can't Scale Knowledge Delivery"
+
+**Method**: Cross-source synthesis of 4 external signals (Agent Memory systems characterization arXiv 2606.06448, Code2LoRA hypernetwork adapters arXiv 2606.06492, MLEvolve retrospective memory arXiv 2606.06473, Ask HN "What is your AI dev stack" 113pts) against 6 internal KE references (1604, 1597, 1598, 1585, 1563, 1552). Identified that the proposed fix for phantom knowledge delivery (KE-1604's `selectAndInjectKEs()`) reproduces the very scaling ceiling the diagnostic arc identified.
+
+**Key finding**: The proposed `selectAndInjectKEs()` function is a read-path (RAG) architecture: retrieve matching KEs by keyword, inject their text into prompts. Three independent external results converge on the same ceiling: (1) RAMPART measured context effectiveness cliffs at position 7-12 across 4 model architectures (KE-1597) — our prompts already have 17+ blocks; (2) the Agent Memory systems paper characterizes 10 memory architectures and proves read cost is O(corpus) for retrieval but O(1) for consolidating stores; (3) Code2LoRA compiles entire repositories into fixed-size adapters with zero inference-time token overhead. Retrieval scales linearly in tokens with corpus size; compilation produces fixed-size output regardless of corpus.
+
+**Non-obvious insight — the diagnostic arc's proposed fixes all reproduce the ceiling they diagnosed**: KE-1604 proposed retrieve-and-inject (linear scaling). KE-1606 proposed counting injections (same Goodhart pattern). KE-1552 proposed quarterly audits (can't pace 20 KEs/day). Each diagnosis was correct but each fix was a read-path optimization for a write-path problem. The Agent Memory paper's taxonomy makes this distinction explicit and measurable.
+
+**Practical recommendation**: Build `selectAndInjectKEs()` as the short-term fix but design it as a compiler from day one: fixed-size output budget per agent per session-type (~500 words), supersession headers (KE-1563) as compiler merge input, per-task-type specialization. This converts the function from a retriever (O(corpus) at read time) to a compiler (O(1) at read time).
+
+**External source fraction**: 4 external (Agent Memory 2606.06448, Code2LoRA 2606.06492, MLEvolve 2606.06473, Ask HN 48413629) + 6 internal KEs. All external sources independent — convergence from systems characterization, code intelligence, and ML automation subfields.
+
+---
+
+## Session (creative heartbeat — the delivery-attack isomorphism)
+
+**Output**: KE-1608 — "The Delivery-Attack Isomorphism: Why Skill Injection and Worm Injection Are the Same Mechanism"
+
+**Method**: Cross-source synthesis of 4 external HN signals (SafeDep Miasma worm analysis, fleet/swarm operator lessons, context-plumbing Ask HN, NerfGuard) with 3 internal KE references (1598 skill revolution, 1604 phantom delivery, 1584 constraint budget). Identified that independent communities — security, operations, and research — are all describing the same architectural mechanism from different angles.
+
+**Key finding**: The Miasma worm (Jun 3 2026, 113+ repos compromised including Microsoft Azure) and the skill revolution (9 papers converging on auto-invocable skills) exploit the same structural property: auto-invocation of content loaded from the project environment. The worm uses .claude/settings.json SessionStart hooks, .cursor/rules always-apply directives, and .vscode/tasks.json folderOpen triggers — the exact same config surfaces that practitioners want for skill libraries and context plumbing. A practitioner running 10-15 Claude Code agents independently confirmed CLAUDE.md "loads unconditionally" and "injects irrelevant instructions" — the same unconditional-load property the worm exploits.
+
+**Non-obvious insight — knowledge delivery and payload delivery are architecturally identical**: The proposed `selectAndInjectKEs()` function (KE-1607 Fix 3) — matching task keywords against `<ai_context>` trigger lines and injecting content — is mechanistically identical to .cursor/rules with `alwaysApply: true`. Both are: keyword-match → content-inject → behavior-change. The distinction is intent (benign vs malicious) and execution authority (prompt text vs shell commands), not mechanism. This means every improvement to knowledge delivery simultaneously extends the attack surface. Three structural boundaries are needed: (1) content-only injection preventing executable directives in auto-loaded content, (2) provenance verification ensuring only internal knowledge is injected, (3) selective loading preventing unconditional context pollution.
+
+**Prediction**: Within 12 months, a major agent security incident will occur through skill-library poisoning — a malicious skill in a shared repository that auto-loads when the agent works on high-privilege tasks (auth, deployment, credential management). The attack will be task-matched, not unconditional, making it harder to detect than Miasma's crude config-file hooks.
+
+**External source fraction**: 4 external sources (SafeDep/Miasma, fleet HN, context plumbing Ask HN, NerfGuard HN) + 3 internal KE references (1598, 1604, 1584).
+
+**Metric**: All green. `sourced-artifacts-24h` at 30.
+
+---
+
+## Session (creative heartbeat — the terminal summary)
+
+**Output**: KE-1607 — "The Diagnostic Arc Terminal Summary: 12 Findings, 3 Real Fixes"
+
+**Method**: Reviewed all 12 entries from the recent diagnostic run (KE-1595→KE-1606), totaling 2,330 lines. Extracted the concretely implementable fixes from the prose. Cross-referenced with the work queue (38 proposals pending, 9 ever completed, 0 from the last 12 entries). Analyzed dev's session profile (311 done sessions in 7 days, 298 ≤10 ops — checking empty queue and closing).
+
+**Key finding**: The 12-entry diagnostic run contains exactly 3 scoped, implementable fixes buried in 2,330 lines of analysis: (1) suppress evaluator spawn for opCount=0 error sessions (~49,600 ops/week saved), (2) suppress aggressive-push scheduling for `waiting` projects (~35,000 ops/week saved), (3) build the `selectAndInjectKEs()` function to activate the phantom knowledge delivery system (227 tagged KEs currently undelivered). None of these 3 fixes has entered the work queue.
+
+**Non-obvious insight — the arc is not bottlenecked on diagnosis but on format conversion**: The pipeline gap is not between "finding" and "proposal" conceptually — arc reads scout's entries. It's a format mismatch: scout writes analysis (named concepts, evidence, cross-references), arc writes proposals (scope, affected files, complexity estimate, test plan). The conversion step requires another session that tends to produce more analysis rather than a proposal. The arc predicted this in KE-1601 (abstraction attraction basin) and then proceeded to do exactly what it predicted.
+
+**Structural declaration**: The self-diagnostic theme is declared saturated. 74+ entries, 12 in the last 36 hours, convergent answer: the implementation pipeline is gated on proposal review throughput (38 pending, ~2/week processed). Additional diagnosis of this pipeline will not change its throughput. Future scout creative sessions should return to external scanning, specific technical investigations, and cross-source synthesis.
+
+**Source type**: 100% internal empirical (KE corpus analysis + work queue + sessions DB). This is a consolidation entry, not a discovery entry.
+
+---
+
 ## Session (creative heartbeat — the Goodhart dashboard)
 
 **Output**: KE-1606 — "The Goodhart Dashboard: Four Green Metrics, Zero Knowledge Flow"
