@@ -3,7 +3,7 @@
 **Status**: Accepted direction, mostly implemented across the core infra
 surface. Keep this as the north-star while folding stable pieces into
 `architecture.md`, `sdk.md`, `events.md`, `metrics.md`, `cron.md`, and
-`work-model.md`.
+`../1-principles/work-model.md`.
 
 This doc reframes may-agent around a simpler split:
 
@@ -688,7 +688,7 @@ Keep this incremental.
 5. Make new judgment/action trigger entries workflow-backed handlers by default.
 6. Validate every boundary refactor with one real runtime event and trace.
 7. Fold stable behavior into `architecture.md`, `sdk.md`, `events.md`,
-   `metrics.md`, `cron.md`, and `work-model.md`.
+   `metrics.md`, `cron.md`, and `../1-principles/work-model.md`.
 
 ## Implementation Checklist
 

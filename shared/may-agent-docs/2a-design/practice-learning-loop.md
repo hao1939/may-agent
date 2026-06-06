@@ -2,7 +2,7 @@
 
 **Status**: Draft  
 **Date**: 2026-05-16  
-**Aligned with**: `work-model.md`, `session-eval-trail.md`, `projects.md`, `metrics.md`, `guards.md`, `sdk.md`
+**Aligned with**: `../1-principles/work-model.md`, `session-eval-trail.md`, `projects.md`, `metrics.md`, `guards.md`, `sdk.md`
 
 ## Purpose
 
