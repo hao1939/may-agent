@@ -13,7 +13,7 @@ export interface TerminalProfile {
 export interface TerminalStatus {
   enabled: boolean;
   reason?: string;
-  profiles: Array<TerminalProfile & { connected: boolean; pid?: number; clients: number }>;
+  profiles: Array<TerminalProfile & { connected: boolean; pid?: number; clients: number; idleUntil?: number }>;
 }
 
 export interface TerminalSocket {
@@ -27,10 +27,13 @@ interface TerminalSession {
   ptyPid?: number;
   clients: Set<TerminalSocket>;
   stdoutBuffer: string;
+  idleTimer?: ReturnType<typeof setTimeout>;
+  idleUntil?: number;
 }
 
 const DEFAULT_COLS = 120;
 const DEFAULT_ROWS = 32;
+const DEFAULT_IDLE_TTL_MS = 10 * 60 * 1000;
 const TMUX_SOCKET = "may-web";
 
 function enabledFromEnv(): boolean {
@@ -39,6 +42,13 @@ function enabledFromEnv(): boolean {
 
 function sanitizeTmuxName(id: string): string {
   return `may-web-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function idleTtlMs(): number {
+  const raw = process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS;
+  if (!raw) return DEFAULT_IDLE_TTL_MS;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_IDLE_TTL_MS;
 }
 
 function makeProfiles(projectRoot: string): TerminalProfile[] {
@@ -105,6 +115,36 @@ export function createTerminalManager(opts: { projectRoot: string }) {
   const sessions = new Map<string, TerminalSession>();
   const enabled = enabledFromEnv();
   const disabledReason = enabled ? undefined : "Set MAY_WEB_TERMINAL=1 to enable web terminal access.";
+  const idleTtl = idleTtlMs();
+
+  function closeSession(profileId: string, session: TerminalSession): void {
+    if (session.idleTimer) clearTimeout(session.idleTimer);
+    session.idleTimer = undefined;
+    session.idleUntil = undefined;
+    session.child.kill();
+    sessions.delete(profileId);
+  }
+
+  function clearIdleTimer(session: TerminalSession): void {
+    if (session.idleTimer) clearTimeout(session.idleTimer);
+    session.idleTimer = undefined;
+    session.idleUntil = undefined;
+  }
+
+  function scheduleIdleClose(profileId: string, session: TerminalSession): void {
+    clearIdleTimer(session);
+    if (idleTtl <= 0) {
+      closeSession(profileId, session);
+      return;
+    }
+    session.idleUntil = Date.now() + idleTtl;
+    session.idleTimer = setTimeout(() => {
+      if (session.clients.size === 0 && sessions.get(profileId) === session) {
+        closeSession(profileId, session);
+      }
+    }, idleTtl);
+    session.idleTimer.unref?.();
+  }
 
   function getStatus(): TerminalStatus {
     return {
@@ -117,6 +157,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
           connected: !!session,
           pid: session?.ptyPid ?? session?.child.pid,
           clients: session?.clients.size ?? 0,
+          idleUntil: session?.idleUntil,
         };
       }),
     };
@@ -135,7 +176,10 @@ export function createTerminalManager(opts: { projectRoot: string }) {
   async function ensureSession(profileId: string, cols = DEFAULT_COLS, rows = DEFAULT_ROWS): Promise<TerminalSession> {
     requireEnabled();
     const existing = sessions.get(profileId);
-    if (existing) return existing;
+    if (existing) {
+      clearIdleTimer(existing);
+      return existing;
+    }
 
     const profile = resolveProfile(profileId);
     const tmuxName = sanitizeTmuxName(profile.id);
@@ -195,6 +239,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     });
 
     child.on("close", (code, signal) => {
+      if (session.idleTimer) clearTimeout(session.idleTimer);
       for (const client of session.clients) {
         try {
           client.send(JSON.stringify({ type: "exit", exitCode: code ?? 0, signal }));
@@ -211,6 +256,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
 
   async function attach(profileId: string, socket: TerminalSocket, cols?: number, rows?: number): Promise<void> {
     const session = await ensureSession(profileId, cols, rows);
+    clearIdleTimer(session);
     session.clients.add(socket);
     socket.send(JSON.stringify({
       type: "ready",
@@ -224,8 +270,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     if (!session) return;
     session.clients.delete(socket);
     if (session.clients.size === 0) {
-      session.child.kill();
-      sessions.delete(profileId);
+      scheduleIdleClose(profileId, session);
     }
   }
 
@@ -248,6 +293,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     const profile = resolveProfile(profileId);
     const session = sessions.get(profileId);
     if (session) {
+      clearIdleTimer(session);
       for (const client of session.clients) {
         try {
           client.send(JSON.stringify({ type: "restart" }));
@@ -255,8 +301,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
         } catch {}
       }
       session.clients.clear();
-      session.child.kill();
-      sessions.delete(profileId);
+      closeSession(profileId, session);
     }
     if (existsSync("/usr/bin/tmux") || existsSync("/bin/tmux") || existsSync("/usr/local/bin/tmux")) {
       spawnSync("tmux", ["-L", TMUX_SOCKET, "kill-session", "-t", sanitizeTmuxName(profile.id)], { stdio: "ignore" });
