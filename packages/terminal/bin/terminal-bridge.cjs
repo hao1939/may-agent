@@ -12,8 +12,6 @@ const cwd = String(config.cwd || process.cwd());
 const command = String(config.command || "bash -i");
 const tmuxSocket = String(config.tmuxSocket || "may-web");
 const commandHash = createHash("sha256").update(command).digest("hex").slice(0, 16);
-const preloadHistoryLines = 50000;
-
 function send(frame) {
   process.stdout.write(JSON.stringify(frame) + "\n");
 }
@@ -62,20 +60,6 @@ function configureTmux() {
   for (const args of options) {
     tmux(args);
   }
-}
-
-function replayTmuxHistory() {
-  const result = spawnSync(
-    "tmux",
-    ["-L", tmuxSocket, "capture-pane", "-p", "-t", tmuxName, "-S", `-${preloadHistoryLines}`],
-    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
-  );
-  if (result.status !== 0) {
-    send({ type: "replay", data: "" });
-    return;
-  }
-  const text = String(result.stdout || "").replace(/\s+$/u, "");
-  send({ type: "replay", data: text ? `${text}\n` : "" });
 }
 
 function ensureTmuxSession() {
@@ -142,7 +126,6 @@ process.stdin.on("data", (chunk) => {
       const frame = JSON.parse(line);
       if (frame.type === "input") term.write(String(frame.data || ""));
       if (frame.type === "resize") term.resize(Number(frame.cols) || cols, Number(frame.rows) || rows);
-      if (frame.type === "replay") replayTmuxHistory();
     } catch (err) {
       send({ type: "error", message: err && err.message ? err.message : String(err) });
     }
