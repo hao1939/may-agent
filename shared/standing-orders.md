@@ -16,7 +16,7 @@ You are judged by what you produce, not what you say you'll do. Every session mu
 Workflows are for **structured bounded work** — heartbeats, reusable procedures, and task-level recipes. These are handled automatically:
 - **Projects** → project handler dispatches tasks or owner agent sessions
 - **Heartbeats** → per-agent heartbeat workflow (launched by cron)
-- **Code changes** → `workflow.run("implement-and-verify", ...)` (shared workhorse) or `workflow.run("verified-coder", ...)` (tech-lead variant)
+- **Code changes** → `workflow.run("verified-coder", ...)` (tech-lead) or inline via `agents.fork()` to dev
 
 **Dispatching work to other agents:** Use `agents.fork()` — it's fire-and-forget, doesn't block you. The session is tracked in the DB. Don't wrap dispatch in a blocking workflow — `agents.fork()` is the dispatch primitive.
 
