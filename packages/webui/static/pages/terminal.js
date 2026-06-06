@@ -232,8 +232,34 @@ function connectTerminal(profileId) {
 function fitActiveTerminal() {
   if (!terminal || !fitAddon) return;
   try {
+    const mount = document.getElementById('terminal-mount');
+    if (mount) {
+      mount.style.height = terminalMountHeight(mount) + 'px';
+    }
     fitAddon.fit();
   } catch {}
+}
+
+function terminalMountHeight(mount) {
+  const shell = mount.closest('.terminal-shell');
+  const toolbar = shell?.querySelector('.terminal-toolbar');
+  const quickbar = shell?.querySelector('.terminal-quickbar:not(.hidden)');
+  const main = document.querySelector('body.terminal-mode .main');
+  const mainRect = main?.getBoundingClientRect();
+  const shellStyle = shell ? getComputedStyle(shell) : null;
+  const gap = shellStyle ? parseFloat(shellStyle.rowGap || shellStyle.gap || '0') || 0 : 0;
+  const border = 2;
+  const available = Math.floor(
+    (mainRect?.height || window.innerHeight)
+    - (toolbar?.getBoundingClientRect().height || 0)
+    - (quickbar?.getBoundingClientRect().height || 0)
+    - gap * (quickbar && !quickbar.classList.contains('hidden') ? 2 : 1)
+  );
+  const min = Math.min(360, Math.max(180, window.innerHeight - 140));
+  const raw = Math.max(min, available);
+  const cell = terminal?.element?.querySelector('.xterm-rows > div')?.getBoundingClientRect().height || 19;
+  const rows = Math.max(8, Math.floor((raw - border) / cell));
+  return Math.floor(rows * cell + border);
 }
 
 function sendTerminalData(data) {
