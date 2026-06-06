@@ -144,7 +144,7 @@ time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
 falsified KE-1564).
 
-As of **2026-06-14** (24h window): uncommitted-files warnings were
+As of **2026-06-06** (24h window): uncommitted-files warnings were
 dominant at ~49% (880 of 1,790), with SESSION_BASH_CAT ~18%,
 PATH_HALLUCINATION ~10%, SESSION_READ ~10%, READ_DEDUP ~3%.
 
