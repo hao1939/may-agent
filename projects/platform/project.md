@@ -9,7 +9,7 @@ project_app: v2
 project_policy: signal-driven
 runtime_control_plane: .app
 task_tree: tasks/tree.json
-wait_reason: all tasks complete — waiting for next platform signal (failing metric, unread comment, or owner push)
+wait_reason: all tasks complete; tests green (1604 pass, 0 fail, 3 skip); no unread comments; waiting for next platform signal
 ---
 
 # Project: platform
