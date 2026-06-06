@@ -8,10 +8,9 @@
  *
  * Heartbeats are normal workflow-backed handlers.
  *
- * Each job execution is tracked as a request in `.state/may.db`.
- * On restart, jobs resume based on when they actually last ran — not from zero.
- * The cron timer skips if a previous execution is still IN_PROGRESS.
- * Manual triggers (`triggerNow`) always fire regardless of overlap.
+ * Handler execution is tracked in memory for single-flight/concurrency control.
+ * On restart, timer entries resume based on when they actually last ran — not from zero.
+ * All trigger paths use the same per-entry capacity limit.
  *
  * Design: docs/design/cron-sqlite.md
  */
@@ -118,7 +117,7 @@ export class Cron {
   private configWatcher?: StatWatcher;
   /** Event-to-handler subscriptions: event type → list of entry names. */
   private eventSubscriptions = new Map<string, Set<string>>();
-  /** Event-trigger queue per entry. Preserves event-driven work without overlapping handlers. */
+  /** Event-trigger queue per entry. Preserves event-driven work when an entry is at concurrency capacity. */
   private queuedEventTriggers = new Map<string, EventEnvelope[]>();
   /** Dynamic handler resolver — called when reload() finds an entry with `handler` but no registered handler. */
   private handlerResolver?: (entryName: string, entry: CronEntry) => Promise<boolean>;
@@ -129,8 +128,8 @@ export class Cron {
 
   private persistDir: string;
 
-  /** In-flight jobs: entry name → start timestamp. Replaces requests table overlap check. */
-  private inflightJobs = new Map<string, number>();
+  /** In-flight jobs: entry name → start timestamps. Replaces requests table overlap check. */
+  private inflightJobs = new Map<string, number[]>();
 
   /** Last fire time per entry. */
   private lastFireTimes = new Map<string, number>();
@@ -412,6 +411,7 @@ export class Cron {
         const configChanged =
           !old ||
           old.intervalMs !== entry.intervalMs ||
+          old.maxConcurrentTriggers !== entry.maxConcurrentTriggers ||
           old.message !== entry.message ||
           old.agent !== entry.agent ||
           JSON.stringify(old.handler ?? null) !== JSON.stringify(entry.handler ?? null) ||
@@ -499,12 +499,12 @@ export class Cron {
     const entry = this.entries.find((e) => e.name === entryName);
     if (!entry) return false;
 
-    if (this.isRunning(entryName)) {
+    if (!this.hasCapacity(entry)) {
       if (opts?.triggerEvent) {
         this.enqueueEventTrigger(entryName, opts.triggerEvent);
         return true;
       }
-      this.onError?.(`Cron "${entryName}" trigger skipped — still running`);
+      this.onError?.(`Cron "${entryName}" trigger skipped — at concurrency capacity`);
       return false;
     }
 
@@ -521,7 +521,7 @@ export class Cron {
 
     if (!this.resolveMode(entry)) return false;
 
-    // Manual trigger — always fire, no overlap check
+    // Manual/event/timer triggers all use the same handler execution path.
     this.fireHandler(entry, opts?.triggerEvent ?? {
       type: `trigger.${entry.name}`,
       source: "manual",
@@ -539,11 +539,14 @@ export class Cron {
       this.queuedEventTriggers.set(entryName, queue);
     }
     queue.push(event);
-    this.onError?.(`Cron "${entryName}" event queued — still running (${queue.length} pending)`);
+    this.onError?.(`Cron "${entryName}" event queued — at concurrency capacity (${queue.length} pending)`);
   }
 
   private drainQueuedEventTrigger(entryName: string): void {
-    if (this.isRunning(entryName)) return;
+    const entry = this.entries.find((candidate) => candidate.name === entryName);
+    if (!entry || entry.enabled === false) return;
+    if (!this.hasCapacity(entry)) return;
+
     const queue = this.queuedEventTriggers.get(entryName);
     if (!queue || queue.length === 0) {
       this.queuedEventTriggers.delete(entryName);
@@ -551,9 +554,6 @@ export class Cron {
     }
     const event = queue.shift()!;
     if (queue.length === 0) this.queuedEventTriggers.delete(entryName);
-
-    const entry = this.entries.find((candidate) => candidate.name === entryName);
-    if (!entry || entry.enabled === false) return;
 
     setTimeout(() => {
       this.triggerNow(entryName, { force: true, triggerEvent: event });
@@ -572,18 +572,49 @@ export class Cron {
     return false;
   }
 
-  // ── Request-based state queries ─────────────────────────────────────
+  // ── In-flight execution state ───────────────────────────────────────
 
-  /** Check if a job (by artifact name) has an active request. */
-  private isRunning(entryName: string): boolean {
-    const start = this.inflightJobs.get(entryName);
-    if (!start) return false;
-    // Consider dead after 10 min
-    if (Date.now() - start > 10 * 60_000) {
+  /** Return active handler start times, pruning stale entries. */
+  private activeInflightStarts(entryName: string): number[] {
+    const starts = this.inflightJobs.get(entryName) ?? [];
+    const cutoff = Date.now() - 10 * 60_000;
+    const active = starts.filter((start) => start >= cutoff);
+    if (active.length > 0) {
+      this.inflightJobs.set(entryName, active);
+    } else {
       this.inflightJobs.delete(entryName);
-      return false;
     }
-    return true;
+    return active;
+  }
+
+  private maxConcurrentTriggers(entry: CronEntry): number {
+    const configured = entry.maxConcurrentTriggers;
+    return typeof configured === "number" && Number.isFinite(configured) && configured > 1
+      ? Math.floor(configured)
+      : 1;
+  }
+
+  private hasCapacity(entry: CronEntry): boolean {
+    return this.activeInflightStarts(entry.name).length < this.maxConcurrentTriggers(entry);
+  }
+
+  private isRunning(entryName: string): boolean {
+    return this.activeInflightStarts(entryName).length > 0;
+  }
+
+  private addInflight(entryName: string, startMs: number): void {
+    this.inflightJobs.set(entryName, [...this.activeInflightStarts(entryName), startMs]);
+  }
+
+  private removeInflight(entryName: string, startMs: number): void {
+    const starts = this.activeInflightStarts(entryName);
+    const index = starts.indexOf(startMs);
+    if (index >= 0) starts.splice(index, 1);
+    if (starts.length > 0) {
+      this.inflightJobs.set(entryName, starts);
+    } else {
+      this.inflightJobs.delete(entryName);
+    }
   }
 
   /** Get the last fire time for a job (epoch ms).
@@ -620,8 +651,8 @@ export class Cron {
 
     const fire = () => {
       // Overlap protection: skip if a previous run is still in flight.
-      if (this.isRunning(entry.name)) {
-        this.onError?.(`Cron "${entry.name}" skipped — still running`);
+      if (!this.hasCapacity(entry)) {
+        this.onError?.(`Cron "${entry.name}" skipped — at concurrency capacity`);
         return;
       }
 
@@ -688,7 +719,7 @@ export class Cron {
 
     this.onJobFire?.(entry);
     const startMs = Date.now();
-    this.inflightJobs.set(entry.name, startMs);
+    this.addInflight(entry.name, startMs);
     this.lastFireTimes.set(entry.name, startMs);
     const agent = entryAgent(entry) || "may";
 
@@ -714,7 +745,7 @@ export class Cron {
 
     Promise.race([handlerPromise, timeoutPromise])
       .then(() => {
-        this.inflightJobs.delete(entry.name);
+        this.removeInflight(entry.name, startMs);
         this.emitEvent?.({
           type: "handler.completed",
           source: "cron",
@@ -724,7 +755,7 @@ export class Cron {
         this.drainQueuedEventTrigger(entry.name);
       })
       .catch((err) => {
-        this.inflightJobs.delete(entry.name);
+        this.removeInflight(entry.name, startMs);
         const errMsg = err instanceof Error ? err.message : String(err);
         this.emitEvent?.({
           type: "handler.failed",

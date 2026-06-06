@@ -336,4 +336,93 @@ describe("Cron event subscriptions", () => {
       data: { agent: "alpha" },
     });
   });
+
+  it("runs event subscribers concurrently up to maxConcurrentTriggers", async () => {
+    const dir = join(tmpdir(), `cron-concurrent-events-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "task-executor",
+        enabled: true,
+        handler: "task-executor",
+        on: ["project.task.execution.requested"],
+        maxConcurrentTriggers: 2,
+      },
+    ]));
+
+    const bus = new EventBus();
+    const started: string[] = [];
+    const resolvers: Array<() => void> = [];
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    cron.load();
+    cron.registerHandler("task-executor", async (event) => {
+      started.push(String(event?.data.taskId));
+      await new Promise<void>((resolve) => resolvers.push(resolve));
+    });
+    cron.subscribeToBus(bus);
+
+    for (const taskId of ["a", "b", "c"]) {
+      bus.emit({
+        type: "project.task.execution.requested",
+        source: "test",
+        owner: "agent:test",
+        data: { taskId },
+      } as any);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["a", "b"]);
+
+    resolvers.shift()?.();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["a", "b", "c"]);
+
+    for (const resolve of resolvers.splice(0)) resolve();
+  });
+
+  it("queues event subscribers by default until the running handler completes", async () => {
+    const dir = join(tmpdir(), `cron-single-flight-events-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDirs.push(dir);
+    mkdirSync(dir, { recursive: true });
+    const configPath = join(dir, "cron.json");
+    writeFileSync(configPath, JSON.stringify([
+      {
+        name: "single-task-executor",
+        enabled: true,
+        handler: "single-task-executor",
+        on: ["project.task.execution.requested"],
+      },
+    ]));
+
+    const bus = new EventBus();
+    const started: string[] = [];
+    const resolvers: Array<() => void> = [];
+    const cron = new Cron(configPath, {} as any, () => "session", undefined, dir);
+    cron.load();
+    cron.registerHandler("single-task-executor", async (event) => {
+      started.push(String(event?.data.taskId));
+      await new Promise<void>((resolve) => resolvers.push(resolve));
+    });
+    cron.subscribeToBus(bus);
+
+    for (const taskId of ["a", "b"]) {
+      bus.emit({
+        type: "project.task.execution.requested",
+        source: "test",
+        owner: "agent:test",
+        data: { taskId },
+      } as any);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["a"]);
+
+    resolvers.shift()?.();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(started).toEqual(["a", "b"]);
+
+    for (const resolve of resolvers.splice(0)) resolve();
+  });
 });
