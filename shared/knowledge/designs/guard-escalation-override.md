@@ -6,7 +6,7 @@
 
 ## Problem
 
-Guards can permanently block agents with no escape. The cost-limit-guard blocks at 1000 tool calls — once triggered, every subsequent call (including `finish()`) is also blocked because the counter keeps incrementing. The agent is trapped: it can't exit cleanly, can't report its status, can't do anything. The session eventually times out and is marked as an error with no useful output.
+Guards can permanently block agents with no escape. The cost-limit-guard blocks at 60 cumulative turns — once triggered, every subsequent call (including `finish()`) is also blocked because the counter keeps incrementing. The agent is trapped: it can't exit cleanly, can't report its status, can't do anything. The session eventually times out and is marked as an error with no useful output.
 
 **Incident**: An agent hit the 200-call limit (TOOL_CALL_LIMIT was set low). The cost-limit-guard blocked every subsequent call, including `finish()`. The agent looped trying to exit, burning context window, until the session was killed externally.
 
@@ -24,7 +24,7 @@ composeGuards(
   readDedupGuard,      // warns on re-reading same file
   sessionReadGuard,    // warns on cross-session reads
   scrapeDedupGuard,
-  costLimitGuard,      // LAST — emergency brake at 1000 calls
+  costLimitGuard,      // LAST — emergency brake at 60 turns
 )
 ```
 

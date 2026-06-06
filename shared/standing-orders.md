@@ -29,7 +29,7 @@ When Hao asks May to dispatch work, May must start it immediately using `agents.
 - **Reason**: Human requests should not wait.
 
 ### [ORDER-004] No turn budgets or op limits in heartbeats (2026-04-15)
-Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to heartbeats or session prompts. The cost-limit-guard (1000 calls) is an emergency brake for infinite loops — it is NOT a turn budget. For session cost control, use persistent tasks + owner review.
+Do NOT add turn budgets, op budgets, hard caps, or "budget: N ops" language to heartbeats or session prompts. The cost-limit-guard (warn at 40 turns, block at 60 turns) is a workflow-level emergency brake — it is NOT a per-session turn budget. For session cost control, use persistent tasks + owner review.
 - **Applies to**: all
 - **Reason**: Hard caps force-close productive sessions. Agents repeatedly re-added budget language because they see real waste — but the fix is owner review, not caps. If you see runaway sessions, report them to May.
 
