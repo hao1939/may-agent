@@ -200,6 +200,49 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     }));
   });
 
+  it("uses the injected user message as the visible task when cold-resuming a session", async () => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+
+    writeRegistryState(persistDir, {
+      "session-chat": {
+        agent: "may",
+        task: "hi",
+        status: "done",
+        kind: "chat",
+        autoClose: "never",
+        startedAt: Date.now() - 60000,
+        endedAt: Date.now() - 50000,
+      },
+    });
+    setupSession(persistDir, "session-chat", [userMessage("hi"), assistantMessage("hello")]);
+
+    const manager = new SubagentManager({ persistDir, bus });
+    registerAgent(manager, "may");
+
+    manager.resumeSession("session-chat", "help", { source: "may-console" });
+
+    const start = events.find((event) => event.type === "session.start" && (event as any).data?.sessionId === "session-chat");
+    expect(start).toMatchObject({
+      type: "session.start",
+      source: "may-console",
+      owner: "agent:may",
+      data: {
+        sessionId: "session-chat",
+        agent: "may",
+        task: "help",
+        kind: "chat",
+      },
+    });
+
+    try {
+      await manager.waitFor("session-chat");
+    } catch {
+      // The fake model is not reachable; this test only needs the start event.
+    }
+  });
+
   it("releases stale heartbeat dispatch dedup leases on restart", () => {
     writeRegistryState(persistDir, {
       "session-heartbeat": {
