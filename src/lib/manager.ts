@@ -349,8 +349,10 @@ export class SubagentManager {
       } catch { /* best-effort — manager.run will re-save the registry row */ }
     }
 
+    const task = opts.injectUserMessage ?? meta.task;
+
     try {
-      this.run(meta.agent, meta.task, {
+      this.run(meta.agent, task, {
         sessionId,
         parentSessionId: meta.parentSessionId,
         workflowRunId: meta.workflowRunId,
