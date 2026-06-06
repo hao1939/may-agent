@@ -18,7 +18,7 @@ let reconnectDelayMs = 250;
 let buffer = "";
 let raw = false;
 let watchMode = "chat"; // chat | all | current
-let directMode = false;
+let selectedTarget = "may"; // may | session
 let currentSessionId = null;
 let currentSessionStatus = null;
 let mayChatSessionId = null;
@@ -26,6 +26,7 @@ let forceNewChat = false;
 let lastDisconnectedMessage = "";
 
 const knownSessions = new Map();
+const sessionsWithText = new Set();
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -39,17 +40,26 @@ function shortSessionId(sessionId) {
   return text.slice(0, 10);
 }
 
+function promptStatus(status) {
+  if (!status || status === "idle") return "";
+  return ` ${status}`;
+}
+
+function mayChatDisplayStatus(status) {
+  if (status === "done") return "ready";
+  return status;
+}
+
 function promptText() {
-  const parts = [];
-  if (!connected) parts.push("disconnected");
-  if (currentSessionId) {
-    const status = currentSessionStatus && !["running", "idle"].includes(currentSessionStatus)
-      ? ` ${currentSessionStatus}`
-      : "";
-    parts.push(`${shortSessionId(currentSessionId)}${status}`);
+  if (!connected) return "may[disconnected]> ";
+  if (selectedTarget === "session" && currentSessionId) {
+    return `may[${shortSessionId(currentSessionId)}${promptStatus(currentSessionStatus)}]> `;
   }
-  if (directMode) parts.push("direct");
-  return parts.length ? `may[${parts.join(" ")}]> ` : "may> ";
+  const mayStatus = mayChatSessionId ? mayChatDisplayStatus(knownSessions.get(mayChatSessionId)?.status) : null;
+  const mayTarget = mayChatSessionId
+    ? `may:${shortSessionId(mayChatSessionId)}${promptStatus(mayStatus)}`
+    : "may";
+  return `may[${mayTarget}]> `;
 }
 
 function refreshPrompt() {
@@ -70,6 +80,18 @@ function printLine(text = "") {
   }
   writeStdout(`${text}\n`);
   refreshPrompt();
+}
+
+function printResponseText(text = "") {
+  try {
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+  } catch {
+    // Non-TTY output is fine in tests and logs.
+  }
+  const value = String(text || "");
+  if (!value) return;
+  writeStdout(value.endsWith("\n") ? value : `${value}\n`);
 }
 
 function eventPayload(event) {
@@ -106,9 +128,6 @@ function rememberSession(item) {
 
 function updateCurrentStatus(status) {
   currentSessionStatus = status || null;
-  if (currentSessionStatus && !["running", "idle"].includes(currentSessionStatus)) {
-    directMode = false;
-  }
 }
 
 function watchSessions() {
@@ -229,9 +248,7 @@ function handleConnected(event) {
   connected = true;
   reconnectDelayMs = 250;
   const sid = typeof event.sessionId === "string" && event.sessionId ? event.sessionId : null;
-  if (sid && !currentSessionId) {
-    currentSessionId = sid;
-    currentSessionStatus = "idle";
+  if (sid) {
     mayChatSessionId = sid;
     rememberSession({ sessionId: sid, agent: event.agent || daemonAgent, status: "idle", kind: "chat", task: "May chat" });
   }
@@ -253,10 +270,6 @@ function handleSessionStart(event) {
   if (String(data.agent || "") === daemonAgent && String(data.kind || "") === "chat") {
     mayChatSessionId = String(data.sessionId || "");
     forceNewChat = false;
-    if (!currentSessionId) {
-      currentSessionId = mayChatSessionId;
-      currentSessionStatus = "running";
-    }
   }
   if (data.sessionId === currentSessionId) updateCurrentStatus("running");
   const parent = data.parentSessionId ? ` child of ${shortSessionId(data.parentSessionId)}` : "";
@@ -265,16 +278,26 @@ function handleSessionStart(event) {
 
 function handleSessionEnd(event) {
   const data = flatPayload(event);
+  const sessionId = typeof data.sessionId === "string" ? data.sessionId : "";
+  const agent = String(data.agent || daemonAgent);
+  const kind = String(data.kind || knownSessions.get(sessionId)?.kind || "");
+  const status = String(data.status || "done");
   rememberSession({
-    sessionId: data.sessionId,
-    agent: data.agent,
-    status: data.status || "done",
-    kind: data.kind,
+    sessionId,
+    agent,
+    status,
+    kind,
     task: data.task,
   });
-  if (data.sessionId === currentSessionId) updateCurrentStatus(String(data.status || "ended"));
-  const summary = String(data.summary || data.error || "").trim();
-  printLine(`[${data.agent || daemonAgent}] ${shortSessionId(data.sessionId)} ${data.status || "done"}${summary ? `: ${summary.slice(0, 180)}` : ""}`);
+  if (sessionId === currentSessionId) updateCurrentStatus(status);
+  const isMayChat = agent === daemonAgent && (kind === "chat" || sessionId === mayChatSessionId);
+  const rawSummary = String(data.summary || data.error || "").trim();
+  if (isMayChat && status === "done" && rawSummary && !sessionsWithText.has(sessionId)) {
+    printResponseText(rawSummary);
+  }
+  const summary = isMayChat && status === "done" ? "" : rawSummary;
+  const displayStatus = isMayChat ? mayChatDisplayStatus(status) : status;
+  printLine(`[${agent}] ${shortSessionId(sessionId)} ${displayStatus}${summary ? `: ${summary.slice(0, 180)}` : ""}`);
 }
 
 function handleEvent(event) {
@@ -302,10 +325,14 @@ function handleEvent(event) {
       handleSessionStart(event);
       return;
     case "text":
-      try {
-        readline.clearLine(process.stdout, 0);
-        readline.cursorTo(process.stdout, 0);
-      } catch {}
+      {
+        const sid = eventSessionId(event);
+        if (sid) sessionsWithText.add(sid);
+        try {
+          readline.clearLine(process.stdout, 0);
+          readline.cursorTo(process.stdout, 0);
+        } catch {}
+      }
       writeStdout(String(event.text || ""));
       return;
     case "tool_call":
@@ -389,7 +416,6 @@ function printHelp() {
     "  /watch chat|all|current",
     "  /use <sessionId>",
     "  /steer <message>",
-    "  /direct [on|off]",
     "  /may",
     "  /cancel, /cancel all",
     "  /new, /reload, /restart",
@@ -400,6 +426,12 @@ function printHelp() {
 function commandNeedsCurrent(name) {
   if (currentSessionId) return true;
   printLine(`[${name}] No current session. Run /sessions then /use <sessionId>.`);
+  return false;
+}
+
+function commandNeedsSelectedSession(name) {
+  if (selectedTarget === "session" && currentSessionId) return true;
+  printLine(`[${name}] No selected session. Run /sessions then /use <sessionId>.`);
   return false;
 }
 
@@ -419,7 +451,6 @@ function handleCommand(input) {
     case "watch": {
       const mode = rest.toLowerCase();
       if (mode === "chat") {
-        directMode = false;
         subscribe("chat");
         refreshPrompt();
         return;
@@ -444,46 +475,30 @@ function handleCommand(input) {
       }
       currentSessionId = resolved.sessionId;
       currentSessionStatus = knownSessions.get(currentSessionId)?.status || null;
-      directMode = false;
+      selectedTarget = "session";
       subscribe("current");
       refreshPrompt();
       return;
     }
     case "may":
-      directMode = false;
+      selectedTarget = "may";
       subscribe("chat");
       refreshPrompt();
       return;
     case "steer":
-      if (!commandNeedsCurrent("steer")) return;
+      if (!commandNeedsSelectedSession("steer")) return;
       if (!rest) {
         printLine("Usage: /steer <message>");
         return;
       }
       sendFrame(steerFrame(currentSessionId, rest));
       return;
-    case "direct": {
-      const mode = rest.toLowerCase();
-      if (mode === "off") {
-        directMode = false;
-        refreshPrompt();
-        return;
-      }
-      if (!commandNeedsCurrent("direct")) return;
-      if (mode === "on" || !mode) directMode = mode === "on" ? true : !directMode;
-      else {
-        printLine("Usage: /direct [on|off]");
-        return;
-      }
-      refreshPrompt();
-      return;
-    }
     case "cancel":
       if (rest.toLowerCase() === "all") {
         sendFrame(cancelAllFrame());
         return;
       }
-      if (currentSessionId && (directMode || watchMode === "current")) {
+      if (selectedTarget === "session" && currentSessionId) {
         sendFrame(cancelFrame(currentSessionId));
         return;
       }
@@ -494,7 +509,7 @@ function handleCommand(input) {
       printLine("[cancel] No May chat session is known. Use /sessions then /use <sessionId>, or /cancel all.");
       return;
     case "new":
-      directMode = false;
+      selectedTarget = "may";
       currentSessionId = null;
       currentSessionStatus = null;
       mayChatSessionId = null;
@@ -547,8 +562,8 @@ function handleInput(line) {
   if (lower === "restart") return sendFrame(runtimeFrame("runtime.restart.requested"));
   if (lower === "exit") return closeAndExit(0);
 
-  if (directMode) {
-    if (!commandNeedsCurrent("direct")) return;
+  if (selectedTarget === "session") {
+    if (!commandNeedsCurrent("target")) return;
     sendFrame(steerFrame(currentSessionId, input));
   } else if (!forceNewChat && mayChatSessionId) {
     sendFrame(steerFrame(mayChatSessionId, input));

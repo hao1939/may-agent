@@ -17,6 +17,19 @@ function makeFakeBridge(root: string): string {
   writeFileSync(bridge, [
     "#!/usr/bin/env node",
     "console.log(JSON.stringify({ type: 'ready', pid: process.pid }));",
+    "let buffer = '';",
+    "let history = '';",
+    "process.stdin.on('data', chunk => {",
+    "  buffer += chunk.toString();",
+    "  const lines = buffer.split('\\n');",
+    "  buffer = lines.pop() || '';",
+    "  for (const line of lines) {",
+    "    if (!line.trim()) continue;",
+    "    const frame = JSON.parse(line);",
+    "    if (frame.type === 'input') { const data = String(frame.data || ''); history += data; console.log(JSON.stringify({ type: 'data', data })); }",
+    "    if (frame.type === 'replay') console.log(JSON.stringify({ type: 'replay', data: history }));",
+    "  }",
+    "});",
     "process.stdin.resume();",
   ].join("\n"), "utf-8");
   return bridge;
@@ -80,6 +93,77 @@ describe("terminal manager", () => {
       await delay(180);
       const finalStatus = manager.getStatus().profiles.find((profile) => profile.id === "may");
       expect(finalStatus?.connected).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("replays terminal output when a browser reattaches", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      process.env.MAY_WEB_TERMINAL = "1";
+      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
+      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
+
+      const manager = createTerminalManager({ projectRoot: root });
+      const firstSocket = makeSocket();
+      await manager.attach("may", firstSocket);
+      await delay(20);
+
+      manager.input("may", "before refresh\n");
+      await delay(20);
+      manager.detach("may", firstSocket);
+
+      manager.input("may", "while detached\n");
+      await delay(20);
+
+      const secondSocket = makeSocket();
+      await manager.attach("may", secondSocket);
+      await delay(20);
+
+      const replayed = secondSocket.frames
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+      expect(replayed).toContain("before refresh\n");
+      expect(replayed).toContain("while detached\n");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("routes attach replay only to the newly attached browser", async () => {
+    const root = mkdtempSync(join(tmpdir(), "terminal-manager-"));
+    try {
+      process.env.MAY_WEB_TERMINAL = "1";
+      process.env.MAY_WEB_TERMINAL_IDLE_TTL_MS = "500";
+      process.env.MAY_TERMINAL_BRIDGE = makeFakeBridge(root);
+
+      const manager = createTerminalManager({ projectRoot: root });
+      const firstSocket = makeSocket();
+      await manager.attach("may", firstSocket);
+      await delay(20);
+
+      manager.input("may", "visible once\n");
+      await delay(20);
+      const firstFrameCount = firstSocket.frames.length;
+
+      const secondSocket = makeSocket();
+      await manager.attach("may", secondSocket);
+      await delay(20);
+
+      const firstAfterReplay = firstSocket.frames
+        .slice(firstFrameCount)
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+      const secondReplay = secondSocket.frames
+        .filter((frame: any) => frame.type === "data")
+        .map((frame: any) => frame.data)
+        .join("");
+
+      expect(firstAfterReplay).not.toContain("visible once\n");
+      expect(secondReplay).toContain("visible once\n");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -26,6 +26,7 @@ interface TerminalSession {
   child: ChildProcessWithoutNullStreams;
   ptyPid?: number;
   clients: Set<TerminalSocket>;
+  replayRequests: TerminalSocket[];
   stdoutBuffer: string;
   idleTimer?: ReturnType<typeof setTimeout>;
   idleUntil?: number;
@@ -227,6 +228,7 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       profile,
       child,
       clients: new Set(),
+      replayRequests: [],
       stdoutBuffer: "",
     };
 
@@ -243,6 +245,15 @@ export function createTerminalManager(opts: { projectRoot: string }) {
           frame = { type: "data", data: line + "\n" };
         }
         if (frame.type === "ready" && typeof frame.pid === "number") session.ptyPid = frame.pid;
+        if (frame.type === "replay") {
+          const replayClient = session.replayRequests.shift();
+          if (replayClient) {
+            try {
+              replayClient.send(JSON.stringify({ type: "data", data: frame.data || "" }));
+            } catch {}
+          }
+          continue;
+        }
         for (const client of session.clients) {
           try {
             client.send(JSON.stringify(frame));
@@ -252,7 +263,8 @@ export function createTerminalManager(opts: { projectRoot: string }) {
     });
 
     child.stderr.on("data", (chunk: Buffer) => {
-      const frame = { type: "data", data: chunk.toString() };
+      const data = chunk.toString();
+      const frame = { type: "data", data };
       for (const client of session.clients) {
         try {
           client.send(JSON.stringify(frame));
@@ -285,12 +297,15 @@ export function createTerminalManager(opts: { projectRoot: string }) {
       profile: session.profile,
       pid: session.ptyPid ?? session.child.pid,
     }));
+    session.replayRequests.push(socket);
+    session.child.stdin.write(JSON.stringify({ type: "replay" }) + "\n");
   }
 
   function detach(profileId: string, socket: TerminalSocket): void {
     const session = sessions.get(profileId);
     if (!session) return;
     session.clients.delete(socket);
+    session.replayRequests = session.replayRequests.filter((client) => client !== socket);
     if (session.clients.size === 0) {
       scheduleIdleClose(profileId, session);
     }
