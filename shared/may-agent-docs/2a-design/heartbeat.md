@@ -120,8 +120,8 @@ Steering is *change what the agent sees when it next looks*, not "make the agent
 
 ## Implementation
 
-- **Heartbeat helper:** `packages/sdk/src/heartbeat-data.ts`
-- **Auto-generation:** `src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
+- **Heartbeat helper:** `@may-agent/sdk` → `genericHeartbeat()` (source: `packages/sdk/src/heartbeat-data.ts`, installed at `node_modules/@may-agent/sdk/src/heartbeat-data.ts`)
+- **Auto-generation:** `projects/platform/repos/may-agent/src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
 - **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts`
 - **Decision event:** heartbeat workflow emits `agent.decision` partway through
 
