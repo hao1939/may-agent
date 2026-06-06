@@ -96,7 +96,7 @@ Loaded by `shared/guards/loader.ts`. Fire on workflow step transitions
 (`warn`, `block`, `run_step`). Events use `source: "workflow"` and the
 guard's own name in the `guard` field.
 
-Active workflow guards (as of 2026-06-07):
+Active workflow guards (as of 2026-06-06):
 `auto-test`, `build-check`, `cost-limit`, `finish-guard`,
 `hallucinated-path`, `knowledge-entry-overwrite`, `milestone-quality`,
 `no-secret-leak`, `rbe-primer`, `read-before-edit`, `vae-primer`.
@@ -148,9 +148,9 @@ As of **2026-06-14** (24h window): uncommitted-files warnings were
 dominant at ~49% (880 of 1,790), with SESSION_BASH_CAT ~18%,
 PATH_HALLUCINATION ~10%, SESSION_READ ~10%, READ_DEDUP ~3%.
 
-**Update 2026-07-06** (24h window, ~1,939 tool-level triggers): guard
+**Update 2026-06-06** (24h window, ~1,939 tool-level triggers): guard
 composition previously collapsed to a single signal. **Correction
-2026-08-03** (24h window, ~1,858 tool-level triggers): composition has
+2026-06-06** (24h window, ~1,858 tool-level triggers): composition has
 **diversified again** — uncommitted-files warnings are ~50% (934),
 SESSION_BASH_CAT ~18% (333), PATH_HALLUCINATION ~12% (221),
 SESSION_READ ~11% (201), READ_DEDUP ~2% (35). The `hallucinated-path`

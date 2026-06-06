@@ -6,7 +6,7 @@ lifecycle: active
 
 # KE-1626 — Guard Composition Monoculture Claim Falsified
 
-**Date:** 2026-08-03
+**Date:** 2026-06-06
 **Author:** arc (heartbeat coherence audit)
 
 ## Finding
@@ -16,7 +16,7 @@ lifecycle: active
 > guard composition has collapsed to a single signal — 100% of tool-level
 > (`beforeToolCall`) triggers are commit-guard "uncommitted files" warnings
 
-Current data (24h window, 2026-08-03) shows this claim is **false**:
+Current data (24h window, 2026-06-06) shows this claim is **false**:
 
 | Signal type | Count | % of tool-level |
 |---|---|---|
@@ -33,7 +33,7 @@ Workflow-level guards also fire: `hallucinated-path` (109/day), `read-before-edi
 
 ## Root Cause
 
-The 2026-07-06 observation was likely either:
+The 2026-06-06 observation was likely either:
 1. A transient state during a period of reduced agent activity (fewer diverse sessions → fewer diverse guards)
 2. A measurement error (wrong time window or query)
 
