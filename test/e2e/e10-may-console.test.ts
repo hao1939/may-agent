@@ -185,9 +185,16 @@ describe("May Console e2e", () => {
     ]);
     expect(h.frames.some((frame: any) => frame.type === "chat.start.requested" || frame.type === "session.steer.requested" || frame.type === "fork" || frame.type === "resume")).toBe(false);
     await h.waitForOutput("s_12345678");
+    await h.waitForOutput("may[may:s_1234567890]>");
+
+    h.sendEvent({ type: "session.start", data: { sessionId: "s_1234567890", agent: "may", status: "running", kind: "chat", task: "help" } });
+    await h.waitForOutput("may[may:s_1234567890 running]>");
+
+    h.sendEvent({ type: "session.end", data: { sessionId: "s_1234567890", agent: "may", status: "done", kind: "chat", summary: "finished" } });
+    await h.waitForOutput("may[may:s_1234567890 ready]>");
   });
 
-  test("selects a session, steers it, and exits direct mode when it ends", async () => {
+  test("selects a target and routes bare input to it", async () => {
     const h = await createHarness();
     harnesses.push(h);
 
@@ -202,7 +209,6 @@ describe("May Console e2e", () => {
       && frame.source === "may-console",
     );
 
-    h.writeLine("/direct on");
     h.writeLine("run focused test");
     await h.waitForFrame((frame) =>
       frame.type === "session.steer.requested"
@@ -213,6 +219,15 @@ describe("May Console e2e", () => {
     h.sendEvent({ type: "session.end", data: { sessionId: "s_worker_abcdef", agent: "worker", status: "done", summary: "finished" } });
     await h.waitForOutput("may[s_worker_a done]>");
 
+    h.writeLine("resume ended session");
+    await h.waitForFrame((frame) =>
+      frame.type === "session.steer.requested"
+      && frame.data?.sessionId === "s_worker_abcdef"
+      && frame.data?.message === "resume ended session"
+      && frame.source === "may-console",
+    );
+
+    h.writeLine("/may");
     h.writeLine("back to may");
     await h.waitForFrame((frame) =>
       frame.type === "session.steer.requested"
@@ -220,6 +235,46 @@ describe("May Console e2e", () => {
       && frame.data?.message === "back to may"
       && frame.source === "may-console",
     );
+  });
+
+  test("does not repeat successful May chat response in the session end summary", async () => {
+    const h = await createHarness();
+    harnesses.push(h);
+
+    h.sendEvent({ type: "text", sessionId: "s_1234567890", agent: "may", text: "Hi there!\n" });
+    h.sendEvent({
+      type: "session.end",
+      data: {
+        sessionId: "s_1234567890",
+        agent: "may",
+        status: "done",
+        kind: "chat",
+        summary: "Hi there! I'm your orchestrator agent — I help coordinate work across the project.",
+      },
+    });
+    await h.waitForOutput("[may] s_1234567890 ready");
+    await h.waitForOutput("may[may:s_1234567890 ready]>");
+    expect(h.stdout).not.toContain("[may] s_1234567890 ready: Hi there!");
+  });
+
+  test("prints May chat summary when no streamed text arrived", async () => {
+    const h = await createHarness();
+    harnesses.push(h);
+
+    h.sendEvent({
+      type: "session.end",
+      data: {
+        sessionId: "s_1234567890",
+        agent: "may",
+        status: "done",
+        kind: "chat",
+        summary: "Hi there! I can help coordinate project work.",
+      },
+    });
+
+    await h.waitForOutput("Hi there! I can help coordinate project work.");
+    await h.waitForOutput("[may] s_1234567890 ready");
+    await h.waitForOutput("may[may:s_1234567890 ready]>");
   });
 
   test("handles cancel/new and rejects ambiguous or missing session steering locally", async () => {

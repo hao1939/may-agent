@@ -96,7 +96,7 @@ function renderTerminalQuickbar() {
     <button class="terminal-quick" onclick="sendTerminalCommand('/sessions')">Sessions</button>
     <button class="terminal-quick" onclick="sendTerminalCommand('/watch chat')">Watch Chat</button>
     <button class="terminal-quick" onclick="sendTerminalCommand('/watch current')">Watch Current</button>
-    <button class="terminal-quick" onclick="sendTerminalCommand('/may')">May Mode</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/may')">Use May</button>
     <button class="terminal-quick" onclick="clearTerminalScreen()">Clear</button>
   `;
 }
