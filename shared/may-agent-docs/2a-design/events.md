@@ -234,12 +234,44 @@ emits normal session/domain events such as `session.start`, `session.end`, and
     reason: "human requested cancel all"
   }
 }
+
+{
+  type: "runtime.reload.requested",
+  source: "telegram",
+  owner: "agent:may",
+  data: {
+    reason: "human requested reload"
+  }
+}
+
+{
+  type: "runtime.restart.requested",
+  source: "may-console",
+  owner: "agent:may",
+  urgency: "high",
+  data: {
+    reason: "human requested restart"
+  }
+}
+
+{
+  type: "runtime.shutdown.requested",
+  source: "web-ui",
+  owner: "agent:may",
+  urgency: "high",
+  data: {
+    reason: "human requested shutdown"
+  }
+}
 ```
 
 Read-only transport controls such as socket `subscribe` and `status` are not
 durable events. Existing shortcut frames such as `input`, `steer`, `fork`,
 `cancel_all`, `reload`, and `shutdown` are compatibility ingress frames and
-should normalize to canonical intent events at the runtime boundary.
+should normalize to canonical intent events at the socket boundary before
+events reach the bus. `session.cancel.requested` is currently treated as a
+socket command type for flat-frame compatibility; after normalization, durable
+uses of that name should use the canonical envelope shown above.
 
 ### Escalation lifecycle
 
@@ -508,12 +540,12 @@ Note: some state is maintained directly (metrics.current, sessions.status) for q
 Uses `message.created` — the single async communication primitive:
 
 ```typescript
-sdk.message("bob", "Review the PR");
+sdk.message("dev", "Review the PR");
 // Emits canonical message.created with source: "agent:<sender>",
-// owner: "agent:bob", and data: { from, to, content, priority }.
+// owner: "agent:dev", and data: { from, to, content, priority }.
 ```
 
-Bob sees it in his inbox on next heartbeat.
+The recipient sees it in their inbox on next heartbeat.
 
 ## Socket Boundary
 
@@ -584,7 +616,19 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `session.end` | runtime session lifecycle | ✅ live (6.9k rows) |
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.4k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.1k rows) |
-| `session.cancel.requested` | cancel intent from CLI/UI | ✅ live (3 rows) |
+| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live compatibility path (3 rows); canonical envelope target |
+
+**Human control intents**
+
+| Event type | Emitted by | Status |
+|---|---|---|
+| `chat.start.requested` | canonical human-surface chat create-or-bind intent | ❌ intended; compatibility path still uses `input`/`fork` |
+| `session.steer.requested` | canonical human-surface session steering intent | ❌ intended; compatibility path still uses flat `steer` |
+| `session.cancel.requested` | canonical human-surface session cancel intent | ⚠️ partially live as flat socket command; should normalize to envelope |
+| `session.cancel_all.requested` | canonical broad cancel intent | ❌ intended; compatibility path still uses `cancel_all` |
+| `runtime.reload.requested` | canonical runtime reload intent | ❌ intended; compatibility path still uses `reload` |
+| `runtime.restart.requested` | canonical runtime restart intent | ❌ intended; compatibility path still uses `restart` |
+| `runtime.shutdown.requested` | canonical runtime shutdown intent | ❌ intended; compatibility path still uses `shutdown` |
 
 **Project lifecycle — owner loop**
 

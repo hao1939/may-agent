@@ -99,8 +99,8 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 │  evaluator    ▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▍     │
 │  arc          ▌      ▌            ▌                       ▌  ▍       │
 │  scout        ▌                                            ▍         │
-│  bob          ▌            ▌            ▌                  ▍         │
-│  judge        ▌                  ▌                         ▍         │
+│  dev          ▌            ▌            ▌                  ▍         │
+│  tech-lead    ▌                  ▌                         ▍         │
 │  …                                                                    │
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -120,8 +120,8 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 │                                                                       │
 │  ● context-injection-review     may       4d ago   metrics: 2 ✓     │
 │  ● handler-health               optimizer 2h ago   metrics: 3, 1⚠   │
-│  ● agent-system-literacy        bob       1h ago   metrics: 2 ✓     │
-│  ◐ skill-workflow-audit         coach     3d ago   metrics: 1 ✓     │
+│  ● agent-system-literacy        arc       1h ago   metrics: 2 ✓     │
+│  ◐ skill-workflow-audit         scout     3d ago   metrics: 1 ✓     │
 │  …                                                                    │
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤

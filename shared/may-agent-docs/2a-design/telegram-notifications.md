@@ -78,8 +78,8 @@ This covers ALL notifications:
 - Project waiting → `{ agent: "may", subject: "project system-efficiency", state: { status: "waiting", metrics: {...} }, background: "orchestrator needs direction" }`
 - Metric breach → `{ agent: "may", subject: "metric handler.p95-duration", state: { value: 274, threshold: 240 }, background: "breaching for 2h" }`
 - Agent finding → `{ agent: "scout", subject: "paper on agent memory architectures", state: {}, background: "found on arXiv, relevant to our context-learning project" }`
-- Agent alert → `{ agent: "coach", subject: "bob stuck in retry loop", state: { sessionCount: 15, task: "Ship EXP-188" }, background: "same task retried 15x over 3 days" }`
-- Simple message → `{ agent: "amy", subject: "XHS content update", state: {}, background: "found 3 posts about multi-agent systems" }`
+- Agent alert → `{ agent: "may", subject: "dev stuck in retry loop", state: { sessionCount: 15, task: "Ship EXP-188" }, background: "same task retried 15x over 3 days" }`
+- Simple message → `{ agent: "scout", subject: "XHS content update", state: {}, background: "found 3 posts about multi-agent systems" }`
 
 ### Enrichment Format
 
@@ -123,11 +123,11 @@ Agent receives:
 
 **Agent alert → reply:**
 ```
-Notification: ⚠️ bob stuck in retry loop — "Ship EXP-188" retried 15x over 3 days
+Notification: ⚠️ dev stuck in retry loop — "Ship EXP-188" retried 15x over 3 days
 User replies: "cancel it and move on to the next experiment"
 
 Agent receives:
-  [User replying to notification from coach about "bob stuck in retry loop"]
+  [User replying to notification from may about "dev stuck in retry loop"]
   State: 15 retries of same task over 3 days.
   User says: cancel it and move on to the next experiment
 ```
@@ -186,7 +186,7 @@ Tested with claude-opus-4.6, same message with and without context enrichment:
 | Reply | Without context | With context |
 |-------|----------------|--------------|
 | "focus on output not cost" | Wrong scope — applied globally to system | Correct — targets system-efficiency project specifically |
-| "cancel it and move on" | "Could you clarify what to cancel?" | "Cancelling Ship EXP-188 for bob, unblocking him" |
+| "cancel it and move on" | "Could you clarify what to cancel?" | "Cancelling Ship EXP-188 for dev, unblocking the task" |
 
 ### Proposed Metric
 

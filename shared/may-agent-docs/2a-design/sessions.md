@@ -47,7 +47,7 @@ Heartbeats are `call` sessions spawned by the heartbeat workflow via `ctx.runAge
 Root (May heartbeat)
   ├── call("tech-lead", task)          ← child (blocks parent)
   │     └── call("dev", subtask)       ← grandchild
-  └── fork("bob", task)                ← new root (async, returns immediately)
+  └── fork("dev", task)                ← new root (async, returns immediately)
 ```
 
 - **call** = synchronous, parent waits, child linked via `workflowRunId` (not `parentSessionId`)

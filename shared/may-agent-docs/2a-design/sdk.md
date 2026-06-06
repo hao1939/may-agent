@@ -212,11 +212,11 @@ The SDK and agent tools are two sides of the same coin:
 
 | Agent thinks | Agent tool | SDK method |
 |---|---|---|
-| "Ask bob and wait for the answer" | `agents.call("bob", task)` | `await sdk.runAgent("bob", task)` |
-| "Start bob in the background" | `agents.fork("bob", task)` | — (no SDK equivalent) |
+| "Ask dev and wait for the answer" | `agents.call("dev", task)` | `await sdk.runAgent("dev", task)` |
+| "Start dev in the background" | `agents.fork("dev", task)` | — (no SDK equivalent) |
 | "Something happened" | — | `sdk.emit("metric.breach", {...}, { owner: "agent:may" })` |
 | "Tell humans" | Telegram/human message | `sdk.message("human", msg)` |
-| "Tell bob" | `message({ to: "bob", content })` | `sdk.message("bob", msg)` |
+| "Tell dev" | `message({ to: "dev", content })` | `sdk.message("dev", msg)` |
 | "I'm done" | `finish()` | `workflow.done(summary)` |
 | "I'm stuck" | `finish({ blocked })` | `sdk.escalate(reason)` |
 
