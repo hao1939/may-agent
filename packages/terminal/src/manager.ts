@@ -51,6 +51,28 @@ function idleTtlMs(): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_IDLE_TTL_MS;
 }
 
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+function mayConsoleCandidates(projectRoot: string): string[] {
+  return [
+    process.env.MAY_CONSOLE_BIN || "",
+    resolve(process.cwd(), "packages", "terminal", "bin", "may-console.cjs"),
+    resolve(projectRoot, "packages", "terminal", "bin", "may-console.cjs"),
+    resolve(projectRoot, "projects", "platform", "repos", "may-agent", "packages", "terminal", "bin", "may-console.cjs"),
+    "/usr/local/bin/may-console",
+  ].filter(Boolean);
+}
+
+function resolveMayConsoleCommand(projectRoot: string): string {
+  const script = mayConsoleCandidates(projectRoot).find((candidate) => existsSync(candidate));
+  if (!script) return "may-console";
+  return script.endsWith(".cjs") || script.endsWith(".js")
+    ? `node ${shellQuote(script)}`
+    : shellQuote(script);
+}
+
 function makeProfiles(projectRoot: string): TerminalProfile[] {
   const root = resolve(projectRoot);
   return [
@@ -58,7 +80,7 @@ function makeProfiles(projectRoot: string): TerminalProfile[] {
       id: "may",
       label: "May Console",
       description: "Interactive console attached to the running May daemon.",
-      command: "may-console",
+      command: resolveMayConsoleCommand(root),
       cwd: root,
     },
     {
