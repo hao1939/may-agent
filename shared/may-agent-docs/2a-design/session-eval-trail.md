@@ -149,6 +149,34 @@ The session page is an enriched chat window. Evaluation evidence appears beside 
 
 The human should not mentally match a separate evaluation rail to the transcript. When scrolling to a turn, the relevant evaluation evidence should be visible beside it.
 
+## Known Structural Distortions (KE-1644, KE-1645)
+
+Empirical analysis (2026-06-08, 7-day window, 3,419 sessions) revealed two
+verdict-determination mechanisms that bypass content evaluation:
+
+1. **Outcome-verdict collapse (KE-1644):** 97.3% of `needs_improvement`
+   verdicts come from heuristic auto-classification rules that check terminal
+   status (`interrupted`, `error`, `opCount≤2`), not work quality. Sessions
+   with `outcome=interrupted` receive 0% good verdicts despite averaging 24.8
+   productive ops — comparable to `done` sessions (23.5 ops). The heuristic
+   evaluator classifies terminal states, not work.
+
+2. **repair_execution downgrade (KE-1645):** A single rule reclassifies 52.9%
+   of all evaluated sessions. If `targetBreakdown.execution === "issue"` or
+   `targetBreakdown.result === "issue"`, the aftermath downgrades a "good"
+   verdict to "acceptable" (quality capped at 0.65). The system's reported
+   good rate of 22.2% would be 67.8% without this rule. The downgrade does
+   not re-evaluate the session's work — it applies a blanket cap based on
+   structural signals (evidence of output, verification steps) orthogonal to
+   quality.
+
+These distortions mean the evaluation trail's `verdict` field is primarily a
+function of session termination mode and structural checklist compliance, not
+substantive work quality. Consumers of evaluation data should be aware that
+`needs_improvement` may indicate scheduling/timeout behavior rather than poor
+agent work, and `acceptable` may indicate missing verification steps rather
+than mediocre output.
+
 ## Open Questions
 
 - How much line-level heuristic seeding is useful before it becomes noise.
