@@ -795,8 +795,10 @@ Second slice, 2026-05-11:
     an idea to revisit only if repeated context loading becomes a measured
     bottleneck.
   - `manual/workflow-authoring.md` lists current reusable shared patterns
-    (`project`, `metric-alert-triage`, `implement-and-verify`) instead of
-    advertising `master-worker`.
+    (`project`, `metric-alert-triage`) instead of advertising
+    `master-worker`. (`implement-and-verify` was dissolved — see
+    KE-1622/KE-1628; references in `workflow-authoring.md` and
+    `evolution.md` are stale.)
   - `events.md` describes `project.iteration` as default
     `project` output plus legacy compatibility shape.
 - Test fixture for normal project scanning now uses `workflow: project` so tests
