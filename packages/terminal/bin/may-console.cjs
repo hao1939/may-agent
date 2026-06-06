@@ -130,6 +130,23 @@ function updateCurrentStatus(status) {
   currentSessionStatus = status || null;
 }
 
+function isMayChatSession(item) {
+  if (!item || typeof item !== "object") return false;
+  const previous = typeof item.sessionId === "string" ? knownSessions.get(item.sessionId) || {} : {};
+  return String(item.agent || previous.agent || "") === daemonAgent && String(item.kind || previous.kind || "") === "chat";
+}
+
+function rememberStatusItems(items) {
+  if (!Array.isArray(items)) return false;
+  let sawMayChat = false;
+  for (const item of items) {
+    if (isMayChatSession(item)) sawMayChat = true;
+    rememberSession(item);
+  }
+  if (!sawMayChat && !forceNewChat) mayChatSessionId = null;
+  return sawMayChat;
+}
+
 function watchSessions() {
   if (watchMode === "all") return ["*"];
   if (watchMode === "current" && currentSessionId) return [currentSessionId];
@@ -214,8 +231,8 @@ function resolveSessionId(input) {
 }
 
 function renderStatus(items) {
+  rememberStatusItems(items);
   if (!Array.isArray(items) || items.length === 0) return "[status] No active sessions";
-  for (const item of items) rememberSession(item);
   return items
     .map((item) => {
       const sessionId = String(item.sessionId || "?");
@@ -252,9 +269,8 @@ function handleConnected(event) {
     mayChatSessionId = sid;
     rememberSession({ sessionId: sid, agent: event.agent || daemonAgent, status: "idle", kind: "chat", task: "May chat" });
   }
-  if (Array.isArray(event.activeAgents)) {
-    for (const item of event.activeAgents) rememberSession(item);
-  }
+  const sawMayChat = rememberStatusItems(event.activeAgents);
+  if (!sid && !sawMayChat && !forceNewChat) mayChatSessionId = null;
   printLine(`Connected to ${event.agent || daemonAgent} (${event.instance || instance})`);
 }
 

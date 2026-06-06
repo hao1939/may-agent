@@ -133,6 +133,7 @@ describe("control socket protocol", () => {
 
   it("serves status locally without emitting a daemon event", async () => {
     const core = createCore({
+      getSessionId: () => "",
       getStatus: () => [
         { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate a long task name" },
         { agent: "dev", sessionId: "s_2", status: "done", kind: "call", task: "finished" },
@@ -146,6 +147,25 @@ describe("control socket protocol", () => {
       activeAgents: [{ agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate a long task name" }],
     });
     expect(core.emitted).toEqual([]);
+  });
+
+  it("includes the current chat target as ready when it is not active", async () => {
+    const core = createCore({
+      getSessionId: () => "s_chat_done",
+      getStatus: () => [
+        { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
+      ],
+    });
+
+    const status = await sendSocketCommand(core.endpoint, { type: "status" });
+
+    expect(status).toEqual({
+      type: "status",
+      activeAgents: [
+        { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
+        { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "May chat" },
+      ],
+    });
   });
 
   it("filters subscribed event streams by session", async () => {

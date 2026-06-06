@@ -68,6 +68,20 @@ function activeStatus(status: ControlStatusItem[]): ControlStatusItem[] {
     }));
 }
 
+function socketStatus(status: ControlStatusItem[], currentSessionId: string, agentName: string): ControlStatusItem[] {
+  const active = activeStatus(status);
+  if (currentSessionId && !active.some((item) => item.sessionId === currentSessionId)) {
+    active.push({
+      agent: agentName,
+      sessionId: currentSessionId,
+      status: "ready",
+      kind: "chat",
+      task: "May chat",
+    });
+  }
+  return active;
+}
+
 function shouldForward(client: ClientState, event: ControlEvent): boolean {
   if (!client.filter) return true;
   const data = eventPayload(event);
@@ -145,7 +159,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         agent: agentName,
         instance,
         sessionId: getSessionId(),
-        activeAgents: activeStatus(getStatus()),
+        activeAgents: socketStatus(getStatus(), getSessionId(), agentName),
       }) + "\n",
     );
 
@@ -202,7 +216,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         }
 
         if (normalized.kind === "control" && normalized.command === "status") {
-          socket.write(JSON.stringify({ type: "status", activeAgents: activeStatus(getStatus()) }) + "\n");
+          socket.write(JSON.stringify({ type: "status", activeAgents: socketStatus(getStatus(), getSessionId(), agentName) }) + "\n");
           continue;
         }
 

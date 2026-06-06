@@ -277,11 +277,40 @@ describe("May Console e2e", () => {
     await h.waitForOutput("may[may:s_1234567890 ready]>");
   });
 
+  test("clears stale May chat target when status no longer reports it", async () => {
+    const h = await createHarness();
+    harnesses.push(h);
+
+    h.sendEvent({
+      type: "session.end",
+      data: {
+        sessionId: "s_1234567890",
+        agent: "may",
+        status: "done",
+        kind: "chat",
+        summary: "ready",
+      },
+    });
+    await h.waitForOutput("may[may:s_1234567890 ready]>");
+
+    const beforeStatus = h.stdout.length;
+    h.sendEvent({ type: "status", activeAgents: [
+      { sessionId: "s_worker_abcdef", agent: "worker", status: "running", kind: "job", task: "Investigate failure" },
+    ] });
+    const start = Date.now();
+    while (Date.now() - start < 3000) {
+      if (h.stdout.slice(beforeStatus).includes("may[may]>")) return;
+      await delay(20);
+    }
+    throw new Error(`Timed out waiting for stale May prompt to clear. Output: ${h.stdout.slice(beforeStatus)}`);
+  });
+
   test("handles cancel/new and rejects ambiguous or missing session steering locally", async () => {
     const h = await createHarness();
     harnesses.push(h);
 
     h.sendEvent({ type: "status", activeAgents: [
+      { sessionId: "s_1234567890", agent: "may", status: "ready", kind: "chat", task: "May chat" },
       { sessionId: "s_abc111", agent: "a", status: "running", kind: "job", task: "one" },
       { sessionId: "s_abc222", agent: "b", status: "running", kind: "job", task: "two" },
     ] });
