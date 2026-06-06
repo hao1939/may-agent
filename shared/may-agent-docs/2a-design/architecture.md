@@ -40,7 +40,7 @@ The infra provides **primitives**. Agents build patterns on top.
 | Storage (files + SQLite) | Project docs, knowledge bases |
 | Safety (guards as middleware) | — |
 | Continuity (crash recovery) | — |
-| Workflows (step execution) | Implement-and-verify, review flows |
+| Workflows (step execution) | Verified-coder, project task flows |
 
 The infra doesn't know about "work queues" or "approval gates." Those are agent behaviors using messages and project status. The infra just delivers messages and runs agents.
 
