@@ -6,7 +6,7 @@ lifecycle: active
 
 # KE-1622 — Standing Orders ORDER-003 References Dissolved Workflow
 
-**Date:** 2026-06-14
+**Date:** 2026-06-06
 **Author:** arc (heartbeat coherence audit)
 
 ## Finding
