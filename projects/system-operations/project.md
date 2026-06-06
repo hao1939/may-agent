@@ -1,12 +1,11 @@
 ---
 id: system-operations
 owner: may
-status: waiting
+status: closed
 type: continuous
 priority: P1
 iteration: 1
 project_policy: maintenance
-wait_reason: Alerts 1038-1040 are self-referential project-health findings (all tasks done); alert 415 is scout-owned. No actionable signals. Waiting on next real ops trigger.
 ---
 
 # Project: System Operations
@@ -141,11 +140,55 @@ Absorbed watch items:
   goal: Evaluate whether provider-error-count-1h threshold=5 is too low for normal operations; raise to 10-12 or investigate root cause of chronic provider errors
 
 - id: standing-ops-watch
-  status: ready
+  result: succeeded
+  attempts: 1
+  status: done
   assignee: may
   goal: Standing ops monitoring task — watch for alerts, route work, validate chains. This task stays open to prevent reconciler replan loops.
 
 ## Journal
+
+### 2026-06-06 — CLOSED: Self-referential alert loop (14th cycle)
+- This project has been stuck in a self-referential alert loop since creation: all tasks done → steward flags "no open work" → metric breach → may woken to judge → sets to waiting → repeat.
+- 13+ judgment cycles documented in this journal, 17 project.health.finding events today alone, 2 error sessions in the last 20 minutes from this loop.
+- The project's goal (ops monitoring) is fully absorbed into may's heartbeat routine. Having a separate project adds no value and wastes compute.
+- **Closing permanently.** If a real multi-session ops initiative emerges, create a new project with concrete deliverables — don't reuse this one.
+
+### 2026-06-06 — Alert chain judgment (thirteenth trigger)
+- Alert 1494 project.owner-incomplete-count=1: Self-referential (this project has all tasks done but status active). Resolved by setting status to waiting.
+- Alert 1493 project.owner-judgment-needed-count=1: Self-referential (this project). Resolved by this judgment.
+- Alert 1492 project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- Alert 1485 agent.heartbeat-dark-count-2h=1: Same recurring timing pattern (13th occurrence). All 7 agents active within 12 minutes. 75% success rate, all cron jobs green, zero handler failures. Not actionable.
+- No new operational signals. Setting to waiting.
+
+### 2026-06-06 — Alert chain judgment (twelfth trigger)
+- Alert 1491 project.owner-incomplete-count=1: Self-referential (this project has all tasks done but status active). Resolved by setting status to waiting.
+- Alert 1490 project.owner-judgment-needed-count=1: Self-referential (this project). Resolved by this judgment.
+- Alert 1487 project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- Alert 1485 agent.heartbeat-dark-count-2h=1: Same recurring timing pattern (12th occurrence). All 6 agents active within 10 minutes. 74% success rate, all cron jobs green, zero handler failures. Not actionable.
+- No new operational signals. Setting to waiting.
+
+### 2026-06-06 — Alert chain judgment (eleventh trigger)
+- Alert 1487 project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- Alert 1485 agent.heartbeat-dark-count-2h=1: Arc last session ~132min ago, just crossing 2h threshold. Same recurring timing pattern (11th occurrence). All other agents active <7min ago. 76% success rate, all cron jobs green, zero handler failures. Not actionable.
+- No new operational signals. Setting to waiting.
+
+### 2026-06-06 — Alert chain judgment (tenth trigger)
+- Alert 1489 project.owner-incomplete-count=1: Self-referential (this project has all tasks done but status active). Resolved by setting status to waiting.
+- Alert 1488 project.owner-judgment-needed-count=1: Self-referential (this project). Resolved by this judgment.
+- Alert 1487 project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- Alert 1485 agent.heartbeat-dark-count-2h=1: Arc last session ~130min ago, just crossing 2h threshold. Same recurring timing pattern (10th occurrence). Arc has 3 recent error sessions (empty assistant turns) interleaved with successful ones — not structural. All other agents active <5min ago. 75% success rate, all cron jobs green, zero handler failures. Not actionable.
+- No new operational signals. Setting to waiting.
+
+### 2026-06-06 — Alert chain judgment (ninth trigger)
+- Alert 1487 project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- Alert 1485 agent.heartbeat-dark-count-2h=1: Arc last session 128min ago, just crossing 2h threshold. Same recurring timing pattern (9th occurrence). All other agents active <4min ago. 74% success rate, all cron jobs green, zero handler failures. Not actionable.
+- No new operational signals. Setting to waiting.
+
+### 2026-06-06 — Alert chain judgment (eighth trigger)
+- Alert 1486 project.health.finding-count=1: Self-referential (this project flagged). Resolved by this judgment.
+- Alert 1485 agent.heartbeat-dark-count-2h=1: Arc last session 127min ago, just crossing 2h threshold. Recurring timing pattern. System clearly alive — evaluator/may/scout/dev/aks-explorer all active <5min ago. 74% success rate, all cron jobs green, zero handler failures. Not actionable.
+- No new operational signals. Setting to waiting.
 
 ### 2026-05-30 — Alert chain judgment (seventh trigger)
 - project.health.finding-count=1: Self-referential. Resolved by this judgment.
