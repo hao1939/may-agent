@@ -18,10 +18,13 @@ function initTerminalPage(requestedProfileId) {
           <div id="terminal-tabs" class="terminal-tabs"></div>
           <div class="terminal-actions">
             <span id="terminal-status" class="terminal-status">Loading</span>
-            <button class="ask-btn" onclick="restartActiveTerminal()">Restart</button>
+            <button class="ask-btn" onclick="copyTerminalSelection()">Copy</button>
+            <button class="ask-btn" onclick="pasteIntoTerminal()">Paste</button>
             <button class="ask-btn" onclick="fitActiveTerminal()">Fit</button>
+            <button class="ask-btn" onclick="restartActiveTerminal()">Restart Terminal</button>
           </div>
         </div>
+        <div id="terminal-quickbar" class="terminal-quickbar"></div>
         <div id="terminal-mount" class="terminal-mount"></div>
       </div>`;
   }
@@ -41,6 +44,7 @@ async function loadTerminals(requestedProfileId) {
     if (requestedProfileId && terminalProfiles.some(p => p.id === requestedProfileId)) activeTerminalId = requestedProfileId;
     if (!terminalProfiles.some(p => p.id === activeTerminalId)) activeTerminalId = terminalProfiles[0]?.id || 'shell';
     renderTerminalTabs();
+    renderTerminalQuickbar();
     connectTerminal(activeTerminalId);
   } catch (err) {
     if (status) status.textContent = err.message || String(err);
@@ -74,6 +78,29 @@ function selectTerminal(profileId) {
   routeTo(`/terminal/${encodeURIComponent(profileId)}`);
 }
 
+function activeTerminalProfile() {
+  return terminalProfiles.find(p => p.id === activeTerminalId) || null;
+}
+
+function renderTerminalQuickbar() {
+  const quickbar = document.getElementById('terminal-quickbar');
+  if (!quickbar) return;
+  if (activeTerminalId !== 'may') {
+    quickbar.innerHTML = '';
+    quickbar.classList.add('hidden');
+    return;
+  }
+  quickbar.classList.remove('hidden');
+  quickbar.innerHTML = `
+    <button class="terminal-quick" onclick="sendTerminalCommand('/status')">Status</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/sessions')">Sessions</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/watch chat')">Watch Chat</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/watch current')">Watch Current</button>
+    <button class="terminal-quick" onclick="sendTerminalCommand('/may')">May Mode</button>
+    <button class="terminal-quick" onclick="clearTerminalScreen()">Clear</button>
+  `;
+}
+
 function disposeTerminalClient() {
   if (terminalResizeObserver) {
     terminalResizeObserver.disconnect();
@@ -93,6 +120,7 @@ function disposeTerminalClient() {
 
 function connectTerminal(profileId) {
   disposeTerminalClient();
+  renderTerminalQuickbar();
   const mount = document.getElementById('terminal-mount');
   const status = document.getElementById('terminal-status');
   if (!mount || !window.Terminal || !window.FitAddon?.FitAddon) {
@@ -158,7 +186,11 @@ function connectTerminal(profileId) {
     try { frame = JSON.parse(event.data); } catch { frame = { type: 'data', data: String(event.data) }; }
     if (frame.type === 'data') terminal.write(frame.data || '');
     else if (frame.type === 'ready') {
-      if (status) status.textContent = `${frame.profile?.label || profileId} · pid ${frame.pid}`;
+      if (status) {
+        const profile = activeTerminalProfile();
+        const idle = profile?.idleUntil ? ` · warm until ${new Date(profile.idleUntil).toLocaleTimeString()}` : '';
+        status.textContent = `${frame.profile?.label || profileId} · ${profileId}${profileId === 'may' ? ' · daemon console' : ''} · pid ${frame.pid}${idle}`;
+      }
       terminal.focus();
       fitActiveTerminal();
     } else if (frame.type === 'error') {
@@ -195,9 +227,52 @@ function fitActiveTerminal() {
   } catch {}
 }
 
+function sendTerminalData(data) {
+  if (terminalSocket?.readyState !== WebSocket.OPEN) {
+    toast('terminal is not connected', 'error');
+    return false;
+  }
+  terminalSocket.send(JSON.stringify({ type: 'input', data }));
+  terminal?.focus();
+  return true;
+}
+
+function sendTerminalCommand(command) {
+  sendTerminalData(`${command}\n`);
+}
+
+function clearTerminalScreen() {
+  terminal?.clear();
+  terminal?.focus();
+}
+
+async function copyTerminalSelection() {
+  if (!terminal) return;
+  const text = terminal.getSelection();
+  if (!text) {
+    toast('no terminal selection to copy');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('terminal selection copied');
+  } catch (err) {
+    toast(`copy failed: ${err.message || err}`, 'error');
+  }
+}
+
+async function pasteIntoTerminal() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) sendTerminalData(text);
+  } catch (err) {
+    toast(`paste failed: ${err.message || err}`, 'error');
+  }
+}
+
 async function restartActiveTerminal() {
   if (!activeTerminalId) return;
-  if (!confirm(`Restart ${activeTerminalId} terminal session? This kills the tmux session for this profile.`)) return;
+  if (!confirm(`Restart ${activeTerminalId} terminal profile? This restarts the web terminal/tmux session, not the May daemon.`)) return;
   try {
     const res = await fetch(`/api/terminals/${encodeURIComponent(activeTerminalId)}/restart`, { method: 'POST' });
     const data = await res.json().catch(() => ({}));
