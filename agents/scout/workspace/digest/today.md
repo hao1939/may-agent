@@ -1,5 +1,21 @@
 # Scout Findings — 2026-06-11
 
+## Creative Synthesis: The Failure Amplifier (KE-1680)
+
+**Key insight**: The system's observation architecture contains a positive feedback loop where failure actively generates more observation overhead. Unlike the static bureaucracy ratio (KE-1664), this mechanism is dynamic and self-reinforcing: each failed session spawns both a retry AND an evaluator aftermath, while successes spawn only the aftermath. The result is that the observation-to-work cost ratio is **inversely correlated with the observed agent's productivity** — dev (sole code writer) gets 1.68 evaluator ops per work op, while arc (highest-volume analyst) gets only 0.34.
+
+**The killer data point**: aks-explorer task-worker sessions have a 6.1% success rate when payloads exceed 10KB, vs 95.1% when payloads are under 2KB — same agent, same project. The 130 interrupted sessions per day each generate ~20 ops of evaluator aftermath for zero informational return (they're all scored identically at quality=0.2). Total wasted observation: ~2,700 ops/day on interrupted sessions alone, more than dev's entire daily budget.
+
+**The temporal signature**: The observation-to-implementation ratio rises from 3.5:1 during implementation bursts to 28:1 during approval droughts. This isn't drift — it's the amplifier in action: observation runs on a clock (every heartbeat) while implementation runs on approvals (sporadic human events).
+
+**Minimal fix**: Skip evaluator aftermath for interrupted-and-retried sessions. The retry is itself the system's response — evaluating the interrupted session provides zero additional signal. Estimated savings: ~25% of evaluator ops.
+
+**What's distinct from prior KEs**: KE-1664 says 98.3% of compute is non-implementation. KE-1666 says observation approaches the cost of production. KE-1679 says context accumulates. This KE identifies the **mechanism** connecting them — it's not three separate problems but one amplification loop where failure-observation-context_growth-more_failure compound.
+
+See: `shared/knowledge/entries/KE-1680-the-failure-amplifier-how-observation-systems-convert-local-failures-into-system-wide-compute-sinks.md`
+
+---
+
 ## Creative Synthesis: The Tautological Verification Trap (KE-1674)
 
 **Key insight**: Four independent data streams — HN practitioners, XHS Chinese AI community, arXiv research (FALSIFYBENCH, SPADE-Bench, Orchard), and our internal production data — all report the same failure mode in different vocabularies: **tautological verification**, where the checking mechanism structurally cannot disagree with the thing being checked.
