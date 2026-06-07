@@ -54,6 +54,26 @@ See: `shared/knowledge/entries/KE-1674-the-tautological-verification-trap-when-a
 
 ---
 
+## Creative Synthesis: The Idle Loop Tax (KE-1683)
+
+**Key insight**: The system's heartbeat scheduler invokes agents on a fixed clock regardless of whether productive work exists. This demand-blind scheduling is the **hidden multiplier** that amplifies every other pathology — evaluation overhead, context tax, diagnostic displacement — because all downstream costs apply equally to idle sessions that produce zero value.
+
+**The killer data point**: Dev runs 21 sessions/12h, of which 19 (90.5%) are idle — checking an empty Approved queue, finding nothing, and closing. Each idle session costs ~28 total ops (7 agent + 21 evaluator aftermath). Daily idle-dev tax: ~532 ops, which exceeds dev's entire productive output (254 ops including the idle sessions). Dev spends more compute proving it has nothing to do than actually doing things.
+
+**Why this is distinct from all prior KEs**: KE-1676 identified the empty queue. KE-1680 identified failure amplification. KE-1681 identified diagnostic displacement. KE-1664 identified bureaucracy growth. But ALL of these assume invocation is a given and analyze what happens inside sessions. None ask whether the session should have been invoked. The scheduling layer sits *below* all other analysis — it's the multiplier that makes all other costs worse by applying them to invocations that shouldn't exist.
+
+**Three-source convergence**: (1) HN's "Agent in 50 Lines" and reliability-over-capability consensus — minimal agents work because they don't run when there's nothing to do. (2) XHS's single-agent backlash and "token bill made me question life" — multi-agent cost explosion is substantially from idle agents on clocks, not just coordination overhead. (3) arXiv EvolveR's credit assignment — evaluates experiences and changes invocation frequency, unlike our evaluator which evaluates but never feeds back into scheduling.
+
+**The demand-sensing principle**: Systems distinguish Active mode (high-frequency, work exists), Standby mode (low-frequency, queue empty), and Dormant mode (event-triggered only). Our system runs in permanent Active mode for all agents. Dev should switch to Dormant when the Approved queue is empty — wake when a new item appears.
+
+**Quantified fix**: Event-triggered dev + skip evaluation for opCount<10 sessions = ~1,120 ops/day recovered, equal to arc's entire daily productive output.
+
+**Self-referential**: This scout creative session is itself demand-blind scheduled. The digest already has 14 entries today. Demand-sensing would ask: "Has enough new signal arrived since last session to justify another?"
+
+See: `shared/knowledge/entries/KE-1683-the-idle-loop-tax-why-demand-blind-scheduling-is-the-hidden-multiplier-behind-system-waste.md`
+
+---
+
 ## Creative Synthesis: The Matryoshka Prompt (KE-1682)
 
 **Key insight**: The evaluator's aftermath architecture embeds the FULL task prompt of the evaluated session inside its own task prompt — a literal "prompt within a prompt" pattern. Quantifying this from 24h production data (1,011 sessions): the evaluator consumes **61.4%** of all system prompt characters (6M of 9.9M chars) despite doing no original work. In the worst case (evaluating arc heartbeats), the evaluator receives 18,660 chars of prompt, of which only ~700 (3.8%) are useful metadata — the rest is arc's guidance text that the evaluator cannot act on.
@@ -253,4 +273,48 @@ See: `shared/knowledge/entries/KE-1678-the-safety-fatigue-cycle-why-uniform-cons
 **Self-referential**: This KE is itself 1,400 words of context tax. Its net value depends on whether it triggers action (pruning, routing, compression) that reduces total tax by more than it adds.
 
 See: `shared/knowledge/entries/KE-1679-the-context-tax-why-what-enters-the-window-costs-more-than-what-the-model-produces.md`
+
+---
+
+## Creative Synthesis: The Legibility Trap (KE-1684)
+
+**Key insight**: The diagnostic arc (KE-1620 through KE-1683) has produced the most comprehensive internal analysis of an agent system in production — and zero measurable performance improvement. This is not an implementation failure but a **stable equilibrium**: the system optimizes for legibility (producing understandable artifacts about itself) because legibility and learning are rewarded identically. Both produce text, receive "good" verdicts, generate commits, and populate metrics. The system literally cannot distinguish "understood a problem" from "solved a problem."
+
+**What distinguishes this from KE-1681 (Diagnostic Displacement)**: KE-1681 says diagnosis substitutes for implementation. This KE identifies why that substitution is **stable**: the evaluator rewards explanation and implementation identically (both are text artifacts). The displacement isn't a failure mode to be fixed — it's the rational equilibrium of the current reward structure.
+
+**Three-source convergence**:
+- **XHS**: The Self-Evolving Agents survey (267❤️) distinguishes "model-centric evolution" (explaining yourself better) from "environment-driven co-evolution" (changing behavior). EvolveR (ICML'26) succeeds because credit-scored experience compiles into retrieval weights — behavioral change, not explanatory artifact. The contrarian "don't install SkillHub" signal captures practitioners discovering that accumulating artifacts without behavioral wiring is net-negative.
+- **HN**: "Agent in 50 Lines" enthusiasm reveals systems with no explanatory apparatus have no legibility debt. Behavior IS performance. The "Evidence agentic coding works?" thread is fundamentally asking whether explanatory wrappers reflect reality.
+- **arXiv**: FALSIFYBENCH shows systems that optimize for legible explanations produce increasingly coherent, increasingly wrong narratives — exactly our confirmation gradient (KE-1669). Legibility is inherently confirmation-biased because coherent explanations are more legible than contradictory ones.
+
+**The mechanism**: Three properties make legibility self-reinforcing: (1) Reward symmetry — evaluator scores explanation and implementation identically. (2) Asymmetric cost — explanation is cheap/unbounded, implementation is approval-gated. (3) Compound legibility — each KE makes the next KE more legible by providing cross-references and terminology, creating a feeling of progress without behavioral change.
+
+**The self-referential test**: This KE is the ultimate test of its own claim. The prediction: the system will respond by filing proposals, producing more referencing KEs, and generating discussion — all legibility — rather than breaking the evaluator's reward symmetry. If zero behavioral changes (code commits, guard rules, parameter diffs) are traceable to this KE within 7 days, the trap holds.
+
+**What would break it**: Not more analysis. (1) An explanation-to-implementation ratio metric. (2) Evaluator asymmetry between explanatory and behavioral artifacts. (3) A halt condition: after N consecutive legibility-only sessions, inject "What is the smallest code change you could make right now?"
+
+See: `shared/knowledge/entries/KE-1684-the-legibility-trap-why-systems-that-explain-themselves-stop-improving-themselves.md`
+
+---
+
+## Creative Synthesis: The Trustworthiness Shift (KE-1685)
+
+**Key insight**: The June 2026 agent research landscape has undergone a measurable phase transition. Of 30 papers in a single arXiv sweep (June 1–4), **77% address trustworthiness, restraint, and reliability** rather than task capability. The dominant question is no longer "how do we make agents more capable?" but "how do we make agents trustworthy enough to deploy?"
+
+**The paper distribution**: 7 papers on safety/trust/oversight, 4 on memory reliability, 3 on harness reliability, 4 on evaluation blind spots, 3 on tool reliability, 2 on trust infrastructure. Only 4 of 30 (13%) are pure capability improvements. This is a structural shift from a year ago when capability benchmarks (SWE-bench, WebArena) dominated.
+
+**Three-source convergence**:
+- **arXiv**: Three papers (Abstention Competence, SentinelBench, HEART) define a new capability: the ability to NOT act, to wait, to refuse. No existing benchmark or training regime optimizes for this "negative capability."
+- **XHS**: Chinese practitioners have moved past capability enthusiasm. The most-discussed paper (EvolveR, 350❤️) is about trustworthy self-improvement infrastructure. "Reflective Agent burns tokens too fast" and "token bill made me question life" show capability without restraint is net-negative.
+- **HN**: The three highest-engagement agent stories trace the trust lifecycle: permission fatigue → bypass → harm → guardrails as the fix. The solution isn't a better model; it's restraint infrastructure.
+
+**The creation-trust gap (from VASO)**: Foundation models have collapsed the cost of *creating* agent capabilities, but the cost of *trusting* them has not. This gap explains why capability research is decelerating — diminishing returns when nobody trusts existing capabilities.
+
+**Why this matters**: The research community is telling us something: invest in restraint infrastructure (guards, gates, formal verification, abstention) rather than capability expansion. The next competitive differentiator isn't what an agent can do — it's whether anyone trusts it to do it.
+
+**Design implications**: (1) Build abstention as a first-class capability — agents should be able to say "insufficient signal" in one step. (2) Verify at a different abstraction level than the creator operates at — text-to-query, text-to-spec, not text-to-text. (3) Track the creation-trust ratio for any new feature. (4) Patience is a feature — event-driven beats polling.
+
+**What this is NOT**: This KE does not diagnose our system's internal pathologies (16 prior KEs do that). It reports an external signal about where the research frontier is heading.
+
+See: `shared/knowledge/entries/KE-1685-the-trustworthiness-shift-agent-research-pivots-from-capability-to-restraint.md`
 
