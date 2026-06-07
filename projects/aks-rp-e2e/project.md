@@ -1,11 +1,11 @@
 ---
 id: aks-rp-e2e
 owner: aks-explorer
-status: active
+status: waiting
 type: milestone
 priority: P1
 iteration: 204
-max_concurrent: 1
+max_concurrent: 3
 max_task_attempts: 2
 project_app: v2
 project_policy: aggressive-push
@@ -62,6 +62,31 @@ Use Go e2ev3 as the source of product intent, not the only execution vehicle.
 The project should learn from handwritten Go cases, then build lightweight
 TypeScript probes that directly call the same underlying AKS surfaces and write
 structured evidence.
+
+### REST-First Staging Replay
+
+For the golden replay pipeline, prefer staging replay through ARM REST or
+generated AKS clients instead of Azure CLI command surfaces. `az` failures are
+still useful evidence when the feature path is explicitly a CLI contract, but
+they should not block product/API replay work for unrelated paths. New replay
+probes should make API versions, request bodies, actor headers, LRO polling,
+response errors, and cleanup state explicit. `az` may be used as an
+authentication/bootstrap fallback only when managed identity or `ARM_ACCESS_TOKEN`
+is unavailable and the evidence records that fallback.
+
+The current policy and next-step rationale are captured in
+`evidence/outputs/rest-first-staging-replay-review.md`.
+
+The canonical REST-first golden-path baseline is now ManagedSystem Pool REST
+add-existing, captured in
+`evidence/outputs/managedsystem-rest-golden-path-contract.md`. That branch has
+the complete source -> feature packet -> test spec -> run plan -> TypeScript
+probe -> local check -> gated staging replay -> cleanup evidence -> model
+judgment chain. Reuse this pattern for other features, but keep adjacent
+ManagedSystem branches separate: CLI create/add are CLI-contract failures,
+runtime placement is audit-only in the reference probe, disable migration is a
+separate product/runtime fail path, and single-pool/reconcile/runtime
+restrictions need their own gated cloud evidence.
 
 Phases:
 - **Learning:** extract scenario intent from Go e2ev3 source, public API/docs,
@@ -147,6 +172,8 @@ Iteration185 owner-loop reconciliation handled the duplicate unread Hao resume c
 Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
 The project should remain gated after the local replan. The new combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. Do not create another same-branch cloud rerun task solely because the project woke up.
+
+**iteration355 review (owner loop — new harvest path found):** Devbox still absent but `scenarios/test-specs/` IS accessible (74 specs at `/app/projects/aks-rp-e2e/scenarios/test-specs/`). Index updated 2026-06-14. Re-scanned all 74 spec files: found 15 specs with pass/staging-pass status (up from 13 at iteration322 freeze). **3 newly harvestable specs** not in project's 56-feature set: (1) `app-routing-nginx-to-istio-migration` (status=pass, 18 assertions, 4 devbox sourceRefs), (2) `app-routing-nginx-disablement` (status=pass, 5 assertions, devbox sourceRef), (3) `vpa-upgrade-survival-runtime` (status=pass, iter115 cloud replay evidence). 3 new tasks created (iteration355-harvest-new-pass-specs, iteration356-updated-coverage-matrix-v18, iteration357-rescan-additional-pass-specs).
 
 ## Current Phase
 
@@ -1596,6 +1623,33 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   goal: "Design a TypeScript probe for workload-autoscaler-keda-profile-state. Read features/workload-autoscaler-keda-profile-state.yaml, outputs/iteration84-keda-disable-reenable-crud-staging.md, outputs/iteration78-workload-autoscaler-runtime-staging.md, and knowledge-map/model.json. Produce probes/workload-autoscaler-keda-profile-state.ts implementing the reference packet scenarios with path-specific verdicts. Include a run-plan at run-plans/workload-autoscaler-keda-profile-state.yaml. Local preflight with --check must pass. Produce outputs/iteration205-keda-profile-state-probe-design.md documenting the design and preflight result. Do not run cloud probes."
   depends_on: [iteration203-model-enrichment-from-new-packets]
   attempts: 0
+
+- id: iteration355-harvest-new-pass-specs
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P1
+  goal: "Create feature packets and test-specs for 3 newly-discovered pass-status scenario specs NOT in the project's 56-feature set. Targets: (1) app-routing-nginx-to-istio-migration (pass, 18 assertions, 4 devbox sourceRefs from approutingmigration/), (2) app-routing-nginx-disablement (pass, 5 assertions, devbox sourceRef nginx_disablement.go), (3) vpa-upgrade-survival-runtime (pass, 5 assertions, distinct from vpa-profile-state, cloud replay iter115 evidence). All enter with immediate pass verdicts. Output: sources/feature-packets/ + outputs/ for each. Target: pass rate 19/59 = 32.2%."
+  depends_on: []
+  attempts: 1
+
+- id: iteration356-updated-coverage-matrix-v18
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P1
+  goal: "Update coverage matrix to include all 59 features with verdict status. Output: outputs/iteration356-coverage-gap-matrix-v18.md. Target: 59 features total, 19 pass (32.2%), 2 source-backed (3.4%)."
+  depends_on: [iteration355-harvest-new-pass-specs]
+  attempts: 1
+
+- id: iteration357-rescan-additional-pass-specs
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Full re-scan of all 74 scenario test-spec files for any additional pass/staging-pass status specs that emerged since the iteration322 freeze. Compare each file's status field and metadata.status field against the project's feature list. Produce delta report. Output: outputs/iteration357-rescan-pass-delta.md."
+  depends_on: [iteration356-updated-coverage-matrix-v18]
+  attempts: 1
 
 ## References
 
