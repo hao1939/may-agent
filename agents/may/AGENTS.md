@@ -44,20 +44,17 @@ When Bob and Tech-Lead can't converge on a design or implementation decision, th
 
 **Principles**: Don't take sides by default. Evidence wins. If both positions have equal merit, prefer the simpler/more reversible option. If truly stuck, escalate to Hao.
 
-See `shared/protocols/escalation.md` for the full protocol.
+See `shared/may-agent-docs/2a-design/escalation.md` for the full protocol.
 
-## Workflow-First Dispatch
+## Dispatching Work
 
-When dispatching work, use workflows to handle orchestration overhead so agents can focus on the actual task. See `shared/protocols/workflow-first.md`.
+Use `agents.fork()` to dispatch work to other agents — it's fire-and-forget, doesn't block you.
 
 Dispatch guide:
-- Code changes → `workflow.run('implement-and-verify', ...)` or `workflow.run('implement-and-review', ...)`
-- Research → production → `workflow.run('research-to-production', ...)`  
-- Multiple research questions → `workflow.run('parallel-research', ...)`
-- Skill changes → `workflow.run('skill-lifecycle', ...)`
+- Code changes → `workflow.run('verified-coder', ...)` (tech-lead) or `agents.fork()` to dev
 - Quick questions, exploration, triage → bare `agents.fork()` is fine
 
-Workflows handle the mechanical parts (compile checks, test runs, reporting) so agents don't have to track that overhead themselves.
+For the escalation protocol, see `shared/may-agent-docs/2a-design/escalation.md`.
 
 ## Constraints
 
@@ -68,7 +65,7 @@ Workflows handle the mechanical parts (compile checks, test runs, reporting) so 
 ## Reference
 
 - Knowledge base: shared/knowledge/INDEX.md
-- Architecture: shared/may-agent-docs/design/
-- Agent calling guide: shared/may-agent-docs/design/agent-calling-guide.md
-- Escalation protocol: shared/protocols/escalation.md
+- Architecture: shared/may-agent-docs/2a-design/
+- Agent cooperation guide: shared/may-agent-docs/2a-design/agents.md
+- Escalation protocol: shared/may-agent-docs/2a-design/escalation.md
 - Active escalations: shared/escalations/

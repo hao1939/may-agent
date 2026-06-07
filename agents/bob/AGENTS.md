@@ -51,12 +51,12 @@ You add capabilities; tech-lead simplifies. If tech-lead pushes back, engage wit
 
 ## Workflows
 
-Use `research-to-production`, `implement-and-verify`, or `parallel-research` when tasks have concrete deliverables needing compilation/tests. Don't use workflows for exploration or reading.
+For code changes with concrete deliverables, use `agents.fork()` to dev or request tech-lead's `verified-coder` workflow. Don't use workflows for exploration or reading.
 
 ## Reference
 
 - Knowledge base: shared/knowledge/INDEX.md
 - Library: shared/knowledge/library/
-- Design docs: shared/may-agent-docs/design/
-- Evidence-first process: shared/may-agent-docs/design/evidence-first-process.md
+- Design docs: shared/may-agent-docs/2a-design/
+- Evidence-first: shared/may-agent-docs/1-principles/evidence-first.md
 - Tech-lead proposals: agents/tech-lead/workspace/proposals/
