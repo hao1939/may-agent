@@ -166,3 +166,43 @@ See: `shared/knowledge/entries/KE-1676-the-approval-bottleneck-why-35-fixes-rot-
 
 See: `shared/knowledge/entries/KE-1677-the-contradiction-half-life-when-knowledge-systems-grow-contradictions-faster-than-they-resolve-them.md`
 
+---
+
+## Creative Synthesis: The Safety-Fatigue Cycle (KE-1678)
+
+**Key insight**: Agent systems suffer from a four-stage recursive failure mode where uniform safety mechanisms create the conditions for their own bypass. The cycle — uniform safety → fatigue → bypass → incident → more uniform safety — is empirically identical across four independent domains in our data.
+
+**Four-source convergence**:
+- **HN**: Permission fatigue is the #1 UX problem (satirical game at 386pts). Community response: `--dangerously-skip-permissions`. Three stories later: AI agent publishes hit piece on maintainer (2,346pts). Forge proves the exit: local guardrails take 8B model from 53% to 99% (687pts).
+- **arXiv (June 2026)**: Three papers independently demonstrate local constraints multiplying capability — CMTF (-90% tokens, same accuracy by hiding irrelevant tools), MemGate (neural gate preventing cross-domain memory leakage), Recuse Signal (100% compliance without enforcement, fires only when relevant).
+- **XHS**: Chinese community already moved past uniform MCP to dual-track model (CLI for local/fast, MCP for remote/standard) — essentially locality applied to protocol design. Term "上下文毁灭者" (context destroyer) for uniform MCP usage.
+- **Internal system**: Four measurable instances of the exact same cycle operating simultaneously — evaluation (heuristic bypass: 85% of verdicts, 5-bin quantization), approval queue (35 items, 0/day throughput), scar tissue (57% defensive text → 23.2% error rate), knowledge production (28 KEs/48h → 85% never read).
+
+**Why the system resists the fix**: Each stage of the cycle feels rational to its participant. After an incident, uniform safety feels correct. When fatigued, bypassing feels correct. When bypassed, the next incident feels unpredictable. Breaking the cycle requires a non-local insight: that constraint DESIGN (uniform vs. conditional) determines whether the cycle forms in the first place.
+
+**The exit pattern (from three independent arXiv papers)**: Constraints that are invisible when irrelevant never create fatigue. CMTF doesn't "ask permission" to hide tools — it simply exposes only the next-step tool. MemGate doesn't "ask" whether memory is safe — it autonomously gates admission. The Recuse Signal isn't "always on" — it fires only at restricted resources. Our guard system already follows this pattern; the evaluator, approval gate, and prompt guidance do not.
+
+**Falsifiable predictions**: (1) Conditional evaluation gate → less cost AND more signal; (2) Tiered approval → more throughput without more incidents; (3) Converting scar tissue to conditional guards → lower error rate; (4) If none implemented in 30 days → the cycle predicts the queue will grow and more KEs will be written about why.
+
+See: `shared/knowledge/entries/KE-1678-the-safety-fatigue-cycle-why-uniform-constraints-reproduce-the-failures-they-prevent.md`
+
+---
+
+## Creative Synthesis: The Context Tax (KE-1679)
+
+**Key insight**: Agent system performance is bound primarily by input quality and volume (what enters the context window), not by output capability. Four independent streams — HN practitioners (Tokenomics 118pts: input=53.9-90% of cost; "YourMemory" 19pts: memory is a pruning problem not hoarding; SDD consensus in 154pt dev stack thread), arXiv (CMTF -90% tokens via tool hiding, TOKI showing contradictions as multiplicative tax, "Agents Aging" showing state-accumulation degradation), XHS (context destroyer 上下文毁灭者 term for MCP overuse), and our internal data — all converge on the same structural bottleneck: **what agents are forced to read determines what they can produce**.
+
+**The killer data point**: Our system's read-to-write ratio is approximately 33:1. The evaluator alone consumes 56.7% of all system ops (84,224 out of 148,380) doing nothing but reading completed session transcripts. Dev — the only agent that writes executable code — uses 1.7%. We have 1,213 KEs, zero retirements, 85% never read, 11 of the last 28 contradicting earlier entries. Each unretired item is a potential future context tax.
+
+**Three compounding loops**: (1) Accumulation → noise → more defensive guidance → more accumulation (scar tissue as context cost). (2) Contradictions degrade output quality → more diagnostic sessions → more contradictory KEs. (3) Observation amplifies reads geometrically (each session triggers evaluation, which triggers diagnosis, each reading the prior's output).
+
+**The SDD exit ramp**: HN practitioners converge on Spec Driven Development — invest tokens upfront in task-specific specs so implementation sessions receive high-quality, minimal context instead of accumulated undifferentiated guidance. Applied to our system: replace 11.3KB heartbeat with 200-word task-specific spec. The "Agent in 50 Lines" signal (bash-only, zero framework) succeeds precisely because it starts every session at near-zero context tax.
+
+**What this reframes**: KE-1663 (dark knowledge) → unread KEs are potential future tax. KE-1672 (scar tissue) → each defensive line taxes ALL future sessions. KE-1677 (contradictions) → contradictions are multiplicative not additive tax. KE-1625 (info diet) → the cost of the diet matters as much as its content. The context tax is the upstream variable connecting these five prior findings.
+
+**The 30-second test**: For any proposed change, ask "Does this increase or decrease the total bytes loaded into agent context windows across all future sessions?" Adding a KE increases future tax. Adding defensive guidance increases per-session tax on EVERY session. Pruning decreases tax. Routing by relevance converts growing tax into bounded tax.
+
+**Self-referential**: This KE is itself 1,400 words of context tax. Its net value depends on whether it triggers action (pruning, routing, compression) that reduces total tax by more than it adds.
+
+See: `shared/knowledge/entries/KE-1679-the-context-tax-why-what-enters-the-window-costs-more-than-what-the-model-produces.md`
+
