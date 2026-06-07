@@ -49,6 +49,26 @@ Heartbeat follows the same work-context convention as projects:
 | Evidence | session summary, file changes, project journal updates |
 | Validation | later metrics/events/tests/next heartbeat |
 
+## Skip Gates (Circuit Breaker + Dispatch Dedup)
+
+Despite the "always run" aspiration above, `genericHeartbeat()` applies two
+gates **before** the LLM session starts:
+
+1. **Circuit breaker** — If the agent has ≥3 consecutive error outcomes,
+   the heartbeat is skipped and a `heartbeat.skipped` event emitted
+   (gate: `circuit_breaker`). Auto-resets after 1 hour (`AUTO_RESET_MS`).
+   Source: `@may-agent/sdk/src/circuit-breaker.ts`.
+
+2. **Dispatch dedup guard** — If the agent's heartbeat is repeatedly failing
+   dispatch checks, the heartbeat is skipped (gate: `dispatch_dedup`).
+   Source: `@may-agent/sdk/src/dispatch-dedup-guard.ts`.
+
+**Known issue (KE-1696):** The circuit breaker counts **all** errors equally,
+including zero-op provider startup failures where the LLM was never called.
+This creates false positives: a transient provider outage can disable a
+healthy agent for up to an hour. A fix would exclude `opCount = 0` errors
+from the consecutive count; this requires a `src/` change.
+
 ## What Gets Loaded
 
 The heartbeat workflow helper (`packages/sdk/src/heartbeat-data.ts`) loads:
