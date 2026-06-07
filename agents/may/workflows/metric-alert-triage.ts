@@ -39,8 +39,18 @@ type AlertContext = {
   priority: string;
 };
 
+type ProjectMetricFinding = {
+  projectId: string;
+  projectPath: string;
+  codes: string[];
+  projectPolicy?: string;
+};
+
 function extractTrigger(task: string): Trigger | null {
-  const match = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
+  // Use a greedy prefix to anchor on the LAST ## Trigger Event block,
+  // avoiding premature termination when the task text itself contains
+  // markdown fences (common in heartbeat/owner-loop prompts).
+  const match = task.match(/[\s\S]*## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
   if (!match) return null;
   try {
     return JSON.parse(match[1]) as Trigger;
@@ -137,6 +147,10 @@ function compactOwnerSessions(rows: Array<Record<string, unknown>>): Array<Recor
 
 function relatedEventTypes(metricId: string): string[] {
   switch (metricId) {
+    case "project.health.finding-count":
+    case "project.owner-judgment-needed-count":
+    case "project.owner-incomplete-count":
+      return ["project.health.finding", "project.owner.incomplete", "project.owner.dispatched", "project.owner.finished"];
     case "evaluator.false-good-rate-sample":
       return ["evaluation.false_good", "evaluation.reviewed", "evaluation.success_candidate"];
     case "evaluator.meaningful-review-rate-24h":
@@ -150,6 +164,85 @@ function relatedEventTypes(metricId: string): string[] {
     default:
       return [];
   }
+}
+
+function projectPathFromId(projectId: string): string {
+  const slug = projectId.split("/").pop()?.trim();
+  return slug ? `projects/${slug}` : projectId;
+}
+
+function projectFindingFromRaw(raw: unknown): ProjectMetricFinding | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+  const projectId = typeof row.projectId === "string" && row.projectId.trim() ? row.projectId.trim() : "";
+  if (!projectId) return null;
+  const projectPath = typeof row.projectPath === "string" && row.projectPath.trim()
+    ? row.projectPath.trim()
+    : projectPathFromId(projectId);
+  const rawCodes = Array.isArray(row.codes) ? row.codes : [];
+  const codes = rawCodes.map(String).filter(Boolean);
+  return {
+    projectId,
+    projectPath,
+    codes,
+    projectPolicy: typeof row.projectPolicy === "string" ? row.projectPolicy : undefined,
+  };
+}
+
+function projectFindingsFromSnapshots(snapshots: Array<Record<string, unknown>>): ProjectMetricFinding[] {
+  const findings = new Map<string, ProjectMetricFinding>();
+  for (const snapshot of snapshots) {
+    const note = typeof snapshot.note === "string" ? snapshot.note : "";
+    if (!note.trim()) continue;
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(note) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    const rawFindings = Array.isArray(parsed.findings) ? parsed.findings : [];
+    for (const rawFinding of rawFindings) {
+      const finding = projectFindingFromRaw(rawFinding);
+      if (finding && !findings.has(finding.projectId)) findings.set(finding.projectId, finding);
+    }
+    if (findings.size > 0) break;
+  }
+  return [...findings.values()];
+}
+
+function projectMetricOperation(metricId: string): string | null {
+  if (
+    metricId === "project.health.finding-count"
+    || metricId === "project.owner-judgment-needed-count"
+    || metricId === "project.owner-incomplete-count"
+  ) return "fix_root_cause";
+  return null;
+}
+
+function routeProjectMetricAlert(ctx: WorkflowContext, alertContext: AlertContext): WorkflowResult | null {
+  if (!projectMetricOperation(alertContext.metricId)) return null;
+
+  const findings = projectFindingsFromSnapshots(alertContext.snapshots);
+  const routable = findings.filter((finding) =>
+    alertContext.metricId !== "project.owner-judgment-needed-count"
+    || finding.codes.includes("owner_judgment_needed")
+  );
+  if (routable.length === 0) return null;
+
+  ctx.emit({
+    type: "metric.alert_judged",
+    metricId: alertContext.metricId,
+    alertId: alertContext.alertId,
+    owner: alertContext.owner,
+    priority: alertContext.priority,
+    operation: "waiting_with_evidence",
+    evidence: `Project health metric events are routed directly to the project reconciler; observed ${routable.length} affected project(s): ${routable.map((finding) => finding.projectId).join(", ")}.`,
+    ownerSessionId: null,
+    nextValidationAt: "next metrics-snapshot",
+    workflow: name,
+  });
+
+  return ctx.done(`Project metric ${alertContext.metricId} is handled by project event routing for ${routable.length} project(s).`);
 }
 
 function buildOwnerTask(ctx: AlertContext): string {
@@ -275,6 +368,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
   const ownerTask = buildOwnerTask(alertContext);
+  const routedProjectMetric = routeProjectMetricAlert(ctx, alertContext);
+  if (routedProjectMetric) return routedProjectMetric;
+
   const ownerResult = await ctx.runAgent(alertContext.owner, ownerTask);
 
   if (ownerResult.status === "error" || ownerResult.status === "interrupted") {

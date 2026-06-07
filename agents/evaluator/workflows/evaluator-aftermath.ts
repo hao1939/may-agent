@@ -4,7 +4,7 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 9;
+export const HEURISTIC_VERSION = 10;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -28,6 +28,12 @@ type EvaluationRoute = {
   signals: string[];
 };
 
+type NormalizedEvaluationState = {
+  heuristic: HeuristicVerdict;
+  route: EvaluationRoute;
+  downgradedFromRepairExecution: boolean;
+};
+
 type SessionEvalTrailParams = {
   sessionId: string;
   session: any;
@@ -40,7 +46,10 @@ type SessionEvalTrailParams = {
 };
 
 function extractTrigger(task: string): any {
-  const match = task.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
+  // Use a greedy prefix to anchor on the LAST ## Trigger Event block,
+  // avoiding premature termination when the task text itself contains
+  // markdown fences (common in heartbeat/owner-loop prompts).
+  const match = task.match(/[\s\S]*## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
   if (!match) return null;
   try {
     return JSON.parse(match[1]);
@@ -960,6 +969,42 @@ function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<st
   };
 }
 
+export function normalizeEvaluationState(params: {
+  heuristic: HeuristicVerdict;
+  route: EvaluationRoute;
+  repairDecision: Record<string, unknown>;
+}): NormalizedEvaluationState {
+  const heuristic = { ...params.heuristic };
+  const route = {
+    lane: params.route.lane,
+    reason: params.route.reason,
+    signals: [...params.route.signals],
+  };
+  const repairAction = String(params.repairDecision?.action ?? "none");
+
+  if (repairAction === "repair_execution" && heuristic.verdict === "good") {
+    return {
+      heuristic: {
+        ...heuristic,
+        verdict: "acceptable",
+        quality: Math.min(heuristic.quality, 0.65),
+      },
+      route: {
+        lane: "needs_triage",
+        reason: `downgraded unresolved repair_execution from good: ${route.reason}`,
+        signals: uniqueStrings([...route.signals, "repair_execution unresolved"]),
+      },
+      downgradedFromRepairExecution: true,
+    };
+  }
+
+  return {
+    heuristic,
+    route,
+    downgradedFromRepairExecution: false,
+  };
+}
+
 function buildUserTurnEvaluation(text: string): { score: "ok" | "check" | "issue" | "context"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
   const normalized = text.replace(/\s+/g, " ").trim();
   const length = normalized.length;
@@ -1206,7 +1251,25 @@ export function buildSessionEvalTrailRows(params: SessionEvalTrailParams): Recor
 
   const lineRows = rows.filter((row) => row.type === "line");
   const repairDecision = buildRepairDecision(params, lineRows);
+  const normalized = normalizeEvaluationState({
+    heuristic: params.heuristic,
+    route: params.route,
+    repairDecision,
+  });
   Object.assign(rows[0], {
+    verdict: normalized.heuristic.verdict,
+    quality: normalized.heuristic.quality,
+    efficiency: normalized.heuristic.efficiency,
+    productiveCalls: Math.max(0, opCount - normalized.heuristic.issues.length),
+    wastedCalls: normalized.heuristic.issues.length,
+    issues: normalized.heuristic.issues,
+    lane: normalized.route.lane,
+    routeReason: normalized.route.reason,
+    signals: normalized.route.signals,
+    comment: normalized.heuristic.issues.length
+      ? `Session ${normalized.heuristic.verdict}: ${normalized.heuristic.issues.join("; ")}`
+      : `Session ${normalized.heuristic.verdict}; route=${normalized.route.lane}.`,
+    downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
     targetBreakdown: repairDecision.targetBreakdown,
     repairDecision,
     workRequest: {
@@ -1231,16 +1294,39 @@ function writeSessionEvalTrail(transcriptPath: string, params: SessionEvalTrailP
   return { evalPath, rows };
 }
 
+function summaryRow(rows: Record<string, unknown>[]): Record<string, unknown> | undefined {
+  return rows.find((row) => row.type === "summary");
+}
+
 function summaryOwnerFindings(rows: Record<string, unknown>[]): OwnerFinding[] {
-  const summary = rows.find((row) => row.type === "summary") as any;
+  const summary = summaryRow(rows) as any;
   const findings = summary?.repairDecision?.ownerFindings;
   return Array.isArray(findings) ? findings as OwnerFinding[] : [];
 }
 
 function summaryImmediateFindingIds(rows: Record<string, unknown>[]): string[] {
-  const summary = rows.find((row) => row.type === "summary") as any;
+  const summary = summaryRow(rows) as any;
   const ids = summary?.repairDecision?.notificationDecision?.immediateFindingIds;
   return Array.isArray(ids) ? ids.map(String) : [];
+}
+
+function normalizedSummaryState(rows: Record<string, unknown>[]): NormalizedEvaluationState | null {
+  const summary = summaryRow(rows) as any;
+  if (!summary) return null;
+  return {
+    heuristic: {
+      verdict: String(summary.verdict ?? "needs_improvement"),
+      quality: Number(summary.quality ?? 0),
+      efficiency: Number(summary.efficiency ?? 0),
+      issues: Array.isArray(summary.issues) ? summary.issues.map(String) : [],
+    },
+    route: {
+      lane: (summary.lane ?? "needs_triage") as EvaluationLane,
+      reason: String(summary.routeReason ?? ""),
+      signals: Array.isArray(summary.signals) ? summary.signals.map(String) : [],
+    },
+    downgradedFromRepairExecution: Boolean(summary.downgradedFromRepairExecution),
+  };
 }
 
 export function artifactVerdict(artifactText: string): string | null {
@@ -1255,9 +1341,11 @@ export function artifactVerdict(artifactText: string): string | null {
   return raw;
 }
 
-function shouldOverrideWithReview(heuristicVerdict: string, reviewedVerdict: string | null): boolean {
+function shouldOverrideWithReview(storedVerdict: string, reviewedVerdict: string | null): boolean {
   if (!reviewedVerdict) return false;
-  return heuristicVerdict === "good" && ["needs_improvement", "acceptable"].includes(reviewedVerdict);
+  if (storedVerdict === "good") return ["needs_improvement", "acceptable"].includes(reviewedVerdict);
+  if (storedVerdict === "acceptable") return reviewedVerdict === "needs_improvement";
+  return false;
 }
 
 function reviewOverrideQuality(reviewedVerdict: string): number {
@@ -1478,6 +1566,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     route,
   });
   const evalTrailDisplayPath = displayPath(projectRoot, evalTrail.evalPath);
+  const normalized = normalizedSummaryState(evalTrail.rows) ?? {
+    heuristic,
+    route,
+    downgradedFromRepairExecution: false,
+  };
 
   await (ctx as any).runFunction("record-evaluation", async () => {
     const db = ctx.getDb() as any;
@@ -1490,23 +1583,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       [
         sessionId,
         session.agent,
-        heuristic.quality,
-        heuristic.efficiency,
-        Math.max(0, Number(session.opCount ?? 0) - heuristic.issues.length),
-        heuristic.issues.length,
-        heuristic.verdict,
-        JSON.stringify(heuristic.issues),
+        normalized.heuristic.quality,
+        normalized.heuristic.efficiency,
+        Math.max(0, Number(session.opCount ?? 0) - normalized.heuristic.issues.length),
+        normalized.heuristic.issues.length,
+        normalized.heuristic.verdict,
+        JSON.stringify(normalized.heuristic.issues),
         JSON.stringify({
-          verdict: heuristic.verdict,
+          verdict: normalized.heuristic.verdict,
           status: session.status,
           aftermathWorkflow: true,
           heuristicVersion: HEURISTIC_VERSION,
-          lane: route.lane,
-          routeReason: route.reason,
-          outputSignals: route.signals,
+          lane: normalized.route.lane,
+          routeReason: normalized.route.reason,
+          outputSignals: normalized.route.signals,
+          downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
           evalTrailPath: evalTrailDisplayPath,
           ...(evaluation ? { refreshedFrom: evaluation.verdict } : {}),
-          ...(route.lane === "routine_ok" ? {} : { artifactPath }),
+          ...(normalized.route.lane === "routine_ok" ? {} : { artifactPath }),
         }),
         null,
         JSON.stringify([]),
@@ -1515,7 +1609,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         Date.now(),
       ],
     );
-    return `recorded ${heuristic.verdict} evaluation for ${sessionId}`;
+    return `recorded ${normalized.heuristic.verdict} evaluation for ${sessionId}`;
   });
 
   ctx.emit({
@@ -1524,13 +1618,14 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     owner: "evaluator",
     sessionId,
     agent: session.agent,
-    lane: route.lane,
-    verdict: heuristic.verdict,
-    reason: route.reason,
-    signals: route.signals,
+    lane: normalized.route.lane,
+    verdict: normalized.heuristic.verdict,
+    reason: normalized.route.reason,
+    signals: normalized.route.signals,
     projectId: session.projectId ?? null,
     workflowRunId: session.workflowRunId ?? null,
     heuristicVersion: HEURISTIC_VERSION,
+    downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
   } as any);
 
   const immediateFindingIds = new Set(summaryImmediateFindingIds(evalTrail.rows));
@@ -1546,8 +1641,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     }) as any);
   }
 
-  if (route.lane === "routine_ok") {
-    return ctx.done(`Evaluated ${sessionId}: good (${route.lane}). No review needed.`);
+  if (normalized.route.lane === "routine_ok") {
+    return ctx.done(`Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). No review needed.`);
   }
 
   mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
@@ -1558,7 +1653,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     transcriptPath,
     artifactPath,
     workflowCollectedFacts,
-    route,
+    route: normalized.route,
     evalTrailPath: evalTrailDisplayPath,
   });
 
@@ -1570,7 +1665,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   const artifactText = readArtifact(artifactAbsPath);
   const reviewedVerdict = artifactVerdict(artifactText);
-  if (shouldOverrideWithReview(heuristic.verdict, reviewedVerdict)) {
+  if (shouldOverrideWithReview(normalized.heuristic.verdict, reviewedVerdict)) {
     await (ctx as any).runFunction("record-review-override", async () => {
       const db = ctx.getDb() as any;
       const prior = db.prepare("SELECT overall FROM evaluations WHERE sessionId = ?").get(sessionId) as any;
@@ -1594,24 +1689,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         [
           reviewedVerdict,
           reviewOverrideQuality(reviewedVerdict),
-          JSON.stringify([...(heuristic.issues ?? []), `review override: ${reviewedVerdict}`]),
+          JSON.stringify([...(normalized.heuristic.issues ?? []), `review override: ${reviewedVerdict}`]),
           JSON.stringify(overall),
           sessionId,
         ],
       );
-      return `review override ${heuristic.verdict} -> ${reviewedVerdict}`;
+      return `review override ${normalized.heuristic.verdict} -> ${reviewedVerdict}`;
     });
-    ctx.emit({
-      type: "evaluation.false_good",
-      ...falseGoodEventPayload({
-        sessionId,
-        heuristicVerdict: heuristic.verdict,
-        reviewedVerdict,
-        reviewSessionId: (review as any).sessionId,
-        artifactPath,
-        agent: session.agent,
-      }),
-    } as any);
+    if (normalized.heuristic.verdict === "good") {
+      ctx.emit({
+        type: "evaluation.false_good",
+        ...falseGoodEventPayload({
+          sessionId,
+          heuristicVerdict: normalized.heuristic.verdict,
+          reviewedVerdict,
+          reviewSessionId: (review as any).sessionId,
+          artifactPath,
+          agent: session.agent,
+        }),
+      } as any);
+    }
   }
 
   ctx.emit({
@@ -1620,29 +1717,30 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     owner: "evaluator",
     sessionId,
     agent: session.agent,
-    lane: route.lane,
-    verdict: heuristic.verdict,
+    lane: normalized.route.lane,
+    verdict: normalized.heuristic.verdict,
     reviewedVerdict,
     reviewSessionId: (review as any).sessionId,
     artifactPath,
     artifactFound: artifactText.length > 0,
+    downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
   } as any);
 
-  if (route.lane === "success_candidate") {
+  if (normalized.route.lane === "success_candidate") {
     ctx.emit({
       type: "evaluation.success_candidate",
       source: "evaluator-aftermath",
       owner: "evaluator",
       sessionId,
       agent: session.agent,
-      reason: route.reason,
-      signals: route.signals,
+      reason: normalized.route.reason,
+      signals: normalized.route.signals,
       reviewSessionId: (review as any).sessionId,
       artifactPath,
     } as any);
   }
 
-  if (route.lane === "needs_triage") {
+  if (normalized.route.lane === "needs_triage") {
     ctx.emit({
       type: "evaluation.triage_closed",
       source: "evaluator-aftermath",
@@ -1661,11 +1759,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       owner: "evaluator",
       sessionId,
       agent: session.agent,
-      lane: route.lane,
+      lane: normalized.route.lane,
       reviewSessionId: (review as any).sessionId,
       artifactPath,
     } as any);
   }
 
-  return ctx.done(`Evaluated ${sessionId}: ${heuristic.verdict} (${route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`);
+  return ctx.done(`Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`);
 }
