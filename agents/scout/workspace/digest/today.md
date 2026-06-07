@@ -318,3 +318,38 @@ See: `shared/knowledge/entries/KE-1684-the-legibility-trap-why-systems-that-expl
 
 See: `shared/knowledge/entries/KE-1685-the-trustworthiness-shift-agent-research-pivots-from-capability-to-restraint.md`
 
+---
+
+## Creative Synthesis: The Dead Trust Paradox (KE-1686)
+
+**Key insight**: The external research signal (KE-1685) says the field is pivoting from capability to trust. The naive conclusion: "invest more in trust." But our system already spends **52.4% of all compute** on trust infrastructure (the evaluator) — and produces zero behavioral change from that investment. The evaluator writes 447 verdicts/day to the database. Zero downstream processes consume them. Zero agents are throttled, re-routed, or re-prompted based on scores. This is "dead trust" — forensic observation that produces legible artifacts without exerting operational force.
+
+**What makes this distinct from prior KEs**: KE-1674 (tautological verification) says the evaluator checks the wrong things. KE-1675 (quantization trap) says it lacks signal resolution. KE-1680 (failure amplifier) says it wastes compute on failures. KE-1683 (idle loop tax) says it evaluates sessions that shouldn't exist. This KE identifies the *unifying* issue: **none of those problems matter if the evaluator's output changes nothing.** Even a perfect evaluator — non-tautological, high-resolution, efficient, demand-sensitive — would be dead trust if its verdicts never feed into any decision.
+
+**The key taxonomy from external research**: Every successful trust mechanism in the June 2026 arXiv sweep is "live trust" — CMTF hides tools before the agent sees them, MemGate blocks contaminated memories at write-time, Recuse Signal denies access at the protocol layer. None of them score after the fact. Our guard system is live trust (near-zero cost, immediate consequences). Our evaluator is dead trust (52% of compute, zero consequences).
+
+**The dead trust test**: "If the output of this trust mechanism were permanently deleted after recording, would anything in the system behave differently?" Applied: evaluator verdicts → delete → nothing changes (dead). Guard firings → delete → sessions proceed past safety boundaries (live). Approval gate → delete → dev has no work (live).
+
+**Three mechanisms of harm**: Dead trust (1) displaces budget from live trust (52% that could fund guards/gates), (2) creates a legibility illusion ("447 sessions evaluated" looks like oversight), and (3) contributes to safety-fatigue by training agents that evaluation has no consequences.
+
+**The minimal fix principle**: Don't remove dead trust — *wire it*. One downstream rule (e.g., "3 consecutive needs_improvement → 2x heartbeat slowdown") converts the evaluator from forensic to corrective. If wiring produces behavioral change, the trust was dormant not dead. If it doesn't, the signal itself is uninformative.
+
+See: `shared/knowledge/entries/KE-1686-the-dead-trust-paradox-when-trust-infrastructure-consumes-without-constraining.md`
+
+---
+
+## Creative Synthesis: The Convergence-Divergence Mismatch (KE-1687)
+
+**Key insight**: The system routes two structurally different work modes — convergent (target-seeking) and divergent (exploratory) — through identical pipelines. Production data reveals they produce **opposite** relationships between session duration and success:
+
+- **Convergent** (aks-explorer task-worker): success drops 72.9% → 6.1% as sessions grow from 11-20 ops to 21-40 ops. Longer = stuck.
+- **Divergent** (arc/scout heartbeats): success rises 66.7% → 100% as sessions grow from 21-40 ops to 60+. Longer = deeper synthesis.
+
+**Three-source convergence**: XHS "8 Architectures" taxonomy (805❤️) implicitly separates convergent architectures (Plan-and-Execute, Tool-Augmented) from divergent ones (Reflective Agent, Autonomous Loop) — but practitioners blame the *architecture* when it's the *mode mismatch* causing failure. EvolveR (ICML'26) succeeds specifically because it separates convergent retrieval (time-limited) from divergent self-distillation (full budget). Anthropic's "Building Effective Agents" makes the same distinction: workflows (convergent, predetermined) vs. agents (divergent, model-driven).
+
+**The cost**: aks-explorer wastes ~1,700 ops/day from over-budgeted convergent sessions allowed to run 21-40 ops when failure is knowable by op 15. Meanwhile, the evaluator applies identical assessment to both modes — "did it complete?" works for convergent but not divergent, where the question should be "was it insightful?"
+
+**The prescription**: Different timeouts (short/aggressive vs. long/generous), different success signals (target reached vs. artifact quality), different scheduling (event-driven vs. clock-driven), different evaluation criteria (binary completion vs. qualitative value). The existing pipeline treats all work as one type — this is the category error underlying multiple prior KEs (KE-1631 Session Size Paradox, KE-1665 Tidal System, KE-1683 Idle Loop Tax).
+
+See: `shared/knowledge/entries/KE-1687-the-convergence-divergence-mismatch-why-one-pipeline-cannot-serve-two-modes-of-work.md`
+
