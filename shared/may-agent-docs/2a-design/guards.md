@@ -212,6 +212,24 @@ running fewer sessions with `/home/` path references. READ_DEDUP tripled
 SESSION_BASH_CAT is 100% evaluator (239 sessions hit in 24h). Overall
 volume well under 2,000/day threshold — no alert risk.
 
+**Update 2026-06-12 ~02:30Z** (24h window, 1,380 total triggers):
+**Monoculture has returned.** SESSION_BASH_CAT is now **98.7%** of all
+guard triggers (1,362 of 1,380). The remaining 1.3% is read-before-edit
+(18). All other signal types — uncommitted-files, finish()-uncommitted,
+SESSION_READ, PATH_HALLUCINATION, READ_DEDUP, SESSION_BASH_GREP — are
+**zero** in the 24h window. This is the starkest composition shift since
+tracking began. SESSION_BASH_CAT is 100% evaluator sessions (229
+unique sessions triggered). The diverse composition observed from
+2026-06-06 through 2026-06-11 has collapsed into a single-signal
+monoculture. Volume down 2% (1,380 vs 1,407). Possible causes:
+(1) commit-guard and path-hallucination-guard may have been changed or
+disabled, (2) aks-explorer's reduced activity removes PATH_HALLUCINATION,
+(3) evaluator's session.jsonl catting overwhelms all other signals.
+KE-1362 (monoculture pattern) is **re-confirmed** — the diversification
+observed 2026-06-06 through 2026-06-11 was a transient phase, not a
+durable structural property. The guard system is again a single-signal
+instrument.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
