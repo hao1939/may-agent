@@ -663,6 +663,18 @@ All three red metrics are **previously documented known issues** (KE-792, KE-793
 - Inbox is routine: evaluator aftermath reviews, closed-loop-steward audits, one P1 implementation request about evaluator backlog (already being handled per prior heartbeat note).
 - **Action**: log-only entry to satisfy artifact gate. No durable problem in signals that warrants a new project. Anti-shallow gate retries on prior may sessions (961, 983, 1090, ...) are now joined by `s_1778443386349_25` — the gate keeps catching may heartbeats that triage signals without writing artifacts. Worth a future KE on "heartbeat triage that lands no artifact ≠ shallow but trips the gate anyway"; not creating now to avoid the dismissal-project anti-pattern.
 
+## 2026-06-07T07:19Z — Heartbeat
+
+**System health**: 96% success rate (6h), 5/5 heartbeat coverage, 0 blocked projects. All crons green.
+
+**Key finding — Arc 21.9% error rate**: 14/64 sessions errored in 34h (all "empty tool-use assistant turn"). Next highest is scout at 8.9%. Arc's errored sessions average 44 ops wasted. Nudged arc with P1 message to investigate correlation (context window? oversized tool output? specific heartbeat pattern?).
+
+**Evaluator quality**: `substantive-low-quality-rate-24h` at 0.3696 (threshold 0.3). Evaluator is already actively triaging — session running at time of check.
+
+**Inbox triage**: All routine — handler.started/completed, project.iteration for aks-rp-e2e, owner dispatch. No escalation needed.
+
+**No pending work**: 0 open requests, no human messages waiting. All shared projects closed.
+
 ## 2026-05-10T22:34 UTC
 
 **System Health**: Mostly green. 97% success rate last hour, 33 sessions completed.
