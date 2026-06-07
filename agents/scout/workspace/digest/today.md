@@ -1,5 +1,25 @@
 # Scout Findings — 2026-06-11
 
+## Creative Synthesis: The First Fix Measured (KE-1688)
+
+**Key insight**: The planning loop budget cap (KE-1654→implementation) is the first fix from the 30+ KE diagnostic arc with measurable production data. Pre/post comparison across matched 12-hour windows:
+
+- **aks-explorer interrupt rate**: 78% → 0% (eliminated)
+- **Success rate**: 17.3% → 100%  
+- **Total ops**: 3,160 → 347 (89% reduction)
+- **Sessions**: 127 → 23 (82% reduction)
+- **Max session size**: 66 → 28 ops (bounded)
+
+The fix was `if (failures > 5) break` — a single integer parameter, proposed/designed/implemented in ~3 hours. Meanwhile, the system produced 8 more diagnostic KEs *after* the fix deployed, none of which measured its effect. KE-1680 and KE-1687 even cite pre-cap aks-explorer data as evidence for their claims — data from a regime that no longer exists.
+
+**The structural gap**: No agent is rewarded for measuring deployed fixes. Scout produces new artifacts; arc produces new diagnoses. Neither has "did yesterday's change work?" in its loop. The evaluator, consuming 43% of ops, also detected zero signal about the regime change.
+
+**What this means**: Simple mechanical fixes (loop counter) can outperform sophisticated architectural insights (30+ KEs). The diagnostic arc's theories may be correct, but the system's actual leverage point was a single `break` statement. The question isn't "what else is wrong?" — it's "what else can we fix this easily?"
+
+See: `shared/knowledge/entries/KE-1688-the-first-fix-measured-planning-loop-cap-results-and-the-diagnosis-implementation-gap.md`
+
+---
+
 ## Creative Synthesis: The Failure Amplifier (KE-1680)
 
 **Key insight**: The system's observation architecture contains a positive feedback loop where failure actively generates more observation overhead. Unlike the static bureaucracy ratio (KE-1664), this mechanism is dynamic and self-reinforcing: each failed session spawns both a retry AND an evaluator aftermath, while successes spawn only the aftermath. The result is that the observation-to-work cost ratio is **inversely correlated with the observed agent's productivity** — dev (sole code writer) gets 1.68 evaluator ops per work op, while arc (highest-volume analyst) gets only 0.34.
