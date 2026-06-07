@@ -57,6 +57,32 @@ task has no children -> executable leaf
 If a worker receives a non-leaf task, the engine made a scheduling error unless
 the task is explicitly a decomposition task.
 
+## Task Tree Principle
+
+The task tree is the project's structured understanding, not a log of every
+agent attempt.
+
+Every branch is a claim about how the project should be understood and worked:
+
+- A parent task should explain one meaningful project question, outcome, or
+  responsibility.
+- Its children should explain how that parent will be resolved.
+- A leaf should be small enough to execute, verify, and roll up in one bounded
+  attempt.
+- Runtime attempts, planner runs, retries, and transient failures should be
+  recorded in workflow/session history and linked artifacts, not promoted into
+  new top-level project structure.
+
+If the tree contains a bad branch, the right fix is not to hide it or keep
+building around it. Mark it `superseded` with a short reason and, when useful,
+link the replacement branch. If a parent is still directionally right but too
+coarse or misleading, split or rewrite that parent so the tree again represents
+the current project understanding.
+
+This keeps the tree useful for both humans and LLMs: reading it should answer
+"what do we currently believe the project is, how are we solving it, what is
+done, what is active, and what is genuinely blocked?"
+
 ## Domain Decomposition Policy
 
 The generic engine only knows how to select, execute, verify, and roll up tasks.
@@ -119,6 +145,14 @@ check the feature queue before declaring the project blocked. If another safe
 local feature exists, it should create a bounded domain-planner task that adds
 the next feature container and its first executable leaf.
 
+Project-local planners should curate the tree as they plan. If accepted
+historical leaves sit at the wrong level, duplicate the current strategy, or
+make the project hard to audit, create a small hygiene/review task to move the
+understanding forward: supersede obsolete branches, attach replacement work
+under the correct domain container, or write a rollup artifact that explains
+why the old branch remains only as history. Do this through normal task claims
+and verification, not through unreviewed wholesale rewrites.
+
 ## Task Lifecycle
 
 Use a small state machine:
@@ -139,15 +173,15 @@ Meanings:
 
 | Status | Meaning |
 |--------|---------|
-| proposed | Created but not approved for execution. |
-| ready | Clear, safe, and small enough to run. |
+| proposed | Candidate work or decomposition that has not yet been trusted as executable project understanding. |
+| ready | Clear, safe, and small enough to run; the tree says this leaf is useful next work. |
 | active | Assigned to an attempt. |
-| decomposed | Replaced by child tasks. |
+| decomposed | Valid parent understanding whose children explain how to resolve it. |
 | claimed_done | Worker claims the task is complete; verifier has not accepted it. |
 | accepted | Acceptance criteria are verified. |
 | rejected | Claim failed verification and needs rework/replan. |
 | blocked | A concrete external/input/safety wait prevents direct execution. Local rework, unclear scope, failed validation, stale evidence, and parent bookkeeping are not blocked states. |
-| superseded | Replaced by a newer task or strategy. |
+| superseded | Replaced by newer understanding, duplicate work, or a corrected strategy; keep a reason and replacement link when possible. |
 
 Important:
 
@@ -1186,6 +1220,15 @@ To keep v1 straightforward:
   healthy projects (typically 5–10 decomposed runs needed) while
   preventing runaway accumulation (88 runs / 88.6% superseded observed
   in aks-rp-e2e as of 2026-06-08).
+- Maximum consecutive failed planning loop runs: 5. When N consecutive
+  planning runs end in `superseded` without any reaching `accepted` or
+  `decomposed`, mark the planning loop as `blocked` (blocker: "Planning
+  loop exhausted after N consecutive failed runs — requires human review
+  or scope reduction") rather than creating run N+1. The budget resets
+  any time a planning run reaches `accepted` or `decomposed` status
+  (evidence of genuine progress). This is implemented in
+  `recoverStalledPlanningLoopRework()` and complements the absolute cap
+  above by catching rapid cycling sooner (KE-1654).
 - Maximum children per split: 7.
 - One primary output per leaf task.
 - Keep executing ready leaf tasks in one wake until blocked or stopped by a

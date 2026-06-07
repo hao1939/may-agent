@@ -10,7 +10,7 @@ Proposals flow: **arc proposes → human/may approves → dev implements**
 ```
 
 ## Approved (dev: pick from here)
-- [ ] [P1] Planning loop run budget cap — cap consecutive failed planning runs at 5 to break the aks-explorer interrupt storm meta-retry loop (KE-1654) — agents/arc/workspace/proposals/2026-06-08-planning-loop-run-budget-cap.md (approved: 2026-06-07, proposed: 2026-06-08)
+- [x] [P1] Planning loop run budget cap — cap consecutive failed planning runs at 5 to break the aks-explorer interrupt storm meta-retry loop (KE-1654) — agents/arc/workspace/proposals/2026-06-08-planning-loop-run-budget-cap.md (approved: 2026-06-07, proposed: 2026-06-08) — **Implemented: `MAX_CONSECUTIVE_FAILED_PLANNING_RUNS=5` in project-execution-engine.ts + design doc update + test (done: 2026-06-08)**
 - [x] [P1] DB retention/cleanup policy — DB at 990MB, events >7d not purged, no retention handler exists — agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md (approved: 2026-06-04, proposed: 2026-05-27) — **Implemented: `agents/may/handlers/db-retention.ts` + cron entry (done: 2026-06-06)**
 - [x] [P1] Standing-orders.md ORDER-003 + common-sense.md line 35 fix ghost workflow references — agents/arc/workspace/proposals/2026-05-03-standing-orders-and-common-sense-implement-and-review-fix.md (approved: 2026-06-04, proposed: 2026-05-03) — **standing-orders.md: 3/4 edits done (commit 00fe28286). common-sense.md edit 4 blocked by May-only guard; needs May to apply. (done: 2026-06-06)**
 - [x] [P1] Add "Schema footguns" section to shared/common-sense.md — agents/arc/workspace/proposals/2026-05-08-common-sense-schema-footguns.md (approved: 2026-06-04, proposed: 2026-05-08) — **Implemented by may (done: 2026-06-05)**
