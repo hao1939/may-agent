@@ -90,7 +90,11 @@ it is scoped by the `cron.json` file it sits beside:
 | Scope | Trigger file | Named handler file | Use for |
 |-------|--------------|--------------------|---------|
 | Agent-owned | `agents/<agent>/cron.json` | `agents/<agent>/handlers/<name>.ts` | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
-| Project-owned | `projects/<project>/agents/<agent>/cron.json` | `projects/<project>/agents/<agent>/handlers/<name>.ts` | Automation that only makes sense inside that project boundary |
+| Project-owned | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Automation that only makes sense inside that project boundary |
+
+The runtime's agent-discovery scans both `projects/<project>/agents/` and
+`projects/<project>/.app/agents/` for backward compatibility, but the `.app`
+convention is canonical for Project App V2 projects (e.g. `aks-rp-e2e`).
 
 Project-wide platform behavior, such as reconciling all projects or routing
 canonical escalation events, remains owned by a global agent such as May. A
@@ -185,7 +189,10 @@ Agents with heartbeat workflows get auto-generated trigger entries:
 
 ## Implementation
 
+All paths below are relative to the platform repo (`projects/platform/repos/may-agent/`):
+
 - **Trigger scheduler class:** `src/app/cron.ts` (historical name)
 - **Handler loading:** `src/app/loader/handler-loader.ts` via the `src/app/agent-loader.ts` compatibility surface
+- **Agent/project discovery:** `src/app/loader/agent-discovery.ts` (scans both `agents/` and `.app/agents/` under projects)
 - **Auto-heartbeat:** `generateAutoHeartbeats()` in `src/app/loader/heartbeat-loader.ts`
-- **Workflow-backed handler adapter:** `createWorkflowHandler()` from `@may-agent/sdk`, used by the loader for `handler: { workflow, agent, task }`
+- **Workflow-backed handler adapter:** `createWorkflowBackedHandler()` (internal) wraps `createWorkflowHandler()` from `@may-agent/sdk`
