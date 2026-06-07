@@ -1174,6 +1174,18 @@ To keep v1 straightforward:
   approach or manual decomposition") instead of retrying. This prevents
   horizontal retry churn where the same task loops without new
   information (KE-1580).
+- Maximum planning loop runs per project: 15. When
+  `createPlanningLoopRun()` would create the 16th run (counting all
+  runs regardless of status), mark the planning loop task as `blocked`
+  (blocker: "exceeded planning loop run limit — 15 runs created, requires
+  human review of task tree strategy") instead of creating another run.
+  This prevents the meta-retry amplification loop where each superseded
+  planning run triggers a fresh run, which proposes tasks, which get
+  interrupted, which trigger another planning run (KE-1654, KE-1655).
+  The cap of 15 allows 2–3× the number of productive runs observed in
+  healthy projects (typically 5–10 decomposed runs needed) while
+  preventing runaway accumulation (88 runs / 88.6% superseded observed
+  in aks-rp-e2e as of 2026-06-08).
 - Maximum children per split: 7.
 - One primary output per leaf task.
 - Keep executing ready leaf tasks in one wake until blocked or stopped by a
