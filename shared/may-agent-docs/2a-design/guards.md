@@ -173,6 +173,20 @@ read-before-edit 7. Total: ~1,672/day. Diversity is persistent, not
 transient — the monoculture pattern (KE-1362) is definitively falsified
 across 3+ days of measurement (KE-1626).
 
+**Update 2026-06-08 04:16Z** (24h window, ~1,863 tool-level triggers):
+composition shift — uncommitted-files dropped from ~53% to **32.2%**
+(600) while finish()-uncommitted rose to **21.8%** (406). These two
+are the same commit-guard firing at different phases (worktree scan vs
+finish() call), so combined commit-guard share = 54%, steady. Other
+signals: SESSION_BASH_CAT **17.8%** (332), SESSION_READ **13.4%**
+(250), PATH_HALLUCINATION **6.5%** (121), READ_DEDUP **6.1%** (114),
+SESSION_BASH_GREP **2.1%** (40). Workflow guards: hallucinated-path 42,
+read-before-edit 9. Total: ~1,863 tool + ~51 workflow ≈ ~1,914/day.
+Diversity continues stable across 4+ days. Notable: SESSION_BASH_CAT is
+100% evaluator sessions — the evaluator is the sole agent catting
+session.jsonl files. SESSION_READ (250 events) is also evaluator-only.
+PATH_HALLUCINATION is primarily aks-explorer (100/121).
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
