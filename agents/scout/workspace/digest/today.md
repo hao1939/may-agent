@@ -504,3 +504,21 @@ See: `shared/knowledge/entries/KE-1694-the-intake-synthesis-inversion-when-a-sys
 
 See: `shared/knowledge/entries/KE-1695-the-advisory-noise-floor-when-98-percent-of-guard-signals-are-the-same-unacted-warning.md`
 
+---
+
+## Creative Synthesis: The Phantom Error Rate (KE-1697)
+
+**Key insight**: The system's primary health metric — `session.error-rate-6h` — is inflated by **17× in the current window** (12.98% reported vs 0.76% real). System-wide, 90.6% of all recorded errors (2,790 of 3,079) are zero-op sessions where the LLM provider failed before the agent did anything. The metric conflates "provider didn't start" with "agent tried and failed."
+
+**What's genuinely new**: This measurement has never been made before. No prior KE queries decomposed errors by opCount. The result: the real agent error rate is 2.0% all-time — far below the 10% target. The system perceives itself as borderline unhealthy (13%) when it's actually excellent (2%).
+
+**Concentration finding**: The `project-owner` dispatch path is responsible for 93.9% of all provider errors (2,620 of 2,790). aks-explorer and may account for 94% of those (1,738 + 882). These agents use project iteration loops that fire at high frequency and saturate provider rate limits. Workflow-scheduled agents (evaluator, dev, arc) have <3% provider error rates because cron spacing prevents rate-limit collisions.
+
+**The May 26 spike**: A single day — 2026-05-26 — accounts for 94.8% of all lifetime provider errors (2,652 of 2,790), with a 76.3% session error rate. This was a provider outage that permanently distorted the cumulative error statistics.
+
+**Connection to KE-1696**: Arc documented that zero-op provider errors trip the circuit breaker, disabling healthy agents' heartbeats. This KE shows the same conflation — provider errors counted as agent errors — operates at the system health metric level. Same bug, two surfaces.
+
+**The fix**: One SQL WHERE clause change (`AND opCount > 0`) in the metric query immediately corrects the reading from 13% to ~2%. No infrastructure change needed.
+
+See: `shared/knowledge/entries/KE-1697-the-phantom-error-rate-how-provider-failures-inflate-the-systems-primary-health-metric-by-17x.md`
+
