@@ -46,13 +46,36 @@ type SessionEvalTrailParams = {
 };
 
 function extractTrigger(task: string): any {
-  // Use a greedy prefix to anchor on the LAST ## Trigger Event block,
-  // avoiding premature termination when the task text itself contains
-  // markdown fences (common in heartbeat/owner-loop prompts).
-  const match = task.match(/[\s\S]*## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
-  if (!match) return null;
+  // The trigger event JSON is always appended at the END of the task text
+  // by the SDK's appendEvent(). When the task text itself contains nested
+  // markdown fences (common in heartbeat/owner-loop prompts that embed
+  // full agent instructions), regex-based extraction fails because lazy
+  // [\s\S]*? stops at the first internal ``` instead of the real closing
+  // fence.
+  //
+  // Strategy: find the LAST "## Trigger Event" header, then find the LAST
+  // closing ``` fence. The JSON lives between the opening ```json and that
+  // closing fence.
+  const headerPattern = "## Trigger Event";
+  const lastHeaderIdx = task.lastIndexOf(headerPattern);
+  if (lastHeaderIdx === -1) return null;
+
+  const afterHeader = task.slice(lastHeaderIdx + headerPattern.length);
+  const jsonFenceStart = afterHeader.indexOf("```json");
+  if (jsonFenceStart === -1) return null;
+
+  const jsonStart = jsonFenceStart + 7; // length of "```json"
+  const remaining = afterHeader.slice(jsonStart);
+
+  // Find the LAST closing ``` fence in the remaining text (the one the SDK appended)
+  const lastClosingFence = remaining.lastIndexOf("```");
+  if (lastClosingFence === -1) return null;
+
+  const jsonText = remaining.slice(0, lastClosingFence).trim();
+  if (!jsonText) return null;
+
   try {
-    return JSON.parse(match[1]);
+    return JSON.parse(jsonText);
   } catch {
     return null;
   }
