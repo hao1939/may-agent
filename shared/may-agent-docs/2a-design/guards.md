@@ -187,6 +187,17 @@ Diversity continues stable across 4+ days. Notable: SESSION_BASH_CAT is
 session.jsonl files. SESSION_READ (250 events) is also evaluator-only.
 PATH_HALLUCINATION is primarily aks-explorer (100/121).
 
+**Update 2026-06-09 06:19Z** (24h window, ~1,881 tool-level triggers):
+composition stable — uncommitted-files **32.1%** (604),
+finish()-uncommitted **21.6%** (406), SESSION_BASH_CAT **17.6%** (332),
+SESSION_READ **13.4%** (252), PATH_HALLUCINATION **6.3%** (118),
+READ_DEDUP **2.3%** (44), SESSION_BASH_GREP **1.9%** (35),
+other **4.8%** (90). Workflow guards: hallucinated-path 39,
+read-before-edit 10. Total: ~1,881 tool + ~49 workflow ≈ **1,930/day**.
+Composition unchanged from prior measurement — diversity is a durable
+structural property, not transient. Guard volume approaching 2,000/day
+threshold.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
