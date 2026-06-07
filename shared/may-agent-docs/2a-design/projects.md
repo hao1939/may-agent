@@ -102,7 +102,10 @@ evidence, or new signals remain, re-plan and continue. Use `waiting` only for a
 real external precondition, `blocked` for a dependency the worker cannot resolve,
 `paused` for an intentional hold, and `closed` only after explicit human/May
 closure or a goal that truly no longer needs ownership. Treat `complete` as a
-legacy alias for `done`; do not write new project files with it.
+legacy alias for `done`; do not write new project files with it. Treat
+`archived` as a legacy alias for `closed`; it appears on 3 pre-existing DB rows
+(workspace-era projects from retired agents) but is not recognized by any
+runtime handler and should not be used in new projects.
 
 Do not keep a project `active` only to monitor it. Monitoring belongs in
 `resume_condition`, `resume_after`, metrics, events, cron/steward checks, and
