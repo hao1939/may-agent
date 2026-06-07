@@ -231,14 +231,21 @@ Metrics should measure lifecycle health, not replace judgment:
 
 ## Current Implementation Cross-Check
 
+> **Last verified: 2026-06-08 05:30Z** — DB evidence from full escalation event
+> history (38 created, 38 routed, 0 resolved, 0 dismissed, 0 resume events).
+
 | Area | Current state | Gap |
 |------|---------------|-----|
 | Event payload delivery | `Cron.triggerSubscribers()` passes the original bus event envelope directly; canonical handlers read domain fields from `event.data`. | Implemented. Keep this model; do not add per-field framework promotion or wrapper payloads. |
 | Workflow-backed handler | `handler: { workflow, agent, task, includeEvent: true }` uses the SDK workflow adapter, appends the event envelope, and can skip when missing. | Good for event-to-workflow bridges without custom handler code. |
 | SDK escalation | `sdk.escalate(reason, opts?)` emits canonical `escalation.created`, keeps envelope fields out of `data`, and relies on the event pipeline for persistence. | Structured create is in place. |
+| Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 38 escalations originate from session-finish boundary code, not proactive mid-session calls. |
+| Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `escalation.routed`, and sends a message to the owner. | Implemented (Slice 2). All 38 created → all 38 routed. |
+| Resolution | **Not implemented.** No agent emits `escalation.resolved` or `escalation.dismissed`. Zero events in DB. | Slice 3 is unbuilt. Escalations are fire-and-forget: created, routed, then the lifecycle ends. No owner closes the loop. |
+| Resume lifecycle | `src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Code is wired but **never triggered** — zero `escalation.resolved` events means resume code is dead. Slice 4 infra exists but has no inputs. |
+| `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 38 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
+| Escalation metrics | Doc specifies 5 lifecycle metrics (open-count, resolve-time, resume-success, dedup-count, unowned-count). | **None exist** in the active metrics table. No escalation health observability. |
 | Workflow escalation | Workflow `ctx.escalate(reason, context)` returns an escalated workflow result and stops the synchronous workflow. | Good target shape. It should not automatically publish `escalation.created`; boundary code decides whether the local workflow escalation needs owner routing. |
-| Session boundary promotion | Blocked/failure `session.end` with structured `finishParams` emits canonical `escalation.created` owned by May, with source agent/session and blocker context in `data`. | Session-source escalation resume is wired after terminal resolution. Owner routing still depends on subscribed handlers/workflows. |
-| Resume capability | Runtime has session/workflow resume primitives and resume diagnostic events. | Terminal `escalation.resolved` resumes the original source session when `sourceSessionId` is available. Workflow checkpoint resume from escalation resolution is still not wired. |
 | Docs | `events.md` documents the common event envelope and canonical escalation taxonomy. | Handler/manual examples should keep using direct `event.data` payloads. |
 
 ## Workflow Escalation: Simple Sync Path
@@ -297,6 +304,9 @@ This keeps workflow code straightforward while still following the event-driven
 escalation lifecycle.
 
 ## Implementation Slices
+
+> **Slice status as of 2026-06-08:** Slice 1 (create) and Slice 2 (routing) are
+> implemented and live. Slices 3–5 are unbuilt. See cross-check table above.
 
 ### Slice 1: Structured Create
 
