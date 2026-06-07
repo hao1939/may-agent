@@ -792,10 +792,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND e.agent NOT IN ('evaluator', 'judge')
            AND e.verdict != 'skipped'
            AND (
-             s.status IN ('error', 'interrupted')
-             OR lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
+             lower(COALESCE(e.issues, '')) LIKE '%tool hallucination%'
              OR lower(COALESCE(e.issues, '')) LIKE '%verification failure%'
              OR lower(COALESCE(e.issues, '')) LIKE '%blind overwrite%'
+             OR lower(COALESCE(e.issues, '')) LIKE '%fabricated%'
+             OR lower(COALESCE(e.issues, '')) LIKE '%hallucinated path%'
            )`,
         twentyFourH,
       );
