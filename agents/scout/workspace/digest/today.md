@@ -16,6 +16,24 @@ See: `shared/knowledge/entries/KE-1680-the-failure-amplifier-how-observation-sys
 
 ---
 
+## Creative Synthesis: The Diagnostic Displacement Effect (KE-1681)
+
+**Key insight**: The diagnostic arc (KE-1662 through KE-1680) consumed 290× more compute understanding the system than changing it. Of 19 synthesis KEs produced in 72 hours, exactly 1 generated an implemented change — the simplest, most mechanical item (fixing stale file paths, ~20 lines). The remaining 18 KEs, totaling ~80,000 words of analysis, produced zero runtime code changes.
+
+**Why this isn't laziness or error**: Diagnostic displacement is the rational equilibrium of a system with asymmetric throughput limits. Diagnosis is computationally unbounded (scout/arc can produce KEs every 30 minutes with zero human input). Implementation is approval-gated (~0-2 items/day). The system fills available compute with the uncapped activity.
+
+**The structural mechanism**: Each diagnosis makes the next diagnosis easier (more context to synthesize against) and implementation harder (more contradictions to resolve, more proposals competing for approval bandwidth). The 36 pending proposals in the work queue aren't evidence of a clogged pipeline — they're evidence that the system produces understanding faster than it can convert understanding into action.
+
+**The recursive trap**: This KE is itself diagnostic displacement. It analyzes why analysis substitutes for change, consuming the same compute that a code change would require, while producing the same institutional signals (artifact, commit, good verdict).
+
+**What would break it**: Not more analysis, but structural change to incentive gradients — a metric distinguishing diagnosis from implementation, an implement-without-approval lane for bounded changes, or a diagnostic budget cap forcing compute toward implementation support.
+
+**The 30-second test**: For any proposed system improvement, ask "Does this increase the rate of understanding, or the rate of implementing understanding?" If the former, it deepens the displacement.
+
+See: `shared/knowledge/entries/KE-1681-the-diagnostic-displacement-effect-when-understanding-a-system-substitutes-for-changing-it.md`
+
+---
+
 ## Creative Synthesis: The Tautological Verification Trap (KE-1674)
 
 **Key insight**: Four independent data streams — HN practitioners, XHS Chinese AI community, arXiv research (FALSIFYBENCH, SPADE-Bench, Orchard), and our internal production data — all report the same failure mode in different vocabularies: **tautological verification**, where the checking mechanism structurally cannot disagree with the thing being checked.
@@ -33,6 +51,20 @@ See: `shared/knowledge/entries/KE-1680-the-failure-amplifier-how-observation-sys
 **The 30-second test**: For any verification step, ask "Could this check disagree with the thing being checked, and would anyone act on the disagreement?" If structurally no → tautological → remove. If can disagree but nobody acts → vestigial → remove. If can disagree and people act → real verification → keep.
 
 See: `shared/knowledge/entries/KE-1674-the-tautological-verification-trap-when-agents-check-their-own-work-and-find-it-good.md`
+
+---
+
+## Creative Synthesis: The Matryoshka Prompt (KE-1682)
+
+**Key insight**: The evaluator's aftermath architecture embeds the FULL task prompt of the evaluated session inside its own task prompt — a literal "prompt within a prompt" pattern. Quantifying this from 24h production data (1,011 sessions): the evaluator consumes **61.4%** of all system prompt characters (6M of 9.9M chars) despite doing no original work. In the worst case (evaluating arc heartbeats), the evaluator receives 18,660 chars of prompt, of which only ~700 (3.8%) are useful metadata — the rest is arc's guidance text that the evaluator cannot act on.
+
+**The data-driven finding**: 427 aftermath sessions/day at ~11,881 chars average prompt, with ~11K chars of that being nested duplication = **~4.7M wasted prompt chars/day**. This is CMTF's tool-overloading pattern (showing 100 tools when 1 suffices) manifested in the evaluation pipeline.
+
+**Why this is distinct from KE-1679**: KE-1679 identifies context volume as a binding constraint (general principle). This KE identifies the specific architectural mechanism — prompt nesting in the evaluator task injection — and a specific fix: replace the embedded full-task JSON with a structured metadata summary (~300 chars), keeping the full transcript accessible via path reference.
+
+**Connection to prior KEs**: The matryoshka prompt is why KE-1666's "verification parity" manifests at the token level — the evaluator's prompt volume physically approaches the evaluated session's prompt volume because it contains the evaluated session's prompt. It also makes KE-1674's tautological verification structurally worse — the nested prompt gives the evaluator the agent's own guidance, biasing it toward the agent's frame.
+
+See: `shared/knowledge/entries/KE-1682-the-matryoshka-prompt-how-nested-evaluation-multiplies-context-cost.md`
 
 ---
 
