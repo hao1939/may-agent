@@ -10,6 +10,7 @@ max_task_attempts: 2
 project_app: v2
 project_policy: aggressive-push
 runtime_control_plane: .app
+wait_reason: devbox-access-needed-for-source-probes — all cron jobs disabled, 4 tasks gated on devbox mount
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map

@@ -1,13 +1,14 @@
 ---
 id: aks-rp-e2e
 owner: aks-explorer
-status: active
+status: waiting
 type: milestone
 priority: P1
-iteration: 190
-max_concurrent: 1
+iteration: 192
+max_concurrent: 3
 max_task_attempts: 2
 project_policy: aggressive-push
+wait_reason: devbox-access-needed-for-source-probes
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -60,6 +61,31 @@ Use Go e2ev3 as the source of product intent, not the only execution vehicle.
 The project should learn from handwritten Go cases, then build lightweight
 TypeScript probes that directly call the same underlying AKS surfaces and write
 structured evidence.
+
+### REST-First Staging Replay
+
+For the golden replay pipeline, prefer staging replay through ARM REST or
+generated AKS clients instead of Azure CLI command surfaces. `az` failures are
+still useful evidence when the feature path is explicitly a CLI contract, but
+they should not block product/API replay work for unrelated paths. New replay
+probes should make API versions, request bodies, actor headers, LRO polling,
+response errors, and cleanup state explicit. `az` may be used as an
+authentication/bootstrap fallback only when managed identity or `ARM_ACCESS_TOKEN`
+is unavailable and the evidence records that fallback.
+
+The current policy and next-step rationale are captured in
+`evidence/outputs/rest-first-staging-replay-review.md`.
+
+The canonical REST-first golden-path baseline is now ManagedSystem Pool REST
+add-existing, captured in
+`evidence/outputs/managedsystem-rest-golden-path-contract.md`. That branch has
+the complete source -> feature packet -> test spec -> run plan -> TypeScript
+probe -> local check -> gated staging replay -> cleanup evidence -> model
+judgment chain. Reuse this pattern for other features, but keep adjacent
+ManagedSystem branches separate: CLI create/add are CLI-contract failures,
+runtime placement is audit-only in the reference probe, disable migration is a
+separate product/runtime fail path, and single-pool/reconcile/runtime
+restrictions need their own gated cloud evidence.
 
 Phases:
 - **Learning:** extract scenario intent from Go e2ev3 source, public API/docs,
@@ -127,15 +153,38 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-Project App V2 task-tree execution is active. Coverage gap analysis is complete in `evidence/outputs/coverage-gap-analysis.md`: all 63 features have testCases, 4 are blocked with no execution evidence, 11 have unknown results, 7 have failing results, and 57 of 63 features currently have only one testCase. The current ready local leaf is `failure-triage` in `tasks/tree.json`; it should classify the 7 failing testCases as real bugs, stale expectations, or environment/test-surface issues. This is safe local analytical work with no cloud, staging, kubectl, or Azure auth gate.
+**June 6, 2026 — task tree understanding cleanup.** The task tree now presents
+the project as three root responsibilities: `aks-learning-system`,
+`project-control`, and `execution-engine-audit`. Historical root-level leaves
+were preserved under the relevant feature, model, UI, synthesis, or control
+container so the root reflects the current project understanding instead of a
+flat attempt backlog.
 
-Iteration190 owner-loop handled the unread discussion tail after `---read @iter189---`: a new human request narrowed the selected live run to `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest`. The requested replan command exited 0 and produced distinct two-path live-selected artifacts under `decisions/replans/live-selected/`: `replan.managedsystem.mode-immutability__managedsystem.rest-add-existing.minimal-rest.json` and `.ts`. Metrics were baseline cluster CRUD 2, replanned cluster CRUD 1, cluster CRUD saved 1, behavior assertions 5, expectation density 5, and diagnostic-clean group count 1. A non-mutating dry-run sanity check exited 0 and canonical model validation passed with `uncoveredFeatureIds=[]`. The required auth gate then failed before any mutation: `az account get-access-token --resource https://management.azure.com/ -o json` returned exit 127 with `/bin/bash: line 4: az: command not found`. Live execution did not start, so there is no elapsed cloud run time, cleanup status, or failed product assertion. The blocker is recorded in `evidence/outputs/iteration190-live-selected-two-path-blocker.md`.
+**Current frontier:** the active branch is control-loop recovery:
+`project-planning-loop-run-23-rework-review`. Domain work is not hidden: the
+tree has two proposed leaves for the next planner pass:
+`managedsystem-devbox-msi-two-path-live-run` and
+`current-pass-spec-harvest-review`.
 
-Iteration189 had already handled the prior four-path replan request for `path.managedsystem.mode-immutability`, `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.cli-create-default-payload`, and `path.managedsystem.cli-add-default-payload`: it added `scenarios/test-specs/managedsystem-cli-create-default-payload.json`, `scenarios/test-specs/managedsystem-cli-add-default-payload.json`, index entries, `scenarios/run-plans/managedsystem-cli-rest-combined.yaml`, and `probes/managedsystem-cli-rest-combined.ts`. Local verification passed with `bun probes/managedsystem-cli-rest-combined.ts --check --run-id=iteration189-local-check`, and canonical validation passed with `bun model/tools/src/validate.ts model/knowledge-map/model.json`. The four-path live execution was also blocked before mutation because local `az` was unavailable; see `evidence/outputs/iteration189-managedsystem-cli-rest-combined-replan.md` and `evidence/outputs/iteration189-live-selected-execution-blocker.md`.
+`managedsystem-devbox-msi-two-path-live-run` remains proposed and gated. It
+must not mutate staging until the worker re-checks devbox/hao-devbox-msi ARM
+auth, confirms the exact live command and cleanup plan, and records command,
+run id, result, cleanup, and model-impact evidence.
+
+`current-pass-spec-harvest-review` exists because the root project frame noted
+new pass/staging-pass specs that were not represented in the task tree. The
+planner should verify the current `scenarios/test-specs/` index against the
+model and create feature-specific work only for genuinely missing coverage.
+
+**Domain model state** is stable: 35 input variables, 71 expectation variables,
+63 feature mappings, and 69 test-case mappings in the latest runtime frame.
+ManagedSystem REST add-existing is pass, azureManagedNodes is audit-only, and
+UI V4 feature-page work is accepted or archived under
+`aks-domain-ui-knowledge-workspace`.
 
 Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
-The live ManagedSystem branch is waiting on an execution environment unblock, but the project itself remains active through blocked-frontier review. Resume the two-path live selected run only when Azure CLI is available in the project workspace and `az account get-access-token --resource https://management.azure.com/ -o json` succeeds, or when the owner provides an approved credentialed execution host/path and that same auth gate succeeds there. Do not fake auth or create another same-branch cloud rerun task solely because the project woke up. The new CLI+REST combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. The older add/immutability/delete combined probe remains separately gated with `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`.
+The live ManagedSystem branch now has an approved credentialed execution path: the user confirmed `devbox` is assigned `hao-devbox-msi`, and the non-mutating auth preflight in `evidence/outputs/20260602T100036Z-devbox-msi-auth-preflight.md` succeeded (`ssh devbox`, `/usr/bin/az`, ARM token acquisition for subscription `26fe00f8-9173-4872-9134-bb1d2e00343a`). The old Azure CLI provisioning question is superseded. The next live task is `managedsystem-devbox-msi-two-path-live-run`, currently proposed and still gated: before any mutation, the worker must re-check devbox ARM auth, use the selected run artifacts, record the exact command/run id/result/cleanup evidence, and not fake a result if auth/capacity fails. The new CLI+REST combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. The older add/immutability/delete combined probe remains separately gated with `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`.
 
 ## Current Phase
 
@@ -181,6 +230,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `evidence/outputs/iteration189-managedsystem-cli-rest-combined-replan.md` — CLI+REST ManagedSystem combined replan for CLI create/add default-payload negative paths plus REST add and mode immutability
 - `evidence/outputs/iteration189-live-selected-execution-blocker.md` — four-path live-selected execution blocker showing artifact regeneration succeeded but local `az` is unavailable for the required ARM token gate
 - `evidence/outputs/iteration190-live-selected-two-path-blocker.md` — two-path live-selected execution blocker for ManagedSystem mode immutability plus REST add-existing; regeneration succeeded, auth gate failed because `az` is unavailable
+- `evidence/outputs/20260602T100036Z-devbox-msi-auth-preflight.md` — accepted non-mutating devbox/hao-devbox-msi ARM auth preflight that supersedes the old local Azure CLI provisioning blocker
 - `decisions/replans/live-selected/` — regenerated live-selected replan JSON/TS artifacts for the four-path and two-path ManagedSystem selections
 - `scenarios/run-plans/managedsystem-cli-rest-combined.yaml` — gated combined plan for the selected CLI+REST ManagedSystem paths
 - `probes/managedsystem-cli-rest-combined.ts` — execution-gated TypeScript probe for the selected CLI+REST ManagedSystem paths
@@ -294,7 +344,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Run the ready `failure-triage` leaf from `tasks/tree.json`. It should read `evidence/outputs/coverage-gap-analysis.md` and `model/knowledge-map/model.json`, produce `evidence/outputs/failure-triage.md`, and classify the seven failing testCases with evidence-backed rationale. After it is accepted, the engine should roll up the parent and create/continue the next local analytical task if the project still has useful safe work.
+Run `feature-learning-queue-refresh` from `tasks/tree.json`. It should write `evidence/outputs/feature-learning-queue.md` and update `tasks/tree.json` with the next concrete feature-learning leaf task when safe local work exists. It must not run cloud/staging/kubectl/live probes.
 
 Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/outputs/iteration190-live-selected-two-path-blocker.md`.
 
@@ -385,10 +435,38 @@ Use the domain workspace indexes instead of a copied artifact ledger in this run
 - Full legacy artifact ledger: `.app/archive/project-pre-v2-task-engine.md#artifacts`
 
 ## Active Task
-- id: project-frontier-replan-4
-- status: active
+- id: spec-index-status-backfill
+- status: ready
 - source: tasks/tree.json
-- outputs: evidence/outputs/project-frontier-replan-4.md
+- outputs: scenarios/test-specs/index.json
+
+## Ready Frontier (owner-loop steering, iteration 192 — UI V4 feature page rework)
+
+**Direction:** All OIDC and golden-path-catalog rework-review chains (19 tasks, spinning at depth 3–6+ with no convergence) have been superseded. The UI V4 ManagedSystem feature page rework is now the executable frontier. The ManagedSystem feature page loads but does not yet match design: it needs grouped status semantics, REST golden-path panel, scenario/path table, REST-first project-owner actions, feature-page tests, and legacy hash route handling.
+
+**Execution order** (rework-reviews that create bounded retry tasks):
+
+1. ~~`aks-ui-v4-managedsystem-rest-first-example-rework-review`~~ (P1, **accepted**) — Reviewed. Created retry task `aks-ui-v4-managedsystem-rest-first-example-retry`. → **NEXT TO DISPATCH**
+
+2. `aks-ui-v4-scenario-path-table-rework-review` (P1, ready) — Review rejected scenario/path table attempt, create retry task. Table should show source/spec id, input path, expectation path, status, evidence, and next gap per row.
+
+3. `aks-ui-v4-rest-scenario-actions-rework-review` (P1, ready) — Review rejected REST scenario actions attempt, create retry task. Per-scenario project-owner actions: Generate Test Script, Request REST Staging Replay, Add Reference, Classify Result, etc.
+
+4. `aks-ui-v4-action-receipts-state-rework-review` (P1, ready) — Review rejected action receipts attempt, create retry task. Visible receipts showing action name, feature id, owner, timestamp, and state.
+
+5. `aks-ui-v4-feature-brief-reference-panel-rework-review` (P1, ready) — Review rejected feature brief panel attempt, create retry task. Feature brief with grouped references by role and missing-state visibility.
+
+6. `aks-ui-v4-feature-page-tests-rework-review` (P2, ready) — Review rejected feature-page tests attempt, create retry task. Browser tests for dedicated feature page, owner-agent wording, REST-first scenario actions.
+
+**Also ready (related golden-path polish):**
+- `managedsystem-golden-path-feature-page-polish-retry-rework-review` (P1, ready) — ManagedSystem golden-path claim/audit distinction, surface-type labels, evidence chain rendering.
+- `golden-path-rollout-batch-1-rework-review` (P1, ready) — Golden-path rollout batch 1 review.
+
+## Over-Claim Correction Status
+The `azureManagedNodes` assertion in `scenarios/test-specs/managedsystem-rest-add-existing.json` has been demoted from `verdictImpact: claim` to `verdictImpact: audit` with a correction note. The model behavior entry also updated. REST add-existing product/API pass verdict is preserved. Runtime placement / azureManagedNodes requires separate staging evidence before it can be restored to claim.
+
+## Superseded Chains (iteration 192)
+19 OIDC rework-review tasks and 6 OIDC parent tasks superseded. These were spinning at rework-review depth 3–6+ with interrupted/blocked/no-progress claims. The OIDC probe work itself (accepted at depth 0) is preserved; only the unproductive rework chains were cut. If OIDC probe work needs to resume, create a fresh bounded task rather than continuing the superseded chains.
 
 ## Task Index
 - tasks/README.md
