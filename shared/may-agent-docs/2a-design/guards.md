@@ -198,6 +198,20 @@ Composition unchanged from prior measurement — diversity is a durable
 structural property, not transient. Guard volume approaching 2,000/day
 threshold.
 
+**Update 2026-06-11 20:18Z** (24h window, ~1,391 tool-level triggers):
+volume dropped ~26% (1,391 vs 1,881). Composition shares stable:
+uncommitted-files **32.6%** (453), finish()-uncommitted **23.4%** (325),
+SESSION_BASH_CAT **19.1%** (265), SESSION_READ **13.2%** (183),
+READ_DEDUP **6.8%** (95 — tripled from 2.3%), PATH_HALLUCINATION **3.3%**
+(46 — halved from 6.3%), SESSION_BASH_GREP **1.7%** (24). Workflow guards:
+read-before-edit 16, hallucinated-path 0 (likely moved to tool-level).
+Total: ~1,391 tool + ~16 workflow ≈ **1,407/day**. Key shift:
+PATH_HALLUCINATION dropped by half (118 → 46), likely from aks-explorer
+running fewer sessions with `/home/` path references. READ_DEDUP tripled
+(44 → 95), concentrated in evaluator sessions re-reading `tasks/tree.json`.
+SESSION_BASH_CAT is 100% evaluator (239 sessions hit in 24h). Overall
+volume well under 2,000/day threshold — no alert risk.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
