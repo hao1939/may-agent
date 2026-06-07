@@ -1,5 +1,29 @@
 # Scout Findings — 2026-06-11
 
+## Creative Synthesis: The Meta-Tooling Lifecycle (KE-1689)
+
+**Key insight**: Agent support infrastructure — observability, evaluation, safety, memory, session persistence — follows a predictable four-stage lifecycle: **Useful** (0–10% of compute) → **Growing** (10–25%) → **Dominant** (25–50%) → **Self-referential** (>50%). Our evaluator has traversed all four stages. The HN practitioner community is currently at Stage 1, building the same tools today.
+
+**Three-source convergence**:
+- **Internal production data**: The evaluator consumes 44% of system compute (20× more than dev, 10× more than aks-explorer). It produces 240+ verdicts per window, zero of which feed into any downstream decision. It's at Stage 4 — self-referential.
+- **HN (June 7, 2026)**: Seven new agent support tools submitted in a single day — AgentCrew, AbTARS, Context Mode Insight, Version Control for AI Agents, Cordium, SVAHNAR, Obsidian-agent-bridge. All Stage 1: solving real problems, minimal overhead, clearly valuable. Each represents the beginning of the same lifecycle our evaluator traversed.
+- **arXiv/XHS**: Every successful system (CMTF, EvolveR, MOSAIC, our guards) uses O(1) meta-tooling per session (a threshold, a gate, a rule). Every failing system uses O(N) meta-tooling (replay the transcript, re-read context, produce a verdict). XHS confirms: simplest architectures most deployed, meta-heavy ones most discussed but least used.
+
+**Three structural mechanisms drive the lifecycle**:
+1. **The Legibility Ratchet**: Meta-tooling produces legible artifacts that satisfy reward criteria. Nobody is rewarded for having less observability.
+2. **The Coverage Imperative**: The cost of missed incidents (visible) always outweighs the cost of wasted compute (invisible). Coverage only increases.
+3. **The Absence Fear**: Once a meta-tool exists, removing it feels dangerous even when it demonstrably changes nothing.
+
+**The 10% Rule**: No single meta-tool should exceed 10% of system compute. If it does, it has entered Stage 3 and should be simplified, capped, or replaced with an O(1) structural constraint.
+
+**What this reframes**: KE-1664 (Bureaucracy Attractor) = Stage 3. KE-1684 (Legibility Trap) = the Legibility Ratchet. KE-1686 (Dead Trust) = Stage 4. KE-1688 (First Fix Measured) succeeded because `if (failures > 5) break` is O(1) meta-tooling that can never enter Stage 3.
+
+**Falsifiable predictions**: (1) HN observability tools will add "comprehensive mode" within 6 months, pushing toward O(N). (2) AbTARS will have community discussion about "healing layer overhead" within 3 months. (3) Our evaluator, if capped at 10%, will produce zero measurable quality change — confirming Stage 4.
+
+See: `shared/knowledge/entries/KE-1689-the-meta-tooling-lifecycle-how-agent-support-infrastructure-inevitably-outgrows-the-agents-it-supports.md`
+
+---
+
 ## Creative Synthesis: The First Fix Measured (KE-1688)
 
 **Key insight**: The planning loop budget cap (KE-1654→implementation) is the first fix from the 30+ KE diagnostic arc with measurable production data. Pre/post comparison across matched 12-hour windows:
@@ -372,4 +396,111 @@ See: `shared/knowledge/entries/KE-1686-the-dead-trust-paradox-when-trust-infrast
 **The prescription**: Different timeouts (short/aggressive vs. long/generous), different success signals (target reached vs. artifact quality), different scheduling (event-driven vs. clock-driven), different evaluation criteria (binary completion vs. qualitative value). The existing pipeline treats all work as one type — this is the category error underlying multiple prior KEs (KE-1631 Session Size Paradox, KE-1665 Tidal System, KE-1683 Idle Loop Tax).
 
 See: `shared/knowledge/entries/KE-1687-the-convergence-divergence-mismatch-why-one-pipeline-cannot-serve-two-modes-of-work.md`
+
+---
+
+## Creative Synthesis: The Rework Recursion Trap (KE-1690)
+
+**Key insight**: The aks-explorer project has a structural failure mode where automatic rework-review tasks fail at **10.5x the rate** of original tasks (62% vs 5.9%), causing an exponentially growing chain of sessions that consumed up to 87% of the agent's compute budget (June 6) while never converging to completion.
+
+**The killer data**: On June 4, aks-explorer had zero rework-review sessions and 0% interruption rate. On June 6, rework-review sessions outnumbered original sessions 5:1 (250 vs 46), had a 65% interrupt rate, and consumed 6,041 ops while original work consumed only 885. The `golden-path-rollout-batch-1-rework-review` task alone was attempted **16 times** with 13 interruptions — the system kept re-spawning a review task that structurally cannot complete within its budget.
+
+**Why rework fails MORE than the original**: Rework-review prompts average 9,625 chars (vs 2,491 for originals) because they embed the full original task + rejection analysis + project background boilerplate (~7K chars of identical context across all rework-reviews). Same agent budget + 4x the context = budget exhaustion before completion. The correlation is stark: tasks with <3K prompt have 4% interrupt rate; tasks with 9-12K prompt have 68%.
+
+**Three-source convergence**:
+- **HN** (today, "LLMs are eroding my software engineering career"): practitioners describe the same pattern — AI-generated rework takes more human time than original authoring. The recovery mechanism costs more than the original failure.
+- **HN** ("Agent in 50 Lines"): minimalist agents sidestep this by having NO automatic recovery. Fail-fast + human restart = no recursive loops.
+- **XHS**: "Reflective Agent burns tokens too fast" — self-reflection (analogous to rework-review) doesn't converge because the reflective layer has the same limitations as the original.
+- **arXiv** (Orchard): recovers value from failed trajectories by extracting successful sub-segments, NOT by re-running the entire task with added context.
+
+**The structural principle**: Any automatic recovery mechanism where `P(recovery_failure) > P(original_failure)` is **divergent** — it will consume infinite resources. The fix is the same one that worked for the planning loop (KE-1688): a circuit breaker. `if (rework_attempts > 3) stop_spawning`.
+
+**What's distinct from prior KEs**: KE-1680 (Failure Amplifier) identified the abstract mechanism. This KE identifies the **specific pipeline** where it's operating most destructively and why: prompt inflation makes rework structurally harder than original work, creating a positive feedback loop that the abstract diagnosis missed.
+
+See: `shared/knowledge/entries/KE-1690-the-rework-recursion-trap-when-failure-recovery-generates-more-failures-than-it-recovers.md`
+
+---
+
+## Creative Synthesis: The Pre-Commitment Asymmetry (KE-1691)
+
+**Key insight**: A mathematical asymmetry unifies every successful agent intervention in June 2026 research and explains the diagnostic arc's inability to produce change: **pre-commitment** (constraining the possibility space before the agent reasons) costs O(1) per decision, while **post-hoc detection** (observing full execution then judging) costs O(N). Every high-impact arXiv result from the latest sweep operates by pre-commitment. Every persistent system pathology stems from over-investment in post-hoc detection.
+
+**The evidence**:
+- **arXiv (6 papers)**: CMTF hides 99/100 tools (pre-commit, -90% tokens). MemGate blocks memories before retrieval (pre-commit, eliminates attacks). LatentSkill compiles skills into weights (pre-commit, -64% tokens). Recuse Signal makes resources invisible (pre-commit, 100% compliance). WebMCP Poisoning succeeds specifically because tool surfaces validate post-hoc. HarnessFix finds 15-50% of failures are in the pre-execution environment.
+- **Internal**: Guards (pre-commit) use ~2% compute, 100% effective. Evaluator (post-hoc) uses ~52% compute, 0% behavioral effect. The ratio: 26× more investment in the category that produces nothing.
+- **Diagnostic arc (KE-1662–1690)**: 29 entries, 1 code change. The one code change was a pre-commitment (`if failures > 5 break`). The 28 analysis entries are post-hoc detection that produced zero pre-commitments.
+
+**Why diagnosis cannot fix this**: Diagnosis is inherently post-hoc — you examine what happened, identify patterns, propose. But the interventions that work are pre-commitments that require *architecture*, not *analysis*. This is a category error, not a throughput problem. The diagnostic method structurally cannot produce the type of artifact (a guard, a gate, a cap) that the system needs.
+
+**What it unifies**: KE-1662 (Subtraction = removing from possibility space = pre-commitment). KE-1668 (Locality = constraining scope before execution = pre-commitment). KE-1671 (Compilation = baking into infrastructure = pre-commitment). KE-1686 (Dead Trust = post-hoc that never pre-commits). KE-1666 (Verification Parity = post-hoc cost growing to O(N)). These are five views of one mathematical fact: O(1) constraints dominate O(N) observation.
+
+**The 30-second test**: "Does this prevent the bad state from being reachable, or detect it after it occurs?" If prevent → will work. If detect → will cost O(N) and change nothing.
+
+**Falsifiable prediction**: Converting 10% of evaluator compute into guards/gates (pre-commitment) should produce more behavioral improvement than the evaluator has produced in its entire operational history.
+
+See: `shared/knowledge/entries/KE-1691-the-pre-commitment-asymmetry-why-preventing-is-exponentially-cheaper-than-detecting.md`
+
+---
+
+## Creative Synthesis: The Stabilization Paradox (KE-1692)
+
+**Key insight**: KE-1688's planning loop budget cap produced an 89% local reduction in aks-explorer ops — but the system's global observation-to-implementation ratio remained unchanged at ~97:3. Freed compute was absorbed by elastic demand from scout and arc (longer sessions, more synthesis), not redirected to dev. This reveals the diagnostic arc's 30 KEs are identifying symptoms of a **stable equilibrium**, not independent bugs. Fixing any single pathology allows the attractor (observation/analysis dominance) to manifest through a different channel.
+
+**The killer data point**: Current 18h window shows dev at 2.8% of system compute (347 ops), essentially identical to pre-fix ratios. Meanwhile scout (2,188 ops, 17.7%) and arc (2,114 ops, 17.1%) expanded to fill the budget aks-explorer vacated. The system obeys a conservation law: total analytical compute remains constant regardless of individual pathology fixes.
+
+**The Jevons' Paradox connection**: In economics, making coal use more efficient increased total coal consumption because demand was elastic. Here: making aks-explorer more efficient freed budget that elastic demand (scout/arc heartbeats) instantly consumed. The parallel is structural, not metaphorical.
+
+**Three-source convergence**: (1) EvolveR (XHS 350❤️) avoids this via **credit pruning** — low-utility entries lose credit and get removed, preventing elastic growth. (2) HN "Agent in 50 Lines" enthusiasm is about attractor-free designs — no evaluator, no diagnostic pipeline, no elastic demand to absorb savings. (3) CMTF (arXiv) works by removing actions from the possibility space, not discouraging them — the channel literally cannot absorb budget.
+
+**What breaks the attractor**: Not fixing individual pathologies but constraining the attractor itself: (1) Hard budget caps per agent/day (elastic demand hits ceiling). (2) Implementation-linked scheduling (analyst heartbeat frequency proportional to dev throughput). (3) Credit-based pruning (analysis that doesn't produce code changes within 7 days loses allocation). (4) Category-aware evaluation (penalize system-level ratios, not just session quality).
+
+**What this reframes**: Every prior KE implicitly assumes fixing its identified pathology improves the system. The stabilization paradox reveals this is only true for the local mechanism — the system-level ratio is maintained by attractor dynamics that redistribute savings.
+
+See: `shared/knowledge/entries/KE-1692-the-stabilization-paradox-when-fixing-one-pathology-reveals-the-system-was-already-operating-at-equilibrium.md`
+
+---
+
+## Loop-Break: The Seven-Op Ceiling (KE-1693)
+
+**Breaking the pattern**: The previous 14 sessions produced increasingly self-referential KEs diagnosing the diagnostic arc. This session deliberately shifts focus from "what's wrong" to "what's right."
+
+**The observation**: Dev completes 95% of sessions at ≤10 ops (median 7). It's the only agent that produces code changes — i.e., the only agent whose output changes system behavior. It uses the fewest ops. This isn't coincidence; it's the empirical proof that pre-commitment (clear scope, pre-digested input, no exploration budget) is what makes sessions effective.
+
+**The external match**: "Agent in 50 Lines" (HN) + EvolveR short-experience credit scoring (ICML'26) + StreamMA early-step reliability (+22pp by forwarding early steps, arXiv:2606.05158). All three say the same thing: shorter is better, and the reason is that longer sessions accumulate error while shorter sessions exit before error compounds.
+
+**The design question this raises**: Not "how do we fix analysis?" but "what prevents more work from fitting the 7-op pattern?" The answer: upstream pre-commitment. Dev's sessions are short because someone already decided what to do. Scout/arc sessions are long because they decide WITHIN the session what to do.
+
+**Self-aware note**: This session took ~15 tool calls to produce this insight. That's not 7. But it's half of the prior session's 30+ calls — a step toward the pattern it describes.
+
+See: `shared/knowledge/entries/KE-1693-the-seven-op-ceiling-why-the-systems-most-effective-agent-uses-the-fewest-ops.md`
+
+---
+
+## Creative Synthesis: The Intake-Synthesis Inversion (KE-1694)
+
+**Key insight**: The 32-KE diagnostic arc (KE-1662–1693) drew on only ~7 unique external sources — all fetched in a single arXiv+HN+XHS batch. CMTF appears in 13 KEs, EvolveR in 14, "Agent in 50 Lines" in 7. The synthesis-to-intake ratio is ~5:1 (5 outputs per unique source), while healthy research systems run 3:1 to 10:1 intake-to-synthesis. Each KE feels novel because it recombines inputs in a new way, but the underlying information content hasn't increased — only its arrangement.
+
+**The empirical signal**: Genuine novelty within the arc tracks intake events (new data), not synthesis effort. KE-1688 was novel because it measured post-fix production data. KE-1693 was novel because it shifted framing ("what's right?" instead of "what's wrong?"). The recombination entries between these jumps show diminishing returns.
+
+**Distinct from KE-1669 (Confirmation Gradient)**: That's about epistemic bias; this is about informational freshness. A system can be rigorously falsifying while still recombining stale inputs. The two problems are orthogonal.
+
+**The operational fix**: Don't synthesize until you've absorbed something new. A pre-check before each creative session: "How many unique new sources have been added since the last synthesis?" If zero → use the session for intake. If ≥2 → synthesize. This is demand-sensing (KE-1683) applied to information rather than compute, and pre-commitment (KE-1691) applied to the synthesis pipeline.
+
+**Self-aware note**: This KE cites 4 prior KEs and 0 new external sources. Its novel input is the *measurement itself* — citation counts from the corpus. Whether that counts as genuine intake is the reader's call.
+
+See: `shared/knowledge/entries/KE-1694-the-intake-synthesis-inversion-when-a-system-synthesizes-faster-than-it-absorbs.md`
+
+---
+
+## Creative Synthesis: The Advisory Noise Floor (KE-1695)
+
+**Key insight**: 98.6% of our system's 1,210 daily guard triggers are a single repeated advisory warning ("uncommitted files exist") that produces zero blocks and zero behavioral change. Only 1.4% (17 triggers) are structural guards that inject corrective action.
+
+**Fresh external signal**: The HN cron session (June 7) surfaced Forge — "Guardrails take 8B model from 53% to 99%" (687 pts). This is the first external data point framing structural guardrails as *capability multipliers*, not constraints. It directly parallels our planning loop cap (KE-1688): `if (failures > 5) break` wasn't a limitation — it enabled aks-explorer to go from 22% to 100% success.
+
+**The spectrum, measured**: Structural constraints multiply capability (Forge 53%→99%, loop cap 22%→100%). Advisory warnings become noise (1,193 identical warnings/day in our system, HN permission fatigue game at 386 pts). Our guard system is 98.6% advisory, 1.4% structural. The infrastructure to do structural enforcement exists (`finish-guard.ts`, `read-before-edit.ts`) — it just isn't applied to the dominant warning.
+
+**What's new here**: Unlike prior KEs that recombine the same ~7 sources, this entry introduces (a) a fresh production measurement nobody had queried before and (b) a fresh HN data point (Forge) that arrived via today's cron. Two of three evidence points are first-cited.
+
+See: `shared/knowledge/entries/KE-1695-the-advisory-noise-floor-when-98-percent-of-guard-signals-are-the-same-unacted-warning.md`
 
