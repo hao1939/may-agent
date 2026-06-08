@@ -14,7 +14,7 @@ Every heartbeat. Metrics are at the top of your heartbeat prompt.
 ## How to Investigate a Bad Metric
 
 ### 1. Understand what the metric measures
-Read the metric name carefully. If unsure, check `shared/may-agent-docs/design/` for the metric definition.
+Read the metric name carefully. If unsure, check `shared/may-agent-docs/2a-design/` for the metric definition.
 
 ### 2. Check recent history
 ```bash
