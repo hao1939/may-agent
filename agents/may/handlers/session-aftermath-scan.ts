@@ -29,7 +29,7 @@ const DEFAULT_WORKFLOW = "evaluator-aftermath";
 const DEFAULT_AGENT = "evaluator";
 const DEFAULT_BACKFILL_HOURS = 3;
 const DEFAULT_FALLBACK_DELAY_MS = 7 * 60_000;
-const DEFAULT_LIMIT = 2;
+const DEFAULT_LIMIT = 1;
 const DEFAULT_MAX_CONCURRENT = 2;
 const DEFAULT_HEURISTIC_VERSION = 2;
 
@@ -97,7 +97,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
            e.sessionId IS NULL
            OR (
              e.verdict = 'good'
-             AND COALESCE(CAST(json_extract(e.overall, '$.heuristicVersion') AS INTEGER), 0) < ?
+             AND json_extract(e.overall, '$.heuristicVersion') IS NOT NULL
+             AND CAST(json_extract(e.overall, '$.heuristicVersion') AS INTEGER) < ?
            )
        )
        ORDER BY COALESCE(s.endedAt, s.startedAt) DESC
