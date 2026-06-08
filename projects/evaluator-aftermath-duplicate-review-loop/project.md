@@ -1,11 +1,11 @@
 ---
 id: evaluator-aftermath-duplicate-review-loop
 owner: evaluator
-status: validating
+status: waiting
 type: milestone
 priority: P2
 iteration: 2
-wait_reason: 
+wait_reason: validating fix landed in session-aftermath-scan.ts; evaluator should confirm no more duplicate aftermath passes appear in the next 24h
 ---
 
 # Evaluator Aftermath Duplicate Review Loop
