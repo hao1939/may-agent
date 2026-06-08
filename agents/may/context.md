@@ -38,6 +38,15 @@ If any fails: don't dispatch, journal reason. Log: `GATE: PASS/FAIL (reason)`.
 - query_db tool for DB. Evaluations in evaluations table.
 - Conventions: C1.1 read-before-edit, C1.3 verify-writes, C1.7 verify-before-finish, C12.1 context-first.
 
+## DB Schema Reference (avoid schema/query errors)
+- **sessions**: sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, startedAt, endedAt, error, outcome, opCount, stepLabel
+- **evaluations**: sessionId, agent, quality, efficiency, productiveCalls, wastedCalls, verdict, issues, overall, usage, failureChains, evaluatedByHeuristic, skippedByJs, createdAt
+- **requests**: requestId, parentRequestId, fromEntity, toAgent, method, task, status, sessionId, source, createdAt, updatedAt, completedAt, durationMs, summary, error, errorClass, retryable, artifact, context, expectations, notify, source_finding
+- **projects**: id, path, name, owner, status, type, workflow, iteration, priority, milestones_done, milestones_total, updated_at
+- **notification_messages**: telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at
+- **events**: use PRAGMA table_info(events) if needed
+- **metric_alerts**: use PRAGMA table_info(metric_alerts) if needed
+
 ## Required Skills
 📘 `agents/may/skills/` — breadcrumb-action, read-before-edit, verify-after-edit, verify-before-finish
 
@@ -57,3 +66,5 @@ Before starting new work, check for existing deliverables:
 grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
+
+- Convention: All fork/call delegations must follow contracts/delegation-memo-convention.md (goal, context_files, success_criteria, scope_boundary required).
