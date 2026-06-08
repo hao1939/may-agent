@@ -1,16 +1,16 @@
 ---
 id: aks-rp-e2e
 owner: aks-explorer
-status: waiting
+status: active
 type: milestone
 priority: P1
-iteration: 204
+iteration: 211
 max_concurrent: 3
 max_task_attempts: 2
 project_app: v2
 project_policy: aggressive-push
 runtime_control_plane: .app
-wait_reason: devbox-access-needed-for-source-probes — all cron jobs disabled, 4 tasks gated on devbox mount
+wait_reason: devbox-access-needed-for-source-probes — cloud/source work gated on devbox mount; local tasks actionable
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -157,24 +157,21 @@ agent pools, and later dark-side discovery.
 ## Current State
 Project App V2 task-tree execution has been reframed around the AKS feature-learning system instead of recent incidents. The root now decomposes into `aks-learning-system` and `execution-engine-audit`. Under `aks-learning-system`, the durable work areas are `knowledge-model-maintenance`, `feature-inventory-and-queue`, `feature-learning-loop`, `cross-feature-synthesis`, and `human-directed-maintenance`.
 
-The feature-learning queue was refreshed at iteration 198 (see `outputs/iteration198-feature-learning-queue-refresh.md`). The prioritized next tasks are:
-1. **Reference packet:** `workload-autoscaler-keda-profile-state` (unknown, no cloud gate, source-backed)
-2. **Reference packet:** `workload-autoscaler-vpa-profile-state` (unknown, no cloud gate, source-backed)
-3. **Reference packet:** `image-cleaner-state-interval` (unknown, no cloud gate, source-backed)
-4. **Test-spec:** `managedsystem-runtime-restrictions` (unknown, source-backed)
-5. **Test-spec:** `managedsystem-single-pool-constraint` (unknown, source-backed)
-6. **Test-spec:** `managedsystem-reconcile-preservation` (unknown, source-backed)
-7. **Execution gate check:** `managedsystem-disable-migration` (fail, needs trigger investigation)
+**Iteration 206–211 reconciliation (owner-loop):** All four tasks from the iteration 204 queue completed with evidence:
+- **`iteration206-vmsize-immutability-enrichment`** (done/succeeded): `bun probes/managedsystem-vmsize-mutation-negative.ts --check` passed (3 assertions, exit 0). Assertion-to-spec alignment verified. Evidence at `evidence/outputs/iteration206-vmsize-immutability-enrichment.md`.
+- **`iteration207-workload-identity-no-oidc-negative-check`** (done/succeeded): `bun probes/workload-identity-no-oidc-negative.ts --check` passed (5 check assertions). Alignment verified. Evidence at `evidence/outputs/iteration207-workload-identity-no-oidc-negative-check.md`.
+- **`iteration208-keda-rest-enable-probe-design`** (dropped at 2/2 attempts): Redundant — design already in iteration205 Extension Point.
+- **`iteration209-keda-rest-enable-runtime-probe`** (done/succeeded): New `probes/workload-autoscaler-keda-runtime.ts` with 5 runtime assertions. `--check` passed. Evidence at `evidence/outputs/iteration209-keda-rest-enable-runtime-probe.md`.
 
-The current ready leaf is the first queue item: create a reference packet for `workload-autoscaler-keda-profile-state` by reading devbox source plans.
+Split-brain fixed: tree.json `active_task_id` was stale (pointed to done iteration206), now cleared. Iteration206/207 accepted, iteration208/209 added to tree.json. Model validator: 7 failing, 7 unknown, 4 blocked, 0 uncovered — unchanged.
 
-Iteration185 owner-loop reconciliation handled the duplicate unread Hao resume comments after `---read @iter184---`. They repeated the already-completed iteration183 request to replan selected ManagedSystem knowledge paths `path.managedsystem.rest-add-existing.minimal-rest`, `path.managedsystem.mode-immutability`, and `path.managedsystem.delete-existing`; no new execution authorization, source/build/rollout signal, feature-registration signal, environment/capacity unblock, or distinct local model-hygiene request was present. The project remains `status: waiting` because the human resume request is complete: those paths share `compatibleGroupKey=managedsystem.add-existing-minimal-rest.single-cluster`, and `run-plans/managedsystem-add-immutability-delete-combined.yaml` combines them into one planned AKS cluster lifecycle: baseline normal cluster, minimal ARM REST ManagedSystem add, mode-mutation rejection check, ManagedSystem pool delete, and resource-group cleanup verification. `probes/managedsystem-add-immutability-delete-combined.ts` implements the reviewable TypeScript probe with path-specific verdicts and explicit non-goals for CLI default-payload, runtime isolation, single-pool, reconcile, disable-migration, and unrelated branches. Local verification passed with `bun probes/managedsystem-add-immutability-delete-combined.ts --check --run-id=iteration183-local-check-v2`; the generated artifact reports 10 assertions and 0 failures, no cloud mutation, and `no-product-model-change`. Fresh owner-loop validation also confirmed the iteration183 deliverables exist and `bun capability-model/src/validate.ts knowledge-map/model.json` passes with `uncoveredFeatureIds=[]`. The replan decision is recorded in `outputs/iteration183-managedsystem-combined-replan.md`; waiting-state reconciliations are recorded in `outputs/iteration184-owner-loop-status-reconciliation.md` and `outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md`.
+**Iteration 211 owner-loop:** Triggered by `project.owner.incomplete` — owner finished success while project remained active with no open tasks. Promoted 3 ready P0 local-only tasks from tree.json into project.md task block: `managedsystem-golden-path-gap-audit`, `feature-page-managedsystem-current-audit`, `combined-scenario-compatibility-contract`. Plan step 101 (wait) superseded. All three are independent, local-only audit/design work requiring no cloud access.
 
-Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
+**June 8, 2026 golden-path hardening:** `managedsystem-golden-path-gap-audit` is accepted. The ManagedSystem REST add-existing chain is solid for the narrow product/API branch: Go source intent -> feature packet -> test spec -> run plan -> TypeScript probe -> local safety check -> existing iteration112 v2 staging replay -> model judgment. The audit also fixed `probes/managedsystem-rest-add-existing.ts` so fresh evidence writes to `evidence/outputs/` and validates the canonical v2 model path. Runtime placement and adjacent ManagedSystem branches remain separate.
 
-The project should remain gated after the local replan. The new combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. Do not create another same-branch cloud rerun task solely because the project woke up.
+2 open P0 tasks remain: `feature-page-managedsystem-current-audit` (review feature page vs requirement) and `combined-scenario-compatibility-contract` (design combined-scenario test compatibility contract). Both are local-only and do not require cloud access.
 
-**iteration355 review (owner loop — new harvest path found):** Devbox still absent but `scenarios/test-specs/` IS accessible (74 specs at `/app/projects/aks-rp-e2e/scenarios/test-specs/`). Index updated 2026-06-14. Re-scanned all 74 spec files: found 15 specs with pass/staging-pass status (up from 13 at iteration322 freeze). **3 newly harvestable specs** not in project's 56-feature set: (1) `app-routing-nginx-to-istio-migration` (status=pass, 18 assertions, 4 devbox sourceRefs), (2) `app-routing-nginx-disablement` (status=pass, 5 assertions, devbox sourceRef), (3) `vpa-upgrade-survival-runtime` (status=pass, iter115 cloud replay evidence). 3 new tasks created (iteration355-harvest-new-pass-specs, iteration356-updated-coverage-matrix-v18, iteration357-rescan-additional-pass-specs).
+Current non-pass frontier remains mostly gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths include App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`), plus `managedsystem-pool-vmsize-immutability`. Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
 ## Current Phase
 
@@ -234,6 +231,9 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `outputs/iteration117-bootstrap-byo-acr-lifecycle.md` — Bootstrap BYO-ACR initial blocked attempt and cleanup evidence
 - `outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md` — detailed BYO-ACR v2 create timeout blocker evidence
 - `outputs/iteration116-post-vpa-ts-probe-selection.md` — local selection artifact that chose the now-completed Bootstrap managed-ACR lifecycle probe
+- `probes/workload-autoscaler-keda-profile-state.ts` — KEDA profile-state REST-first TS probe (iteration205)
+- `scenarios/run-plans/workload-autoscaler-keda-profile-state.yaml` — KEDA profile-state run plan with extension point for REST-enable runtime path
+- `evidence/outputs/iteration205-keda-profile-state-probe-design.md` — iteration205 design artifact
 - `tasks/README.md` — task index; all external task breakdown files should be reachable from here
 - `tasks/managedsystem-pool/wave-01-feature-standard.yaml` — ManagedSystem Pool parallel feature-standard task wave
 - `outputs/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
@@ -325,13 +325,14 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Execute the active task tree children under `project-frontier-replan-7`:
+The ManagedSystem golden-path audit is accepted. Two P0 local-only tasks remain open after owner-loop promotion from tree.json (iteration 211). Both are local audit/design work requiring no cloud access:
 
-1. **`app-routing-http-reach-fail-hypothesis`** (active, P2): Analyze the app-routing default-domain-http-reachability fail path — document root-cause hypothesis, check if existing evidence reveals a product bug vs test gap, and create a test-spec.
-2. **`pass-path-expectation-density-enrichment`** (ready, P3): Enrich thin pass paths (<3 behavioral expectations) from feature packets, API specs, or existing evidence. Target: raise at least 5 paths to 4+ expectations.
-3. **`nap-full-cleanup-test-spec-creation`** (ready, P3): Create a test-spec for the full NAP cleanup path that captures expected behavior and known failure modes.
+1. **`feature-page-managedsystem-current-audit`** (open, P0): Review the dedicated ManagedSystem feature page against requirement: feature brief, references, scenario/path table, owner actions, evidence, and user review/audit actions.
+2. **`combined-scenario-compatibility-contract`** (open, P0): Design the minimal compatibility contract for combined-scenario tests: scenario selection, shared cluster lifecycle rules, conflict rules, per-scenario verdict schema, cleanup/evidence requirements, and failure diagnosis boundaries.
 
-All three are safe local/domain work with no cloud dependency. Cloud-gated resume triggers remain unchanged for ManagedSystem live execution, App Routing TLS, Machines API, NAP, VPA cert renewal, Bootstrap BYO-ACR, and PAF.
+These two tasks are independent and can execute in parallel. Gated follow-up implementation tasks (`feature-page-managedsystem-polish-implementation`, `managedsystem-combined-scenario-prototype-plan`) should only move after the corresponding audit/contract leaf is accepted. `managedsystem-rest-staging-replay-verification` is superseded for the add-existing branch because existing iteration112 v2 staging replay and cleanup evidence is sufficient.
+
+Cloud-gated resume triggers remain unchanged for ManagedSystem live execution, App Routing TLS, Machines API, NAP, VPA cert renewal, Bootstrap BYO-ACR, and PAF.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -571,7 +572,8 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
 98. ✅ Migrate Workload Autoscaler KEDA/VPA profile and runtime branches into normalized knowledge-map paths without cloud execution
 99. ✅ Migrate security-profile Image Cleaner and Node Restriction branches into normalized knowledge-map paths without cloud execution
 100. ✅ Migrate Machines API CRUD and full NAP default Machines pool cleanup into normalized knowledge-map paths without cloud execution
-101. ⏸️ Wait for an external execution/source trigger before queuing the next bounded task — reconfirmed by iteration185 owner loop after duplicate ManagedSystem replan resume comments were handled by the iteration183 deliverables
+101. ~~Wait for an external execution/source trigger before queuing the next bounded task~~ Superseded: owner-loop iteration 211 promoted 3 ready P0 local tasks from tree.json to project.md task block.
+102. Execute three parallel P0 local audits/designs: ManagedSystem golden-path gap audit, ManagedSystem feature-page current audit, and combined-scenario compatibility contract design.
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1610,20 +1612,59 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   attempts: 2
 
 - id: iteration204-feature-learning-queue-refresh-v2
-  status: ready
+  status: done
+  result: succeeded
   assignee: aks-explorer
   priority: P2
   goal: "Rebuild the prioritized AKS feature-learning queue from the updated model state after iteration 203 enrichment. Follow the same method as iteration 198 (outputs/iteration198-feature-learning-queue-refresh.md): inspect model for unknown/blocked/failing features, check devbox source for new/changed cases, and rank the top 5-8 features by learning value, local-work feasibility, source availability, and model coverage gap. Produce outputs/iteration204-feature-learning-queue-refresh-v2.md with the ranked queue and concrete next task type per candidate. Update Current State in project.md."
   depends_on: [iteration203-model-enrichment-from-new-packets]
-  attempts: 0
+  attempts: 1
 
 - id: iteration205-keda-profile-state-probe-design
-  status: ready
+  status: done
+  result: succeeded
   assignee: aks-explorer
   priority: P2
   goal: "Design a TypeScript probe for workload-autoscaler-keda-profile-state. Read features/workload-autoscaler-keda-profile-state.yaml, outputs/iteration84-keda-disable-reenable-crud-staging.md, outputs/iteration78-workload-autoscaler-runtime-staging.md, and knowledge-map/model.json. Produce probes/workload-autoscaler-keda-profile-state.ts implementing the reference packet scenarios with path-specific verdicts. Include a run-plan at run-plans/workload-autoscaler-keda-profile-state.yaml. Local preflight with --check must pass. Produce outputs/iteration205-keda-profile-state-probe-design.md documenting the design and preflight result. Do not run cloud probes."
   depends_on: [iteration203-model-enrichment-from-new-packets]
-  attempts: 0
+  attempts: 1
+
+- id: iteration206-vmsize-immutability-enrichment
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Verify the managedsystem-vmsize-mutation-negative probe --check passes, review assertion alignment with test-specs managedsystem-vmsize-mutation-negative.json and managedsystem-vmsize-immutability.json, and enrich model path notes for managedsystem-pool-vmsize-immutability. Start from probes/managedsystem-vmsize-mutation-negative.ts, scenarios/test-specs/managedsystem-vmsize-mutation-negative.json, scenarios/test-specs/managedsystem-vmsize-immutability.json, knowledge-map/model.json, and outputs/e2e-capability-model.json. Verify --check passes (confirmed by owner-loop iteration206), then inspect each assertion against the test-spec expected behavior entries and model path definitions. If model path notes or feature-path expectations need enrichment, update model.json and validate. Produce evidence/outputs/iteration206-vmsize-immutability-enrichment.md with assertion-to-spec alignment, model edits if any, and validator output. Do not run cloud probes."
+  depends_on: [iteration205-keda-profile-state-probe-design]
+  attempts: 1
+
+- id: iteration207-workload-identity-no-oidc-negative-check
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Verify the workload-identity-no-oidc-negative probe --check passes, review assertion alignment with test-spec workload-identity-no-oidc-negative.json, and confirm path alignment in the model. Start from probes/workload-identity-no-oidc-negative.ts, scenarios/test-specs/workload-identity-no-oidc-negative.json, knowledge-map/model.json, and outputs/e2e-capability-model.json. Verify --check passes (confirmed by owner-loop iteration206), then inspect each assertion (HTTP 400 rejection and error-references-oidc) against the test-spec expected behavior entries. If model notes or feature-path expectations need enrichment, update model.json and validate. Produce evidence/outputs/iteration207-workload-identity-no-oidc-negative-check.md with assertion-to-spec alignment, model edits if any, and validator output. Do not run cloud probes."
+  depends_on: [iteration205-keda-profile-state-probe-design]
+  attempts: 1
+
+- id: iteration208-keda-rest-enable-probe-design
+  result: dropped
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Design the REST-enable runtime extension for the KEDA probe."
+  depends_on: [iteration206-vmsize-immutability-enrichment]
+  attempts: 2
+  drop_reason: "Owner judgment at 2/2 attempts: design is already documented in iteration205 Extension Point section and test-spec workload-autoscaler-keda-runtime-scaling.json (5 assertions). A separate design doc is redundant. Replaced by iteration209-keda-rest-enable-runtime-probe which directly implements the probe."
+
+- id: iteration209-keda-rest-enable-runtime-probe
+  result: succeeded
+  status: done
+  assignee: aks-explorer
+  priority: P2
+  goal: "Implement a new TypeScript probe for the workload-autoscaler-keda-runtime REST-enable path. The design is already documented: iteration205 Extension Point (evidence/outputs/iteration205-keda-profile-state-probe-design.md section 5) describes adding kubectl runtime assertions after ARM REST create-with-KEDA-enabled. Test-spec scenarios/test-specs/workload-autoscaler-keda-runtime-scaling.json defines the 5 target assertions: KEDA resources present, operator pod running, ScaledObject status ready, replicas scaled above min, end-to-end scaling loop. Create a NEW separate probe probes/workload-autoscaler-keda-runtime.ts (do not modify the profile-state probe) that: (1) creates a cluster with KEDA enabled via ARM REST PUT, (2) runs kubectl assertions for KEDA operator pod readiness in kube-system, KEDA metrics-server pod, KEDA CRDs (scaledobjects.keda.sh), (3) optionally deploys a cron ScaledObject and verifies scaling. Create a matching run-plan scenarios/run-plans/workload-autoscaler-keda-runtime.yaml. Cloud execution gated behind --execute and AKS_RP_E2E_ALLOW_CLOUD_MUTATION=workload-autoscaler-keda-runtime. Verify --check passes locally. Produce evidence/outputs/iteration209-keda-rest-enable-runtime-probe.md. Reference: iteration78 and iteration84 for prior KEDA staging evidence. Do not run cloud probes."
+  depends_on: []
+  attempts: 1
 
 - id: iteration355-harvest-new-pass-specs
   result: succeeded
@@ -1651,6 +1692,31 @@ All three are safe local/domain work with no cloud dependency. Cloud-gated resum
   goal: "Full re-scan of all 74 scenario test-spec files for any additional pass/staging-pass status specs that emerged since the iteration322 freeze. Compare each file's status field and metadata.status field against the project's feature list. Produce delta report. Output: outputs/iteration357-rescan-pass-delta.md."
   depends_on: [iteration356-updated-coverage-matrix-v18]
   attempts: 1
+
+- id: managedsystem-golden-path-gap-audit
+  status: done
+  result: succeeded
+  assignee: aks-explorer
+  priority: P0
+  goal: "Audit the ManagedSystem REST add-existing golden path end to end. Produce a concise gap report showing which links are proven, stale, missing, overclaimed, or need a real staging replay before the pattern can be reused. Current output: evidence/outputs/managedsystem-golden-path-gap-audit.md. Local check: evidence/outputs/codex-golden-path-local-check-managedsystem-rest-add-existing.md. Probe hardening: probes/managedsystem-rest-add-existing.ts now writes to evidence/outputs and validates the canonical v2 model path."
+  depends_on: []
+  attempts: 1
+
+- id: feature-page-managedsystem-current-audit
+  status: ready
+  assignee: aks-explorer
+  priority: P0
+  goal: "Review the implemented dedicated ManagedSystem feature page against the requirement: feature brief, PRD/API/design/public/source references, scenario/input/expectation table, one-click generate-script/replay requests, evidence, and user review/audit actions. Produce exact gaps and the smallest implementation fix list. Local only; no cloud probes."
+  depends_on: []
+  attempts: 0
+
+- id: combined-scenario-compatibility-contract
+  status: ready
+  assignee: aks-explorer
+  priority: P0
+  goal: "Design the minimal compatibility contract for combined-scenario tests: scenario selection inputs, shared cluster lifecycle rules, conflict rules, per-scenario verdict schema, cleanup/evidence requirements, and failure diagnosis boundaries. Local only; no cloud probes."
+  depends_on: []
+  attempts: 0
 
 ## References
 
