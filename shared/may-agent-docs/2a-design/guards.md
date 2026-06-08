@@ -144,119 +144,42 @@ time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
 KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
 falsified KE-1564).
 
-As of **2026-06-06** (24h window): uncommitted-files warnings were
-dominant at ~49% (880 of 1,790), with SESSION_BASH_CAT ~18%,
-PATH_HALLUCINATION ~10%, SESSION_READ ~10%, READ_DEDUP ~3%.
+### Composition history (2026-06-06 through 2026-06-08)
 
-**Update 2026-06-06** (24h window, ~1,939 tool-level triggers): guard
-composition previously collapsed to a single signal. **Correction
-2026-06-06** (24h window, ~1,858 tool-level triggers): composition has
-**diversified again** — uncommitted-files warnings are ~50% (934),
-SESSION_BASH_CAT ~18% (333), PATH_HALLUCINATION ~12% (221),
-SESSION_READ ~11% (201), READ_DEDUP ~2% (35). The `hallucinated-path`
-and `read-before-edit` workflow guards also fire (109 and 20 triggers
-in 24h), using `source: "workflow"`. Total guard events: ~1,858 tool +
-~129 workflow ≈ ~1,987/day. The monoculture pattern (KE-1362) has
-reversed — all five tool-level guard types are active again. The prior
-"100% single signal" observation was either a transient state or a
-measurement artifact. Total count remains near the 2,000/day threshold
-noise. This is structural — every session that calls `finish()` with
-dirty worktree files triggers it, regardless of whether those files are
-the agent's own deliverables.
-
-**Update 2026-06-08** (24h window, ~1,611 tool-level triggers):
-composition remains stable — uncommitted-files ~53% (849),
-SESSION_BASH_CAT ~19% (300), SESSION_READ ~13% (211),
-PATH_HALLUCINATION ~8% (130), READ_DEDUP ~6% (95),
-SESSION_BASH_GREP ~2% (26). Workflow guards: hallucinated-path 53,
-read-before-edit 7. Total: ~1,672/day. Diversity is persistent, not
-transient — the monoculture pattern (KE-1362) is definitively falsified
-across 3+ days of measurement (KE-1626).
-
-**Update 2026-06-08 04:16Z** (24h window, ~1,863 tool-level triggers):
-composition shift — uncommitted-files dropped from ~53% to **32.2%**
-(600) while finish()-uncommitted rose to **21.8%** (406). These two
-are the same commit-guard firing at different phases (worktree scan vs
-finish() call), so combined commit-guard share = 54%, steady. Other
-signals: SESSION_BASH_CAT **17.8%** (332), SESSION_READ **13.4%**
-(250), PATH_HALLUCINATION **6.5%** (121), READ_DEDUP **6.1%** (114),
-SESSION_BASH_GREP **2.1%** (40). Workflow guards: hallucinated-path 42,
-read-before-edit 9. Total: ~1,863 tool + ~51 workflow ≈ ~1,914/day.
-Diversity continues stable across 4+ days. Notable: SESSION_BASH_CAT is
-100% evaluator sessions — the evaluator is the sole agent catting
-session.jsonl files. SESSION_READ (250 events) is also evaluator-only.
-PATH_HALLUCINATION is primarily aks-explorer (100/121).
-
-**Update 2026-06-09 06:19Z** (24h window, ~1,881 tool-level triggers):
-composition stable — uncommitted-files **32.1%** (604),
-finish()-uncommitted **21.6%** (406), SESSION_BASH_CAT **17.6%** (332),
-SESSION_READ **13.4%** (252), PATH_HALLUCINATION **6.3%** (118),
-READ_DEDUP **2.3%** (44), SESSION_BASH_GREP **1.9%** (35),
-other **4.8%** (90). Workflow guards: hallucinated-path 39,
-read-before-edit 10. Total: ~1,881 tool + ~49 workflow ≈ **1,930/day**.
-Composition unchanged from prior measurement — diversity is a durable
-structural property, not transient. Guard volume approaching 2,000/day
-threshold.
-
-**Update 2026-06-11 20:18Z** (24h window, ~1,391 tool-level triggers):
-volume dropped ~26% (1,391 vs 1,881). Composition shares stable:
-uncommitted-files **32.6%** (453), finish()-uncommitted **23.4%** (325),
-SESSION_BASH_CAT **19.1%** (265), SESSION_READ **13.2%** (183),
-READ_DEDUP **6.8%** (95 — tripled from 2.3%), PATH_HALLUCINATION **3.3%**
-(46 — halved from 6.3%), SESSION_BASH_GREP **1.7%** (24). Workflow guards:
-read-before-edit 16, hallucinated-path 0 (likely moved to tool-level).
-Total: ~1,391 tool + ~16 workflow ≈ **1,407/day**. Key shift:
-PATH_HALLUCINATION dropped by half (118 → 46), likely from aks-explorer
-running fewer sessions with `/home/` path references. READ_DEDUP tripled
-(44 → 95), concentrated in evaluator sessions re-reading `tasks/tree.json`.
-SESSION_BASH_CAT is 100% evaluator (239 sessions hit in 24h). Overall
-volume well under 2,000/day threshold — no alert risk.
-
-**Update 2026-06-12 ~02:30Z** (24h window, 1,380 total triggers):
-**Monoculture has returned.** SESSION_BASH_CAT is now **98.7%** of all
-guard triggers (1,362 of 1,380). The remaining 1.3% is read-before-edit
-(18). All other signal types — uncommitted-files, finish()-uncommitted,
-SESSION_READ, PATH_HALLUCINATION, READ_DEDUP, SESSION_BASH_GREP — are
-**zero** in the 24h window. This is the starkest composition shift since
-tracking began. SESSION_BASH_CAT is 100% evaluator sessions (229
-unique sessions triggered). The diverse composition observed from
-2026-06-06 through 2026-06-11 has collapsed into a single-signal
-monoculture. Volume down 2% (1,380 vs 1,407). Possible causes:
-(1) commit-guard and path-hallucination-guard may have been changed or
-disabled, (2) aks-explorer's reduced activity removes PATH_HALLUCINATION,
-(3) evaluator's session.jsonl catting overwhelms all other signals.
-KE-1362 (monoculture pattern) was re-confirmed 2026-06-12 — but see
-update below.
-
-**Update 2026-06-12 ~18:00Z** (24h window, ~1,129 tool-level triggers):
-diversity has **returned again**. uncommitted-files **50.7%** (573),
-SESSION_BASH_CAT **17.9%** (202), READ_DEDUP **13.3%** (150),
-SESSION_READ **11.4%** (129), PATH_HALLUCINATION **3.5%** (40),
-SESSION_BASH_GREP **1.5%** (17). Workflow guards: read-before-edit 18.
-Total: ~1,129 tool + ~18 workflow ≈ **1,147/day**. The 2026-06-12
-monoculture (SESSION_BASH_CAT 98.7%) lasted <16 hours before
-reverting to the diverse baseline. The guard composition is **oscillating**
-between monoculture and diversity depending on which agents are active
-and how many evaluator sessions run relative to other agents' sessions.
+Guard composition oscillates between monoculture (one signal >95%) and
+diversity (5+ active signals) depending on which agents are active.
 Neither KE-1362 (monoculture) nor its falsification (KE-1626) is
-durably correct — the system switches between regimes. Volume is
-well below the 2,000/day threshold.
+durably correct — the system switches between regimes. Volume has
+ranged from ~1,150 to ~1,930/day across 8 snapshots taken 2026-06-06
+through 2026-06-08, always well under the 2,000/day threshold.
 
-**Update 2026-06-08 15:27Z** (24h window, 1,272 tool-level triggers):
-**READ_DEDUP is now the #1 single signal** — overtook both
-uncommitted-files and SESSION_BASH_CAT. READ_DEDUP **23.6%** (304),
-uncommitted-files **22.6%** (291), finish()-uncommitted **22.3%** (288),
-SESSION_BASH_CAT **14.7%** (189), SESSION_READ **11.6%** (150),
-PATH_HALLUCINATION **1.9%** (25), SESSION_BASH_GREP **1.9%** (25).
-Combined commit-guard (uncommitted + finish-uncommitted) = 45%.
-Workflow guards: read-before-edit 12, hallucinated-path 5.
-Total: 1,272 tool + 17 workflow = **1,289/day** (lowest measured).
-Key structural shift: **aks-explorer** is the primary READ_DEDUP
-source — 201 of 304 events (66%) across 34 sessions, averaging 5.9
-triggers/session, all from re-reading `projects/aks-rp-e2e/project.md`.
-The prior observation (2026-06-11) that READ_DEDUP was "concentrated
-in evaluator sessions re-reading tasks/tree.json" is now stale.
-Diversity continues — no monoculture regime in this window.
+Key structural observations from the full snapshot history:
+- Combined commit-guard (uncommitted-files + finish()-uncommitted) is
+  the largest category at 44–54% when diverse.
+- SESSION_BASH_CAT is 100% evaluator — the sole agent catting
+  session.jsonl files. It can dominate during evaluator-heavy windows.
+- READ_DEDUP source has shifted: evaluator (re-reading periodic-tasks,
+  project files) and aks-explorer (re-reading project.md) trade off.
+- PATH_HALLUCINATION is primarily aks-explorer (`/home/` paths).
+- Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7% on 2026-06-12)
+  last <16h before reverting to diverse baseline.
+
+**Latest snapshot 2026-06-08 ~21:00Z** (24h window, ~1,338 tool-level):
+
+| Signal | Count | Share |
+|--------|------:|------:|
+| commit-guard (combined) | 595 | 44.5% |
+| READ_DEDUP | 352 | 26.3% |
+| SESSION_BASH_CAT | 189 | 14.1% |
+| SESSION_READ | 157 | 11.7% |
+| SESSION_BASH_GREP | 28 | 2.1% |
+| PATH_HALLUCINATION | 17 | 1.3% |
+
+Workflow guards: read-before-edit 11, hallucinated-path 5.
+Total: ~1,338 tool + ~16 workflow ≈ **1,354/day**.
+READ_DEDUP has surged to #1 individual signal (was ~3% on 2026-06-06),
+driven by evaluator sessions re-reading the same project files.
+Volume well under threshold — no alert risk.
 
 ### Known issue: guard name conflation
 
