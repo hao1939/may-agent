@@ -710,3 +710,21 @@ See: `shared/knowledge/entries/KE-1708-the-overclaim-paradox-why-sessions-that-e
 **What's new**: The `session_digests.what_happened` field (39,629 records) has never been analyzed as a quality predictor. This is the first cross-join of agent self-narrative against evaluation verdicts. The finding complements KE-1708 (overclaiming hurts quality within brackets) with its mirror: saying *nothing* is an even stronger signal of bad work than saying too much.
 
 See: `shared/knowledge/entries/KE-1709-the-empty-receipt-when-agents-say-done-but-did-nothing.md`
+
+---
+
+## Creative Synthesis: The Chronic Condition Report (KE-1710)
+
+**Key insight**: First-ever systematic mining of `session_digests.still_open` reveals a **Groundhog Day loop** — agents repeatedly discover, document, and report the same blockers every session without recognizing them as chronic. A single issue ("worktree has unrelated dirty files") accounts for **75% of all still_open reports** (1,045 of 1,393), reported by 4 agents across 24.5 days.
+
+**The killer data point**: The evaluator has reported "worktree blocked" in 38.5% of all its heartbeats (518 of 1,346). These blocked heartbeats consumed 13,939 ops — **3.3× dev's entire operational lifetime** (4,203 ops). The system spends more compute *rediscovering* a known impediment than it spends on all code implementation combined.
+
+**Five chronic conditions never resolved**: (1) Worktree dirty — 1,045 reports, 24.5 days, 4 agents. (2) Feedback loop broken (last-eval not read) — 41 reports, 15.7 days, may only. (3) arXiv rate limiting — 39 reports, 20.2 days, scout only. (4) Approval queue blocked — 27 reports, 23.7 days, 4 agents. (5) Ownership unclear — 15 reports, 22.9 days, 3 agents.
+
+**What's genuinely new**: The `still_open` field has never been systematically analyzed. No prior KE queries it. The finding that 969 unique phrasings (evaluator alone) map to ~5 actual underlying issues is novel. KE-1695 found 98.6% of guard warnings are the same unacted advisory — this is the session-level equivalent: 75% of blockers are the same unresolved condition.
+
+**The structural cause**: No chronic-condition registry exists. Sessions start memoryless. still_open is write-only (sessions write but never read prior reports). No escalation threshold exists (the 246th report of the same issue has the same force as the 1st).
+
+**The minimal fix**: A `shared/known-impediments.md` file listing chronic unresolved conditions. Heartbeats check before running diagnostic steps. If impediment is known → skip rediscovery, increment counter, escalate if counter > threshold.
+
+See: `shared/knowledge/entries/KE-1710-the-chronic-condition-report-when-agents-rediscover-the-same-blocker-every-session.md`
