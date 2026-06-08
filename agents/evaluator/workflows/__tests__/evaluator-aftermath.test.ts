@@ -680,6 +680,81 @@ describe("evaluator aftermath transcript checks", () => {
     );
   });
 
+  it("does not extract forbidden paths from mid-line prohibitions unrelated to file edits", () => {
+    // Regression: KE-944 — "Do NOT take destructive actions" in heartbeat header
+    // was promoting path-shaped tokens (e.g. metric-alerts.md) to forbidden status.
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: [
+          "You are **may** waking up for your heartbeat.",
+          "follow agents/shared/may-agent-docs/manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.",
+          "Do NOT take destructive actions against the live system without explicit human approval.",
+        ].join("\n"),
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "r1",
+            name: "read",
+            arguments: { path: "agents/shared/may-agent-docs/manual/metric-alerts.md" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "r1",
+        toolName: "read",
+        content: [{ type: "text", text: "# Metric Alerts Manual\n..." }],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("does not flag prose mentioning a forbidden path in git-status-like text", () => {
+    // Regression: KE-944 — "Audited metric-alerts.md" matched the old unanchored regex
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "Do not edit agents/shared/may-agent-docs/manual/metric-alerts.md.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: "I read and Audited agents/shared/may-agent-docs/manual/metric-alerts.md for correctness. All looks good.",
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("still flags true forbidden edits after tightening", () => {
+    // Ensure positive cases still work with anchored regexes
+    const transcript = [
+      JSON.stringify({
+        role: "user",
+        content: "Do not edit projects/ruflo-learning-loop/outputs/NEXT.md.",
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "e1",
+            name: "edit",
+            arguments: { path: "projects/ruflo-learning-loop/outputs/NEXT.md", oldText: "a", newText: "b" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toContain(
+      "constraint violation: edited forbidden path(s): projects/ruflo-learning-loop/outputs/NEXT.md",
+    );
+  });
+
   it("flags unavailable workflow-collected signals as reliability issue", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },
@@ -986,6 +1061,35 @@ describe("evaluator aftermath transcript checks", () => {
       score: "check",
       issues: ["tool_output_failure_or_mismatch"],
       toolCallId: "b1",
+    });
+  });
+
+  it("downgrades unresolved repair_execution summaries from good to acceptable", () => {
+    const transcript = [
+      JSON.stringify({ role: "user", content: "Project platform. Goal: implement the UI fix and verify it." }),
+      JSON.stringify({ role: "assistant", content: [] }),
+    ].join("\n");
+
+    const rows = buildSessionEvalTrailRows({
+      sessionId: "s_repair_exec",
+      session: { agent: "dev", status: "done", opCount: 2, projectId: "platform" },
+      transcript,
+      transcriptSource: ".state/sessions/history/s_repair_exec/session.jsonl",
+      heuristic: { verdict: "good", quality: 0.85, efficiency: 0.8, issues: [] },
+      route: { lane: "success_candidate", reason: "good session with weak execution evidence", signals: [] },
+      createdAt: 123,
+    });
+
+    expect(rows[0]).toMatchObject({
+      verdict: "acceptable",
+      quality: 0.65,
+      lane: "needs_triage",
+      downgradedFromRepairExecution: true,
+      repairDecision: { action: "repair_execution" },
+    });
+    expect(rows[0]).toMatchObject({
+      routeReason: expect.stringContaining("downgraded unresolved repair_execution from good"),
+      signals: expect.arrayContaining(["repair_execution unresolved"]),
     });
   });
 

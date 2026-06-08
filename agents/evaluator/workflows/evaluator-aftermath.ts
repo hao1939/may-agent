@@ -199,10 +199,17 @@ function forbiddenConstraintText(line: string): string | null {
   const forbidden = normalized.match(/\bforbidden\s*:\s*(.+)$/i);
   if (forbidden) return forbidden[1] ?? "";
 
+  // Match edit prohibition at start or after common prefix (e.g. "Task constraints: Do not edit ...")
   const editProhibition = normalized.match(
     /\b(?:do\s+not|don't|never|must\s+not|cannot|can't)\s+(?:edit|modify|write|change|touch)\b\s*:?[\s—–-]*(.+)$/i,
   );
   if (editProhibition) return editProhibition[1] ?? "";
+
+  // Also match "You CANNOT edit ..." form
+  const youEditProhibition = normalized.match(
+    /\byou\s+(?:cannot|can't|must\s+not|should\s+not)\s+(?:edit|modify|write|change|touch)\b\s*:?[\s—–-]*(.+)$/i,
+  );
+  if (youEditProhibition) return youEditProhibition[1] ?? "";
 
   const noEdits = normalized.match(/\bno\s+edits?\s+(?:to|under|in)\b\s*:?[\s—–-]*(.+)$/i);
   if (noEdits) return noEdits[1] ?? "";
@@ -231,7 +238,9 @@ function editedForbiddenPaths(ownText: string, forbiddenPaths: string[]): string
 
   for (const forbidden of canonicalForbiddenPaths) {
     const escaped = escapeRegExp(forbidden);
-    if (new RegExp(`\\b(?:M|A|AM|MM)\\s+[^\\n]*${escaped}(?:\\s|$)`).test(ownText)) {
+    // Anchored to start-of-line in multiline mode: two-column git status code + space + path.
+    // Prevents prose like "Audited metric-alerts.md" from matching.
+    if (new RegExp(`^[ MADRCU?!]{1,2}\\s+(?:\\S+/)*${escaped}(?:\\s|$)`, "m").test(ownText)) {
       edited.add(forbidden);
     }
   }
