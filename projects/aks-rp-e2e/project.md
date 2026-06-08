@@ -4,7 +4,7 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 211
+iteration: 212
 max_concurrent: 3
 max_task_attempts: 2
 project_app: v2
@@ -169,7 +169,12 @@ Split-brain fixed: tree.json `active_task_id` was stale (pointed to done iterati
 
 **June 8, 2026 golden-path hardening:** `managedsystem-golden-path-gap-audit` is accepted. The ManagedSystem REST add-existing chain is solid for the narrow product/API branch: Go source intent -> feature packet -> test spec -> run plan -> TypeScript probe -> local safety check -> existing iteration112 v2 staging replay -> model judgment. The audit also fixed `probes/managedsystem-rest-add-existing.ts` so fresh evidence writes to `evidence/outputs/` and validates the canonical v2 model path. Runtime placement and adjacent ManagedSystem branches remain separate.
 
-2 open P0 tasks remain: `feature-page-managedsystem-current-audit` (review feature page vs requirement) and `combined-scenario-compatibility-contract` (design combined-scenario test compatibility contract). Both are local-only and do not require cloud access.
+**Iteration 211 completion (owner-loop):** All 3 iteration-211 P0 tasks completed with evidence:
+- **`managedsystem-golden-path-gap-audit`** (done/succeeded): Golden-path chain verified. Evidence at `evidence/outputs/managedsystem-golden-path-gap-audit.md`.
+- **`feature-page-managedsystem-current-audit`** (done/succeeded): Audit found 5 meaningful gaps and 3 minor gaps against V4 requirement — all display enrichment, no structural rework. Evidence at `evidence/outputs/feature-page-managedsystem-current-audit.md`.
+- **`combined-scenario-compatibility-contract`** (done/succeeded): Contract designed covering scenario selection, shared cluster lifecycle rules, conflict rules, per-scenario verdict schema, cleanup/evidence requirements, and failure diagnosis boundaries. Evidence at `scenarios/combined-scenario-compatibility-contract.md`.
+
+Split-brain fixed: tree.json `active_task_id` was stale (pointed to `feature-page-managedsystem-current-audit` after it completed), now cleared. Both completed tasks accepted in tree.json. Follow-up tasks promoted from `proposed` to `ready`: `feature-page-managedsystem-polish-implementation` (P0) and `managedsystem-combined-scenario-prototype-plan` (P1). Model validator unchanged: 35 input variables, 71 expectation variables, 63 features, 7 failing, 7 unknown, 3 blocked, 0 uncovered.
 
 Current non-pass frontier remains mostly gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths include App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`), plus `managedsystem-pool-vmsize-immutability`. Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
@@ -325,12 +330,12 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-The ManagedSystem golden-path audit is accepted. Two P0 local-only tasks remain open after owner-loop promotion from tree.json (iteration 211). Both are local audit/design work requiring no cloud access:
+Iteration 211 tasks are all complete. Two follow-up tasks are now ready:
 
-1. **`feature-page-managedsystem-current-audit`** (open, P0): Review the dedicated ManagedSystem feature page against requirement: feature brief, references, scenario/path table, owner actions, evidence, and user review/audit actions.
-2. **`combined-scenario-compatibility-contract`** (open, P0): Design the minimal compatibility contract for combined-scenario tests: scenario selection, shared cluster lifecycle rules, conflict rules, per-scenario verdict schema, cleanup/evidence requirements, and failure diagnosis boundaries.
+1. **`feature-page-managedsystem-polish-implementation`** (ready, P0): Implement the smallest accepted ManagedSystem feature-page polish from the current audit (5 meaningful gaps found in `evidence/outputs/feature-page-managedsystem-current-audit.md`): recommended next move, confidence metric, generate-script action receipt persistence, per-spec state badge, and golden-path chain status rendering. Display and interaction tests required. Local only; no cloud probes.
+2. **`managedsystem-combined-scenario-prototype-plan`** (ready, P1): After the compatibility contract is accepted, generate the first ManagedSystem-centered combined scenario run plan using the contract rules from `scenarios/combined-scenario-compatibility-contract.md`. Local only; no cloud probes.
 
-These two tasks are independent and can execute in parallel. Gated follow-up implementation tasks (`feature-page-managedsystem-polish-implementation`, `managedsystem-combined-scenario-prototype-plan`) should only move after the corresponding audit/contract leaf is accepted. `managedsystem-rest-staging-replay-verification` is superseded for the add-existing branch because existing iteration112 v2 staging replay and cleanup evidence is sufficient.
+A third proposed task exists: `managedsystem-devbox-msi-two-path-live-run` (proposed, P0) — run the selected two-path ManagedSystem live test from the approved devbox MSI environment. This requires cloud access and explicit mutation gates.
 
 Cloud-gated resume triggers remain unchanged for ManagedSystem live execution, App Routing TLS, Machines API, NAP, VPA cert renewal, Bootstrap BYO-ACR, and PAF.
 
@@ -573,7 +578,8 @@ Cloud-gated resume triggers remain unchanged for ManagedSystem live execution, A
 99. ✅ Migrate security-profile Image Cleaner and Node Restriction branches into normalized knowledge-map paths without cloud execution
 100. ✅ Migrate Machines API CRUD and full NAP default Machines pool cleanup into normalized knowledge-map paths without cloud execution
 101. ~~Wait for an external execution/source trigger before queuing the next bounded task~~ Superseded: owner-loop iteration 211 promoted 3 ready P0 local tasks from tree.json to project.md task block.
-102. Execute three parallel P0 local audits/designs: ManagedSystem golden-path gap audit, ManagedSystem feature-page current audit, and combined-scenario compatibility contract design.
+102. ✅ Execute three parallel P0 local audits/designs: ManagedSystem golden-path gap audit, ManagedSystem feature-page current audit, and combined-scenario compatibility contract design.
+103. Implement feature-page polish from audit and generate the first combined-scenario prototype plan.
 
 ## Tasks
 - id: managedsystem-pool-priority-test
@@ -1703,19 +1709,37 @@ Cloud-gated resume triggers remain unchanged for ManagedSystem live execution, A
   attempts: 1
 
 - id: feature-page-managedsystem-current-audit
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P0
   goal: "Review the implemented dedicated ManagedSystem feature page against the requirement: feature brief, PRD/API/design/public/source references, scenario/input/expectation table, one-click generate-script/replay requests, evidence, and user review/audit actions. Produce exact gaps and the smallest implementation fix list. Local only; no cloud probes."
   depends_on: []
-  attempts: 0
+  attempts: 1
 
 - id: combined-scenario-compatibility-contract
-  status: ready
+  result: succeeded
+  status: done
   assignee: aks-explorer
   priority: P0
   goal: "Design the minimal compatibility contract for combined-scenario tests: scenario selection inputs, shared cluster lifecycle rules, conflict rules, per-scenario verdict schema, cleanup/evidence requirements, and failure diagnosis boundaries. Local only; no cloud probes."
   depends_on: []
+  attempts: 1
+
+- id: feature-page-managedsystem-polish-implementation
+  status: ready
+  assignee: aks-explorer
+  priority: P0
+  goal: "Implement the smallest accepted ManagedSystem feature-page polish from the current audit (evidence/outputs/feature-page-managedsystem-current-audit.md). Address the 5 meaningful gaps: recommended next move display, confidence metric, generate-script action receipt persistence, per-spec state badge, and golden-path chain status rendering. Include display and interaction tests. Local only; no cloud probes."
+  depends_on: [feature-page-managedsystem-current-audit]
+  attempts: 0
+
+- id: managedsystem-combined-scenario-prototype-plan
+  status: ready
+  assignee: aks-explorer
+  priority: P1
+  goal: "Generate the first ManagedSystem-centered combined scenario run plan using the compatibility contract rules from scenarios/combined-scenario-compatibility-contract.md. Select compatible ManagedSystem specs, produce a combined run plan with shared cluster lifecycle, per-scenario verdicts, and failure diagnosis boundaries. Local only; no cloud probes."
+  depends_on: [combined-scenario-compatibility-contract]
   attempts: 0
 
 ## References
