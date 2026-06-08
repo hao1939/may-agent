@@ -638,12 +638,13 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `project.owner.dispatched` | project handler when dispatching an owner session | ✅ live (1.1k rows) |
 | `project.owner.finished` | project handler when owner session finishes | ✅ live (1.1k rows) |
 | `project.owner.incomplete` | project handler when owner session finishes without completing | ✅ live (42 rows) |
-| `project.execution.requested` | project handler requesting iteration execution | ✅ live (338 rows) |
+| `project.execution.requested` | project handler or explicit UI workflow wake requesting iteration/execution | ✅ live (338 rows) |
 | `project.nudge` | project handler nudging stale/idle projects | ✅ live (61 rows) |
 | `project.audit.suggested` | project health check suggesting an audit | ✅ live (46 rows) |
 | `project.comment.created` | project comment system | ✅ live (16 rows) |
-| `project.action.requested` | intended HTTP/UI event ingress for project UI requests; no accepted producer until `POST /api/events` lands | ❌ intended |
+| `project.action.requested` | HTTP/UI event ingress for project UI requests that the project app should interpret | ✅ accepted |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
+| `project.execution.watchdog` | manual/operator recovery for stale zero-op sessions | ⚠️ rare (1 row); not wired to a handler |
 
 **Project lifecycle — task-driven**
 
@@ -738,6 +739,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `trigger.project` | manual project trigger from operator | ✅ live (15 rows) |
 | `restart` | daemon restart signal | ✅ live (5 rows) |
 | `reload` | daemon reload signal | ✅ live (1 row) |
+| `codex.probe` | codex integration probe (external tooling handshake) | ⚠️ rare (1 row); ephemeral diagnostic |
 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
