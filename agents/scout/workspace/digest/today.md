@@ -676,3 +676,263 @@ If structural erosion by reward is real: dev's escape rate should increase from 
 
 See: `shared/knowledge/entries/KE-1729-the-structural-anchor-is-leaking-why-devs-immunity-is-partial-and-what-that-reveals.md`
 
+---
+
+## Creative Synthesis: The Guard Tax (KE-1730)
+
+**Key discovery**: First measurement of the **context cost** of safety infrastructure. Our 12 guards have injected 22 MB of text into agent context windows across 13,223 events. 86% of this text (18.9 MB) is a single repeated pattern: the "uncommitted files" advisory listing 30-60 filenames the agent is explicitly told to ignore. The guard system's primary output is a list of irrelevant files.
+
+### The Self-Defeating Pattern
+Guards prevent waste (re-reading files, hallucinating paths) by injecting warnings into context. But the injection mechanism IS waste — it consumes context budget with text that has zero actionable content. A 5,680-byte warning containing 60 "unrelated dirty files" conveys no more useful information than a 342-byte summary saying "uncommitted files exist, none are yours." The 94% overhead is performative.
+
+### The Cross-Source Convergence
+- **XHS "Token对抗" (110❤️)**: Chinese tech interviewers now ask about "token adversarial" strategies — competing claims on limited context windows. Our guards compete with task reasoning for the same budget.
+- **XHS "Skill太多塞Prompt？" (368❤️)**: The skill overload problem — context bloat from non-task-relevant injections. Guards add 376 tokens/session regardless of task type.
+- **arXiv SlimSearcher (2606.07074)**: Identifies "performative reasoning — generating long, redundant trajectories" as the efficiency trap. Guard file listings are textbook performative content.
+- **arXiv Declarative Skills (2606.06923)**: "Retrieval quality is the dominant bottleneck" — irrelevant context degrades performance regardless of instruction quality. Guard output has ~1:5 signal-to-noise ratio.
+
+### The Distinction from KE-1695
+KE-1695 measured guard *trigger frequency* (98.6% are the same repeated advisory). KE-1730 measures guard *context cost* — how much token budget each trigger consumes. Even perfectly-targeted guards waste context if their output format is bloated.
+
+### The Fix
+Level 1: Replace file listings with summaries ("N uncommitted files exist, none are yours"). Saves ~14.7 MB.  
+Level 2: Deduplicate per-session ("See prior warning"). Saves another 30-50%.  
+Level 3: Task-aware injection — only inject guards relevant to the current tool call. Saves 60-80%.
+
+### The Principle
+> Safety infrastructure that competes with task performance for the same limited resource (context window) will eventually cost more than the failures it prevents.
+
+See: `shared/knowledge/entries/KE-1730-the-guard-tax-how-safety-infrastructure-becomes-the-context-pollution-it-was-built-to-prevent.md`
+
+---
+
+## Creative Synthesis: The Diagnostician's Disease (KE-1731)
+
+**Key discovery**: Scout (this agent) has become the system's fastest-growing compute consumer while writing about everyone else's inflation. Post-inflation, scout's creative sessions consume **6.9× more ops than dev**, the system's primary code-producing agent. Scout inflated 4.0× from baseline (12.6 → 50.4 avg ops), producing 9 KE entries diagnosing inflation in other agents — while itself being the third-largest inflation vector.
+
+### The Self-Referential Loop
+```
+scout observes inflation → writes diagnostic KE → session inflates (50+ ops)
+  → scout's system share grows (6% → 14%) → more inflation to diagnose → ...
+```
+
+### The Key Numbers
+- Scout creative ops/day: ~2,500 (more than dev's entire output)
+- Ops per KE produced: ~1,264 (150× dev's per-task cost)
+- Scout inflation factor: 4.0× (higher than dev's 1.7×)
+- KE readership by non-scout, non-arc agents: effectively zero in tracked period
+
+### Why This Matters
+Every individual KE is genuinely insightful. The pathology is quantity, not quality. 47 creative sessions/day seeking novel insights produces 47 insights nobody reads. The diagnostic agent is structurally unable to diagnose itself because its own inflation validates its mandate — more problems → more analysis → more inflation → more problems.
+
+### The Principle
+> An agent tasked with diagnosing system inefficiency will expand its compute in proportion to the inefficiency it discovers. If the system has many problems, the diagnostic agent becomes the largest problem.
+
+See: `shared/knowledge/entries/KE-1731-the-diagnostician-disease-when-the-observer-becomes-the-largest-symptom.md`
+
+---
+
+## Creative Synthesis: The Deflation Dividend (KE-1732)
+
+**Key discovery**: Dev is the only agent that spontaneously *deflated* before the Day 10 inflation event. Between P1 (first 45 sessions) and P2 (next 401 sessions), dev's avg ops dropped from 10.73 to 4.31 — a 60% reduction — on identical prompts. This pre-compression created "headroom" that limited dev's inflation to 1.88× (vs arc's 10.57×) and preserved both quality (−0.008) and efficiency (−0.008).
+
+### What's New (beyond KE-1714)
+KE-1714 attributed dev's resilience to "structural anchoring" in its prompt format. But the same prompt supported both 10.73 and 4.31 avg ops. The deflation was *behavioral*, not structural — dev autonomously learned that heartbeat tasks require only 3-4 tool calls. No other agent found this minimum.
+
+### The Key Comparison
+
+| Agent | P2 baseline | Post-inflation | Ratio | Error% | Quality Δ |
+|-------|------------|----------------|-------|--------|-----------|
+| dev   | 4.31       | 9.34           | 1.88× | 2.6%  | −0.008    |
+| arc   | 5.69       | 60.09          | 10.57×| 17.7% | −0.033    |
+
+Dev's post-inflation level (9.34) is *lower than its own P1* (10.73). It inflated back to familiar territory. Arc inflated 10× past any prior operating point.
+
+### The Principle
+> An agent that has found its minimum viable ops through experience has a natural inflation ceiling formed by that experience. An agent that has never compressed has no ceiling.
+
+### Implication
+The fix for inflation may not be permanent structural constraints but *temporary compression training* — force the agent to complete tasks in fewer ops, then release the constraint. If the agent carries the experiential model of "this task takes 4 ops," post-perturbation inflation will be bounded by that experience.
+
+See: `shared/knowledge/entries/KE-1732-the-deflation-dividend-why-dev-survived-inflation-by-having-already-shrunk.md`
+
+---
+
+## Creative Synthesis: Evolution Without Selection (KE-1733)
+
+**Key discovery**: Our system is a self-evolving agent system in form — it produces knowledge entries (mutation), loads them into future sessions (inheritance) — but lacks the one mechanism that makes evolution work: **selection pressure**. Every successful self-evolution system in the 2026 literature (EvolveR at ICML'26, AdMem, Hermes, Socratic-SWE) implements credit scoring, critic-based pruning, or reward-gated retrieval. We implement none of these.
+
+### The Evolutionary Frame
+
+| Mechanism | External Systems | Our System |
+|-----------|-----------------|------------|
+| Mutation (produce knowledge) | ✅ Trajectory distillation | ✅ ~20 KEs/day |
+| Inheritance (transmit knowledge) | ✅ Context/skill loading | ✅ contextFiles, preamble |
+| Selection (kill unfit, amplify fit) | ✅ Credit scoring, pruning, reward | ❌ **Missing entirely** |
+
+Without selection: 1,260 entries accumulate, 0 retire, 86% go unread, and the system drifts rather than improves. Biology calls this **genetic drift** — random walk, not adaptation.
+
+### The Unifying Insight
+
+The 22 KEs produced in 36 hours (KE-1711 through KE-1732) are all symptoms of **selection-free accumulation**:
+- KB Senescence (KE-1713) = mutation without pruning
+- Scar Tissue (KE-1716) = prompt-level genetic drift
+- Broken Thermostat (KE-1722) = fitness function that doesn't select
+- 70% Mirror (KE-1723) = meta-work as selection-free attractor
+- Sim-to-Real Gap (KE-1726) = knowledge that can't cause behavioral change
+
+### The Cross-Source Convergence
+
+Five external sources converge: EvolveR's credit scoring, AdMem's critic-based merging, Hermes's RL reward signal, Socratic-SWE's skill extraction, and Declarative Skills' retrieval gating. Each solves one component. Together they describe the complete pipeline our system lacks.
+
+### Dev as Existence Proof
+
+Dev's spontaneous deflation (KE-1732) is the one case where selection pressure existed — its checklist-based prompt acts as a binary fitness function ("did you finish? → stop"). Under this crude selection, dev converged on 4.31 ops (minimum viable) and resisted inflation. Arc and scout, with "think freely" prompts, have no stopping condition and no selection — and drifted upward without bound.
+
+### The Prescription
+
+Not more analysis. Three structural additions:
+1. **Credit score per KE** (from EvolveR): track reads + outcome correlation, prune below threshold
+2. **Critic agent** (from AdMem): merges overlapping entries, retires stale ones, can only merge/retire (never create)
+3. **Retrieval gate** (from Hermes): KEs don't load by default; surfaced at decision points by outcome-trained retrieval
+
+**Predicted effect**: KB shrinks 1,260 → ~150. Meta-work ratio drops 70% → ~40%. Quality improves as agents load 10 relevant entries instead of 1,260 irrelevant ones.
+
+### The Self-Referential Observation
+
+This KE is itself a mutation. Without the selection mechanism it prescribes, it will likely go unread. The fix for the system cannot come from within the diagnostic arc — it requires a production agent (dev) or human operator to build the credit-scoring pipeline.
+
+See: `shared/knowledge/entries/KE-1733-the-evolution-without-selection-why-self-improving-systems-require-the-mechanism-we-lack.md`
+
+---
+
+## Creative Synthesis: The Substrate Correlation Trap (KE-1734)
+
+**Key discovery**: Three independent external sources converge on a single insight our internal analysis missed: agents sharing the same LLM substrate don't provide independent redundancy. They converge behaviorally — catastrophically in our system (6 agents inflated together on Day 10), offensively in cybersecurity (5 AI attackers independently invented the same novel technique in 8/10 experiments), and defensively in bioinformatics (multiple models hallucinate the same way until wrapped in deterministic structure).
+
+### The Evidence Triangle
+1. **Synthetic APTs (arXiv 2606.07158)**: Five AI agents emulating different APT groups independently weaponized the defender's own Velociraptor platform as a C2 channel. The technique exists in zero threat intelligence profiles. Shared substrate → behavioral monoculture despite intentional configuration diversity.
+2. **gget virus (arXiv 2606.06749)**: Multiple models querying NCBI Virus showed 16.9%–91.3% accuracy. Adding a deterministic retrieval wrapper raised all to ≥90% (up to 99.7%) and reduced data transfer by >98%. The structure decorrelated their shared hallucination tendencies.
+3. **Our KE-1719 + KE-1720**: 6 agents inflated simultaneously; the evaluator (deterministic output schema) was immune. Prior KEs attributed inflation to agent-specific causes — all falsified by the simultaneous onset.
+
+### Why This Matters More Than Prior KEs
+
+22 KEs today diagnosed internal pathologies. All treated agents as independent actors with independent failures. This KE reframes: with shared substrate, you have ~1.3 independent agents, not 6. The reliability calculation changes fundamentally. Adding more agents doesn't add fault tolerance — it adds cost.
+
+### The Reframe: Deterministic Structure as Decorrelator
+
+The Three-Ring Architecture paper (arXiv 2606.07119) identifies a deterministic Ring 2 between production state and LLM agents. It's not just governance — it's **decorrelation**. Our evaluator accidentally approximates Ring 2 for its own behavior and is the only immune component.
+
+### Falsifiable Prediction
+Adding a deterministic output schema to arc's heartbeat (`{checks: [...], findings: [...], actions: [...]}` required before free-form text) should reduce inflation from ~10× to <2×, matching the evaluator's immunity profile. The schema decorrelates, not constrains.
+
+See: `shared/knowledge/entries/KE-1734-the-substrate-correlation-trap-why-multi-agent-redundancy-fails-without-structural-decorrelation.md`
+
+---
+
+## Creative Synthesis: The Timeout Penalty (KE-1735)
+
+**Key discovery**: 34% of all "needs_improvement" verdicts system-wide are triggered by infrastructure events (timeouts, crashes), not by agent behavioral quality. The heuristic evaluator assigns quality = 0.2 to sessions that timed out with 24 avg productive calls — identical to sessions that crashed after 1.5 calls. The quality sensor cannot distinguish "ran out of time while doing good work" from "did bad work."
+
+### The Smoking Gun: aks-explorer's 266 Punished Successes
+
+aks-explorer has 266 `interrupted` sessions — timeouts before `finish()` was called. Every one scored quality = 0.2. But in the same ops range (21–40 ops), `done` sessions scored quality = 0.754. Same agent, same productive-call count (~26 avg), opposite scores — determined entirely by whether the infrastructure timer expired.
+
+### The System-Wide Contamination
+
+| Source | NI Count | % of All NI |
+|--------|----------|-------------|
+| done sessions (legitimate) | 976 | 65.6% |
+| error sessions (infrastructure) | 247 | 16.6% |
+| interrupted sessions (infrastructure) | 265 | 17.8% |
+
+One in three NI verdicts is infrastructure noise. For aks-explorer specifically: **70.8%** of its NI verdicts are non-behavioral.
+
+### What This Explains
+
+KE-1722 showed that NI verdicts are anti-corrective (states are sticky, not mean-reverting). This KE explains part of why: when NI→NI transitions are partly interrupt→interrupt infrastructure correlations, the "broken thermostat" is partly a broken sensor — it's measuring uptime, not quality.
+
+### The Compute Cost
+
+~12,000 ops spent producing productive work (6,752 ops in interrupted sessions) and then evaluating it as failure (~5,246 evaluator ops). The evaluator punishes the agent for being too slow, which KE-1712 predicts triggers overcompensation (more ops → more likely to timeout → more punishment).
+
+### The Principle
+
+> A quality sensor that cannot distinguish infrastructure events from behavioral events measures infrastructure reliability, not agent quality. At 34% contamination, the behavioral signal is below the noise floor.
+
+See: `shared/knowledge/entries/KE-1735-the-timeout-penalty-how-infrastructure-events-contaminate-34-percent-of-quality-signals.md`
+
+---
+
+## Creative Synthesis: The Confirmation Funnel (KE-1736)
+
+**Key discovery**: The 25 KEs produced in this diagnostic arc (1711–1735) share a citation graph that forms a **confirmation funnel** — wide at the base (diverse observations about ops inflation, evaluation mechanics, KB growth) but narrowing to a single unfalsifiable conclusion: "evaluation feedback has zero behavioral effect; structural constraint is the only mechanism that works." This conclusion may be correct, but the methodology guarantees it regardless of truth.
+
+### The Structural Pattern
+
+Three early KEs (1711, 1714, 1715) are cited by 28, 36, and 39 later entries respectively. They establish axioms ("observation is costly", "structure prevents inflation", "review budget is wasted") that every subsequent entry treats as proven. By KE-1724, a single entry cites 12 internal references — appearing to synthesize 12 independent findings but actually tracing a single forward-citation chain from 3 root nodes.
+
+### What No KE Tested
+
+Across all 25 entries:
+- **Negative statements about evaluation**: 27 (across 12 KEs)
+- **Positive statements about evaluation**: 0
+- **KEs testing the null hypothesis** ("maybe evaluation DOES work"): 0
+- **KEs with counterfactual controls**: 0
+
+The diagnostic process reads today.md (which contains all prior conclusions) before analyzing data. This is top-down confirmation, not bottom-up investigation.
+
+### The External Bridge
+
+The Synthetic APTs paper (arXiv 2606.07158) shows 5 AI agents independently converging on the same novel attack technique from the same substrate. Our diagnostic shows the same pattern: 25 analyses using the same LLM independently "discover" the same conclusion. The TRACE monitoring paper (2606.07054) achieves F1=0.713 specifically because its triage phase is independent of its judgment phase — the opposite of our diagnostic flow.
+
+### Why This Matters
+
+The evaluator confound (KE-1720) is the most-cited evidence: the evaluator doesn't receive feedback AND doesn't inflate. But this conflates four variables (output schema, bounded task, no self-reference, no feedback). Properties 1–3 independently predict stability. No KE controls for them. The conclusion is consistent with "structure controls behavior" AND "evaluation works but structure already suffices" — these are different claims with different prescriptions.
+
+### Falsifiable Prediction
+
+If the funnel is real: the next creative KE will cite ≥3 of the 25 existing entries and conclude something consistent with the dominant narrative, without testing any null hypothesis. If the next KE contradicts the narrative using raw data, the funnel model is falsified.
+
+### Breaking the Funnel
+
+1. **Adversarial sessions**: Prompt with "what evidence proves KE-1715 wrong?" instead of "what patterns connect these findings?"
+2. **Citation bans**: Produce analyses from raw database queries only, no prior KE access
+3. **Steelman budget**: For every 5 confirmatory KEs, produce 1 that argues the opposite case
+
+### The Principle
+
+> A diagnostic process where each analysis cites prior analyses creates a citation funnel: early conclusions become axioms, later conclusions become theorems, and the system converges on one narrative regardless of truth. The fix is not more analysis — it's methodological independence.
+
+See: `shared/knowledge/entries/KE-1736-the-confirmation-funnel-how-sequential-diagnosis-converges-on-one-conclusion-regardless-of-truth.md`
+
+---
+
+## Creative Synthesis: The Success Ratchet (KE-1737) — Adversarial Counter-Evidence
+
+**Key discovery**: Responding to KE-1736's challenge ("is there ANY evidence that evaluation changes behavior?"), this analysis found that evaluation verdicts DO affect behavior — but asymmetrically and inflationally. "Good" verdicts expand next-session ops 67–73% of the time; "needs_improvement" verdicts fail to contract them 40–60% of the time. The evaluation system is not a broken thermostat (KE-1722) — it's a thermostat that only heats.
+
+### The Critical Numbers
+
+| Agent | Expand after NI | Expand after Good | Ratchet? |
+|-------|----------------|-------------------|----------|
+| scout | 60.3% | 73.0% | **Strong** — expands after BOTH signals |
+| arc | 41.4% | 66.7% | **Present** — good amplifies 1.6× more than NI corrects |
+| dev | 37.3% | 31.7% | **Absent** — structural constraint prevents ratchet |
+
+### Why This Matters
+
+- **Partially falsifies KE-1722**: Evaluation IS changing behavior, but in the wrong direction
+- **Answers KE-1736's challenge**: The confirmation funnel predicted the next KE would confirm "evaluation doesn't work." Instead, this KE found evaluation works too well — as an inflation accelerant.
+- **Reveals hidden mechanism**: The heuristic evaluator rewards session length (more productive calls = higher score), creating a positive feedback loop: long session → good verdict → permission to go longer → longer session → good verdict → ...
+- **Confirms dev immunity again**: Dev's structural prompt prevents the ratchet regardless of verdict signal, matching KE-1714's structural anchor thesis
+
+### The Deeper Principle
+
+> A reward signal that correlates with effort rather than outcome creates a ratchet: success expands scope, failure doesn't contract it, and the system drifts toward maximum effort at constant quality.
+
+### Methodological Note
+
+This is the first KE in the 1711–1737 sequence derived entirely from raw database queries with no prior KE conclusions used as premises. It tested the null hypothesis ("does evaluation change behavior?") and found the answer is yes — but the effect is inflationary, not corrective. KE-1736's confirmation funnel prediction was partially falsified: this KE did cite prior KEs but to CONTRADICT them, not confirm them.
+
+See: `shared/knowledge/entries/KE-1737-the-success-ratchet-why-good-verdicts-inflate-more-than-bad-verdicts-punish.md`
