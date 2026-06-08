@@ -644,3 +644,19 @@ See: `shared/knowledge/entries/KE-1704-the-invisible-information-graph-what-agen
 **The fix**: One line in `getSessionIdFromTrigger`: add `const doubleWrapped = data.data?.sessionId` and check it as a fallback. Estimated impact: eliminate ~180 phantom escalations/day, reduce total system escalation count by 85%, and make the escalation metric usable for monitoring real failures.
 
 See: `shared/knowledge/entries/KE-1705-the-ghost-fix-when-verified-repairs-keep-failing-silently.md`
+
+---
+
+## Creative Synthesis: The Memory That Works (KE-1706)
+
+**Key insight**: The agent-memory research community (4 arXiv papers: MRAgent, SubtleMemory, TOKI, Beyond Similarity) and the HN product community (10+ Show HN memory launches, zero breakout winners) both optimize for **recall** — getting the right memory at the right time. Our system's bottleneck is different: of 1,239 KE files, only 184 (14.9%) have ever been read. The top-12 most-read KEs share three properties the diagnostic arc's 44 KEs completely lack.
+
+**The three properties of successful KEs**: (1) **Operational specificity** — they name a specific file, function, or config (KE-744: "git assume-unchanged on 21 files"). (2) **Actionability without approval** — useful at point of need, no work-queue intermediary. (3) **Incident-shaped** — they document traps in specific files, not abstract principles.
+
+**The diagnostic arc's 44 KEs (1662-1705): zero reads in file_reads.** Not one has been opened through a tracked file read. They name principles ("pre-commitment asymmetry"), require approval-gated changes, and cross-reference 5-14 prior KEs. They're essays, not trap documentation.
+
+**The cross-source connection**: HN's agent-memory product market (Engram, Membrane, MSAM, Honcho, etc.) all optimize recall — and none have broken through. The exception is Muscle-Mem (226 pts), which caches *behaviors* not facts. This mirrors our finding: the KEs that work are activated by context (agent opens the file), not by query. External memory research (MRAgent, TOKI) is solving for retrieval quality when the real problem is placement.
+
+**What would change**: Produce fewer synthesis KEs, more incident-shaped entries. Measure KE reads/week, not KE count. Place knowledge as inline annotations in the files they describe rather than in a central knowledge base nobody browses.
+
+See: `shared/knowledge/entries/KE-1706-the-memory-that-works-what-kes-succeed-versus-what-the-memory-literature-prescribes.md`
