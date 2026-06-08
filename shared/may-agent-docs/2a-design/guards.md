@@ -225,10 +225,38 @@ monoculture. Volume down 2% (1,380 vs 1,407). Possible causes:
 (1) commit-guard and path-hallucination-guard may have been changed or
 disabled, (2) aks-explorer's reduced activity removes PATH_HALLUCINATION,
 (3) evaluator's session.jsonl catting overwhelms all other signals.
-KE-1362 (monoculture pattern) is **re-confirmed** — the diversification
-observed 2026-06-06 through 2026-06-11 was a transient phase, not a
-durable structural property. The guard system is again a single-signal
-instrument.
+KE-1362 (monoculture pattern) was re-confirmed 2026-06-12 — but see
+update below.
+
+**Update 2026-06-12 ~18:00Z** (24h window, ~1,129 tool-level triggers):
+diversity has **returned again**. uncommitted-files **50.7%** (573),
+SESSION_BASH_CAT **17.9%** (202), READ_DEDUP **13.3%** (150),
+SESSION_READ **11.4%** (129), PATH_HALLUCINATION **3.5%** (40),
+SESSION_BASH_GREP **1.5%** (17). Workflow guards: read-before-edit 18.
+Total: ~1,129 tool + ~18 workflow ≈ **1,147/day**. The 2026-06-12
+monoculture (SESSION_BASH_CAT 98.7%) lasted <16 hours before
+reverting to the diverse baseline. The guard composition is **oscillating**
+between monoculture and diversity depending on which agents are active
+and how many evaluator sessions run relative to other agents' sessions.
+Neither KE-1362 (monoculture) nor its falsification (KE-1626) is
+durably correct — the system switches between regimes. Volume is
+well below the 2,000/day threshold.
+
+**Update 2026-06-08 15:27Z** (24h window, 1,272 tool-level triggers):
+**READ_DEDUP is now the #1 single signal** — overtook both
+uncommitted-files and SESSION_BASH_CAT. READ_DEDUP **23.6%** (304),
+uncommitted-files **22.6%** (291), finish()-uncommitted **22.3%** (288),
+SESSION_BASH_CAT **14.7%** (189), SESSION_READ **11.6%** (150),
+PATH_HALLUCINATION **1.9%** (25), SESSION_BASH_GREP **1.9%** (25).
+Combined commit-guard (uncommitted + finish-uncommitted) = 45%.
+Workflow guards: read-before-edit 12, hallucinated-path 5.
+Total: 1,272 tool + 17 workflow = **1,289/day** (lowest measured).
+Key structural shift: **aks-explorer** is the primary READ_DEDUP
+source — 201 of 304 events (66%) across 34 sessions, averaging 5.9
+triggers/session, all from re-reading `projects/aks-rp-e2e/project.md`.
+The prior observation (2026-06-11) that READ_DEDUP was "concentrated
+in evaluator sessions re-reading tasks/tree.json" is now stale.
+Diversity continues — no monoculture regime in this window.
 
 ### Known issue: guard name conflation
 
