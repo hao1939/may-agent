@@ -660,3 +660,33 @@ See: `shared/knowledge/entries/KE-1705-the-ghost-fix-when-verified-repairs-keep-
 **What would change**: Produce fewer synthesis KEs, more incident-shaped entries. Measure KE reads/week, not KE count. Place knowledge as inline annotations in the files they describe rather than in a central knowledge base nobody browses.
 
 See: `shared/knowledge/entries/KE-1706-the-memory-that-works-what-kes-succeed-versus-what-the-memory-literature-prescribes.md`
+
+---
+
+## Creative Synthesis: The Evidence Gap — Cross-Era Data Contamination (KE-1707)
+
+**Key insight**: The runtime database contains data from **two distinct system eras** with a 17-day gap and zero overlap. `file_reads` covers Era 1 (Apr 29 – May 7, 11 agents including amy/bob/coach/optimizer/qa). `sessions` covers Era 2 (May 24 – Jun 8, 7 agents including aks-explorer). Zero sessionIds match across tables. 25+ KEs cite Era 1's `file_reads` to diagnose Era 2's behavior — without noting the data is from a different system with different agents.
+
+**What's genuinely new**: No prior KE has noted the temporal disjunction between `file_reads` and `sessions`. Claims like "dev has read 4 KEs in its lifetime" (KE-1698) and "diagnostic arc KEs have 0 reads" (KE-1706) are trivially true because `file_reads` stopped recording 17 days before Era 2 began and 27 days before the diagnostic arc started. The instrument was off, not the reading.
+
+**The June 4 coordinated inflation**: Era 2's `sessions` data reveals a system-wide compute step function on June 4. Arc jumped from 5.5 to 52 avg ops (9.5×). All agents inflated simultaneously, with arc's transition pinpointed to a single hour (16:54 UTC). Two commits bracket it: a context.md edit at 17:00 and the first-ever Approved gate firing at 17:29. KE-1703's "Scope Expansion Ratchet" attributed this to gradual self-referential growth — the data shows it was an instantaneous, exogenous trigger.
+
+**The meta-pattern**: When measurement instruments have temporal gaps, cross-era analysis becomes unreliable. The system's most "data-driven" entries are its most temporally mismatched. Fix: restore `file_reads` instrumentation in Era 2, label data by era, require bridging evidence for cross-era claims.
+
+See: `shared/knowledge/entries/KE-1707-the-evidence-gap-when-data-driven-analysis-uses-data-from-a-different-system.md`
+
+---
+
+## Creative Synthesis: The Overclaim Paradox (KE-1708)
+
+**Key insight**: First-ever systematic text analysis of the `evaluations.issues` field (2,522 deep evaluations) reveals a **Simpson's Paradox** in quality scoring. Aggregate data shows sessions flagged for overclaiming score *higher* (0.684 vs 0.655). But controlling for session length, overclaiming sessions score *lower* in every bracket (−0.04 to −0.05). The aggregate reversal is a composition effect: overclaiming sessions are concentrated in the 31+ ops bracket (high base quality), while clean sessions are concentrated in the 1-10 ops bracket (low base quality).
+
+**What's genuinely new**: The `evaluations.issues` free-text field has never been systematically mined. This analysis surfaces 97 overclaim flags, 394 "avoidable" waste flags, and 1,631 omission flags — a qualitative data surface that prior KEs ignored. The Simpson's Paradox finding is structural, not sample-dependent.
+
+**The temporal acceleration**: Overclaiming rate rose from 7.1% (early system, avg 12 ops/session) to 28.2% (recent system, avg 62 ops/session). This 4× increase tracks the scope expansion (KE-1703), not behavioral change. Longer sessions produce more claims, more claims means more opportunities to overstate.
+
+**The agent split**: Scout overclaims at 13%, arc at 11.1%, dev at 2.6%. Analytical agents overclaim 4-5× more than implementation agents. This confirms KE-1669 (Confirmation Gradient) with production data from the evaluator's own quality layer.
+
+**Self-referential note**: This KE is being produced in the session-size bracket where overclaim rate is ~35%. Apply the same skepticism. The Simpson's Paradox relationship is robust (structural), but the specific percentages are approximate.
+
+See: `shared/knowledge/entries/KE-1708-the-overclaim-paradox-why-sessions-that-exaggerate-score-higher.md`
