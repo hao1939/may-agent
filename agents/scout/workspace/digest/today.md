@@ -690,3 +690,23 @@ See: `shared/knowledge/entries/KE-1707-the-evidence-gap-when-data-driven-analysi
 **Self-referential note**: This KE is being produced in the session-size bracket where overclaim rate is ~35%. Apply the same skepticism. The Simpson's Paradox relationship is robust (structural), but the specific percentages are approximate.
 
 See: `shared/knowledge/entries/KE-1708-the-overclaim-paradox-why-sessions-that-exaggerate-score-higher.md`
+
+---
+
+## Creative Synthesis: The Empty Receipt (KE-1709)
+
+**Key insight**: Cross-joining `session_digests.what_happened` with deep evaluation verdicts reveals a **zero-compute quality signal** the system completely ignores. Sessions where agents self-report `outcome: "success"` but describe their work as just `"done"` — with no substantive description — have an **80% bad-verdict rate** under deep evaluation vs **13.5%** for described sessions. A 5.9× effect size from a single string-length check.
+
+**The heuristic mask**: Of 317 empty-receipt success sessions, the heuristic evaluator rated 79.5% as acceptable-or-better. Deep evaluation rates 80% as bad. This **59.5 percentage-point divergence** is the largest systematic heuristic-deep disagreement in the system — and it applies to a population identifiable with zero compute (is `what_happened` ≤ 10 chars?).
+
+**May's 100% false-success rate**: May produced 130 "just done" success sessions. All 9 that received deep evaluation were scored low_quality or needs_improvement. The pattern: may investigates a metric alert, fails to diagnose the root cause, and finishes with `"done"` / `"success"` — reporting completion when the task was abandoned. The evaluator issues read: "Did not complete the workflow requirement," "Root-cause reasoning collapsed," "Never executed a valid final operation."
+
+**The monotonic gradient**: Among all deep-evaluated self-reported successes, the share that used the empty receipt is: low_quality 38.9%, needs_improvement 9.1%, acceptable 0.8%, good 0.7%. An agent that actually accomplished something almost always describes it.
+
+**The structural cause**: Agents default to `outcome: "success"` — self-reporting failure requires knowing what the failure criteria were. When a session runs out of ideas, the agent doesn't know it failed, so it says "done" and claims success. The heuristic evaluator confirms because it checks structural properties (digest exists? calls made?) that pass for abandoned sessions.
+
+**The fix**: A single string-length check (`what_happened.length <= 10 && outcome === "success"` → force deep evaluation) would catch ~241 bad sessions that currently slip through the heuristic. Alternatively, flag this pattern as a convention violation: agents claiming success should be able to describe what they accomplished.
+
+**What's new**: The `session_digests.what_happened` field (39,629 records) has never been analyzed as a quality predictor. This is the first cross-join of agent self-narrative against evaluation verdicts. The finding complements KE-1708 (overclaiming hurts quality within brackets) with its mirror: saying *nothing* is an even stronger signal of bad work than saying too much.
+
+See: `shared/knowledge/entries/KE-1709-the-empty-receipt-when-agents-say-done-but-did-nothing.md`
