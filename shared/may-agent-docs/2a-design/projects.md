@@ -303,7 +303,7 @@ chain through the shared event bus.
 
 ### Relationship to Project-Local Agents
 
-Projects with a full local agent (like `aks-rp-e2e/agents/aks-explorer/`) already
+Projects with a full local agent (like `aks-rp-e2e/.app/agents/aks-explorer/`) already
 have app behavior via their agent's `cron.json`, handlers, and workflows. That
 pattern remains valid and is the canonical exemplar.
 
@@ -470,24 +470,34 @@ not hidden HTTP function calls in the runtime adapter.
 
 ### Existing Exemplar
 
-`projects/aks-rp-e2e/` is the canonical project-as-app, using the full
-project-local-agent pattern:
+`projects/aks-rp-e2e/` is the canonical project-as-app. It has migrated to the
+V2 layout (`project-app-v2.md`), with runtime files under `.app/`:
 
 ```text
 projects/aks-rp-e2e/
   project.md                              # context: goal, scope, plan
-  agents/aks-explorer/
-    agent.json                            # agent identity
-    cron.json                             # 3 scheduled capabilities
-    workflows/aks-rp-e2e-iteration.ts     # the work
-  knowledge-map/                          # domain knowledge
-  execution/                              # execution state
+  .app/
+    agents/aks-explorer/
+      agent.json                          # agent identity
+      AGENTS.md                           # agent role description
+      cron.json                           # scheduled capabilities
+      heartbeat.md                        # heartbeat guidance
+      workspace/                          # agent workspace
+  model/                                  # domain knowledge
+  scenarios/                              # test scenarios
+  sources/                                # input sources
 ```
 
-Its cron entries demonstrate the pattern: scheduled exploration (hourly learning),
-periodic review (weekly replan), and event-triggered verification — all gated by
-`enabled: true/false` and event triggers, with the reconciler managing the
-project's overall lifecycle.
+Its cron entries demonstrate the pattern: scheduled exploration, periodic
+review, and event-triggered verification — all gated by `enabled: true/false`
+and event triggers, with the reconciler managing the project's overall
+lifecycle.
+
+> **Note:** The V1 path `projects/<name>/agents/<agent>/` described earlier in
+> this document is the original design. `aks-rp-e2e` has migrated to
+> `projects/<name>/.app/agents/<agent>/` per `project-app-v2.md`. Both paths
+> are discoverable by the runtime, but new projects should prefer the `.app/`
+> layout.
 
 ## Project Handler
 
