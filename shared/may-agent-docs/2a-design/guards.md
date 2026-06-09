@@ -164,22 +164,23 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7% on 2026-06-12)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-08 ~21:00Z** (24h window, ~1,338 tool-level):
+**Latest snapshot 2026-06-09 ~01:00Z** (24h window, ~1,390 tool-level):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 595 | 44.5% |
-| READ_DEDUP | 352 | 26.3% |
-| SESSION_BASH_CAT | 189 | 14.1% |
-| SESSION_READ | 157 | 11.7% |
-| SESSION_BASH_GREP | 28 | 2.1% |
-| PATH_HALLUCINATION | 17 | 1.3% |
+| commit-guard (combined) | 610 | 43.9% |
+| SESSION_BASH_CAT | 186 | 13.4% |
+| SESSION_READ | 165 | 11.9% |
+| READ_DEDUP | ~385 | 27.7% |
+| SESSION_BASH_GREP | 27 | 1.9% |
+| PATH_HALLUCINATION | 17 | 1.2% |
 
-Workflow guards: read-before-edit 11, hallucinated-path 5.
-Total: ~1,338 tool + ~16 workflow ≈ **1,354/day**.
-READ_DEDUP has surged to #1 individual signal (was ~3% on 2026-06-06),
-driven by evaluator sessions re-reading the same project files.
-Volume well under threshold — no alert risk.
+Workflow guards: read-before-edit 12, hallucinated-path 10.
+Total: ~1,390 tool + ~22 workflow ≈ **1,412/day**.
+Composition stable in diverse regime. commit-guard share holding at
+~44% (structural floor from shared-worktree dirty files). READ_DEDUP
+remains elevated (~28%) — aks-explorer re-reading project.md is the
+top individual file. Volume well under 2,000/day threshold.
 
 ### Known issue: guard name conflation
 
