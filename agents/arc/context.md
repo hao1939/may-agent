@@ -57,6 +57,19 @@ is no mandatory write/edit count or tool-call quota.
 - Proposals: `agents/arc/workspace/proposals/`
 - Analysis: `agents/arc/workspace/analysis/`
 
+## ⚠️ git add -f for Knowledge Entries (KE-921, May nudge 2026-06-14)
+`.gitignore` line 71 ignores `shared/knowledge/entries/KE-*.md`. A plain
+`git add shared/knowledge/entries/KE-*.md` silently does nothing. You MUST use:
+```bash
+git add -f shared/knowledge/entries/KE-<number>-<slug>.md
+```
+Then verify with `git ls-files -- shared/knowledge/entries/KE-<number>-<slug>.md`
+to confirm the file is tracked. Failing to do this has caused 3+ arc sessions to
+error at closeout after completing all investigative work (s_1780998244298_588,
+s_1780983255939_495, s_1780992601960_552). The same `-f` requirement applies to
+new files under `agents/arc/workspace/analysis/` and `agents/arc/workspace/proposals/`
+(`.gitignore` line 45: `**/workspace/**`).
+
 
 ## Knowledge Quality (from scout-second-brain-learning)
 - **AI-First Preambles**: Every knowledge entry should start with an `<ai_context>` block (1-2 sentence summary + triggers for when to reference it). Enables fast relevance scanning without full-file reads.
