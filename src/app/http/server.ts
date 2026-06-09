@@ -16,8 +16,9 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number };
 };
-import { appendFileSync, readFileSync, existsSync, readdirSync, statSync } from "node:fs";
-import { extname, join, relative, resolve } from "node:path";
+import { appendFileSync, mkdirSync, readFileSync, existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { dirname, extname, join, relative, resolve } from "node:path";
 import type { Duplex } from "node:stream";
 import { connectSocketEndpoint, daemonSocketPath, sendDaemonEvent } from "../../../packages/control/src/client.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
@@ -272,12 +273,31 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return candidates.find((candidate) => existsSync(candidate)) ?? candidates[0];
   }
 
+  function projectAppDirForName(name: string): string | null {
+    if (!name) return null;
+    const appDir = resolve(PROJECTS_ROOT, `${name.replace(/\.app$/, "")}.app`);
+    return existsSync(appDir) ? appDir : null;
+  }
+
+  function projectAppDirForPath(path: string): string | null {
+    return projectAppDirForName(projectNameFromPath(path));
+  }
+
   function resolveProjectFile(path: string): string {
     if (path.endsWith(".md")) {
       const dir = resolveProjectDir(path.replace(/\/project\.md$/, ""));
-      return resolve(dir, "project.md");
+      const projectFile = resolve(dir, "project.md");
+      if (existsSync(projectFile)) return projectFile;
+      const appDir = projectAppDirForPath(path);
+      if (appDir) return resolve(appDir, "project.md");
+      return projectFile;
     }
-    return resolve(resolveProjectDir(path), "project.md");
+    const projectDir = resolveProjectDir(path);
+    const projectFile = resolve(projectDir, "project.md");
+    if (existsSync(projectFile)) return projectFile;
+    const appDir = projectAppDirForPath(path);
+    if (appDir) return resolve(appDir, "project.md");
+    return projectFile;
   }
 
   function conventionSocketPath(): string {
@@ -1549,8 +1569,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function serveProjectStatic(pathname: string): Response {
     const relPath = projectStaticPathFromUrl(pathname);
     if (relPath === null) return new Response("Bad path", { status: 400 });
-    const absPath = resolve(PROJECTS_ROOT, relPath);
+    let absPath = resolve(PROJECTS_ROOT, relPath);
     if (!isInsideProjectsRoot(absPath)) return new Response("Forbidden", { status: 403 });
+    if (!existsSync(absPath)) {
+      const parts = relPath.split("/").filter(Boolean);
+      const [name, area, ...rest] = parts;
+      const appDir = projectAppDirForName(name);
+      if (appDir && area === "ui") {
+        absPath = resolve(appDir, "ui", ...rest);
+      } else if (appDir && area === "kanban") {
+        absPath = resolve(appDir, "ui", "kanban", ...rest);
+      }
+      if (!isInsideProjectsRoot(absPath)) return new Response("Forbidden", { status: 403 });
+    }
     if (!existsSync(absPath)) return new Response("Not found", { status: 404 });
     const stat = statSync(absPath);
     if (stat.isDirectory()) return serveProjectDirectory(absPath, pathname);
@@ -1740,16 +1771,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
 
     const projectDir = resolveProjectDir(path);
-    const treePath = resolve(projectDir, "tasks", "tree.json");
+    let treePath = resolve(projectDir, "tasks", "tree.json");
+    const appDir = projectAppDirForPath(path);
+    if (!existsSync(treePath) && appDir) treePath = resolve(appDir, "tasks", "tree.json");
     if (treePath !== projectDir && !treePath.startsWith(`${projectDir}/`)) {
-      return json({ error: "Access denied" }, 403);
+      if (!appDir || (treePath !== appDir && !treePath.startsWith(`${appDir}/`))) {
+        return json({ error: "Access denied" }, 403);
+      }
     }
 
     if (!existsSync(treePath)) {
       return json({
         available: false,
         path,
-        treePath: "tasks/tree.json",
+        treePath: appDir ? `${projectNameFromPath(path)}.app/tasks/tree.json` : "tasks/tree.json",
         reason: "Project does not expose a v2 task tree yet.",
       });
     }
@@ -2268,6 +2303,464 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       return json(rows);
     } catch {
       return json([]); // table may not exist yet
+    }
+  }
+
+  function objectRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  }
+
+  function stringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  function safeId(prefix: string): string {
+    const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 17);
+    return `${prefix}_${stamp}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function writeProjectJsonFile(projectDir: string, relativePath: string, value: unknown): void {
+    const filePath = resolve(projectDir, relativePath);
+    if (filePath !== projectDir && !filePath.startsWith(`${projectDir}/`)) {
+      throw new Error(`Refusing to write outside project: ${relativePath}`);
+    }
+    mkdirSync(dirname(filePath), { recursive: true });
+    writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+  }
+
+  function appendProjectJsonl(projectDir: string, relativePath: string, value: unknown): void {
+    const filePath = resolve(projectDir, relativePath);
+    if (filePath !== projectDir && !filePath.startsWith(`${projectDir}/`)) {
+      throw new Error(`Refusing to write outside project: ${relativePath}`);
+    }
+    mkdirSync(dirname(filePath), { recursive: true });
+    appendFileSync(filePath, `${JSON.stringify(value)}\n`, "utf-8");
+  }
+
+  function dispatchFeatureTestRunner(input: {
+    projectDir: string;
+    requestId: string;
+    runId: string;
+    featureId: string;
+    specId: string;
+    target: Record<string, unknown>;
+    params: Record<string, unknown>;
+  }): { dispatched: boolean; phase: string; pid?: number; reason?: string } {
+    const { projectDir, requestId, runId, featureId, specId, target, params } = input;
+    const supportedProject = projectDir.endsWith("/projects/aks-rp-e2e");
+    const environment = typeof target.environment === "string" ? target.environment.toLowerCase() : "";
+    const surface = typeof target.surface === "string"
+      ? target.surface.toLowerCase()
+      : typeof target.clientSurface === "string"
+      ? target.clientSurface.toLowerCase()
+      : "";
+    const liveRun = params.liveRun === true;
+    const gatedLiveRun = params.gatedLiveRun === true;
+    const supportedManagedSystemSpecs = new Set([
+      "spec.managedsystem.rest-add-existing.minimal-rest",
+      "spec.managedsystem.field-rejection-matrix",
+      "spec.managedsystem.delete-existing",
+      "spec.managedsystem.runtime-restrictions",
+      "spec.managedsystem.single-pool-constraint",
+      "spec.managedsystem.reconcile-preservation",
+    ]);
+    const supported = supportedProject
+      && featureId === "managedsystem-pool"
+      && supportedManagedSystemSpecs.has(specId)
+      && environment === "staging"
+      && (surface === "rest" || surface === "arm-rest")
+      && liveRun
+      && gatedLiveRun;
+
+    if (!supported) {
+      const missing = [
+        supportedProject ? "" : "project is not aks-rp-e2e",
+        featureId === "managedsystem-pool" ? "" : `unsupported feature ${featureId || "unknown"}`,
+        supportedManagedSystemSpecs.has(specId) ? "" : `unsupported spec ${specId || "unknown"}`,
+        environment === "staging" ? "" : `unsupported environment ${environment || "unknown"}`,
+        surface === "rest" || surface === "arm-rest" ? "" : `unsupported surface ${surface || "unknown"}`,
+        liveRun ? "" : "liveRun gate missing",
+        gatedLiveRun ? "" : "gatedLiveRun gate missing",
+      ].filter(Boolean).join("; ");
+      return { dispatched: false, phase: "runner-not-dispatched", reason: missing || "unsupported feature test request" };
+    }
+
+    const appDir = projectAppDirForName("aks-rp-e2e");
+    const runnerPath = resolve(appDir ?? projectDir, "runner", "feature-test-runner.ts");
+    if (!existsSync(runnerPath)) {
+      return { dispatched: false, phase: "runner-not-found", reason: `runner/feature-test-runner.ts not found` };
+    }
+
+    const child = spawn("bun", [
+      runnerPath,
+      `--request-id=${requestId}`,
+      `--run-id=${runId}`,
+    ], {
+      cwd: projectDir,
+      detached: true,
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        AKS_RP_E2E_EXECUTION_HOST: "devbox",
+      },
+    });
+    child.unref();
+    return { dispatched: true, phase: "runner-dispatched", pid: child.pid };
+  }
+
+  function maybeWriteFeatureTestRequest(input: {
+    body: Record<string, unknown>;
+    data: Record<string, unknown>;
+    projectDir: string;
+    workflow: { runId?: string | null; status?: string | null } | null;
+  }): Record<string, unknown> | null {
+    const { body, data, projectDir, workflow } = input;
+    const params = objectRecord(data.params);
+    const reason = typeof data.reason === "string" ? data.reason : typeof params.eventType === "string" ? params.eventType : "";
+    if (reason !== "feature-test.requested") return null;
+
+    const featureId = typeof params.featureId === "string" ? params.featureId : typeof data.featureId === "string" ? data.featureId : "";
+    const specId = typeof params.specId === "string" ? params.specId : typeof data.specId === "string" ? data.specId : "";
+    if (!featureId || !specId) return { error: "feature-test.requested requires params.featureId and params.specId" };
+
+    const now = new Date().toISOString();
+    const requestId = safeId("req");
+    const runId = safeId("run");
+    const selectedPathIds = stringArray(params.selectedPathIds);
+    const featurePathIds = selectedPathIds.length ? selectedPathIds : stringArray(params.featurePathIds);
+    const target = objectRecord(params.executionTarget);
+    const workflowRunId = workflow?.runId ?? null;
+    const workflowStatus = workflow?.status ?? null;
+    const status = "queued";
+    let phase = workflowRunId ? "owner-workflow-started" : "waiting-runner-dispatch";
+    const actor = typeof data.requested_by === "string"
+      ? data.requested_by
+      : typeof body.owner === "string"
+      ? body.owner
+      : "feature-page";
+    const runnerGate = {
+      liveRun: params.liveRun === true,
+      gatedLiveRun: params.gatedLiveRun === true,
+      acceptedEnvironment: typeof target.environment === "string" ? target.environment : null,
+      acceptedSurface: typeof target.surface === "string" ? target.surface : typeof target.clientSurface === "string" ? target.clientSurface : null,
+      acceptedBy: actor,
+      acceptedAt: now,
+      cleanupPlan: "ManagedSystem REST add-existing probe creates an isolated resource group and records resource-group delete/verification.",
+    };
+
+    const request = {
+      requestId,
+      featureId,
+      specId,
+      featurePathIds,
+      target,
+      status,
+      createdBy: actor,
+      createdAt: now,
+      updatedAt: now,
+      reason: typeof params.prompt === "string" ? params.prompt.split("\n").slice(0, 8).join("\n") : "Feature page requested REST staging replay.",
+      runIds: [runId],
+      workflowRunId,
+      workflowStatus,
+      params,
+      runnerGate,
+      source: {
+        eventType: typeof body.type === "string" ? body.type : "project.execution.requested",
+        reason,
+        source: typeof body.source === "string" ? body.source : "web-ui",
+      },
+    };
+    const runStatus = {
+      runId,
+      requestId,
+      featureId,
+      specId,
+      featurePathIds,
+      target,
+      status,
+      phase,
+      startedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      workflowRunId,
+      workflowStatus,
+      evidenceDir: `evidence/test-runs/runs/${runId}`,
+      resultPath: `evidence/test-runs/runs/${runId}/result.json`,
+      diagnosisPath: `evidence/test-runs/runs/${runId}/diagnosis.json`,
+      summaryPath: `evidence/test-runs/runs/${runId}/summary.md`,
+    };
+    const indexRecord = {
+      kind: "run",
+      requestId,
+      runId,
+      featureId,
+      specId,
+      featurePathIds,
+      target,
+      status,
+      phase,
+      createdAt: now,
+      updatedAt: now,
+      workflowRunId,
+      workflowStatus,
+      requestPath: `evidence/test-runs/requests/${requestId}.json`,
+      statusPath: `evidence/test-runs/runs/${runId}/status.json`,
+      resultPath: `evidence/test-runs/runs/${runId}/result.json`,
+      diagnosisPath: `evidence/test-runs/runs/${runId}/diagnosis.json`,
+      summaryPath: `evidence/test-runs/runs/${runId}/summary.md`,
+    };
+
+    writeProjectJsonFile(projectDir, `evidence/test-runs/requests/${requestId}.json`, request);
+    writeProjectJsonFile(projectDir, `evidence/test-runs/runs/${runId}/request.json`, request);
+    writeProjectJsonFile(projectDir, `evidence/test-runs/runs/${runId}/status.json`, runStatus);
+    appendProjectJsonl(projectDir, `evidence/test-runs/runs/${runId}/steps.jsonl`, {
+      ts: now,
+      step: "request.accepted",
+      status,
+      phase,
+      workflowRunId,
+      note: workflowRunId
+        ? "Feature test request accepted and owner workflow observed."
+        : "Feature test request accepted; owner workflow was not observed during the HTTP confirmation window.",
+    });
+    const summary = [
+      `# Feature Test Run ${runId}`,
+      "",
+      `- request: ${requestId}`,
+      `- feature: ${featureId}`,
+      `- spec: ${specId}`,
+      `- status: ${status}`,
+      `- phase: ${phase}`,
+      `- workflow: ${workflowRunId || "not observed yet"}`,
+      "",
+      "This file is created when the feature page requests a test. The runner should update `status.json`, `result.json`, `diagnosis.json`, and this summary after execution.",
+      "",
+    ].join("\n");
+    const summaryPath = resolve(projectDir, `evidence/test-runs/runs/${runId}/summary.md`);
+    mkdirSync(dirname(summaryPath), { recursive: true });
+    writeFileSync(summaryPath, summary, "utf-8");
+    appendProjectJsonl(projectDir, "evidence/test-runs/index.jsonl", indexRecord);
+
+    const runner = dispatchFeatureTestRunner({ projectDir, requestId, runId, featureId, specId, target, params });
+    if (runner.dispatched) {
+      const dispatchedAt = new Date().toISOString();
+      phase = runner.phase;
+      const dispatchedStatus = {
+        ...runStatus,
+        phase,
+        updatedAt: dispatchedAt,
+        runnerPid: runner.pid,
+      };
+      writeProjectJsonFile(projectDir, `evidence/test-runs/runs/${runId}/status.json`, dispatchedStatus);
+      appendProjectJsonl(projectDir, `evidence/test-runs/runs/${runId}/steps.jsonl`, {
+        ts: dispatchedAt,
+        step: "runner.dispatched",
+        status,
+        phase,
+        runnerPid: runner.pid,
+        note: "Project-local feature test runner dispatched.",
+      });
+      appendProjectJsonl(projectDir, "evidence/test-runs/index.jsonl", {
+        ...indexRecord,
+        kind: "run-state",
+        phase,
+        updatedAt: dispatchedAt,
+        runnerPid: runner.pid,
+      });
+    } else {
+      const notDispatchedAt = new Date().toISOString();
+      phase = runner.phase;
+      const gatedStatus = {
+        ...runStatus,
+        status: "blocked",
+        phase,
+        updatedAt: notDispatchedAt,
+        runnerDispatchReason: runner.reason,
+      };
+      writeProjectJsonFile(projectDir, `evidence/test-runs/runs/${runId}/status.json`, gatedStatus);
+      appendProjectJsonl(projectDir, `evidence/test-runs/runs/${runId}/steps.jsonl`, {
+        ts: notDispatchedAt,
+        step: "runner.not-dispatched",
+        status: "blocked",
+        phase,
+        note: runner.reason || "No supported runner adapter matched this request.",
+      });
+      appendProjectJsonl(projectDir, "evidence/test-runs/index.jsonl", {
+        ...indexRecord,
+        kind: "run-state",
+        status: "blocked",
+        phase,
+        updatedAt: notDispatchedAt,
+        runnerDispatchReason: runner.reason,
+      });
+    }
+
+    return { requestId, runId, status: runner.dispatched ? status : "blocked", phase, workflowRunId, workflowStatus, runner, indexRecord };
+  }
+
+  function maybeWriteFeatureTestFeedback(input: {
+    body: Record<string, unknown>;
+    data: Record<string, unknown>;
+    projectDir: string;
+  }): Record<string, unknown> | null {
+    const { body, data, projectDir } = input;
+    const params = objectRecord(data.params);
+    const reason = typeof data.reason === "string" ? data.reason : typeof params.eventType === "string" ? params.eventType : "";
+    if (reason !== "feature-test.failure.reviewed") return null;
+
+    const runId = typeof params.runId === "string" ? params.runId : "";
+    const requestId = typeof params.requestId === "string" ? params.requestId : "";
+    const featureId = typeof params.featureId === "string" ? params.featureId : "";
+    const specId = typeof params.specId === "string" ? params.specId : "";
+    const action = typeof params.action === "string" ? params.action : "";
+    const note = typeof params.note === "string" ? params.note.trim() : "";
+    if (!runId || !requestId || !featureId || !specId || !action) {
+      return { error: "feature-test.failure.reviewed requires runId, requestId, featureId, specId, and action" };
+    }
+
+    const runStatusPath = resolve(projectDir, `evidence/test-runs/runs/${runId}/status.json`);
+    if (!runStatusPath.startsWith(`${projectDir}/`) || !existsSync(runStatusPath)) {
+      return { error: `run not found: ${runId}` };
+    }
+
+    const now = new Date().toISOString();
+    const feedbackId = safeId("fb");
+    const actor = typeof data.requested_by === "string"
+      ? data.requested_by
+      : typeof body.owner === "string"
+      ? body.owner
+      : "feature-page";
+    const feedback = {
+      feedbackId,
+      ts: now,
+      actor,
+      subject: objectRecord(params.subject),
+      context: objectRecord(params.context),
+      requestId,
+      runId,
+      featureId,
+      specId,
+      action,
+      note,
+      diagnosis: typeof params.diagnosis === "string" ? params.diagnosis : null,
+      blocker: objectRecord(params.blocker),
+      next: typeof params.next === "string" ? params.next : null,
+      source: {
+        eventType: typeof body.type === "string" ? body.type : "project.execution.requested",
+        reason,
+        source: typeof body.source === "string" ? body.source : "web-ui",
+      },
+    };
+
+    appendProjectJsonl(projectDir, `evidence/test-runs/runs/${runId}/feedback.jsonl`, feedback);
+    appendProjectJsonl(projectDir, `evidence/test-runs/runs/${runId}/steps.jsonl`, {
+      ts: now,
+      step: "feedback.received",
+      status: "reviewed",
+      phase: "human-feedback",
+      action,
+      note,
+      feedbackId,
+      contextKey: typeof objectRecord(params.context).key === "string" ? objectRecord(params.context).key : null,
+    });
+    appendProjectJsonl(projectDir, "evidence/test-runs/index.jsonl", {
+      kind: "run-feedback",
+      requestId,
+      runId,
+      featureId,
+      specId,
+      subject: objectRecord(params.subject),
+      context: objectRecord(params.context),
+      status: "reviewed",
+      phase: "human-feedback",
+      action,
+      feedbackId,
+      createdAt: now,
+      updatedAt: now,
+      statusPath: `evidence/test-runs/runs/${runId}/status.json`,
+      feedbackPath: `evidence/test-runs/runs/${runId}/feedback.jsonl`,
+      resultPath: `evidence/test-runs/runs/${runId}/result.json`,
+      diagnosisPath: `evidence/test-runs/runs/${runId}/diagnosis.json`,
+      summaryPath: `evidence/test-runs/runs/${runId}/summary.md`,
+    });
+
+    return {
+      feedbackId,
+      runId,
+      requestId,
+      status: "reviewed",
+      phase: "human-feedback",
+      action,
+      feedbackPath: `evidence/test-runs/runs/${runId}/feedback.jsonl`,
+    };
+  }
+
+  async function handleEventIngress(req: Request): Promise<Response> {
+    try {
+      const body = await req.json() as Record<string, unknown>;
+      const type = typeof body.type === "string" ? body.type.trim() : "";
+      if (!type) return json({ error: "type required" }, 400);
+      const data = body.data && typeof body.data === "object" && !Array.isArray(body.data)
+        ? body.data as Record<string, unknown>
+        : {};
+      const projectPath = typeof data.projectPath === "string"
+        ? data.projectPath
+        : typeof body.projectPath === "string"
+        ? body.projectPath
+        : "";
+
+      let projectId = typeof data.projectId === "string" ? data.projectId : "";
+      let projectDir = "";
+      let owner = typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : "agent:may";
+      if (projectPath) {
+        if (!isAllowedProjectPath(projectPath)) return json({ error: "Access denied" }, 403);
+        projectDir = resolveProjectDir(projectPath);
+        const projectFile = resolveProjectFile(projectPath);
+        if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
+        const identity = parseProjectIdentity(projectPath, readFileSync(projectFile, "utf-8"));
+        projectId = projectId || identity.projectId;
+        owner = typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : normalizeEventOwner(identity.owner);
+      }
+
+      const sentAt = Date.now();
+      const trigger = await sendDaemonFrame({
+        ...body,
+        type,
+        source: typeof body.source === "string" && body.source.trim() ? body.source.trim() : "web-ui",
+        owner: normalizeEventOwner(owner),
+        data,
+      });
+      if (!trigger.ok) return json({ ok: false, triggered: false, error: trigger.error }, 503);
+
+      const workflow = type === "project.execution.requested" && projectPath
+        ? await waitForProjectWorkflowStart(projectId, projectPath, sentAt, 2500)
+        : null;
+      const featureTestRequest = projectDir
+        ? maybeWriteFeatureTestRequest({ body, data, projectDir, workflow })
+        : null;
+      if (featureTestRequest && typeof featureTestRequest.error === "string") {
+        return json({ ok: false, triggered: true, error: featureTestRequest.error }, 400);
+      }
+      const featureTestFeedback = projectDir
+        ? maybeWriteFeatureTestFeedback({ body, data, projectDir })
+        : null;
+      if (featureTestFeedback && typeof featureTestFeedback.error === "string") {
+        return json({ ok: false, triggered: true, error: featureTestFeedback.error }, 400);
+      }
+      return json({
+        ok: true,
+        triggered: true,
+        eventType: type,
+        reason: typeof data.reason === "string" ? data.reason : null,
+        workflowStarted: Boolean(workflow),
+        workflowRunId: workflow?.runId ?? null,
+        workflowStatus: workflow?.status ?? null,
+        featureTestRequest,
+        featureTestFeedback,
+      }, workflow || type !== "project.execution.requested" ? 200 : 202);
+    } catch (e: any) {
+      return json({ error: e.message }, 500);
     }
   }
 
@@ -2847,6 +3340,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
+      if (url.pathname === "/api/events" && req.method === "POST") return handleEventIngress(req);
       if (url.pathname === "/api/events") return handleEvents(url);
       if (url.pathname === "/api/learning") return handleLearning(url);
       if (url.pathname === "/api/loop-trace") return handleLoopTrace(url);

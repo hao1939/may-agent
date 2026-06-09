@@ -7,9 +7,13 @@ export interface AgentDirectory {
   agentsRoot: string;
   projectId?: string;
   projectDir?: string;
+  relativeDir?: string;
 }
 
-function listAgentDirectoriesInRoot(agentsRoot: string, project?: { projectId: string; projectDir: string }): AgentDirectory[] {
+function listAgentDirectoriesInRoot(
+  agentsRoot: string,
+  project?: { projectId: string; projectDir: string; relativeAgentsRoot?: string },
+): AgentDirectory[] {
   if (!existsSync(agentsRoot)) return [];
   const agents: AgentDirectory[] = [];
   for (const entry of readdirSync(agentsRoot, { withFileTypes: true })) {
@@ -22,6 +26,7 @@ function listAgentDirectoriesInRoot(agentsRoot: string, project?: { projectId: s
       agentsRoot: resolve(agentsRoot),
       projectId: project?.projectId,
       projectDir: project?.projectDir,
+      relativeDir: project?.relativeAgentsRoot ? `${project.relativeAgentsRoot}/${entry.name}` : undefined,
     });
   }
   return agents;
@@ -37,6 +42,26 @@ export function listProjectAgentDirectories(projectsRoot: string): AgentDirector
   for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
+
+    if (entry.name.endsWith(".app")) {
+      const appDir = resolve(projectsRoot, entry.name);
+      const projectId = entry.name.slice(0, -".app".length);
+      const domainDir = resolve(projectsRoot, projectId);
+      const projectDir = existsSync(domainDir) ? domainDir : appDir;
+      const hasAppFrame = existsSync(resolve(appDir, "project.md")) || existsSync(resolve(appDir, "app.ts"));
+      if (!hasAppFrame) continue;
+      const agentsRoot = resolve(appDir, "agents");
+      if (!existsSync(agentsRoot)) continue;
+      agents.push(
+        ...listAgentDirectoriesInRoot(agentsRoot, {
+          projectId,
+          projectDir,
+          relativeAgentsRoot: `projects/${entry.name}/agents`,
+        }),
+      );
+      continue;
+    }
+
     const projectDir = resolve(projectsRoot, entry.name);
     const hasProjectFrame = existsSync(resolve(projectDir, "project.md")) || existsSync(resolve(projectDir, ".app", "project.md"));
     if (!hasProjectFrame) continue;
@@ -82,6 +107,7 @@ export function agentProjectRoot(agentDir: AgentDirectory, fallbackProjectRoot: 
 }
 
 export function agentRelativeDir(agentDir: AgentDirectory): string {
+  if (agentDir.relativeDir) return agentDir.relativeDir;
   return agentDir.projectDir
     ? "projects/" + agentDir.projectId + "/agents/" + agentDir.name
     : "agents/" + agentDir.name;

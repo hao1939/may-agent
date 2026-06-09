@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { listProjectAgentDirectories } from "./agent-discovery.ts";
+import { agentProjectRoot, agentRelativeDir, listProjectAgentDirectories } from "./agent-discovery.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `agent-discovery-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -27,6 +27,33 @@ describe("project-local agent discovery", () => {
       expect(listProjectAgentDirectories(root).map((agent) => agent.dir)).toEqual([
         join(project, ".app", "agents", "aks-explorer"),
       ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("discovers Project App V3 agents under sibling .app projects", () => {
+    const root = tempRoot();
+    try {
+      const domainProject = join(root, "aks-rp-e2e");
+      const appProject = join(root, "aks-rp-e2e.app");
+      const agentDir = join(appProject, "agents", "aks-explorer");
+      mkdirSync(domainProject, { recursive: true });
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(domainProject, "README.md"), "# AKS RP E2E\n");
+      writeFileSync(join(appProject, "app.ts"), "export default {};\n");
+      writeFileSync(join(appProject, "project.md"), "# aks-rp-e2e app\n");
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({
+        name: "aks-explorer",
+        model: "test",
+        tools: [],
+      }));
+
+      const agents = listProjectAgentDirectories(root);
+      expect(agents.map((agent) => agent.dir)).toEqual([agentDir]);
+      expect(agents[0]?.projectId).toBe("aks-rp-e2e");
+      expect(agentProjectRoot(agents[0], "fallback")).toBe(domainProject);
+      expect(agentRelativeDir(agents[0])).toBe("projects/aks-rp-e2e.app/agents/aks-explorer");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
