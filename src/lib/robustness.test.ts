@@ -9,7 +9,7 @@ import {
   sessionJsonlPath,
   sessionMetaPath,
 } from "./persistence.js";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
 describe("JSONL corruption handling", () => {
   let persistDir: string;

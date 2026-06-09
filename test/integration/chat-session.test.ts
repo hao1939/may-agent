@@ -6,12 +6,12 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { getModel } from "@mariozechner/pi-ai";
+import { getModel } from "@earendil-works/pi-ai";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { ChatSession } from "../../src/app/chat-session.js";
 import { EventBus } from "../../src/app/event-bus.js";
 import { appendSessionMessage, readSessionMeta, writeSessionMeta, ensureSessionDir } from "../../src/lib/persistence.js";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 

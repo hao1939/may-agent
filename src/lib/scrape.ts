@@ -9,9 +9,9 @@
  * No external dependencies — uses Node 20 built-in fetch + regex-based HTML stripping.
  */
 
-import { Type } from "@mariozechner/pi-ai";
-import type { TSchema } from "@mariozechner/pi-ai";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type } from "@earendil-works/pi-ai";
+import type { TSchema } from "@earendil-works/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
 function textResult(text: string): AgentToolResult<string> {
   return {

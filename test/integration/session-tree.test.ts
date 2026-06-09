@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { RegistryStore, ensureSessionDir, appendSessionMessage } from "../../src/lib/persistence.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
   return {

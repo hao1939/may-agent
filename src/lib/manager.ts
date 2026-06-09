@@ -10,8 +10,8 @@
  * See: shared/may-agent-docs/architecture.md §3 "Agent Runs"
  */
 
-import { Agent } from "@mariozechner/pi-agent-core";
-import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
+import { Agent } from "@earendil-works/pi-agent-core";
+import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {

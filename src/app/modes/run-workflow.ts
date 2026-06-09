@@ -87,7 +87,7 @@ export async function runWorkflowMode(opts: {
           };
         }
       : async (sessionOpts: { systemPrompt: string; tools: "full" | "readonly"; label?: string }) => {
-          const { Agent } = await import("@mariozechner/pi-agent-core");
+          const { Agent } = await import("@earendil-works/pi-agent-core");
           const { createCodingTools } = await import("../../lib/tools/coding.js");
           const { createReadTool } = await import("../../lib/tools/read.js");
 

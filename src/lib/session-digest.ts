@@ -14,7 +14,7 @@
 
 import { getDb } from "./requests.js";
 import { readSessionMessages } from "./persistence.js";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import { log } from "./log.js";
 

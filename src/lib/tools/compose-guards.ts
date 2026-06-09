@@ -9,7 +9,7 @@
  * If no guard returns a result, returns undefined (allow the tool call).
  */
 
-// TODO(pi-agent-core): Import from @mariozechner/pi-agent-core once it exports
+// TODO(pi-agent-core): Import from @earendil-works/pi-agent-core once it exports
 // BeforeToolCallContext / BeforeToolCallResult. Until then, define locally so
 // guard code compiles and is ready when the upstream hook ships.
 

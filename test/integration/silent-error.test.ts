@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { SubagentDefinition } from "../../src/lib/types.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";

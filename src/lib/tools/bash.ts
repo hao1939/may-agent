@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 import { createWriteStream, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { Type } from "@mariozechner/pi-ai";
-import type { TSchema } from "@mariozechner/pi-ai";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { Type } from "@earendil-works/pi-ai";
+import type { TSchema } from "@earendil-works/pi-ai";
 import { spawn } from "child_process";
 // Inlined shell utilities (may-agent runs on Linux/Docker only)
 function getShellConfig(): { shell: string; args: string[] } {

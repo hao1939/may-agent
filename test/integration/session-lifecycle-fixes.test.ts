@@ -14,7 +14,7 @@ import { SubagentManager } from "../../src/lib/manager.js";
 import { classifyTerminalAssistantFailure } from "../../src/lib/manager-utils.js";
 import { readSessionMeta, writeSessionMeta, ensureSessionDir, appendSessionMessage } from "../../src/lib/persistence.js";
 import { EventBus, type AgentEvent } from "../../src/app/event-bus.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
   return {

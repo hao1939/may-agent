@@ -1,5 +1,5 @@
 /**
- * Ambient type declarations for @mariozechner/pi-ai.
+ * Ambient type declarations for @earendil-works/pi-ai.
  *
  * The real package is linked via a workspace symlink to ../../../pi-mono/packages/ai
  * which doesn't exist in the container. These stubs provide enough type information
@@ -10,7 +10,7 @@
  *
  * WARNING: Keep in sync with the real package when updating pi-mono.
  */
-declare module "@mariozechner/pi-ai" {
+declare module "@earendil-works/pi-ai" {
   // ── Schema (re-exported from @sinclair/typebox) ──────────────────────
 
   /** TypeBox TSchema — base type for all schema definitions. */

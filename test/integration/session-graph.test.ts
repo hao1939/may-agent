@@ -7,7 +7,7 @@ import { SubagentManager } from "../../src/lib/manager.js";
 import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
 import { getWorkflowRun, listWorkflowRunIds } from "../../src/lib/requests.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 
