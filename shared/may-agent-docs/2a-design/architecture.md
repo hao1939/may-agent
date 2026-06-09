@@ -92,7 +92,8 @@ The agent just works. The infra triggers, frames, protects, records, and connect
 │                             metric.stalled                           │
 │  Agent tools    ──────────▶ message.created   ──▶ ack + queue      │
 │  (message, finish)          session.end       ──▶ MetricEngine       │
-│                             tool.executed     ──▶ SQLite audit       │
+│                             tool_call         ──▶ UI/console (ephemeral) │
+│                             tool_result       ──▶ UI/console (ephemeral) │
 │                                                                      │
 │  Pi-coding-agent events are bridged into system events via           │
 │  session.subscribe()                                                 │
@@ -308,14 +309,20 @@ async function runAgent(agentName: string, task: string, source: string): Promis
   session.agent.state.systemPrompt = resolveSystemPrompt(config);
 
   // Bridge pi-coding-agent events → system EventBus
+  // Note: tool_call and tool_result are ephemeral bus events for UI/console.
+  // They use underscores (not dots) and are NOT persisted to the events table
+  // by db-writer (which only persists events with dots in the type name).
   session.subscribe((event) => {
     if (event.type === "agent_end") {
       const result = extractResult(event.messages);
       db.insertSession({ sessionId, agent: agentName, task, source, ...result });
       bus.emit({ type: "session.end", agent: agentName, sessionId, ...result });
     }
+    if (event.type === "tool_execution_start") {
+      bus.emit({ type: "tool_call", sessionId, agent: agentName, tool: event.toolName, args: event.args });
+    }
     if (event.type === "tool_execution_end") {
-      bus.emit({ type: "tool.executed", agent: agentName, sessionId, tool: event.toolName, args: event.args });
+      bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: event.toolName, preview: text.slice(0, 200), isError: event.isError });
     }
   });
 
