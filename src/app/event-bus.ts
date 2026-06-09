@@ -114,6 +114,7 @@ export type SystemEvent =
   | { type: "handler.started"; source: "cron"; owner: string; data: { handler: string; agent: string } }
   | { type: "handler.completed"; source: "cron"; owner: string; data: { handler: string; agent: string; durationMs: number } }
   | { type: "handler.failed"; source: "cron"; owner: string; data: { handler: string; agent: string; error: string; durationMs: number } }
+  | { type: "handler.load-failed"; source: "handler-loader"; owner: string; data: { handler: string; agent: string; path: string; error: string } }
   | { type: "handler.skipped"; source?: string; owner: string; data: { handler: string; reason: string; eventType?: string | null; [key: string]: unknown } }
   | { type: "handler.workflow_dispatched"; source?: string; owner: string; data: { handler: string; workflow: string; source?: string | null; projectId?: string | null; workflowRunId?: string | null; status: string; [key: string]: unknown } }
   | { type: "session.completed"; source: "runtime"; owner: string; data: { sessionId: string; agent: string; parentSessionId?: string; outcome?: string; status?: string; source?: string; kind?: string; error?: string; task?: string } }
