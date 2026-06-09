@@ -52,10 +52,14 @@ The Auto-generated banner is literal — heed it.
 
 **Rule going forward:** when arc has something worth preserving, write
 it to a path the runtime does **not** rewrite — KE under
-`agents/shared/knowledge/entries/`, a project journal under
-`agents/shared/projects/<id>/`, or a proposal under
+`shared/knowledge/entries/`, a project journal under
+`projects/<id>/`, or a proposal under
 `agents/arc/workspace/proposals/`. `last-session.md` is for the wrapper,
 not for arc's content.
+
+> **Correction (KE-1745, 2026-06-13):** F1 above ("stopReason lives in
+> session.end event data") was falsified — 0 of 7,802 session.end events
+> contain a `stopReason` field. See KE-1745 for the correct alternatives.
 
 ## Action this session
 
