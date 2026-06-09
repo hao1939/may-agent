@@ -1004,3 +1004,32 @@ The only feedback loop that changes behavior is the one where no agent is respon
 Don't fix broken loops by making agents read more. Remove agents from the feedback path. Make evaluations actuate structural changes (ops caps, tool access) instead of delivering advice. Make learnings modify prompts/guards instead of injecting text. Make escalations auto-resolve when their triggering condition clears.
 
 See: `shared/knowledge/entries/KE-1740-the-open-loop-census-first-measurement-of-which-feedback-loops-actually-close.md`
+
+---
+
+## Creative Synthesis: The Consistency Illusion (KE-1741)
+
+**Key discovery**: Three fresh arXiv papers (June 5–7, 2026) converge on a finding that reframes our system's core problem. Wang & Yang's "Consistency Illusion" (2606.08457) proves that multi-agent debate reduces visible contradictions while *increasing* reasoning divergence — agents appear to agree more but reason less consistently. Our production data shows exactly this pattern.
+
+### The Data
+All four work agents have converged to a narrow quality band (0.61–0.69) while their operational behavior diverges 5.3×:
+- **dev**: 0.685 quality at 7.3 avg ops (4.3% error)
+- **may**: 0.654 quality at 19.1 avg ops (7.7% error)
+- **scout**: 0.634 quality at 32.7 avg ops (10.2% error)
+- **arc**: 0.610 quality at 38.8 avg ops (11.8% error)
+
+Quality range: 0.075. Ops range: 5.3×. The quality metric shows consensus; the process diverges wildly.
+
+### The Silent Entropy Connection
+Liu's "Silent Failure" paper (2606.08162) formalizes this as exponential entropy growth: S(t) = S₀ · e^(α·t). Our temporal data confirms it: quality peaked at 0.800 around day 25–26 then silently declined to 0.63–0.66 with no trigger event. Simultaneously, productive calls inflated from ~7 to ~38. The system got 5× more expensive while appearing stable.
+
+### Why This Is Different From Prior KEs
+Prior entries analyzed evaluation mechanics (broken thermostat, routing discontinuity). This identifies a different pathology: *output-level convergence masking process-level divergence*. The evaluator measures "did the session do something?" when it should measure "did the session's reasoning chain match what this task actually requires?"
+
+### The Cheap Fix (From the Paper)
+The Grounded Debate Protocol (GDP) improved reasoning alignment by Cohen's d = +1.43 to +1.99 **without extra LLM calls** — just by requiring explicit fact-level commitments. Our analog: evaluate whether each tool call was logically necessitated by the previous one's output, not just whether the session completed.
+
+### Falsifiable Prediction
+Manual review of 10 "good" sessions each from dev (7 ops) and arc (39 ops) should reveal structurally different reasoning chains despite similar quality scores. If both show identical logical structure, this framing is wrong.
+
+See: `shared/knowledge/entries/KE-1741-the-consistency-illusion-our-system-has-answer-consensus-without-reasoning-alignment.md`
