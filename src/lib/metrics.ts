@@ -312,6 +312,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       let rateLimit: number | null = null;
       let rateDirection: "below" | "above" | null = null;
       let stallDetected = false;
+      let alertKind: "threshold" | "rate" | "stall" | "consecutive_failures" | "sustained" = "threshold";
 
       if (metricType === "health" && alertConfig?.mode === "consecutive_failures") {
         const requiredCount = alertConfig.count || 3;
@@ -320,6 +321,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         ).all(row.id, requiredCount) as Array<{ value: number }>;
         breached = snapshots.length >= requiredCount
           && snapshots.every((s) => evaluateThreshold({ current: s.value, threshold, alert_op: row.alert_op }));
+        if (breached) alertKind = "consecutive_failures";
       } else if (metricType === "counter" && alertConfig?.mode === "rate") {
         const lastTwo = db.prepare(
           "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 2",
@@ -353,6 +355,11 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         }
         thresholdBreached = evaluateThreshold({ current, threshold, alert_op: row.alert_op });
         breached = thresholdBreached || rateBreached;
+        if (breached) {
+          if (stallDetected) alertKind = "stall";
+          else if (rateBreached && !thresholdBreached) alertKind = "rate";
+          // else alertKind remains "threshold"
+        }
       } else if (metricType === "gauge" && alertConfig?.mode === "sustained") {
         const requiredCount = alertConfig.consecutive || 3;
         const snapshots = db.prepare(
@@ -360,6 +367,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         ).all(row.id, requiredCount) as Array<{ value: number }>;
         breached = snapshots.length >= requiredCount
           && snapshots.every((s) => evaluateThreshold({ current: s.value, threshold, alert_op: row.alert_op }));
+        if (breached) alertKind = "sustained";
       } else {
         breached = evaluateThreshold({ current, threshold, alert_op: row.alert_op });
       }
@@ -371,7 +379,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       if (breached) {
         const thresholdDirection = row.alert_op === ">" || row.alert_op === "above" ? "above" : "below";
         const rateUnit = alertConfig?.per === "day" ? "day" : "hour";
-        const alertType = rateBreached && !thresholdBreached ? "rate" : "threshold";
+        const alertType = alertKind;
         const message = alertType === "rate"
           ? `${row.name ?? row.id} rate is ${rateDirection ?? "outside"} limit: rate=${ratePer?.toFixed(2) ?? "?"}/${rateUnit}, limit=${rateLimit ?? "?"}/${rateUnit}, current=${current}, target=${row.target ?? "?"}`
           : `${row.name ?? row.id} is ${thresholdDirection} threshold: current=${current}, threshold=${threshold}, target=${row.target ?? "?"}`;
