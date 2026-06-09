@@ -1,8 +1,8 @@
 /**
- * project-execution-engine — Breadth-first task-tree runner for Project App V2.
+ * project-execution-engine — Breadth-first task-tree runner for Project App V3.
  *
- * This is the first app-local implementation for aks-rp-e2e. It owns the
- * current task tree in .app/tasks/tree.json and uses infra sessions/events for audit.
+ * This app-local implementation owns aks-rp-e2e.app/tasks/tree.json and uses
+ * infra sessions/events for audit.
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, renameSync, rmSync, statSync } from "node:fs";
@@ -106,6 +106,7 @@ type TaskTree = {
 };
 
 type EngineConfig = {
+  appDir: string;
   projectDir: string;
   projectPath: string;
   treePath: string;
@@ -194,14 +195,16 @@ function triggerNumber(event: TriggerEvent | null, key: string): number | undefi
 function parseInput(raw: string, callingAgent: string): EngineConfig {
   const trigger = parseTriggerEvent(raw);
   const projectDir = field(raw, "project") ?? "/app/projects/aks-rp-e2e";
+  const appDir = field(raw, "app") ?? new URL("..", import.meta.url).pathname;
   const maxConcurrent = Number.parseInt(field(raw, "maxConcurrent") ?? "", 10);
   return {
+    appDir,
     projectDir,
-    projectPath: join(projectDir, ".app", "project.md"),
-    treePath: join(projectDir, "tasks", "tree.json"),
-    featureQueuePath: join(projectDir, "evidence", "outputs", "feature-learning-queue.md"),
-    journalPath: join(projectDir, ".app", "journal.jsonl"),
-    plannerRunsPath: join(projectDir, ".app", "planner-runs.jsonl"),
+    projectPath: join(appDir, "project.md"),
+    treePath: join(appDir, "tasks", "tree.json"),
+    featureQueuePath: join(projectDir, "evidence", "archive", "feature-learning-queue.md"),
+    journalPath: join(appDir, "journal.jsonl"),
+    plannerRunsPath: join(appDir, "planner-runs.jsonl"),
     owner: field(raw, "owner") ?? field(raw, "agent") ?? callingAgent,
     worker: field(raw, "worker") ?? field(raw, "agent") ?? callingAgent,
     maxAttempts: Number.parseInt(field(raw, "maxAttempts") ?? "3", 10),
@@ -2983,7 +2986,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
 if (import.meta.main) {
   const result = await execute({
-    task: "project: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxAttempts: 0",
+    task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxAttempts: 0",
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }) as WorkflowResult,
     escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,

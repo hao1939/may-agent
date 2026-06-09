@@ -1,0 +1,5 @@
+*.jsonl
+/discussion.md
+/journal.md
+agents/*/workspace/**
+!agents/*/workspace/.gitkeep

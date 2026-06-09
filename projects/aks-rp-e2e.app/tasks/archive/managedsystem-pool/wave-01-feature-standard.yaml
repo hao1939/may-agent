@@ -1,0 +1,124 @@
+wave: managedsystem-pool-feature-standard
+status: done
+created: "2026-05-20"
+source_draft: evidence/archive/managedsystem-pool-feature-standard-init-tasks.md
+purpose: >
+  Turn ManagedSystem Pool into the first standard feature packet for this
+  project: feature meaning, source/API/doc anchors, input and expectation
+  paths, evidence states, reproducible checks, related resources, gaps, and
+  recommended next action.
+
+principles:
+  - This completed learning wave used existing artifacts and did not run new cloud probes.
+  - New execution work now lives in project.md task managedsystem-reference-backed-ts-probe.
+  - Use existing artifacts, capability model data, devbox source, public API/spec, and public docs.
+  - Treat handwritten e2ev3 as source of developer intent, not only as commands to run.
+  - Keep each parallel task output disjoint.
+  - Integrate only after the parallel outputs exist.
+
+parallel_tasks:
+  - id: managedsystem-feature-intent-source-anchors
+    status: done
+    assignee: aks-explorer
+    output: evidence/archive/managedsystem-pool-feature-intent.md
+    depends_on: []
+    goal: >
+      Build the ManagedSystem Pool feature-intent source map. Read devbox
+      source under /home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/managedsystem*.go,
+      /home/hayua/rp/test/e2ev3/validate/agent_pool/managedsystem_pool.go,
+      /home/hayua/rp/test/e2ev3/handlers/azure/azcontainerservice/clean_managedsystem_pool.go,
+      and .claude/skills/test-managedsystem-pool/.
+    acceptance:
+      - Explains what the feature means in product terms.
+      - Lists source paths and the behavior each path contributes.
+      - Inventories Scenario_ManagedSystemPool_Enable, Scenario_ManagedSystemPool_Disable, Scenario_ManagedSystem_AgentPool, reconcile/lifecycle variants, and virtualmachine suite references.
+      - Separates source-intended behavior from observed behavior.
+      - Names unknowns where source mentions behavior that existing evidence does not prove.
+
+  - id: managedsystem-api-doc-boundary
+    status: done
+    assignee: aks-explorer
+    output: evidence/archive/managedsystem-pool-api-doc-boundary.md
+    depends_on: []
+    goal: >
+      Build the ManagedSystem Pool API/docs boundary. Use public AKS API/spec
+      as input-space source and public docs/design references as expectation-space
+      source. Focus on what callers may set, what they must omit, whether the
+      feature is opt-in/default, and which operation surfaces exist.
+    acceptance:
+      - Answers what non-default value enables the feature.
+      - States what must not be sent in the accepted payload.
+      - Distinguishes API/RP contract from CLI behavior.
+      - Identifies missing doc/design links instead of inventing them.
+
+  - id: managedsystem-evidence-state-matrix
+    status: done
+    assignee: aks-explorer
+    output: evidence/archive/managedsystem-pool-evidence-state-matrix.md
+    depends_on: []
+    goal: >
+      Audit ManagedSystem Pool states from existing artifacts and the capability
+      model. Every pass/fail/exploring row must link raw evidence and state the
+      exact input path, expectation path, observed path, environment, command
+      surface, and diagnosis.
+    read_first:
+      - evidence/archive/e2e-capability-model.json
+      - evidence/archive/input-expectation-knowledge-map.md
+      - evidence/archive/iteration24-managedsystem-pool-pass.md
+      - evidence/archive/iteration56-managedsystem-staging-refresh.md
+      - evidence/archive/20260519T1646Z-managedsystem-priority-staging.md
+      - evidence/archive/managedsystem-pool-exploration.md
+      - evidence/archive/iteration53-managedsystem-pool-inventory-and-blocker.md
+    acceptance:
+      - Covers standalone e2ev3 enable, staging REST add, staging CLI create/add, mode immutability, delete, and unknown/exploring runtime behaviors.
+      - Lets a reviewer audit every verdict from local artifacts.
+      - Does not mix pass, fail, and exploring states.
+      - Marks CLI default-payload failures as tooling/input-shape failures, not RP product failures.
+
+  - id: managedsystem-agent-repro-pack
+    status: done
+    assignee: aks-explorer
+    output: evidence/archive/managedsystem-pool-repro-pack.md
+    depends_on: []
+    goal: >
+      Convert the known ManagedSystem Pool checks into an agent-consumable
+      repro pack. Do not execute the checks. Prefer the proven minimal REST path
+      and preserve CLI failure paths as diagnostic checks.
+    acceptance:
+      - Provides placeholder-based commands for minimal ARM REST add, polling/show, CLI create diagnostic, CLI add diagnostic, delete, and post-delete verification.
+      - Includes optional e2ev3 entry for Scenario_ManagedSystemPool_Enable.
+      - Includes cleanup guidance and standalone async cleanup/leak risk.
+      - Describes how to turn the pack into a future skill.
+
+  - id: managedsystem-related-resource-context
+    status: done
+    assignee: aks-explorer
+    output: evidence/archive/managedsystem-pool-related-context.md
+    depends_on: []
+    goal: >
+      Build the related-resource context for ManagedSystem Pool so future agents
+      understand what resources and controllers matter.
+    acceptance:
+      - Covers managed cluster, agent pool, VirtualMachines type, node status, node taints, critical add-ons, and VAP/VAP bindings if source supports them.
+      - Separates ManagedSystem from generic VirtualMachines pools, Node Auto Provisioning, normal System pools, and CLI preview behavior.
+      - Lists confirmed context separately from open questions.
+
+integration_task:
+  id: managedsystem-feature-standard-packet
+  status: done
+  assignee: aks-explorer
+  output: evidence/archive/managedsystem-pool-feature-standard.md
+  depends_on:
+    - managedsystem-feature-intent-source-anchors
+    - managedsystem-api-doc-boundary
+    - managedsystem-evidence-state-matrix
+    - managedsystem-agent-repro-pack
+    - managedsystem-related-resource-context
+  goal: >
+    Integrate the ManagedSystem Pool parallel artifacts into one standard
+    feature packet. Update evidence/archive/e2e-capability-model.json only for
+    unambiguous model additions, then run the capability-model validator.
+  acceptance:
+    - Final packet is reusable as the template for the next feature.
+    - Packet explains the feature without hiding uncertainty.
+    - Packet names the next concrete action: model edit, source investigation, or one justified run.

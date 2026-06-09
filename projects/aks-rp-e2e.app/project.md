@@ -1,14 +1,14 @@
 ---
-id: aks-rp-e2e
+id: aks-rp-e2e.app
 owner: aks-explorer
-status: waiting
+status: active
 type: milestone
 priority: P1
 iteration: 193
 max_concurrent: 3
 max_task_attempts: 2
 project_policy: aggressive-push
-wait_reason: "all-tasks-terminal-no-ready-frontier"
+wait_reason: all-tasks-terminal-no-ready-frontier
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -224,7 +224,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `replays/execution/README.md` — phased learning/experimenting/replanning strategy for TS probes
 - `replays/execution/test-runner-engine.md` — project-local runner engine that links feature-page test requests, durable run state, evidence, diagnosis, and model updates
 - `replays/execution/automation.md` — operating model for cron/supervisor triggers, always-on controller behavior, lane selection, execution gates, and agent compliance
-- `.app/agents/aks-explorer/cron.json` — disabled project-local trigger template for regular learning, weekly replanning review, and manual verification wake-ups
+- `agents/aks-explorer/cron.json` — disabled project-local trigger template for regular learning, weekly replanning review, and manual verification wake-ups
 - `features/README.md` — stable feature reference-packet directory
 - `suites/README.md` — tracked reviewable run-plan directory
 - `replays/README.md` — tracked TypeScript probe directory
@@ -235,7 +235,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `evidence/archive/iteration189-live-selected-execution-blocker.md` — four-path live-selected execution blocker showing artifact regeneration succeeded but local `az` is unavailable for the required ARM token gate
 - `evidence/archive/iteration190-live-selected-two-path-blocker.md` — two-path live-selected execution blocker for ManagedSystem mode immutability plus REST add-existing; regeneration succeeded, auth gate failed because `az` is unavailable
 - `evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md` — accepted non-mutating devbox/hao-devbox-msi ARM auth preflight that supersedes the old local Azure CLI provisioning blocker
-- `.app/decisions/replans/live-selected/` — regenerated live-selected replan JSON/TS artifacts for the four-path and two-path ManagedSystem selections
+- `decisions/replans/live-selected/` — regenerated live-selected replan JSON/TS artifacts for the four-path and two-path ManagedSystem selections
 - `suites/managedsystem-cli-rest-combined.yaml` — gated combined plan for the selected CLI+REST ManagedSystem paths
 - `replays/managedsystem-cli-rest-combined.ts` — execution-gated TypeScript probe for the selected CLI+REST ManagedSystem paths
 - `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
@@ -255,8 +255,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `evidence/archive/iteration117-bootstrap-byo-acr-lifecycle.md` — Bootstrap BYO-ACR initial blocked attempt and cleanup evidence
 - `evidence/archive/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md` — detailed BYO-ACR v2 create timeout blocker evidence
 - `evidence/archive/iteration116-post-vpa-ts-probe-selection.md` — local selection artifact that chose the now-completed Bootstrap managed-ACR lifecycle probe
-- `.app/tasks/README.md` — task tree index and execution rules
-- `.app/tasks/tree.json` — current project execution task tree
+- `tasks/README.md` — task tree index and execution rules
+- `tasks/tree.json` — current project execution task tree
 - `tasks/archive/managedsystem-pool/wave-01-feature-standard.yaml` — archived ManagedSystem Pool parallel feature-standard task wave
 - `evidence/archive/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
 - `evidence/archive/e2ev3-handwritten-coverage-inventory.md` — handwritten e2ev3 source inventory mapping scenarios to input paths, expectation paths, current evidence coverage, and model gaps
@@ -313,12 +313,12 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `devbox:/home/hayua/rp` — AKS RP checkout and staging execution context
 
 ## Task Management
-- `.app/project.md` is the project control plane and navigation root. It should stay readable: goal, current state, next action, validation rules, key context links, and the active task pointer.
-- Current project execution state lives in `.app/tasks/tree.json`. That task tree is the operational view of how the project is broken down and what is blocked, ready, active, or accepted.
-- `.app/tasks/README.md` explains the task tree rules. `scenarios/` is reserved for AKS e2e domain scenarios, test specs, run plans, and execution strategy.
+- `project.md` is the project control plane and navigation root. It should stay readable: goal, current state, next action, validation rules, key context links, and the active task pointer.
+- Current project execution state lives in `tasks/tree.json`. That task tree is the operational view of how the project is broken down and what is blocked, ready, active, or accepted.
+- `tasks/README.md` explains the task tree rules. `scenarios/` is reserved for AKS e2e domain scenarios, test specs, run plans, and execution strategy.
 - Durable findings, evidence, feature packets, and run results live under `evidence/archive/`.
 - Keep one task responsible for one durable output artifact. Parallel tasks must write to different outputs; integration tasks merge them afterward.
-- The project execution engine works breadth-first from `.app/tasks/tree.json`, executes ready leaf tasks until blocked or gated, verifies claims before acceptance, and rolls accepted work up to parent tasks.
+- The project execution engine works breadth-first from `tasks/tree.json`, executes ready leaf tasks until blocked or gated, verifies claims before acceptance, and rolls accepted work up to parent tasks.
 
 ## Capability Map
 - `Scenario_Traffic_AppRouting_Nginx_Disablement`: pass. Green evidence is in `evidence/archive/successful-e2e-run.md`.
@@ -348,11 +348,11 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Run `feature-learning-queue-refresh` from `.app/tasks/tree.json`. It should write `evidence/archive/feature-learning-queue.md` and update `.app/tasks/tree.json` with the next concrete feature-learning leaf task when safe local work exists. It must not run cloud/staging/kubectl/live probes.
+Run `feature-learning-queue-refresh` from `tasks/tree.json`. It should write `evidence/archive/feature-learning-queue.md` and update `tasks/tree.json` with the next concrete feature-learning leaf task when safe local work exists. It must not run cloud/staging/kubectl/live probes.
 
-Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `.app/decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/archive/iteration190-live-selected-two-path-blocker.md`.
+Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/archive/iteration190-live-selected-two-path-blocker.md`.
 
-The project execution engine should first run the blocked-frontier review tasks in `.app/tasks/tree.json`. Those tasks must decide whether current blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. If safe local work exists, create ready child tasks and continue. If only external gates remain, record the exact resume condition and keep the relevant task blocked.
+The project execution engine should first run the blocked-frontier review tasks in `tasks/tree.json`. Those tasks must decide whether current blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. If safe local work exists, create ready child tasks and continue. If only external gates remain, record the exact resume condition and keep the relevant task blocked.
 
 Resume only when one of these triggers exists:
 
@@ -376,19 +376,19 @@ Until a matching trigger exists, preserve the recorded gates for Machines/NAP, P
 ## Migration Notes
 The detailed historical migration log was archived when Project App V2 task-tree execution became the current model.
 
-- Archive: `.app/archive/project-pre-v2-task-engine.md`
-- Current runtime frame: `.app/project.md`
-- Current execution tree: `.app/tasks/tree.json`
+- Archive: `archive/project-pre-v2-task-engine.md`
+- Current runtime frame: `project.md`
+- Current execution tree: `tasks/tree.json`
 - Current domain evidence: `evidence/archive/`, `model/knowledge-map/`, `scenarios/`, and `replays/`
 
 ## Plan
-Current project execution is driven by the breadth-first task tree. The engine selects ready leaf tasks from `.app/tasks/tree.json`, verifies claims before acceptance, rolls up parent state, creates parent-review or blocked-review tasks when audit/replan is needed, and keeps going until truly blocked, gated, complete, or interrupted by an infra budget guard.
+Current project execution is driven by the breadth-first task tree. The engine selects ready leaf tasks from `tasks/tree.json`, verifies claims before acceptance, rolls up parent state, creates parent-review or blocked-review tasks when audit/replan is needed, and keeps going until truly blocked, gated, complete, or interrupted by an infra budget guard.
 
 Blocked is not a passive stop state. When the ready frontier is empty, the engine creates or runs blocked-review tasks that inspect whether blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. The project should wait only after that review confirms no safe local unblock, split, correction, or evidence-gathering task remains.
 
-Workers should not edit `.app/tasks/tree.json` directly. A worker produces a claim and evidence for one leaf; the engine owns task updates, parent rollup, review-task creation, and continuation events. If a wake slice ends while ready work remains, the engine emits another `project.execution.requested` event so the project stays active.
+Workers should not edit `tasks/tree.json` directly. A worker produces a claim and evidence for one leaf; the engine owns task updates, parent rollup, review-task creation, and continuation events. If a wake slice ends while ready work remains, the engine emits another `project.execution.requested` event so the project stays active.
 
-The project watcher is enabled through `.app/app.ts`: the `regular-learning` schedule emits `project.tick` every hour, and the app converts that tick into the same `project.execution.requested` event used by comments, steering, and the `advance-project`/`watch` actions. The project-local trigger in `.app/agents/aks-explorer/cron.json` consumes that event and runs the task-tree workflow.
+The project watcher is enabled through `app.ts`: the `regular-learning` schedule emits `project.tick` every hour, and the app converts that tick into the same `project.execution.requested` event used by comments, steering, and the `advance-project`/`watch` actions. The project-local trigger in `agents/aks-explorer/cron.json` consumes that event and runs the task-tree workflow.
 
 ## Tasks
 
@@ -430,20 +430,20 @@ The project watcher is enabled through `.app/app.ts`: the `regular-learning` sch
 ## Artifacts
 Use the domain workspace indexes instead of a copied artifact ledger in this runtime file.
 
-- Current task state: `.app/tasks/tree.json`
+- Current task state: `tasks/tree.json`
 - Accepted and raw evidence: `evidence/archive/`
 - Knowledge model and generated views: `model/knowledge-map/`
 - Feature packets: `features/`
 - Run plans: `suites/`
 - Probes: `replays/`
-- Full legacy artifact ledger: `.app/archive/project-pre-v2-task-engine.md#artifacts`
+- Full legacy artifact ledger: `archive/project-pre-v2-task-engine.md#artifacts`
 
 ## Active Task
 - none
 
 ## Ready Frontier (owner-loop iteration 193 — all tasks terminal)
 
-**State:** All 777 tasks in `.app/tasks/tree.json` are terminal (580 accepted, 197 superseded). The cascade closeout during iteration 193 promoted 92 decomposed tasks whose children were all terminal, including the root task. There are zero ready, zero active, and zero blocked tasks remaining.
+**State:** All 777 tasks in `tasks/tree.json` are terminal (580 accepted, 197 superseded). The cascade closeout during iteration 193 promoted 92 decomposed tasks whose children were all terminal, including the root task. There are zero ready, zero active, and zero blocked tasks remaining.
 
 **Previous iteration 192 frontier items** (all now accepted):
 - UI V4 feature page rework chain (scenario-path table, REST scenario actions, action receipts, feature brief panel, feature page tests) — all accepted.
@@ -459,5 +459,5 @@ The `azureManagedNodes` assertion in `specs/managedsystem-rest-add-existing.json
 19 OIDC rework-review tasks and 6 OIDC parent tasks superseded. These were spinning at rework-review depth 3–6+ with interrupted/blocked/no-progress claims. The OIDC probe work itself (accepted at depth 0) is preserved; only the unproductive rework chains were cut. If OIDC probe work needs to resume, create a fresh bounded task rather than continuing the superseded chains.
 
 ## Task Index
-- .app/tasks/README.md
-- .app/tasks/tree.json
+- tasks/README.md
+- tasks/tree.json

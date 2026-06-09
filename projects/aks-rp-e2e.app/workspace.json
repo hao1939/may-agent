@@ -1,0 +1,8 @@
+{
+  "workspace": "aks-rp-e2e",
+  "repo": "git@github.com:hao1939/aks-rp-e2e.git",
+  "localPath": "../aks-rp-e2e",
+  "branch": "main",
+  "observedRevision": "dca46cc",
+  "lastSyncedAt": "2026-06-09T09:41:44Z"
+}

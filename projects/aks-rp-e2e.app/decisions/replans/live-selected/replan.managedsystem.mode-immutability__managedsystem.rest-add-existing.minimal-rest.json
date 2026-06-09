@@ -1,0 +1,159 @@
+{
+  "id": "replan.managedsystem.mode-immutability__managedsystem.rest-add-existing.minimal-rest",
+  "generatedAt": "2026-05-29T13:32:26.931Z",
+  "selectedPathIds": [
+    "path.managedsystem.mode-immutability",
+    "path.managedsystem.rest-add-existing.minimal-rest"
+  ],
+  "acceptedPathIds": [
+    "path.managedsystem.mode-immutability",
+    "path.managedsystem.rest-add-existing.minimal-rest"
+  ],
+  "rejectedPaths": [],
+  "groups": [
+    {
+      "id": "group.01",
+      "compatibleGroupKey": "managedsystem.add-existing-minimal-rest.single-cluster",
+      "clusterShapeKey": "existing-normal-systempool",
+      "selectedPathIds": [
+        "path.managedsystem.rest-add-existing.minimal-rest",
+        "path.managedsystem.mode-immutability"
+      ],
+      "specIds": [
+        "spec.managedsystem.rest-add-existing.minimal-rest",
+        "spec.managedsystem.mode-immutability"
+      ],
+      "operations": [
+        {
+          "id": "operation.add-managedsystem-pool",
+          "surface": "arm-rest",
+          "method": "PUT",
+          "pathTemplate": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.ContainerService/managedClusters/{clusterName}/agentPools/{poolName}?api-version={apiVersion}",
+          "body": {
+            "properties": {
+              "mode": "ManagedSystem"
+            }
+          },
+          "intent": "Send the proven minimal mode-only request shape.",
+          "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
+          "featurePathIds": [
+            "path.managedsystem.rest-add-existing.minimal-rest"
+          ]
+        },
+        {
+          "id": "operation.get-managedsystem-pool",
+          "surface": "arm-rest",
+          "method": "GET",
+          "pathTemplate": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.ContainerService/managedClusters/{clusterName}/agentPools/{poolName}?api-version={apiVersion}",
+          "intent": "Read the pool back for persisted ManagedSystem state.",
+          "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
+          "featurePathIds": [
+            "path.managedsystem.rest-add-existing.minimal-rest"
+          ]
+        },
+        {
+          "id": "operation.patch-mode-system",
+          "surface": "arm-rest",
+          "method": "PUT",
+          "pathTemplate": "/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.ContainerService/managedClusters/{clusterName}/agentPools/{poolName}?api-version={apiVersion}",
+          "body": {
+            "properties": {
+              "mode": "System"
+            }
+          },
+          "intent": "Try to mutate an existing ManagedSystem pool back to System.",
+          "specId": "spec.managedsystem.mode-immutability",
+          "featurePathIds": [
+            "path.managedsystem.mode-immutability"
+          ]
+        }
+      ],
+      "assertions": [
+        {
+          "id": "assert.rp-request-accepted",
+          "behavior": "rp.request.accepted",
+          "expected": "true",
+          "verdictImpact": "claim",
+          "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
+          "featurePathIds": [
+            "path.managedsystem.rest-add-existing.minimal-rest"
+          ]
+        },
+        {
+          "id": "assert.managedsystem-ready",
+          "behavior": "agentPool.managedsystem.ready",
+          "expected": "true",
+          "verdictImpact": "claim",
+          "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
+          "featurePathIds": [
+            "path.managedsystem.rest-add-existing.minimal-rest"
+          ]
+        },
+        {
+          "id": "assert.azure-managed-nodes",
+          "behavior": "agentPool.managedsystem.azureManagedNodes",
+          "expected": "true",
+          "verdictImpact": "claim",
+          "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
+          "featurePathIds": [
+            "path.managedsystem.rest-add-existing.minimal-rest"
+          ]
+        },
+        {
+          "id": "assert.mode-mutation-rejected",
+          "behavior": "rp.request.accepted",
+          "expected": "false",
+          "verdictImpact": "claim",
+          "specId": "spec.managedsystem.mode-immutability",
+          "featurePathIds": [
+            "path.managedsystem.mode-immutability"
+          ]
+        },
+        {
+          "id": "assert.mode-change-rejected",
+          "behavior": "agentPool.mode.changeRejected",
+          "expected": "true",
+          "verdictImpact": "claim",
+          "specId": "spec.managedsystem.mode-immutability",
+          "featurePathIds": [
+            "path.managedsystem.mode-immutability"
+          ]
+        }
+      ],
+      "cleanup": [
+        {
+          "id": "cleanup.resource-group",
+          "surface": "az-cli",
+          "intent": "Delete the resource group after all compatible ManagedSystem checks finish.",
+          "specId": "spec.managedsystem.rest-add-existing.minimal-rest",
+          "featurePathIds": [
+            "path.managedsystem.rest-add-existing.minimal-rest"
+          ]
+        }
+      ],
+      "sourceRefs": [
+        "devbox:/home/hayua/rp/test/e2ev3/sigs/rp/nativerp/plans/managedsystem_lifecycle.go",
+        "devbox:/home/hayua/rp/test/e2ev3/validate/agent_pool/managedsystem_pool.go",
+        "features/managedsystem-pool.yaml",
+        "suites/managedsystem-rest-add-existing.yaml",
+        "evidence/archive/managedsystem-pool-api-doc-boundary.md",
+        "evidence/archive/iteration56-managedsystem-staging-refresh.md",
+        "evidence/archive/managedsystem-pool-evidence-state-matrix.md"
+      ],
+      "diagnosticClean": true,
+      "diagnosticNotes": [
+        "Selected paths share one compatibility key, one cluster shape, and explicit pairwise compatibility.",
+        "Failure diagnosis remains path-specific because every operation and assertion carries specId and featurePathIds."
+      ]
+    }
+  ],
+  "metrics": {
+    "selectedScenarioCount": 1,
+    "behaviorAssertionCount": 5,
+    "baselineClusterCrudCount": 2,
+    "replannedClusterCrudCount": 1,
+    "clusterCrudSaved": 1,
+    "expectationDensity": 5,
+    "diagnosticCleanGroupCount": 1
+  }
+}

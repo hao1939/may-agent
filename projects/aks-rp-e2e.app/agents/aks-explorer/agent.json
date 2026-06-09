@@ -1,0 +1,12 @@
+{
+  "name": "aks-explorer",
+  "description": "Project-local AKS RP E2E explorer for running tests, investigating blockers, and recording evidence",
+  "domain": "AKS RP e2e execution, staging/devbox investigation, capability evidence",
+  "model": "opus",
+  "tools": [
+    "coding",
+    "cron",
+    "query_db",
+    "finish"
+  ]
+}
