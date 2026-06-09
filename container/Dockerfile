@@ -1,5 +1,8 @@
+ARG NODE_IMAGE=node:22-bookworm-slim@sha256:9c2c405e3ff9b9afb2873232d24bb06367d649aa3e6259cbe314da59578e81e9
+ARG DEBIAN_IMAGE=debian:bookworm-slim@sha256:74d56e3931e0d5a1dd51f8c8a2466d21de84a271cd3b5a733b803aa91abf4421
+
 # ── Builder stage: compile standalone binary ──────────────────────────────
-FROM node:22-bookworm-slim AS builder
+FROM ${NODE_IMAGE} AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -18,7 +21,8 @@ RUN curl -fsSL https://bun.sh/install | bash -s "$BUN_VERSION" && \
 
 WORKDIR /build
 
-# Install dependencies
+# Install dependencies. Keep this workspace manifest list in sync with
+# package.json workspaces and WORKSPACE_PACKAGE_DIRS below.
 COPY package.json bun.lock ./
 COPY packages/sdk/package.json packages/sdk/package.json
 COPY packages/control/package.json packages/control/package.json
@@ -31,11 +35,16 @@ COPY src/ src/
 COPY packages/ packages/
 COPY tsconfig.json ./
 
+ARG WORKSPACE_PACKAGE_DIRS="packages/control packages/sdk packages/terminal packages/webui"
+RUN actual="$(find packages -mindepth 2 -maxdepth 2 -name package.json -printf '%h\n' | sort | xargs)" && \
+    test "$actual" = "$WORKSPACE_PACKAGE_DIRS" || \
+    (printf 'Workspace package list drifted.\nExpected: %s\nActual:   %s\nUpdate Dockerfile workspace manifest COPY lines and WORKSPACE_PACKAGE_DIRS.\n' "$WORKSPACE_PACKAGE_DIRS" "$actual" >&2; exit 1)
+
 # Compile standalone binary
 RUN bun build --compile src/app/binary-entry.ts --outfile /build/may-agent
 
 # ── Runtime stage: minimal image with Chrome + GUI ────────────────────────
-FROM debian:bookworm-slim
+FROM ${DEBIAN_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bubblewrap \
@@ -79,18 +88,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
-# Node.js 22 — novnc pulls in nodejs 18, but agents' bash commands
-# use node to run scripts with native modules (better-sqlite3) compiled
-# for the host's Node 22. Override with matching version.
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-# Install CLI agent tools (claude-code, codex) — used as worker agents
-# They route through litellm proxy for model access
-RUN npm install -g @anthropic-ai/claude-code@latest @openai/codex@latest
+# Runtime Node/npm comes from the pinned builder image. This avoids the extra
+# NodeSource apt repository while keeping agent shell commands on Node 22.
+COPY --from=builder /usr/local/bin/node /usr/local/bin/node
+COPY --from=builder /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Install CLI agent tools (claude-code, codex) used as worker agents. They
+# route through litellm proxy for model access; keep versions pinned so image
+# rebuilds do not silently change agent behavior.
+ARG CLAUDE_CODE_VERSION=2.1.156
+ARG CODEX_VERSION=0.135.0
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION} @openai/codex@${CODEX_VERSION} \
+    && npm cache clean --force
 
 # Copy compiled runtime tools from builder. The service runs from the standalone
 # may-agent binary, but agent/operator commands and docs assume `bun` exists.
