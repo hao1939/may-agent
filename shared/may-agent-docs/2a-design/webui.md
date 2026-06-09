@@ -95,11 +95,11 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 │  HEARTBEAT TIMELINE   (last 4h)                          ← live →    │
 │                                                                       │
 │  may          ▌  ▌    ▌   ▌  ▌    ▌   ▌  ▌   ▌  ▌    ▌  ▌  ▌  ▍     │
-│  optimizer    ▌    ▌      ▌      ▌    ▌      ▌      ▌       ▍        │
 │  evaluator    ▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▍     │
 │  arc          ▌      ▌            ▌                       ▌  ▍       │
 │  scout        ▌                                            ▍         │
 │  dev          ▌            ▌            ▌                  ▍         │
+│  aks-explorer ▌    ▌      ▌      ▌    ▌      ▌      ▌       ▍        │
 │  tech-lead    ▌                  ▌                         ▍         │
 │  …                                                                    │
 │                                                                       │
@@ -108,7 +108,7 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 │  RECENT DECISIONS                                                     │
 │  14:24  may         "Project context-injection-review is stale 4d.   │
 │                      Iterating to unstick before it goes blocked."   │
-│  14:22  optimizer   "handler.success-rate breached. Investigating    │
+│  14:22  dev         "handler.success-rate breached. Investigating    │
 │                      whether evaluator retries are the cause."       │
 │  14:18  arc         "Reviewing scout's proposal on stigmergy. Will   │
 │                      respond with feedback this heartbeat."          │
@@ -119,7 +119,7 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 │  PROJECTS  (sorted by recent activity)                               │
 │                                                                       │
 │  ● context-injection-review     may       4d ago   metrics: 2 ✓     │
-│  ● handler-health               optimizer 2h ago   metrics: 3, 1⚠   │
+│  ● handler-health               dev       2h ago   metrics: 3, 1⚠   │
 │  ● agent-system-literacy        arc       1h ago   metrics: 2 ✓     │
 │  ◐ skill-workflow-audit         scout     3d ago   metrics: 1 ✓     │
 │  …                                                                    │
@@ -127,8 +127,8 @@ Answers "is the system alive?" in one screen, no clicks. Built around **movement
 ├──────────────────────────────────────────────────────────────────────┤
 │                                                                       │
 │  CONVERSATION  (last hour)                                           │
-│  14:24  may → optimizer    P1  "handler.success-rate review"        │
-│  14:22  optimizer → may    P2  "ack, picking up next heartbeat"     │
+│  14:24  may → dev           P1  "handler.success-rate review"        │
+│  14:22  dev → may          P2  "ack, picking up next heartbeat"     │
 │  14:18  scout → arc        P2  "stigmergy proposal ready for review"│
 │                                                                       │
 └──────────────────────────────────────────────────────────────────────┘
@@ -220,7 +220,7 @@ A session is **a thought**. The UI renders it as one, in four phases (matching t
 │  READ        Context the agent took in:                              │
 │              · projects/context-injection-review/{project,journal,   │
 │                  discussion}.md                                       │
-│              · 3 unread messages (from optimizer, arc, human)        │
+│              · 3 unread messages (from dev, arc, human)              │
 │              · 14 active metrics, 1 in breach (handler.success-rate) │
 │              · last 5 own decisions                                  │
 │                                                                       │
@@ -231,11 +231,11 @@ A session is **a thought**. The UI renders it as one, in four phases (matching t
 │  ACT         8 tool calls:                                           │
 │              · read project.md, journal.md, discussion.md            │
 │              · edit journal.md (added iteration entry)               │
-│              · message → optimizer (P2, request review)              │
+│              · message → dev (P2, request review)                    │
 │              · finish                                                 │
 │                                                                       │
 │  RECORD      · journal entry added to context-injection-review      │
-│              · message.created → optimizer                           │
+│              · message.created → dev                                 │
 │              · session.end (outcome: progress)                       │
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤
@@ -294,7 +294,7 @@ The metric grid lives here, not on the front page. This is where you go when the
 │                                                                       │
 ├──────────────────────────────────────────────────────────────────────┤
 │  INFRASTRUCTURE                                                       │
-│  handler.success-rate         0.78 / 0.80   ⚠  optimizer  ▁▂▃▅█▇▅   │
+│  handler.success-rate         0.78 / 0.80   ⚠  dev        ▁▂▃▅█▇▅   │
 │  handler.heartbeat-coverage   13 / 8        ✓                        │
 │  session.error-rate-6h        0.07 / 0.10   ✓                        │
 │  …                                                                    │

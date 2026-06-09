@@ -66,7 +66,7 @@ Every outbound Telegram message would store a context blob:
 
 ```typescript
 interface NotificationContext {
-  agent: string;              // "may", "scout", "coach", etc.
+  agent: string;              // "may", "scout", "dev", etc.
   subject: string;            // human-readable: "project system-efficiency", "metric handler.p95-duration"
   state: Record<string, unknown>;
   background: string;
