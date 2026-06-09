@@ -231,19 +231,21 @@ Metrics should measure lifecycle health, not replace judgment:
 
 ## Current Implementation Cross-Check
 
-> **Last verified: 2026-06-08 05:30Z** — DB evidence from full escalation event
-> history (38 created, 38 routed, 0 resolved, 0 dismissed, 0 resume events).
+> **Last verified: 2026-06-13 ~00:30Z** — DB evidence from full escalation event
+> history (35 created, 35 routed, 0 resolved, 0 dismissed, 0 resume events).
+> All 35 escalations remain `pending` status — zero have been handled.
+> See KE-1739 for detailed analysis of the escalation graveyard.
 
 | Area | Current state | Gap |
 |------|---------------|-----|
 | Event payload delivery | `Cron.triggerSubscribers()` passes the original bus event envelope directly; canonical handlers read domain fields from `event.data`. | Implemented. Keep this model; do not add per-field framework promotion or wrapper payloads. |
 | Workflow-backed handler | `handler: { workflow, agent, task, includeEvent: true }` uses the SDK workflow adapter, appends the event envelope, and can skip when missing. | Good for event-to-workflow bridges without custom handler code. |
 | SDK escalation | `sdk.escalate(reason, opts?)` emits canonical `escalation.created`, keeps envelope fields out of `data`, and relies on the event pipeline for persistence. | Structured create is in place. |
-| Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 38 escalations originate from session-finish boundary code, not proactive mid-session calls. |
-| Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `escalation.routed`, and sends a message to the owner. | Implemented (Slice 2). All 38 created → all 38 routed. |
+| Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 35 escalations originate from session-finish boundary code, not proactive mid-session calls. |
+| Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `escalation.routed`, and sends a message to the owner. | Implemented (Slice 2). All 35 created → all 35 routed. |
 | Resolution | **Not implemented.** No agent emits `escalation.resolved` or `escalation.dismissed`. Zero events in DB. | Slice 3 is unbuilt. Escalations are fire-and-forget: created, routed, then the lifecycle ends. No owner closes the loop. |
 | Resume lifecycle | `src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Code is wired but **never triggered** — zero `escalation.resolved` events means resume code is dead. Slice 4 infra exists but has no inputs. |
-| `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 38 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
+| `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 35 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
 | Escalation metrics | Doc specifies 5 lifecycle metrics (open-count, resolve-time, resume-success, dedup-count, unowned-count). | **None exist** in the active metrics table. No escalation health observability. |
 | Workflow escalation | Workflow `ctx.escalate(reason, context)` returns an escalated workflow result and stops the synchronous workflow. | Good target shape. It should not automatically publish `escalation.created`; boundary code decides whether the local workflow escalation needs owner routing. |
 | Docs | `events.md` documents the common event envelope and canonical escalation taxonomy. | Handler/manual examples should keep using direct `event.data` payloads. |
