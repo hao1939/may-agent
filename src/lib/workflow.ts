@@ -123,6 +123,14 @@ export interface WorkflowContext {
    */
   runAgent(name: string, task: string): Promise<TaskResult>;
 
+  /** Run work in a durable agent session.
+   *  If sessionId is provided, resume that exact session and append the new
+   *  task prompt to its transcript. If the session is already active, wait for
+   *  the active run instead of enqueueing duplicate work. If sessionId is
+   *  omitted or cannot be resumed, create a fresh session like runAgent().
+   */
+  runAgentSession(name: string, task: string, sessionId?: string): Promise<TaskResult>;
+
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
 
