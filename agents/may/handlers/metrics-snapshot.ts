@@ -113,6 +113,9 @@ const ALL_METRICS: MetricDef[] = [
   { id: "infra.persist.db-size-mb", name: "DB size (MB)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 500, threshold: 2000, unit: "MB", alert_op: ">", priority: "P2" },
   { id: "infra.messages.delivery-rate", name: "Message delivery success rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.9, unit: "ratio", alert_op: "<", priority: "P2" },
   { id: "infra.sessions.active-count", name: "Active sessions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 5, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
+  // Metric health — structurally-pinned detector (KE-938/KE-939/KE-940)
+  { id: "metric.structurally-pinned-count", name: "Structurally pinned metrics (dv=1/7d)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } } },
 ];
 
 const RETIRED_METRIC_IDS = [
@@ -147,6 +150,19 @@ const RETIRED_METRIC_IDS = [
 
 /** Snapshot retention: keep 30 days of history */
 const RETENTION_DAYS = 30;
+
+/**
+ * Structurally-pinned metric allow-list — these metrics have a legitimate
+ * steady-state of dv=1 (e.g. health metrics that remain 0 when healthy).
+ * They are excluded from the structurally-pinned count so they don't fire
+ * false-positive alerts.  (KE-938 / proposal: Option A guard-metric list)
+ */
+const STRUCTURALLY_PINNED_ALLOWLIST = new Set([
+  "capability.zombie-session-count",        // desired steady-state 0; alerts on non-zero
+  "capability.status-reality-mismatch-count", // desired 0; multi-signal composite
+  "infra.bus.subscriber-failed-count-1h",   // desired 0; failure counter
+  "infra.messages.delivery-rate",           // desired 1.0; high-reliability gauge
+]);
 
 function projectSlugFromRef(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null;
@@ -1056,6 +1072,30 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const activeSessions = count("SELECT COUNT(*) as c FROM sessions WHERE status = 'running'");
       record("infra.sessions.active-count", activeSessions);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.sessions.active-count: ${e}`); }
+
+    // ── Structurally-pinned metric detector (KE-938/KE-939/KE-940) ──
+    // Counts active metrics (v2.*/capability.*/infra.*) that have only 1
+    // distinct snapshot value over 7 days (dv=1) with ≥24 samples, excluding
+    // metrics on the guard-metric allow-list (STRUCTURALLY_PINNED_ALLOWLIST).
+    try {
+      const sevenDays = now - 7 * 86400000;
+      const pinnedRows = db.prepare(
+        `SELECT m.id
+         FROM metrics m
+         LEFT JOIN metric_snapshots s
+           ON s.metric_id = m.id
+          AND s.measured_at > ?
+         WHERE m.status = 'active'
+           AND (m.id LIKE 'v2.%' OR m.id LIKE 'capability.%' OR m.id LIKE 'infra.%')
+         GROUP BY m.id
+         HAVING COUNT(DISTINCT s.value) = 1 AND COUNT(s.value) >= 24`
+      ).all(sevenDays) as Array<{ id: string }>;
+      const pinned = pinnedRows.filter(r => !STRUCTURALLY_PINNED_ALLOWLIST.has(r.id));
+      record("metric.structurally-pinned-count", pinned.length, pinnedRows.length);
+      if (pinned.length > 0) {
+        ctx.sdk.log("info", `[metrics-snapshot] Structurally pinned metrics: ${pinned.map(r => r.id).join(", ")}`);
+      }
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring metric.structurally-pinned-count: ${e}`); }
 
     // ── Generic metrics (source_query / source_command) ──────────────
 
