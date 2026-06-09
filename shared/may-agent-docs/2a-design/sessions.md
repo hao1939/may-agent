@@ -56,8 +56,8 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-11: 0 of 2,685+ `call` sessions have a
-non-null `parentSessionId`; all 10 sessions with `parentSessionId` are `job` or `chat` kind.
+(kind=`chat`) sessions. Verified 2026-06-13: 0 of 14,823 `call` sessions have a
+non-null `parentSessionId`; all 12 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
 
