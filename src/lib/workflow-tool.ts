@@ -736,6 +736,146 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       emitAndCollectDemands(guards, startEvent); // start events: collect but don't expect demands (logging only)
     }
 
+    const runAgentStep = async (
+      agentName: string,
+      agentTask: string,
+      reuseSessionId?: string,
+    ): Promise<TaskResult> => {
+      // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
+      // where they'd produce the confusing "Agent \"undefined\" not registered" error.
+      // This can happen when workflows use ctx.agent on a binary compiled before the agent field was added.
+      if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
+        throw new Error(
+          `runAgent called with invalid agent name: ${JSON.stringify(agentName)}. ` +
+          `If using ctx.agent, ensure the workflow tool was created with agentName option ` +
+          `and that the binary has been restarted after deploy.`
+        );
+      }
+      const currentStep = stepCounter++;
+      const sessionToReuse = typeof reuseSessionId === "string" && reuseSessionId.trim() ? reuseSessionId.trim() : "";
+
+      // Replay applies to ordinary workflow steps. Task-bound sessions represent
+      // actual fresh/resumed work and should not be satisfied from replay alone.
+      if (!sessionToReuse && previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
+        const prevStep = previousRun.steps[currentStep];
+        if (prevStep.agent === agentName) {
+          try {
+            const taskResult = manager.result(prevStep.sessionId);
+            const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
+            localSteps.push(step);
+            completedSteps.push(step);
+            pruneCompletedSteps(completedSteps);
+
+            run.steps.push({
+              sessionId: prevStep.sessionId,
+              agent: agentName,
+              task: agentTask,
+              status: taskResult.status,
+              startedAt: prevStep.startedAt,
+              endedAt: prevStep.endedAt,
+              lastAssistantText: taskResult.lastAssistantText,
+            });
+
+            onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
+            return taskResult;
+          } catch {
+            replayExhausted = true;
+          }
+        } else {
+          replayExhausted = true;
+        }
+      }
+
+      const steering = steeringQueue.shift();
+      if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+
+      let effectiveTask = agentTask;
+      if (guardWarnings.length > 0) {
+        effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map(w => "- " + w).join("\n")}`;
+        guardWarnings.length = 0;
+      }
+
+      let sid = sessionToReuse;
+      let taskResult: TaskResult | undefined;
+      if (sid) {
+        try {
+          onEvent?.({ type: "workflow.step_started", step: agentName, sessionId: sid });
+          if (!manager.hasActiveSession(sid)) manager.resumeSession(sid, effectiveTask, { source: `workflow:${workflow.name}` });
+          taskResult = await manager.waitFor(sid);
+          taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message.includes("not found")) {
+            sid = manager.run(agentName, effectiveTask, {
+              sessionId: sid,
+              parentSessionId,
+              workflowRunId: runId,
+              projectId: effectiveProjectId,
+              stepLabel: agentName,
+              source: `workflow:${workflow.name}`,
+              kind: "call",
+            });
+            taskResult = await manager.waitFor(sid);
+            taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
+          } else {
+            sid = "";
+          }
+        }
+      }
+      if (!taskResult || !sid) {
+        onEvent?.({ type: "workflow.step_started", step: agentName });
+        taskResult = await manager.callAgent(agentName, effectiveTask, {
+          parentSessionId,
+          source: `workflow:${workflow.name}`,
+          workflowRunId: runId,
+          projectId: effectiveProjectId,
+          stepLabel: agentName,
+        });
+        sid = taskResult.sessionId;
+      }
+
+      sid = taskResult.sessionId || sid;
+
+      const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
+      localSteps.push(step);
+      completedSteps.push(step);
+      pruneCompletedSteps(completedSteps);
+
+      run.steps.push({
+        sessionId: sid,
+        agent: agentName,
+        task: agentTask,
+        status: taskResult.status,
+        startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
+        endedAt: Date.now(),
+        lastAssistantText: taskResult.lastAssistantText,
+      });
+
+      onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
+
+      if (guards.length > 0) {
+        const guardEvent: WorkflowGuardEvent = {
+          type: "step_done",
+          source: "agent",
+          step: agentName,
+          sessionId: sid,
+          result: taskResult,
+          completedSteps,
+          task: agentTask,
+        };
+        const demands = emitAndCollectDemands(guards, guardEvent);
+        if (demands.length > 0) {
+          await resolveDemands(demands, guardEvent, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
+            manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings, emitGuardSignal);
+        }
+      }
+
+      const steeringAfter = steeringQueue.shift();
+      if (steeringAfter) throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
+
+      return taskResult;
+    };
+
     const ctx: WorkflowContext = {
       task,
       agent: (opts.agentName && opts.agentName !== "undefined") ? opts.agentName : "unknown",
@@ -764,128 +904,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         opts.runtimeCtx?.dispatchEvent(eventType, data);
       },
 
-      runAgent: async (agentName: string, agentTask: string): Promise<TaskResult> => {
-        // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
-        // where they'd produce the confusing "Agent \"undefined\" not registered" error.
-        // This can happen when workflows use ctx.agent on a binary compiled before the agent field was added.
-        if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
-          throw new Error(
-            `runAgent called with invalid agent name: ${JSON.stringify(agentName)}. ` +
-            `If using ctx.agent, ensure the workflow tool was created with agentName option ` +
-            `and that the binary has been restarted after deploy.`
-          );
-        }
-        const currentStep = stepCounter++;
-
-        // Replay: if we have a previous run with a completed step at this index,
-        // return the archived result instead of spawning a new session.
-        if (previousRun && !replayExhausted && currentStep < previousRun.steps.length) {
-          const prevStep = previousRun.steps[currentStep];
-          if (prevStep.agent === agentName) {
-            // Agent matches — replay from archive
-            try {
-              const taskResult = manager.result(prevStep.sessionId);
-
-              const step: CompletedStep = { step: agentName, sessionId: prevStep.sessionId, result: taskResult };
-              localSteps.push(step);
-              completedSteps.push(step);
-              pruneCompletedSteps(completedSteps);
-
-              // Record the replayed step in the new run
-              const wfStep: WorkflowStep = {
-                sessionId: prevStep.sessionId,
-                agent: agentName,
-                task: agentTask,
-                status: taskResult.status,
-                startedAt: prevStep.startedAt,
-                endedAt: prevStep.endedAt,
-                lastAssistantText: taskResult.lastAssistantText,
-              };
-              run.steps.push(wfStep);
-              // Step data persisted via sessions table (db-writer)
-
-              onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
-              return taskResult;
-            } catch {
-              // Archived data unavailable — fall through to live execution
-              replayExhausted = true;
-            }
-          } else {
-            // Agent name mismatch — workflow code changed, stop replaying
-            replayExhausted = true;
-          }
-        }
-
-        // Live execution
-        const steering = steeringQueue.shift();
-        if (steering) {
-          throw new WorkflowInterrupted(steering, completedSteps, runId);
-        }
-
-        onEvent?.({ type: "workflow.step_started", step: agentName });
-
-        // Gap 1: Inject accumulated guard warnings into the task
-        let effectiveTask = agentTask;
-        if (guardWarnings.length > 0) {
-          effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map(w => "- " + w).join("\n")}`;
-          guardWarnings.length = 0; // clear after delivery
-        }
-
-        const taskResult = await manager.callAgent(agentName, effectiveTask, {
-          parentSessionId,
-          workflowRunId: runId,
-          projectId: effectiveProjectId,
-          stepLabel: agentName,
-          source: `workflow:${workflow.name}`,
-        });
-
-        const sid = taskResult.sessionId;
-
-        const step: CompletedStep = { step: agentName, sessionId: sid, result: taskResult };
-        localSteps.push(step);
-        completedSteps.push(step);
-        pruneCompletedSteps(completedSteps);
-
-        // Persist step to the workflow run
-        const wfStep: WorkflowStep = {
-          sessionId: sid,
-          agent: agentName,
-          task: agentTask,
-          status: taskResult.status,
-          startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
-          endedAt: Date.now(),
-          lastAssistantText: taskResult.lastAssistantText,
-        };
-        run.steps.push(wfStep);
-        // Step data persisted via sessions table (db-writer)
-
-        onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
-
-        // ── Guard: step_done event ────────────────────────────────────
-        if (guards.length > 0) {
-          const guardEvent: WorkflowGuardEvent = {
-            type: "step_done",
-            source: "agent",
-            step: agentName,
-            sessionId: sid,
-            result: taskResult,
-            completedSteps,
-            task: agentTask,
-          };
-          const demands = emitAndCollectDemands(guards, guardEvent);
-          if (demands.length > 0) {
-            await resolveDemands(demands, guardEvent, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings, emitGuardSignal);
-          }
-        }
-
-        const steeringAfter = steeringQueue.shift();
-        if (steeringAfter) {
-          throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
-        }
-
-        return taskResult;
-      },
+      runAgent: (agentName: string, agentTask: string): Promise<TaskResult> => runAgentStep(agentName, agentTask),
+      runAgentSession: (agentName: string, agentTask: string, sessionId?: string): Promise<TaskResult> =>
+        runAgentStep(agentName, agentTask, sessionId),
 
       runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
         const start = Date.now();
