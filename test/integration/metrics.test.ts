@@ -48,8 +48,8 @@ describe("MetricService", () => {
       { metricId: "scout.idea-yield-24h", status: "breached" },
     ]);
 
-    const alert = db.prepare("SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id = ?").get("scout.idea-yield-24h") as any;
-    expect(alert).toMatchObject({ metric_id: "scout.idea-yield-24h", resolved_at: null });
+    const alert = db.prepare("SELECT metric_id, alert_type, resolved_at FROM metric_alerts WHERE metric_id = ?").get("scout.idea-yield-24h") as any;
+    expect(alert).toMatchObject({ metric_id: "scout.idea-yield-24h", alert_type: "threshold", resolved_at: null });
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
       envelope: { owner: "agent:scout", source: "test", urgency: "normal" },
@@ -98,8 +98,8 @@ describe("MetricService", () => {
       { metricId: "guard.blocked-count-15m", status: "breached" },
     ]);
 
-    const alert = db.prepare("SELECT metric_id, resolved_at FROM metric_alerts WHERE metric_id = ?").get("guard.blocked-count-15m") as any;
-    expect(alert).toMatchObject({ metric_id: "guard.blocked-count-15m", resolved_at: null });
+    const alert = db.prepare("SELECT metric_id, alert_type, resolved_at FROM metric_alerts WHERE metric_id = ?").get("guard.blocked-count-15m") as any;
+    expect(alert).toMatchObject({ metric_id: "guard.blocked-count-15m", alert_type: "consecutive_failures", resolved_at: null });
     expect(emitted.at(-1)).toMatchObject({
       type: "metric.breach",
       envelope: { owner: "agent:may", source: "test", urgency: "high" },
