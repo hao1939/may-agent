@@ -25,7 +25,8 @@ CREATE TABLE sessions (
   error           TEXT,             -- ⚠️ universally NULL due to db-writer race (KE-1558); use meta.json on disk for error text
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
-  stepLabel       TEXT              -- workflow step label (in practice, always equals `agent` when non-null)
+  stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration, used for zombie-session detection
 );
 ```
 
@@ -56,7 +57,7 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-13: 0 of 14,823 `call` sessions have a
+(kind=`chat`) sessions. Verified 2026-06-09: 0 of 14,548 `call` sessions have a
 non-null `parentSessionId`; all 12 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
