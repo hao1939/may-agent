@@ -188,7 +188,11 @@ export function validateProjectTasks(tasks: ProjectTask[]): string[] {
 }
 
 function dependencySucceeded(task: ProjectTask | undefined): boolean {
-  return task?.status === "done" && task.result === "succeeded";
+  if (!task) return false;
+  if (task.status === "done" && task.result === "succeeded") return true;
+  // Dropped/superseded dependencies are intentionally resolved; treat them as satisfied.
+  if (task.result === "dropped" || task.result === "superseded") return true;
+  return false;
 }
 
 export function planProjectTasks(tasks: ProjectTask[], opts: ProjectTaskPlanOptions = {}): ProjectTaskPlan {
@@ -197,7 +201,8 @@ export function planProjectTasks(tasks: ProjectTask[], opts: ProjectTaskPlanOpti
   const byId = new Map(tasks.map((task) => [task.id, task]));
 
   const planned = tasks.map((task): PlannedProjectTask => {
-    if (task.status === "done") {
+    // Terminal states: done, dropped, or superseded are not dispatchable.
+    if (task.status === "done" || task.result === "dropped" || task.result === "superseded") {
       return { ...task, status: "done", unmetDependencies: [] };
     }
 

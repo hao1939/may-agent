@@ -181,4 +181,78 @@ describe("project task parsing", () => {
       result: "succeeded",
     });
   });
+
+  it("treats dropped tasks as terminal and not dispatchable", () => {
+    const droppedProject = `## Tasks
+- id: setup
+  status: done
+  result: dropped
+  assignee: may
+  goal: Set up infrastructure.
+  depends_on: []
+  attempts: 2
+
+- id: build
+  status: pending
+  result: null
+  assignee: may
+  goal: Build the project.
+  depends_on: [setup]
+  attempts: 0
+`;
+    const { tasks } = parseProjectTasks(droppedProject);
+    const plan = planProjectTasks(tasks, { maxConcurrent: 3 });
+
+    // Dropped task must be in done, not dispatchable.
+    expect(plan.done.map((t) => t.id)).toContain("setup");
+    expect(plan.dispatchable.map((t) => t.id)).not.toContain("setup");
+
+    // Dropped dependency satisfies downstream, so build should be ready.
+    expect(plan.dispatchable.map((t) => t.id)).toContain("build");
+  });
+
+  it("treats superseded tasks as terminal and not dispatchable", () => {
+    const supersededProject = `## Tasks
+- id: old-approach
+  status: done
+  result: superseded
+  assignee: may
+  goal: Old approach.
+  depends_on: []
+  attempts: 1
+
+- id: new-approach
+  status: pending
+  result: null
+  assignee: may
+  goal: New approach.
+  depends_on: []
+  attempts: 0
+`;
+    const { tasks } = parseProjectTasks(supersededProject);
+    const plan = planProjectTasks(tasks, { maxConcurrent: 3 });
+
+    expect(plan.done.map((t) => t.id)).toContain("old-approach");
+    expect(plan.dispatchable.map((t) => t.id)).not.toContain("old-approach");
+    expect(plan.dispatchable.map((t) => t.id)).toContain("new-approach");
+  });
+
+  it("treats dropped tasks as terminal even when status is not 'done'", () => {
+    // This is the real-world bug: task has status: "dropped" (non-canonical) with result: "dropped"
+    const bugProject = `## Tasks
+- id: knowledge-path
+  status: dropped
+  result: dropped
+  assignee: may
+  goal: Populate golden chain.
+  depends_on: []
+  attempts: 3
+`;
+    const { tasks } = parseProjectTasks(bugProject);
+    const plan = planProjectTasks(tasks, { maxConcurrent: 3 });
+
+    // Even with non-canonical status, result: dropped makes it terminal
+    expect(plan.done.map((t) => t.id)).toContain("knowledge-path");
+    expect(plan.dispatchable.map((t) => t.id)).not.toContain("knowledge-path");
+  });
 });
