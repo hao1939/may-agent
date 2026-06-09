@@ -518,6 +518,146 @@ describe("workflow tool: ctx.agent", () => {
   });
 });
 
+describe("workflow tool: ctx.runAgentSession", () => {
+  function mockManager(mockOpts: { resumeMissing?: boolean } = {}) {
+    const calls: Array<{ method: string; sessionId?: string; agent?: string; task?: string; source?: string }> = [];
+    const results = new Map<string, Promise<{
+      sessionId: string;
+      status: "done";
+      lastAssistantText: string;
+      messages: Array<{ timestamp: number }>;
+      duration: string;
+      outputDir: string;
+    }>>();
+    const completed = (sessionId: string, text: string) => Promise.resolve({
+      sessionId,
+      status: "done" as const,
+      lastAssistantText: text,
+      messages: [{ timestamp: 1 }],
+      duration: "0.0s",
+      outputDir: "",
+    });
+
+    return {
+      calls,
+      manager: {
+        result: (sessionId: string) => {
+          throw new Error(`no archived result for ${sessionId}`);
+        },
+        hasActiveSession: (sessionId: string) => {
+          calls.push({ method: "hasActiveSession", sessionId });
+          return false;
+        },
+        resumeSession: (sessionId: string, task: string, opts?: { source?: string }) => {
+          calls.push({ method: "resumeSession", sessionId, task, source: opts?.source });
+          if (mockOpts.resumeMissing) throw new Error(`Session "${sessionId}" not found`);
+          results.set(sessionId, completed(sessionId, `resumed: ${task}`));
+          return sessionId;
+        },
+        run: (agent: string, task: string, runOpts?: { sessionId?: string }) => {
+          const sessionId = runOpts?.sessionId ?? `fresh-${results.size + 1}`;
+          calls.push({ method: "run", sessionId, agent, task });
+          results.set(sessionId, completed(sessionId, `fresh: ${task}`));
+          return sessionId;
+        },
+        waitFor: (sessionId: string) => {
+          calls.push({ method: "waitFor", sessionId });
+          const result = results.get(sessionId);
+          if (!result) throw new Error(`missing result for ${sessionId}`);
+          return result;
+        },
+        progress: (sessionId: string) => {
+          calls.push({ method: "progress", sessionId });
+          return [{ timestamp: 1 }];
+        },
+        callAgent: async (agent: string, task: string) => {
+          const sessionId = `fresh-${results.size + 1}`;
+          calls.push({ method: "callAgent", sessionId, agent, task });
+          return completed(sessionId, `fresh: ${task}`);
+        },
+      } as unknown as SubagentManager,
+    };
+  }
+
+  it("resumes the supplied session instead of creating a new one", async () => {
+    writeWorkflow(
+      "session-reuse.ts",
+      `
+      export const name = "session-reuse";
+      export async function execute(ctx) {
+        const result = await ctx.runAgentSession("worker", "continue task", "s_existing");
+        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+      }
+    `,
+    );
+
+    const { manager, calls } = mockManager();
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", { action: "run", name: "session-reuse", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("s_existing:resumed: continue task");
+    }
+    expect(calls.some(call => call.method === "resumeSession" && call.sessionId === "s_existing")).toBe(true);
+    expect(calls.some(call => call.method === "run")).toBe(false);
+  });
+
+  it("creates a missing durable session with the supplied session id", async () => {
+    writeWorkflow(
+      "session-create-durable.ts",
+      `
+      export const name = "session-create-durable";
+      export async function execute(ctx) {
+        const result = await ctx.runAgentSession("worker", "start durable task", "s_task_existing");
+        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+      }
+    `,
+    );
+
+    const { manager, calls } = mockManager({ resumeMissing: true });
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", { action: "run", name: "session-create-durable", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("s_task_existing:fresh: start durable task");
+    }
+    expect(calls.some(call => call.method === "resumeSession" && call.sessionId === "s_task_existing")).toBe(true);
+    expect(calls.some(call => call.method === "run" && call.sessionId === "s_task_existing")).toBe(true);
+  });
+
+  it("creates a new session when no reusable session is supplied", async () => {
+    writeWorkflow(
+      "session-new.ts",
+      `
+      export const name = "session-new";
+      export async function execute(ctx) {
+        const result = await ctx.runAgentSession("worker", "start task");
+        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+      }
+    `,
+    );
+
+    const { manager, calls } = mockManager();
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", { action: "run", name: "session-new", task: "test" });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("fresh-1:fresh: start task");
+    }
+    expect(calls.some(call => call.method === "callAgent" && call.sessionId === "fresh-1")).toBe(true);
+    expect(calls.some(call => call.method === "resumeSession")).toBe(false);
+  });
+});
+
 describe("workflow tool: steering", () => {
   it("steer() returns false when no workflow is running", () => {
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
