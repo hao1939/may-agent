@@ -936,3 +936,71 @@ See: `shared/knowledge/entries/KE-1736-the-confirmation-funnel-how-sequential-di
 This is the first KE in the 1711–1737 sequence derived entirely from raw database queries with no prior KE conclusions used as premises. It tested the null hypothesis ("does evaluation change behavior?") and found the answer is yes — but the effect is inflationary, not corrective. KE-1736's confirmation funnel prediction was partially falsified: this KE did cite prior KEs but to CONTRADICT them, not confirm them.
 
 See: `shared/knowledge/entries/KE-1737-the-success-ratchet-why-good-verdicts-inflate-more-than-bad-verdicts-punish.md`
+
+---
+
+## Creative Synthesis: Conservation of Overhead (KE-1738)
+
+**Key discovery**: The system exhibits a conservation law for overhead compute. Evaluation, diagnostic, and observation agents consume ~75-80% of total compute, and this fraction is approximately invariant even as its composition shifts dramatically. The evaluator dropped from 75% to 38% of system compute over 15 days (primarily via heuristic evaluation replacing LLM evaluation), but the freed compute was absorbed by diagnostic inflation (scout + arc rose from 10% to 32%), not redirected to productive work (dev stayed at ~2.5%).
+
+### The Numbers
+
+| Period | Evaluator % | Diagnostic % | Total Overhead % | Dev % |
+|--------|------------|-------------|------------------|-------|
+| Days 1–7 | 69.9 | 10.0 | **79.9** | 2.9 |
+| Days 8–11 | 67.1 | 9.9 | **76.9** | 1.5 |
+| Days 12–15 | 46.4 | 26.9 | **73.3** | 2.1 |
+
+The evaluator shed 23.5 percentage points. Diagnostics absorbed 16.9 of them. Net overhead reduction: only 6.6 points. 72% of the evaluator's "savings" were captured by diagnostic inflation.
+
+### Why This Matters
+
+This is the **Jevons Paradox for agent systems**: making one form of monitoring cheaper doesn't reduce total monitoring — it enables more monitoring elsewhere. The system's appetite for self-observation is unbounded because:
+1. Overhead activities (querying DB, reading files, checking metrics) ARE productive calls in the evaluator's scoring model
+2. No agent has a budget constraint except dev (whose structural prompt caps it)
+3. Session duration determines compute share, and overhead agents run 5.8× longer than dev
+
+### Quality-per-op Decay
+
+All agents exhibit the same pattern: quality barely improves with more ops, but efficiency craters.
+
+| Ops bucket | Quality/op (all agents) |
+|-----------|----------------------|
+| 1–5 ops | 0.14–0.19 |
+| 6–10 ops | 0.09 |
+| 51+ ops | 0.007–0.01 |
+
+The system concentrates compute in the 51+ ops zone (15–19× less efficient) because nothing prevents expansion into it.
+
+### The Prescription Difference
+
+Prior KEs recommend reducing the evaluator. This KE argues that's necessary but insufficient — without **simultaneous structural constraints on all unconstrained agents**, the freed compute will be absorbed by the next-hungriest agent. The fix is per-agent ops caps + system-level compute reservation for productive agents.
+
+### Falsifiable Prediction
+
+If the evaluator is disabled entirely but no structural constraints are added to scout/arc, total overhead will drop to no lower than 55% (not to 5%). Dev's share will remain at ~2.5% regardless.
+
+See: `shared/knowledge/entries/KE-1738-conservation-of-overhead-why-reducing-one-oversight-mechanism-feeds-another.md`
+
+---
+
+## Creative Synthesis: The Open-Loop Census (KE-1740)
+
+**Key discovery**: First complete census of all 8 feedback loops in the system. Only 1 closes effectively (metric alerts — because no agent is in the feedback path). 3 close electrically but are behaviorally inert (evaluations, messages, learnings). 4 are structurally open (escalations, KE entries, success candidates, project health findings).
+
+### The Unifying Principle
+
+The only feedback loop that changes behavior is the one where no agent is responsible for closing it. Infrastructure auto-measures, auto-alerts, auto-resolves. When the loop requires an agent to read something and act differently, it fails — agents have finite context and unbounded input.
+
+### Key Numbers
+- 1,190 learnings created → 329 delivered (27.6%) → 0 behavioral changes measured
+- 1,568 metric alerts → 1,568 resolved (100%) → 76 agent-judged (4.8% actively investigated)
+- 54% of all metric alerts (849/1,568) are "bounces" from 3 project-health metrics that fire and auto-resolve within 5 minutes
+- The evaluator sends 74% of all inter-agent messages (805/1,093). Dev sends 0.
+- 787 success candidates identified → 0 downstream actions (no consumer exists)
+
+### The Design Implication
+
+Don't fix broken loops by making agents read more. Remove agents from the feedback path. Make evaluations actuate structural changes (ops caps, tool access) instead of delivering advice. Make learnings modify prompts/guards instead of injecting text. Make escalations auto-resolve when their triggering condition clears.
+
+See: `shared/knowledge/entries/KE-1740-the-open-loop-census-first-measurement-of-which-feedback-loops-actually-close.md`
