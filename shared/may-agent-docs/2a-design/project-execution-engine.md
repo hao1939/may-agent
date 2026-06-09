@@ -110,11 +110,55 @@ feature
   -> expectation-space enumeration
   -> existing evidence/test mapping
   -> gap analysis
-  -> test-spec/probe design
+  -> test-spec/replay design
   -> execution gate or execution evidence
   -> model update
   -> feature closeout / next-feature recommendation
 ```
+
+For projects that learn by executable tests, test-spec design is part of the
+domain understanding, not a UI convention. A test-spec task is incomplete until
+the spec explains the whole test in a reviewable shape:
+
+- **Scenario:** the user/product scenario being proven.
+- **Surface-independent identity:** the spec id/title should name the product
+  behavior. Environment and user/client surface belong in execution variants,
+  badges, and evidence state unless the product behavior itself is surface
+  specific.
+- **Test lifecycle:** ordered setup/fixture, mutation/action,
+  observation/polling, and cleanup steps. Each step should name the execution
+  surface, action, and purpose.
+- **Operations:** exact calls, commands, API paths, request bodies, or scripts
+  that execute the lifecycle.
+- **Assertions:** meaningful product claims only. Generic transport facts such
+  as "request accepted" are execution outcomes unless the scenario is itself a
+  negative/acceptance-boundary test.
+- **Execution strategy:** who runs it, which surface is allowed, which surface
+  is forbidden, and which gates are required for mutation.
+- **Execution variants:** environment and client/executor differences for the
+  same product behavior. Staging vs standalone, REST vs CLI vs generated client,
+  and source-suite vs replay execution are variants when lifecycle and feature
+  assertions are shared. Do not create separate specs just because the same
+  behavior is exercised through a different environment or client surface.
+- **Environment and user-surface state:** the review UI should expose compact
+  badges for environment coverage such as staging/standalone/local-check and
+  user/client surface such as REST/CLI/generated client, with status when known.
+- **Case matrix:** repeated negative or parameter-rejection checks that share
+  fixture, operation pattern, and assertion pattern should be one spec with
+  test cases, not one top-level spec per rejected field.
+- **Artifacts and evidence:** one run plan, one replay when applicable,
+  deduped source references, and evidence that maps back to the assertions.
+- **Scope and non-goals:** what the spec proves and what adjacent behavior is
+  intentionally left to another spec.
+
+The task tree should reflect this standard directly. For example, a feature
+branch should not jump from "extract expectations" to "run staging replay" if
+the test-spec lacks lifecycle, operations, assertions, execution strategy, or
+evidence mapping. Instead, create a reviewable leaf such as
+`managedsystem-rest-add-existing-spec-contract-audit` or
+`app-routing-tls-test-lifecycle-fill` under that feature branch. The verifier
+should reject a worker claim that says a spec is ready when these sections are
+missing, duplicated, or filled with non-claim assertions.
 
 This keeps task breakdown aligned with the project goal. A blocked live run, a
 bug report, or a coverage-gap report is evidence inside the loop; it should not
@@ -219,7 +263,7 @@ are audit history; they do not make parent rollup blockers legitimate.
 
 ## Human Review Surface
 
-The canonical project state is still `tasks/tree.json`, but humans should not
+The canonical project state is still `.app/tasks/tree.json`, but humans should not
 have to read raw JSON to understand what is happening. The platform UI should
 provide a shared project Kanban and task-tree projection for any project that
 has a v2 task tree. Project-local UI should stay domain-specific and should not
@@ -336,7 +380,7 @@ truth, Kanban owns execution visibility, and the hierarchy owns audit context.
 
 Mutation must remain event-native. The first shared Kanban projection is
 read-only: it reads through a generic platform API such as
-`/api/projects/tasks?path=<project>` and does not rewrite `tasks/tree.json`
+`/api/projects/tasks?path=<project>` and does not rewrite `.app/tasks/tree.json`
 directly. Steering actions should emit project actions or comments that the
 project app converts into planner/reviewer events.
 
@@ -364,7 +408,7 @@ A task must be clear enough for one bounded agent run:
     ".app/project.md"
   ],
   "outputs": [
-    "evidence/outputs/managedsystem-live-auth-gate.md"
+    "evidence/archive/managedsystem-live-auth-gate.md"
   ],
   "acceptance": [
     "Runs `az account get-access-token --resource https://management.azure.com/ -o json` or records that `az` is unavailable.",
@@ -372,7 +416,7 @@ A task must be clear enough for one bounded agent run:
     "Writes exact command, exit code, and stdout/stderr summary."
   ],
   "forbidden": [
-    "Do not run probes with `AKS_RP_E2E_DRY_RUN=0`."
+    "Do not run live replays with `AKS_RP_E2E_DRY_RUN=0`."
   ],
   "gates": [
     "Azure CLI exists in the selected execution environment."
@@ -468,7 +512,7 @@ domain work and never leases workers.
 
 It does:
 
-- Read `.app/project.md` and `tasks/tree.json`.
+- Read `.app/project.md` and `.app/tasks/tree.json`.
 - Normalize the tree and repair stale schema.
 - Review finished, blocked, and rejected tasks.
 - Roll up parent state.
@@ -514,7 +558,7 @@ Use these event edges:
 
 | Event | Handler role | Responsibility |
 |-------|--------------|----------------|
-| `project.execution.requested` | Planner | Review/refill `tasks/tree.json`; emit `project.tasks.ready` when executable leaves exist. |
+| `project.execution.requested` | Planner | Review/refill `.app/tasks/tree.json`; emit `project.tasks.ready` when executable leaves exist. |
 | `project.tasks.ready` | Worker pickup | Lease ready leaves up to `max_concurrent`; emit per-task execution events. |
 | `project.task.execution.requested` | Worker execution | Execute exactly one leased leaf, verify the claim, update the leaf branch, and emit completion. |
 | `project.task.completed` | Native app handler / liveness fallback | Convert completion into a fresh `project.execution.requested` planner wake. |
@@ -592,7 +636,7 @@ Dispatch rules:
   worker execution loop may also emit the same `project.execution.requested`
   wake directly as a liveness fallback; the planner must be idempotent because
   duplicate completion wakes are possible in an event-based system.
-- Because `tasks/tree.json` is the canonical project-local state, worker saves
+- Because `.app/tasks/tree.json` is the canonical project-local state, worker saves
   must merge their task branch into the latest tree snapshot under a project
   tree lock. A worker completing task A must not overwrite task B's independent
   completion just because both workers started from the same leased snapshot.
@@ -689,7 +733,7 @@ The review verdict should be one of:
 Blocked-review tasks are ordinary leaf tasks with stricter safety rules. They
 write an evidence artifact and recommend accept/block/split/continue outcomes,
 but they do not own task-tree mutation. The engine audits the claim and updates
-`tasks/tree.json`.
+`.app/tasks/tree.json`.
 
 The project should stop only when every remaining blocked task is confirmed
 external/human/unsafe with exact resume conditions, or a review changes strategy
@@ -800,7 +844,7 @@ The worker must return a claim record:
   "claim": "blocked",
   "summary": "Azure CLI is unavailable; auth gate could not run.",
   "outputs": [
-    "evidence/outputs/managedsystem-live-auth-gate.md"
+    "evidence/archive/managedsystem-live-auth-gate.md"
   ],
   "checks": [
     {
@@ -815,7 +859,7 @@ The worker must return a claim record:
 }
 ```
 
-The engine writes the claim into `tasks/tree.json` and emits an infra event such
+The engine writes the claim into `.app/tasks/tree.json` and emits an infra event such
 as `task.claimed`. The project does not keep a parallel task event log.
 
 ## Verification
@@ -843,7 +887,7 @@ Verifier output:
 }
 ```
 
-The verifier updates the task status in `tasks/tree.json` and emits an infra
+The verifier updates the task status in `.app/tasks/tree.json` and emits an infra
 event such as `task.verified`.
 
 Verification must consider command outcomes, not only artifact existence. If a
@@ -908,7 +952,7 @@ projects/<name>/
     README.md
 ```
 
-`tasks/tree.json` is the canonical current task state. It is a real project
+`.app/tasks/tree.json` is the canonical current task state. It is a real project
 file because agents and humans need a stable, cheap-to-read view of the work
 tree as the project evolves.
 
@@ -931,7 +975,7 @@ Task nodes should carry trace pointers into infra history:
 }
 ```
 
-Recommended `tasks/tree.json` envelope:
+Recommended `.app/tasks/tree.json` envelope:
 
 ```json
 {
@@ -1032,7 +1076,7 @@ Parent verdict: blocked because required child `managedsystem-live-auth-gate` is
 ## User Steering
 
 User steering should be event-based. The UI should not directly mutate
-`tasks/tree.json`.
+`.app/tasks/tree.json`.
 
 Preferred event shape:
 
@@ -1062,7 +1106,7 @@ Useful steering actions:
 | reject | Human rejects a claim/verdict and explains why. |
 
 The app handles the steering event by appending the human text to
-`.app/discussion.jsonl`, updating `tasks/tree.json` when appropriate, and
+`.app/discussion.jsonl`, updating `.app/tasks/tree.json` when appropriate, and
 emitting infra task events for audit.
 
 Steering should target a task id whenever possible. A task-targeted comment is
@@ -1088,7 +1132,7 @@ task.parent_rolled_up
 ```
 
 These events are not stored as project files. They are recorded by May-agent's
-normal event/session/workflow observability. `tasks/tree.json` stores only the
+normal event/session/workflow observability. `.app/tasks/tree.json` stores only the
 current task state plus trace ids that point back to those infra records.
 
 ## Project.md Role
@@ -1110,15 +1154,15 @@ Example:
 ## Active Task
 - id: managedsystem-live-auth-gate
 - status: blocked
-- source: tasks/tree.json
-- output: evidence/outputs/managedsystem-live-auth-gate.md
+- source: .app/tasks/tree.json
+- output: evidence/archive/managedsystem-live-auth-gate.md
 
 ## Task Index
-- tasks/README.md
-- tasks/tree.json
+- .app/tasks/README.md
+- .app/tasks/tree.json
 ```
 
-The full current task tree lives in `tasks/tree.json`. Audit history lives in
+The full current task tree lives in `.app/tasks/tree.json`. Audit history lives in
 May-agent infra events, sessions, and workflow runs referenced by each task's
 trace fields.
 
@@ -1135,7 +1179,7 @@ projects/aks-rp-e2e/.app/workflows/project-execution-engine.ts
 `project-execution-engine.ts` remains the compatibility/helper implementation
 for planner refill/review and single-task execution while the runtime-facing
 workflows expose the simpler two-loop model. Ready-task pickup is owned directly
-by `task-worker.ts`: it reads `tasks/tree.json`, requeues stale leases, leases
+by `task-worker.ts`: it reads `.app/tasks/tree.json`, requeues stale leases, leases
 dispatchable ready leaves up to `max_concurrent`, writes the task tree under the
 project lock, then emits `project.task.execution.requested` for each persisted
 lease. It must not synthesize a `project.execution.requested` event to reach the
@@ -1150,7 +1194,7 @@ and `project.task.execution.requested` for one leased leaf execution.
 Initial scope:
 
 1. Read `.app/project.md`.
-2. Read `tasks/tree.json`.
+2. Read `.app/tasks/tree.json`.
 3. Planner loop creates, reviews, promotes, and refills task-tree work.
 4. Planner loop emits `project.tasks.ready` when ready leaves exist.
 5. Worker pickup loop directly leases dispatchable ready leaves up to

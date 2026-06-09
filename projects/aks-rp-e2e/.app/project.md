@@ -74,11 +74,11 @@ authentication/bootstrap fallback only when managed identity or `ARM_ACCESS_TOKE
 is unavailable and the evidence records that fallback.
 
 The current policy and next-step rationale are captured in
-`evidence/outputs/rest-first-staging-replay-review.md`.
+`evidence/archive/rest-first-staging-replay-review.md`.
 
 The canonical REST-first golden-path baseline is now ManagedSystem Pool REST
 add-existing, captured in
-`evidence/outputs/managedsystem-rest-golden-path-contract.md`. That branch has
+`evidence/archive/managedsystem-rest-golden-path-contract.md`. That branch has
 the complete source -> feature packet -> test spec -> run plan -> TypeScript
 probe -> local check -> gated staging replay -> cleanup evidence -> model
 judgment chain. Reuse this pattern for other features, but keep adjacent
@@ -95,12 +95,12 @@ Phases:
 - **Replanning:** after the first two phases are solid, generate high-density
   run plans and TS probes that combine compatible cases in one cluster lifecycle.
 
-Accepted run plans and probes should be tracked under `scenarios/run-plans/` and
-`probes/`. Runtime evidence stays under `evidence/outputs/`. This keeps the system
+Accepted run plans and probes should be tracked under `suites/` and
+`replays/`. Runtime evidence stays under `evidence/archive/`. This keeps the system
 auditable: future agents can inspect what the probe intended, what it actually
 ran, and whether its coverage claim was honest.
 
-Execution strategy details live in `scenarios/execution/README.md`.
+Execution strategy details live in `replays/execution/README.md`.
 
 ## Test Efficiency Metrics
 
@@ -147,44 +147,47 @@ agent pools, and later dark-side discovery.
 - knowledge.input-space-modeled: current capability model has 35 AKS input variables.
 - knowledge.expectation-space-modeled: current capability model has 68 expectation variables.
 - knowledge.feature-mapping-started: current capability model has 61 feature mappings and 67 test-case evidence mappings; current validator has 7 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs after iteration122.
-- knowledge.source-inventory-modeled: `evidence/outputs/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
-- e2e.existing-cases-cataloged: `evidence/outputs/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
-- knowledge.public-api-candidates-started: `evidence/outputs/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
+- knowledge.source-inventory-modeled: `evidence/archive/iteration73-capability-model-source-inventory-update.md` converted handwritten e2ev3 source intent into first-class model structure; validator exits 0.
+- e2e.existing-cases-cataloged: `evidence/archive/scenario-catalog.md` and e2e artifacts provide the first source for inferring feature intent and coverage.
+- knowledge.public-api-candidates-started: `evidence/archive/aks-public-api-scenario-candidates.md` derives additional candidate feature surfaces from public AKS API/docs.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-**June 6, 2026 — task tree understanding cleanup.** The task tree now presents
-the project as three root responsibilities: `aks-learning-system`,
-`project-control`, and `execution-engine-audit`. Historical root-level leaves
-were preserved under the relevant feature, model, UI, synthesis, or control
-container so the root reflects the current project understanding instead of a
-flat attempt backlog.
+**June 8, 2026 — speed-up refocus.** The task tree still has one root,
+`project`, with three root responsibilities: `aks-learning-system`,
+`project-control`, and `execution-engine-audit`. The active project work is no
+longer a control-loop recovery branch. It is three parallel domain lanes. The
+ManagedSystem golden-path lane has now completed its current audit:
 
-**Current frontier:** the active branch is control-loop recovery:
-`project-planning-loop-run-23-rework-review`. Domain work is not hidden: the
-tree has two proposed leaves for the next planner pass:
-`managedsystem-devbox-msi-two-path-live-run` and
-`current-pass-spec-harvest-review`.
+1. `managedsystem-golden-path-gap-audit` — accepted on June 8, 2026. The
+   ManagedSystem REST add-existing golden path is solid for the narrow
+   product/API branch; runtime placement and adjacent branches remain separate.
+2. `feature-page-managedsystem-current-audit` — audit the implemented
+   dedicated feature page against the agreed user-facing requirement. This is
+   now the active pointer.
+3. `combined-scenario-compatibility-contract` — define the minimal contract
+   that makes combined-scenario tests possible without losing diagnosis.
 
-`managedsystem-devbox-msi-two-path-live-run` remains proposed and gated. It
-must not mutate staging until the worker re-checks devbox/hao-devbox-msi ARM
-auth, confirms the exact live command and cleanup plan, and records command,
-run id, result, cleanup, and model-impact evidence.
+The older ready leaves are still valid but are now secondary and properly
+parented under their feature areas: `iteration206-vmsize-immutability-enrichment`
+under `feature-managedsystem-pool`, and
+`iteration207-workload-identity-no-oidc-negative-check` under
+`feature-workload-identity`.
 
-`current-pass-spec-harvest-review` exists because the root project frame noted
-new pass/staging-pass specs that were not represented in the task tree. The
-planner should verify the current `scenarios/test-specs/` index against the
-model and create feature-specific work only for genuinely missing coverage.
+The first follow-up tasks are intentionally gated by those audits/contracts:
+`feature-page-managedsystem-polish-implementation` and
+`managedsystem-combined-scenario-prototype-plan`. The conditional
+`managedsystem-rest-staging-replay-verification` task was superseded for the
+add-existing branch because the gap audit found existing iteration112 v2
+staging replay and cleanup evidence sufficient.
 
-**Domain model state** is stable: 35 input variables, 71 expectation variables,
-63 feature mappings, and 69 test-case mappings in the latest runtime frame.
-ManagedSystem REST add-existing is pass, azureManagedNodes is audit-only, and
-UI V4 feature-page work is accepted or archived under
-`aks-domain-ui-knowledge-workspace`.
+**Domain model state** remains stable enough for this refocus: ManagedSystem
+REST add-existing is the canonical REST-first baseline. The current audit is
+`evidence/archive/managedsystem-golden-path-gap-audit.md`.
 
 Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
-The live ManagedSystem branch now has an approved credentialed execution path: the user confirmed `devbox` is assigned `hao-devbox-msi`, and the non-mutating auth preflight in `evidence/outputs/20260602T100036Z-devbox-msi-auth-preflight.md` succeeded (`ssh devbox`, `/usr/bin/az`, ARM token acquisition for subscription `26fe00f8-9173-4872-9134-bb1d2e00343a`). The old Azure CLI provisioning question is superseded. The next live task is `managedsystem-devbox-msi-two-path-live-run`, currently proposed and still gated: before any mutation, the worker must re-check devbox ARM auth, use the selected run artifacts, record the exact command/run id/result/cleanup evidence, and not fake a result if auth/capacity fails. The new CLI+REST combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. The older add/immutability/delete combined probe remains separately gated with `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`.
+The live ManagedSystem branch now has an approved credentialed execution path: the user confirmed `devbox` is assigned `hao-devbox-msi`, and the non-mutating auth preflight in `evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md` succeeded (`ssh devbox`, `/usr/bin/az`, ARM token acquisition for subscription `26fe00f8-9173-4872-9134-bb1d2e00343a`). The old Azure CLI provisioning question is superseded. The next live task is `managedsystem-devbox-msi-two-path-live-run`, currently proposed and still gated: before any mutation, the worker must re-check devbox ARM auth, use the selected run artifacts, record the exact command/run id/result/cleanup evidence, and not fake a result if auth/capacity fails. The new CLI+REST combined ManagedSystem probe must not run cloud mutation unless an owner/operator supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the prior ManagedSystem SKU/image/defaulting gate is clear. The older add/immutability/delete combined probe remains separately gated with `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`.
 
 ## Current Phase
 
@@ -194,19 +197,19 @@ The generic App Routing NGINX-to-Istio migration probe has passed in staging via
 
 The NAP cleanup no-Machine-CRUD split has failed in the selected staging eastus2 environment: iteration143 created a source-shaped NAP Auto cluster and persisted `nodeProvisioningProfile.mode=Auto` / `defaultNodePools=Auto`, but `aksmanagedap` was NotFound before Manual update; cleanup reached `az group exists=false` with no Machine CRUD or `deleteMachines` calls. Iteration144/145 triaged this as likely rollout/environment mismatch because checked-in `enable-managed-machine-agent-pool` and `regionallooper-reconcile-nap-cluster-enabled` rules do not enable staging eastus2. Do not blind-rerun the same eastus2 input unless owner/rollout/source/environment inputs materially change.
 
-`evidence/outputs/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md` is the latest local reference packet. It closes the parser-visible VirtualMachines CLI comma multi-SKU packet task without cloud mutation: the failing boundary is specifically `az aks nodepool add --vm-set-type VirtualMachines --vm-sizes <sku1,sku2>` on the preview CLI surface, where help advertises a two-SKU comma-list but active `aks-preview` source rejects `len(--vm-sizes) != 1` before constructing the request. Adjacent product/API paths remain separate and passing: CLI add with one SKU, CLI manual-scale multiple single-size profiles, REST mixed manual `manual[]` profiles, CLI/REST single-size autoscale update, and autoscaled VMs CRUD/upgrade. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 56 evidence references, 8 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs.
+`evidence/archive/iteration147-virtualmachines-cli-multisku-failure-reference-packet.md` is the latest local reference packet. It closes the parser-visible VirtualMachines CLI comma multi-SKU packet task without cloud mutation: the failing boundary is specifically `az aks nodepool add --vm-set-type VirtualMachines --vm-sizes <sku1,sku2>` on the preview CLI surface, where help advertises a two-SKU comma-list but active `aks-preview` source rejects `len(--vm-sizes) != 1` before constructing the request. Adjacent product/API paths remain separate and passing: CLI add with one SKU, CLI manual-scale multiple single-size profiles, REST mixed manual `manual[]` profiles, CLI/REST single-size autoscale update, and autoscaled VMs CRUD/upgrade. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 56 evidence references, 8 failing feature IDs, 7 unknown feature IDs, and 2 blocked feature IDs.
 
-`evidence/outputs/iteration153-managedsystem-runtime-restrictions-execution-implementation.md` is the latest local implementation artifact. It closes the runtime-restrictions implementation task without cloud mutation: `probes/managedsystem-runtime-restrictions.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-runtime-restrictions`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST setup boundary from iteration123/151/152: normal baseline cluster, exactly one ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, then runtime-only assertions for ManagedSystem node labels/taints, CoreDNS readiness/managed-system affinity, critical add-on placement/affinity, VAP/VAPBinding presence, customer nginx Pending/Unschedulable, temporary pod cleanup, setup-failure vs runtime-restrictions classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-runtime-restrictions.ts --check`, non-mutating `--run-id=iteration153-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-runtime-restrictions` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
+`evidence/archive/iteration153-managedsystem-runtime-restrictions-execution-implementation.md` is the latest local implementation artifact. It closes the runtime-restrictions implementation task without cloud mutation: `replays/managedsystem-runtime-restrictions.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-runtime-restrictions`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST setup boundary from iteration123/151/152: normal baseline cluster, exactly one ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, then runtime-only assertions for ManagedSystem node labels/taints, CoreDNS readiness/managed-system affinity, critical add-on placement/affinity, VAP/VAPBinding presence, customer nginx Pending/Unschedulable, temporary pod cleanup, setup-failure vs runtime-restrictions classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun replays/managedsystem-runtime-restrictions.ts --check`, non-mutating `--run-id=iteration153-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-runtime-restrictions` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
 
-`evidence/outputs/iteration152-managedsystem-reconcile-preservation-execution-implementation.md` remains the reconcile-preservation implementation artifact. It closes the reconcile-preservation implementation task without cloud mutation: `probes/managedsystem-reconcile-preservation.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-reconcile-preservation`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the source-equivalent REST boundary from iteration125/151: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, managed-cluster GET sanitized with CleanManagedSystemPoolForPUT-equivalent rules so ManagedSystem profiles keep only `name`/`mode`/`count` and omit `type` plus read-only/default fields, no-op managed-cluster PUT, preservation assertions, setup-failure vs reconcile-preservation classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-reconcile-preservation.ts --check`, non-mutating `--run-id=iteration152-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0); an owner-loop rerun also passed with `--run-id=iteration152-local-gated-rerun`. The model remains unchanged and `managedsystem-reconcile-preservation` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
+`evidence/archive/iteration152-managedsystem-reconcile-preservation-execution-implementation.md` remains the reconcile-preservation implementation artifact. It closes the reconcile-preservation implementation task without cloud mutation: `replays/managedsystem-reconcile-preservation.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-reconcile-preservation`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the source-equivalent REST boundary from iteration125/151: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, managed-cluster GET sanitized with CleanManagedSystemPoolForPUT-equivalent rules so ManagedSystem profiles keep only `name`/`mode`/`count` and omit `type` plus read-only/default fields, no-op managed-cluster PUT, preservation assertions, setup-failure vs reconcile-preservation classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun replays/managedsystem-reconcile-preservation.ts --check`, non-mutating `--run-id=iteration152-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0); an owner-loop rerun also passed with `--run-id=iteration152-local-gated-rerun`. The model remains unchanged and `managedsystem-reconcile-preservation` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
 
-`evidence/outputs/iteration151-managedsystem-single-pool-constraint-execution-implementation.md` remains the single-pool implementation artifact. It closes the single-pool implementation task without cloud mutation: `probes/managedsystem-single-pool-constraint.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-single-pool-constraint`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST boundary from iteration124/150: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, second ManagedSystem pool via the same minimal body with only the pool name changed, post-rejection agentPools list assertions, setup-failure vs second-pool-rejection classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun probes/managedsystem-single-pool-constraint.ts --check`, non-mutating `--run-id=iteration151-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-single-pool-constraint` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
+`evidence/archive/iteration151-managedsystem-single-pool-constraint-execution-implementation.md` remains the single-pool implementation artifact. It closes the single-pool implementation task without cloud mutation: `replays/managedsystem-single-pool-constraint.ts` is now execution-capable but gated behind `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-single-pool-constraint`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the iteration88 SKU/image/defaulting gate is cleared. The implemented runtime path preserves the clean REST boundary from iteration124/150: first ManagedSystem pool via minimal `{"properties":{"mode":"ManagedSystem"}}`, second ManagedSystem pool via the same minimal body with only the pool name changed, post-rejection agentPools list assertions, setup-failure vs second-pool-rejection classification, diagnostics, and whole resource-group cleanup verification. Local verification passed (`bun replays/managedsystem-single-pool-constraint.ts --check`, non-mutating `--run-id=iteration151-local-gated` producing `blocked`/`execution-gated` artifacts, and model validator exit 0). The model remains unchanged and `managedsystem-single-pool-constraint` remains unknown until an explicitly gated cloud execution produces target-branch evidence.
 
-`evidence/outputs/iteration150-managedsystem-cli-failure-reference-packet.md` remains the latest ManagedSystem CLI failure reference packet. It closes the ManagedSystem CLI create/add failure refresh without cloud mutation: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` fail because the preview CLI sends ordinary/default node-pool fields (`OSTypeCasePreserved`, `availabilityProfile`, `count`, `networkProfile`, `osType`, `scaleSetPriority`, `workloadRuntime`, and add-specific `scaleDownMode`) that RP rejects for ManagedSystem pools. The accepted adjacent path remains the minimal ARM REST add-existing body `{"properties":{"mode":"ManagedSystem"}}`, proven by iteration56/20260519/iteration112. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 7 failing feature IDs, 7 unknown feature IDs, and 3 blocked feature IDs. Do not rerun the same CLI failure unless a new `aks-preview`/Azure CLI version, CLI source fix, or owner request gives a material trigger.
+`evidence/archive/iteration150-managedsystem-cli-failure-reference-packet.md` remains the latest ManagedSystem CLI failure reference packet. It closes the ManagedSystem CLI create/add failure refresh without cloud mutation: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` fail because the preview CLI sends ordinary/default node-pool fields (`OSTypeCasePreserved`, `availabilityProfile`, `count`, `networkProfile`, `osType`, `scaleSetPriority`, `workloadRuntime`, and add-specific `scaleDownMode`) that RP rejects for ManagedSystem pools. The accepted adjacent path remains the minimal ARM REST add-existing body `{"properties":{"mode":"ManagedSystem"}}`, proven by iteration56/20260519/iteration112. No model edit was needed; the validator still exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 7 failing feature IDs, 7 unknown feature IDs, and 3 blocked feature IDs. Do not rerun the same CLI failure unless a new `aks-preview`/Azure CLI version, CLI source fix, or owner request gives a material trigger.
 
-`evidence/outputs/iteration149-paf-throttling-model-hygiene.md` remains the latest local model-changing artifact. It reconciles the iteration148 source/precondition packet into `evidence/outputs/e2e-capability-model.json`: `paf-throttling` is now **blocked/gated** instead of stale fail, with current observations `identity.msi.available=unknown` and `paf.throttling.behavior=unknown` because no artifact reached a failed `Verify PAF Objects` assertion. The validator exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 60 evidence references, 7 failing feature IDs, 7 unknown feature IDs, and 3 blocked feature IDs. Do not rerun standalone/staging PAF until MSI/HCP access, eastus2/underlay capacity or owner-approved bypass, and a source-owner/source-confirmed `DedicatedOom` trigger/assertion path are all available.
+`evidence/archive/iteration149-paf-throttling-model-hygiene.md` remains the latest local model-changing artifact. It reconciles the iteration148 source/precondition packet into `evidence/archive/e2e-capability-model.json`: `paf-throttling` is now **blocked/gated** instead of stale fail, with current observations `identity.msi.available=unknown` and `paf.throttling.behavior=unknown` because no artifact reached a failed `Verify PAF Objects` assertion. The validator exits 0 with 35 input variables, 71 expectation variables, 63 feature mappings, 69 test-case mappings, 60 evidence references, 7 failing feature IDs, 7 unknown feature IDs, and 3 blocked feature IDs. Do not rerun standalone/staging PAF until MSI/HCP access, eastus2/underlay capacity or owner-approved bypass, and a source-owner/source-confirmed `DedicatedOom` trigger/assertion path are all available.
 
-`evidence/outputs/iteration148-paf-throttling-source-precondition-reference-packet.md` remains the source/precondition packet behind the iteration149 model edit. It classified the prior `paf-throttling` model fail as stale/ambiguous standalone evidence rather than a confirmed PAF product failure: the first run failed before PAF assertions because the devbox lacked the `akse2ehcp-e2e` MSI; the post-MSI retry reached the dedicated/OOM stress gate but `Verify PAF Objects` was skipped because no kube-apiserver OOMKilled/137 event appeared within the source timeout; later `AKSCapacityHeavyUsage` evidence is a standalone capacity gate.
+`evidence/archive/iteration148-paf-throttling-source-precondition-reference-packet.md` remains the source/precondition packet behind the iteration149 model edit. It classified the prior `paf-throttling` model fail as stale/ambiguous standalone evidence rather than a confirmed PAF product failure: the first run failed before PAF assertions because the devbox lacked the `akse2ehcp-e2e` MSI; the post-MSI retry reached the dedicated/OOM stress gate but `Verify PAF Objects` was skipped because no kube-apiserver OOMKilled/137 event appeared within the source timeout; later `AKSCapacityHeavyUsage` evidence is a standalone capacity gate.
 
 Human review remains asynchronous. Agents should continue to leave reviewable artifacts and execute bounded preflight/probes when safe, but same-branch cloud reruns require a material trigger or a changed probe input that tests a distinct coverage claim. No further BYO rerun is allowed without a new source/environment/build signal. ManagedSystem cloud execution should wait for a source-shaped request plan with explicit SKU/location/preflight gates, cleanup plan, sanitizer/request-shape evidence where applicable, and clear assertion boundaries. Machines/NAP Machine API cloud execution should wait for the Machine preview feature registrations or an equivalent source environment. App Routing migration execution is complete for the generic branch; preserve the checked-in gates and preflights for any future adjacent App Routing work.
 
@@ -215,118 +218,119 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 ## Linked Context
 - `model/knowledge-map/README.md` — normalized knowledge-map model, visualization contract, and human/LLM update protocol
 - `model/knowledge-map/feature-workflow.md` — repeatable deeper/wider workflow for turning one feature into model-backed knowledge
-- `model/knowledge-map/model.json` — canonical accepted knowledge model; prefer this over legacy generated summaries under `evidence/outputs/`
+- `model/knowledge-map/model.json` — canonical accepted knowledge model; prefer this over legacy generated summaries under `evidence/archive/`
 - `model/knowledge-map/views/` — generated status, graph, path-summary, and evidence views derived from the canonical model
 - `model/knowledge-map/deep-dives/managedsystem-pool.md` — worked deep feature example: sources, scenarios, input DAGs, expectations, verification, quality, risks, and improvement loop
-- `scenarios/execution/README.md` — phased learning/experimenting/replanning strategy for TS probes
-- `scenarios/execution/automation.md` — operating model for cron/supervisor triggers, always-on controller behavior, lane selection, execution gates, and agent compliance
+- `replays/execution/README.md` — phased learning/experimenting/replanning strategy for TS probes
+- `replays/execution/test-runner-engine.md` — project-local runner engine that links feature-page test requests, durable run state, evidence, diagnosis, and model updates
+- `replays/execution/automation.md` — operating model for cron/supervisor triggers, always-on controller behavior, lane selection, execution gates, and agent compliance
 - `.app/agents/aks-explorer/cron.json` — disabled project-local trigger template for regular learning, weekly replanning review, and manual verification wake-ups
-- `sources/feature-packets/README.md` — stable feature reference-packet directory
-- `scenarios/run-plans/README.md` — tracked reviewable run-plan directory
-- `probes/README.md` — tracked TypeScript probe directory
-- `probes/lib/README.md` — shared helper library directory for probes
-- `evidence/outputs/iteration155-knowledge-map-normalization.md` — local review aligning current project findings to the normalized scenario/DAG/behavior model
-- `evidence/outputs/iteration185-owner-loop-duplicate-resume-reconciliation.md` — owner-loop reconciliation that handled duplicate ManagedSystem replan resume comments without queuing new work
-- `evidence/outputs/iteration189-managedsystem-cli-rest-combined-replan.md` — CLI+REST ManagedSystem combined replan for CLI create/add default-payload negative paths plus REST add and mode immutability
-- `evidence/outputs/iteration189-live-selected-execution-blocker.md` — four-path live-selected execution blocker showing artifact regeneration succeeded but local `az` is unavailable for the required ARM token gate
-- `evidence/outputs/iteration190-live-selected-two-path-blocker.md` — two-path live-selected execution blocker for ManagedSystem mode immutability plus REST add-existing; regeneration succeeded, auth gate failed because `az` is unavailable
-- `evidence/outputs/20260602T100036Z-devbox-msi-auth-preflight.md` — accepted non-mutating devbox/hao-devbox-msi ARM auth preflight that supersedes the old local Azure CLI provisioning blocker
-- `decisions/replans/live-selected/` — regenerated live-selected replan JSON/TS artifacts for the four-path and two-path ManagedSystem selections
-- `scenarios/run-plans/managedsystem-cli-rest-combined.yaml` — gated combined plan for the selected CLI+REST ManagedSystem paths
-- `probes/managedsystem-cli-rest-combined.ts` — execution-gated TypeScript probe for the selected CLI+REST ManagedSystem paths
-- `sources/feature-packets/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
-- `scenarios/run-plans/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
-- `probes/managedsystem-rest-add-existing.ts` — executable reference-backed probe
-- `sources/feature-packets/workload-autoscaler-vpa-upgrade-survival.yaml` — second reference-backed TS probe feature packet
-- `scenarios/run-plans/vpa-upgrade-survival-runtime.yaml` — VPA upgrade-survival TS probe plan
-- `probes/vpa-upgrade-survival-runtime.ts` — executable VPA upgrade-survival probe
-- `evidence/outputs/iteration115-vpa-upgrade-survival-runtime.md` — VPA upgrade-survival pass summary and model update evidence
-- `sources/feature-packets/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR reference packet
-- `scenarios/run-plans/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR TS probe plan
-- `probes/bootstrap-profile-managed-acr-lifecycle.ts` — executable Bootstrap managed-ACR probe
-- `evidence/outputs/iteration116-bootstrap-managed-acr-lifecycle.md` — Bootstrap managed-ACR pass summary and model update evidence
-- `sources/feature-packets/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR reference packet
-- `scenarios/run-plans/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR TS probe plan
-- `probes/bootstrap-profile-byo-acr-lifecycle.ts` — executable Bootstrap BYO-ACR probe, hardened after the v2 timeout
-- `evidence/outputs/iteration117-bootstrap-byo-acr-lifecycle.md` — Bootstrap BYO-ACR initial blocked attempt and cleanup evidence
-- `evidence/outputs/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md` — detailed BYO-ACR v2 create timeout blocker evidence
-- `evidence/outputs/iteration116-post-vpa-ts-probe-selection.md` — local selection artifact that chose the now-completed Bootstrap managed-ACR lifecycle probe
-- `tasks/README.md` — task tree index and execution rules
-- `tasks/tree.json` — current project execution task tree
+- `features/README.md` — stable feature reference-packet directory
+- `suites/README.md` — tracked reviewable run-plan directory
+- `replays/README.md` — tracked TypeScript probe directory
+- `replays/lib/README.md` — shared helper library directory for probes
+- `evidence/archive/iteration155-knowledge-map-normalization.md` — local review aligning current project findings to the normalized scenario/DAG/behavior model
+- `evidence/archive/iteration185-owner-loop-duplicate-resume-reconciliation.md` — owner-loop reconciliation that handled duplicate ManagedSystem replan resume comments without queuing new work
+- `evidence/archive/iteration189-managedsystem-cli-rest-combined-replan.md` — CLI+REST ManagedSystem combined replan for CLI create/add default-payload negative paths plus REST add and mode immutability
+- `evidence/archive/iteration189-live-selected-execution-blocker.md` — four-path live-selected execution blocker showing artifact regeneration succeeded but local `az` is unavailable for the required ARM token gate
+- `evidence/archive/iteration190-live-selected-two-path-blocker.md` — two-path live-selected execution blocker for ManagedSystem mode immutability plus REST add-existing; regeneration succeeded, auth gate failed because `az` is unavailable
+- `evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md` — accepted non-mutating devbox/hao-devbox-msi ARM auth preflight that supersedes the old local Azure CLI provisioning blocker
+- `.app/decisions/replans/live-selected/` — regenerated live-selected replan JSON/TS artifacts for the four-path and two-path ManagedSystem selections
+- `suites/managedsystem-cli-rest-combined.yaml` — gated combined plan for the selected CLI+REST ManagedSystem paths
+- `replays/managedsystem-cli-rest-combined.ts` — execution-gated TypeScript probe for the selected CLI+REST ManagedSystem paths
+- `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
+- `suites/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
+- `replays/managedsystem-rest-add-existing.ts` — executable reference-backed probe
+- `features/workload-autoscaler-vpa-upgrade-survival.yaml` — second reference-backed TS probe feature packet
+- `suites/vpa-upgrade-survival-runtime.yaml` — VPA upgrade-survival TS probe plan
+- `replays/vpa-upgrade-survival-runtime.ts` — executable VPA upgrade-survival probe
+- `evidence/archive/iteration115-vpa-upgrade-survival-runtime.md` — VPA upgrade-survival pass summary and model update evidence
+- `features/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR reference packet
+- `suites/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR TS probe plan
+- `replays/bootstrap-profile-managed-acr-lifecycle.ts` — executable Bootstrap managed-ACR probe
+- `evidence/archive/iteration116-bootstrap-managed-acr-lifecycle.md` — Bootstrap managed-ACR pass summary and model update evidence
+- `features/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR reference packet
+- `suites/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR TS probe plan
+- `replays/bootstrap-profile-byo-acr-lifecycle.ts` — executable Bootstrap BYO-ACR probe, hardened after the v2 timeout
+- `evidence/archive/iteration117-bootstrap-byo-acr-lifecycle.md` — Bootstrap BYO-ACR initial blocked attempt and cleanup evidence
+- `evidence/archive/iteration117-bootstrap-byo-acr-v2-timeout-blocker.md` — detailed BYO-ACR v2 create timeout blocker evidence
+- `evidence/archive/iteration116-post-vpa-ts-probe-selection.md` — local selection artifact that chose the now-completed Bootstrap managed-ACR lifecycle probe
+- `.app/tasks/README.md` — task tree index and execution rules
+- `.app/tasks/tree.json` — current project execution task tree
 - `tasks/archive/managedsystem-pool/wave-01-feature-standard.yaml` — archived ManagedSystem Pool parallel feature-standard task wave
-- `evidence/outputs/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
-- `evidence/outputs/e2ev3-handwritten-coverage-inventory.md` — handwritten e2ev3 source inventory mapping scenarios to input paths, expectation paths, current evidence coverage, and model gaps
-- `evidence/outputs/iteration73-capability-model-source-inventory-update.md` — validated capability-model update from handwritten e2ev3 source inventory
-- `evidence/outputs/iteration74-node-restriction-source-spec-resolution.md` — Node Restriction source/spec contradiction resolution and operation-shape correction
-- `evidence/outputs/iteration75-model-driven-probe-selection.md` — ranked high-density future probes from the validated model
-- `evidence/outputs/iteration76-workload-identity-oidc-runtime-staging.md` — Workload Identity Linux token projection and OIDC discovery/JWKS runtime pass evidence
-- `evidence/outputs/iteration77-identity-runtime-model-consolidation.md` — branch-accurate Identity/OIDC model consolidation
-- `evidence/outputs/iteration78-workload-autoscaler-runtime-staging.md` — KEDA runtime pass and bounded VPA component/recommendation evidence
-- `evidence/outputs/iteration79-vpa-runtime-model-split.md` — branch-accurate VPA runtime model split and next-probe reranking
-- `evidence/outputs/iteration80-app-routing-tls-source-hypothesis.md` — source-first comparison showing App Routing DefaultDomainCertificate TLS failure is not explained by malformed customer CR/input
-- `evidence/outputs/iteration81-app-routing-tls-owner-escalation.md` — owner escalation packet and diagnostic rerun gate for App Routing TLS
-- `evidence/outputs/iteration91-app-routing-tls-gated-followup-tracker.md` — explicit App Routing TLS follow-up tracker with owner/diagnostic/fixed-build rerun gates and no-blind-rerun rule
-- `evidence/outputs/iteration99-oidc-v133-explicit-enable-staging.md` — OIDC v1.33 explicit-enable discovery/JWKS staging pass evidence
-- `evidence/outputs/iteration100-post-oidc-v133-unknown-selection.md` — post-OIDC v1.33 unknown-selection artifact selecting VirtualMachines mixed-SKU REST scale as the next non-gated branch
-- `evidence/outputs/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md` — VirtualMachines mixed-SKU REST scale staging pass evidence for `Scenario_Mixed_SKU_Scale`
-- `evidence/outputs/iteration102-post-virtualmachines-unknown-selection.md` — post-VirtualMachines unknown-selection artifact selecting Workload Identity Windows token projection as the next non-gated branch
-- `evidence/outputs/iteration103-workload-identity-windows-token-projection-staging.md` — Workload Identity Windows token-projection staging pass evidence for `Scenario_WorkloadIdentity` Windows branch
-- `evidence/outputs/iteration92-next-model-unknown-selection.md` — local selection artifact that selected the focused VPA residual runtime probe
-- `evidence/outputs/iteration93-vpa-residual-runtime-staging.md` — VPA Helm, HA/leader-election, and in-place-update staging pass evidence
-- `evidence/outputs/iteration94-next-model-unknown-selection.md` — local selection artifact choosing Image Cleaner vulnerable-image erasure as the next non-gated runtime branch
-- `evidence/outputs/iteration82-post-escalation-next-probe-selection.md` — post-App-Routing ranking that selected Node Restriction
-- `evidence/outputs/iteration83-node-restriction-fullput-runtime-staging.md` — Node Restriction corrected full-PUT disable contract and runtime-default staging pass evidence
-- `evidence/outputs/iteration84-keda-disable-reenable-crud-staging.md` — KEDA disable/re-enable CRUD lifecycle staging pass evidence
-- `evidence/outputs/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` — Workload Identity disable/re-enable lifecycle staging pass evidence
-- `evidence/outputs/managedsystem-pool-feature-standard.md` — integrated ManagedSystem Pool feature-standard packet and next execution recommendation
-- `evidence/outputs/managedsystem-pool-feature-standard-init-tasks.md` — narrative draft for the ManagedSystem Pool feature-standard parallel task wave
-- `evidence/outputs/iteration88-managedsystem-disable-migration-checkpointed.md` — checkpointed ManagedSystem rerun showing current add-phase SKU/image gate and cleanup status
-- `evidence/outputs/iteration24-managedsystem-pool-pass.md` — pass evidence for `Scenario_ManagedSystemPool_Enable`
-- `evidence/outputs/underlay-debug-findings.md` — root cause analysis, MSI fix, retry results
-- `evidence/outputs/e2e-run-results-summary.md` — original e2e run results, including older App Routing default-domain traffic/TLS failure context
-- `evidence/outputs/managedsystem-pool-exploration.md` — ManagedSystem Pool feature exploration and refreshed conclusions
-- `evidence/outputs/iteration55-managedsystem-staging-results.md` — initial staging ManagedSystem Pool evidence
-- `evidence/outputs/iteration56-managedsystem-staging-refresh.md` — refreshed staging ManagedSystem Pool CLI/REST classification matrix
-- `evidence/outputs/20260519T1646Z-managedsystem-priority-staging.md` — fresh priority re-test confirming ManagedSystem Pool REST/CLI/delete verdict
-- `evidence/outputs/aks-public-api-scenario-candidates.md` — prioritized public API feature scenarios
-- `evidence/outputs/iteration57-node-autoprovision-staging.md` — NAP staging create evidence
-- `evidence/outputs/iteration58-node-autoprovision-followup.md` — NAP staging update evidence
-- `evidence/outputs/iteration59-app-routing-staging.md` — App Routing public CLI staging enablement evidence
-- `evidence/outputs/iteration60-workload-identity-staging.md` — OIDC issuer + workload identity public CLI staging evidence
-- `evidence/outputs/iteration61-workload-autoscaler-staging.md` — workload autoscaler KEDA/VPA public CLI profile-state evidence
-- `evidence/outputs/iteration62-security-profile-staging.md` — Image Cleaner pass and Node Restriction tag-only PATCH/non-contract evidence
-- `evidence/outputs/iteration63-bootstrap-profile-staging.md` — bootstrapProfile.artifactSource contract-first staging evidence
-- `evidence/outputs/iteration64-virtualmachines-agentpool-staging.md` — non-ManagedSystem VirtualMachines agent-pool single-SKU pass and multi-SKU failure evidence
-- `evidence/outputs/iteration65-virtualmachines-multisku-contract.md` — VirtualMachines single-SKU autoscale/update contract evidence and misleading multi-SKU add help classification
-- `evidence/outputs/iteration66-virtualmachines-manual-scale-staging.md` — VirtualMachines manual-scale multi-profile add/delete staging evidence
-- `evidence/outputs/iteration67-app-routing-disable-staging.md` — App Routing public CLI disable pass and persisted disabled-state evidence
-- `evidence/outputs/iteration68-app-routing-defaultdomain-staging.md` — App Routing default-domain public API/state pass evidence
-- `evidence/outputs/iteration69-app-routing-defaultdomain-traffic-staging.md` — App Routing default-domain HTTP traffic reachability pass evidence
-- `evidence/outputs/iteration70-app-routing-defaultdomain-tls-staging.md` — App Routing DefaultDomainCertificate/TLS-secret staging failure and fallback-cert HTTPS evidence
-- `evidence/outputs/e2e-capability-model.json` — project-local capability model and evidence map
-- `evidence/outputs/scripts/README.md` — reusable scripts produced for cleanup/run/capacity/MSI work
-- `evidence/outputs/iteration33-standalone-environment-dead.md` — blocker evidence: old standalone builds recycled
+- `evidence/archive/input-expectation-knowledge-map.md` — consolidated input/expectation knowledge map and ranked gaps
+- `evidence/archive/e2ev3-handwritten-coverage-inventory.md` — handwritten e2ev3 source inventory mapping scenarios to input paths, expectation paths, current evidence coverage, and model gaps
+- `evidence/archive/iteration73-capability-model-source-inventory-update.md` — validated capability-model update from handwritten e2ev3 source inventory
+- `evidence/archive/iteration74-node-restriction-source-spec-resolution.md` — Node Restriction source/spec contradiction resolution and operation-shape correction
+- `evidence/archive/iteration75-model-driven-probe-selection.md` — ranked high-density future probes from the validated model
+- `evidence/archive/iteration76-workload-identity-oidc-runtime-staging.md` — Workload Identity Linux token projection and OIDC discovery/JWKS runtime pass evidence
+- `evidence/archive/iteration77-identity-runtime-model-consolidation.md` — branch-accurate Identity/OIDC model consolidation
+- `evidence/archive/iteration78-workload-autoscaler-runtime-staging.md` — KEDA runtime pass and bounded VPA component/recommendation evidence
+- `evidence/archive/iteration79-vpa-runtime-model-split.md` — branch-accurate VPA runtime model split and next-probe reranking
+- `evidence/archive/iteration80-app-routing-tls-source-hypothesis.md` — source-first comparison showing App Routing DefaultDomainCertificate TLS failure is not explained by malformed customer CR/input
+- `evidence/archive/iteration81-app-routing-tls-owner-escalation.md` — owner escalation packet and diagnostic rerun gate for App Routing TLS
+- `evidence/archive/iteration91-app-routing-tls-gated-followup-tracker.md` — explicit App Routing TLS follow-up tracker with owner/diagnostic/fixed-build rerun gates and no-blind-rerun rule
+- `evidence/archive/iteration99-oidc-v133-explicit-enable-staging.md` — OIDC v1.33 explicit-enable discovery/JWKS staging pass evidence
+- `evidence/archive/iteration100-post-oidc-v133-unknown-selection.md` — post-OIDC v1.33 unknown-selection artifact selecting VirtualMachines mixed-SKU REST scale as the next non-gated branch
+- `evidence/archive/iteration101-virtualmachines-mixed-sku-rest-scale-staging.md` — VirtualMachines mixed-SKU REST scale staging pass evidence for `Scenario_Mixed_SKU_Scale`
+- `evidence/archive/iteration102-post-virtualmachines-unknown-selection.md` — post-VirtualMachines unknown-selection artifact selecting Workload Identity Windows token projection as the next non-gated branch
+- `evidence/archive/iteration103-workload-identity-windows-token-projection-staging.md` — Workload Identity Windows token-projection staging pass evidence for `Scenario_WorkloadIdentity` Windows branch
+- `evidence/archive/iteration92-next-model-unknown-selection.md` — local selection artifact that selected the focused VPA residual runtime probe
+- `evidence/archive/iteration93-vpa-residual-runtime-staging.md` — VPA Helm, HA/leader-election, and in-place-update staging pass evidence
+- `evidence/archive/iteration94-next-model-unknown-selection.md` — local selection artifact choosing Image Cleaner vulnerable-image erasure as the next non-gated runtime branch
+- `evidence/archive/iteration82-post-escalation-next-probe-selection.md` — post-App-Routing ranking that selected Node Restriction
+- `evidence/archive/iteration83-node-restriction-fullput-runtime-staging.md` — Node Restriction corrected full-PUT disable contract and runtime-default staging pass evidence
+- `evidence/archive/iteration84-keda-disable-reenable-crud-staging.md` — KEDA disable/re-enable CRUD lifecycle staging pass evidence
+- `evidence/archive/iteration85-workload-identity-disable-reenable-lifecycle-staging.md` — Workload Identity disable/re-enable lifecycle staging pass evidence
+- `evidence/archive/managedsystem-pool-feature-standard.md` — integrated ManagedSystem Pool feature-standard packet and next execution recommendation
+- `evidence/archive/managedsystem-pool-feature-standard-init-tasks.md` — narrative draft for the ManagedSystem Pool feature-standard parallel task wave
+- `evidence/archive/iteration88-managedsystem-disable-migration-checkpointed.md` — checkpointed ManagedSystem rerun showing current add-phase SKU/image gate and cleanup status
+- `evidence/archive/iteration24-managedsystem-pool-pass.md` — pass evidence for `Scenario_ManagedSystemPool_Enable`
+- `evidence/archive/underlay-debug-findings.md` — root cause analysis, MSI fix, retry results
+- `evidence/archive/e2e-run-results-summary.md` — original e2e run results, including older App Routing default-domain traffic/TLS failure context
+- `evidence/archive/managedsystem-pool-exploration.md` — ManagedSystem Pool feature exploration and refreshed conclusions
+- `evidence/archive/iteration55-managedsystem-staging-results.md` — initial staging ManagedSystem Pool evidence
+- `evidence/archive/iteration56-managedsystem-staging-refresh.md` — refreshed staging ManagedSystem Pool CLI/REST classification matrix
+- `evidence/archive/20260519T1646Z-managedsystem-priority-staging.md` — fresh priority re-test confirming ManagedSystem Pool REST/CLI/delete verdict
+- `evidence/archive/aks-public-api-scenario-candidates.md` — prioritized public API feature scenarios
+- `evidence/archive/iteration57-node-autoprovision-staging.md` — NAP staging create evidence
+- `evidence/archive/iteration58-node-autoprovision-followup.md` — NAP staging update evidence
+- `evidence/archive/iteration59-app-routing-staging.md` — App Routing public CLI staging enablement evidence
+- `evidence/archive/iteration60-workload-identity-staging.md` — OIDC issuer + workload identity public CLI staging evidence
+- `evidence/archive/iteration61-workload-autoscaler-staging.md` — workload autoscaler KEDA/VPA public CLI profile-state evidence
+- `evidence/archive/iteration62-security-profile-staging.md` — Image Cleaner pass and Node Restriction tag-only PATCH/non-contract evidence
+- `evidence/archive/iteration63-bootstrap-profile-staging.md` — bootstrapProfile.artifactSource contract-first staging evidence
+- `evidence/archive/iteration64-virtualmachines-agentpool-staging.md` — non-ManagedSystem VirtualMachines agent-pool single-SKU pass and multi-SKU failure evidence
+- `evidence/archive/iteration65-virtualmachines-multisku-contract.md` — VirtualMachines single-SKU autoscale/update contract evidence and misleading multi-SKU add help classification
+- `evidence/archive/iteration66-virtualmachines-manual-scale-staging.md` — VirtualMachines manual-scale multi-profile add/delete staging evidence
+- `evidence/archive/iteration67-app-routing-disable-staging.md` — App Routing public CLI disable pass and persisted disabled-state evidence
+- `evidence/archive/iteration68-app-routing-defaultdomain-staging.md` — App Routing default-domain public API/state pass evidence
+- `evidence/archive/iteration69-app-routing-defaultdomain-traffic-staging.md` — App Routing default-domain HTTP traffic reachability pass evidence
+- `evidence/archive/iteration70-app-routing-defaultdomain-tls-staging.md` — App Routing DefaultDomainCertificate/TLS-secret staging failure and fallback-cert HTTPS evidence
+- `evidence/archive/e2e-capability-model.json` — project-local capability model and evidence map
+- `evidence/archive/scripts/README.md` — reusable scripts produced for cleanup/run/capacity/MSI work
+- `evidence/archive/iteration33-standalone-environment-dead.md` — blocker evidence: old standalone builds recycled
 - `devbox:/home/hayua/rp` — AKS RP checkout and staging execution context
 
 ## Task Management
 - `.app/project.md` is the project control plane and navigation root. It should stay readable: goal, current state, next action, validation rules, key context links, and the active task pointer.
-- Current project execution state lives in `tasks/tree.json`. That task tree is the operational view of how the project is broken down and what is blocked, ready, active, or accepted.
-- `tasks/README.md` explains the task tree rules. `scenarios/` is reserved for AKS e2e domain scenarios, test specs, run plans, and execution strategy.
-- Durable findings, evidence, feature packets, and run results live under `evidence/outputs/`.
+- Current project execution state lives in `.app/tasks/tree.json`. That task tree is the operational view of how the project is broken down and what is blocked, ready, active, or accepted.
+- `.app/tasks/README.md` explains the task tree rules. `scenarios/` is reserved for AKS e2e domain scenarios, test specs, run plans, and execution strategy.
+- Durable findings, evidence, feature packets, and run results live under `evidence/archive/`.
 - Keep one task responsible for one durable output artifact. Parallel tasks must write to different outputs; integration tasks merge them afterward.
-- The project execution engine works breadth-first from `tasks/tree.json`, executes ready leaf tasks until blocked or gated, verifies claims before acceptance, and rolls accepted work up to parent tasks.
+- The project execution engine works breadth-first from `.app/tasks/tree.json`, executes ready leaf tasks until blocked or gated, verifies claims before acceptance, and rolls accepted work up to parent tasks.
 
 ## Capability Map
-- `Scenario_Traffic_AppRouting_Nginx_Disablement`: pass. Green evidence is in `evidence/outputs/successful-e2e-run.md`.
-- `Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld`: partially reconciled. Fresh staging HTTP default-domain traffic passes (`evidence/outputs/iteration69-app-routing-defaultdomain-traffic-staging.md`), but TLS/DefaultDomainCertificate certificate provisioning fails in staging (`evidence/outputs/iteration70-app-routing-defaultdomain-tls-staging.md`) and older standalone evidence also points to TLS secret provisioning failure.
+- `Scenario_Traffic_AppRouting_Nginx_Disablement`: pass. Green evidence is in `evidence/archive/successful-e2e-run.md`.
+- `Scenario_Traffic_AppRouting_DefaultDomain_HelloWorld`: partially reconciled. Fresh staging HTTP default-domain traffic passes (`evidence/archive/iteration69-app-routing-defaultdomain-traffic-staging.md`), but TLS/DefaultDomainCertificate certificate provisioning fails in staging (`evidence/archive/iteration70-app-routing-defaultdomain-tls-staging.md`) and older standalone evidence also points to TLS secret provisioning failure.
 - `Scenario_PAFThrottling`: blocked/gated after iteration149 model hygiene. Current evidence does not prove a PAF product failure: the first run lacked `akse2ehcp-e2e` MSI, the post-MSI retry reached `DedicatedOom` but timed out before `Verify PAF Objects`, and later standalone evidence hit eastus2 `AKSCapacityHeavyUsage`. Do not rerun until MSI/HCP access, target capacity or owner-approved bypass, and source-owner/source-confirmed OOM trigger/assertion path are all available.
 - Duplicate-registered scenarios: blocked by framework/test-selection ambiguity; use source inspection before retrying exact scenario names.
-- ManagedSystem ARM REST add-existing-pool: pass in staging. Evidence is in `evidence/outputs/managedsystem-pool-exploration.md`.
+- ManagedSystem ARM REST add-existing-pool: pass in staging. Evidence is in `evidence/archive/managedsystem-pool-exploration.md`.
 - ManagedSystem Azure CLI create/add: fail. CLI sends default fields that RP rejects for ManagedSystem pools.
-- ManagedSystem standalone e2ev3 scenario: pass. Evidence is in `evidence/outputs/iteration24-managedsystem-pool-pass.md`.
+- ManagedSystem standalone e2ev3 scenario: pass. Evidence is in `evidence/archive/iteration24-managedsystem-pool-pass.md`.
 
 ## Capability Model
-- Source: `evidence/outputs/e2e-capability-model.json`
+- Source: `evidence/archive/e2e-capability-model.json`
 - Validator: `model/tools/src/validate.ts`
 - Scope: project-local to `aks-rp-e2e`; do not promote to shared infra until this model proves useful through real iterations.
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
@@ -344,11 +348,11 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Run `feature-learning-queue-refresh` from `tasks/tree.json`. It should write `evidence/outputs/feature-learning-queue.md` and update `tasks/tree.json` with the next concrete feature-learning leaf task when safe local work exists. It must not run cloud/staging/kubectl/live probes.
+Run `feature-learning-queue-refresh` from `.app/tasks/tree.json`. It should write `evidence/archive/feature-learning-queue.md` and update `.app/tasks/tree.json` with the next concrete feature-learning leaf task when safe local work exists. It must not run cloud/staging/kubectl/live probes.
 
-Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/outputs/iteration190-live-selected-two-path-blocker.md`.
+Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `.app/decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/archive/iteration190-live-selected-two-path-blocker.md`.
 
-The project execution engine should first run the blocked-frontier review tasks in `tasks/tree.json`. Those tasks must decide whether current blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. If safe local work exists, create ready child tasks and continue. If only external gates remain, record the exact resume condition and keep the relevant task blocked.
+The project execution engine should first run the blocked-frontier review tasks in `.app/tasks/tree.json`. Those tasks must decide whether current blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. If safe local work exists, create ready child tasks and continue. If only external gates remain, record the exact resume condition and keep the relevant task blocked.
 
 Resume only when one of these triggers exists:
 
@@ -374,15 +378,15 @@ The detailed historical migration log was archived when Project App V2 task-tree
 
 - Archive: `.app/archive/project-pre-v2-task-engine.md`
 - Current runtime frame: `.app/project.md`
-- Current execution tree: `tasks/tree.json`
-- Current domain evidence: `evidence/outputs/`, `model/knowledge-map/`, `scenarios/`, and `probes/`
+- Current execution tree: `.app/tasks/tree.json`
+- Current domain evidence: `evidence/archive/`, `model/knowledge-map/`, `scenarios/`, and `replays/`
 
 ## Plan
-Current project execution is driven by the breadth-first task tree. The engine selects ready leaf tasks from `tasks/tree.json`, verifies claims before acceptance, rolls up parent state, creates parent-review or blocked-review tasks when audit/replan is needed, and keeps going until truly blocked, gated, complete, or interrupted by an infra budget guard.
+Current project execution is driven by the breadth-first task tree. The engine selects ready leaf tasks from `.app/tasks/tree.json`, verifies claims before acceptance, rolls up parent state, creates parent-review or blocked-review tasks when audit/replan is needed, and keeps going until truly blocked, gated, complete, or interrupted by an infra budget guard.
 
 Blocked is not a passive stop state. When the ready frontier is empty, the engine creates or runs blocked-review tasks that inspect whether blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. The project should wait only after that review confirms no safe local unblock, split, correction, or evidence-gathering task remains.
 
-Workers should not edit `tasks/tree.json` directly. A worker produces a claim and evidence for one leaf; the engine owns task updates, parent rollup, review-task creation, and continuation events. If a wake slice ends while ready work remains, the engine emits another `project.execution.requested` event so the project stays active.
+Workers should not edit `.app/tasks/tree.json` directly. A worker produces a claim and evidence for one leaf; the engine owns task updates, parent rollup, review-task creation, and continuation events. If a wake slice ends while ready work remains, the engine emits another `project.execution.requested` event so the project stays active.
 
 The project watcher is enabled through `.app/app.ts`: the `regular-learning` schedule emits `project.tick` every hour, and the app converts that tick into the same `project.execution.requested` event used by comments, steering, and the `advance-project`/`watch` actions. The project-local trigger in `.app/agents/aks-explorer/cron.json` consumes that event and runs the task-tree workflow.
 
@@ -401,7 +405,7 @@ The project watcher is enabled through `.app/app.ts`: the `regular-learning` sch
 
 **Artifacts:**
 - See `## Artifacts`; primary current evidence is
-  `evidence/outputs/first-e2e-run-results.md`.
+  `evidence/archive/first-e2e-run-results.md`.
 
 
 ## Validation
@@ -426,19 +430,16 @@ The project watcher is enabled through `.app/app.ts`: the `regular-learning` sch
 ## Artifacts
 Use the domain workspace indexes instead of a copied artifact ledger in this runtime file.
 
-- Current task state: `tasks/tree.json`
-- Accepted and raw evidence: `evidence/outputs/`
+- Current task state: `.app/tasks/tree.json`
+- Accepted and raw evidence: `evidence/archive/`
 - Knowledge model and generated views: `model/knowledge-map/`
-- Feature packets: `sources/feature-packets/`
-- Run plans: `scenarios/run-plans/`
-- Probes: `probes/`
+- Feature packets: `features/`
+- Run plans: `suites/`
+- Probes: `replays/`
 - Full legacy artifact ledger: `.app/archive/project-pre-v2-task-engine.md#artifacts`
 
 ## Active Task
-- id: spec-index-status-backfill
-- status: ready
-- source: tasks/tree.json
-- outputs: scenarios/test-specs/index.json
+- none
 
 ## Ready Frontier (owner-loop steering, iteration 192 — UI V4 feature page rework)
 
@@ -463,11 +464,11 @@ Use the domain workspace indexes instead of a copied artifact ledger in this run
 - `golden-path-rollout-batch-1-rework-review` (P1, ready) — Golden-path rollout batch 1 review.
 
 ## Over-Claim Correction Status
-The `azureManagedNodes` assertion in `scenarios/test-specs/managedsystem-rest-add-existing.json` has been demoted from `verdictImpact: claim` to `verdictImpact: audit` with a correction note. The model behavior entry also updated. REST add-existing product/API pass verdict is preserved. Runtime placement / azureManagedNodes requires separate staging evidence before it can be restored to claim.
+The `azureManagedNodes` assertion in `specs/managedsystem-rest-add-existing.json` has been demoted from `verdictImpact: claim` to `verdictImpact: audit` with a correction note. The model behavior entry also updated. REST add-existing product/API pass verdict is preserved. Runtime placement / azureManagedNodes requires separate staging evidence before it can be restored to claim.
 
 ## Superseded Chains (iteration 192)
 19 OIDC rework-review tasks and 6 OIDC parent tasks superseded. These were spinning at rework-review depth 3–6+ with interrupted/blocked/no-progress claims. The OIDC probe work itself (accepted at depth 0) is preserved; only the unproductive rework chains were cut. If OIDC probe work needs to resume, create a fresh bounded task rather than continuing the superseded chains.
 
 ## Task Index
-- tasks/README.md
-- tasks/tree.json
+- .app/tasks/README.md
+- .app/tasks/tree.json

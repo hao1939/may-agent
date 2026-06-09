@@ -2,10 +2,8 @@
   {
     "name": "aks-rp-e2e-project-planner",
     "type": "job",
-    "enabled": false,
-    "intervalMs": 3600000,
-    "offsetMs": 300000,
-    "description": "Planner loop. Reviews/refills tasks/tree.json and emits project.tasks.ready when executable leaves exist.",
+    "enabled": true,
+    "description": "Planner loop. Reviews/refills .app/tasks/tree.json and emits project.tasks.ready when executable leaves exist.",
     "handler": {
       "workflow": "project-planner",
       "agent": "aks-explorer",
@@ -19,16 +17,14 @@
     ],
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
-      "projects/aks-rp-e2e/tasks/README.md"
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
+      "projects/aks-rp-e2e/.app/tasks/README.md"
     ]
   },
   {
     "name": "aks-rp-e2e-ready-task-picker",
     "type": "job",
-    "enabled": false,
-    "intervalMs": 3600000,
-    "offsetMs": 330000,
+    "enabled": true,
     "description": "Worker loop pickup. Leases ready leaves and emits per-task execution events.",
     "handler": {
       "workflow": "task-worker",
@@ -43,17 +39,15 @@
     ],
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
-      "projects/aks-rp-e2e/tasks/README.md"
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
+      "projects/aks-rp-e2e/.app/tasks/README.md"
     ]
   },
   {
     "name": "aks-rp-e2e-task-execution-worker",
     "type": "job",
-    "enabled": false,
-    "intervalMs": 3600000,
-    "offsetMs": 360000,
-    "description": "Worker loop execution. Executes one leased leaf task from tasks/tree.json and emits task completion.",
+    "enabled": true,
+    "description": "Worker loop execution. Executes one leased leaf task from .app/tasks/tree.json and emits task completion.",
     "maxConcurrentTriggers": 3,
     "handler": {
       "workflow": "task-worker",
@@ -68,8 +62,8 @@
     ],
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
-      "projects/aks-rp-e2e/tasks/README.md"
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
+      "projects/aks-rp-e2e/.app/tasks/README.md"
     ]
   },
   {
@@ -88,8 +82,8 @@
     },
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
-      "projects/aks-rp-e2e/tasks/README.md"
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
+      "projects/aks-rp-e2e/.app/tasks/README.md"
     ]
   },
   {
@@ -111,7 +105,7 @@
     ],
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
       "projects/aks-rp-e2e/model/knowledge-map/README.md"
     ]
   },
@@ -134,16 +128,16 @@
     ],
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
       "projects/aks-rp-e2e/model/knowledge-map/views/path-summary.json",
-      "projects/aks-rp-e2e/scenarios/run-plans/README.md"
+      "projects/aks-rp-e2e/suites/README.md"
     ]
   },
   {
     "name": "aks-rp-e2e-verification-signal",
     "type": "job",
     "enabled": false,
-    "description": "Disabled manual/event template for a verification wake. Live execution still requires explicit task gates in tasks/tree.json.",
+    "description": "Disabled manual/event template for a verification wake. Live execution still requires explicit task gates in .app/tasks/tree.json.",
     "handler": {
       "workflow": "project-execution-engine",
       "agent": "aks-explorer",
@@ -156,9 +150,9 @@
     ],
     "context": [
       "projects/aks-rp-e2e/.app/project.md",
-      "projects/aks-rp-e2e/tasks/tree.json",
-      "projects/aks-rp-e2e/scenarios/execution/automation.md",
-      "projects/aks-rp-e2e/probes/README.md"
+      "projects/aks-rp-e2e/.app/tasks/tree.json",
+      "projects/aks-rp-e2e/replays/execution/automation.md",
+      "projects/aks-rp-e2e/replays/README.md"
     ]
   }
 ]
