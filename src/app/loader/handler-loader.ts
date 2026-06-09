@@ -79,6 +79,14 @@ export async function loadHandlersForAgentCrons(
         const msg = `Handler file not found: ${handlerDir}/${handlerFile}.(js|ts)`;
         errors.push(msg);
         bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+        for (const entry of fileEntries) {
+          bus.emit({
+            type: "handler.load-failed",
+            source: "handler-loader",
+            owner: `agent:${agentName}`,
+            data: { handler: entry.name, agent: agentName, path: `${handlerDir}/${handlerFile}.(js|ts)`, error: msg },
+          });
+        }
         continue;
       }
 
@@ -88,6 +96,14 @@ export async function loadHandlersForAgentCrons(
           const msg = `Handler ${modulePath} does not export create()`;
           errors.push(msg);
           bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+          for (const entry of fileEntries) {
+            bus.emit({
+              type: "handler.load-failed",
+              source: "handler-loader",
+              owner: `agent:${agentName}`,
+              data: { handler: entry.name, agent: agentName, path: modulePath, error: msg },
+            });
+          }
           continue;
         }
 
@@ -103,6 +119,14 @@ export async function loadHandlersForAgentCrons(
         const msg = `Failed to import handler ${modulePath}: ${err instanceof Error ? err.message : String(err)}`;
         errors.push(msg);
         bus.emit({ type: "info", message: `[handler] ⚠️ ${msg}` });
+        for (const entry of fileEntries) {
+          bus.emit({
+            type: "handler.load-failed",
+            source: "handler-loader",
+            owner: `agent:${agentName}`,
+            data: { handler: entry.name, agent: agentName, path: modulePath, error: msg },
+          });
+        }
       }
     }
 
@@ -122,9 +146,16 @@ export async function loadHandlersForAgentCrons(
       const handlerDir = resolveHandlerDir(agentsRoot, agentName, cron as CronWithConfigPath);
       const modulePath = resolveHandlerModule(handlerDir, entry.handler);
       if (!modulePath) {
+        const loadMsg = `Handler file not found for "${entryName}": ${handlerDir}/${entry.handler}.(js|ts)`;
         bus.emit({
           type: "info",
-          message: `[handler] ⚠️ Handler file not found for "${entryName}": ${handlerDir}/${entry.handler}.(js|ts)`,
+          message: `[handler] ⚠️ ${loadMsg}`,
+        });
+        bus.emit({
+          type: "handler.load-failed",
+          source: "handler-loader",
+          owner: `agent:${agentName}`,
+          data: { handler: entryName, agent: agentName, path: `${handlerDir}/${entry.handler}.(js|ts)`, error: loadMsg },
         });
         return false;
       }
@@ -132,9 +163,16 @@ export async function loadHandlersForAgentCrons(
       try {
         const mod = await importRuntimeModule<HandlerModule>(modulePath);
         if (typeof mod.create !== "function") {
+          const createMsg = `Handler ${modulePath} does not export create() — cannot resolve "${entryName}"`;
           bus.emit({
             type: "info",
-            message: `[handler] ⚠️ Handler ${modulePath} does not export create() — cannot resolve "${entryName}"`,
+            message: `[handler] ⚠️ ${createMsg}`,
+          });
+          bus.emit({
+            type: "handler.load-failed",
+            source: "handler-loader",
+            owner: `agent:${agentName}`,
+            data: { handler: entryName, agent: agentName, path: modulePath, error: createMsg },
           });
           return false;
         }
@@ -147,9 +185,16 @@ export async function loadHandlersForAgentCrons(
         return true;
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
+        const dynMsg = `Failed to dynamically import handler for "${entryName}": ${errMsg}`;
         bus.emit({
           type: "info",
-          message: `[handler] ⚠️ Failed to dynamically import handler for "${entryName}": ${errMsg}`,
+          message: `[handler] ⚠️ ${dynMsg}`,
+        });
+        bus.emit({
+          type: "handler.load-failed",
+          source: "handler-loader",
+          owner: `agent:${agentName}`,
+          data: { handler: entryName, agent: agentName, path: modulePath, error: dynMsg },
         });
         return false;
       }
