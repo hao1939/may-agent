@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration, used for zombie-session detection
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Effectively unpopulated: only 2/13,280 sessions have a non-null value (as of 2026-06-09). Zombie detection uses JSONL file mtime instead (see Known Issues).
 );
 ```
 
@@ -57,7 +57,7 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-09: 0 of 14,548 `call` sessions have a
+(kind=`chat`) sessions. Verified 2026-06-09: 0 of 13,254 `call` sessions have a
 non-null `parentSessionId`; all 12 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
@@ -85,6 +85,22 @@ actual error text. The `error` field in `meta.json` contains the correct value
 **Fix pending:** Requires either adding `error` to the `session.end` bus event
 data, or changing the UPDATE to use COALESCE. Both are `src/` changes requiring
 Hao approval (ORDER-010).
+
+### `lastActivityAt` column is effectively dead
+
+The `lastActivityAt` column was added via migration and is written by both
+`updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
+and `updateSessionDb()` (called at session end). However, as of 2026-06-09 only
+2 of 13,280 sessions have a non-null value — suggesting the write path was deployed
+very recently or is not reaching the production DB consistently.
+
+The `capability.zombie-session-count` metric does NOT use this column. Zombie
+detection in `metrics-snapshot.ts` (`sessionInactiveSince()`) checks JSONL file
+`mtime` via `statSync(path).mtimeMs`, not the DB column. So the column is
+a write-only sink with no consumer.
+
+If zombie detection is eventually moved to pure-SQL (no disk access), this column
+becomes the natural data source — but until then, it's dead weight.
 
 ## Implementation
 
