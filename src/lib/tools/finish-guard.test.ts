@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { createFinishGuard } from "./finish-guard.js";
-import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 
 /**
  * Helper to build a minimal BeforeToolCallContext for testing.

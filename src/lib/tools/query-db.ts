@@ -5,8 +5,8 @@
  * the runtime getDb() convention and exposes only bounded read queries.
  */
 
-import { Type } from "@mariozechner/pi-ai";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type } from "@earendil-works/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { getDb } from "../requests.js";
 
 const DEFAULT_LIMIT = 50;

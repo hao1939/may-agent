@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { writeSessionMeta } from "../../src/lib/persistence.js";
 import { insertWorkflowRun } from "../../src/lib/requests.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
   return {

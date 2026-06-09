@@ -23,8 +23,8 @@
 
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { Type, type Static } from "@mariozechner/pi-ai";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type, type Static } from "@earendil-works/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
 export interface MessageToolOptions {
   /** Name of the calling agent. */

@@ -4,8 +4,8 @@
  * Takes manager dependencies as parameters to avoid circular imports.
  */
 
-import type { AgentMessage, AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type, StringEnum } from "@mariozechner/pi-ai";
+import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import { Type, StringEnum } from "@earendil-works/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, TaskResult } from "./types.js";
 import type { PersistedSession } from "./persistence.js";

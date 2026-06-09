@@ -1,5 +1,5 @@
 /**
- * Ambient type declarations for @mariozechner/pi-agent-core.
+ * Ambient type declarations for @earendil-works/pi-agent-core.
  *
  * The real package is linked via a workspace symlink to ../../../pi-mono/packages/agent
  * which doesn't exist in the container. These stubs provide enough type information
@@ -8,8 +8,8 @@
  * WARNING: Keep in sync with the real package when updating pi-mono.
  * Updated for pi-agent-core 0.65.0.
  */
-declare module "@mariozechner/pi-agent-core" {
-  import type { TSchema, Model } from "@mariozechner/pi-ai";
+declare module "@earendil-works/pi-agent-core" {
+  import type { TSchema, Model } from "@earendil-works/pi-ai";
 
   // ── Agent messages ───────────────────────────────────────────────────
 
