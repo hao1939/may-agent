@@ -23,7 +23,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     try {
       // Fire-and-await. Worker will typically fail at LLM dispatch; we don't
       // care about the outcome here, only the session row.
-      const result = await ctx.sdk.runAgent("worker", "fixture call chain ping");
+      const result = await ctx.sdk.runAgent("worker", "fixture call chain ping", { timeout: 2_000 });
       ctx.sdk.emit(
         "e2e.call-worker.completed",
         { caller: entry.name, childStatus: result?.status ?? "unknown" },
