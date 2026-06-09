@@ -4,11 +4,11 @@ owner: aks-explorer
 status: waiting
 type: milestone
 priority: P1
-iteration: 192
+iteration: 193
 max_concurrent: 3
 max_task_attempts: 2
 project_policy: aggressive-push
-wait_reason: devbox-access-needed-for-source-probes
+wait_reason: "all-tasks-terminal-no-ready-frontier"
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -241,15 +241,15 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `features/managedsystem-pool.yaml` — stable ManagedSystem Pool reference packet
 - `suites/managedsystem-rest-add-existing.yaml` — first single-case TS probe plan
 - `replays/managedsystem-rest-add-existing.ts` — executable reference-backed probe
-- `features/workload-autoscaler-vpa-upgrade-survival.yaml` — second reference-backed TS probe feature packet
+- `features/workload-autoscaler/vpa-upgrade-survival.yaml` — second reference-backed TS probe feature packet
 - `suites/vpa-upgrade-survival-runtime.yaml` — VPA upgrade-survival TS probe plan
 - `replays/vpa-upgrade-survival-runtime.ts` — executable VPA upgrade-survival probe
 - `evidence/archive/iteration115-vpa-upgrade-survival-runtime.md` — VPA upgrade-survival pass summary and model update evidence
-- `features/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR reference packet
+- `features/bootstrap-profile/managed-acr-lifecycle.yaml` — Bootstrap managed-ACR reference packet
 - `suites/bootstrap-profile-managed-acr-lifecycle.yaml` — Bootstrap managed-ACR TS probe plan
 - `replays/bootstrap-profile-managed-acr-lifecycle.ts` — executable Bootstrap managed-ACR probe
 - `evidence/archive/iteration116-bootstrap-managed-acr-lifecycle.md` — Bootstrap managed-ACR pass summary and model update evidence
-- `features/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR reference packet
+- `features/bootstrap-profile/byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR reference packet
 - `suites/bootstrap-profile-byo-acr-lifecycle.yaml` — Bootstrap BYO-ACR TS probe plan
 - `replays/bootstrap-profile-byo-acr-lifecycle.ts` — executable Bootstrap BYO-ACR probe, hardened after the v2 timeout
 - `evidence/archive/iteration117-bootstrap-byo-acr-lifecycle.md` — Bootstrap BYO-ACR initial blocked attempt and cleanup evidence
@@ -441,27 +441,16 @@ Use the domain workspace indexes instead of a copied artifact ledger in this run
 ## Active Task
 - none
 
-## Ready Frontier (owner-loop steering, iteration 192 — UI V4 feature page rework)
+## Ready Frontier (owner-loop iteration 193 — all tasks terminal)
 
-**Direction:** All OIDC and golden-path-catalog rework-review chains (19 tasks, spinning at depth 3–6+ with no convergence) have been superseded. The UI V4 ManagedSystem feature page rework is now the executable frontier. The ManagedSystem feature page loads but does not yet match design: it needs grouped status semantics, REST golden-path panel, scenario/path table, REST-first project-owner actions, feature-page tests, and legacy hash route handling.
+**State:** All 777 tasks in `.app/tasks/tree.json` are terminal (580 accepted, 197 superseded). The cascade closeout during iteration 193 promoted 92 decomposed tasks whose children were all terminal, including the root task. There are zero ready, zero active, and zero blocked tasks remaining.
 
-**Execution order** (rework-reviews that create bounded retry tasks):
+**Previous iteration 192 frontier items** (all now accepted):
+- UI V4 feature page rework chain (scenario-path table, REST scenario actions, action receipts, feature brief panel, feature page tests) — all accepted.
+- Golden-path catalog and OIDC rework chains — all accepted or superseded.
+- ManagedSystem golden-path feature page polish — accepted.
 
-1. ~~`aks-ui-v4-managedsystem-rest-first-example-rework-review`~~ (P1, **accepted**) — Reviewed. Created retry task `aks-ui-v4-managedsystem-rest-first-example-retry`. → **NEXT TO DISPATCH**
-
-2. `aks-ui-v4-scenario-path-table-rework-review` (P1, ready) — Review rejected scenario/path table attempt, create retry task. Table should show source/spec id, input path, expectation path, status, evidence, and next gap per row.
-
-3. `aks-ui-v4-rest-scenario-actions-rework-review` (P1, ready) — Review rejected REST scenario actions attempt, create retry task. Per-scenario project-owner actions: Generate Test Script, Request REST Staging Replay, Add Reference, Classify Result, etc.
-
-4. `aks-ui-v4-action-receipts-state-rework-review` (P1, ready) — Review rejected action receipts attempt, create retry task. Visible receipts showing action name, feature id, owner, timestamp, and state.
-
-5. `aks-ui-v4-feature-brief-reference-panel-rework-review` (P1, ready) — Review rejected feature brief panel attempt, create retry task. Feature brief with grouped references by role and missing-state visibility.
-
-6. `aks-ui-v4-feature-page-tests-rework-review` (P2, ready) — Review rejected feature-page tests attempt, create retry task. Browser tests for dedicated feature page, owner-agent wording, REST-first scenario actions.
-
-**Also ready (related golden-path polish):**
-- `managedsystem-golden-path-feature-page-polish-retry-rework-review` (P1, ready) — ManagedSystem golden-path claim/audit distinction, surface-type labels, evidence chain rendering.
-- `golden-path-rollout-batch-1-rework-review` (P1, ready) — Golden-path rollout batch 1 review.
+**Wait reason:** No actionable local work remains. The project needs an external trigger to create new tasks. See the resume triggers in the Next Action section.
 
 ## Over-Claim Correction Status
 The `azureManagedNodes` assertion in `specs/managedsystem-rest-add-existing.json` has been demoted from `verdictImpact: claim` to `verdictImpact: audit` with a correction note. The model behavior entry also updated. REST add-existing product/API pass verdict is preserved. Runtime placement / azureManagedNodes requires separate staging evidence before it can be restored to claim.
