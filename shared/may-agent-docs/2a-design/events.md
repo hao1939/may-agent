@@ -586,7 +586,7 @@ path: validate at the edge, persist via the bus, and let subscribers react.
 - Event payload examples should use the envelope shape above, not flattened
   domain fields.
 
-## Operational Status (appendix, refreshed 2026-06-13)
+## Operational Status (appendix, refreshed 2026-06-15)
 
 This section reflects what the runtime actually emits and consumes, so readers do
 not mistake the taxonomy above for a live wiring diagram. Keep this table in sync
@@ -616,18 +616,20 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `session.end` | runtime session lifecycle | ✅ live (7.7k rows) |
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.8k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.6k rows) |
-| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (179 rows) |
+| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (210 rows) |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (97 rows); all current instances are `category: session_not_found` for aks-rp-e2e task sessions |
+| `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (3 rows) |
 
 **Human control intents**
 
 | Event type | Emitted by | Status |
 |---|---|---|
 | `chat.start.requested` | canonical human-surface chat create-or-bind intent | ✅ live (13 rows) |
-| `session.steer.requested` | canonical human-surface session steering intent | ✅ live (9 rows) |
-| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (179 rows); see session lifecycle above |
+| `session.steer.requested` | canonical human-surface session steering intent | ✅ live (10 rows) |
+| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (210 rows); see session lifecycle above |
 | `session.cancel_all.requested` | canonical broad cancel intent | ❌ intended; 0 rows in DB |
-| `runtime.reload.requested` | canonical runtime reload intent | ✅ live (4 rows) |
-| `runtime.restart.requested` | canonical runtime restart intent | ❌ intended; 0 rows in DB |
+| `runtime.reload.requested` | canonical runtime reload intent | ✅ live (9 rows) |
+| `runtime.restart.requested` | canonical runtime restart intent | ✅ live (1 row) |
 | `runtime.shutdown.requested` | canonical runtime shutdown intent | ❌ intended; 0 rows in DB |
 
 **Project lifecycle — owner loop**
@@ -743,7 +745,9 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
-still has no emitter.
+still has no emitter. `session.resume_failed` fires actively from session-recovery
+when the target session cannot be found (97 rows, 21/hour as of 2026-06-15 —
+exclusively aks-rp-e2e task sessions whose session IDs were never registered).
 
 ### Consumer Reality
 
