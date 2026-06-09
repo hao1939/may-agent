@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { extractHandoff, summarizeForHandoff } from "../../src/lib/handoff.js";
 import type { TaskResult } from "../../src/lib/types.js";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 

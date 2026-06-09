@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { createSessionReadGuard } from "./session-read-guard.js";
-import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 
 /** Minimal BeforeToolCallContext for testing. */
 function makeCtx(toolName: string, args: Record<string, unknown>): BeforeToolCallContext {

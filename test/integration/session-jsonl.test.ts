@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import {
   ensureSessionDir,
   appendSessionMessage,
@@ -12,7 +12,7 @@ import {
   historyDir,
 } from "../../src/lib/persistence.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
   return {

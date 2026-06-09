@@ -8,9 +8,9 @@
  * Used by the coach agent to spawn coachee may-agent processes.
  */
 
-import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { TSchema } from "@mariozechner/pi-ai";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type, StringEnum } from "@earendil-works/pi-ai";
+import type { TSchema } from "@earendil-works/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { spawn, type ChildProcess } from "node:child_process";
 import { isMetaRecursionCommand } from "./tools/may-utils.js";
 

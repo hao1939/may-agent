@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { SubagentDefinition } from "../../src/lib/types.js";
-import type { Model } from "@mariozechner/pi-ai";
+import type { Model } from "@earendil-works/pi-ai";
 
 function fakeModel(): Model<any> {
   return {

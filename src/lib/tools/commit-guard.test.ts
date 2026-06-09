@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createCommitGuard } from "./commit-guard.js";
-import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";

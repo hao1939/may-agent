@@ -8,7 +8,7 @@ import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 import type { WorkflowRun } from "../../src/lib/workflow-tool.js";
 import { getDb, insertWorkflowRun, getWorkflowRun, getWorkflowStepSessions, listWorkflowRunIds, upsertSession } from "../../src/lib/requests.js";
 import type { WorkflowRunRecord } from "../../src/lib/requests.js";
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 

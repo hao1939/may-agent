@@ -5,8 +5,8 @@
 import { createHmac, randomUUID } from "node:crypto";
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import { Type } from "@mariozechner/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import { Type } from "@earendil-works/pi-ai";
 import { sessionDir } from "./persistence.js";
 import type { BeforeToolCallContext, BeforeToolCallResult } from "./tools/compose-guards.js";
 

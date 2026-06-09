@@ -1,8 +1,8 @@
 import { readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { Type, StringEnum } from "@mariozechner/pi-ai";
-import type { TSchema } from "@mariozechner/pi-ai";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type, StringEnum } from "@earendil-works/pi-ai";
+import type { TSchema } from "@earendil-works/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { SubagentManager } from "./manager.js";
 import type { TaskResult } from "./types.js";
 import type {

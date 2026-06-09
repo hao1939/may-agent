@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
-import type { Model } from "@mariozechner/pi-ai";
-import { Type } from "@mariozechner/pi-ai";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { Model } from "@earendil-works/pi-ai";
+import { Type } from "@earendil-works/pi-ai";
 import type { TSchema } from "@sinclair/typebox";
 
 function fakeModel(): Model<any> {

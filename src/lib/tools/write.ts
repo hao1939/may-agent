@@ -1,6 +1,6 @@
-import type { AgentTool } from "@mariozechner/pi-agent-core";
-import { Type } from "@mariozechner/pi-ai";
-import type { TSchema } from "@mariozechner/pi-ai";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { Type } from "@earendil-works/pi-ai";
+import type { TSchema } from "@earendil-works/pi-ai";
 import { mkdir as fsMkdir, readFile as fsReadFile, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";

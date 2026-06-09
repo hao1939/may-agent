@@ -6,8 +6,8 @@
  * the newest messages verbatim.
  */
 
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Model, ToolResultMessage } from "@mariozechner/pi-ai";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import type { Model, ToolResultMessage } from "@earendil-works/pi-ai";
 
 const DEFAULT_THRESHOLD = 0.6;
 const DEFAULT_KEEP_RATIO = 0.35;

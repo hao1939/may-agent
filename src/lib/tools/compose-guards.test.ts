@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { composeGuards } from "./compose-guards.js";
-import type { BeforeToolCallContext } from "@mariozechner/pi-agent-core";
+import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 
 function makeCtx(): BeforeToolCallContext {
   return {

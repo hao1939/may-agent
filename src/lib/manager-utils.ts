@@ -1,7 +1,7 @@
 /**
  * manager-utils.ts — Pure utility functions shared by manager.ts and agents-tool.
  */
-import type { AgentMessage } from "@mariozechner/pi-agent-core";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { SubagentDefinition } from "./types.js";
 import { createHash } from "node:crypto";
 

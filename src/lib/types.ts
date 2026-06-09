@@ -1,5 +1,5 @@
-import type { AgentTool, AgentMessage } from "@mariozechner/pi-agent-core";
-import type { Model, Api } from "@mariozechner/pi-ai";
+import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
+import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./persistence.js";
 
 /**
