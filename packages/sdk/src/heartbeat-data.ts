@@ -141,10 +141,25 @@ export function loadMetrics(ctx: WorkflowContext, agent: string): string {
     const rows = loadMetricRowsForAgent(ctx, agent);
     if (!rows.length) return "";
     const agentsRoot = getAgentsRoot(ctx);
+    // Build a set of metric IDs with open alerts so we can mark them as breached
+    // even when the threshold check alone doesn't fire (e.g. rate-mode alerts).
+    const openAlerts = new Map<string, string>();
+    try {
+      const alertRows = (loadHeartbeatContext(ctx, agent).alerts ?? []).map(normalizeHeartbeatAlert) as any[];
+      for (const a of alertRows) {
+        const mid = a.metric_id ?? a.metricId;
+        if (mid) openAlerts.set(mid, a.message ?? "open alert");
+      }
+    } catch {}
     return rows.map((r: any) => {
-      const breached = r.threshold != null && r.current != null &&
+      const thresholdBreached = r.threshold != null && r.current != null &&
         (r.alert_op === ">" || r.alert_op === "above" ? r.current > r.threshold : r.current < r.threshold);
+      const hasOpenAlert = openAlerts.has(r.id);
+      const breached = thresholdBreached || hasOpenAlert;
       let line = `📊 ${r.id}: ${r.current ?? "?"} (target ${r.target ?? "?"}) ${breached ? "⚠️ BELOW TARGET" : "✅"}`;
+      if (breached && !thresholdBreached && hasOpenAlert) {
+        line += `\n  → Open alert (non-threshold): ${openAlerts.get(r.id)}`;
+      }
       if (breached) {
         // Count consecutive breached snapshots for escalation
         let consecutiveBreaches = 0;
