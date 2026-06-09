@@ -102,6 +102,16 @@ a write-only sink with no consumer.
 If zombie detection is eventually moved to pure-SQL (no disk access), this column
 becomes the natural data source — but until then, it's dead weight.
 
+## Data Retention
+
+The `db-retention` handler (`agents/may/handlers/db-retention.ts`, daily cron)
+deletes sessions where `startedAt < now - 14 days`. This means SQL queries
+against `sessions` older than 14 days return empty results. For longer-term
+session analysis, use disk artifacts (`.state/sessions/history/<id>/meta.json`)
+if they have not been cleaned separately.
+
+See `events.md` → "Data Retention" for the full retention table.
+
 ## Implementation
 
 - **Manager:** `src/lib/manager.ts` — spawns/manages sessions

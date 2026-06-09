@@ -3,10 +3,15 @@
 ## Core Principle
 
 ```
-Event = something that happened at a point in time (immutable, append-only)
+Event = something that happened at a point in time
 ```
 
-Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table is effectively append-only today and serves as the audit trail, though it carries reserved mutable columns (`status`, `handled_by`, `result`, `reason`, `retry_count`) for future inbox-ack and retry patterns — see DDL and row mapping below.
+Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table serves as the audit trail for the **retention window** (currently 7 days — see Data Retention below), though it carries reserved mutable columns (`status`, `handled_by`, `result`, `reason`, `retry_count`) for future inbox-ack and retry patterns — see DDL and row mapping below.
+
+> **Not append-only.** The `db-retention` handler (daily cron) deletes events
+> older than 7 days. As of 2026-06-10, ~1M historical events have been pruned;
+> only the most recent ~7 days survive in the table. Do not assume events
+> persist indefinitely. See "Data Retention" section below.
 
 ## Schema
 
@@ -486,7 +491,7 @@ ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
 LIMIT 20
 ```
 
-Events naturally expire via TTL or time window. Agents act or they don't.
+Events are retained for 7 days, then bulk-deleted by the `db-retention` handler (daily cron). Agents act within the retention window or they don't. The `ttl_ms` column exists on the envelope/schema but no current producer populates it; expiry is enforced solely by the retention handler's `DELETE FROM events WHERE timestamp < ?`.
 
 ## Handler Event Payloads
 
@@ -774,6 +779,26 @@ Before adding a new `on:`-only handler:
 
 Before adding a new event type to the `SystemEvent` union:
 1. Identify the emitter site in code, not just in this spec. A type added here without an emitter is the failure mode that produced `project.status_changed` above.
+
+## Data Retention
+
+The `db-retention` handler (`agents/may/handlers/db-retention.ts`, daily cron)
+enforces these windows:
+
+| Table | Retention | Delete condition |
+|---|---|---|
+| `events` | 7 days | `timestamp < now - 7d` |
+| `sessions` | 14 days | `startedAt < now - 14d` |
+| `metric_snapshots` | 30 days | `measured_at < now - 30d` |
+
+After deletions exceed 1,000 rows, a `VACUUM` reclaims disk space.
+
+**Implication for agents:** Any query window exceeding the retention limit returns
+incomplete data. `COUNT(*)` over `events` reflects only the surviving window, not
+lifetime totals. Session-based analytics should stay within 14 days.
+
+Approved 2026-06-04 via `shared/work-queue.md`; proposal at
+`agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md`.
 
 ### See Also
 
