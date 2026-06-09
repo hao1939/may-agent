@@ -81,6 +81,7 @@ export interface RunOptions {
   projectId?: string;
   orderId?: string;
   startedAt?: number;
+  timeoutMs?: number;
   resumeMessages?: AgentMessage[];
 }
 
@@ -484,11 +485,12 @@ export class SubagentManager {
     this.bridgeEvents(session);
 
     // Timeout
-    if (def.timeoutMs) {
+    const timeoutMs = opts?.timeoutMs ?? def.timeoutMs;
+    if (timeoutMs) {
       session.timeoutTimer = setTimeout(() => {
-        log("warn", `[runtime] ${sessionId} timed out after ${def.timeoutMs}ms`);
+        log("warn", `[runtime] ${sessionId} timed out after ${timeoutMs}ms`);
         agent.abort();
-      }, def.timeoutMs);
+      }, timeoutMs);
     }
 
     this._sessions.set(sessionId, session);
@@ -628,7 +630,7 @@ export class SubagentManager {
   async callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; source?: string; workflowRunId?: string; projectId?: string; stepLabel?: string },
+    opts?: { parentSessionId?: string; source?: string; workflowRunId?: string; projectId?: string; stepLabel?: string; timeout?: number },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
     if (parentDepth >= this._maxCallDepth) {
@@ -649,6 +651,7 @@ export class SubagentManager {
       workflowRunId: opts?.workflowRunId,
       projectId: opts?.projectId,
       stepLabel: opts?.stepLabel,
+      timeoutMs: opts?.timeout,
     });
     this.callDepths.set(sessionId, parentDepth + 1);
     const result = await this.waitFor(sessionId);
