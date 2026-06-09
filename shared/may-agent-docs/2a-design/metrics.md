@@ -286,11 +286,11 @@ Agents can add domain metrics by inserting rows with a query or command:
 ```sql
 INSERT INTO metrics (id, name, owner, type, source_query, threshold, alert_op, status)
 VALUES (
-  'coach.skill-eff',
-  'Skill effectiveness',
-  'coach',
+  'scout.avg-quality-7d',
+  'Scout average quality (7d)',
+  'scout',
   'gauge',
-  'SELECT avg(score) FROM evaluations WHERE agent = "coach"',
+  'SELECT avg(quality) FROM evaluations WHERE agent = "scout" AND createdAt > strftime(''%s'',''now'')*1000 - 604800000',
   0.4,
   '<',
   'active'
@@ -313,9 +313,9 @@ Without both, agents optimize pathologically. Examples:
 
 | Project | Activity metric | Impact metric |
 |---------|----------------|---------------|
-| Skill quality (coach) | skills deployed | eval score improvement |
-| System efficiency (optimizer) | iterations completed | output files produced |
-| Agent literacy (bob) | baselines measured | gym pass rate |
+| Knowledge pipeline (scout) | artifacts sourced | downstream reference files |
+| System health (evaluator) | sessions evaluated | triage closure rate |
+| Feature delivery (aks-explorer) | iterations completed | test pass rate |
 
 Anti-gaming: if activity is high but impact is low, the agent is busy but not effective. The impact metric catches it.
 
