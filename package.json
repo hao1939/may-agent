@@ -31,8 +31,8 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\""
   },
   "dependencies": {
-    "@mariozechner/pi-agent-core": "^0.70.6",
-    "@mariozechner/pi-ai": "^0.70.6",
+    "@mariozechner/pi-agent-core": "^0.73.1",
+    "@mariozechner/pi-ai": "^0.73.1",
     "@may-agent/sdk": "workspace:*",
     "@may-agent/terminal": "workspace:*",
     "@xterm/addon-fit": "^0.11.0",
