@@ -25,10 +25,16 @@ folder does not keep a parallel task event log.
 
 - Task `inputs`, `outputs`, and `workspaceRefs` should make path ownership
   explicit. App-control files are app-relative, such as `project.json`,
-  `tasks/tree.json`, and `planner-runs.jsonl`. Domain files are
-  domain-relative, such as `specs/index.json`, `replays/<name>.ts`,
-  `runs/executions/`, and `evidence/archive/`.
+  `app.ts`, and `tasks/tree.json`. App runtime exchange/traces are
+  app-relative under `.state/`, such as `.state/discussion.jsonl` and
+  `.state/planner-runs.jsonl`. Domain files are domain-relative, such as
+  `specs/index.json`, `replays/<name>.ts`, `runs/executions/`, and
+  `evidence/archive/`.
 - Only leaf tasks are executable.
+- A task without `owner` is owned by the convention-inferred project owner
+  (`agents/<single-local-agent>/`, or `agents/owner/` /
+  `agents/project-owner/` when multiple app-local agents exist). Set `owner`
+  only for real exceptions such as `human` or another agent boundary.
 - Every task should be meaningful as one of: a project/domain responsibility, a
   decomposition of that responsibility, an executable leaf, or a review that
   corrects the decomposition. Avoid vague branches such as "follow up",
@@ -146,7 +152,7 @@ folder does not keep a parallel task event log.
   value-loop lanes.
 - Planning is control-loop behavior, not dispatchable task work. The
   `project-planner` workflow may run one bounded planner-control pass, record
-  the attempt in `planner-runs.jsonl`, and update `tree.json` with concrete
+  the attempt in `.state/planner-runs.jsonl`, and update `tree.json` with concrete
   domain leaves. Do not represent each planner wake, retry, or recovery as a
   normal leaf task.
 - Legacy planning/control nodes such as `project-control`,

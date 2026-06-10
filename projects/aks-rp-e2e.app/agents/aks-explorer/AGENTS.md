@@ -5,9 +5,12 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 
 ## Scope
 - Treat `/app/projects/aks-rp-e2e` as the domain working root.
-- Primary May-agent app files are in `/app/projects/aks-rp-e2e.app/`:
-  `project.json`, `discussion.jsonl`, `journal.jsonl`, `planner-runs.jsonl`,
-  and `tasks/tree.json`.
+- Primary durable May-agent app files are in `/app/projects/aks-rp-e2e.app/`:
+  `project.json` and `tasks/tree.json`.
+- App runtime exchange/traces such as `.state/discussion.jsonl`,
+  `.state/journal.jsonl`, and
+  `.state/planner-runs.jsonl` are useful for debugging recent attempts, but do
+  not treat them as durable project understanding.
 - Prefer writing durable domain run evidence under
   `/app/projects/aks-rp-e2e/evidence/archive/`.
 - Use devbox/staging evidence only when the task requires it; quote exact commands and outcomes.

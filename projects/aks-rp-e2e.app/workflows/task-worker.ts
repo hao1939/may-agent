@@ -512,7 +512,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       appDir,
       projectDir,
       treePath: join(appDir, "tasks", "tree.json"),
-      journalPath: join(appDir, "journal.jsonl"),
+      journalPath: join(appDir, ".state", "journal.jsonl"),
       worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
       maxConcurrent: configuredMaxConcurrent,
       requestedReadyTaskIds: triggerStringArray(trigger, "readyTaskIds"),
@@ -541,9 +541,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const result = await executeEngine({
     ...ctx,
     task: `${taskLines.join("\n")}\n\n${triggerBlock}`,
-    done: (message: string) => ({ status: "done", message }) as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,
-  } as WorkflowContext);
+    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+  } as unknown as WorkflowContext);
 
   const message = (result as { message?: string; summary?: string }).message
     ?? (result as { message?: string; summary?: string }).summary
@@ -559,12 +559,12 @@ if (import.meta.main) {
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxConcurrent: 3",
     agent: "aks-explorer",
-    done: (message: string) => ({ status: "done", message }) as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,
+    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
     emit() {},
     dispatchEvent() {},
     runAgent: async () => ({ status: "error", lastAssistantText: "" }),
     summarize: () => "",
-  } as WorkflowContext);
+  } as unknown as WorkflowContext);
   console.log(JSON.stringify(result));
 }

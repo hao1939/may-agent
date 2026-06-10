@@ -24,8 +24,12 @@ The app declaration in `app.ts` points at the sibling domain repo:
 
 App code should treat paths intentionally:
 
-- app/control-plane files: `project.json`, `tasks/tree.json`, `journal.jsonl`,
-  `planner-runs.jsonl`, `workflows/`, `ui/`;
+- app/control-plane files: `app.ts`, `project.json`, `package.json`,
+  `tsconfig.json`, `tasks/tree.json`, `workflows/`, `agents/`, `ui/`,
+  `scripts/`, and `e2e/`;
+- app runtime scratch files: `.state/journal.jsonl`,
+  `.state/planner-runs.jsonl`, `.state/discussion.jsonl`, `.state/tmp/`,
+  and `.state/cache/`;
 - domain workspace files: `../aks-rp-e2e/features/`,
   `../aks-rp-e2e/specs/`, `../aks-rp-e2e/replays/`,
   `../aks-rp-e2e/runner/`, `../aks-rp-e2e/model/`.
@@ -33,22 +37,61 @@ App code should treat paths intentionally:
 ## Runtime Files
 
 - `app.ts` - Project app declaration, schedules, actions, and event behavior.
+- `package.json` - app-local command surface for bundle, check, test, format,
+  and inspection tools.
+- `tsconfig.json` - TypeScript check boundary for the app.
 - `project.json` - readable May-agent operating state for this app.
 - `tasks/tree.json` - current project execution decomposition.
-- `discussion.jsonl` - optional append-only project comment stream.
-- `journal.jsonl` - optional compact app workflow trace.
-- `planner-runs.jsonl` - compact planner run history.
 - `agents/` - app-local agent definitions and triggers.
 - `workflows/` - project-specific workflow implementation.
+- `scripts/` - app package tooling only, such as integrity checks and task-tree
+  inspection. Domain runner logic still belongs in `../aks-rp-e2e`.
+- `types/` - small app-local ambient declarations needed by app checks.
 - `ui/` - project-specific May-agent UI assets.
 - `e2e/` - cross-surface app/UI tests.
+- `.state/` - ignored app sandbox for runtime scratch, including
+  `discussion.jsonl`, `journal.jsonl`, `planner-runs.jsonl`, temporary files,
+  and caches.
 
 May-agent infrastructure owns durable event, session, workflow, and intent
 history. This app does not keep a parallel `events/` or `runs/` directory.
-This app also does not own a `runner/` or `scripts/` directory; runnable test
-logic belongs to the portable domain project.
+This app also does not own a `runner/` directory or domain test scripts;
+runnable test logic belongs to the portable domain project.
 
-## Execution
+The project owner is inferred by convention from the app-local `agents/`
+folder. Because this app has a single local agent, `agents/aks-explorer/`,
+workflow handlers and tasks do not need to repeat `aks-explorer` as their
+default owner/agent.
+
+Deleting `.state/` must not lose the project goal, task decomposition, feature
+knowledge, specs, replay scripts, evidence, or durable steering decisions. If
+an app needs those facts to reason correctly, they belong in checked-in
+app/domain files, not `.state/`.
+
+## App Commands
+
+Run app-local commands from this directory:
+
+```sh
+bun run check
+```
+
+The default check verifies app integrity, bundles app/workflow entrypoints as a
+syntax gate, typechecks the app, checks package/tooling formatting, and runs the
+stable workflow/replanning test set.
+
+Useful commands:
+
+- `bun run bundle` - bundle `app.ts` and workflow entrypoints into
+  `.state/bundle/`.
+- `bun run integrity` - validate app config against actual workflows, agents,
+  task tree, and domain runner presence.
+- `bun run typecheck` - run `tsc` for the app boundary.
+- `bun run test` - run stable workflow and replanning tests.
+- `bun run test:ui` - run state-sensitive UI e2e tests.
+- `bun run tasks:summary` - print task-tree counts and roots.
+
+## Domain Execution
 
 The app drives the domain runner instead of replacing it. For example, a
 feature-page test request should become an event handled by this app, and the

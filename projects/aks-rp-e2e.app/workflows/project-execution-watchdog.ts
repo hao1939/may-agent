@@ -7,7 +7,7 @@
  * worker picker start it again.
  */
 
-import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
@@ -22,6 +22,7 @@ type WatchdogConfig = {
   projectDir: string;
   treePath: string;
   stateDbPath: string;
+  agent: string;
   maxAttempts: number;
   maxConcurrent: number;
 };
@@ -48,7 +49,7 @@ function field(raw: string, name: string): string | undefined {
   return match ? match[1].trim() : undefined;
 }
 
-function parseInput(raw: string): WatchdogConfig {
+function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
   const projectDir = field(raw, "project") ?? "/app/projects/aks-rp-e2e";
   const explicitAppDir = field(raw, "app");
   const embeddedProjectPath = join(projectDir, ".app", "project.json");
@@ -65,6 +66,7 @@ function parseInput(raw: string): WatchdogConfig {
     projectDir,
     treePath: join(appDir, "tasks", "tree.json"),
     stateDbPath: field(raw, "stateDb") ?? "/app/.state/may.db",
+    agent: field(raw, "agent") ?? defaultAgent,
     maxAttempts: Number(field(raw, "maxAttempts") ?? 3),
     maxConcurrent: Number(field(raw, "maxConcurrent") ?? 3),
   };
@@ -83,7 +85,9 @@ function saveTree(config: WatchdogConfig, tree: TaskTree): void {
 }
 
 function appendJournal(config: WatchdogConfig, entry: Record<string, unknown>): void {
-  appendFileSync(join(config.appDir, "journal.jsonl"), `${JSON.stringify({
+  const journalDir = join(config.appDir, ".state");
+  if (!existsSync(journalDir)) mkdirSync(journalDir, { recursive: true });
+  appendFileSync(join(journalDir, "journal.jsonl"), `${JSON.stringify({
     ts: new Date().toISOString(),
     actor: "project-execution-watchdog",
     ...entry,
@@ -158,9 +162,9 @@ function buildLoopTask(config: WatchdogConfig, eventData: Record<string, unknown
   return [
     `app: ${config.appDir}`,
     `project: ${config.projectDir}`,
-    "agent: aks-explorer",
-    "owner: aks-explorer",
-    "worker: aks-explorer",
+    `agent: ${config.agent}`,
+    `owner: ${config.agent}`,
+    `worker: ${config.agent}`,
     `maxAttempts: ${config.maxAttempts}`,
     `maxConcurrent: ${config.maxConcurrent}`,
     `reason: ${reason}`,
@@ -184,9 +188,9 @@ async function runWorker(ctx: WorkflowContext, config: WatchdogConfig, readyTask
         maxConcurrent: config.maxConcurrent,
       },
     }, reason),
-    done: (message: string) => ({ status: "done", message }) as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,
-  } as WorkflowContext);
+    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+  } as unknown as WorkflowContext);
 }
 
 async function runPlanner(ctx: WorkflowContext, config: WatchdogConfig, reason: string): Promise<WorkflowResult> {
@@ -200,9 +204,9 @@ async function runPlanner(ctx: WorkflowContext, config: WatchdogConfig, reason: 
         maxConcurrent: config.maxConcurrent,
       },
     }, reason),
-    done: (message: string) => ({ status: "done", message }) as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,
-  } as WorkflowContext);
+    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+  } as unknown as WorkflowContext);
 }
 
 function resultMessage(result: WorkflowResult): string {
@@ -212,7 +216,7 @@ function resultMessage(result: WorkflowResult): string {
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
-  const config = parseInput(ctx.task);
+  const config = parseInput(ctx.task, ctx.agent);
   const tree = readTree(config.treePath);
   if (!tree) return ctx.done("Watchdog skipped: task tree does not exist yet.");
 
@@ -249,12 +253,12 @@ if (import.meta.main) {
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nmaxAttempts: 3",
     agent: "aks-explorer",
-    done: (message: string) => ({ status: "done", message }) as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,
+    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
     emit() {},
     dispatchEvent() {},
     runAgent: async () => ({ status: "error", lastAssistantText: "" }),
     summarize: () => "",
-  } as WorkflowContext);
+  } as unknown as WorkflowContext);
   console.log(JSON.stringify(result));
 }

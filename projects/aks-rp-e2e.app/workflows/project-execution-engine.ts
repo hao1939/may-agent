@@ -99,7 +99,7 @@ type TaskNode = {
   id: string;
   parent_id: string | null;
   status: TaskStatus;
-  kind?: "work" | "blocked_review" | "parent_review" | "rework_review" | "frontier_replan" | "domain_planner" | "human_question" | "loop_task";
+  kind?: "work" | "blocked_review" | "parent_review" | "rework_review" | "frontier_replan" | "domain_planner" | "human_question" | "loop_task" | "local_implementation";
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
   workflow?: string;
@@ -258,8 +258,8 @@ function parseInput(raw: string, callingAgent: string): EngineConfig {
     projectPath,
     treePath: join(appDir, "tasks", "tree.json"),
     featureQueuePath: join(projectDir, "evidence", "archive", "feature-learning-queue.md"),
-    journalPath: join(appDir, "journal.jsonl"),
-    plannerRunsPath: join(appDir, "planner-runs.jsonl"),
+    journalPath: join(appDir, ".state", "journal.jsonl"),
+    plannerRunsPath: join(appDir, ".state", "planner-runs.jsonl"),
     owner: field(raw, "owner") ?? field(raw, "agent") ?? callingAgent,
     worker: field(raw, "worker") ?? field(raw, "agent") ?? callingAgent,
     role: field(raw, "role") ?? defaultRole,
@@ -318,7 +318,7 @@ function withTreeLock<T>(config: EngineConfig, operation: () => T): T {
 
 function appendJournal(path: string, record: Record<string, unknown>): void {
   ensureDir(dirname(path));
-  const next = { ts: new Date().toISOString(), actor: "project-execution-engine", ...record };
+  const next: Record<string, unknown> = { ts: new Date().toISOString(), actor: "project-execution-engine", ...record };
   try {
     if (existsSync(path)) {
       const recent = readText(path).trimEnd().split("\n").slice(-20);
@@ -1613,7 +1613,7 @@ function supersedeTask(taskNode: TaskNode, reason: string): void {
 
 function retireLegacyPlanningControlTasks(tree: TaskTree): string[] {
   const retired: string[] = [];
-  const reason = "Superseded by planner control-loop execution; planning state is recorded in planner-runs.jsonl and concrete generated work stays under value-loop task lanes.";
+  const reason = "Superseded by planner control-loop execution; planning state is recorded in .state/planner-runs.jsonl and concrete generated work stays under value-loop task lanes.";
   for (const taskNode of Object.values(tree.tasks)) {
     if (!isPlanningControlTask(tree, taskNode)) continue;
     if (taskNode.id === tree.root_task_id) continue;
@@ -2313,7 +2313,7 @@ function buildWorkerPrompt(config: EngineConfig, task: TaskNode, frame: ProjectF
         `Look especially at unknown, failing, blocked, stale, or weakly evidenced feature paths in the model, reports, specs, run plans, probes, and evidence.`,
         `Speed matters: create a batch of 5-10 proposed ordinary leaf tasks when safe local work exists. Parent generated tasks under the durable value-loop lanes: feature-knowledge-and-specs, spec-runner-and-replays, evidence-feedback-and-model-update, or user-review-workspace. Prefer independent tasks with explicit conflict_scope so the planner can promote them and the worker pickup loop can dispatch them in parallel.`,
         ...taskTreeCurationGuidance,
-        `You may edit ${appPath(config, "tasks/tree.json")} directly, but only to add or update concrete proposed child tasks for this project frontier. Do not create new root project-frontier-replan-* tasks. Preserve old planning history; the engine records this execution in ${appPath(config, "planner-runs.jsonl")}.`,
+        `You may edit ${appPath(config, "tasks/tree.json")} directly, but only to add or update concrete proposed child tasks for this project frontier. Do not create new root project-frontier-replan-* tasks. Preserve old planning history; the engine records this execution in ${appPath(config, ".state/planner-runs.jsonl")}.`,
         `Do not answer with "no work" or "waiting" as a terminal result. If the frontier appears exhausted, create a concrete diagnostic/review task, identify a blocker task to address, or record one concrete human/input question and say CLAIM: blocked.`,
       ]
     : [];
@@ -2519,6 +2519,7 @@ function appendPlannerRunRecord(config: EngineConfig, tree: TaskTree, previousTr
     .filter(id => id !== task.id)
     .sort();
   task.latest_run_id = runId;
+  ensureDir(dirname(config.plannerRunsPath));
   appendFileSync(config.plannerRunsPath, `${JSON.stringify({
     id: runId,
     ts: attempt.ts,
@@ -2611,7 +2612,7 @@ function createPlannerControlTask(config: EngineConfig): TaskNode {
       "specs/index.json",
       "evidence/archive/feature-learning-queue.md",
     ]),
-    outputs: ["tasks/tree.json", "planner-runs.jsonl"],
+    outputs: ["tasks/tree.json"],
     acceptance: [
       "Audits whether the root project goal is achieved, blocked, or still has local/domain work available.",
       "Inspects unknown, failing, blocked, or weakly evidenced feature paths for safe local next work.",
@@ -2624,7 +2625,7 @@ function createPlannerControlTask(config: EngineConfig): TaskNode {
       "Do not run cloud mutation, kubectl against live clusters, staging probes, or `AKS_RP_E2E_DRY_RUN=0`.",
       "Do not mark external gates satisfied without exact gate evidence.",
       "Do not treat a blocked active project as complete.",
-      "Do not create planning/control task nodes; planning is the control loop and its history belongs in planner-runs.jsonl.",
+      "Do not create planning/control task nodes; planning is the control loop and its history belongs in .state/planner-runs.jsonl.",
     ],
     gates: [],
   });
@@ -2914,7 +2915,7 @@ function buildSpecRunnerVerification(task: TaskNode, attempt: TaskAttempt, artif
     { item: "Real runner execution produced terminal result/diagnosis/summary/steps artifacts.", result: hasTerminalCore ? "pass" : "not_proven" },
     { item: "Terminal status is from live execution, not dry-run/canceled resolution.", result: hasRealTerminalStatus && !dryRunOnly ? "pass" : "fail" },
     { item: "Result reaches product assertions or records a concrete diagnosis for follow-up.", result: status === "passed" || diagnosisConcrete ? "pass" : "not_proven" },
-    ...task.acceptance.map(item => ({ item, result: accepted ? "pass" : "not_proven" })),
+    ...task.acceptance.map((item): Verification["criteria"][number] => ({ item, result: accepted ? "pass" : "not_proven" })),
   ] satisfies Verification["criteria"];
   return {
     ts: nowIso(),
@@ -3853,12 +3854,12 @@ if (import.meta.main) {
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxAttempts: 0",
     agent: "aks-explorer",
-    done: (message: string) => ({ status: "done", message }) as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,
+    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
     emit() {},
     dispatchEvent() {},
     runAgent: async () => ({ status: "error", lastAssistantText: "" }),
     summarize: () => "",
-  } as WorkflowContext);
+  } as unknown as WorkflowContext);
   console.log(JSON.stringify(result));
 }

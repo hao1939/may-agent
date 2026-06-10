@@ -1,4 +1,5 @@
-import { appendFileSync } from "node:fs";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 type EventSelector =
   | string
@@ -41,6 +42,25 @@ type ProjectApp = {
     cron?: string;
     event: Record<string, unknown>;
   }>;
+  workflowHandlers: Array<{
+    name: string;
+    type: "job";
+    enabled: boolean;
+    description: string;
+    intervalMs?: number;
+    offsetMs?: number;
+    maxConcurrentTriggers?: number;
+    on: string[];
+    handler: {
+      workflow: string;
+      agent?: string;
+      projectId?: string;
+      includeEvent?: boolean;
+      task: string;
+      timeoutMs: number;
+    };
+    context: string[];
+  }>;
   events: EventSelector[];
   actions: Record<
     string,
@@ -79,7 +99,9 @@ function appendDiscussionRecord(ctx: ProjectAppContext, event: Record<string, un
   if (!text.trim()) return null;
   const now = new Date().toISOString();
   const id = eventString(event, "id") || `c_${now.replace(/\D/g, "").slice(0, 14)}_${Math.random().toString(36).slice(2, 8)}`;
-  appendFileSync(ctx.appPath("discussion.jsonl"), `${JSON.stringify({
+  const discussionPath = ctx.appPath(".state/discussion.jsonl");
+  mkdirSync(dirname(discussionPath), { recursive: true });
+  appendFileSync(discussionPath, `${JSON.stringify({
     id,
     ts: now,
     author: eventString(event, "author") || "human",
@@ -109,6 +131,14 @@ function projectExecutionEvent(reason: string, params: unknown = {}): Record<str
     },
   };
 }
+
+const appTaskContext = "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e";
+
+const taskTreeContext = [
+  "projects/aks-rp-e2e.app/project.json",
+  "projects/aks-rp-e2e.app/tasks/tree.json",
+  "projects/aks-rp-e2e.app/tasks/README.md",
+];
 
 export default defineProjectApp({
   id: "aks-rp-e2e",
@@ -156,6 +186,124 @@ export default defineProjectApp({
         project: "aks-rp-e2e",
         lane: "replan-review",
       },
+    },
+  ],
+
+  workflowHandlers: [
+    {
+      name: "aks-rp-e2e-project-planner",
+      type: "job",
+      enabled: true,
+      description: "Planner loop. Reviews/refills aks-rp-e2e.app/tasks/tree.json and emits project.tasks.ready when executable leaves exist.",
+      handler: {
+        workflow: "project-planner",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxConcurrent: 5`,
+        timeoutMs: 3_600_000,
+      },
+      on: ["project.execution.requested"],
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-ready-task-picker",
+      type: "job",
+      enabled: true,
+      description: "Worker loop pickup. Leases ready leaves and emits per-task execution events.",
+      handler: {
+        workflow: "task-worker",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxConcurrent: 5`,
+        timeoutMs: 1_800_000,
+      },
+      on: ["project.tasks.ready"],
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-task-execution-worker",
+      type: "job",
+      enabled: true,
+      description: "Worker loop execution. Executes one leased leaf task from aks-rp-e2e.app/tasks/tree.json and emits task completion.",
+      maxConcurrentTriggers: 5,
+      handler: {
+        workflow: "task-worker",
+        includeEvent: true,
+        task: `${appTaskContext}\nmaxAttempts: 1\nmaxConcurrent: 1`,
+        timeoutMs: 3_600_000,
+      },
+      on: ["project.task.execution.requested"],
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-project-watchdog",
+      type: "job",
+      enabled: true,
+      intervalMs: 300_000,
+      offsetMs: 120_000,
+      description: "Five-minute liveness guard. If the task tree is fresh or a worker is healthy, it no-ops; otherwise it invokes the execution engine to resume runnable work.",
+      on: ["project.watchdog.tick"],
+      handler: {
+        workflow: "project-execution-watchdog",
+        task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nmaxAttempts: 2\nmaxConcurrent: 5",
+        timeoutMs: 1_800_000,
+      },
+      context: taskTreeContext,
+    },
+    {
+      name: "aks-rp-e2e-regular-learning",
+      type: "job",
+      intervalMs: 3_600_000,
+      enabled: false,
+      description: "Disabled timer template. When enabled, it emits the same task-tree execution workflow instead of a separate learning lane.",
+      handler: {
+        workflow: "project-execution-engine",
+        task: `${appTaskContext}\nmaxAttempts: 50\nlane: regular-learning`,
+        timeoutMs: 3_600_000,
+      },
+      offsetMs: 300_000,
+      on: ["trigger.aks-rp-e2e-regular-learning"],
+      context: [
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e.app/tasks/tree.json",
+        "projects/aks-rp-e2e/model/knowledge-map/README.md",
+      ],
+    },
+    {
+      name: "aks-rp-e2e-weekly-replan-review",
+      type: "job",
+      intervalMs: 604_800_000,
+      enabled: false,
+      description: "Disabled timer template. Replan review is represented as task-tree work and advanced by the project execution workflow.",
+      handler: {
+        workflow: "project-execution-engine",
+        task: `${appTaskContext}\nmaxAttempts: 50\nlane: replan-review`,
+        timeoutMs: 3_600_000,
+      },
+      offsetMs: 900_000,
+      on: ["trigger.aks-rp-e2e-weekly-replan-review"],
+      context: [
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e.app/tasks/tree.json",
+        "projects/aks-rp-e2e/model/knowledge-map/views/path-summary.json",
+        "projects/aks-rp-e2e/suites/README.md",
+      ],
+    },
+    {
+      name: "aks-rp-e2e-verification-signal",
+      type: "job",
+      enabled: false,
+      description: "Disabled manual/event template for a verification wake. Live execution still requires explicit task gates in aks-rp-e2e.app/tasks/tree.json.",
+      handler: {
+        workflow: "project-execution-engine",
+        task: `${appTaskContext}\nmaxAttempts: 50\nlane: verification`,
+        timeoutMs: 3_600_000,
+      },
+      on: ["trigger.aks-rp-e2e-verification-signal"],
+      context: [
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e.app/tasks/tree.json",
+        "projects/aks-rp-e2e/replays/execution/automation.md",
+        "projects/aks-rp-e2e/replays/README.md",
+      ],
     },
   ],
 
@@ -325,6 +473,8 @@ export default defineProjectApp({
       return ctx.noop("project.task.execution.requested is consumed by the aks-rp-e2e task-worker workflow trigger");
     }
 
-    return ctx.noop(`no aks-rp-e2e handler for event ${String(event.type)}`);
+    // Unhandled project events intentionally fall through so the runtime can
+    // route them to the convention-inferred project owner.
+    return undefined;
   },
 });

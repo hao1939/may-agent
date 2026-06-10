@@ -93,13 +93,16 @@ agents repo
   projects/
     aks-rp-e2e.app/
       app.ts
+      package.json
+      tsconfig.json
       project.json
       tasks/
       workflows/
       agents/
+      scripts/
+      types/
       ui/
-      discussion.jsonl
-      journal.jsonl
+      .state/
 ```
 
 The agents/platform repo owns app logic because that logic is May-agent
@@ -110,6 +113,8 @@ integration. The domain repo owns the project product.
 ```text
 aks-rp-e2e.app/
   app.ts                 # required app declaration and event handler
+  package.json           # app-local command surface
+  tsconfig.json          # app TypeScript check boundary
   project.json           # structured app/project state and workspace binding
   tasks/
     tree.json            # current task decomposition and review state
@@ -117,18 +122,62 @@ aks-rp-e2e.app/
   workflows/             # project-specific workflows
   agents/                # optional app-local agent identities
   handlers/              # app.ts helper modules
+  scripts/               # app package tooling, not domain runner logic
+  types/                 # small app-local ambient declarations
   ui/                    # project app UI assets
   e2e/                   # app/UI cross-surface tests
-  discussion.jsonl       # optional append-only human/app comments
-  journal.jsonl          # optional compact app-local trace
+  .state/                # ignored app sandbox/runtime scratch
+    discussion.jsonl     # optional append-only human/app exchange
+    journal.jsonl        # optional compact app-local trace
+    planner-runs.jsonl   # optional compact planner attempt trace
+    tmp/
+    cache/
   archive/               # retired app-control files
 ```
 
-No active `runner/`, `scripts/`, `events/`, `runs/`, `evidence/`, `specs/`,
-`replays/`, `features/`, or `model/` folder belongs inside the app. The domain
-project owns those domain tools and artifacts. May-agent infrastructure owns
-durable event, session, workflow, and intent history. The app may keep compact
-JSONL traces only when they help the app reason.
+No active `runner/`, domain test `scripts/`, `events/`, `runs/`, `evidence/`,
+`specs/`, `replays/`, `features/`, or `model/` folder belongs inside the app.
+The domain project owns those domain tools and artifacts. The app may have a
+small `scripts/` folder for package tooling such as integrity checks, bundle
+helpers, and task-tree inspection. May-agent infrastructure owns durable event,
+session, workflow, and intent history. The app may keep compact JSONL traces in
+`.state/` only when they help the app reason during local operation.
+
+## App Package
+
+Each project app should have a `package.json`. Treat it like the app's command
+surface, similar to a mobile app project: code and durable state are checked in,
+while `.state/` remains disposable runtime scratch.
+
+Recommended scripts:
+
+- `bundle` - bundle `app.ts` and workflow entrypoints to an ignored
+  `.state/bundle/` folder.
+- `check` - stable default gate for app integrity, syntax/bundle, typecheck,
+  format check, and stable tests.
+- `integrity` - validate app declarations against actual files: owner
+  inference, workflow handlers, schedule events, task tree references, and
+  domain workspace binding.
+- `syntax` - fast bundle/parse check for app and workflow entrypoints.
+- `typecheck` - app TypeScript boundary.
+- `test` - stable app tests that should not depend on live UI/domain state.
+- `test:ui` - broader state-sensitive UI e2e tests.
+- `format` and `format:check` - app package/tooling formatting. If an existing
+  app does not have a Prettier baseline, do not silently rewrite every workflow
+  and UI file as part of introducing `package.json`; baseline that separately.
+- `tasks:summary` or equivalent tools - read-only app inspection helpers.
+
+`package.json` is not a replacement for `app.ts`. `app.ts` is the runtime
+declaration loaded by May-agent; `package.json` is the human/CI command surface
+for building and checking that declaration.
+
+Deleting `.state/` must not lose project understanding. Durable project intent
+belongs in `project.json`, task thinking in `tasks/tree.json`, and domain
+knowledge/evidence in the domain workspace. Human comments may enter through
+`.state/discussion.jsonl`, but durable steering decisions must be folded into
+the task tree, `project.json`, app docs, or domain artifacts. If the app cannot
+recover its purpose after deleting `.state/`, the data was stored in the wrong
+place.
 
 ## Domain Workspace Binding
 
@@ -143,6 +192,20 @@ export default defineProjectApp({
     localPath: "../aks-rp-e2e",
     branch: "main",
   },
+  workflowHandlers: [
+    {
+      name: "aks-rp-e2e-project-planner",
+      enabled: true,
+      on: ["project.execution.requested"],
+      handler: {
+        workflow: "project-planner",
+        includeEvent: true,
+        task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e",
+        timeoutMs: 3600000,
+      },
+      context: ["projects/aks-rp-e2e.app/tasks/tree.json"],
+    },
+  ],
   async onEvent(ctx, event) {
     // App-owned event behavior.
   },
@@ -153,6 +216,42 @@ The binding has two roles:
 
 - `repo` and `branch` describe the expected source of the domain project.
 - `localPath` tells the runtime where commands should run on this host.
+
+`workflowHandlers` replaces project-local `agents/*/cron.json`. The app owns
+which events wake which workflows; infra owns delivery, scheduling, sessions,
+dedup, and workflow-run audit.
+
+## Convention Defaults
+
+Project apps use convention over configuration. `app.ts` should declare
+exceptions, not restate obvious ownership.
+
+The runtime infers the project owner from the app folder:
+
+1. If `agents/` contains exactly one local agent, that agent is the project
+   owner.
+2. If multiple local agents exist, `agents/owner/` wins, then
+   `agents/project-owner/`.
+3. If the owner is still ambiguous, app discovery fails loudly. The app should
+   not add an `owner` field to work around an unclear folder shape.
+
+Owner-based defaults:
+
+- A workflow handler without `handler.agent` runs as the inferred project owner.
+- A workflow handler without `handler.projectId` uses the app id/folder.
+- A task without `owner` is owned by the inferred project owner.
+- A task without a dedicated worker runs with the project owner.
+- A review/verifier without an explicit assignee uses the project owner.
+- A blocker/escalation without a clearly classified external owner returns to
+  the project owner for judgment.
+- A project-scoped event that has no matching workflow handler and is not
+  intentionally suppressed by `app.onEvent` is dispatched to the project owner.
+
+Dedicated handlers are still useful for deterministic paths such as planner
+wakes, ready-task pickup, native spec execution, watchdog recovery, and
+synchronous read-only UI actions. Unknown project events should not disappear:
+they either match a handler, are intentionally ignored with a reason, or reach
+the project owner.
 
 The app should record workspace binding and the observed domain revision in
 `project.json` when task decisions or evidence depend on a specific layout:
@@ -178,11 +277,14 @@ V3 discovery:
 
 1. Scan configured app roots for `*.app/app.ts`.
 2. Import each `app.ts` side-effect free.
-3. Validate app id, workspace binding, schedules, event subscriptions, and
-   resource limits.
-4. Resolve the domain workspace path.
-5. Register app event handlers and schedules.
-6. Serve app UI and shared project task views.
+3. Infer and validate the project owner from the app-local `agents/` folder.
+4. Validate app id, workspace binding, schedules, workflow handlers, event
+   subscriptions, and resource limits.
+5. Resolve the domain workspace path.
+6. Expand convention defaults such as handler agent, handler project id, task
+   owner, reviewer, and fallback event owner.
+7. Register app event handlers, workflow handlers, and schedules.
+8. Serve app UI and shared project task views.
 
 Discovery should support V2 during migration:
 

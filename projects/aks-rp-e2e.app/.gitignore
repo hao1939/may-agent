@@ -1,4 +1,5 @@
 *.jsonl
+/.state/
 /discussion.md
 /journal.md
 agents/*/workspace/**

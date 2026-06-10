@@ -7,6 +7,7 @@ import { execute } from "./project-execution-watchdog.ts";
 
 async function makeProject() {
   const dir = await mkdtemp(join(tmpdir(), "aks-watchdog-"));
+  await mkdir(join(dir, ".state"), { recursive: true });
   await mkdir(join(dir, "tasks"), { recursive: true });
   await writeFile(join(dir, "project.json"), `${JSON.stringify({
     id: "test-project",
@@ -14,7 +15,7 @@ async function makeProject() {
     status: "active",
     goal: "Test Project",
   }, null, 2)}\n`, "utf8");
-  await writeFile(join(dir, "journal.jsonl"), "", "utf8");
+  await writeFile(join(dir, ".state", "journal.jsonl"), "", "utf8");
   return dir;
 }
 

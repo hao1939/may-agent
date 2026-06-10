@@ -24,10 +24,11 @@ function projectJson(status: string) {
 async function makeProject(status: string) {
   const dir = await mkdtemp(join(tmpdir(), "aks-task-engine-"));
   await mkdir(join(dir, ".app"), { recursive: true });
+  await mkdir(join(dir, ".state"), { recursive: true });
   await mkdir(join(dir, "tasks"), { recursive: true });
   await mkdir(join(dir, "evidence", "outputs"), { recursive: true });
   await writeFile(join(dir, ".app", "project.json"), projectJson(status), "utf8");
-  await writeFile(join(dir, ".app", "journal.jsonl"), "", "utf8");
+  await writeFile(join(dir, ".state", "journal.jsonl"), "", "utf8");
   return dir;
 }
 
@@ -98,6 +99,16 @@ describe("project execution engine", () => {
       type: "project.watchdog.tick",
       project: "aks-rp-e2e",
     });
+    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-project-planner")?.handler.workflow)
+      .toBe("project-planner");
+    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-project-planner")?.handler.agent)
+      .toBeUndefined();
+    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-project-planner")?.handler.projectId)
+      .toBeUndefined();
+    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-ready-task-picker")?.on)
+      .toEqual(["project.tasks.ready"]);
+    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-task-execution-worker")?.maxConcurrentTriggers)
+      .toBe(5);
     expect(app.actions.watch.type).toBe("async");
     expect((app.actions.watch as any).event({}).type).toBe("project.execution.requested");
     expect(app.events).toContainEqual({ type: "project.watchdog.tick", project: "aks-rp-e2e" });
@@ -1262,7 +1273,7 @@ describe("project execution engine", () => {
           };
         }
         writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- tasks/tree.json\n- planner-runs.jsonl" };
+        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- tasks/tree.json\n- .state/planner-runs.jsonl" };
       },
     }));
 
@@ -1274,7 +1285,7 @@ describe("project execution engine", () => {
     expect(updated.tasks["project-planning-loop"]).toBeUndefined();
     expect(updated.tasks["project-planning-loop-run"]).toBeUndefined();
     expect(updated.tasks["task-1"].status).toBe("ready");
-    const plannerRuns = await readFile(join(projectDir, "planner-runs.jsonl"), "utf8");
+    const plannerRuns = await readFile(join(projectDir, ".state/planner-runs.jsonl"), "utf8");
     expect(plannerRuns).toContain("project-planner-control-loop");
   });
 
@@ -1348,7 +1359,7 @@ describe("project execution engine", () => {
           gates: [],
         };
         writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- tasks/tree.json\n- planner-runs.jsonl" };
+        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- tasks/tree.json\n- .state/planner-runs.jsonl" };
       },
     }));
 
@@ -3884,7 +3895,7 @@ describe("project execution engine", () => {
           };
         }
         writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/project-planning-loop.md\n- planner-runs.jsonl\n- tasks/tree.json" };
+        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/project-planning-loop.md\n- .state/planner-runs.jsonl\n- tasks/tree.json" };
       },
     }));
 
@@ -4684,7 +4695,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: [],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records the next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -4694,7 +4705,7 @@ describe("project execution engine", () => {
             agent: "aks-explorer",
             claim: "done",
             summary: "Prior planning run accepted.",
-            outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+            outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
             checks: [],
             open_risks: [],
           }],
@@ -4834,7 +4845,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-rework-review"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -4938,7 +4949,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -4954,7 +4965,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-rework-review"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5057,7 +5068,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-2", "project-planning-loop-run-3"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5073,7 +5084,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-2-rework-review"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5111,7 +5122,7 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: [],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5449,7 +5460,7 @@ describe("project execution engine", () => {
         goal: "Standing planning loop.",
         children: [] as string[],
         inputs: ["project.json", "tasks/tree.json"],
-        outputs: ["evidence/archive/project-planning-loop.md", "planner-runs.jsonl", "tasks/tree.json"],
+        outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
         acceptance: ["Planning run records next work."],
         forbidden: ["Do not run live mutation."],
         gates: [],

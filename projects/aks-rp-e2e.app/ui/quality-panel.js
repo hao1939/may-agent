@@ -97,7 +97,7 @@ function suggestAksRpE2eDirection() {
   const input = document.getElementById('aks-direction-suggestion');
   const suggestion = String(input?.value || '').trim();
   const prompt = suggestion
-    ? `[resume] Direction suggestion for aks-rp-e2e:\n\n${suggestion}\n\nEvaluate this against the current feature status/gaps, source/API/docs references, execution cost, cleanup risk, and existing Next Action. If this is a better project move, update .app/project.json and leave reviewable evidence. If not, explain why in .app/discussion.jsonl.`
+    ? `[resume] Direction suggestion for aks-rp-e2e:\n\n${suggestion}\n\nEvaluate this against the current feature status/gaps, source/API/docs references, execution cost, cleanup risk, and existing Next Action. If this is a better project move, update .app/project.json and leave reviewable evidence. If not, explain why in .app/.state/discussion.jsonl.`
     : '[resume] Review aks-rp-e2e and suggest the next best project move from the current feature status/gaps, source/API/docs references, execution cost, cleanup risk, and existing Next Action.';
   prefillProjectComment(prompt);
 }
@@ -1274,7 +1274,7 @@ async function renderAksRpE2eQualityPanel(el) {
       return `[resume] Produce a manual verification path for aks-rp-e2e feature ${label} (${ids}). Use existing run plans/replays/scripts when available; otherwise draft exact commands, prerequisites, expected observations, cleanup, and evidence files. Do not mutate cloud resources until preflight is clean.`;
     }
     if (kind === 'suggest') {
-      return `[resume] Consider making aks-rp-e2e feature ${label} (${ids}) the next project move. Evaluate status, gap value, source/API/docs grounding, execution cost, environment risk, cleanup risk, and whether it beats current .app/project.json Next Action. Update .app/project.json only if it is a better direction; otherwise explain why in .app/discussion.jsonl.`;
+      return `[resume] Consider making aks-rp-e2e feature ${label} (${ids}) the next project move. Evaluate status, gap value, source/API/docs grounding, execution cost, environment risk, cleanup risk, and whether it beats current .app/project.json Next Action. Update .app/project.json only if it is a better direction; otherwise explain why in .app/.state/discussion.jsonl.`;
     }
     return `[resume] Challenge the current aks-rp-e2e status for feature ${label} (${ids}). Look for misleading evidence, stale results, missing source references, unclaimed branches, cleanup uncertainty, and product/probe/environment/doc mismatches.`;
   }
