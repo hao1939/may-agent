@@ -446,11 +446,11 @@ function createInitialTree(frame: ProjectFrame): TaskTree {
     priority: "P1",
     owner: "aks-explorer",
     goal: frame.goal || "Build and use the AKS RP input/expectation knowledge map.",
-    inputs: [".app/project.json", "model/knowledge-map/model.json", "reports/current.md"],
-    outputs: [".app/tasks/tree.json"],
+    inputs: ["project.json", "model/knowledge-map/model.json", "reports/current.md"],
+    outputs: ["tasks/tree.json"],
     acceptance: [
       "No ready or active work remains, or remaining work is explicitly blocked/superseded.",
-      "Task state is visible in .app/tasks/tree.json and summarized in .app/project.json.",
+      "Task state is visible in tasks/tree.json and summarized in project.json.",
     ],
     forbidden: [
       "Do not run cloud mutation unless a task has an explicit gate and that gate passes.",
@@ -564,7 +564,7 @@ function createInitialTree(frame: ProjectFrame): TaskTree {
       priority: "P2",
       owner: "aks-explorer",
       goal,
-      inputs: [".app/project.json"],
+      inputs: ["project.json"],
       outputs: [],
       acceptance: ["Required external trigger is present before work starts."],
       forbidden: ["Do not execute cloud or staging work without the explicit gate for this branch."],
@@ -712,7 +712,7 @@ function ensureTaskEscalation(
     created_at: taskNode.escalation?.created_at ?? now,
     updated_at: now,
     evidence: {
-      files: [".app/tasks/tree.json", ".app/tasks/README.md"],
+      files: ["tasks/tree.json", "tasks/README.md"],
       outputs: taskNode.outputs,
       session_id: taskNode.session_id,
     },
@@ -1438,8 +1438,8 @@ function createBlockedFrontierReview(tree: TaskTree, root: TaskNode): TaskNode |
     owner: root.owner ?? "aks-explorer",
     goal: "Review the whole blocked frontier and decide which blockers are real, stale, too coarse, missing evidence, or locally unblockable.",
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       "model/knowledge-map/views/path-summary.json",
       "reports/current.md",
     ]),
@@ -1469,8 +1469,8 @@ function createBranchBlockedReview(parent: TaskNode): TaskNode {
     owner: parent.owner ?? "aks-explorer",
     goal: `Review why task ${parent.id} is blocked and identify any safe local work that can unblock, split, or correct it.`,
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       ...parent.inputs,
       ...parent.outputs,
     ]),
@@ -1500,8 +1500,8 @@ function createParentReview(parent: TaskNode, reason: string): TaskNode {
     owner: parent.owner ?? "aks-explorer",
     goal: `Audit parent task ${parent.id} after child rollup: ${reason}`,
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       ...parent.inputs,
       ...parent.outputs,
     ]),
@@ -1509,12 +1509,12 @@ function createParentReview(parent: TaskNode, reason: string): TaskNode {
     acceptance: [
       "Reviews the parent goal, child states, evidence, blockers, and acceptance criteria.",
       "States whether the parent should be accepted, remain blocked, be split further, or continue with another child task.",
-      "Records exact next actions without directly editing .app/tasks/tree.json.",
+      "Records exact next actions without directly editing tasks/tree.json.",
       "Writes a review artifact with evidence-backed reasoning.",
     ],
     forbidden: [
       "Do not run cloud mutation, kubectl against live clusters, staging probes, or `AKS_RP_E2E_DRY_RUN=0`.",
-      "Do not edit .app/tasks/tree.json directly; the engine owns task-tree mutation.",
+      "Do not edit tasks/tree.json directly; the engine owns task-tree mutation.",
       "Do not mark gates satisfied without exact gate evidence.",
     ],
     gates: [],
@@ -1555,8 +1555,8 @@ function createFrontierReplan(root: TaskNode, id: string): TaskNode {
     owner: root.owner ?? "aks-explorer",
     goal: "Replan the active project frontier: decide whether the current blocked state still leaves safe local/domain work, then add a batch of concrete proposed tasks when it does.",
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       "reports/current.md",
       "model/knowledge-map/model.json",
       "model/knowledge-map/views/path-summary.json",
@@ -1567,7 +1567,7 @@ function createFrontierReplan(root: TaskNode, id: string): TaskNode {
     acceptance: [
       "Audits whether the root project goal is achieved, blocked, or still has local/domain work available.",
       "Inspects unknown, failing, blocked, or weakly evidenced feature paths for safe local next work.",
-      "Adds a batch of 5-10 concrete proposed child tasks to .app/tasks/tree.json when enough safe local work exists; each task has goal, inputs, outputs, acceptance, gates, forbidden actions, and conflict_scope.",
+      "Adds a batch of 5-10 concrete proposed child tasks to tasks/tree.json when enough safe local work exists; each task has goal, inputs, outputs, acceptance, gates, forbidden actions, and conflict_scope.",
       "If fewer than 5 safe tasks exist, adds every concrete safe task it can find and explains why the batch is smaller.",
       "If no safe local work exists, writes exact evidence and unblock triggers instead of claiming the project goal is achieved.",
       "Writes a replan artifact summarizing the decision and task-tree changes.",
@@ -1776,8 +1776,8 @@ function createFeatureQueueAdvanceTask(tree: TaskTree, parent: TaskNode, item: F
     owner: parent.owner ?? "aks-explorer",
     goal: `Advance the AKS feature-learning conveyor by creating the next concrete feature-learning task for ${item.name}.`,
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       "evidence/archive/feature-learning-queue.md",
       "model/knowledge-map/model.json",
       "model/knowledge-map/views/path-summary.json",
@@ -1788,7 +1788,7 @@ function createFeatureQueueAdvanceTask(tree: TaskTree, parent: TaskNode, item: F
     ]),
     outputs: [
       reviewOutput(id),
-      ".app/tasks/tree.json",
+      "tasks/tree.json",
     ],
     acceptance: [
       `Uses queue item #${item.row} (${item.name}) as the next safe local feature-learning target.`,
@@ -1834,8 +1834,8 @@ function createReworkReview(rejected: TaskNode, reason: string): TaskNode {
     owner: rejected.owner ?? "aks-explorer",
     goal: `Review the rejected attempt for task ${rejected.id} and decide the next executable recovery step.`,
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       ...rejected.inputs,
       ...rejected.outputs,
     ]),
@@ -2220,7 +2220,7 @@ function updateProjectActiveTask(config: EngineConfig, projectContent: string, t
     ? [
         `- id: ${active.id}`,
         `- status: ${active.status}`,
-        `- source: .app/tasks/tree.json`,
+        `- source: tasks/tree.json`,
         active.blocker ? `- blocker: ${active.blocker}` : "",
         active.outputs.length ? `- outputs: ${active.outputs.join(", ")}` : "",
       ].filter(Boolean).join("\n")
@@ -2251,7 +2251,7 @@ function updateProjectActiveTask(config: EngineConfig, projectContent: string, t
   }
 
   let next = updateSection(latestProjectContent, "Active Task", `${activeBlock}\n`);
-  next = updateSection(next, "Task Index", "- .app/tasks/README.md\n- .app/tasks/tree.json\n");
+  next = updateSection(next, "Task Index", "- tasks/README.md\n- tasks/tree.json\n");
   writeFileSync(config.projectPath, next, "utf-8");
 }
 
@@ -2603,15 +2603,15 @@ function createPlannerControlTask(config: EngineConfig): TaskNode {
     session_history: [sessionId],
     goal: "Planner control loop: reconcile the project task tree, keep executable frontier work available, and create/refine concrete AKS domain tasks when the ordinary backlog is thin.",
     inputs: unique([
-      ".app/project.json",
-      ".app/tasks/tree.json",
+      "project.json",
+      "tasks/tree.json",
       "reports/current.md",
       "model/knowledge-map/model.json",
       "model/knowledge-map/views/path-summary.json",
       "specs/index.json",
       "evidence/archive/feature-learning-queue.md",
     ]),
-    outputs: [".app/tasks/tree.json", ".app/planner-runs.jsonl"],
+    outputs: ["tasks/tree.json", "planner-runs.jsonl"],
     acceptance: [
       "Audits whether the root project goal is achieved, blocked, or still has local/domain work available.",
       "Inspects unknown, failing, blocked, or weakly evidenced feature paths for safe local next work.",
@@ -3238,7 +3238,7 @@ async function runOneTaskAttempt(
       appendJournal(config.journalPath, {
         kind: "task_tree_reload_failed",
         status: "blocked",
-        summary: "Worker changed .app/tasks/tree.json, but the engine could not parse it. Continuing from the pre-worker tree.",
+        summary: "Worker changed tasks/tree.json, but the engine could not parse it. Continuing from the pre-worker tree.",
         task_id: taskId,
       });
     }
@@ -3350,7 +3350,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appendJournal(config.journalPath, {
       kind: "task_tree_created",
       status: tree.tasks[tree.root_task_id]?.status,
-      summary: "Initialized .app/tasks/tree.json from .app/project.json current state.",
+      summary: "Initialized tasks/tree.json from project.json current state.",
     });
   }
 
@@ -3661,7 +3661,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         appendJournal(config.journalPath, {
           kind: "ready_work_detected_after_reload",
           status: "ready",
-          summary: "Reloaded .app/tasks/tree.json before stopping and found runnable work created by another actor.",
+          summary: "Reloaded tasks/tree.json before stopping and found runnable work created by another actor.",
           active_task_id: next.id,
         });
         saveTree(config, tree);
@@ -3734,7 +3734,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         appendJournal(config.journalPath, {
           kind: "task_tree_reload_failed",
           status: "blocked",
-          summary: "Worker changed .app/tasks/tree.json, but the engine could not parse it. Continuing from the pre-worker tree.",
+          summary: "Worker changed tasks/tree.json, but the engine could not parse it. Continuing from the pre-worker tree.",
           task_id: taskId,
         });
       }

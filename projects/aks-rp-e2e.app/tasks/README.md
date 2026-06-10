@@ -23,6 +23,11 @@ folder does not keep a parallel task event log.
 
 ## Rules
 
+- Task `inputs`, `outputs`, and `workspaceRefs` should make path ownership
+  explicit. App-control files are app-relative, such as `project.json`,
+  `tasks/tree.json`, and `planner-runs.jsonl`. Domain files are
+  domain-relative, such as `specs/index.json`, `replays/<name>.ts`,
+  `runs/executions/`, and `evidence/archive/`.
 - Only leaf tasks are executable.
 - Every task should be meaningful as one of: a project/domain responsibility, a
   decomposition of that responsibility, an executable leaf, or a review that
