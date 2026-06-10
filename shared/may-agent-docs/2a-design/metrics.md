@@ -110,6 +110,7 @@ until they become necessary for keeping the loop running.
 | `project.iterations-24h` | How much active-project work happened? | active project.iteration events (24h) | 0 | 0 | watch-only |
 | `project.blocked-over-6h` | Is work stuck on true blockers? | `COUNT(*)` from projects where blocked >6h | 0 | 4 | above |
 | `metric.stale-active-count` | Is measurement coverage stale? | active metrics without a recent snapshot | 0 | 8 | above |
+| `metric.structurally-pinned-count` | Are any metrics stuck at a single value? | active metrics with coefficient of variation = 1 over 7d snapshots (KE-938/939/940) | 0 | 0 | above |
 | `capability.status-reality-mismatch-count` | Does runtime state match durable facts? | stale projects, stale metrics, orphan terminal sessions, missing heartbeat agents | 0 | 3 | above |
 | `capability.zombie-session-count` | Are sessions stuck alive? | running/idle sessions older than stale cutoff | 0 | 2 | above |
 
