@@ -164,23 +164,28 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7% on 2026-06-12)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-09 ~01:00Z** (24h window, ~1,390 tool-level):
+**Latest snapshot 2026-06-10 ~09:51Z** (24h window, ~1,840 tool-level):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 610 | 43.9% |
-| SESSION_BASH_CAT | 186 | 13.4% |
-| SESSION_READ | 165 | 11.9% |
-| READ_DEDUP | ~385 | 27.7% |
-| SESSION_BASH_GREP | 27 | 1.9% |
-| PATH_HALLUCINATION | 17 | 1.2% |
+| commit-guard (combined) | 922 | 50.1% |
+| SESSION_BASH_CAT | 276 | 15.0% |
+| READ_DEDUP | 273 | 14.8% |
+| PATH_HALLUCINATION | 163 | 8.9% |
+| SESSION_READ | 161 | 8.8% |
+| SESSION_BASH_GREP | 45 | 2.4% |
 
-Workflow guards: read-before-edit 12, hallucinated-path 10.
-Total: ~1,390 tool + ~22 workflow ≈ **1,412/day**.
-Composition stable in diverse regime. commit-guard share holding at
-~44% (structural floor from shared-worktree dirty files). READ_DEDUP
-remains elevated (~28%) — aks-explorer re-reading project.md is the
-top individual file. Volume well under 2,000/day threshold.
+Workflow guards: read-before-edit 98, hallucinated-path 87.
+Total: ~1,840 tool + ~185 workflow ≈ **2,017/day** (breached 2,000 threshold).
+
+Notable shifts from 2026-06-09:
+- **PATH_HALLUCINATION surged 10×** (17→163, all aks-explorer `/home/` paths).
+- **Workflow guards surged 8×** (22→185), split between read-before-edit (98)
+  and hallucinated-path (87) — both concentrated on aks-explorer.
+- commit-guard share rose to ~50% (structural floor from shared-worktree
+  dirty files, amplified by may's 11 uncommitted files repeating per session).
+- Total volume crossed threshold; the breach is driven by aks-explorer's
+  elevated session count (319/24h) and path hallucination rate.
 
 ### Known issue: guard name conflation
 
