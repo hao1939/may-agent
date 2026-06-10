@@ -1470,14 +1470,6 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const loadedData = ctx.query.evaluatorAftermathContext({ sessionId }) as any;
   const session = loadedData.session;
   const evaluation = loadedData.evaluation;
-  ctx.emit({
-    type: "context.read",
-    source: "evaluator-aftermath",
-    owner: "evaluator",
-    contextSource: "query.evaluatorAftermathContext",
-    sessionId,
-    sections: { session: !!session, evaluation: !!evaluation },
-  });
   if (!session) return ctx.escalate(`Session ${sessionId} not found`);
 
   if (session.agent === "evaluator" || session.agent === "judge") {

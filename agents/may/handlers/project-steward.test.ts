@@ -46,6 +46,7 @@ function makeCtx(root: string, projectsRoot: string) {
         emitted.push({ type, data, envelope });
       }),
       log: vi.fn(),
+      getDb: vi.fn(() => null),
       metrics,
     },
   } as any;
@@ -102,6 +103,12 @@ function makeMetricDb(): Database {
     resolved_at INTEGER,
     created_at INTEGER
   )`);
+  db.run(`CREATE TABLE events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_type TEXT,
+    data TEXT,
+    timestamp INTEGER
+  )`);
   return db;
 }
 
@@ -145,6 +152,7 @@ this is not a task row
 id: needs-owner
 owner: evaluator
 status: active
+project_policy: aggressive-push
 max_task_attempts: 2
 ---
 
@@ -164,13 +172,14 @@ max_task_attempts: 2
 
     await create(ctx, { name: "project-steward", enabled: true, handler: "project-steward" } as any)();
 
-    expect(emitted.filter((event) => event.type === "project.health.checked")).toHaveLength(4);
     const findings = emitted.filter((event) => event.type === "project.health.finding");
     expect(findings.map((event) => event.data?.code).sort()).toEqual([
       "invalid_format",
       "owner_judgment_needed",
       "task_parser_error",
     ]);
+    expect(findings.find((event) => event.data?.projectId === "evaluator/needs-owner")?.data)
+      .toMatchObject({ projectPolicy: "aggressive-push" });
     expect(findings.every((event) => !Object.prototype.hasOwnProperty.call(event.data ?? {}, "owner"))).toBe(true);
     expect(findings.every((event) => event.envelope?.owner === "evaluator" || event.envelope?.owner === "unknown")).toBe(true);
 
@@ -180,12 +189,14 @@ max_task_attempts: 2
       ["project.invalid-format-count", 1],
       ["project.task-parser-error-count", 1],
       ["project.owner-judgment-needed-count", 1],
+      ["project.owner-incomplete-count", 0],
     ]);
     expect(metrics.evaluated).toEqual([
       "project.health.finding-count",
       "project.invalid-format-count",
       "project.task-parser-error-count",
       "project.owner-judgment-needed-count",
+      "project.owner-incomplete-count",
     ]);
 
     for (const [file, content] of before) {
@@ -202,6 +213,7 @@ max_task_attempts: 2
 id: finished-phase
 owner: may
 status: active
+project_policy: stable-watch
 ---
 
 # Finished Phase
@@ -229,6 +241,11 @@ status: active
       code: "owner_judgment_needed",
       severity: "P2",
     });
+    expect(report.projectPolicy).toBe("stable-watch");
+    expect(report.findings[0].evidence).toMatchObject({
+      projectPolicy: "stable-watch",
+      ownerIncomplete: true,
+    });
     expect(report.findings[0].message).toContain("replan the next phase or close");
   });
 
@@ -240,6 +257,7 @@ status: active
 id: no-tasks
 owner: evaluator
 status: active
+project_policy: aggressive-push
 ---
 
 # No Tasks
@@ -260,6 +278,8 @@ status: active
     });
     expect(report.findings[0].evidence).toMatchObject({
       taskCount: 0,
+      projectPolicy: "aggressive-push",
+      ownerIncomplete: true,
     });
   });
 
@@ -335,6 +355,120 @@ status: active
         resolved_at: 1_779_219_500_000,
       });
       expect(emitted.some((event) => event.type === "metric.recovered" && event.data?.metricId === "project.health.finding-count")).toBe(true);
+    } finally {
+      db.close();
+    }
+  });
+
+  it("surfaces unavailable watch metrics on waiting projects", async () => {
+    const { root, projectsRoot } = makeRoot();
+    writeProject(projectsRoot, "scout-second-brain-learning", `---
+id: scout-second-brain-learning
+owner: scout
+status: waiting
+resume_condition: Resume if \`scout.knowledge-practice-loaded\` drops below 1 or \`scout.knowledge-preamble-coverage\` stops improving.
+---
+
+# Scout Second Brain Learning
+
+## Signals
+- \`scout.operational-friction-rate-24h\` is a weak secondary signal only.
+
+## Watch Conditions
+- Reactivate if \`scout.knowledge-practice-loaded < 1\`.
+- Reactivate if \`scout.knowledge-preamble-coverage\` stops improving.
+`);
+    const db = makeMetricDb();
+    const now = Date.now();
+    db.run(
+      `INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, project, alert_op, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["scout.knowledge-practice-loaded", "Scout knowledge practice loaded", "scout", "health", 1, 1, 1, "boolean", "P2", "disabled", "scout-second-brain-learning", "<", now - 12 * 3600_000, now - 12 * 3600_000],
+    );
+    db.run(
+      `INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, project, alert_op, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["scout.knowledge-preamble-coverage", "Scout knowledge preamble coverage", "scout", "gauge", 0.3, 0.8, 0.25, "ratio", "P3", "active", "scout-second-brain-learning", "<", now - 12 * 3600_000, now - 12 * 3600_000],
+    );
+    db.run(
+      `INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, project, alert_op, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["scout.operational-friction-rate-24h", "Scout operational friction", "scout", "gauge", 0.5, 0.1, 0.3, "ratio", "P3", "disabled", "scout-second-brain-learning", ">", now - 12 * 3600_000, now - 12 * 3600_000],
+    );
+    const { ctx, emitted, metrics } = makeCtx(root, projectsRoot);
+    ctx.sdk.getDb = vi.fn(() => db);
+
+    try {
+      await create(ctx, { name: "project-steward", enabled: true, handler: "project-steward" } as any)();
+
+      const finding = emitted.find((event) => event.type === "project.health.finding");
+      expect(finding?.data).toMatchObject({
+        projectId: "scout/scout-second-brain-learning",
+        projectPath: "projects/scout-second-brain-learning",
+        code: "watch_signal_unavailable",
+        severity: "P2",
+      });
+      expect(finding?.envelope).toMatchObject({ owner: "scout" });
+      expect(JSON.stringify(finding?.data?.evidence)).toContain("not_active");
+      expect(JSON.stringify(finding?.data?.evidence)).toContain("stale");
+      expect(JSON.stringify(finding?.data?.evidence)).not.toContain("scout.operational-friction-rate-24h");
+      expect(metrics.recorded.find((record) => record.id === "project.health.finding-count")).toMatchObject({ value: 1 });
+    } finally {
+      db.close();
+    }
+  });
+
+  it("surfaces system-operations only when alert chains lack fresh judgment", async () => {
+    const { root, projectsRoot } = makeRoot();
+    writeProject(projectsRoot, "system-operations", `---
+id: system-operations
+owner: may
+status: waiting
+resume_condition: Run on a P0/P1 reliability signal breach or unresolved metric-alert chain.
+---
+
+# System Operations
+`);
+    const db = makeMetricDb();
+    const now = Date.now();
+    db.run(
+      `INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, alert_op, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["session.error-rate-6h", "Session error rate", "may", "gauge", 0.5, 0.1, 0.3, "ratio", "P1", "active", ">", now - 60 * 60_000, now - 60 * 60_000],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, resolved_at, created_at) VALUES (?, ?, ?, ?, ?)",
+      ["session.error-rate-6h", "threshold", "Session error rate is above threshold", null, now - 20 * 60_000],
+    );
+    db.run(
+      `INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, alert_op, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ["project.health.finding-count", "Project health findings", "may", "health", 1, 0, 0, "count", "P1", "active", ">", now - 60 * 60_000, now - 60 * 60_000],
+    );
+    db.run(
+      "INSERT INTO metric_alerts (metric_id, alert_type, message, resolved_at, created_at) VALUES (?, ?, ?, ?, ?)",
+      ["project.health.finding-count", "threshold", "Project health findings is above threshold", null, now - 60 * 60_000],
+    );
+    const { ctx, emitted } = makeCtx(root, projectsRoot);
+    ctx.sdk.getDb = vi.fn(() => db);
+
+    try {
+      await create(ctx, { name: "project-steward", enabled: true, handler: "project-steward" } as any)();
+      expect(emitted.find((event) => event.type === "project.health.finding")?.data).toMatchObject({
+        projectId: "may/system-operations",
+        code: "ops_alert_chain_needs_judgment",
+        severity: "P1",
+      });
+      expect(JSON.stringify(emitted.find((event) => event.type === "project.health.finding")?.data?.evidence))
+        .not.toContain("project.health.finding-count");
+
+      emitted.length = 0;
+      db.run(
+        "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+        ["metric.alert_judged", JSON.stringify({ metricId: "session.error-rate-6h", alertId: 1, operation: "fix_root_cause" }), now - 5 * 60_000],
+      );
+      await create(ctx, { name: "project-steward", enabled: true, handler: "project-steward" } as any)();
+      expect(emitted.some((event) => event.type === "project.health.finding")).toBe(false);
     } finally {
       db.close();
     }
