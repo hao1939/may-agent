@@ -1567,59 +1567,6 @@ function taskConflictScope(task: TaskNode): string[] {
     : unique(task.outputs);
 }
 
-function conflictScopesOverlap(a: TaskNode, b: TaskNode): boolean {
-  const left = taskConflictScope(a);
-  const right = new Set(taskConflictScope(b));
-  return left.some((item) => right.has(item));
-}
-
-function selectDispatchableLeaves(
-  tree: TaskTree,
-  maxConcurrent: number,
-): TaskNode[] {
-  const active = activeLeaves(tree);
-  if (active.some(isGlobalSerializedExecutionTask)) return [];
-  const capacity = Math.max(0, maxConcurrent - active.length);
-  if (capacity <= 0) return [];
-
-  const selected: TaskNode[] = [];
-  const ready = findReadyLeaves(tree);
-  const hasNonPlanningReady = ready.some(
-    (candidate) => !isPlanningLoopTask(candidate),
-  );
-  for (const candidate of ready) {
-    if (selected.length >= capacity) break;
-    const clarity = isClearEnough(candidate);
-    if (!clarity.ok || hasClosedGate(candidate)) continue;
-    if (hasNonPlanningReady && isPlanningLoopTask(candidate)) continue;
-    if (isGlobalSerializedExecutionTask(candidate)) {
-      if (active.length === 0 && selected.length === 0) {
-        selected.push(candidate);
-        break;
-      }
-      continue;
-    }
-    if (isReviewTask(candidate)) {
-      if (
-        [...active, ...selected].some((other) =>
-          conflictScopesOverlap(other, candidate),
-        )
-      )
-        continue;
-      selected.push(candidate);
-      continue;
-    }
-    if (
-      [...active, ...selected].some((other) =>
-        conflictScopesOverlap(other, candidate),
-      )
-    )
-      continue;
-    selected.push(candidate);
-  }
-  return selected;
-}
-
 function leaseTask(task: TaskNode, worker: string): void {
   task.status = "active";
   task.claimed_by = worker;
@@ -1659,37 +1606,6 @@ function requeueStaleActiveLeaves(
   }
   normalizeActiveTaskPointer(tree);
   return requeued;
-}
-
-function dispatchTaskExecutionEvents(
-  ctx: WorkflowContext,
-  config: EngineConfig,
-  tree: TaskTree,
-): string[] {
-  const selected = selectDispatchableLeaves(tree, config.maxConcurrent);
-  for (const taskNode of selected) {
-    leaseTask(taskNode, config.worker);
-    ensureTaskSession(taskNode);
-    emitTaskEvent(ctx, "task.started", taskNode, {
-      mode: "event-dispatch",
-      claimed_by: taskNode.claimed_by,
-      lease_expires_at: taskNode.lease_expires_at,
-      session_id: taskNode.session_id,
-    });
-    try {
-      ctx.dispatchEvent("project.task.execution.requested", {
-        project: "aks-rp-e2e",
-        taskId: taskNode.id,
-        worker: config.worker,
-        lease_expires_at: taskNode.lease_expires_at,
-        requested_by: "project-execution-engine",
-      });
-    } catch {
-      // Local test contexts may not provide a real dispatcher.
-    }
-  }
-  normalizeActiveTaskPointer(tree);
-  return selected.map((taskNode) => taskNode.id);
 }
 
 function collectTaskSubtreeIds(
@@ -4639,7 +4555,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         kind: "backlog_tasks_promoted",
         status: "ready",
         summary:
-          "Promoted clear proposed leaf tasks from backlog to ready before dispatching event-native workers.",
+          "Promoted clear proposed leaf tasks from backlog to ready during planner reconciliation.",
         task_ids: promoted,
       });
     }
@@ -4649,35 +4565,22 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         kind: "ready_tasks_blocked_before_dispatch",
         status: "blocked",
         summary:
-          "Converted unexecutable ready leaves into blocked state before dispatching event-native workers.",
+          "Converted unexecutable ready leaves into blocked state during planner reconciliation.",
         task_ids: blockedReady,
       });
-    }
-    const dispatched = dispatchTaskExecutionEvents(ctx, config, tree);
-    if (dispatched.length > 0) {
-      appendJournal(config.journalPath, {
-        kind: "task_execution_events_dispatched",
-        status: "active",
-        summary:
-          "Leased ready leaf tasks and dispatched event-native task execution requests.",
-        task_ids: dispatched,
-        max_concurrent: config.maxConcurrent,
-      });
-      saveTree(config, tree);
-      updateProjectActiveTask(config, content, tree);
-      return ctx.done(
-        `Dispatched ${dispatched.length} task execution event(s): ${dispatched.join(", ")}.`,
-      );
     }
     saveTree(config, tree);
     updateProjectActiveTask(config, content, tree);
     const active = activeLeaves(tree);
+    const ready = findReadyLeaves(tree);
     return ctx.done(
       active.length > 0
-        ? `No new task events dispatched; ${active.length} task(s) already active: ${active.map((item) => item.id).join(", ")}.`
+        ? `Planner reconciled task tree; ${active.length} task(s) already active: ${active.map((item) => item.id).join(", ")}.`
         : openTaskCount(tree) === 0
           ? "All task-tree work is settled."
-          : `Project is stopped on a concrete blocked/input frontier after worker pickup checks: ${blockedFrontierSummary(tree)}.`,
+          : ready.length > 0
+            ? `Planner reconciled task tree; ${ready.length} ready task(s) available for project-planner to signal.`
+            : `Project is stopped on a concrete blocked/input frontier after planner reconciliation: ${blockedFrontierSummary(tree)}.`,
     );
   }
 

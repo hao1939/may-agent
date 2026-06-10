@@ -467,7 +467,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe(null);
   });
 
-  test("event coordinator leases and dispatches independent ready leaves in parallel", async () => {
+  test("planner reconciliation leaves independent ready leaves for task-worker pickup", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -558,32 +558,31 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Dispatched 2 task execution event");
-    const taskEvents = dispatched.filter(
-      (event) => event.type === "project.task.execution.requested",
+    expect(result.message).toContain(
+      "Planner reconciled task tree; 3 ready task(s) available",
     );
-    expect(taskEvents.map((event) => event.payload.taskId).sort()).toEqual([
-      "task-a",
-      "task-b",
-    ]);
+    expect(
+      dispatched.some(
+        (event) => event.type === "project.task.execution.requested",
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["task-a"].status).toBe("active");
-    expect(updated.tasks["task-b"].status).toBe("active");
+    expect(updated.tasks["task-a"].status).toBe("ready");
+    expect(updated.tasks["task-b"].status).toBe("ready");
     expect(updated.tasks["task-c"].status).toBe("ready");
-    expect(updated.active_task_ids.sort()).toEqual(["task-a", "task-b"]);
   });
 
-  test("event coordinator leases independent review leaves in parallel", async () => {
+  test("planner reconciliation leaves independent review leaves for task-worker pickup", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -678,29 +677,28 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Dispatched 2 task execution event");
-    const taskEvents = dispatched.filter(
-      (event) => event.type === "project.task.execution.requested",
+    expect(result.message).toContain(
+      "Planner reconciled task tree; 3 ready task(s) available",
     );
-    expect(taskEvents.map((event) => event.payload.taskId).sort()).toEqual([
-      "review-a",
-      "review-b",
-    ]);
+    expect(
+      dispatched.some(
+        (event) => event.type === "project.task.execution.requested",
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["review-a"].status).toBe("active");
-    expect(updated.tasks["review-b"].status).toBe("active");
+    expect(updated.tasks["review-a"].status).toBe("ready");
+    expect(updated.tasks["review-b"].status).toBe("ready");
     expect(updated.tasks["review-c"].status).toBe("ready");
-    expect(updated.active_task_ids.sort()).toEqual(["review-a", "review-b"]);
   });
 
   test("ignores legacy timer triggers instead of entering the direct execution loop", async () => {
@@ -2300,7 +2298,7 @@ describe("project execution engine", () => {
     );
   });
 
-  test("event coordinator promotes clear backlog leaves before parallel dispatch", async () => {
+  test("planner reconciliation promotes clear backlog leaves before task-worker pickup", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2389,38 +2387,37 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Dispatched 2 task execution event");
+    expect(result.message).toContain(
+      "Planner reconciled task tree; 2 ready task(s) available",
+    );
     expect(
       dispatched
         .filter((event) => event.type === "task.promoted")
         .map((event) => event.payload.taskId)
         .sort(),
     ).toEqual(["task-a", "task-b"]);
-    const taskEvents = dispatched.filter(
-      (event) => event.type === "project.task.execution.requested",
-    );
-    expect(taskEvents.map((event) => event.payload.taskId).sort()).toEqual([
-      "task-a",
-      "task-b",
-    ]);
+    expect(
+      dispatched.some(
+        (event) => event.type === "project.task.execution.requested",
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["task-a"].status).toBe("active");
-    expect(updated.tasks["task-b"].status).toBe("active");
+    expect(updated.tasks["task-a"].status).toBe("ready");
+    expect(updated.tasks["task-b"].status).toBe("ready");
     expect(updated.tasks["unclear-task"].status).toBe("proposed");
-    expect(updated.active_task_ids.sort()).toEqual(["task-a", "task-b"]);
   });
 
-  test("event coordinator promotes proposed leaves behind accepted prose dependency gates", async () => {
+  test("planner reconciliation promotes proposed leaves behind accepted prose dependency gates", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2495,7 +2492,7 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
@@ -2503,15 +2500,15 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("downstream");
+      ),
+    ).toBe(false);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks.downstream.gate_status).toBe("satisfied");
-    expect(updated.tasks.downstream.status).toBe("active");
+    expect(updated.tasks.downstream.status).toBe("ready");
   });
 
   test("normalization reconciles accepted parent rollup reviews before dependency promotion", async () => {
@@ -2620,7 +2617,7 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
@@ -2628,16 +2625,16 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("downstream");
+      ),
+    ).toBe(false);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["upstream-parent"].status).toBe("accepted");
     expect(updated.tasks.downstream.gate_status).toBe("satisfied");
-    expect(updated.tasks.downstream.status).toBe("active");
+    expect(updated.tasks.downstream.status).toBe("ready");
   });
 
   test("ready leaves waiting on internal dependency gates are deferred instead of escalated", async () => {
@@ -2742,7 +2739,7 @@ describe("project execution engine", () => {
     expect(updated.tasks.downstream.escalation).toBeUndefined();
   });
 
-  test("artifact existence gates are satisfied from project inputs before dispatch", async () => {
+  test("artifact existence gates are satisfied from project inputs before pickup", async () => {
     const projectDir = await makeProject("active");
     await mkdir(join(projectDir, "specs"), { recursive: true });
     await writeFile(join(projectDir, "specs", "a.json"), "{}", "utf8");
@@ -2808,7 +2805,7 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
@@ -2816,18 +2813,18 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("index-task");
+      ),
+    ).toBe(false);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["index-task"].gate_status).toBe("satisfied");
-    expect(updated.tasks["index-task"].status).toBe("active");
+    expect(updated.tasks["index-task"].status).toBe("ready");
   });
 
-  test("event coordinator normalizes string conflict scopes before dispatch selection", async () => {
+  test("planner reconciliation normalizes string conflict scopes before pickup", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2907,29 +2904,33 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Dispatched 1 task execution event");
+    expect(result.message).toContain(
+      "Planner reconciled task tree; 1 task(s) already active",
+    );
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("task-b");
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["task-a"].conflict_scope).toEqual(["replays/a.ts"]);
     expect(updated.tasks["task-b"].conflict_scope).toEqual(["replays/b.ts"]);
-    expect(updated.active_task_ids.sort()).toEqual(["task-a", "task-b"]);
+    expect(updated.tasks["task-a"].status).toBe("active");
+    expect(updated.tasks["task-b"].status).toBe("ready");
+    expect(updated.active_task_ids.sort()).toEqual(["task-a"]);
   });
 
-  test("event coordinator requeues stale active leaves before scheduling", async () => {
+  test("planner reconciliation requeues stale active leaves before pickup", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -3006,32 +3007,32 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch events, not run workers inline",
+            "planner reconciliation should not run workers inline",
           );
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Dispatched 2 task execution event");
+    expect(result.message).toContain(
+      "Planner reconciled task tree; 2 ready task(s) available",
+    );
     expect(
       dispatched.find((event) => event.type === "task.requeued")?.payload
         .taskId,
     ).toBe("stale-review");
     expect(
-      dispatched
-        .filter((event) => event.type === "project.task.execution.requested")
-        .map((event) => event.payload.taskId),
-    ).toEqual(["stale-review", "task-b"]);
+      dispatched.some(
+        (event) => event.type === "project.task.execution.requested",
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["stale-review"].status).toBe("active");
-    expect(typeof updated.tasks["stale-review"].lease_expires_at).toBe(
-      "string",
-    );
-    expect(updated.tasks["task-b"].status).toBe("active");
+    expect(updated.tasks["stale-review"].status).toBe("ready");
+    expect(updated.tasks["stale-review"].lease_expires_at).toBeUndefined();
+    expect(updated.tasks["task-b"].status).toBe("ready");
   });
 
   test("task execution event processes one leased leaf and requests coordinator continuation", async () => {
@@ -3430,7 +3431,7 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch recovered ready work, not run it inline",
+            "planner reconciliation should recover ready work, not run it inline",
           );
         },
       }),
@@ -3438,15 +3439,15 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("feedback-rollup");
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["feedback-rollup"].status).toBe("active");
+    expect(updated.tasks["feedback-rollup"].status).toBe("ready");
     expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
     expect(updated.tasks["feedback-rollup"].escalation).toBeUndefined();
   });
@@ -3521,7 +3522,7 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch evidence feedback work, not run it inline",
+            "planner reconciliation should not run evidence feedback work inline",
           );
         },
       }),
@@ -3532,15 +3533,15 @@ describe("project execution engine", () => {
       false,
     );
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("feedback-rollup");
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["feedback-rollup"].status).toBe("active");
+    expect(updated.tasks["feedback-rollup"].status).toBe("ready");
     expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
   });
 
@@ -3619,7 +3620,7 @@ describe("project execution engine", () => {
         dispatched,
         runAgent: async () => {
           throw new Error(
-            "coordinator should dispatch feedback diagnostics, not run it inline",
+            "planner reconciliation should not run feedback diagnostics inline",
           );
         },
       }),
@@ -3627,16 +3628,16 @@ describe("project execution engine", () => {
 
     expect(result.status).toBe("done");
     expect(
-      dispatched.find(
+      dispatched.some(
         (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("staging-execution-feedback-rollup-v2");
+      ),
+    ).toBe(false);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["staging-execution-feedback-rollup-v2"].status).toBe(
-      "active",
+      "ready",
     );
     expect(
       updated.tasks["staging-execution-feedback-rollup-v2"].blocker,
