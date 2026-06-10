@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Effectively unpopulated: only 2/13,280 sessions have a non-null value (as of 2026-06-09). Zombie detection uses JSONL file mtime instead (see Known Issues).
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Effectively unpopulated: only 2/12,140 sessions have a non-null value (as of 2026-06-11). Zombie detection uses JSONL file mtime instead (see Known Issues).
 );
 ```
 
@@ -57,7 +57,7 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-09: 0 of 13,254 `call` sessions have a
+(kind=`chat`) sessions. Verified 2026-06-11: 0 of 12,116 `call` sessions have a
 non-null `parentSessionId`; all 12 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
@@ -90,8 +90,8 @@ Hao approval (ORDER-010).
 
 The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
-and `updateSessionDb()` (called at session end). However, as of 2026-06-09 only
-2 of 13,280 sessions have a non-null value — suggesting the write path was deployed
+and `updateSessionDb()` (called at session end). However, as of 2026-06-11 only
+2 of 12,140 sessions have a non-null value — suggesting the write path was deployed
 very recently or is not reaching the production DB consistently.
 
 The `capability.zombie-session-count` metric does NOT use this column. Zombie
