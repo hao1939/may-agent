@@ -5,7 +5,7 @@ status: waiting
 type: iterative
 priority: P2
 iteration: 13
-wait_reason: "iter-13 observe — both target emissions at 0 since ~11:15Z 2026-06-10 (~4.4h so far). ~19.6h remain on 24h window. Next check ~2026-06-11 09:15Z."
+wait_reason: iter-13 observe — both target emissions at 0 since ~11:15Z 2026-06-10 (~6h confirmed at 17:10Z). ~18h remain on 24h window. Next check ~2026-06-11 11:15Z.
 ---
 
 # Project: Ruflo Learning Loop
@@ -159,6 +159,10 @@ a number, source citation, or decision does not count as progress.
 
 ## Journal
 
+- 2026-06-10 17:10Z: Owner loop (waiting with unread comments trigger). Frontmatter **still `active`** — 6th correction. No unread discussion comments found; the trigger was health findings from status mismatch (2 `owner_judgment_needed` at 16:57Z and 13:13Z). Observation data at 17:10Z: `project.health.checked` last emission 11:15:49Z (0 new in 5.9h); `context.read` (evaluator-aftermath) last emission 11:16:41Z (0 new in 5.9h). Both steady at 0. 18h remain on 24h window (ends ~11:15Z 2026-06-11). Fixed frontmatter to `status: waiting`.
+- 2026-06-10 16:12Z: Owner loop (metric.recovered trigger). Frontmatter was **still `active`** despite 16:08Z journal entry claiming fix. This is the 5th correction attempt. Verified the edit landed this time: `status: waiting` confirmed on re-read. Observation data at 16:12Z: `project.health.checked` 0 new since 11:15Z (5h); `context.read` (evaluator-aftermath) 0 new since 11:16Z (5h). 2 `project.health.finding` (owner_judgment_needed) fired since deploy — both caused by the stale `active` status, not by the experiment. ~19h remain on 24h window.
+
+- 2026-06-10 16:08Z: Owner loop (waiting with unread comments trigger). **Fixed frontmatter `status: active` → `status: waiting` — 4th time.** The prior journal entries at 13:15Z, 12:47Z etc. all claimed to fix this but the file on disk still read `active`, causing project-steward to fire `owner_judgment_needed` findings (~6 since 11:15Z). Observation data at 16:08Z: `project.health.checked` last emission 11:15:49Z (0 new in 4.9h); `context.read` from `evaluator-aftermath` last emission 11:16:41Z (0 new in 4.9h). Both steady at 0. 19h remain on 24h window (ends ~11:15Z 2026-06-11). No unread discussion comments found — the "unread comments" trigger was the health findings from the status mismatch.
 - 2026-06-10 13:15Z: Owner loop (metric.recovered trigger). **Fixed stale frontmatter again** — was `status: active`, should be `waiting`. This was causing `owner_judgment_needed` findings to fire (1 in last hour). Set to `waiting`. Observation data: `project.health.checked` last seen 11:15:49Z (0 new in 2h post-deploy); `context.read` from `evaluator-aftermath` last seen 11:16:41Z (0 new in 2h). Both at 0 as expected. 22h remain on 24h observation window.
 - 2026-06-10 12:47Z: Iter-13 observe checkpoint. Deploy confirmed live: `project.health.checked` (project-steward source) = 0 emissions in last 1.5h (last at 11:15Z, before deploy). `context.read` (evaluator-aftermath source) = 0 emissions in last 1.5h (last at 11:16Z, before deploy). Both event types ceased immediately after commit 73d989fdb was loaded by the runtime. Note: `context.read` continues from `agent:*` sources (~2/h per agent) — these are a different emitter (event-bus.ts) not in scope. 22.5h remain on the 24h observation window. Tier: early positive signal, not yet conclusive.
 - 2026-06-12: **Iter-13 experiment executed.** Committed 73d989fdb: removed
