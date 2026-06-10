@@ -5,7 +5,7 @@ status: waiting
 type: iterative
 priority: P2
 iteration: 13
-wait_reason: iter-13 observe — waiting 24h for project.health.checked to drop to 0/day after commit 73d989fdb
+wait_reason: iter-13 observe — deploy confirmed 12:47Z; project.health.checked=0/1.5h, context.read=0/1.5h. Full 24h confirmation pending.
 ---
 
 # Project: Ruflo Learning Loop
@@ -154,6 +154,7 @@ a number, source citation, or decision does not count as progress.
 
 ## Journal
 
+- 2026-06-10 12:47Z: Iter-13 observe checkpoint. Deploy confirmed live: `project.health.checked` (project-steward source) = 0 emissions in last 1.5h (last at 11:15Z, before deploy). `context.read` (evaluator-aftermath source) = 0 emissions in last 1.5h (last at 11:16Z, before deploy). Both event types ceased immediately after commit 73d989fdb was loaded by the runtime. Note: `context.read` continues from `agent:*` sources (~2/h per agent) — these are a different emitter (event-bus.ts) not in scope. 22.5h remain on the 24h observation window. Tier: early positive signal, not yet conclusive.
 - 2026-06-12: **Iter-13 experiment executed.** Committed 73d989fdb: removed
   `project.health.checked` emission from project-steward.ts (was 2,931/day, #4
   by volume, 37,490 total rows, zero consumers) and `context.read` emission from
