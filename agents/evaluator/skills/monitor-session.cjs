@@ -1015,6 +1015,10 @@ function detectAdversarialSycophancy(entries) {
  *  (case-insensitive). This ensures agents consult the error log before
  *  attempting complex work.
  *
+ *  Narrow exception: evaluator aftermath artifact writes under
+ *  agents/evaluator/workspace/aftermath/ are review output, not source/policy
+ *  edits, so they are excluded from P114.
+ *
  * Returns { detected, violations[] } or { detected: false, violations: [] }.
  */
 function detectProtocolViolations(entries) {
@@ -1022,6 +1026,10 @@ function detectProtocolViolations(entries) {
 
   // Track whether we've seen a grep ERROR_LOG command
   let seenErrorLogGrep = false;
+
+  function isEvaluatorAftermathArtifact(targetPath) {
+    return /^agents\/evaluator\/workspace\/aftermath\//.test(targetPath || "");
+  }
 
   // We need to scan entries in chronological order to enforce "before" semantics
   for (let i = 0; i < entries.length; i++) {
@@ -1077,8 +1085,10 @@ function detectProtocolViolations(entries) {
         // ── P114: Complex task without Experience Replay ──────────
         // Modification to src/ or agents/ without prior grep ERROR_LOG
         // Exclude SIGNALS.md (communication file, not a complex task)
+        // and evaluator aftermath artifacts (review output, not durable code/policy edits)
         const isSignalsFile = /SIGNALS\.md/i.test(targetPath);
-        if (!isSignalsFile && /(?:^|\/)(?:src|agents)\//.test(targetPath) && !seenErrorLogGrep) {
+        const isAftermathArtifact = isEvaluatorAftermathArtifact(targetPath);
+        if (!isSignalsFile && !isAftermathArtifact && /(?:^|\/)(?:src|agents)\//.test(targetPath) && !seenErrorLogGrep) {
           violations.push({
             type: "P114",
             policy: "Experience Replay",

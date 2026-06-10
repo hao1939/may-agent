@@ -233,6 +233,42 @@ describe("detectProtocolViolations (P82/P114)", () => {
       // Should be clean — SIGNALS.md has read_by so no P82, and SIGNALS.md is excluded from P114
       expect(result.detected).toBe(false);
     });
+
+    it("does not flag evaluator aftermath artifact writes without grep ERROR_LOG", () => {
+      const entries = [
+        assistantWithToolCalls([
+          {
+            name: "write",
+            args: {
+              path: "agents/evaluator/workspace/aftermath/s_1780236464684_525.md",
+              content: "# Aftermath\nreview notes",
+            },
+          },
+        ]),
+      ];
+      const result = detectProtocolViolations(entries);
+      expect(result.detected).toBe(false);
+      expect(result.violations).toHaveLength(0);
+    });
+
+    it("still flags non-aftermath evaluator workspace writes without grep ERROR_LOG", () => {
+      const entries = [
+        assistantWithToolCalls([
+          {
+            name: "write",
+            args: {
+              path: "agents/evaluator/workspace/journal.md",
+              content: "journal update",
+            },
+          },
+        ]),
+      ];
+      const result = detectProtocolViolations(entries);
+      expect(result.detected).toBe(true);
+      expect(result.violations).toHaveLength(1);
+      expect(result.violations[0].type).toBe("P114");
+      expect(result.violations[0].path).toBe("agents/evaluator/workspace/journal.md");
+    });
   });
 
   // ── Combined scenarios ──────────────────────────────────────────────
