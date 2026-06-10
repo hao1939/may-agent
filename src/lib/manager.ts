@@ -33,7 +33,15 @@ import {
   sessionDir,
   archiveSession,
 } from "./persistence.js";
-import { updateSessionDb, listWorkflowRunIds, getWorkflowRun, updateWorkflowRun, hasEvaluation, getDb } from "./requests.js";
+import {
+  updateSessionDb,
+  updateSessionProgress,
+  listWorkflowRunIds,
+  getWorkflowRun,
+  updateWorkflowRun,
+  hasEvaluation,
+  getDb,
+} from "./requests.js";
 import { readIdentity } from "./detached.js";
 import type { EventBus } from "../app/event-bus.js";
 import type { SubagentDefinition, SessionInfo, TaskResult } from "./types.js";
@@ -115,9 +123,7 @@ type DispatchDedupDb = {
 function isHeartbeatSession(meta: { source?: string; task?: string }): boolean {
   const source = meta.source ?? "";
   const task = meta.task ?? "";
-  return source.includes("heartbeat")
-    || task.includes("waking up for your heartbeat")
-    || /^\[heartbeat\]/i.test(task);
+  return source.includes("heartbeat") || task.includes("waking up for your heartbeat") || /^\[heartbeat\]/i.test(task);
 }
 
 function releaseStaleHeartbeatDispatchLease(persistDir: string, agent: string): boolean {
@@ -134,7 +140,10 @@ function releaseStaleHeartbeatDispatchLease(persistDir: string, agent: string): 
     writeFileSync(dedupPath, JSON.stringify(db, null, 2));
     return true;
   } catch (err) {
-    log("warn", `[manager] Error releasing stale heartbeat dispatch lease for ${agent}: ${err instanceof Error ? err.message : String(err)}`);
+    log(
+      "warn",
+      `[manager] Error releasing stale heartbeat dispatch lease for ${agent}: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return false;
   }
 }
@@ -167,7 +176,10 @@ function releaseOrphanedHeartbeatDispatchLeases(
     if (released.length > 0) writeFileSync(dedupPath, JSON.stringify(db, null, 2));
     return released;
   } catch (err) {
-    log("warn", `[manager] Error releasing orphaned heartbeat dispatch leases: ${err instanceof Error ? err.message : String(err)}`);
+    log(
+      "warn",
+      `[manager] Error releasing orphaned heartbeat dispatch leases: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return [];
   }
 }
@@ -252,7 +264,9 @@ export class SubagentManager {
   private _promptTimestamp = new Date().toISOString();
 
   /** Expose activeSessions for AgentsToolManagerDeps */
-  get activeSessions(): Map<string, ActiveSession> { return this._sessions; }
+  get activeSessions(): Map<string, ActiveSession> {
+    return this._sessions;
+  }
 
   constructor(opts: SubagentManagerOptions) {
     this._persistDir = opts.persistDir;
@@ -312,7 +326,11 @@ export class SubagentManager {
     },
   ): void {
     if (opts.unarchive) {
-      try { unarchiveSession(this._persistDir, sessionId); } catch { /* best-effort */ }
+      try {
+        unarchiveSession(this._persistDir, sessionId);
+      } catch {
+        /* best-effort */
+      }
     }
 
     const resumeMessages = this.buildResumeMessages(sessionId);
@@ -323,10 +341,11 @@ export class SubagentManager {
       // explicit message is provided, replace the synthetic tail so the new
       // turn lands cleanly.
       const tail: any = resumeMessages[resumeMessages.length - 1];
-      const isSyntheticRestart = tail?.role === "user"
-        && Array.isArray(tail.content)
-        && tail.content[0]?.type === "text"
-        && /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
+      const isSyntheticRestart =
+        tail?.role === "user" &&
+        Array.isArray(tail.content) &&
+        tail.content[0]?.type === "text" &&
+        /^Process restarted\./.test(String(tail.content[0]?.text ?? ""));
       if (isSyntheticRestart) resumeMessages.pop();
       const newUserTurn: any = {
         role: "user",
@@ -337,7 +356,11 @@ export class SubagentManager {
       // Persist the injected user turn to JSONL now — message_end events only
       // fire for messages the agent itself emits, so without this the operator's
       // turn would not appear in transcript views.
-      try { appendSessionMessage(this._persistDir, sessionId, newUserTurn); } catch { /* best-effort */ }
+      try {
+        appendSessionMessage(this._persistDir, sessionId, newUserTurn);
+      } catch {
+        /* best-effort */
+      }
     }
 
     if (opts.resetDbRow) {
@@ -347,7 +370,9 @@ export class SubagentManager {
       try {
         const db = getDb(this._persistDir);
         db.run(`UPDATE sessions SET status = 'running', endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
-      } catch { /* best-effort — manager.run will re-save the registry row */ }
+      } catch {
+        /* best-effort — manager.run will re-save the registry row */
+      }
     }
 
     const task = opts.injectUserMessage ?? meta.task;
@@ -386,12 +411,18 @@ export class SubagentManager {
     this._registry.removeAgent(name);
   }
 
-  hasAgent(name: string): boolean { return this.agents.has(name); }
-  agentNames(): string[] { return [...this.agents.keys()]; }
-  agentCount(): number { return this.agents.size; }
+  hasAgent(name: string): boolean {
+    return this.agents.has(name);
+  }
+  agentNames(): string[] {
+    return [...this.agents.keys()];
+  }
+  agentCount(): number {
+    return this.agents.size;
+  }
 
   listAgents(): Array<{ name: string; description: string; domain: string }> {
-    return [...this.agents.values()].map(a => ({
+    return [...this.agents.values()].map((a) => ({
       name: a.definition.name,
       description: a.definition.description,
       domain: a.definition.domain,
@@ -432,9 +463,7 @@ export class SubagentManager {
         tools: def.tools,
       },
       beforeToolCall,
-      getApiKey: def.apiKey === "dynamic"
-        ? () => this.getCopilotToken()
-        : def.apiKey ? () => def.apiKey! : undefined,
+      getApiKey: def.apiKey === "dynamic" ? () => this.getCopilotToken() : def.apiKey ? () => def.apiKey! : undefined,
     });
 
     // JSONL persistence
@@ -445,14 +474,21 @@ export class SubagentManager {
     });
 
     const session: ActiveSession = {
-      sessionId, agent, agentName: name, task, startedAt,
-      status: "running", kind, autoClose,
+      sessionId,
+      agent,
+      agentName: name,
+      task,
+      startedAt,
+      status: "running",
+      kind,
+      autoClose,
       parentSessionId: opts?.parentSessionId,
       originSessionId: opts?.originSessionId,
       workflowRunId: opts?.workflowRunId,
       stepLabel: opts?.stepLabel,
       source: opts?.source,
-      toolCalls: 0, turnCount: 0,
+      toolCalls: 0,
+      turnCount: 0,
       requestId: opts?.requestId,
       projectId: opts?.projectId,
       resumeMessages: opts?.resumeMessages,
@@ -461,7 +497,11 @@ export class SubagentManager {
     const existingMeta = this._registry.getSession(sessionId);
     if (!existingMeta && opts?.resumeMessages?.length) {
       for (const message of opts.resumeMessages) {
-        try { appendSessionMessage(this._persistDir, sessionId, message); } catch { /* best-effort */ }
+        try {
+          appendSessionMessage(this._persistDir, sessionId, message);
+        } catch {
+          /* best-effort */
+        }
       }
     }
     this._registry.saveSession(sessionId, {
@@ -522,6 +562,7 @@ export class SubagentManager {
         endedAt: Date.now(),
         error: "Cancelled",
         opCount: session.toolCalls,
+        lastActivityAt: Date.now(),
       });
     }
   }
@@ -552,21 +593,23 @@ export class SubagentManager {
   // ── Query ──
 
   status(): SessionInfo[] {
-    return [...this._sessions.values()].filter(s => s.status !== "interrupted").map(s => ({
-      sessionId: s.sessionId,
-      agent: s.agentName,
-      task: s.task,
-      status: s.status === "running" ? "running" as const : "idle" as const,
-      startedAt: s.startedAt,
-      runtime: formatDuration(Date.now() - s.startedAt),
-      outputDir: sessionOutputDir(this._persistDir, s.sessionId),
-      parentSessionId: s.parentSessionId,
-      workflowRunId: s.workflowRunId,
-      stepLabel: s.stepLabel,
-      kind: s.kind,
-      autoClose: s.autoClose,
-      turnCount: s.turnCount,
-    }));
+    return [...this._sessions.values()]
+      .filter((s) => s.status !== "interrupted")
+      .map((s) => ({
+        sessionId: s.sessionId,
+        agent: s.agentName,
+        task: s.task,
+        status: s.status === "running" ? ("running" as const) : ("idle" as const),
+        startedAt: s.startedAt,
+        runtime: formatDuration(Date.now() - s.startedAt),
+        outputDir: sessionOutputDir(this._persistDir, s.sessionId),
+        parentSessionId: s.parentSessionId,
+        workflowRunId: s.workflowRunId,
+        stepLabel: s.stepLabel,
+        kind: s.kind,
+        autoClose: s.autoClose,
+        turnCount: s.turnCount,
+      }));
   }
 
   hasActiveSession(sessionId: string): boolean {
@@ -630,7 +673,14 @@ export class SubagentManager {
   async callAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; source?: string; workflowRunId?: string; projectId?: string; stepLabel?: string; timeout?: number },
+    opts?: {
+      parentSessionId?: string;
+      source?: string;
+      workflowRunId?: string;
+      projectId?: string;
+      stepLabel?: string;
+      timeout?: number;
+    },
   ): Promise<TaskResult & { messages: AgentMessage[] }> {
     const parentDepth = opts?.parentSessionId ? (this.callDepths.get(opts.parentSessionId) ?? 0) : 0;
     if (parentDepth >= this._maxCallDepth) {
@@ -661,7 +711,14 @@ export class SubagentManager {
   runAgent(
     agentName: string,
     task: string,
-    opts?: { parentSessionId?: string; originSessionId?: string; source?: string; requestId?: string; workflowRunId?: string; projectId?: string },
+    opts?: {
+      parentSessionId?: string;
+      originSessionId?: string;
+      source?: string;
+      requestId?: string;
+      workflowRunId?: string;
+      projectId?: string;
+    },
   ): string {
     return this.run(agentName, task, {
       parentSessionId: opts?.parentSessionId,
@@ -677,7 +734,10 @@ export class SubagentManager {
   // ── Session resume (v1 carryover; pi-agent-core has agent.continue() but we don't wire it yet) ──
 
   /** Resume or interrupt sessions left running by a previous process. */
-  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): { resumed: SessionInfo[]; interrupted: SessionInfo[] } {
+  resumeStaleSessions(opts?: { abort?: boolean; kinds?: SessionKind[] }): {
+    resumed: SessionInfo[];
+    interrupted: SessionInfo[];
+  } {
     const activeSessions = loadActiveSessionMetas(this._persistDir);
     const kindFilter = opts?.kinds ? new Set(opts.kinds) : null;
     const stale = new Map<string, (typeof activeSessions)[string]>();
@@ -704,7 +764,9 @@ export class SubagentManager {
           if (!existsSync(sentinelPath)) continue;
           const persisted = activeSessions[dirName];
           if (!persisted) {
-            try { unlinkSync(sentinelPath); } catch {}
+            try {
+              unlinkSync(sentinelPath);
+            } catch {}
             continue;
           }
           const kind = persisted.kind ?? "job";
@@ -712,7 +774,9 @@ export class SubagentManager {
           if (persisted.status === "running" || persisted.status === "idle") {
             stale.set(dirName, persisted);
           }
-          try { unlinkSync(sentinelPath); } catch {}
+          try {
+            unlinkSync(sentinelPath);
+          } catch {}
         }
       } catch (err) {
         log("warn", `[manager] Error scanning stale sentinels: ${err instanceof Error ? err.message : String(err)}`);
@@ -762,7 +826,9 @@ export class SubagentManager {
           // is still live; only the sentinel needs cleanup).
           // No resetDbRow: manager.run reseats the row.
         });
-        try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
+        try {
+          unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
+        } catch {}
         resumed.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "running" }));
       } catch (err) {
         // executeResume already emitted session.resume_failed. We additionally
@@ -771,7 +837,9 @@ export class SubagentManager {
         const error = `Failed to resume session: ${err instanceof Error ? err.message : String(err)}`;
         this._registry.updateSessionStatus(sessionId, "interrupted", error);
         updateSessionDb(this._persistDir, sessionId, { status: "interrupted", endedAt: Date.now(), error });
-        try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
+        try {
+          unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
+        } catch {}
         interrupted.push(this.sessionInfoFromMeta(sessionId, { ...persisted, status: "interrupted", error }));
       }
     }
@@ -856,9 +924,10 @@ export class SubagentManager {
     const now = Date.now();
     const dayAgo = now - 24 * 60 * 60 * 1000;
     const allSessions = Object.entries(sessions);
-    const unevaluated = allSessions.filter(([sid, s]) =>
-      (s.status === "done" || s.status === "error" || s.status === "interrupted") &&
-      !hasEvaluation(this._persistDir, sid),
+    const unevaluated = allSessions.filter(
+      ([sid, s]) =>
+        (s.status === "done" || s.status === "error" || s.status === "interrupted") &&
+        !hasEvaluation(this._persistDir, sid),
     );
     const metaAgents = new Set(["evaluator", "optimizer", "may"]);
     const staleSessions = allSessions
@@ -912,9 +981,13 @@ export class SubagentManager {
   }
 
   /** Alias for AgentsToolManagerDeps compatibility */
-  get registry(): RegistryStore { return this._registry; }
+  get registry(): RegistryStore {
+    return this._registry;
+  }
 
-  get projectRoot(): string { return this._projectRoot; }
+  get projectRoot(): string {
+    return this._projectRoot;
+  }
 
   getWorkflowSteps(_workflowRunId: string): Array<{ step: string; sessionId: string; summary: string }> {
     // TODO: implement via DB query when needed
@@ -960,7 +1033,8 @@ export class SubagentManager {
         tree: {
           type: "session",
           id: targetId,
-          label: "agentName" in targetSession ? (targetSession as ActiveSession).agentName : (targetSession as any).agent,
+          label:
+            "agentName" in targetSession ? (targetSession as ActiveSession).agentName : (targetSession as any).agent,
           isTarget: true,
           children: [],
         },
@@ -1054,7 +1128,10 @@ export class SubagentManager {
     return sessionOutputDir(this._persistDir, sessionId);
   }
 
-  async waitForDetached(sessionId: string, opts?: { pollIntervalMs?: number; timeoutMs?: number }): Promise<TaskResult> {
+  async waitForDetached(
+    sessionId: string,
+    opts?: { pollIntervalMs?: number; timeoutMs?: number },
+  ): Promise<TaskResult> {
     const pollInterval = opts?.pollIntervalMs ?? 2000;
     const timeoutMs = opts?.timeoutMs ?? 600_000;
     const initialMeta = this._registry.getSession(sessionId);
@@ -1116,9 +1193,10 @@ export class SubagentManager {
     if (messages.length === 0) messages = readArchivedSessionMessages(this._persistDir, sessionId);
     const repaired = messages.slice();
     const last = repaired[repaired.length - 1] as any;
-    const pendingToolCalls = last?.role === "assistant" && Array.isArray(last.content)
-      ? last.content.filter((block: any) => block?.type === "toolCall")
-      : [];
+    const pendingToolCalls =
+      last?.role === "assistant" && Array.isArray(last.content)
+        ? last.content.filter((block: any) => block?.type === "toolCall")
+        : [];
     for (const call of pendingToolCalls) {
       repaired.push({
         role: "toolResult",
@@ -1218,15 +1296,13 @@ export class SubagentManager {
 
   private runtimeEnvironment(def: SubagentDefinition, agentDir: string | undefined): string {
     const root = def.projectRoot ?? this._projectRoot;
-    const relAgentDir = agentDir && root && agentDir.startsWith(root)
-      ? agentDir.slice(root.length + 1)
-      : agentDir;
-    const relWorkspace = def.workspace && root && def.workspace.startsWith(root)
-      ? def.workspace.slice(root.length + 1)
-      : def.workspace;
-    const relKnowledge = def.knowledgeDir && root && def.knowledgeDir.startsWith(root)
-      ? def.knowledgeDir.slice(root.length + 1)
-      : def.knowledgeDir;
+    const relAgentDir = agentDir && root && agentDir.startsWith(root) ? agentDir.slice(root.length + 1) : agentDir;
+    const relWorkspace =
+      def.workspace && root && def.workspace.startsWith(root) ? def.workspace.slice(root.length + 1) : def.workspace;
+    const relKnowledge =
+      def.knowledgeDir && root && def.knowledgeDir.startsWith(root)
+        ? def.knowledgeDir.slice(root.length + 1)
+        : def.knowledgeDir;
 
     const toolNames = def.tools.map((tool: any) => tool?.name).filter(Boolean);
     const lines = ["# Runtime Environment"];
@@ -1235,7 +1311,9 @@ export class SubagentManager {
     if (relWorkspace) lines.push(`- Workspace: ${relWorkspace} (scratch/runtime work)`);
     if (relKnowledge) lines.push(`- Knowledge: ${relKnowledge} (read on demand; start with INDEX.md when needed)`);
     lines.push("- Already in context: shared/common-sense.md and this agent's AGENTS.md when present.");
-    lines.push("- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.");
+    lines.push(
+      "- Prompt precedence: common-sense is the shared default; this agent's AGENTS.md is the role-specific identity layer and takes precedence for agent-specific behavior.",
+    );
     if (toolNames.length > 0) {
       lines.push(`- Available tools: ${toolNames.join(", ")}`);
     }
@@ -1297,7 +1375,9 @@ export class SubagentManager {
       const tokenPath = process.env.COPILOT_TOKEN_PATH || "/app/.copilot/api-key.json";
       const data = JSON.parse(readFileSync(tokenPath, "utf-8"));
       return data.token || "";
-    } catch { return ""; }
+    } catch {
+      return "";
+    }
   }
 
   private async executeSession(session: ActiveSession): Promise<TaskResult> {
@@ -1315,7 +1395,9 @@ export class SubagentManager {
       log("error", `[runtime] ${sessionId} failed: ${err}`);
     } finally {
       if (session.timeoutTimer) clearTimeout(session.timeoutTimer);
-      try { unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]")); } catch {}
+      try {
+        unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
+      } catch {}
     }
 
     // Extract result
@@ -1329,13 +1411,17 @@ export class SubagentManager {
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }
-    const status: "done" | "error" | "interrupted" = session.status === "interrupted" ? "interrupted"
-      : finishParams?.status === "failure" ? "error"
-      : errorText ? "error"
-      // finish(blocked) and finish(partial) are deliberate terminal reports,
-      // not runtime interruptions. The structured finish status carries the
-      // blocked/partial meaning for workflows and evaluators.
-      : "done";
+    const status: "done" | "error" | "interrupted" =
+      session.status === "interrupted"
+        ? "interrupted"
+        : finishParams?.status === "failure"
+          ? "error"
+          : errorText
+            ? "error"
+            : // finish(blocked) and finish(partial) are deliberate terminal reports,
+              // not runtime interruptions. The structured finish status carries the
+              // blocked/partial meaning for workflows and evaluators.
+              "done";
     const lastText = finishParams?.summary ?? assistantText ?? "";
     const durationMs = Date.now() - startedAt;
     this._registry.updateSessionStatus(sessionId, status, errorText);
@@ -1345,6 +1431,7 @@ export class SubagentManager {
       error: errorText,
       outcome: lastText,
       opCount: session.toolCalls,
+      lastActivityAt: Date.now(),
     });
 
     // Emit session.end
@@ -1376,7 +1463,9 @@ export class SubagentManager {
     }
 
     if (session.autoClose === "immediate") {
-      try { archiveSession(this._persistDir, sessionId); } catch {}
+      try {
+        archiveSession(this._persistDir, sessionId);
+      } catch {}
     }
 
     return {
@@ -1395,6 +1484,16 @@ export class SubagentManager {
     if (!this.bus) return;
     const { agent, sessionId, agentName, task } = session;
     const bus = this.bus;
+    const persistProgress = (): void => {
+      try {
+        updateSessionProgress(this._persistDir, sessionId, {
+          opCount: session.toolCalls,
+          lastActivityAt: Date.now(),
+        });
+      } catch {
+        // Progress telemetry must not interrupt the agent loop.
+      }
+    };
 
     bus.emit({
       type: "session.start",
@@ -1420,15 +1519,30 @@ export class SubagentManager {
       switch (event.type) {
         case "turn_start":
           session.turnCount++;
+          persistProgress();
           break;
         case "tool_execution_start":
           session.toolCalls++;
-          bus.emit({ type: "tool_call", sessionId, agent: agentName, tool: (event as any).toolName, args: (event as any).args });
+          persistProgress();
+          bus.emit({
+            type: "tool_call",
+            sessionId,
+            agent: agentName,
+            tool: (event as any).toolName,
+            args: (event as any).args,
+          });
           break;
         case "tool_execution_end": {
           const blocks = (event as any).result?.content ?? [];
           const text = blocks.find((b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output"))?.text ?? "";
-          bus.emit({ type: "tool_result", sessionId, agent: agentName, tool: (event as any).toolName, preview: text.slice(0, 200), isError: !!(event as any).isError });
+          bus.emit({
+            type: "tool_result",
+            sessionId,
+            agent: agentName,
+            tool: (event as any).toolName,
+            preview: text.slice(0, 200),
+            isError: !!(event as any).isError,
+          });
           break;
         }
         case "message_end": {
@@ -1443,6 +1557,7 @@ export class SubagentManager {
           break;
         }
         case "turn_end":
+          persistProgress();
           bus.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: session.toolCalls, durationMs: 0 });
           break;
       }

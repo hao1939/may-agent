@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   endedAt         INTEGER,
   error           TEXT,
   outcome         TEXT,
-  opCount         INTEGER DEFAULT 0
+  opCount         INTEGER DEFAULT 0,
+  lastActivityAt  INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_sess_agent   ON sessions(agent);
@@ -303,26 +304,100 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
   db.exec(SCHEMA);
 
   // gym_runs columns added after initial schema
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN run_tag TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN prompt_hash TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN framework_sha TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN model TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN batch_id TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN categories TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN tags TEXT"); } catch { /* already exists */ }
-  try { db.exec("ALTER TABLE gym_runs ADD COLUMN tier TEXT"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN run_tag TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN prompt_hash TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN framework_sha TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN model TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN batch_id TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN categories TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN tags TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE gym_runs ADD COLUMN tier TEXT");
+  } catch {
+    /* already exists */
+  }
 
   // Indexes on migrated columns (must come after ALTER TABLE).
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)"); } catch { /* already exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash)"); } catch { /* already exists */ }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_batch ON gym_runs(batch_id)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_gym_runs_prompt ON gym_runs(prompt_hash)");
+  } catch {
+    /* already exists */
+  }
 
-  try { db.exec("ALTER TABLE sessions ADD COLUMN projectId TEXT"); } catch { /* already exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId)"); } catch { /* already exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId)"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE sessions ADD COLUMN projectId TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("ALTER TABLE sessions ADD COLUMN lastActivityAt INTEGER");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_sess_project ON sessions(projectId)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_sess_activity ON sessions(lastActivityAt)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_sess_workflow ON sessions(workflowRunId)");
+  } catch {
+    /* already exists */
+  }
 
-  try { db.exec("ALTER TABLE workflow_runs ADD COLUMN projectId TEXT"); } catch { /* already exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_wfr_project ON workflow_runs(projectId)"); } catch { /* already exists */ }
-  try { db.run("UPDATE workflow_runs SET parentSessionId = NULL WHERE parentSessionId = 'unknown'"); } catch { /* best-effort cleanup */ }
+  try {
+    db.exec("ALTER TABLE workflow_runs ADD COLUMN projectId TEXT");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_wfr_project ON workflow_runs(projectId)");
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.run("UPDATE workflow_runs SET parentSessionId = NULL WHERE parentSessionId = 'unknown'");
+  } catch {
+    /* best-effort cleanup */
+  }
   try {
     db.run(`
       UPDATE workflow_runs
@@ -342,35 +417,86 @@ export function applyDbSchemaAndMigrations(db: SqliteDb): void {
             AND s.projectId != ''
         ) = 1
     `);
-  } catch { /* best-effort backfill */ }
+  } catch {
+    /* best-effort backfill */
+  }
 
   // Events table migrations (columns added after initial schema).
   const eventCols = ["status", "handled_by", "result", "reason", "retry_count", "ttl_ms", "urgency"];
   for (const col of eventCols) {
     try {
-      const defaultVal = col === "status" ? " DEFAULT 'pending'" : col === "retry_count" ? " DEFAULT 0" : col === "urgency" ? " DEFAULT 'normal'" : "";
+      const defaultVal =
+        col === "status"
+          ? " DEFAULT 'pending'"
+          : col === "retry_count"
+            ? " DEFAULT 0"
+            : col === "urgency"
+              ? " DEFAULT 'normal'"
+              : "";
       const colType = col === "retry_count" ? "INTEGER" : col === "ttl_ms" ? "INTEGER" : "TEXT";
       db.exec(`ALTER TABLE events ADD COLUMN ${col} ${colType}${defaultVal}`);
-    } catch { /* already exists */ }
+    } catch {
+      /* already exists */
+    }
   }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(owner, status, timestamp)"); } catch { /* already exists */ }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_events_inbox ON events(owner, status, timestamp)");
+  } catch {
+    /* already exists */
+  }
 
   // Evaluations table migrations.
-  try { db.exec("ALTER TABLE evaluations ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_eval_agent_ts ON evaluations(agent, createdAt)"); } catch { /* exists */ }
-  try { db.exec("CREATE INDEX IF NOT EXISTS idx_eval_created ON evaluations(createdAt)"); } catch { /* exists */ }
-  try { db.exec("ALTER TABLE evaluations ADD COLUMN evaluatedByHeuristic INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
-  try { db.exec("ALTER TABLE evaluations ADD COLUMN skippedByJs INTEGER NOT NULL DEFAULT 0"); } catch { /* exists */ }
+  try {
+    db.exec("ALTER TABLE evaluations ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0");
+  } catch {
+    /* exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_eval_agent_ts ON evaluations(agent, createdAt)");
+  } catch {
+    /* exists */
+  }
+  try {
+    db.exec("CREATE INDEX IF NOT EXISTS idx_eval_created ON evaluations(createdAt)");
+  } catch {
+    /* exists */
+  }
+  try {
+    db.exec("ALTER TABLE evaluations ADD COLUMN evaluatedByHeuristic INTEGER NOT NULL DEFAULT 0");
+  } catch {
+    /* exists */
+  }
+  try {
+    db.exec("ALTER TABLE evaluations ADD COLUMN skippedByJs INTEGER NOT NULL DEFAULT 0");
+  } catch {
+    /* exists */
+  }
 
   // Event columns for TTL and urgency (event-native: no mutable status columns).
   for (const col of ["ttl_ms INTEGER", "urgency TEXT DEFAULT 'normal'"]) {
-    try { db.exec(`ALTER TABLE events ADD COLUMN ${col}`); } catch { /* already exists */ }
+    try {
+      db.exec(`ALTER TABLE events ADD COLUMN ${col}`);
+    } catch {
+      /* already exists */
+    }
   }
 
   // Session stepLabel column (unified session model — workflow steps tracked via sessions table).
-  try { db.exec("ALTER TABLE sessions ADD COLUMN stepLabel TEXT"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE sessions ADD COLUMN stepLabel TEXT");
+  } catch {
+    /* already exists */
+  }
   // Typed metrics: config JSON column for type-specific measurement + alert rules.
-  try { db.exec("ALTER TABLE metrics ADD COLUMN config TEXT"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE metrics ADD COLUMN config TEXT");
+  } catch {
+    /* already exists */
+  }
   // Metric priority gates direct reactions: only P0 breaches should fork immediately.
-  try { db.exec("ALTER TABLE metrics ADD COLUMN priority TEXT"); } catch { /* already exists */ }
+  try {
+    db.exec("ALTER TABLE metrics ADD COLUMN priority TEXT");
+  } catch {
+    /* already exists */
+  }
 }
