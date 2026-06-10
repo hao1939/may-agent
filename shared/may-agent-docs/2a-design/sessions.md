@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Partially populated: 211/12,333 sessions (1.7%) have a non-null value (as of 2026-06-11). Write path activated ~2026-06-09 17:33Z; 18% of sessions started after that timestamp are populated. Coverage is uneven: evaluator (105) and aks-explorer (79) populate consistently; other agents started populating ~2026-06-10 17:08Z. Zombie detection uses JSONL file mtime instead (see Known Issues).
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Partially populated: 232/12,354 sessions (1.9%) have a non-null value (as of 2026-06-11). Write path activated ~2026-06-09 17:33Z; ~20% of sessions started after that timestamp are populated. All 7 agents now populate; coverage is 12–24% per agent. Zombie detection uses JSONL file mtime instead (see Known Issues).
 );
 ```
 
@@ -57,7 +57,7 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-11: 0 of 12,278 `call` sessions have a
+(kind=`chat`) sessions. Verified 2026-06-11: 0 of 12,327 `call` sessions have a
 non-null `parentSessionId`; all 13 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
@@ -92,14 +92,16 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-11 ~20:00Z):** The write path activated around
-2026-06-09 17:33Z. Since then, 211 of 12,333 total sessions (1.7%) have a
-non-null value. For sessions started after activation, coverage is ~18%
-(211/1,165). Coverage is agent-dependent: evaluator (105 sessions) and
-aks-explorer (79) began populating immediately; arc, scout, dev, and may
-(6–8 each) started populating ~2026-06-10 17:08Z. tech-lead has 0 populated
-sessions. The column is no longer "dead" — it is partially alive and trending
-toward broader coverage.
+**Status (updated 2026-06-11 ~21:00Z):** The write path activated around
+2026-06-09 17:33Z. Since then, 232 of 12,354 total sessions (1.9%) have a
+non-null value. For sessions started after activation, coverage is ~20%
+(231/1,186). Coverage is agent-dependent: aks-explorer (85 sessions, 24%)
+and evaluator (115, 19%) populate most consistently; arc (9, 16%), dev (7,
+16%), scout (7, 12%), and may (7, 11%) started populating ~2026-06-10
+17:08Z. tech-lead has 1 populated session (first at 2026-06-10 20:13Z).
+All agents now populate the column. 24h coverage is ~23%. The column is
+no longer "dead" — it is partially alive and trending toward broader
+coverage.
 
 The `capability.zombie-session-count` metric does NOT yet use this column.
 Zombie detection in `metrics-snapshot.ts` (`sessionInactiveSince()`) checks
