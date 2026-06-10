@@ -4,11 +4,11 @@ owner: aks-explorer
 status: active
 type: milestone
 priority: P1
-iteration: 193
-max_concurrent: 3
+iteration: 218
+max_concurrent: 5
 max_task_attempts: 2
 project_policy: aggressive-push
-wait_reason: all-tasks-terminal-no-ready-frontier
+wait_reason: ""
 ---
 
 # Project: AKS RP E2E - Input/Expectation Knowledge Map
@@ -153,37 +153,47 @@ agent pools, and later dark-side discovery.
 - execution.evidence-collected: staging and standalone artifacts provide pass/fail/blocker evidence for ManagedSystem, App Routing, NAP, workload identity, autoscaler, security, bootstrap, and VirtualMachines paths.
 
 ## Current State
-**June 8, 2026 — speed-up refocus.** The task tree still has one root,
-`project`, with three root responsibilities: `aks-learning-system`,
-`project-control`, and `execution-engine-audit`. The active project work is no
-longer a control-loop recovery branch. It is three parallel domain lanes. The
-ManagedSystem golden-path lane has now completed its current audit:
+**Iteration 218 — project active; replay-implementation frontier is live.**
 
-1. `managedsystem-golden-path-gap-audit` — accepted on June 8, 2026. The
-   ManagedSystem REST add-existing golden path is solid for the narrow
-   product/API branch; runtime placement and adjacent branches remain separate.
-2. `feature-page-managedsystem-current-audit` — audit the implemented
-   dedicated feature page against the agreed user-facing requirement. This is
-   now the active pointer.
-3. `combined-scenario-compatibility-contract` — define the minimal contract
-   that makes combined-scenario tests possible without losing diagnosis.
+The task tree has active work: 8 ready leaves, 1 active leaf (expired lease),
+1 proposed leaf, and 15 decomposed containers. Total 763 tasks: 628 accepted,
+110 superseded, 8 ready, 1 active, 1 proposed, 15 decomposed.
 
-The older ready leaves are still valid but are now secondary and properly
-parented under their feature areas: `iteration206-vmsize-immutability-enrichment`
-under `feature-managedsystem-pool`, and
-`iteration207-workload-identity-no-oidc-negative-check` under
-`feature-workload-identity`.
+**Ready replay-implementation tasks (8):**
+- `jwt-external-idp-replay-impl` — JWT Authenticator external IDP login replay
+- `jwt-incluster-idp-replay-impl` — JWT Authenticator in-cluster IDP login replay
+- `pm-security-patch-replay-impl` — Planned Maintenance security patch replay
+- `pm-update-schedule-replay-impl` — Planned Maintenance update-schedule replay
+- `pm-autoupgrade-scheduling-replay-impl` — Planned Maintenance autoupgrade scheduling replay
+- `trusted-access-dataplane-replay-impl` — Trusted Access dataplane token gateway replay
+- `ds-pss-level-change-replay-impl` — Deployment Safeguards PSS level-change replay
+- `ds-basic-replay-author-v2-rework-review` — DS basic enable/disable rework review
 
-The first follow-up tasks are intentionally gated by those audits/contracts:
-`feature-page-managedsystem-polish-implementation` and
-`managedsystem-combined-scenario-prototype-plan`. The conditional
-`managedsystem-rest-staging-replay-verification` task was superseded for the
-add-existing branch because the gap audit found existing iteration112 v2
-staging replay and cleanup evidence sufficient.
+**Active (expired lease):**
+- `ds-private-cluster-replay-impl-rework-review` — DS private cluster rework review
+  (lease expired 2026-06-10T08:01:31Z; should be released for pickup)
+
+**Proposed:**
+- `staging-execution-feedback-rollup-v2` — classify 11 not_ready spec-runner runs
+
+The knowledge model has 125 features: 51 pass, 6 fail, 3 blocked, 3 unknown,
+and 62 unset. 30 of the 62 unset features have matching spec files;
+32 unset features (mostly KMS v2+ variants) still need specs. All unset/unknown
+features require cloud execution to resolve — they have feature packets and
+input/expectation enumeration, but no staging/devbox/standalone evidence.
+
+**Planner/control-loop rule.** Planning is no longer represented as ordinary
+task-tree work. `project-planner` is the control loop: it repairs stale state,
+rolls up completed work, refills the ordinary frontier under the four value-loop
+lanes, records planner attempts in `planner-runs.jsonl`, and then signals the
+worker picker through `project.tasks.ready`. Legacy `project-control`,
+`project-planning-loop*`, or `project-frontier-replan-*` nodes are history only
+and must not be leased as active project tasks.
 
 **Domain model state** remains stable enough for this refocus: ManagedSystem
-REST add-existing is the canonical REST-first baseline. The current audit is
-`evidence/archive/managedsystem-golden-path-gap-audit.md`.
+REST add-existing is the canonical REST-first baseline, and the project should
+continue applying that source -> spec -> replay -> evidence -> model feedback
+pattern across AKS RP features.
 
 Current non-pass frontier is still gated rather than missing local model work. Blocked paths are Bootstrap BYO ACR lifecycle, Machines API CRUD, PAF throttling, and VPA cert renewal. Unknown paths are App Routing default-domain Istio, App Routing default-domain TLS lifecycle, full NAP default Machines pool cleanup, and the three execution-capable-but-gated ManagedSystem probes (`managedsystem-reconcile-preservation`, `managedsystem-runtime-restrictions`, `managedsystem-single-pool-constraint`). Current fail paths are documented product/test-surface failures with artifacts: App Routing default-domain/TLS-secret, NAP cleanup no-Machine-CRUD split, ManagedSystem disable migration, ManagedSystem CLI create/add, and VirtualMachines CLI comma multi-SKU.
 
@@ -230,6 +240,7 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - `replays/README.md` — tracked TypeScript probe directory
 - `replays/lib/README.md` — shared helper library directory for probes
 - `evidence/archive/iteration155-knowledge-map-normalization.md` — local review aligning current project findings to the normalized scenario/DAG/behavior model
+- `evidence/archive/coverage-gap-assessment.md` — ranked coverage gap analysis: 98 features, 48 pass, 6 fail, 3 blocked, 41 unknown; next-phase recommendation
 - `evidence/archive/iteration185-owner-loop-duplicate-resume-reconciliation.md` — owner-loop reconciliation that handled duplicate ManagedSystem replan resume comments without queuing new work
 - `evidence/archive/iteration189-managedsystem-cli-rest-combined-replan.md` — CLI+REST ManagedSystem combined replan for CLI create/add default-payload negative paths plus REST add and mode immutability
 - `evidence/archive/iteration189-live-selected-execution-blocker.md` — four-path live-selected execution blocker showing artifact regeneration succeeded but local `az` is unavailable for the required ARM token gate
@@ -336,8 +347,8 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - Boundary: observation context (`standalone`, `staging`, `dev`, `devbox`, build version, execution surface) is a filter for where/how evidence was collected, not AKS product input space.
 - Purpose: model the relation between AKS inputs, expected behavior, existing tests, observed behavior, and evidence. It is a coverage and discovery map, not just a result ledger.
 - Mapping rule: each feature must map to one or more AKS input paths and expectation paths; each test case should map the concrete input path it exercised, the expected behavior path it intended to verify, and the observed path it actually produced.
-- Current deterministic summary: 35 AKS input variables, 71 AKS state/behavior expectation variables, 63 feature mappings, 69 test-case evidence mappings, 58 judgments, 60 evidence references.
-- Current feature status from validator after iteration149: 7 fail (`app-routing-default-domain`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `app-routing-default-domain-tls-secret`, `managedsystem-disable-migration`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), 7 unknown feature IDs (`bootstrap-profile-byo-acr-lifecycle`, `app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `managedsystem-runtime-restrictions`, `machines-agentpool-nap-default-pool-cleanup`, `managedsystem-single-pool-constraint`, `managedsystem-reconcile-preservation`), and 3 blocked (`paf-throttling`, `workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`). `paf-throttling` is blocked/gated by MSI/HCP, capacity, and `DedicatedOom` trigger preconditions rather than a confirmed product fail. `machines-agentpool-nap-default-pool-cleanup-no-machine-crud` is a failed partial split after iteration143; it must not close the full NAP cleanup or Machines API CRUD branches, and same-input staging eastus2 rerun is gated by iteration145 owner/rollout triggers. `app-routing-nginx-to-istio-migration` is pass after iteration137 as a generic AppRoutingIstio/Gateway branch; it does not close default-domain Istio, default-domain TLS lifecycle, or the failed TLS-secret provisioning branch. `workload-autoscaler-vpa-upgrade-survival-runtime` is pass after iteration115, `bootstrap-profile-managed-acr-lifecycle` is pass after iteration116, `oidc-issuer-default-enabled-signing-key-rotation` is pass after iteration119, `node-restriction-tag-only-patch-shape` is pass/non-contract after iteration121, and the legacy `workload-autoscaler-vpa-runtime` roll-up is retired after iteration122.
+- Current deterministic summary: 113 AKS input variables, 218 AKS state/behavior expectation variables, 98 feature mappings, 70 test-case evidence mappings, 69 judgments, 143 evidence references.
+- Current feature status from model.json after iteration 218: 125 features total — 51 pass, 6 fail (`app-routing-default-domain-tls-secret`, CLI create/add ManagedSystem paths, `virtualmachines-agentpool-cli-add-multi-sku`, `managedsystem-disable-migration`, `machines-agentpool-nap-default-pool-cleanup-no-machine-crud`), 3 unknown (`app-routing-default-domain-istio`, `app-routing-default-domain-tls-lifecycle`, `machines-agentpool-nap-default-pool-cleanup`), 3 blocked (`paf-throttling`, `workload-autoscaler-vpa-cert-renewal-runtime`, `machines-agentpool-api-crud`), and 62 unset (KMS v2 ×15, KMS v2+ ×28, planned-maintenance ×7, deployment-safeguards ×7, trusted-access ×2, jwt-authenticator ×2, bootstrap-byo-acr-lifecycle ×1). 30 of the 62 unset features have matching spec files; 32 need specs authored.
 - Rule: agents may propose model changes, but the model is accepted only when the TypeScript validator passes.
 
 ## Weaknesses
@@ -348,27 +359,28 @@ This keeps the project on the agreed phase order: learn -> ground -> experiment 
 - ManagedSystem CLI bug: `az aks create --enable-managed-system-pool` and `az aks nodepool add --mode ManagedSystem` send default fields that RP rejects.
 
 ## Next Action
-Run `feature-learning-queue-refresh` from `tasks/tree.json`. It should write `evidence/archive/feature-learning-queue.md` and update `tasks/tree.json` with the next concrete feature-learning leaf task when safe local work exists. It must not run cloud/staging/kubectl/live probes.
+**Execute the ready replay-implementation frontier.**
 
-Status is `active` with a blocked frontier under review. Iteration190 handled the unread discussion tail after `---read @iter189---`: the two-path ManagedSystem live-selected replan for `path.managedsystem.mode-immutability` and `path.managedsystem.rest-add-existing.minimal-rest` regenerated successfully into `decisions/replans/live-selected/`; a non-mutating dry-run sanity check and canonical model validation both exited 0, but the owner-specified ARM token gate failed before mutation because `az` is not installed in this workspace. The blocker artifact is `evidence/archive/iteration190-live-selected-two-path-blocker.md`.
+The task tree has 8 ready leaves and 1 active leaf with an expired lease. These
+are concrete replay-authoring tasks for Deployment Safeguards, JWT Authenticator,
+Planned Maintenance, and Trusted Access. Each task authors a TypeScript probe
+file against an existing spec and feature packet. This is safe local work
+(no cloud mutation) and should proceed immediately.
 
-The project execution engine should first run the blocked-frontier review tasks in `tasks/tree.json`. Those tasks must decide whether current blockers are real, stale, too coarse, missing evidence, wrongly blocked, locally unblockable, or genuinely external. If safe local work exists, create ready child tasks and continue. If only external gates remain, record the exact resume condition and keep the relevant task blocked.
+Priority order for the ready frontier:
+1. Release expired lease on `ds-private-cluster-replay-impl-rework-review`
+2. Execute `ds-basic-replay-author-v2-rework-review` (unblock DS basic path)
+3. Execute `ds-pss-level-change-replay-impl` (DS PSS level change)
+4. Execute `pm-security-patch-replay-impl` (Planned Maintenance)
+5. Execute `pm-update-schedule-replay-impl` (Planned Maintenance)
+6. Execute `pm-autoupgrade-scheduling-replay-impl` (Planned Maintenance)
+7. Execute `jwt-external-idp-replay-impl` (JWT Authenticator)
+8. Execute `jwt-incluster-idp-replay-impl` (JWT Authenticator)
+9. Execute `trusted-access-dataplane-replay-impl` (Trusted Access)
+10. Promote `staging-execution-feedback-rollup-v2` from proposed to ready
 
-Resume only when one of these triggers exists:
-
-1. Azure CLI is available in the project workspace and `az account get-access-token --resource https://management.azure.com/ -o json` succeeds for the two-path live selected run, or the owner provides an approved credentialed execution host/path where the same auth gate succeeds.
-2. ManagedSystem owner/operator authorizes execution of the CLI+REST combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-cli-rest-combined`, and a concrete `AKS_RP_E2E_MANAGEDSYSTEM_GATE_NOTE` explaining why the ManagedSystem SKU/image/defaulting gate is cleared.
-3. ManagedSystem owner/operator authorizes the older add/immutability/delete combined probe and supplies `--execute`, `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-add-immutability-delete-combined`, and a concrete ManagedSystem gate note.
-4. ManagedSystem owner/operator authorizes another ManagedSystem cloud probe and supplies that branch-specific `AKS_RP_E2E_ALLOW_CLOUD_MUTATION` value plus a concrete gate note.
-5. App Routing owner provides default-domain TLS-secret diagnostics, a fixed build/config, or a live-verifiable precondition for default-domain TLS/Istio.
-6. Machines API preview features `Microsoft.ContainerService/PutMachinePreview` and `Microsoft.ContainerService/DeleteSpecificMachinesPreview` are registered, or an equivalent source environment is provided.
-7. NAP managed-machine-pool rollout/config changes, source expectations change, or a source-equivalent environment is identified for `aksmanagedap` creation.
-8. VPA cert-renewal source/environment ambiguity is resolved.
-9. Bootstrap BYO ACR gets a new source/environment/build signal plus SKU/location feasibility preflight.
-10. PAF gets MSI/HCP access, target capacity or owner-approved bypass, and source-owner confirmation for the `DedicatedOom` OOM trigger/assertion path.
-11. A human explicitly requests a different bounded local model-hygiene/reference-packet/replanning task.
-
-Until a matching trigger exists, preserve the recorded gates for Machines/NAP, PAF, App Routing default-domain TLS/Istio, Bootstrap BYO-ACR cloud reruns, VPA cert renewal, Node Restriction PATCH, same-input NAP eastus2, and ManagedSystem cloud probes. Do not run `kubectl`, `--execute`, standalone/staging, cluster creation, Machine APIs, `deleteMachines`, or ManagedSystem cloud probes without the relevant trigger. It is acceptable to rerun the owner-specified non-mutating `az account get-access-token` gate only when `az` becomes available or an approved credentialed host/path is supplied. Local blocked-review, model hygiene, reference-packet review, task-tree cleanup, and non-mutating evidence checks may continue when they are explicitly represented as ready tasks.
+After replay authoring, the next step is gated cloud execution of the authored
+probes via devbox ARM auth.
 
 ## Backlog
 - UI graph for the knowledge model: the current quality panel is mostly a table/list view. It is missing the critical visualization for the core idea: an **input-space graph**, an **expectation-space graph**, and **feature mappings as paths across both spaces**. Keep this as a backlog design task for now, not part of the current handwritten-source inventory. When picked up, the UI should make the knowledge model visible: how a feature selects paths from both spaces, which tests/evidence attach to those paths, and where staging/standalone coverage is missing, blocked, failing, or not yet explored.
@@ -390,7 +402,18 @@ Workers should not edit `tasks/tree.json` directly. A worker produces a claim an
 
 The project watcher is enabled through `app.ts`: the `regular-learning` schedule emits `project.tick` every hour, and the app converts that tick into the same `project.execution.requested` event used by comments, steering, and the `advance-project`/`watch` actions. The project-local trigger in `agents/aks-explorer/cron.json` consumes that event and runs the task-tree workflow.
 
-## Tasks
+## Task Summary
+Active execution frontier is in `tasks/tree.json`. Summary of ready work:
+
+- [ ] `ds-private-cluster-replay-impl-rework-review` — active (expired lease, release for pickup)
+- [ ] `ds-basic-replay-author-v2-rework-review` — rework review for DS basic enable/disable
+- [ ] `ds-pss-level-change-replay-impl` — author DS PSS level-change replay probe
+- [ ] `pm-security-patch-replay-impl` — author Planned Maintenance security patch replay
+- [ ] `pm-update-schedule-replay-impl` — author Planned Maintenance update-schedule replay
+- [ ] `pm-autoupgrade-scheduling-replay-impl` — author Planned Maintenance autoupgrade scheduling replay
+- [ ] `jwt-external-idp-replay-impl` — author JWT Authenticator external IDP login replay
+- [ ] `jwt-incluster-idp-replay-impl` — author JWT Authenticator in-cluster IDP login replay
+- [ ] `trusted-access-dataplane-replay-impl` — author Trusted Access dataplane token gateway replay
 
 ## References
 
@@ -439,18 +462,35 @@ Use the domain workspace indexes instead of a copied artifact ledger in this run
 - Full legacy artifact ledger: `archive/project-pre-v2-task-engine.md#artifacts`
 
 ## Active Task
-- none
+- id: ds-private-cluster-replay-code-author-rework-review
+- status: active
+- source: .app/tasks/tree.json
+- outputs: evidence/archive/ds-private-cluster-replay-code-author-rework-review.md
 
-## Ready Frontier (owner-loop iteration 193 — all tasks terminal)
+## Ready Frontier (owner-loop iteration 218)
 
-**State:** All 777 tasks in `tasks/tree.json` are terminal (580 accepted, 197 superseded). The cascade closeout during iteration 193 promoted 92 decomposed tasks whose children were all terminal, including the root task. There are zero ready, zero active, and zero blocked tasks remaining.
+**State:** 1 active leaf (expired lease), 8 ready leaves, 1 proposed leaf,
+15 decomposed containers. 628 accepted, 110 superseded. Total 763 tasks.
 
-**Previous iteration 192 frontier items** (all now accepted):
-- UI V4 feature page rework chain (scenario-path table, REST scenario actions, action receipts, feature brief panel, feature page tests) — all accepted.
-- Golden-path catalog and OIDC rework chains — all accepted or superseded.
-- ManagedSystem golden-path feature page polish — accepted.
+**Ready leaves (replay authoring — safe local work):**
+1. `jwt-external-idp-replay-impl` — Author JWT Authenticator external IDP login TS probe
+2. `jwt-incluster-idp-replay-impl` — Author JWT Authenticator in-cluster IDP login TS probe
+3. `pm-security-patch-replay-impl` — Author Planned Maintenance security patch TS probe
+4. `pm-update-schedule-replay-impl` — Author Planned Maintenance update-schedule TS probe
+5. `pm-autoupgrade-scheduling-replay-impl` — Author Planned Maintenance autoupgrade scheduling TS probe
+6. `trusted-access-dataplane-replay-impl` — Author Trusted Access dataplane token gateway TS probe
+7. `ds-pss-level-change-replay-impl` — Author Deployment Safeguards PSS level-change TS probe
+8. `ds-basic-replay-author-v2-rework-review` — Rework review for DS basic enable/disable
 
-**Wait reason:** No actionable local work remains. The project needs an external trigger to create new tasks. See the resume triggers in the Next Action section.
+**Active (expired lease — needs release):**
+- `ds-private-cluster-replay-impl-rework-review` — expired 2026-06-10T08:01:31Z
+
+**Proposed (promote when ready leaves settle):**
+- `staging-execution-feedback-rollup-v2` — classify 11 not_ready spec-runner runs
+
+**Transition:** Project is active with a healthy ready frontier. Workers should
+pick up ready leaves for replay authoring (all safe local work, no cloud
+mutation needed).
 
 ## Over-Claim Correction Status
 The `azureManagedNodes` assertion in `specs/managedsystem-rest-add-existing.json` has been demoted from `verdictImpact: claim` to `verdictImpact: audit` with a correction note. The model behavior entry also updated. REST add-existing product/API pass verdict is preserved. Runtime placement / azureManagedNodes requires separate staging evidence before it can be restored to claim.
@@ -459,5 +499,5 @@ The `azureManagedNodes` assertion in `specs/managedsystem-rest-add-existing.json
 19 OIDC rework-review tasks and 6 OIDC parent tasks superseded. These were spinning at rework-review depth 3–6+ with interrupted/blocked/no-progress claims. The OIDC probe work itself (accepted at depth 0) is preserved; only the unproductive rework chains were cut. If OIDC probe work needs to resume, create a fresh bounded task rather than continuing the superseded chains.
 
 ## Task Index
-- tasks/README.md
-- tasks/tree.json
+- .app/tasks/README.md
+- .app/tasks/tree.json
