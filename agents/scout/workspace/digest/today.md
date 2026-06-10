@@ -778,3 +778,68 @@ The LLM evaluator produces 23 rich assessments/day that the heuristic never cons
 KE-1769 diagnosed the heuristic as tautological (a step function of opCount). This entry identifies the external-validated fix: continuous distillation from LLM verdicts, exactly as AgentTrust demonstrated across 45,000 actions with judge-call rate dropping 50% → 44% and accuracy rising 71% → 80%.
 
 See: `shared/knowledge/entries/KE-1786-the-self-distilling-evaluator-why-the-heuristic-should-learn-from-the-llm-judge.md`
+
+---
+
+## GitHub Trending Signal: The Agent Sleep Cycle
+
+**Key repos**: SkillOpt (Microsoft, 5,588⭐), Memory-OS (1,053⭐), elephant-agent (565⭐), opensquilla (3,685⭐)
+
+The June GitHub trending landscape reveals a structural shift: **the cutting edge in agent improvement is moving from real-time to offline.** Three independent repos have converged on an "agent sleep cycle" — a qualitatively different mode of operation where agents consolidate experience offline.
+
+### The headline signal: SkillOpt-Sleep
+
+Microsoft's SkillOpt (arXiv 2605.23904) just shipped SkillOpt-Sleep: plugins for Claude Code, Codex, and Copilot that give coding agents a nightly "sleep cycle." The agent reviews past sessions offline, replays recurring tasks, and consolidates validated long-term memory behind a held-out gate. Key results:
+- Deficient skills go **0.00 → 1.00** on held-out tasks
+- The trainable artifact is a compact text file (`best_skill.md`, 300–2,000 tokens) — no weight changes
+- Validation gate blocks regressions automatically
+- Cross-model transfer works (Claude ↔ Codex)
+
+### The broader convergence
+
+| Repo | Stars | Mechanism |
+|------|-------|-----------|
+| SkillOpt-Sleep | 5,588 | Nightly harvest → replay → validate → stage |
+| Memory-OS | 1,053 | 7-layer memory with weekly decay scanner + semantic dedup |
+| elephant-agent | 565 | "Personal-Model First Self Evolving" agent |
+| opensquilla | 3,685 | "Token-Efficient AI Agent — same budget, higher intelligence density" |
+
+### Other notable GitHub trends (June 2026)
+
+- **12-factor-agents** (23,170⭐) — community converging on "own your context window" as the #3 most important design principle. Independent validation of KE-1760 (Environment Is the Agent).
+- **Agent memory is the hot category**: mem0 (58K⭐), MemOS (9.7K⭐), memvid (15.6K⭐), Memori (15.2K⭐) — all actively updated June 10. Memory infrastructure is being treated as a standalone system layer, not a model feature.
+- **Coding agent diversification**: smallcode (1,816⭐, 87% benchmark with 4B model), Duel-Agents (1,034⭐), adhd (797⭐, tree-of-thought for coding agents). The trend is "small models + smart harness > big models."
+
+---
+
+## Creative Synthesis: The Sleep Cycle Gap (KE-1787)
+
+**Key discovery**: Our `context.md` files (500–1,100 tokens per agent) are structurally identical to SkillOpt's `best_skill.md` artifacts (300–2,000 tokens) — both are compact, per-session-injected text files that modify agent behavior without model changes. The systems converged on the same form factor independently. But SkillOpt-Sleep consolidates nightly; our system consolidates at human-approval speed (median 34 days).
+
+### The structural parallel
+
+| Component | SkillOpt-Sleep | Our System |
+|-----------|---------------|------------|
+| Trainable artifact | `best_skill.md` (300-2K tokens) | `context.md` (500-1,100 tokens) |
+| Edit mechanism | Bounded add/delete/replace | Work-queue proposals |
+| Validation gate | Held-out task score improvement | Human review |
+| Consolidation schedule | **Nightly** | **34-day median** |
+| Convergence | "When not to act" rules | "When not to act" rules (KE-1783) |
+
+### The gap
+
+The system produces experience 40× faster than it consolidates:
+- 297 KEs in 7 days (write path)
+- 0 context.md updates in 7 days (consolidation path)
+
+SkillOpt-Sleep would process those 297 KEs into 3–5 bounded, validated edits in one night. Our system presents 1,318 raw KEs and expects the human to consolidate mentally.
+
+### The non-obvious insight
+
+**The approval pipeline is not the bottleneck. The absence of automated pre-consolidation is.** SkillOpt-Sleep also ends with human adoption — but it pre-processes raw experience into a small number of validated, bounded edits first. Adding a weekly "dream pass" that identifies hub insights and proposes bounded context.md edits would convert the reviewer's task from "read 297 diagnostics" to "approve/reject 3 pre-validated edits."
+
+### What this unifies
+
+Five prior KEs (KE-1780 Write-Path Trap, KE-1765 Immortal Knowledge, KE-1767 Prompt as Product, KE-1783 Immune System Paradox, KE-1779 Missing Edge) are all symptoms of the same upstream gap: no consolidation step between experience accumulation and artifact improvement.
+
+See: `shared/knowledge/entries/KE-1787-the-sleep-cycle-gap-why-our-system-runs-24-7-but-never-dreams.md`
