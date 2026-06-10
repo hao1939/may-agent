@@ -5,7 +5,7 @@ status: waiting
 type: iterative
 priority: P2
 iteration: 13
-wait_reason: iter-13 observe — deploy confirmed 12:47Z; project.health.checked=0/1.5h, context.read=0/1.5h. Full 24h confirmation pending.
+wait_reason: "iter-13 observe — both target emissions at 0 since ~11:15Z 2026-06-10 (~4.4h so far). ~19.6h remain on 24h window. Next check ~2026-06-11 09:15Z."
 ---
 
 # Project: Ruflo Learning Loop
@@ -17,7 +17,12 @@ loops, and adopt only the smallest ideas that improve may-agent's autonomous
 closed loop without adding unnecessary orchestration complexity.
 
 ## Current State
-Iter-13 experiment **executed**: commit `73d989fdb` removed both `project.health.checked` (2,931/day, #4 by volume, 0 consumers) and `context.read` (773/day, 0 consumers) emissions. All tests pass (project-steward 7/7, evaluator-aftermath 46/46). `project.health.finding` transition events are unaffected. Waiting 24h to confirm `project.health.checked` drops to 0/day in the live top-15.
+Iter-13 **observe phase in progress**. Commit `73d989fdb` deployed and runtime reloaded. Live evidence at 13:15Z 2026-06-10:
+- `project.health.checked` from `project-steward`: last emission 11:15:49Z, **0 new in 2h** (was 2,931/day).
+- `context.read` from `evaluator-aftermath`: last emission 11:16:41Z, **0 new in 2h** (was 773/day).
+- `context.read` from `agent:*` sources continues (~148/day) — different emitter, out of scope.
+- `project.health.finding` transition events still emitting normally (unaffected by change).
+22h remain on 24h observation window. If both remain at 0 by ~09:15Z 2026-06-11, close iter-13 as successful.
 ## Context
 Reference repo:
 - https://github.com/ruvnet/ruflo
@@ -154,6 +159,7 @@ a number, source citation, or decision does not count as progress.
 
 ## Journal
 
+- 2026-06-10 13:15Z: Owner loop (metric.recovered trigger). **Fixed stale frontmatter again** — was `status: active`, should be `waiting`. This was causing `owner_judgment_needed` findings to fire (1 in last hour). Set to `waiting`. Observation data: `project.health.checked` last seen 11:15:49Z (0 new in 2h post-deploy); `context.read` from `evaluator-aftermath` last seen 11:16:41Z (0 new in 2h). Both at 0 as expected. 22h remain on 24h observation window.
 - 2026-06-10 12:47Z: Iter-13 observe checkpoint. Deploy confirmed live: `project.health.checked` (project-steward source) = 0 emissions in last 1.5h (last at 11:15Z, before deploy). `context.read` (evaluator-aftermath source) = 0 emissions in last 1.5h (last at 11:16Z, before deploy). Both event types ceased immediately after commit 73d989fdb was loaded by the runtime. Note: `context.read` continues from `agent:*` sources (~2/h per agent) — these are a different emitter (event-bus.ts) not in scope. 22.5h remain on the 24h observation window. Tier: early positive signal, not yet conclusive.
 - 2026-06-12: **Iter-13 experiment executed.** Committed 73d989fdb: removed
   `project.health.checked` emission from project-steward.ts (was 2,931/day, #4
