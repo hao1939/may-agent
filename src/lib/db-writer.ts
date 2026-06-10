@@ -62,8 +62,7 @@ export class DbWriter {
   handler = (event: AgentEvent): void => {
     try {
       switch (event.type) {
-        case "session.start":
-          {
+        case "session.start": {
           const ev = event as any;
           if (!isCanonicalEventEnvelope(ev)) break;
           const payload = eventPayload(ev);
@@ -83,16 +82,20 @@ export class DbWriter {
           });
           // Also write event row for analytics / audit
           try {
-            this.db.run(
-              "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
-              [event.type, eventSource(ev, payload.agent), eventOwner(ev, payload.agent), JSON.stringify(payload), Date.now()],
-            );
-          } catch { /* best-effort */ }
-          break;
+            this.db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)", [
+              event.type,
+              eventSource(ev, payload.agent),
+              eventOwner(ev, payload.agent),
+              JSON.stringify(payload),
+              Date.now(),
+            ]);
+          } catch {
+            /* best-effort */
           }
+          break;
+        }
 
-        case "session.end":
-          {
+        case "session.end": {
           const ev = event as any;
           if (!isCanonicalEventEnvelope(ev)) break;
           const payload = eventPayload(ev);
@@ -101,47 +104,49 @@ export class DbWriter {
             error: payload.error as string | undefined,
             outcome: payload.outcome as string | undefined,
             opCount: payload.opCount as number | undefined,
+            lastActivityAt: Date.now(),
             endedAt: Date.now(),
           });
           // Also write event row for analytics / audit
           try {
-            this.db.run(
-              "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)",
-              [event.type, eventSource(ev, payload.agent), eventOwner(ev, payload.agent), JSON.stringify(payload), Date.now()],
-            );
-          } catch { /* best-effort */ }
+            this.db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?,?,?,?,?)", [
+              event.type,
+              eventSource(ev, payload.agent),
+              eventOwner(ev, payload.agent),
+              JSON.stringify(payload),
+              Date.now(),
+            ]);
+          } catch {
+            /* best-effort */
+          }
           break;
-          }
+        }
 
-        case "message.created":
-          {
-            const ev = event as any;
-            if (!isCanonicalEventEnvelope(ev)) break;
-            const payload = eventPayload(ev);
-            const priority = payload.priority ?? "P2";
-            const urgency = eventUrgency(ev);
-            // v2 inter-agent message — persist with canonical source/owner so
-            // inbox queries key on the event owner.
-            this.db.run(
-              "INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)",
-              [
-                "message.created",
-                eventSource(ev),
-                eventOwner(ev),
-                JSON.stringify({
-                  from: payload.from,
-                  to: payload.to,
-                  content: payload.content,
-                  intent: payload.intent ?? null,
-                  artifact: payload.artifact ?? null,
-                  priority,
-                }),
-                Date.now(),
-                urgency,
-              ],
-            );
-            break;
-          }
+        case "message.created": {
+          const ev = event as any;
+          if (!isCanonicalEventEnvelope(ev)) break;
+          const payload = eventPayload(ev);
+          const priority = payload.priority ?? "P2";
+          const urgency = eventUrgency(ev);
+          // v2 inter-agent message — persist with canonical source/owner so
+          // inbox queries key on the event owner.
+          this.db.run("INSERT INTO events (event_type, source, owner, data, timestamp, urgency) VALUES (?,?,?,?,?,?)", [
+            "message.created",
+            eventSource(ev),
+            eventOwner(ev),
+            JSON.stringify({
+              from: payload.from,
+              to: payload.to,
+              content: payload.content,
+              intent: payload.intent ?? null,
+              artifact: payload.artifact ?? null,
+              priority,
+            }),
+            Date.now(),
+            urgency,
+          ]);
+          break;
+        }
 
         default:
           if (DURABLE_COMMAND_EVENTS.has(event.type)) {
@@ -150,23 +155,43 @@ export class DbWriter {
               const data = eventPayload(ev);
               this.db.run(
                 "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [event.type, eventSource(ev), eventOwner(ev), JSON.stringify(data), Date.now(), eventUrgency(ev), eventTtlMs(ev)],
+                [
+                  event.type,
+                  eventSource(ev),
+                  eventOwner(ev),
+                  JSON.stringify(data),
+                  Date.now(),
+                  eventUrgency(ev),
+                  eventTtlMs(ev),
+                ],
               );
-            } catch { /* table may not exist */ }
+            } catch {
+              /* table may not exist */
+            }
             break;
           }
 
           // Persist domain events (dot-separated types) to events table
-          if (event.type.includes('.')) {
+          if (event.type.includes(".")) {
             try {
               const ev = event as any;
               if (!isCanonicalEventEnvelope(ev)) break;
               const data = eventPayload(ev);
               this.db.run(
                 "INSERT INTO events (event_type, source, owner, data, timestamp, urgency, ttl_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [event.type, eventSource(ev), eventOwner(ev), JSON.stringify(data), Date.now(), eventUrgency(ev), eventTtlMs(ev)],
+                [
+                  event.type,
+                  eventSource(ev),
+                  eventOwner(ev),
+                  JSON.stringify(data),
+                  Date.now(),
+                  eventUrgency(ev),
+                  eventTtlMs(ev),
+                ],
               );
-            } catch { /* table may not exist */ }
+            } catch {
+              /* table may not exist */
+            }
           }
           break;
       }
