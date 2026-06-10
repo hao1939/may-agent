@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Partially populated: 232/12,354 sessions (1.9%) have a non-null value (as of 2026-06-11). Write path activated ~2026-06-09 17:33Z; ~20% of sessions started after that timestamp are populated. All 7 agents now populate; coverage is 12–24% per agent. Zombie detection uses JSONL file mtime instead (see Known Issues).
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Partially populated: 251/12,373 sessions (2.0%) have a non-null value (as of 2026-06-11). Write path activated ~2026-06-09 17:33Z; 24h coverage ~25%. All 7 agents now populate; coverage is 16–31% per agent. Zombie detection uses JSONL file mtime instead (see Known Issues).
 );
 ```
 
@@ -92,16 +92,14 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-11 ~21:00Z):** The write path activated around
-2026-06-09 17:33Z. Since then, 232 of 12,354 total sessions (1.9%) have a
-non-null value. For sessions started after activation, coverage is ~20%
-(231/1,186). Coverage is agent-dependent: aks-explorer (85 sessions, 24%)
-and evaluator (115, 19%) populate most consistently; arc (9, 16%), dev (7,
-16%), scout (7, 12%), and may (7, 11%) started populating ~2026-06-10
-17:08Z. tech-lead has 1 populated session (first at 2026-06-10 20:13Z).
-All agents now populate the column. 24h coverage is ~23%. The column is
-no longer "dead" — it is partially alive and trending toward broader
-coverage.
+**Status (updated 2026-06-12 ~00:15Z):** The write path activated around
+2026-06-09 17:33Z. Since then, 333 of 12,455 total sessions (2.7%) have a
+non-null value. 24h coverage is ~33.5% (330/985). Coverage by agent (24h):
+tech-lead (3/6, 50%), aks-explorer (105/280, 37.5%), evaluator (164/500,
+32.8%), dev (12/39, 30.8%), may (18/60, 30%), arc (14/50, 28%), scout
+(14/50, 28%). All agents now populate the column. Coverage is trending
+upward (from ~25% → ~33.5% in 24h) but still well below the ~80% threshold
+needed for pure-SQL zombie detection.
 
 The `capability.zombie-session-count` metric does NOT yet use this column.
 Zombie detection in `metrics-snapshot.ts` (`sessionInactiveSince()`) checks
