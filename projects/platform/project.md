@@ -9,7 +9,8 @@ project_app: v2
 project_policy: signal-driven
 runtime_control_plane: .app
 task_tree: tasks/tree.json
-wait_reason: all tasks complete; typecheck clean; no unread comments; no actionable platform signal
+wait_reason: all tasks complete; tests 1622/0 pass; typecheck clean; no unread comments; no actionable platform signal; finding-count metric recovered
+resume_condition: failing platform metric, unread comment, or owner push
 ---
 
 # Project: platform
