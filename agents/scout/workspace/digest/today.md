@@ -843,3 +843,32 @@ SkillOpt-Sleep would process those 297 KEs into 3–5 bounded, validated edits i
 Five prior KEs (KE-1780 Write-Path Trap, KE-1765 Immortal Knowledge, KE-1767 Prompt as Product, KE-1783 Immune System Paradox, KE-1779 Missing Edge) are all symptoms of the same upstream gap: no consolidation step between experience accumulation and artifact improvement.
 
 See: `shared/knowledge/entries/KE-1787-the-sleep-cycle-gap-why-our-system-runs-24-7-but-never-dreams.md`
+
+---
+
+## Creative Synthesis: The Learning Evaporation Rate (KE-1788)
+
+**Key discovery**: The evaluator's aftermath corpus — 8,943 files consuming 37MB — contains 2,621 tagged learnings ("Learning Created: yes") that have produced exactly 2 references in any agent's context.md. The conversion rate from structured learning to behavioral change is **0.076%** — less than one in a thousand.
+
+### Why this matters more than it seems
+
+KE-1787 (Sleep Cycle Gap) called for a "dream pass" to consolidate raw experience into context.md patches. This entry identifies the **specific input source** that makes such a pass tractable: aftermath learnings are already structured, tagged, and session-linked. A consolidation task doesn't need to process 1,318 KE entries — it needs to cluster 2,621 tagged learnings and identify the 10 most-repeated patterns.
+
+### The most-repeated patterns (from manual sample)
+
+1. **Finish hygiene > task content** — sessions succeed at their task but fail at commit/cleanup
+2. **Project-owner loops need state mutations, not analysis** — agent correctly diagnoses but doesn't update the canonical file
+3. **Interrupted ≠ failed** — terminal status is misleading when the artifact was produced before interruption
+4. **Long sessions with artifacts are high-quality** — contradicts the heuristic's "longer = worse"
+
+Each pattern appears 5+ times in the recent corpus. None are codified in context.md for the relevant agents. Each could be a bounded <50-token context.md edit that passes the human approval gate.
+
+### The structural diagnosis
+
+No agent's job includes reading aftermath learnings and proposing context.md edits. Evaluator produces but doesn't consume. Arc reads KEs but not aftermath files. The aftermath corpus (37MB) is too large for manual scan but has built-in filtering (the `Learning Created: yes` tag).
+
+### The fix
+
+A weekly task — not a new system — that greps the yes-tagged learnings, clusters by theme, and proposes bounded context.md edits for approval. This completes the wire that KE-1787 identified as missing, using the specific input source KE-1788 measured as underused.
+
+See: `shared/knowledge/entries/KE-1788-the-learning-evaporation-rate-why-2621-evaluator-learnings-produce-2-context-patches.md`
