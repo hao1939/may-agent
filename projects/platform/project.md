@@ -4,12 +4,12 @@ owner: tech-lead
 status: waiting
 type: milestone
 priority: P0
-iteration: 40
+iteration: 42
 project_app: v2
 project_policy: signal-driven
 runtime_control_plane: .app
 task_tree: tasks/tree.json
-wait_reason: all tasks complete; tests green (1604 pass, 0 fail, 3 skip); no unread comments; waiting for next platform signal
+wait_reason: all tasks complete; typecheck clean; no unread comments; no actionable platform signal
 ---
 
 # Project: platform
@@ -96,6 +96,7 @@ Historical project references:
 - [x] Add canonical platform v2 task tree at `tasks/tree.json` (iter40)
 - [x] Verify and roll up shared Project Kanban in the platform web UI (iter40)
 - [x] Re-verify 2 test failures flagged by creative audit (iter40)
+- [x] Fix 3 test failures: project-health force-cooldown test timing, verify-after-write guard import path (iter41)
 - [ ] Wait for signal — failing platform metric, unread comment, or owner push
 
 ## Tasks
