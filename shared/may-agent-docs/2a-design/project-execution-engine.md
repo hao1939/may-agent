@@ -31,7 +31,7 @@ Keep the model small:
 |------|---------|
 | Project | Durable goal container, current truth, gates, and task tree root. |
 | Task | Recursive work unit. A subtask is just a task with `parent_id`. |
-| Loop task | Standing task for recurring project responsibilities such as planning, hygiene, queue refresh, and blocked-frontier review. |
+| Control loop | Runtime/app behavior that reviews/refills the task tree, wakes workers, and handles liveness without becoming normal project work. |
 | Attempt | One agent/session attempt to execute, decompose, or verify a task. |
 | Claim | What an agent says happened: done, blocked, partial, decomposed. |
 | Verdict | The verifier's decision on a claim: accepted, rejected, blocked. |
@@ -39,11 +39,11 @@ Keep the model small:
 Do not add separate terminology such as epic/story/workstream for v1. If a
 task is too large, create child tasks.
 
-A loop task is still a task, but it is not a one-shot project deliverable. It
-is the visible project responsibility; its `workflow` is the executable
-implementation; each workflow execution is a loop run. Loop runs should be
-recorded as workflow runs and append-only run records, not as an unbounded list
-of root task nodes.
+Planning is a control loop, not a task. The task tree should show the project
+understanding and concrete work that the planner creates or reviews; it should
+not grow one task per planner wake, retry, or recovery attempt. Planner runs
+belong in workflow/session history and compact run records such as
+`.app/planner-runs.jsonl`.
 
 ## Core Rule
 
@@ -82,6 +82,74 @@ the current project understanding.
 This keeps the tree useful for both humans and LLMs: reading it should answer
 "what do we currently believe the project is, how are we solving it, what is
 done, what is active, and what is genuinely blocked?"
+
+## Task-Owned Sessions
+
+The task is the durable work container. A session is the live cognitive
+workspace attached to that task.
+
+Do not treat worker sessions as disposable by default. Reusing the task's
+primary session is useful because it preserves working memory that may not yet
+be obvious enough to promote into structured task fields: investigation trail,
+discarded hypotheses, codebase orientation, subtle human preferences, and
+half-formed reasoning.
+
+The task still owns the source of truth. The session preserves continuity; the
+task records the auditable state.
+
+Each executable task may carry:
+
+```json
+{
+  "context": {
+    "summary": "Current task understanding.",
+    "constraints": [],
+    "decisions": [],
+    "evidence": [],
+    "attempts_to_avoid": [],
+    "latest_feedback": [],
+    "next_action": "..."
+  },
+  "session_id": "s_task_feature_packet_deployment_safeguards",
+  "session_history": ["s_task_feature_packet_deployment_safeguards"]
+}
+```
+
+Session reuse rules:
+
+- `session_id` is the task's durable primary worker session. For new ordinary
+  worker tasks, the picker should assign a stable task-derived id before the
+  task is marked `active`, so the task tree can show the active session
+  immediately.
+- Reuse the task's primary session when continuing the same task, handling
+  feedback on that task, reviewing a worker claim, or resuming after a short
+  pause.
+- Start a different session only when the primary session is unavailable, too stale,
+  technically full, polluted by a wrong direction, or when parallel child work
+  intentionally forks. Keep previous ids in `session_history`.
+- A replacement session must be seeded from task context, latest handoff summary,
+  recent human feedback, and relevant parent/child context.
+- Important conclusions discovered inside a session must be promoted back into
+  the task context, task fields, evidence artifacts, or child tasks. A useful
+  session memory that affects future work but remains only in the transcript is
+  not reviewable enough.
+
+Child tasks inherit context from the parent task, and may inherit or fork the
+session:
+
+```text
+small recursive split  -> child continues in the parent task session
+parallel child work    -> child gets a new session seeded from parent context
+child completion       -> parent task context receives a completion packet
+```
+
+The completion packet should summarize claim, evidence, changed files,
+remaining risks, and recommended parent update. Parent rollup should read child
+completion packets before raw transcripts.
+
+Human feedback should target the relevant task when possible. The event handler
+should append it to that task context and either steer the warm primary session
+or ensure the next task wake starts from the updated context.
 
 ## Domain Decomposition Policy
 
@@ -165,10 +233,12 @@ bug report, or a coverage-gap report is evidence inside the loop; it should not
 become the organizing principle of the whole project unless the project goal
 has changed.
 
-Project-local planner tasks may add or update concrete child tasks when they
-are explicitly marked as planner work. The planner is still bounded: it should
-write a reviewable artifact, mutate only its owned project subtree, preserve
-safety gates, and create executable leaves rather than broad intentions.
+Project-local planner workflows may add or update concrete child tasks as
+control-loop behavior. The planner is still bounded: it should record a
+reviewable run summary, preserve safety gates, and create executable leaves
+rather than broad intentions. It must not create `project-control`,
+`project-planning-loop*`, or `project-frontier-replan-*` task nodes to represent
+the planner wake itself.
 
 For queue-shaped exploration projects, the queue is part of execution state,
 not a one-time planning artifact. In `aks-rp-e2e`, `feature-learning-loop` is a
@@ -260,6 +330,69 @@ Everything else should stay executable or recoverable:
 A task may remain `blocked` after a review child is attached, but only when the
 task itself still carries a concrete external/input/safety wait. Review children
 are audit history; they do not make parent rollup blockers legitimate.
+
+## Task-Linked Escalation
+
+Escalation is the unblock lifecycle for a blocked task that crosses an ownership
+boundary. It is not a planning lane, retry mechanism, hidden notification, or
+new project-control branch.
+
+```text
+confirmed blocked task
+  -> task.escalation + escalation.created
+  -> owner investigates / fixes / answers / rejects / asks human
+  -> escalation.resolved or escalation.dismissed
+  -> original task session resumes or the task is replanned
+```
+
+Escalation is stored as an overlay on the blocked task:
+
+```json
+{
+  "status": "blocked",
+  "blocker": "Needs staging mutation approval.",
+  "session_id": "s_task_managedsystem_run",
+  "escalation_id": "esc_aks_rp_e2e_managedsystem_run",
+  "escalation": {
+    "id": "esc_aks_rp_e2e_managedsystem_run",
+    "state": "open",
+    "owner": "human:project-owner",
+    "severity": "P1",
+    "reason": "Needs staging mutation approval.",
+    "requested_action": "Approve the staging run or provide an alternate target.",
+    "resume_condition": "Approval is granted or rejected explicitly.",
+    "dedup_key": "aks-rp-e2e:managedsystem-run:staging-approval",
+    "created_at": "2026-06-09T00:00:00Z",
+    "updated_at": "2026-06-09T00:00:00Z"
+  }
+}
+```
+
+Escalation creation rules:
+
+- Create an escalation only after blocked review, a closed safety/input gate, or
+  an accepted blocked worker claim confirms a real external/human/ownership
+  boundary.
+- Do not escalate vague tasks, failed validation, stale evidence, worker errors,
+  no-work claims, or ordinary rework. Split, reject, or create ready recovery
+  tasks instead.
+- Use a deterministic `dedup_key` based on project, task, and blocker so repeat
+  wakes do not create noisy duplicate escalations.
+- Include `taskId`, `projectId`, `sourceSessionId`, requested action, evidence,
+  and resume instruction in `escalation.created`.
+
+Resolution rules:
+
+| Outcome | Engine action |
+|---------|---------------|
+| `fixed` or `answered` | Mark the escalation `resolved`, clear the blocker, satisfy the gate when applicable, move the leaf to `ready`, and wake worker pickup. |
+| `rejected` or `dismissed` | Keep the task `blocked` with the rejection/dismissal reason and leave it visible for review. |
+| `needs_human` | Keep the task blocked and the escalation in `waiting_human`; do not resume the source task yet. |
+| `superseded` | Mark the task `superseded` when the original work is no longer relevant. |
+
+Resolution does not mean the project is done. It means the original task has
+new context. The project owner loop must resume the task's durable `session_id`
+or create the next review/replan task from that context.
 
 ## Human Review Surface
 
@@ -405,7 +538,7 @@ A task must be clear enough for one bounded agent run:
   "goal": "Verify whether live ManagedSystem execution can proceed.",
   "inputs": [
     "decisions/replans/live-selected/",
-    ".app/project.md"
+    "aks-rp-e2e.app/project.md"
   ],
   "outputs": [
     "evidence/archive/managedsystem-live-auth-gate.md"
@@ -421,6 +554,29 @@ A task must be clear enough for one bounded agent run:
   "gates": [
     "Azure CLI exists in the selected execution environment."
   ],
+  "context": {
+    "summary": "Live execution is allowed only after a fresh non-mutating auth check.",
+    "constraints": [
+      "No cloud mutation from the auth-gate task."
+    ],
+    "evidence": [
+      "evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md"
+    ],
+    "attempts_to_avoid": [
+      "Do not treat old Azure CLI failures as current evidence without rerunning the preflight."
+    ],
+    "latest_feedback": [
+      "User confirmed devbox has hao-devbox-msi permissions."
+    ],
+    "next_action": "Run the auth preflight and write the exact result artifact."
+  },
+  "session": {
+    "primary": "s_...",
+    "status": "warm",
+    "last_used_at": "2026-06-09T10:00:00Z",
+    "handoff_summary": "Continue from the auth preflight plan; do not execute mutation in this task.",
+    "history": []
+  },
   "trace": {
     "created_by_event": "evt_...",
     "last_updated_by_event": "evt_...",
@@ -489,7 +645,7 @@ on project event:
       stop
 
     if infra budget/runtime guard interrupts while ready work remains:
-      request continuation with project.execution.requested
+      request continuation with project.planning.requested
       stop this wake, not the project
 ```
 
@@ -499,6 +655,83 @@ becomes review input: is the task too coarse, wrongly marked done, missing
 evidence, stale, or locally unblockable? Audit safety comes from task-tree
 diffs, claim/verification records, trace links, and explicit stop boundaries,
 not from artificially stopping after every small transition.
+
+## Reconciler-Generated Child Tasks
+
+The project reconciler is responsible for breaking top-level lanes into
+concrete child tasks and activating work. Do not add a separate handoff protocol
+between project phases. The task is the handoff.
+
+When the reconciler sees an active lane without enough useful ready work, it
+should create child tasks under that lane:
+
+```text
+active lane
+  -> reconciler creates concrete child task
+  -> child task owns context, inputs, outputs, acceptance, gates, conflicts
+  -> worker executes child
+  -> reconciler reviews result and creates the next child
+```
+
+Each generated child task must answer:
+
+- Why this task now?
+- Which parent lane does it move forward?
+- What exact inputs should the worker inspect?
+- What concrete output or evidence should exist when done?
+- What must not happen?
+- Which files, feature paths, specs, or model areas conflict with parallel work?
+
+Minimum generated child shape:
+
+```json
+{
+  "parent_id": "spec-runner-and-replays",
+  "status": "ready",
+  "goal": "Run spec X through the repo-local runner and record real feedback.",
+  "context": {
+    "summary": "Why this child exists and what prior evidence matters.",
+    "next_action": "Exact first step for the worker."
+  },
+  "inputs": ["specs/x.json", "replays/x.ts"],
+  "outputs": ["runs/executions/<run-id>/", "evidence/archive/x.md"],
+  "acceptance": ["..."],
+  "forbidden": ["..."],
+  "conflict_scope": ["spec:x", "replay:x"]
+}
+```
+
+For projects like `aks-rp-e2e`, the reconciler should keep three streams moving
+in parallel when conflict scopes allow:
+
+```text
+feature-knowledge-and-specs       -> source/Go exploration and spec drafting
+spec-runner-and-replays           -> script hardening, local checks, gated e2e execution
+evidence-feedback-and-model-update -> diagnosis and model feedback from runs
+```
+
+The lanes are not a rigid phase gate. They are synchronized by the task tree:
+new source exploration can run while existing specs are being executed, and
+model feedback can process previous evidence while the runner hardens the next
+script. The reconciler creates the next child in the correct lane when a result
+arrives, instead of relying on fragile out-of-band handoff objects.
+
+For executable test-spec projects, dry-run is not verification. Dry-run only
+proves that a spec resolves, required fields are present, and the replay can be
+selected without mutation. A spec is e2e-verified only when a real execution
+reaches the verdict-driving product assertions, records result/diagnosis,
+records cleanup state, and produces evidence that can feed the model. If live
+execution is gated, the task should say `execution-gated` or `blocked`; it
+should not claim the spec is verified.
+
+Known executable domain work should use native workflow handlers instead of a
+generic worker prompt. In `aks-rp-e2e`, a task with `workflow: "spec-runner"`
+and context such as `specId`, `target`, `surface`, `host`, `active_run_id`, and
+`active_request_id` is handled by the project engine directly: it runs or
+reconciles `bun runner/spec-runner.ts`, reads terminal artifacts, rejects
+dry-run/canceled evidence, and then emits ordinary task completion/feedback
+events. Agents remain useful for learning, diagnosis, repair, and replanning;
+the stable runner path is code.
 
 ## Two Event Loops
 
@@ -517,7 +750,7 @@ It does:
 - Review finished, blocked, and rejected tasks.
 - Roll up parent state.
 - Create or promote enough concrete next tasks.
-- Emit `project.tasks.ready` when executable leaves exist.
+- Emit `project.task.execution.requested` for dispatchable executable leaves.
 
 Core invariant:
 
@@ -536,11 +769,9 @@ The worker owns task pickup and execution. It does not plan the project.
 
 It does:
 
-- Consume `project.tasks.ready`.
-- Lease dispatchable ready leaves up to `max_concurrent`.
-- Emit `project.task.execution.requested` for each leased leaf.
 - Consume `project.task.execution.requested`.
-- Execute exactly one leased leaf.
+- Claim exactly one requested ready leaf under the task-tree lock.
+- Execute the claimed leaf.
 - Record attempt, verification, and completion.
 - Emit `project.task.completed`.
 
@@ -558,26 +789,30 @@ Use these event edges:
 
 | Event | Handler role | Responsibility |
 |-------|--------------|----------------|
-| `project.execution.requested` | Planner | Review/refill `.app/tasks/tree.json`; emit `project.tasks.ready` when executable leaves exist. |
-| `project.tasks.ready` | Worker pickup | Lease ready leaves up to `max_concurrent`; emit per-task execution events. |
-| `project.task.execution.requested` | Worker execution | Execute exactly one leased leaf, verify the claim, update the leaf branch, and emit completion. |
-| `project.task.completed` | Native app handler / liveness fallback | Convert completion into a fresh `project.execution.requested` planner wake. |
+| `project.planning.requested` | Planner | Review/refill `.app/tasks/tree.json`; emit `project.task.execution.requested` for dispatchable executable leaves. |
+| `project.task.execution.requested` | Worker execution | Claim exactly one requested ready leaf under the task-tree lock, execute the claimed leaf, update the leaf branch, and emit completion. |
+| `project.task.completed` | Native app handler / liveness fallback | Convert completion into a fresh `project.planning.requested` planner wake. |
 
-Standing loops use the same event model:
+The project has two standing control loops:
 
 ```text
-loop task = durable visible responsibility
-workflow = executable implementation
-loop run = one workflow run plus optional run-ledger record
+planner loop = review/repair/roll up/refill the task tree
+worker loop  = lease and execute ready leaves
 ```
 
-For example, `project-planning-loop` maps to workflow `project-planner`.
-Events such as `project.task.completed`, `project.ready.empty`,
-`project.backlog.low`, human comments, and manual advance actions wake that
-loop. The loop run may create or update concrete domain tasks, and each created
-task should link back through `generated_by` or a run record. Do not create a
-new top-level `project-frontier-replan-*` task for each planning run; keep that
-history in `.app/planner-runs.jsonl`, workflow runs, and review artifacts.
+Events such as `project.task.completed`, empty-ready watchdog ticks, human
+comments, and manual advance actions wake the planner through
+`project.planning.requested`. The planner may create or update concrete domain
+tasks, and each created task should link back through `generated_by` or a run
+record. Do not create a new top-level `project-frontier-replan-*`,
+`project-control`, or `project-planning-loop*` task for each planning run; keep
+that history in `.app/planner-runs.jsonl`, workflow runs, and review artifacts.
+
+Because planner control is not a task-tree leaf, its live session is a virtual
+runtime session. The watchdog must detect stale zero-op planner-control
+sessions directly from runtime session state, emit `session.cancel.requested`,
+and run a fresh planner wake. It must not rely on `active_task_id` to find or
+recover planner-control stalls.
 
 The planner is the only role that should reshape the task tree globally. The
 worker pickup role may lease ready leaves, but it should not create project
@@ -593,8 +828,11 @@ parallel execution.
 Dispatch rules:
 
 - Run independent ordinary leaf work in parallel up to `max_concurrent`.
-- Globally serialize planner, frontier-replan, domain-planner, loop-task, and
-  human-question tasks.
+- Do not dispatch planner/control-loop work as a task leaf. The planner is
+  woken by `project.planning.requested`; workers only claim concrete ready
+  leaves from exact task execution events.
+- Globally serialize frontier-replan, domain-planner, and human-question tasks
+  when a project still uses those task kinds as domain/review work.
 - Serialize blocked-review, parent-review, and rework-review tasks against
   other review tasks, but do not let an active review globally freeze unrelated
   ordinary work. An active shell rework should not stop an independent REST
@@ -618,10 +856,11 @@ Dispatch rules:
   running infra session for an active task is older than the zero-op threshold
   and still has `opCount: 0`, the watchdog first emits the command event
   `session.cancel.requested` for that session through the raw runtime event
-  channel, then passes that active task id to worker pickup as an abandoned
-  lease. Worker pickup requeues and
-  redispatches that task; if the task-execution cron entry was still in
-  flight, the cron queue drains the redispatch after cancellation completes.
+  channel, then requeues that active task and emits a fresh
+  `project.task.execution.requested` event. The worker must still claim that
+  exact task under the task-tree lock before it executes; if an older
+  task-execution entry was still in flight, its claim becomes a no-op after the
+  newer claim changes task state.
   Only the latest running session for the task counts, so an old hung zero-op
   session does not kill a newer real attempt.
 - The watchdog's healthy check must be scheduler-aware. A fresh task-tree
@@ -631,9 +870,9 @@ Dispatch rules:
   leaves are ready under `max_concurrent: 3`, the watchdog should wake worker
   pickup instead of skipping.
 - If a worker finishes, it emits `project.task.completed`. The project app's
-  native event handler turns that into `project.execution.requested`, so the
+  native event handler turns that into `project.planning.requested`, so the
   planner can review the result and refill from the latest tree state. The
-  worker execution loop may also emit the same `project.execution.requested`
+  worker execution loop may also emit the same `project.planning.requested`
   wake directly as a liveness fallback; the planner must be idempotent because
   duplicate completion wakes are possible in an event-based system.
 - Because `.app/tasks/tree.json` is the canonical project-local state, worker saves
@@ -937,24 +1176,24 @@ merely when every child produced an artifact.
 For v1, keep storage simple:
 
 ```text
-projects/<name>/
-  .app/
-    project.md
-    journal.jsonl
-    discussion.jsonl
-    workflows/
-      project-planner.ts
-      task-worker.ts
-      project-execution-engine.ts
-
+projects/<name>.app/
+  app.ts
+  project.md
+  journal.jsonl
+  discussion.jsonl
   tasks/
     tree.json
     README.md
+  workflows/
+    project-planner.ts
+    task-worker.ts
+    project-execution-engine.ts
 ```
 
-`.app/tasks/tree.json` is the canonical current task state. It is a real project
-file because agents and humans need a stable, cheap-to-read view of the work
-tree as the project evolves.
+`tasks/tree.json` inside the project app is the canonical current task state.
+It is app control-plane state, not domain project state. Agents and humans need
+a stable, cheap-to-read view of the work tree as the project evolves, while the
+domain project stays portable and runnable without May-agent.
 
 Do not keep a project-local `events.jsonl` for v1. May-agent infrastructure
 already owns event, session, workflow-run, and attempt history. Duplicating
@@ -1178,40 +1417,44 @@ projects/aks-rp-e2e/.app/workflows/project-execution-engine.ts
 
 `project-execution-engine.ts` remains the compatibility/helper implementation
 for planner refill/review and single-task execution while the runtime-facing
-workflows expose the simpler two-loop model. Ready-task pickup is owned directly
-by `task-worker.ts`: it reads `.app/tasks/tree.json`, requeues stale leases, leases
-dispatchable ready leaves up to `max_concurrent`, writes the task tree under the
-project lock, then emits `project.task.execution.requested` for each persisted
-lease. It must not synthesize a `project.execution.requested` event to reach the
-old coordinator path.
+workflows expose the simpler two-loop model. The planner reads
+`.app/tasks/tree.json` and emits `project.task.execution.requested` for
+dispatchable ready leaves up to `max_concurrent`. Ready-task pickup is no longer
+a separate event. `task-worker.ts` consumes one task execution event, requeues
+stale leases, claims that exact ready leaf under the project lock, then runs the
+compatibility engine for the claimed leaf. It must not synthesize a
+`project.planning.requested` event to reach an old coordinator path before the
+task completes.
 
 Legacy timer triggers such as `timer.tick` must be ignored by the compatibility
 engine. They are pre-v2 control-plane entries and must not enter the old
 `maxAttempts` direct execution loop. The only event triggers accepted by the
-compatibility engine are `project.execution.requested` for planner/refill checks
-and `project.task.execution.requested` for one leased leaf execution.
+compatibility engine are `project.planning.requested` for planner/refill checks
+and `project.task.execution.requested` for one claimed leaf execution. During
+migration, implementations may also accept legacy `project.execution.requested`
+as an alias for `project.planning.requested`, but new code should emit the
+planning event.
 
 Initial scope:
 
 1. Read `.app/project.md`.
 2. Read `.app/tasks/tree.json`.
 3. Planner loop creates, reviews, promotes, and refills task-tree work.
-4. Planner loop emits `project.tasks.ready` when ready leaves exist.
-5. Worker pickup loop directly leases dispatchable ready leaves up to
-   `max_concurrent`.
-6. Worker execution loop runs exactly one leased leaf per
+4. Planner loop emits `project.task.execution.requested` for dispatchable ready
+   leaves up to `max_concurrent`.
+5. Worker execution loop claims exactly one ready leaf per
    `project.task.execution.requested`.
-7. Worker records attempt/verification and emits `project.task.completed`.
-8. Native app handler, or the worker execution liveness fallback, turns
+6. Worker records attempt/verification and emits `project.task.completed`.
+7. Native app handler, or the worker execution liveness fallback, turns
    completion into the next planner wake.
-9. Continue until the planner records only concrete human/external blockers,
+8. Continue until the planner records only concrete human/external blockers,
    the project goal is satisfied, or infra budget interrupts a wake.
 
 For `aks-rp-e2e`, the project-local `aks-explorer` trigger entry listens for
-`project.execution.requested` and dispatches the planner workflow. The planner
-emits `project.tasks.ready`, which dispatches the task-worker pickup workflow.
-Project app actions and comments should emit the planner event rather than
-starting lane-specific ad hoc
+`project.planning.requested` and dispatches the planner workflow. The planner
+emits `project.task.execution.requested` candidate events, and the task-worker
+workflow claims one exact task before execution. Project app actions and
+comments should emit the planner event rather than starting lane-specific ad hoc
 sessions.
 
 Do not replace the existing `aks-rp-e2e-iteration.ts` immediately. Run the new

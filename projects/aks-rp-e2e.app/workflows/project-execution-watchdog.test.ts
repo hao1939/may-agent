@@ -131,13 +131,13 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.tasks.ready for 1 dispatchable ready task(s): ready-task",
+      "Watchdog requested execution for 1 dispatchable ready task(s): ready-task",
     );
     expect(
       dispatched.some(
         (event) =>
-          event.type === "project.tasks.ready" &&
-          (event.payload.readyTaskIds as string[]).includes("ready-task"),
+          event.type === "project.task.execution.requested" &&
+          event.payload.taskId === "ready-task",
       ),
     ).toBe(true);
 
@@ -176,13 +176,13 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.tasks.ready for 1 dispatchable ready task(s): active-task",
+      "Watchdog requested execution for 1 dispatchable ready task(s): active-task",
     );
     expect(
       dispatched.some(
         (event) =>
-          event.type === "project.tasks.ready" &&
-          (event.payload.readyTaskIds as string[]).includes("active-task"),
+          event.type === "project.task.execution.requested" &&
+          event.payload.taskId === "active-task",
       ),
     ).toBe(true);
 
@@ -209,11 +209,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.execution.requested: watchdog-open-work-reconcile.",
+      "Watchdog emitted project.planning.requested: watchdog-open-work-reconcile.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.execution.requested",
+        type: "project.planning.requested",
         payload: {
           project: "aks-rp-e2e",
           reason: "watchdog-open-work-reconcile",

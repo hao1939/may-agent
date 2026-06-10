@@ -193,32 +193,35 @@ function restartAbandonedActiveTasks(
   return restarted.sort();
 }
 
-function emitTasksReady(
+function emitTaskExecutionRequests(
   ctx: WorkflowContext,
   config: WatchdogConfig,
-  readyTaskIds: string[],
+  taskIds: string[],
   reason: string,
 ): void {
-  try {
-    ctx.dispatchEvent("project.tasks.ready", {
-      project: "aks-rp-e2e",
-      reason,
-      readyTaskIds,
-      maxConcurrent: config.maxConcurrent,
-      requested_by: "project-execution-watchdog",
-    });
-  } catch {
-    // Local tests may not provide a dispatcher.
+  for (const taskId of taskIds) {
+    try {
+      ctx.dispatchEvent("project.task.execution.requested", {
+        project: "aks-rp-e2e",
+        reason,
+        taskId,
+        worker: config.agent,
+        maxConcurrent: config.maxConcurrent,
+        requested_by: "project-execution-watchdog",
+      });
+    } catch {
+      // Local tests may not provide a dispatcher.
+    }
   }
 }
 
-function emitExecutionRequested(
+function emitPlanningRequested(
   ctx: WorkflowContext,
   config: WatchdogConfig,
   reason: string,
 ): void {
   try {
-    ctx.dispatchEvent("project.execution.requested", {
+    ctx.dispatchEvent("project.planning.requested", {
       project: "aks-rp-e2e",
       reason,
       maxConcurrent: config.maxConcurrent,
@@ -264,9 +267,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       recovery.restarted.length > 0
         ? "watchdog-restarted-active-tasks"
         : "watchdog-ready-resume";
-    emitTasksReady(ctx, config, readyTaskIds, reason);
+    emitTaskExecutionRequests(ctx, config, readyTaskIds, reason);
     return ctx.done(
-      `Watchdog emitted project.tasks.ready for ${readyTaskIds.length} dispatchable ready task(s): ${readyTaskIds.slice(0, 8).join(", ")}.`,
+      `Watchdog requested execution for ${readyTaskIds.length} dispatchable ready task(s): ${readyTaskIds.slice(0, 8).join(", ")}.`,
     );
   }
 
@@ -280,8 +283,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const reason = recovery.needsRefill
       ? "watchdog-settled-active-project-refill"
       : "watchdog-open-work-reconcile";
-    emitExecutionRequested(ctx, config, reason);
-    return ctx.done(`Watchdog emitted project.execution.requested: ${reason}.`);
+    emitPlanningRequested(ctx, config, reason);
+    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
 
   return ctx.done(

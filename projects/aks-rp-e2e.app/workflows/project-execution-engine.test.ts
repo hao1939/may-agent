@@ -104,6 +104,14 @@ function context(input: {
   } as any;
 }
 
+function requestedTaskIds(
+  dispatched: Array<{ type: string; payload: Record<string, unknown> }>,
+): unknown[] {
+  return dispatched
+    .filter((event) => event.type === "project.task.execution.requested")
+    .map((event) => event.payload.taskId);
+}
+
 describe("project execution engine", () => {
   test("project app watcher emits execution events through one schedule path", () => {
     const regularLearning = app.schedules.find(
@@ -142,8 +150,8 @@ describe("project execution engine", () => {
     expect(
       app.workflowHandlers.find(
         (handler) => handler.name === "aks-rp-e2e-ready-task-picker",
-      )?.on,
-    ).toEqual(["project.tasks.ready"]);
+      ),
+    ).toBeUndefined();
     expect(
       app.workflowHandlers.find(
         (handler) => handler.name === "aks-rp-e2e-task-execution-worker",
@@ -151,7 +159,7 @@ describe("project execution engine", () => {
     ).toBe(5);
     expect(app.actions.watch.type).toBe("async");
     expect((app.actions.watch as any).event({}).type).toBe(
-      "project.execution.requested",
+      "project.planning.requested",
     );
     expect(app.events).toContainEqual({
       type: "project.watchdog.tick",
@@ -162,6 +170,10 @@ describe("project execution engine", () => {
       project: "aks-rp-e2e",
     });
     expect(app.events).toContainEqual({
+      type: "project.planning.requested",
+      project: "aks-rp-e2e",
+    });
+    expect(app.events).not.toContainEqual({
       type: "project.tasks.ready",
       project: "aks-rp-e2e",
     });
@@ -300,7 +312,7 @@ describe("project execution engine", () => {
     );
 
     expect(result).toEqual({
-      type: "project.execution.requested",
+      type: "project.planning.requested",
       project: "aks-rp-e2e",
       reason: "task-completed",
       params: {
@@ -552,7 +564,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 2,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -671,7 +683,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 2,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -890,11 +902,10 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("signaled 2 dispatchable ready task");
-    expect(
-      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
-        .readyTaskIds,
-    ).toEqual(["local-check", "task-a"]);
+    expect(result.message).toContain(
+      "requested execution for 2 dispatchable ready task",
+    );
+    expect(requestedTaskIds(dispatched)).toEqual(["local-check", "task-a"]);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
@@ -987,36 +998,11 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
-    const readyPayload = dispatched.find(
-      (event) => event.type === "project.tasks.ready",
-    )?.payload;
-    expect(readyPayload?.readyTaskIds).toEqual(["bootstrap-live"]);
-    const pickupResult = await executeTaskWorker(
-      context({
-        projectDir,
-        maxConcurrent: 3,
-        triggerEvent: {
-          type: "project.tasks.ready",
-          data: readyPayload,
-        },
-        dispatched,
-        runAgent: async () => {
-          throw new Error(
-            "ready-task pickup should dispatch execution events, not run workers inline",
-          );
-        },
-      }),
-    );
-    expect(pickupResult.status).toBe("done");
-    expect(
-      dispatched.find(
-        (event) => event.type === "project.task.execution.requested",
-      )?.payload.taskId,
-    ).toBe("bootstrap-live");
+    expect(requestedTaskIds(dispatched)).toEqual(["bootstrap-live"]);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["bootstrap-live"].status).toBe("active");
+    expect(updated.tasks["bootstrap-live"].status).toBe("ready");
   });
 
   test("planner leaves active task recovery to watchdog and worker pickup", async () => {
@@ -1119,7 +1105,7 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("no dispatchable ready leaves to signal");
+    expect(result.message).toContain("no dispatchable ready leaves to request");
     expect(
       emitted.some((event) => event.type === "session.cancel.requested"),
     ).toBe(false);
@@ -1127,7 +1113,9 @@ describe("project execution engine", () => {
       dispatched.find((event) => event.type === "task.requeued"),
     ).toBeUndefined();
     expect(
-      dispatched.find((event) => event.type === "project.tasks.ready"),
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      ),
     ).toBeUndefined();
 
     const updated = JSON.parse(
@@ -1260,10 +1248,7 @@ describe("project execution engine", () => {
     expect(dispatched.some((event) => event.type === "task.requeued")).toBe(
       false,
     );
-    expect(
-      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
-        .readyTaskIds,
-    ).toEqual(["ready-task"]);
+    expect(requestedTaskIds(dispatched)).toEqual(["ready-task"]);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
@@ -1396,10 +1381,7 @@ describe("project execution engine", () => {
     expect(dispatched.some((event) => event.type === "task.requeued")).toBe(
       false,
     );
-    expect(
-      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
-        .readyTaskIds,
-    ).toEqual(["ready-task"]);
+    expect(requestedTaskIds(dispatched)).toEqual(["ready-task"]);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
@@ -1484,10 +1466,9 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
-    expect(
-      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
-        .readyTaskIds,
-    ).toEqual(["smart-execution-frontier-steering"]);
+    expect(requestedTaskIds(dispatched)).toEqual([
+      "smart-execution-frontier-steering",
+    ]);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
@@ -1668,7 +1649,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 2,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "settled-active-refill" },
         },
         runAgent: async (_agent, prompt) => {
@@ -1894,40 +1875,24 @@ describe("project execution engine", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
-    const result = await executeTaskWorker(
+    const result = await executePlanner(
       context({
         projectDir,
         maxConcurrent: 2,
-        triggerEvent: {
-          type: "project.tasks.ready",
-          data: {
-            project: "aks-rp-e2e",
-            readyTaskIds: ["task-a", "task-b"],
-            maxConcurrent: 2,
-          },
-        },
         dispatched,
         runAgent: async () => {
-          throw new Error(
-            "ready-task pickup should dispatch execution events, not run workers inline",
-          );
+          throw new Error("planner loop should not run workers");
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Dispatched 2 task execution event");
-    expect(
-      dispatched
-        .filter((event) => event.type === "project.task.execution.requested")
-        .map((event) => event.payload.taskId)
-        .sort(),
-    ).toEqual(["task-a", "task-b"]);
+    expect(requestedTaskIds(dispatched).sort()).toEqual(["task-a", "task-b"]);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["task-a"].status).toBe("active");
-    expect(updated.tasks["task-b"].status).toBe("active");
+    expect(updated.tasks["task-a"].status).toBe("ready");
+    expect(updated.tasks["task-b"].status).toBe("ready");
   });
 
   test("task worker fills capacity past serialized review work using explicit conflict scopes", async () => {
@@ -2014,35 +1979,28 @@ describe("project execution engine", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
-    const result = await executeTaskWorker(
+    const result = await executePlanner(
       context({
         projectDir,
         maxConcurrent: 3,
-        triggerEvent: {
-          type: "project.tasks.ready",
-          data: { project: "aks-rp-e2e", maxConcurrent: 3 },
-        },
         dispatched,
         runAgent: async () => {
-          throw new Error(
-            "ready-task pickup should dispatch execution events, not run workers inline",
-          );
+          throw new Error("planner loop should not run workers");
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(
-      dispatched
-        .filter((event) => event.type === "project.task.execution.requested")
-        .map((event) => event.payload.taskId),
-    ).toEqual(["review-task", "ready-model-task"]);
+    expect(requestedTaskIds(dispatched)).toEqual([
+      "review-task",
+      "ready-model-task",
+    ]);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["active-model-task"].status).toBe("active");
-    expect(updated.tasks["ready-model-task"].status).toBe("active");
-    expect(updated.tasks["review-task"].status).toBe("active");
+    expect(updated.tasks["ready-model-task"].status).toBe("ready");
+    expect(updated.tasks["review-task"].status).toBe("ready");
   });
 
   test("task worker fills capacity while an unrelated review task is active", async () => {
@@ -2130,39 +2088,32 @@ describe("project execution engine", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
-    const result = await executeTaskWorker(
+    const result = await executePlanner(
       context({
         projectDir,
         maxConcurrent: 3,
-        triggerEvent: {
-          type: "project.tasks.ready",
-          data: { project: "aks-rp-e2e", maxConcurrent: 3 },
-        },
         dispatched,
         runAgent: async () => {
-          throw new Error(
-            "ready-task pickup should dispatch execution events, not run workers inline",
-          );
+          throw new Error("planner loop should not run workers");
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(
-      dispatched
-        .filter((event) => event.type === "project.task.execution.requested")
-        .map((event) => event.payload.taskId),
-    ).toEqual(["ready-domain-task", "ready-review"]);
+    expect(requestedTaskIds(dispatched)).toEqual([
+      "ready-domain-task",
+      "ready-review",
+    ]);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["active-review"].status).toBe("active");
-    expect(updated.tasks["ready-domain-task"].status).toBe("active");
-    expect(updated.tasks["ready-review"].status).toBe("active");
+    expect(updated.tasks["ready-domain-task"].status).toBe("ready");
+    expect(updated.tasks["ready-review"].status).toBe("ready");
   });
 
-  test("task worker honors event readyTaskIds when other ready tasks conflict", async () => {
+  test("planner skips conflicting ready work while requesting independent tasks", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2261,40 +2212,28 @@ describe("project execution engine", () => {
       type: string;
       payload: Record<string, unknown>;
     }> = [];
-    const result = await executeTaskWorker(
+    const result = await executePlanner(
       context({
         projectDir,
         maxConcurrent: 5,
-        triggerEvent: {
-          type: "project.tasks.ready",
-          data: {
-            project: "aks-rp-e2e",
-            readyTaskIds: ["smart-execution-frontier-steering"],
-            maxConcurrent: 5,
-          },
-        },
         dispatched,
         runAgent: async () => {
-          throw new Error(
-            "ready-task pickup should dispatch execution events, not run workers inline",
-          );
+          throw new Error("planner loop should not run workers");
         },
       }),
     );
 
     expect(result.status).toBe("done");
-    expect(
-      dispatched
-        .filter((event) => event.type === "project.task.execution.requested")
-        .map((event) => event.payload.taskId),
-    ).toEqual(["smart-execution-frontier-steering"]);
+    expect(requestedTaskIds(dispatched)).toEqual([
+      "smart-execution-frontier-steering",
+    ]);
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
     expect(updated.tasks["active-model-task"].status).toBe("active");
     expect(updated.tasks["model-rework"].status).toBe("ready");
     expect(updated.tasks["smart-execution-frontier-steering"].status).toBe(
-      "active",
+      "ready",
     );
   });
 
@@ -2381,7 +2320,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 2,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -2486,7 +2425,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 1,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -2611,7 +2550,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 1,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -2706,7 +2645,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 2,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -2799,7 +2738,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 1,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -2898,7 +2837,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 2,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -3001,7 +2940,7 @@ describe("project execution engine", () => {
         projectDir,
         maxConcurrent: 3,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -3128,7 +3067,7 @@ describe("project execution engine", () => {
     expect(completedEvent?.payload.taskId).toBe("task-a");
     expect(completedEvent?.payload.status).toBe("accepted");
     const continuationEvent = dispatched.find(
-      (event) => event.type === "project.execution.requested",
+      (event) => event.type === "project.planning.requested",
     );
     expect(continuationEvent?.payload.reason).toBe("task-completed");
     expect(continuationEvent?.payload.completedTaskId).toBe("task-a");
@@ -3425,7 +3364,7 @@ describe("project execution engine", () => {
       context({
         projectDir,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -3516,7 +3455,7 @@ describe("project execution engine", () => {
       context({
         projectDir,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -3614,7 +3553,7 @@ describe("project execution engine", () => {
       context({
         projectDir,
         triggerEvent: {
-          type: "project.execution.requested",
+          type: "project.planning.requested",
           data: { project: "aks-rp-e2e", reason: "test" },
         },
         dispatched,
@@ -3858,7 +3797,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("continuation requested");
     expect(
-      dispatched.some((event) => event.type === "project.execution.requested"),
+      dispatched.some((event) => event.type === "project.planning.requested"),
     ).toBe(true);
 
     const updated = JSON.parse(
@@ -5374,10 +5313,7 @@ describe("project execution engine", () => {
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
-    expect(
-      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
-        .readyTaskIds,
-    ).toContain("project-planning-loop-run");
+    expect(requestedTaskIds(dispatched)).toContain("project-planning-loop-run");
   });
 
   test("does not turn accepted work into blocked when its review child is accepted", async () => {
@@ -6643,7 +6579,7 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("continuation requested");
     expect(
-      dispatched.some((event) => event.type === "project.execution.requested"),
+      dispatched.some((event) => event.type === "project.planning.requested"),
     ).toBe(true);
 
     const updated = JSON.parse(

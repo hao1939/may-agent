@@ -1333,7 +1333,7 @@ describe("project UI replanning buttons e2e", () => {
           };
         };
       };
-      expect(requestBody.type).toBe("project.execution.requested");
+      expect(requestBody.type).toBe("project.planning.requested");
       expect(requestBody.data?.project).toBe("aks-rp-e2e");
       expect(requestBody.data?.projectPath).toBe("projects/aks-rp-e2e");
       expect(requestBody.data?.reason).toBe("feature-test.requested");

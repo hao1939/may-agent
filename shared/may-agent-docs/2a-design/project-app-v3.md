@@ -196,7 +196,7 @@ export default defineProjectApp({
     {
       name: "aks-rp-e2e-project-planner",
       enabled: true,
-      on: ["project.execution.requested"],
+      on: ["project.planning.requested"],
       handler: {
         workflow: "project-planner",
         includeEvent: true,

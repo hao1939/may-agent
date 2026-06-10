@@ -161,10 +161,11 @@ folder does not keep a parallel task event log.
   capacity, and should be superseded when they appear in the executable
   frontier.
 - The robust execution loop is: event or timer wakes the planner control loop;
-  the planner repairs/rolls up/refills the task tree; `project.tasks.ready`
-  wakes the picker; the picker leases ready leaves; workers execute leaves and
-  emit completion; completion wakes the planner again. The timer is only a
-  safety net for missed events or stale leases.
+  the planner repairs/rolls up/refills the task tree; the planner emits
+  `project.task.execution.requested` for dispatchable ready leaves; each worker
+  claims exactly one requested ready leaf under the task-tree lock before
+  executing it; completion wakes the planner again. The timer is only a safety
+  net for missed events or stale leases.
 - Do not create top-level `project-control`, `execution-engine-audit`, or
   `project-frontier-replan-*` branches. Keep planner/engine history in runtime
   traces or archive material, and put current work under the feature/spec,

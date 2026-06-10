@@ -151,7 +151,7 @@ function projectExecutionEvent(
   params: unknown = {},
 ): Record<string, unknown> {
   return {
-    type: "project.execution.requested",
+    type: "project.planning.requested",
     project: "aks-rp-e2e",
     reason,
     params: {
@@ -228,29 +228,14 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Planner loop. Reviews/refills aks-rp-e2e.app/tasks/tree.json and emits project.tasks.ready when executable leaves exist.",
+        "Planner loop. Reviews/refills aks-rp-e2e.app/tasks/tree.json and emits per-task execution requests when executable leaves exist.",
       handler: {
         workflow: "project-planner",
         includeEvent: true,
         task: `${appTaskContext}\nmaxConcurrent: 5`,
         timeoutMs: 3_600_000,
       },
-      on: ["project.execution.requested"],
-      context: taskTreeContext,
-    },
-    {
-      name: "aks-rp-e2e-ready-task-picker",
-      type: "job",
-      enabled: true,
-      description:
-        "Worker loop pickup. Leases ready leaves and emits per-task execution events.",
-      handler: {
-        workflow: "task-worker",
-        includeEvent: true,
-        task: `${appTaskContext}\nmaxConcurrent: 5`,
-        timeoutMs: 1_800_000,
-      },
-      on: ["project.tasks.ready"],
+      on: ["project.planning.requested", "project.execution.requested"],
       context: taskTreeContext,
     },
     {
@@ -276,7 +261,7 @@ export default defineProjectApp({
       intervalMs: 300_000,
       offsetMs: 120_000,
       description:
-        "Five-minute liveness guard. If the task tree is fresh or a worker is healthy, it no-ops; otherwise it invokes the execution engine to resume runnable work.",
+        "Five-minute liveness guard. If the task tree is fresh or a worker is healthy, it no-ops; otherwise it emits normal planning/task execution events.",
       on: ["project.watchdog.tick"],
       handler: {
         workflow: "project-execution-watchdog",
@@ -351,8 +336,8 @@ export default defineProjectApp({
     { type: "project.comment.created", project: "aks-rp-e2e" },
     { type: "project.tick", project: "aks-rp-e2e" },
     { type: "project.watchdog.tick", project: "aks-rp-e2e" },
+    { type: "project.planning.requested", project: "aks-rp-e2e" },
     { type: "project.execution.requested", project: "aks-rp-e2e" },
-    { type: "project.tasks.ready", project: "aks-rp-e2e" },
     { type: "project.task.execution.requested", project: "aks-rp-e2e" },
     { type: "project.task.completed", project: "aks-rp-e2e" },
     { type: "project.task.steer", project: "aks-rp-e2e" },
@@ -567,15 +552,12 @@ export default defineProjectApp({
       );
     }
 
-    if (event.type === "project.execution.requested") {
+    if (
+      event.type === "project.planning.requested" ||
+      event.type === "project.execution.requested"
+    ) {
       return ctx.noop(
-        "project.execution.requested is consumed by the aks-rp-e2e project-planner workflow trigger",
-      );
-    }
-
-    if (event.type === "project.tasks.ready") {
-      return ctx.noop(
-        "project.tasks.ready is consumed by the aks-rp-e2e task-worker workflow trigger",
+        `${event.type} is consumed by the aks-rp-e2e project-planner workflow trigger`,
       );
     }
 

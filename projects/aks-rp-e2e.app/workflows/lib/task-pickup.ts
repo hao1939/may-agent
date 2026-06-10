@@ -68,6 +68,18 @@ export type LeasedTask = {
   session_id?: string;
 };
 
+export type ClaimReadyTaskResult =
+  | {
+      claimed: true;
+      task: LeasedTask;
+      requeuedTaskIds: string[];
+    }
+  | {
+      claimed: false;
+      reason: string;
+      requeuedTaskIds: string[];
+    };
+
 export function parseTriggerEvent(raw: string): TriggerEvent | null {
   const match = raw.match(/## Trigger Event\s*```json\s*([\s\S]*?)\s*```/);
   if (!match) return null;
@@ -586,36 +598,6 @@ function leaseDispatchableTasks(
   }));
 }
 
-export function emitTaskExecutionEvents(
-  ctx: WorkflowContext,
-  config: PickupConfig,
-  leased: LeasedTask[],
-): void {
-  for (const task of leased) {
-    try {
-      ctx.dispatchEvent("task.started", {
-        projectId: "aks-rp-e2e",
-        taskId: task.id,
-        status: "active",
-        mode: "event-dispatch",
-        claimed_by: config.worker,
-        lease_expires_at: task.lease_expires_at,
-        session_id: task.session_id,
-      });
-      ctx.dispatchEvent("project.task.execution.requested", {
-        project: "aks-rp-e2e",
-        taskId: task.id,
-        worker: config.worker,
-        lease_expires_at: task.lease_expires_at,
-        session_id: task.session_id,
-        requested_by: "task-worker",
-      });
-    } catch {
-      // Local test contexts may not provide a real dispatcher.
-    }
-  }
-}
-
 export function readDispatchableReadyTaskIds(config: PickupConfig): string[] {
   if (!existsSync(config.treePath)) return [];
   return withTreeLock(config, () =>
@@ -627,10 +609,11 @@ export function readDispatchableReadyTaskIds(config: PickupConfig): string[] {
   );
 }
 
-export function pickupReadyTasks(
+export function tryClaimReadyTask(
   ctx: WorkflowContext,
   config: PickupConfig,
-): LeasedTask[] {
+  taskId: string,
+): ClaimReadyTaskResult {
   return withTreeLock(config, () => {
     const tree = readTree(config);
     const requeued = requeueStaleActiveLeaves(ctx, tree, config);
@@ -639,28 +622,89 @@ export function pickupReadyTasks(
         kind: "stale_active_tasks_requeued",
         status: "ready",
         summary:
-          "Requeued active leaf tasks whose execution lease was missing or expired before worker pickup.",
+          "Requeued active leaf tasks whose execution lease was missing or expired before exact task claim.",
         task_ids: requeued,
       });
     }
 
-    const selected = selectDispatchableLeaves(
-      tree,
-      config.maxConcurrent,
-      config.requestedReadyTaskIds,
-    );
-    const leased = leaseDispatchableTasks(config, tree, selected);
-    if (leased.length > 0) {
-      appendJournal(config, {
-        kind: "task_execution_events_dispatched",
-        status: "active",
-        summary:
-          "Leased ready leaf tasks and dispatched event-native task execution requests.",
-        task_ids: leased.map((task) => task.id),
-        max_concurrent: config.maxConcurrent,
-      });
+    const task = tree.tasks[taskId];
+    if (!task) {
+      if (requeued.length > 0) saveTree(config, tree);
+      return {
+        claimed: false,
+        reason: `task ${taskId || "(missing)"} was not found`,
+        requeuedTaskIds: requeued,
+      };
     }
+
+    if (task.status === "active") {
+      if (requeued.length > 0) saveTree(config, tree);
+      return {
+        claimed: false,
+        reason: `task ${task.id} is already active`,
+        requeuedTaskIds: requeued,
+      };
+    }
+
+    if (task.status !== "ready") {
+      if (requeued.length > 0) saveTree(config, tree);
+      return {
+        claimed: false,
+        reason: `task ${task.id} is ${task.status}, not ready`,
+        requeuedTaskIds: requeued,
+      };
+    }
+
+    if (!isLeaf(task)) {
+      if (requeued.length > 0) saveTree(config, tree);
+      return {
+        claimed: false,
+        reason: `task ${task.id} is not a leaf`,
+        requeuedTaskIds: requeued,
+      };
+    }
+
+    const selected = selectDispatchableLeaves(tree, config.maxConcurrent, [
+      task.id,
+    ]);
+    if (selected[0]?.id !== task.id) {
+      if (requeued.length > 0) saveTree(config, tree);
+      return {
+        claimed: false,
+        reason: `task ${task.id} is not dispatchable now`,
+        requeuedTaskIds: requeued,
+      };
+    }
+
+    const [leased] = leaseDispatchableTasks(config, tree, [task]);
+    appendJournal(config, {
+      kind: "task_execution_claimed",
+      status: "active",
+      summary:
+        "Claimed one ready leaf from a project.task.execution.requested event.",
+      task_id: leased.id,
+      max_concurrent: config.maxConcurrent,
+    });
     saveTree(config, tree);
-    return leased;
+
+    try {
+      ctx.dispatchEvent("task.started", {
+        projectId: "aks-rp-e2e",
+        taskId: leased.id,
+        status: "active",
+        mode: "event-claim",
+        claimed_by: config.worker,
+        lease_expires_at: leased.lease_expires_at,
+        session_id: leased.session_id,
+      });
+    } catch {
+      // Local test contexts may not provide a real dispatcher.
+    }
+
+    return {
+      claimed: true,
+      task: leased,
+      requeuedTaskIds: requeued,
+    };
   });
 }

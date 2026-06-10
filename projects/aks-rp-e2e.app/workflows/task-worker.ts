@@ -1,9 +1,8 @@
 /**
  * task-worker — workflow adapter for aks-rp-e2e task pickup/execution.
  *
- * Handles two events:
- * - project.tasks.ready: lease ready leaves and dispatch execution events.
- * - project.task.execution.requested: execute exactly one leased leaf.
+ * Handles project.task.execution.requested by claiming exactly one ready leaf
+ * under the task-tree lock, then executing that claimed task.
  */
 
 import { existsSync } from "node:fs";
@@ -12,17 +11,15 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { execute as executeEngine } from "./project-execution-engine.ts";
 import {
   abandonedActiveTaskIds,
-  emitTaskExecutionEvents,
   maxConcurrent,
   parseTriggerEvent,
-  pickupReadyTasks,
-  triggerStringArray,
+  tryClaimReadyTask,
   type PickupConfig,
 } from "./lib/task-pickup.ts";
 
 export const name = "task-worker";
 export const description =
-  "Pick ready aks-rp-e2e leaves or execute one leased task event.";
+  "Claim and execute one aks-rp-e2e ready leaf from a task execution event.";
 
 function field(raw: string, name: string): string | undefined {
   const match = raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
@@ -53,22 +50,24 @@ function pickupConfig(
     journalPath: join(appDir, ".state", "journal.jsonl"),
     worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
     maxConcurrent: configuredMaxConcurrent,
-    requestedReadyTaskIds: triggerStringArray(trigger, "readyTaskIds"),
+    requestedReadyTaskIds: [],
     abandonedActiveTaskIds: abandonedActiveTaskIds(ctx.task, trigger),
   };
 }
 
-async function runPickupMode(
-  ctx: WorkflowContext,
-  config: PickupConfig,
-): Promise<WorkflowResult> {
-  const leased = pickupReadyTasks(ctx, config);
-  emitTaskExecutionEvents(ctx, config, leased);
-  return ctx.done(
-    leased.length > 0
-      ? `Dispatched ${leased.length} task execution event(s): ${leased.map((task) => task.id).join(", ")}.`
-      : "No dispatchable ready task found; worker pickup left the task tree unchanged except stale lease recovery.",
-  );
+function triggerValue(
+  trigger: ReturnType<typeof parseTriggerEvent>,
+  key: string,
+): string {
+  const value =
+    trigger?.data && typeof trigger.data === "object" && key in trigger.data
+      ? trigger.data[key]
+      : trigger?.params &&
+          typeof trigger.params === "object" &&
+          key in trigger.params
+        ? trigger.params[key]
+        : trigger?.[key];
+  return typeof value === "string" ? value : "";
 }
 
 async function runExecutionMode(
@@ -76,7 +75,22 @@ async function runExecutionMode(
   appDir: string,
   projectDir: string,
   configuredMaxConcurrent: number,
+  config: PickupConfig,
+  trigger: ReturnType<typeof parseTriggerEvent>,
 ): Promise<WorkflowResult> {
+  const taskId =
+    triggerValue(trigger, "taskId") ||
+    triggerValue(trigger, "task_id") ||
+    field(ctx.task, "taskId");
+  if (!taskId)
+    return ctx.done(
+      "Task execution event ignored because it did not include taskId.",
+    );
+
+  const claim = tryClaimReadyTask(ctx, config, taskId);
+  if (claim.claimed === false)
+    return ctx.done(`Task execution event ignored because ${claim.reason}.`);
+
   const taskLines = [
     `app: ${appDir}`,
     `project: ${projectDir}`,
@@ -110,14 +124,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const trigger = parseTriggerEvent(ctx.task);
   const configuredMaxConcurrent = maxConcurrent(ctx.task, trigger);
+  const config = pickupConfig(
+    ctx,
+    appDir,
+    projectDir,
+    configuredMaxConcurrent,
+    trigger,
+  );
 
   if (trigger?.type === "project.task.execution.requested") {
-    return runExecutionMode(ctx, appDir, projectDir, configuredMaxConcurrent);
+    return runExecutionMode(
+      ctx,
+      appDir,
+      projectDir,
+      configuredMaxConcurrent,
+      config,
+      trigger,
+    );
   }
 
-  return runPickupMode(
-    ctx,
-    pickupConfig(ctx, appDir, projectDir, configuredMaxConcurrent, trigger),
+  return ctx.done(
+    `Task worker ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.execution.requested.`,
   );
 }
 

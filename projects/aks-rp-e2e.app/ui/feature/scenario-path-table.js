@@ -2542,7 +2542,7 @@
         prompt,
       };
       const body = {
-        type: "project.execution.requested",
+        type: "project.planning.requested",
         source: "web-ui",
         owner: "agent:aks-explorer",
         data: {
@@ -2635,7 +2635,7 @@
 
     try {
       const body = {
-        type: "project.execution.requested",
+        type: "project.planning.requested",
         source: "web-ui",
         owner: "agent:aks-explorer",
         data: {

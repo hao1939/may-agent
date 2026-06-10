@@ -298,7 +298,10 @@ function parseInput(raw: string, callingAgent: string): EngineConfig {
   const maxConcurrent = Number.parseInt(field(raw, "maxConcurrent") ?? "", 10);
   const triggerType = trigger?.type ? String(trigger.type) : "";
   const defaultRole =
-    triggerType === "project.execution.requested" ? "planner" : "worker";
+    triggerType === "project.planning.requested" ||
+    triggerType === "project.execution.requested"
+      ? "planner"
+      : "worker";
   return {
     appDir,
     projectDir,
@@ -2663,7 +2666,11 @@ function applyEscalationDisposition(
   tree: TaskTree,
   trigger: TriggerEvent | null,
 ): string[] {
-  if (trigger?.type !== "project.execution.requested") return [];
+  if (
+    trigger?.type !== "project.planning.requested" &&
+    trigger?.type !== "project.execution.requested"
+  )
+    return [];
   const data = triggerDataRecord(trigger);
   const params = triggerParamsRecord(trigger);
   const reason = recordString(data, "reason");
@@ -2771,7 +2778,7 @@ function requestContinuation(
   }
   tree.active_task_id = next.id;
   try {
-    ctx.dispatchEvent("project.execution.requested", {
+    ctx.dispatchEvent("project.planning.requested", {
       project: "aks-rp-e2e",
       reason,
       active_task_id: next.id,
@@ -4355,6 +4362,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (
     trigger &&
     ![
+      "project.planning.requested",
       "project.execution.requested",
       "project.task.execution.requested",
     ].includes(String(trigger.type))
@@ -4369,7 +4377,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     saveTree(config, tree);
     updateProjectActiveTask(config, content, tree);
     return ctx.done(
-      `Ignored non-v2 project execution trigger ${String(trigger.type ?? "unknown")}; use project.execution.requested or project.task.execution.requested.`,
+      `Ignored non-v2 project execution trigger ${String(trigger.type ?? "unknown")}; use project.planning.requested or project.task.execution.requested.`,
     );
   }
 
@@ -4430,7 +4438,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         requested_by: "project-execution-engine",
       });
       if (shouldRequestContinuationAfterTask(completed)) {
-        ctx.dispatchEvent("project.execution.requested", {
+        ctx.dispatchEvent("project.planning.requested", {
           project: "aks-rp-e2e",
           reason: "task-completed",
           completedTaskId: result.taskId,
@@ -4444,7 +4452,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           kind: "rejected_review_continuation_suppressed",
           status: completedStatus,
           summary:
-            "Suppressed project.execution.requested for a rejected review task to avoid an immediate retry loop.",
+            "Suppressed project.planning.requested for a rejected review task to avoid an immediate retry loop.",
           task_id: result.taskId,
           verification_verdict: verificationVerdict,
         });
@@ -4548,7 +4556,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     updateProjectActiveTask(config, content, tree);
   }
 
-  if (trigger?.type === "project.execution.requested") {
+  if (
+    trigger?.type === "project.planning.requested" ||
+    trigger?.type === "project.execution.requested"
+  ) {
     const promoted = promoteClearBacklogLeaves(ctx, tree);
     if (promoted.length > 0) {
       appendJournal(config.journalPath, {

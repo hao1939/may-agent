@@ -2,7 +2,7 @@
  * project-planner — refill/review loop for aks-rp-e2e.
  *
  * The planner does planner work only: run the execution engine in planner mode
- * and emit project.tasks.ready when the task tree has ready executable leaves.
+ * and emit per-task execution request events for dispatchable ready leaves.
  */
 
 import { existsSync } from "node:fs";
@@ -17,7 +17,7 @@ import {
 
 export const name = "project-planner";
 export const description =
-  "Review/refill aks-rp-e2e.app/tasks/tree.json, then emit project.tasks.ready when executable leaves exist.";
+  "Review/refill aks-rp-e2e.app/tasks/tree.json, then emit project.task.execution.requested for executable leaves.";
 
 function field(raw: string, name: string): string | undefined {
   const match = raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
@@ -83,15 +83,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     pickupConfig(ctx, appDir, projectDir, configuredMaxConcurrent),
   );
   if (readyLeafIds.length > 0) {
-    try {
-      ctx.dispatchEvent("project.tasks.ready", {
-        project: "aks-rp-e2e",
-        readyTaskIds: readyLeafIds,
-        maxConcurrent: configuredMaxConcurrent,
-        requested_by: "project-planner",
-      });
-    } catch {
-      // Local tests may not provide a dispatcher.
+    for (const taskId of readyLeafIds) {
+      try {
+        ctx.dispatchEvent("project.task.execution.requested", {
+          project: "aks-rp-e2e",
+          taskId,
+          worker:
+            field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
+          maxConcurrent: configuredMaxConcurrent,
+          requested_by: "project-planner",
+        });
+      } catch {
+        // Local tests may not provide a dispatcher.
+      }
     }
   }
 
@@ -100,8 +104,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     (result as { message?: string; summary?: string }).summary ??
     JSON.stringify(result);
   const plannerMessage = readyLeafIds.length
-    ? `Planner updated task tree and signaled ${readyLeafIds.length} dispatchable ready task(s): ${readyLeafIds.slice(0, 8).join(", ")}. Engine result: ${message}`
-    : `Planner updated task tree; no dispatchable ready leaves to signal. Engine result: ${message}`;
+    ? `Planner updated task tree and requested execution for ${readyLeafIds.length} dispatchable ready task(s): ${readyLeafIds.slice(0, 8).join(", ")}. Engine result: ${message}`
+    : `Planner updated task tree; no dispatchable ready leaves to request. Engine result: ${message}`;
   if ((result as { status?: string }).status === "escalated")
     return ctx.escalate(plannerMessage);
   return ctx.done(plannerMessage);
