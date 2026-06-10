@@ -11,6 +11,7 @@ import {
   getAgentCrons,
   loadAgents,
 } from "./agent-loader.js";
+import { installProjectApps } from "./loader/project-app-loader.js";
 
 export async function prepareDaemonAgents(opts: {
   agentsRoot: string;
@@ -51,6 +52,20 @@ export async function prepareDaemonAgents(opts: {
       }
       opts.bus.emit({ type: "info", message: `[auto-heartbeat] Generated ${autoHeartbeats.length} heartbeat(s): ${autoHeartbeats.map((e) => e.agent).join(", ")}` });
     }
+  }
+
+  const appResult = await installProjectApps({
+    projectsRoot: opts.projectsRoot,
+    projectRoot: opts.projectRoot,
+    manager: opts.manager,
+    bus: opts.bus,
+    agentCrons: getAgentCrons(),
+  });
+  if (appResult.installed.length > 0) {
+    opts.bus.emit({
+      type: "info",
+      message: `[project-app] Installed ${appResult.installed.length} app(s), ${appResult.entries} trigger(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
+    });
   }
 
   for (const cron of getAgentCrons().values()) {
