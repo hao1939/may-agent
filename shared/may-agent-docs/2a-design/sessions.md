@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Effectively unpopulated: only 2/12,140 sessions have a non-null value (as of 2026-06-11). Zombie detection uses JSONL file mtime instead (see Known Issues).
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Partially populated: 211/12,333 sessions (1.7%) have a non-null value (as of 2026-06-11). Write path activated ~2026-06-09 17:33Z; 18% of sessions started after that timestamp are populated. Coverage is uneven: evaluator (105) and aks-explorer (79) populate consistently; other agents started populating ~2026-06-10 17:08Z. Zombie detection uses JSONL file mtime instead (see Known Issues).
 );
 ```
 
@@ -57,8 +57,8 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-11: 0 of 12,116 `call` sessions have a
-non-null `parentSessionId`; all 12 sessions with `parentSessionId` are `job` or `chat` kind.
+(kind=`chat`) sessions. Verified 2026-06-11: 0 of 12,278 `call` sessions have a
+non-null `parentSessionId`; all 13 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
 
@@ -86,21 +86,34 @@ actual error text. The `error` field in `meta.json` contains the correct value
 data, or changing the UPDATE to use COALESCE. Both are `src/` changes requiring
 Hao approval (ORDER-010).
 
-### `lastActivityAt` column is effectively dead
+### `lastActivityAt` column: recently activated, partially populated
 
 The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
-and `updateSessionDb()` (called at session end). However, as of 2026-06-11 only
-2 of 12,140 sessions have a non-null value — suggesting the write path was deployed
-very recently or is not reaching the production DB consistently.
+and `updateSessionDb()` (called at session end).
 
-The `capability.zombie-session-count` metric does NOT use this column. Zombie
-detection in `metrics-snapshot.ts` (`sessionInactiveSince()`) checks JSONL file
-`mtime` via `statSync(path).mtimeMs`, not the DB column. So the column is
-a write-only sink with no consumer.
+**Status (updated 2026-06-11 ~20:00Z):** The write path activated around
+2026-06-09 17:33Z. Since then, 211 of 12,333 total sessions (1.7%) have a
+non-null value. For sessions started after activation, coverage is ~18%
+(211/1,165). Coverage is agent-dependent: evaluator (105 sessions) and
+aks-explorer (79) began populating immediately; arc, scout, dev, and may
+(6–8 each) started populating ~2026-06-10 17:08Z. tech-lead has 0 populated
+sessions. The column is no longer "dead" — it is partially alive and trending
+toward broader coverage.
 
-If zombie detection is eventually moved to pure-SQL (no disk access), this column
-becomes the natural data source — but until then, it's dead weight.
+The `capability.zombie-session-count` metric does NOT yet use this column.
+Zombie detection in `metrics-snapshot.ts` (`sessionInactiveSince()`) checks
+JSONL file `mtime` via `statSync(path).mtimeMs`, not the DB column.
+
+Once coverage stabilizes above ~80% for all agents, this column becomes a
+viable pure-SQL data source for zombie detection (eliminating the disk
+`statSync` dependency). Monitor with:
+```sql
+SELECT agent, COUNT(*) as total,
+       SUM(CASE WHEN lastActivityAt IS NOT NULL THEN 1 ELSE 0 END) as populated
+FROM sessions WHERE startedAt > strftime('%s','now')*1000 - 86400000
+GROUP BY agent;
+```
 
 ## Data Retention
 
