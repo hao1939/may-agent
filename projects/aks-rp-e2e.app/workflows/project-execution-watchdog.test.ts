@@ -131,20 +131,20 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog ran worker for 1 ready task(s): ready-task",
+      "Watchdog emitted project.tasks.ready for 1 dispatchable ready task(s): ready-task",
     );
     expect(
       dispatched.some(
         (event) =>
-          event.type === "project.task.execution.requested" &&
-          event.payload.taskId === "ready-task",
+          event.type === "project.tasks.ready" &&
+          (event.payload.readyTaskIds as string[]).includes("ready-task"),
       ),
     ).toBe(true);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["ready-task"].status).toBe("active");
+    expect(updated.tasks["ready-task"].status).toBe("ready");
   });
 
   test("restarts an active leaf whose runtime session is no longer running", async () => {
@@ -176,21 +176,52 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog ran worker for 1 ready task(s): active-task",
+      "Watchdog emitted project.tasks.ready for 1 dispatchable ready task(s): active-task",
     );
     expect(
       dispatched.some(
         (event) =>
-          event.type === "project.task.execution.requested" &&
-          event.payload.taskId === "active-task",
+          event.type === "project.tasks.ready" &&
+          (event.payload.readyTaskIds as string[]).includes("active-task"),
       ),
     ).toBe(true);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["active-task"].status).toBe("active");
-    expect(updated.tasks["active-task"].claimed_by).toBe("aks-explorer");
+    expect(updated.tasks["active-task"].status).toBe("ready");
+    expect(updated.tasks["active-task"].claimed_by).toBeUndefined();
+  });
+
+  test("wakes planner when open work has no dispatchable ready leaves", async () => {
+    const projectDir = await makeProject();
+    await writeTree(projectDir, {
+      "blocked-task": task("blocked-task", "blocked", {
+        blocker: "Needs investigation.",
+      }),
+    });
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(context({ projectDir, dispatched }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.execution.requested: watchdog-open-work-reconcile.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.execution.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-open-work-reconcile",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+        },
+      },
+    ]);
   });
 
   test("leaves a running active leaf alone", async () => {

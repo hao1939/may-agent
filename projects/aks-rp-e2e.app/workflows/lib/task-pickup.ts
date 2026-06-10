@@ -45,6 +45,7 @@ export type TaskNode = {
 
 export type TaskTree = {
   updated_at?: string;
+  project_lifecycle?: string;
   active_task_id?: string | null;
   active_task_ids?: string[];
   tasks: Record<string, TaskNode>;
@@ -164,7 +165,7 @@ function sleepSync(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-function withTreeLock<T>(config: PickupConfig, operation: () => T): T {
+export function withTreeLock<T>(config: PickupConfig, operation: () => T): T {
   const lockPath = `${config.treePath}.lock`;
   const deadline = Date.now() + 5_000;
   while (true) {
