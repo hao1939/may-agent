@@ -111,6 +111,7 @@ export class Cron {
   /** Pending setTimeout handles from startEntry (not yet promoted to setInterval). */
   private pendingStartTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private entries: CronEntry[] = [];
+  private syntheticEntries = new Map<string, CronEntry>();
   private started = false;
   private handlers = new Map<string, CronHandler>();
   private onJobFire?: CronJobCallback;
@@ -148,6 +149,10 @@ export class Cron {
 
   registerHandler(jobName: string, handler: CronHandler): void {
     this.handlers.set(jobName, handler);
+  }
+
+  hasHandler(jobName: string): boolean {
+    return this.handlers.has(jobName);
   }
 
   getConfigPath(): string {
@@ -222,8 +227,10 @@ export class Cron {
   }
 
   load(): CronEntry[] {
+    let loaded: CronEntry[] = [];
     if (!existsSync(this.configPath)) {
-      this.entries = [];
+      this.entries = [...this.syntheticEntries.values()];
+      this.buildEventSubscriptions();
       return this.entries;
     }
     try {
@@ -233,7 +240,7 @@ export class Cron {
         this.onError?.(`Cron config is not an array: ${this.configPath}`);
         return this.entries;
       }
-      this.entries = parsed.filter((entry: CronEntry) => {
+      loaded = parsed.filter((entry: CronEntry) => {
         const hasEventSubscription = Array.isArray(entry.on) && entry.on.length > 0;
         if (!entry.name || (!entry.intervalMs && !hasEventSubscription)) {
           this.onError?.(`Invalid cron entry: ${JSON.stringify(entry)}`);
@@ -257,14 +264,21 @@ export class Cron {
     } catch (err) {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
+    const syntheticNames = new Set(this.syntheticEntries.keys());
+    this.entries = [
+      ...loaded.filter((entry) => !syntheticNames.has(entry.name)),
+      ...this.syntheticEntries.values(),
+    ];
     this.buildEventSubscriptions();
     return this.entries;
   }
 
   /** Add a synthetic (auto-generated) entry not from cron.json. Starts it if cron is running. */
   addSyntheticEntry(entry: CronEntry): void {
-    // Don't add if an entry with this name already exists
+    // Don't add if an entry with this name already exists in loaded config.
     if (this.entries.some(e => e.name === entry.name)) return;
+    if (this.syntheticEntries.has(entry.name)) return;
+    this.syntheticEntries.set(entry.name, entry);
     this.entries.push(entry);
     this.buildEventSubscriptions();
     if (this.started && entry.enabled !== false) {
