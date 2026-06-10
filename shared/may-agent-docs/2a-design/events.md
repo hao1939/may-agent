@@ -622,7 +622,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.8k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.6k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (210 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (172 rows as of 2026-06-10); all `category: session_not_found` — spans planner_control, aks-explorer task sessions, and various project task sessions (no longer aks-rp-e2e exclusive) |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (418 rows as of 2026-06-11, ~13/hour); all `category: session_not_found` — spans planner_control, aks-explorer task sessions, and various project task sessions (no longer aks-rp-e2e exclusive); 314 unique session IDs in 24h, dominated by rework-review (102), replay (83), and rollup-review (61) task types |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (3 rows) |
 
 **Human control intents**
@@ -667,7 +667,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.health.checked` | project health checker on every check cycle | ✅ live, high volume (66.3k rows) |
+| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); was high volume (~2,931/day). See KE iter-13 in ruflo-learning-loop. |
 | `project.health.finding` | project health checker on detected issues | ✅ live (776 rows) |
 
 **Task lifecycle (generic)**
@@ -741,7 +741,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `context.read` | context system when reading agent context | ✅ live (5.2k rows) |
+| `context.read` | context system when reading agent context | ✅ live from agent:* sources; ⛔ evaluator-aftermath emission removed (commit 73d989fdb, 2026-06-10) |
 | `steer` | session steering from CLI/UI | ✅ live (14 rows) |
 | `trigger.project` | manual project trigger from operator | ✅ live (7 rows) |
 | `restart` | daemon restart signal | ✅ live (5 rows) |
@@ -751,9 +751,11 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (172 rows as of 2026-06-10, ~19/hour —
+when the target session cannot be found (418 rows as of 2026-06-11, ~13/hour —
 spans planner_control sessions, aks-explorer task sessions, and various project
-task sessions; no longer exclusive to aks-rp-e2e).
+task sessions; no longer exclusive to aks-rp-e2e). The dominant categories are
+rework-review (102), replay (83), and rollup-review (61) task session IDs in the
+last 24h — each a unique session name that was never registered in the sessions table.
 
 ### Consumer Reality
 

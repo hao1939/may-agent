@@ -4,8 +4,8 @@ owner: arc
 status: waiting
 type: iterative
 priority: P2
-iteration: 13
-wait_reason: iter-13 observe — both target emissions at 0 since ~11:15Z 2026-06-10 (~6h confirmed at 17:10Z). ~18h remain on 24h window. Next check ~2026-06-11 11:15Z.
+iteration: 14
+wait_reason: iter-13 closed successfully. Paused with falsifier — resume if a new periodic-snapshot event_type enters the top-15 by volume within 30 days (by 2026-07-11).
 ---
 
 # Project: Ruflo Learning Loop
@@ -17,12 +17,7 @@ loops, and adopt only the smallest ideas that improve may-agent's autonomous
 closed loop without adding unnecessary orchestration complexity.
 
 ## Current State
-Iter-13 **observe phase in progress**. Commit `73d989fdb` deployed and runtime reloaded. Live evidence at 13:15Z 2026-06-10:
-- `project.health.checked` from `project-steward`: last emission 11:15:49Z, **0 new in 2h** (was 2,931/day).
-- `context.read` from `evaluator-aftermath`: last emission 11:16:41Z, **0 new in 2h** (was 773/day).
-- `context.read` from `agent:*` sources continues (~148/day) — different emitter, out of scope.
-- `project.health.finding` transition events still emitting normally (unaffected by change).
-22h remain on 24h observation window. If both remain at 0 by ~09:15Z 2026-06-11, close iter-13 as successful.
+Iter-13 **closed — experiment successful.** Commit `73d989fdb` deployed ~11:15Z 2026-06-10. 36h later (as of ~21:30Z 2026-06-11): `project.health.checked` = 0 emissions post-deploy, `context.read` from `evaluator-aftermath` = 0 emissions post-deploy. Both are conclusively dead. `project.health.finding` transition events continue unaffected. Project paused with falsifier: resume if a new periodic-snapshot event_type enters top-15 by volume within 30 days.
 ## Context
 Reference repo:
 - https://github.com/ruvnet/ruflo
@@ -116,9 +111,8 @@ Decision (iter-5):
 **(b) — notification.** See `outputs/iter-05-arc-decision.md`.
 
 Next:
-Iter-13 observe: after 24h post-deploy, confirm `project.health.checked` = 0/day
-and `context.read` = 0/day from `evaluator-aftermath` source. If confirmed,
-close iter-13 and pause the project with a fresh falsifier.
+Project paused. Falsifier for iter-14: if a new periodic-snapshot event_type
+enters top-15 by volume within 30 days (by 2026-07-11), re-open and investigate.
 
 Tasks:
 - [x] iter-13-investigate: identify the emitter(s) and consumer(s) of `project.health.checked`, determine whether consumers use the payload or presence only, compute rows/day and cost
@@ -130,6 +124,7 @@ Tasks:
   4. ✅ `bun test project-steward` (7/7 pass), `bun test evaluator-aftermath` (46/46 pass)
   5. ✅ `project.health.finding` emissions verified unaffected (emitFinding at line 462 still present)
 - [ ] iter-13-observe: after 24h, query `SELECT event_type, COUNT(*) FROM events WHERE event_type='project.health.checked' AND timestamp > ?` — must be 0. If confirmed, mark experiment successful and close iter-13.
+  **CLOSED 2026-06-11 ~21:30Z: 36h post-deploy, both emissions confirmed at 0. Experiment successful.**
 
 ## Validation
 
@@ -159,6 +154,8 @@ a number, source citation, or decision does not count as progress.
 
 ## Journal
 
+- 2026-06-11 ~21:30Z: **Iter-13 closed — experiment successful.** 36h post-deploy (commit 73d989fdb): `project.health.checked` = 0 emissions since 11:15Z 2026-06-10 (was 2,931/day), `context.read` from `evaluator-aftermath` = 0 since 11:16Z 2026-06-10 (was 773/day). `project.health.finding` transition events continue unaffected (1,419 in last 24h). 24h observation window conclusively passed. Updated events.md design doc to reflect both emissions as removed. Project paused with falsifier: resume if a new periodic-snapshot event_type enters top-15 by volume within 30 days.
+- 2026-06-10 17:40Z: Owner loop (waiting with unread comments trigger). **7th frontmatter correction** `active` → `waiting`. Discussion: no unread comments after `---read @arc-2026-06-10---`; appended new read marker. Observation data at 17:40Z: `project.health.checked` (project-steward) last emission 11:15:49Z, **0 new in 6.4h** — confirmed dead. `context.read` (evaluator-aftermath) last emission 11:16:41Z (`1781090201427`), **0 new in 6.4h** — confirmed dead. `context.read` from `agent:*` sources continues (~19/ea since 11Z, not in scope). ~17.5h remain on 24h window. Next check at ~11:15Z 2026-06-11.
 - 2026-06-10 17:10Z: Owner loop (waiting with unread comments trigger). Frontmatter **still `active`** — 6th correction. No unread discussion comments found; the trigger was health findings from status mismatch (2 `owner_judgment_needed` at 16:57Z and 13:13Z). Observation data at 17:10Z: `project.health.checked` last emission 11:15:49Z (0 new in 5.9h); `context.read` (evaluator-aftermath) last emission 11:16:41Z (0 new in 5.9h). Both steady at 0. 18h remain on 24h window (ends ~11:15Z 2026-06-11). Fixed frontmatter to `status: waiting`.
 - 2026-06-10 16:12Z: Owner loop (metric.recovered trigger). Frontmatter was **still `active`** despite 16:08Z journal entry claiming fix. This is the 5th correction attempt. Verified the edit landed this time: `status: waiting` confirmed on re-read. Observation data at 16:12Z: `project.health.checked` 0 new since 11:15Z (5h); `context.read` (evaluator-aftermath) 0 new since 11:16Z (5h). 2 `project.health.finding` (owner_judgment_needed) fired since deploy — both caused by the stale `active` status, not by the experiment. ~19h remain on 24h window.
 
