@@ -1,5 +1,6 @@
 const PROJECT_PATH = "projects/aks-rp-e2e";
-const TASK_TREE_FILE = ".app/tasks/tree.json";
+const APP_PATH = "projects/aks-rp-e2e.app";
+const TASK_TREE_FILE = "aks-rp-e2e.app/tasks/tree.json";
 const MAX_CONCURRENT = 3;
 
 let state = {
@@ -69,6 +70,15 @@ function hasExternalBlockSignal(task) {
   if (/validation|validator|check failed|failed required|not executable|no-work|waiting claims are not terminal/i.test(task.blocker || "")) return false;
   const text = [task.goal, task.blocker, ...(task.gates || [])].filter(Boolean).join("\n");
   return /(?:external|credential|auth|token|azure cli|\baz\b|owner|capacity|quota|rollout|environment|precondition|human|input|approval|unsafe|safety|not installed|unavailable|source signal|subscription|msi|hcp|staging)/i.test(text);
+}
+
+function taskEscalation(task) {
+  return task?.escalation && typeof task.escalation === "object" ? task.escalation : null;
+}
+
+function hasOpenEscalation(task) {
+  const escalation = taskEscalation(task);
+  return !!escalation && ["open", "routed", "waiting_human"].includes(escalation.state);
 }
 
 function kanbanColumn(task) {
@@ -279,6 +289,7 @@ function taskStats(tree) {
   }, {});
   const accepted = workflowCounts.accepted || 0;
   const blocked = workflowTasks.filter(task => task.status === "blocked" && hasExternalBlockSignal(task)).length;
+  const escalated = workflowTasks.filter(hasOpenEscalation).length;
   const active = columnCounts["in-progress"] || 0;
   const total = workflowTasks.length;
   return {
@@ -287,6 +298,7 @@ function taskStats(tree) {
     workflowCounts,
     accepted,
     blocked,
+    escalated,
     active,
     ready: columnCounts.ready || 0,
     review: columnCounts.review || 0,
@@ -338,7 +350,7 @@ async function fetchJson(path) {
 async function loadData() {
   const [projectData, taskData] = await Promise.all([
     fetchJson(`/api/projects/content?path=${encodeURIComponent(PROJECT_PATH)}`).catch(() => ({ content: "" })),
-    fetchJson(`/api/projects/artifact?path=${encodeURIComponent(PROJECT_PATH)}&file=${encodeURIComponent(TASK_TREE_FILE)}`),
+    fetchJson(`/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/tree.json")}`),
   ]);
   state.project = projectData.content || "";
   state.tree = JSON.parse(taskData.content || "{}");
@@ -408,6 +420,7 @@ function renderSummary(tree) {
         ${renderMetric("ready", stats.ready, "var(--blue)")}
         ${renderMetric("in progress", stats.active, "var(--blue)")}
         ${renderMetric("blocked", stats.blocked, "var(--yellow)")}
+        ${renderMetric("escalated", stats.escalated, "var(--orange)")}
       </div>
     </div>
     <div class="panel">
@@ -426,6 +439,7 @@ function renderSummary(tree) {
 function renderCard(task) {
   const selected = task.id === state.selectedTaskId ? " active-card" : "";
   const branch = topBranchId(state.tree, task);
+  const escalation = taskEscalation(task);
   const meta = [
     task.priority || "",
     task.claimed_by ? `claimed by ${task.claimed_by}` : "",
@@ -437,6 +451,7 @@ function renderCard(task) {
   return `<article class="card${selected}" style="--task-color:${taskColor(task.status)}" data-task-id="${attrEsc(task.id)}" onclick="selectTask(this.dataset.taskId)" title="${attrEsc(task.goal || task.id)}">
     <div class="card-id">${esc(task.id)}</div>
     <div class="card-goal">${esc(task.blocker || task.goal || "")}</div>
+    ${escalation ? `<div class="card-badges"><span class="escalation-badge">${hasOpenEscalation(task) ? "Escalated" : "Escalation"}: ${esc(escalation.owner || escalation.state || "owner")}</span></div>` : ""}
     ${reason ? `<div class="card-scheduler">${esc(reason)}</div>` : ""}
     <div class="card-meta">${meta.map(item => `<span>${esc(item)}</span>`).join("")}</div>
   </article>`;
@@ -548,6 +563,7 @@ function renderDetail() {
   }
   const parent = task.parent_id ? state.tree.tasks?.[task.parent_id] : null;
   const latestAttempt = (task.attempts || []).at(-1);
+  const escalation = taskEscalation(task);
   return `<aside class="detail panel" data-testid="task-detail">
     <div>
       <div class="kicker">Selected Task</div>
@@ -569,10 +585,28 @@ function renderDetail() {
         ${schedulerReason(state.tree, task) ? `<div>Scheduler: ${esc(schedulerReason(state.tree, task))}</div>` : ""}
         <div>Outputs: ${outputLinks(task)}</div>
         ${task.blocker ? `<div>Blocker: ${esc(task.blocker)}</div>` : ""}
+        ${task.session_id ? `<div>Session: ${esc(task.session_id)}</div>` : ""}
         ${task.verification ? `<div>Verification: ${esc(task.verification.verdict)} - ${esc(task.verification.reason || "")}</div>` : ""}
         ${latestAttempt ? `<div>Latest attempt: ${esc(latestAttempt.claim)} - ${esc(String(latestAttempt.summary || "").slice(0, 260))}</div>` : ""}
       </div>
     </div>
+    ${escalation ? `<div class="detail-section escalation-panel">
+      <div class="kicker">Escalation</div>
+      <div class="detail-list">
+        <div>ID: ${esc(escalation.id || task.escalation_id || "")}</div>
+        <div>State: ${esc(escalation.state || "open")}</div>
+        <div>Owner: ${esc(escalation.owner || "")}</div>
+        <div>Severity: ${esc(escalation.severity || "")}</div>
+        <div>Reason: ${esc(escalation.reason || "")}</div>
+        <div>Requested action: ${esc(escalation.requested_action || "")}</div>
+        <div>Resume condition: ${esc(escalation.resume_condition || "")}</div>
+        ${escalation.resolution ? `<div>Resolution: ${esc(escalation.resolution.outcome || "")} - ${esc(escalation.resolution.summary || "")}</div>` : ""}
+      </div>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn" onclick="prefillSelected('resolve')">Resolve</button>
+        <button class="btn" onclick="prefillSelected('reject-escalation')">Reject</button>
+      </div>
+    </div>` : ""}
     ${detailList("Acceptance", task.acceptance)}
     ${detailList("Gates", task.gates)}
     ${detailList("Forbidden", task.forbidden)}
@@ -587,6 +621,7 @@ function renderDetail() {
         <button class="btn" onclick="prefillSelected('review')">Audit</button>
         <button class="btn" onclick="prefillSelected('split')">Split</button>
         <button class="btn" onclick="prefillSelected('challenge')">Challenge</button>
+        <button class="btn" onclick="prefillSelected('escalate')">Escalate</button>
       </div>
       <div class="status" id="send-status" data-testid="send-status"></div>
     </div>
@@ -638,7 +673,7 @@ function prefillAdvance() {
   const active = primaryActiveTask(state.tree);
   state.selectedTaskId = active?.id || state.selectedTaskId;
   render();
-  setSteerText(`[resume] Advance aks-rp-e2e through .app/tasks/tree.json.\n\nCurrent task: ${active?.id || "none"}\n\nKeep working until blocked by a concrete gate/input, complete, or budget-limited. Do not accept no_work or waiting as terminal. Verify claims before accepting tasks.`);
+  setSteerText(`[resume] Advance aks-rp-e2e through aks-rp-e2e.app/tasks/tree.json.\n\nCurrent task: ${active?.id || "none"}\n\nKeep working until blocked by a concrete gate/input, complete, or budget-limited. Do not accept no_work or waiting as terminal. Verify claims before accepting tasks.`);
 }
 
 function prefillReviewFrontier() {
@@ -649,10 +684,14 @@ function prefillReviewFrontier() {
 function prefillSelected(action) {
   const task = selectedTask();
   if (!task) return;
+  const escalation = taskEscalation(task);
   const prompts = {
-    review: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: review\n\nReview this task's status, evidence, acceptance, blockers, and parent rollup. Tell me whether it is correctly represented in .app/tasks/tree.json and what should happen next.`,
+    review: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: review\n\nReview this task's status, evidence, acceptance, blockers, and parent rollup. Tell me whether it is correctly represented in aks-rp-e2e.app/tasks/tree.json and what should happen next.`,
     split: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: split\n\nIf this task is too broad or blocked ambiguously, split it into smaller executable child tasks. Preserve safety gates, forbidden actions, and evidence links.`,
     challenge: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: challenge\n\nChallenge this task status. Check whether the claim is overaccepted, under-specified, blocked for the wrong reason, or missing a concrete next step.`,
+    escalate: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: escalate\n\nReview whether this task is blocked by a real ownership boundary. If yes, create or refresh a task-linked escalation with owner, requested action, evidence, and resume condition. If local rework is possible, do not escalate; create ready follow-up work instead.\n\nCurrent blocker: ${task.blocker || "none"}`,
+    resolve: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: resolve_escalation\n\nResolve escalation ${escalation?.id || task.escalation_id || "(missing)"} for this task. Record outcome fixed or answered only if the task can resume now; otherwise use rejected, needs_human, or superseded with evidence. Wake project execution after updating the task.\n\nResolution summary: `,
+    "reject-escalation": `[task-steer] aks-rp-e2e task ${task.id}\n\naction: reject_escalation\n\nReject or dismiss escalation ${escalation?.id || task.escalation_id || "(missing)"} if the request is invalid, obsolete, or not enough to unblock the task. Explain what should happen next in the task tree.`,
   };
   setSteerText(prompts[action] || prompts.review);
 }

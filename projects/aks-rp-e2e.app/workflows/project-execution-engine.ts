@@ -6,6 +6,7 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, renameSync, rmSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
@@ -66,6 +67,34 @@ type Verification = {
   trace?: Trace;
 };
 
+type EscalationOutcome = "fixed" | "answered" | "rejected" | "needs_human" | "superseded" | "dismissed";
+
+type TaskEscalation = {
+  id: string;
+  state: "open" | "routed" | "waiting_human" | "resolved" | "dismissed";
+  owner: string;
+  severity: "P0" | "P1" | "P2" | "P3";
+  reason: string;
+  requested_action: string;
+  resume_condition: string;
+  dedup_key: string;
+  created_at: string;
+  updated_at: string;
+  evidence?: {
+    files?: string[];
+    outputs?: string[];
+    session_id?: string;
+  };
+  resolution?: {
+    ts: string;
+    outcome: EscalationOutcome;
+    resolver?: string;
+    summary: string;
+    evidence?: unknown;
+    resume_instruction?: string;
+  };
+};
+
 type TaskNode = {
   id: string;
   parent_id: string | null;
@@ -76,6 +105,8 @@ type TaskNode = {
   workflow?: string;
   wake_on?: string[];
   latest_run_id?: string;
+  session_id?: string;
+  session_history?: string[];
   claimed_by?: string;
   lease_expires_at?: string;
   conflict_scope?: string[];
@@ -88,7 +119,10 @@ type TaskNode = {
   forbidden: string[];
   gates: string[];
   blocker?: string;
+  escalation_id?: string;
+  escalation?: TaskEscalation;
   progress?: { accepted: number; blocked: number; total: number };
+  context?: Record<string, unknown>;
   attempts?: TaskAttempt[];
   verification?: Verification;
   trace?: Trace;
@@ -115,16 +149,21 @@ type EngineConfig = {
   plannerRunsPath: string;
   owner: string;
   worker: string;
+  role: string;
   maxAttempts: number;
   maxConcurrent: number;
+};
+
+type AgentTaskResult = Awaited<ReturnType<WorkflowContext["runAgent"]>>;
+
+type SessionWorkflowContext = WorkflowContext & {
+  runAgentSession?: (name: string, task: string, sessionId?: string) => Promise<AgentTaskResult>;
 };
 
 const PROJECT_CONTROL_ID = "project-control";
 const PROJECT_PLANNING_LOOP_ID = "project-planning-loop";
 const PROJECT_PLANNING_LOOP_RUN_ID = "project-planning-loop-run";
-const PROJECT_PLANNING_HISTORY_ID = "project-planning-history";
-const MAX_INTERRUPTED_CONTROL_REWORK_ATTEMPTS = 3;
-const MAX_CONSECUTIVE_FAILED_PLANNING_RUNS = 5;
+const MAX_REJECTED_REVIEW_RETRIES = 2;
 
 type FeatureQueueItem = {
   row: number;
@@ -195,18 +234,35 @@ function triggerNumber(event: TriggerEvent | null, key: string): number | undefi
 function parseInput(raw: string, callingAgent: string): EngineConfig {
   const trigger = parseTriggerEvent(raw);
   const projectDir = field(raw, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = field(raw, "app") ?? new URL("..", import.meta.url).pathname;
+  const explicitAppDir = field(raw, "app");
+  const embeddedProjectPath = join(projectDir, ".app", "project.json");
+  const legacyRootTaskDir = join(projectDir, "tasks");
+  const defaultAppDir = existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
+    ? projectDir
+    : existsSync(embeddedProjectPath)
+    ? join(projectDir, ".app")
+    : new URL("..", import.meta.url).pathname;
+  const appDir = explicitAppDir ?? defaultAppDir;
+  const appEmbeddedProjectPath = join(appDir, ".app", "project.json");
+  const projectPath = appDir === projectDir && existsSync(embeddedProjectPath)
+    ? embeddedProjectPath
+    : existsSync(appEmbeddedProjectPath) && existsSync(join(appDir, "tasks"))
+    ? appEmbeddedProjectPath
+    : join(appDir, "project.json");
   const maxConcurrent = Number.parseInt(field(raw, "maxConcurrent") ?? "", 10);
+  const triggerType = trigger?.type ? String(trigger.type) : "";
+  const defaultRole = triggerType === "project.execution.requested" ? "planner" : "worker";
   return {
     appDir,
     projectDir,
-    projectPath: join(appDir, "project.md"),
+    projectPath,
     treePath: join(appDir, "tasks", "tree.json"),
     featureQueuePath: join(projectDir, "evidence", "archive", "feature-learning-queue.md"),
     journalPath: join(appDir, "journal.jsonl"),
     plannerRunsPath: join(appDir, "planner-runs.jsonl"),
     owner: field(raw, "owner") ?? field(raw, "agent") ?? callingAgent,
     worker: field(raw, "worker") ?? field(raw, "agent") ?? callingAgent,
+    role: field(raw, "role") ?? defaultRole,
     maxAttempts: Number.parseInt(field(raw, "maxAttempts") ?? "3", 10),
     maxConcurrent: Math.max(1, triggerNumber(trigger, "maxConcurrent") || maxConcurrent || 1),
   };
@@ -327,6 +383,30 @@ function updateSection(content: string, heading: string, newContent: string): st
 }
 
 function projectFrame(projectContent: string): ProjectFrame {
+  const trimmed = projectContent.trim();
+  if (trimmed.startsWith("{")) {
+    try {
+      const project = JSON.parse(trimmed) as {
+        status?: string;
+        goal?: string;
+        closeReason?: string;
+        currentState?: string | { summary?: string };
+        currentFocus?: { summary?: string; nextAction?: string };
+      };
+      const currentState = typeof project.currentState === "string"
+        ? project.currentState
+        : project.currentState?.summary ?? project.currentFocus?.summary ?? "";
+      return {
+        status: (project.status || "active").toLowerCase(),
+        goal: project.goal ?? "",
+        currentState,
+        nextAction: project.currentFocus?.nextAction ?? "",
+        closeReason: project.closeReason ?? "",
+      };
+    } catch {
+      // Fall back to the legacy markdown parser below.
+    }
+  }
   return {
     status: (extractFrontmatterValue(projectContent, "status") || "active").toLowerCase(),
     goal: extractSection(projectContent, "Goal").split("\n\n")[0].trim(),
@@ -366,11 +446,11 @@ function createInitialTree(frame: ProjectFrame): TaskTree {
     priority: "P1",
     owner: "aks-explorer",
     goal: frame.goal || "Build and use the AKS RP input/expectation knowledge map.",
-    inputs: [".app/project.md", "model/knowledge-map/model.json", "reports/current.md"],
+    inputs: [".app/project.json", "model/knowledge-map/model.json", "reports/current.md"],
     outputs: [".app/tasks/tree.json"],
     acceptance: [
       "No ready or active work remains, or remaining work is explicitly blocked/superseded.",
-      "Task state is visible in .app/tasks/tree.json and summarized in .app/project.md.",
+      "Task state is visible in .app/tasks/tree.json and summarized in .app/project.json.",
     ],
     forbidden: [
       "Do not run cloud mutation unless a task has an explicit gate and that gate passes.",
@@ -484,7 +564,7 @@ function createInitialTree(frame: ProjectFrame): TaskTree {
       priority: "P2",
       owner: "aks-explorer",
       goal,
-      inputs: [".app/project.md"],
+      inputs: [".app/project.json"],
       outputs: [],
       acceptance: ["Required external trigger is present before work starts."],
       forbidden: ["Do not execute cloud or staging work without the explicit gate for this branch."],
@@ -513,12 +593,12 @@ function loadTree(config: EngineConfig): TaskTree {
 function loadTreeWithNormalizationState(config: EngineConfig): { tree: TaskTree; changed: boolean } {
   const tree = JSON.parse(readText(config.treePath)) as TaskTree;
   const before = JSON.stringify(tree);
-  normalizeTaskTree(tree);
+  normalizeTaskTreeForRuntime(config, tree);
   return { tree, changed: JSON.stringify(tree) !== before };
 }
 
 function saveTreeUnlocked(config: EngineConfig, tree: TaskTree): void {
-  normalizeTaskTree(tree);
+  normalizeTaskTreeForRuntime(config, tree);
   normalizeActiveTaskPointer(tree);
   tree.updated_at = nowIso();
   writeJson(config.treePath, tree);
@@ -568,16 +648,130 @@ function acceptedBlockedTaskHasConcreteExternalWait(task: TaskNode): boolean {
     .test(task.blocker ?? "");
 }
 
+function slug(value: string, max = 96): string {
+  return value.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, max) || "item";
+}
+
+function escalationIdForTask(task: TaskNode): string {
+  return `esc_aks_rp_e2e_${slug(task.id)}`;
+}
+
+function taskHasOpenEscalation(task: TaskNode): boolean {
+  return Boolean(task.escalation && ["open", "routed", "waiting_human"].includes(task.escalation.state));
+}
+
+function escalationOwner(task: TaskNode, config: EngineConfig, reason: string): string {
+  const text = [task.goal, reason, task.blocker, ...(task.gates ?? [])].filter(Boolean).join("\n");
+  if (task.kind === "human_question" || task.owner === "human" || /human|approval|decision|input/i.test(text)) return "human:project-owner";
+  if (/may-agent|runtime|handler|workflow|event|session|kanban|platform|ui|daemon/i.test(text)) return "agent:may";
+  if (task.owner && task.owner !== config.worker && task.owner !== config.owner) return task.owner.startsWith("agent:") || task.owner.startsWith("human:")
+    ? task.owner
+    : `agent:${task.owner}`;
+  return "human:project-owner";
+}
+
+function escalationSeverity(task: TaskNode): TaskEscalation["severity"] {
+  if (task.priority === "P0") return "P0";
+  if (task.priority === "P1") return "P1";
+  if (task.priority === "P2") return "P2";
+  return "P2";
+}
+
+function escalationRequestedAction(task: TaskNode, owner: string, reason: string): string {
+  if (owner.startsWith("human:")) {
+    return `Decide or provide the missing input needed to unblock task ${task.id}: ${reason}`;
+  }
+  return `Investigate and resolve the blocker for task ${task.id}, then emit escalation.resolved with evidence and resume instructions.`;
+}
+
+function escalationResumeCondition(task: TaskNode, reason: string): string {
+  if (hasClosedGate(task)) return `Blocking gate is satisfied or explicitly rejected: ${task.gates.filter(isBlockingGate).join("; ")}`;
+  return `Escalation owner resolves the blocker with outcome fixed or answered: ${reason}`;
+}
+
+function ensureTaskEscalation(
+  ctx: WorkflowContext,
+  config: EngineConfig,
+  taskNode: TaskNode,
+  reason: string,
+): boolean {
+  if (!hasExternalBlockSignal(taskNode, reason)) return false;
+  if (taskHasOpenEscalation(taskNode)) return false;
+  const id = taskNode.escalation_id || escalationIdForTask(taskNode);
+  const owner = escalationOwner(taskNode, config, reason);
+  const now = nowIso();
+  const escalation: TaskEscalation = {
+    id,
+    state: "open",
+    owner,
+    severity: escalationSeverity(taskNode),
+    reason,
+    requested_action: escalationRequestedAction(taskNode, owner, reason),
+    resume_condition: escalationResumeCondition(taskNode, reason),
+    dedup_key: `aks-rp-e2e:${taskNode.id}:${slug(reason, 48)}`,
+    created_at: taskNode.escalation?.created_at ?? now,
+    updated_at: now,
+    evidence: {
+      files: [".app/tasks/tree.json", ".app/tasks/README.md"],
+      outputs: taskNode.outputs,
+      session_id: taskNode.session_id,
+    },
+  };
+  taskNode.escalation_id = id;
+  taskNode.escalation = escalation;
+  try {
+    ctx.emit({
+      type: "escalation.created",
+      source: `agent:${config.owner}`,
+      owner,
+      urgency: escalation.severity === "P0" || escalation.severity === "P1" ? "high" : "normal",
+      data: {
+        escalationId: id,
+        project: "aks-rp-e2e",
+        projectId: "aks-rp-e2e.app",
+        projectPath: config.appDir,
+        taskId: taskNode.id,
+        sourceAgent: config.worker,
+        sourceSessionId: taskNode.session_id,
+        reason,
+        requestedAction: escalation.requested_action,
+        severity: escalation.severity,
+        blockedOn: taskNode.blocker ?? reason,
+        evidence: escalation.evidence,
+        resume: {
+          kind: "task",
+          taskId: taskNode.id,
+          sourceSessionId: taskNode.session_id,
+          instruction: `Resume task ${taskNode.id} after applying the escalation resolution.`,
+        },
+        dedupKey: escalation.dedup_key,
+      },
+    });
+  } catch {
+    // Local test contexts may not provide a real event bus.
+  }
+  appendJournal(config.journalPath, {
+    kind: "task_escalation_created",
+    status: "blocked",
+    summary: `Escalated blocked task ${taskNode.id} to ${owner}.`,
+    task_id: taskNode.id,
+    escalation_id: id,
+    owner,
+    reason,
+  });
+  return true;
+}
+
 function findNextReadyLeaf(tree: TaskTree): TaskNode | null {
   const leaves = Object.values(tree.tasks)
-    .filter(item => ["ready", "active"].includes(item.status) && isLeaf(item))
+    .filter(item => ["ready", "active"].includes(item.status) && isLeaf(item) && isDispatchableTask(tree, item))
     .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
-  return leaves.find(item => !isPlanningLoopTask(item)) ?? leaves[0] ?? null;
+  return leaves[0] ?? null;
 }
 
 function findReadyLeaves(tree: TaskTree): TaskNode[] {
   return Object.values(tree.tasks)
-    .filter(item => item.status === "ready" && isLeaf(item))
+    .filter(item => item.status === "ready" && isLeaf(item) && isDispatchableTask(tree, item))
     .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
 }
 
@@ -589,7 +783,7 @@ function findProposedLeaves(tree: TaskTree): TaskNode[] {
 
 function activeLeaves(tree: TaskTree): TaskNode[] {
   return Object.values(tree.tasks)
-    .filter(item => ["active", "claimed_done"].includes(item.status) && isLeaf(item))
+    .filter(item => ["active", "claimed_done"].includes(item.status) && isLeaf(item) && isDispatchableTask(tree, item))
     .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
 }
 
@@ -607,12 +801,23 @@ function normalizeTaskTree(tree: TaskTree): void {
     taskNode.acceptance = normalizeStringArray(taskNode.acceptance);
     taskNode.forbidden = normalizeStringArray(taskNode.forbidden);
     taskNode.gates = normalizeStringArray(taskNode.gates);
+    if (taskNode.escalation && typeof taskNode.escalation === "object") {
+      taskNode.escalation_id = taskNode.escalation.id || taskNode.escalation_id;
+    } else {
+      taskNode.escalation = undefined;
+    }
     const rawConflictScope = taskNode.conflict_scope as unknown;
     taskNode.conflict_scope = Array.isArray(rawConflictScope)
       ? rawConflictScope.filter((item): item is string => typeof item === "string" && Boolean(item))
       : typeof rawConflictScope === "string" && rawConflictScope
       ? [rawConflictScope]
       : undefined;
+    if (taskNode.status === "blocked" && /^Closed gate:\s*$/.test(taskNode.blocker ?? "") && !hasClosedGate(taskNode)) {
+      taskNode.status = "ready";
+      taskNode.blocker = undefined;
+      taskNode.escalation = undefined;
+      taskNode.escalation_id = undefined;
+    }
   }
   for (const taskNode of Object.values(tree.tasks)) {
     if (!taskNode.parent_id) continue;
@@ -697,11 +902,89 @@ function normalizeTaskTree(tree: TaskTree): void {
       }
     }
   }
+  reconcileAcceptedParentReviews(tree);
+  normalizeDependencyGates(tree);
+}
+
+function normalizeTaskTreeForRuntime(config: EngineConfig, tree: TaskTree): void {
+  normalizeTaskTree(tree);
+  normalizeRuntimeGates(config, tree);
 }
 
 function dependencyGateTaskId(gate: string): string | null {
-  const match = gate.trim().match(/^([A-Za-z0-9_.:-]+)\s+accepted$/);
-  return match?.[1] ?? null;
+  const text = gate.trim().replace(/[.。]+$/, "");
+  const exact = text.match(/^([A-Za-z0-9_.:-]+)\s+accepted$/);
+  if (exact) return exact[1];
+  const prose = text.match(/^([A-Za-z0-9_.:-]+)\s+(?:(?:must|should|needs? to|has to)\s+)?(?:be\s+)?(?:accepted|satisfied|completed)(?:\s+first\b.*|\s+before\b.*)?$/i);
+  return prose?.[1] ?? null;
+}
+
+function dependencyGateIsInternal(tree: TaskTree, gate: string): boolean {
+  const dependencyId = dependencyGateTaskId(gate);
+  return Boolean(dependencyId && tree.tasks[dependencyId]);
+}
+
+function unsatisfiedInternalDependencyGates(tree: TaskTree, taskNode: TaskNode): string[] {
+  return taskNode.gates
+    .filter(isBlockingGate)
+    .filter(gate => {
+      const dependencyId = dependencyGateTaskId(gate);
+      return Boolean(dependencyId && tree.tasks[dependencyId]?.status !== "accepted");
+    });
+}
+
+function onlyWaitingOnInternalDependencies(tree: TaskTree, taskNode: TaskNode): boolean {
+  const blockingGates = taskNode.gates.filter(isBlockingGate);
+  if (blockingGates.length === 0) return false;
+  return blockingGates.every(gate => {
+    const dependencyId = dependencyGateTaskId(gate);
+    return Boolean(dependencyId && tree.tasks[dependencyId]?.status !== "accepted");
+  });
+}
+
+function artifactExistenceGateSatisfied(config: EngineConfig, taskNode: TaskNode, gate: string): boolean {
+  const atLeast = gate.match(/\bat\s+least\s+(\d+)\b[\s\S]*\b(?:exist|exists)\b/i);
+  if (!atLeast) return false;
+  const requiredCount = Number.parseInt(atLeast[1], 10);
+  if (!Number.isFinite(requiredCount) || requiredCount <= 0) return false;
+  const existingInputs = taskNode.inputs.filter(input => {
+    if (!input || input.includes("*")) return false;
+    return existsSync(join(config.projectDir, input)) || existsSync(join(config.appDir, input));
+  });
+  return existingInputs.length >= requiredCount;
+}
+
+function normalizeRuntimeGates(config: EngineConfig, tree: TaskTree): void {
+  for (const taskNode of Object.values(tree.tasks)) {
+    const blockingGates = taskNode.gates.filter(isBlockingGate);
+    if (blockingGates.length === 0) continue;
+    const unsatisfied = blockingGates.filter(gate => {
+      const dependencyId = dependencyGateTaskId(gate);
+      if (dependencyId) return tree.tasks[dependencyId]?.status !== "accepted";
+      return !artifactExistenceGateSatisfied(config, taskNode, gate);
+    });
+    if (unsatisfied.length === 0) {
+      taskNode.gate_status = "satisfied";
+      if (taskNode.blocker?.startsWith("Closed gate:") || taskNode.blocker?.startsWith("Waiting for dependency gate:")) {
+        taskNode.blocker = undefined;
+      }
+      if (taskNode.status === "blocked" && isClearEnough(taskNode).ok) {
+        taskNode.status = "ready";
+        taskNode.escalation = undefined;
+        taskNode.escalation_id = undefined;
+      }
+      continue;
+    }
+
+    const onlyInternalDependencies = unsatisfied.every(gate => dependencyGateIsInternal(tree, gate));
+    if (onlyInternalDependencies && taskNode.status === "blocked") {
+      taskNode.status = "proposed";
+      taskNode.blocker = `Waiting for dependency gate: ${unsatisfied.join("; ")}`;
+      taskNode.escalation = undefined;
+      taskNode.escalation_id = undefined;
+    }
+  }
+  normalizeDependencyGates(tree);
 }
 
 function normalizeDependencyGates(tree: TaskTree): void {
@@ -716,6 +999,41 @@ function normalizeDependencyGates(tree: TaskTree): void {
     if (dependencyIds.every(id => tree.tasks[id!]?.status === "accepted")) {
       taskNode.gate_status = "satisfied";
       if (taskNode.blocker?.startsWith("Closed gate:")) taskNode.blocker = undefined;
+    }
+  }
+}
+
+function parentReviewAllowsAcceptance(tree: TaskTree, parent: TaskNode): boolean {
+  if (isReviewTask(parent) || !acceptedParentReview(tree, parent)) return false;
+  const children = parent.children.map(id => tree.tasks[id]).filter((child): child is TaskNode => Boolean(child));
+  if (children.length === 0) return false;
+  const workChildren = children.filter(child => !isReviewTask(child));
+  const reviewChildren = children.filter(isReviewTask);
+  const workAccepted = workChildren.length === 0
+    ? children.every(child => ["accepted", "superseded"].includes(child.status))
+    : workChildren.every(child => child.status === "accepted");
+  const reviewsSettled = reviewChildren.every(child => ["accepted", "superseded"].includes(child.status));
+  return workAccepted && reviewsSettled;
+}
+
+function reconcileAcceptedParentReviews(tree: TaskTree, verifier = "project-execution-engine"): void {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const parent of Object.values(tree.tasks)) {
+      if (!["decomposed", "claimed_done"].includes(parent.status)) continue;
+      if (!parentReviewAllowsAcceptance(tree, parent)) continue;
+      parent.status = "accepted";
+      parent.blocker = undefined;
+      parent.verification = {
+        ts: nowIso(),
+        verifier,
+        verdict: "accepted",
+        reason: "Accepted parent review and settled child work complete this parent task.",
+        criteria: parent.acceptance.map(item => ({ item, result: "pass" })),
+      };
+      changed = true;
+      rollUpParent(tree, parent);
     }
   }
 }
@@ -764,6 +1082,18 @@ function isPlanningLoopTask(task: TaskNode): boolean {
   return task.kind === "loop_task" || task.id === PROJECT_PLANNING_LOOP_ID || isPlanningLoopRunId(task.id);
 }
 
+function isPlanningControlTask(tree: TaskTree, task: TaskNode): boolean {
+  return task.id === PROJECT_CONTROL_ID
+    || task.id === PROJECT_PLANNING_LOOP_ID
+    || isPlanningLoopRunId(task.id)
+    || isDescendantOf(tree, task, PROJECT_CONTROL_ID)
+    || task.conflict_scope?.includes("project-control:planning-loop") === true;
+}
+
+function isDispatchableTask(tree: TaskTree, task: TaskNode): boolean {
+  return !isPlanningControlTask(tree, task);
+}
+
 function isDomainPlannerTask(task: TaskNode): boolean {
   return task.kind === "domain_planner";
 }
@@ -774,6 +1104,27 @@ function isHumanQuestionTask(task: TaskNode): boolean {
 
 function isReviewTask(task: TaskNode): boolean {
   return isBlockedReviewTask(task) || isParentReviewTask(task) || isReworkReviewTask(task);
+}
+
+function rejectedReviewAttemptCount(task: TaskNode): number {
+  if (!isReviewTask(task)) return 0;
+  return (task.attempts ?? []).filter(attempt => {
+    const errored = attempt.open_risks.some(risk => /worker session errored/i.test(risk));
+    const rejected = task.verification?.verdict === "rejected";
+    return errored || rejected || attempt.claim === "blocked";
+  }).length;
+}
+
+function exhaustRejectedReviewTask(task: TaskNode, reason: string): void {
+  task.status = "superseded";
+  task.claimed_by = undefined;
+  task.lease_expires_at = undefined;
+  task.blocker = undefined;
+  task.context = {
+    ...(task.context ?? {}),
+    exhausted_by: "project-execution-engine",
+    exhausted_reason: reason,
+  };
 }
 
 function isFastLocalUiTask(task: TaskNode): boolean {
@@ -819,7 +1170,6 @@ function hasExternalBlockSignal(task: TaskNode, evidenceText = ""): boolean {
   if (task.verification?.verdict === "rejected") return false;
   if (/validation|validator|check failed|failed required|not executable|no-work|waiting claims are not terminal/i.test(task.blocker ?? "")) return false;
   const text = [
-    task.goal,
     task.blocker,
     task.gates.join("\n"),
     evidenceText,
@@ -910,10 +1260,15 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree): string[
   const requeued: string[] = [];
   for (const taskNode of Object.values(tree.tasks)) {
     if (!isLeaf(taskNode) || !activeLeaseIsMissingOrExpired(taskNode)) continue;
-    taskNode.status = "ready";
+    if (isPlanningControlTask(tree, taskNode)) {
+      taskNode.status = "superseded";
+      taskNode.blocker = "Superseded stale legacy planning-control task; planning now runs in the project-planner control loop and is not worker-dispatchable.";
+    } else {
+      taskNode.status = "ready";
+    }
     taskNode.claimed_by = undefined;
     taskNode.lease_expires_at = undefined;
-    emitTaskEvent(ctx, "task.requeued", taskNode, { reason: "missing-or-expired-active-lease" });
+    emitTaskEvent(ctx, taskNode.status === "ready" ? "task.requeued" : "task.superseded", taskNode, { reason: "missing-or-expired-active-lease" });
     requeued.push(taskNode.id);
   }
   normalizeActiveTaskPointer(tree);
@@ -924,10 +1279,12 @@ function dispatchTaskExecutionEvents(ctx: WorkflowContext, config: EngineConfig,
   const selected = selectDispatchableLeaves(tree, config.maxConcurrent);
   for (const taskNode of selected) {
     leaseTask(taskNode, config.worker);
+    ensureTaskSession(taskNode);
     emitTaskEvent(ctx, "task.started", taskNode, {
       mode: "event-dispatch",
       claimed_by: taskNode.claimed_by,
       lease_expires_at: taskNode.lease_expires_at,
+      session_id: taskNode.session_id,
     });
     try {
       ctx.dispatchEvent("project.task.execution.requested", {
@@ -994,7 +1351,7 @@ function saveTaskBranchIntoLatest(config: EngineConfig, localTree: TaskTree, tas
   });
 }
 
-function blockUnexecutableReadyLeaves(ctx: WorkflowContext, tree: TaskTree): string[] {
+function blockUnexecutableReadyLeaves(ctx: WorkflowContext, config: EngineConfig, tree: TaskTree): string[] {
   const blocked: string[] = [];
   for (const taskNode of findReadyLeaves(tree)) {
     const clarity = isClearEnough(taskNode);
@@ -1009,8 +1366,20 @@ function blockUnexecutableReadyLeaves(ctx: WorkflowContext, tree: TaskTree): str
       continue;
     }
     if (hasClosedGate(taskNode)) {
+      if (onlyWaitingOnInternalDependencies(tree, taskNode)) {
+        const waiting = unsatisfiedInternalDependencyGates(tree, taskNode);
+        taskNode.status = "proposed";
+        taskNode.blocker = `Waiting for dependency gate: ${waiting.join("; ")}`;
+        taskNode.escalation = undefined;
+        taskNode.escalation_id = undefined;
+        emitTaskEvent(ctx, "task.deferred", taskNode, { reason: taskNode.blocker });
+        rollUpParent(tree, taskNode);
+        blocked.push(taskNode.id);
+        continue;
+      }
       taskNode.status = "blocked";
-      taskNode.blocker = taskNode.blocker ?? `Closed gate: ${taskNode.gates.join("; ")}`;
+      taskNode.blocker = taskNode.blocker ?? closedGateReason(taskNode);
+      ensureTaskEscalation(ctx, config, taskNode, taskNode.blocker ?? "gate closed");
       emitTaskEvent(ctx, "task.blocked", taskNode, { reason: taskNode.blocker ?? "gate closed" });
       rollUpParent(tree, taskNode);
       blocked.push(taskNode.id);
@@ -1069,7 +1438,7 @@ function createBlockedFrontierReview(tree: TaskTree, root: TaskNode): TaskNode |
     owner: root.owner ?? "aks-explorer",
     goal: "Review the whole blocked frontier and decide which blockers are real, stale, too coarse, missing evidence, or locally unblockable.",
     inputs: unique([
-      ".app/project.md",
+      ".app/project.json",
       ".app/tasks/tree.json",
       "model/knowledge-map/views/path-summary.json",
       "reports/current.md",
@@ -1100,7 +1469,7 @@ function createBranchBlockedReview(parent: TaskNode): TaskNode {
     owner: parent.owner ?? "aks-explorer",
     goal: `Review why task ${parent.id} is blocked and identify any safe local work that can unblock, split, or correct it.`,
     inputs: unique([
-      ".app/project.md",
+      ".app/project.json",
       ".app/tasks/tree.json",
       ...parent.inputs,
       ...parent.outputs,
@@ -1131,7 +1500,7 @@ function createParentReview(parent: TaskNode, reason: string): TaskNode {
     owner: parent.owner ?? "aks-explorer",
     goal: `Audit parent task ${parent.id} after child rollup: ${reason}`,
     inputs: unique([
-      ".app/project.md",
+      ".app/project.json",
       ".app/tasks/tree.json",
       ...parent.inputs,
       ...parent.outputs,
@@ -1186,7 +1555,7 @@ function createFrontierReplan(root: TaskNode, id: string): TaskNode {
     owner: root.owner ?? "aks-explorer",
     goal: "Replan the active project frontier: decide whether the current blocked state still leaves safe local/domain work, then add a batch of concrete proposed tasks when it does.",
     inputs: unique([
-      ".app/project.md",
+      ".app/project.json",
       ".app/tasks/tree.json",
       "reports/current.md",
       "model/knowledge-map/model.json",
@@ -1213,112 +1582,6 @@ function createFrontierReplan(root: TaskNode, id: string): TaskNode {
   });
 }
 
-function ensureProjectControlTree(tree: TaskTree): { control: TaskNode; loop: TaskNode; history: TaskNode } | null {
-  const root = tree.tasks[tree.root_task_id];
-  if (!root) return null;
-
-  let control = tree.tasks[PROJECT_CONTROL_ID];
-  if (!control) {
-    control = task(PROJECT_CONTROL_ID, {
-      parent_id: root.id,
-      kind: "work",
-      status: "decomposed",
-      priority: "P0",
-      owner: root.owner ?? "aks-explorer",
-      goal: "Visible control plane for standing project loops, planning, hygiene, and runtime audit.",
-      inputs: [".app/project.md", ".app/tasks/tree.json"],
-      outputs: [".app/tasks/tree.json", ".app/planner-runs.jsonl"],
-      acceptance: ["Standing loop responsibilities are visible and linked to workflow/run history."],
-      forbidden: ["Do not hide project-control work from the task tree; collapse it in UI if needed."],
-      gates: [],
-    });
-    addChild(tree, root, control);
-  } else if (!root.children.includes(control.id)) {
-    root.children = unique([...root.children, control.id]);
-  }
-
-  let history = tree.tasks[PROJECT_PLANNING_HISTORY_ID];
-  if (!history) {
-    history = task(PROJECT_PLANNING_HISTORY_ID, {
-      parent_id: control.id,
-      kind: "work",
-      status: "accepted",
-      priority: "P3",
-      owner: control.owner ?? "aks-explorer",
-      goal: "Archived planning run task nodes kept for audit. New planning runs should be recorded in .app/planner-runs.jsonl instead of creating top-level replan tasks.",
-      inputs: [".app/tasks/tree.json", ".app/planner-runs.jsonl"],
-      outputs: [".app/planner-runs.jsonl"],
-      acceptance: ["Legacy planner task nodes are kept out of the root project decomposition."],
-      forbidden: ["Do not schedule archived planner history as executable project work."],
-      gates: [],
-    });
-    addChild(tree, control, history);
-  } else {
-    history.parent_id = control.id;
-    if (!control.children.includes(history.id)) control.children = unique([...control.children, history.id]);
-  }
-
-  let loop = tree.tasks[PROJECT_PLANNING_LOOP_ID];
-  if (!loop) {
-    loop = task(PROJECT_PLANNING_LOOP_ID, {
-      parent_id: control.id,
-      kind: "loop_task",
-      workflow: "project-planner",
-      wake_on: [
-        "project.task.completed",
-        "project.ready.empty",
-        "project.backlog.low",
-        "project.comment.created",
-        "project.action.invoked",
-      ],
-      status: "accepted",
-      priority: "P0",
-      owner: control.owner ?? "aks-explorer",
-      goal: "Standing planning loop: review the project frontier, maintain backlog, and create/refine concrete AKS domain tasks.",
-      inputs: unique([
-        ".app/project.md",
-        ".app/tasks/tree.json",
-        "reports/current.md",
-        "model/knowledge-map/model.json",
-        "model/knowledge-map/views/path-summary.json",
-        "specs/index.json",
-        "evidence/archive/feature-learning-queue.md",
-      ]),
-      outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
-      acceptance: [
-        "Audits whether the root project goal is achieved, blocked, or still has local/domain work available.",
-        "Inspects unknown, failing, blocked, or weakly evidenced feature paths for safe local next work.",
-        "Adds a batch of 5-10 concrete proposed child tasks under meaningful domain parents when enough safe local work exists; each task has goal, inputs, outputs, acceptance, gates, forbidden actions, and conflict_scope.",
-        "If fewer than 5 safe tasks exist, adds every concrete safe task it can find and explains why the batch is smaller.",
-        "If no safe local work exists, writes exact evidence and unblock triggers instead of claiming the project goal is achieved.",
-        "Writes a planning artifact summarizing the decision and task-tree changes.",
-      ],
-      forbidden: [
-        "Do not run cloud mutation, kubectl against live clusters, staging probes, or `AKS_RP_E2E_DRY_RUN=0`.",
-        "Do not mark external gates satisfied without exact gate evidence.",
-        "Do not treat a blocked active project as complete.",
-        "Do not create new root project-frontier-replan-* tasks; record planning executions as loop runs and parent generated work under domain containers.",
-      ],
-      gates: [],
-    });
-    addChild(tree, control, loop);
-  } else {
-    loop.parent_id = control.id;
-    loop.kind = "loop_task";
-    loop.workflow = loop.workflow ?? "project-planner";
-    loop.wake_on = loop.wake_on?.length ? loop.wake_on : [
-      "project.task.completed",
-      "project.ready.empty",
-      "project.backlog.low",
-      "project.comment.created",
-      "project.action.invoked",
-    ];
-    if (!control.children.includes(loop.id)) control.children = unique([...control.children, loop.id]);
-  }
-
-  return { control, loop, history };
-}
-
 function isDescendantOf(tree: TaskTree, task: TaskNode, ancestorId: string): boolean {
   let current = task.parent_id ? tree.tasks[task.parent_id] : undefined;
   const seen = new Set<string>();
@@ -1331,101 +1594,7 @@ function isDescendantOf(tree: TaskTree, task: TaskNode, ancestorId: string): boo
 }
 
 function isControlOrArchivedPlanningTask(tree: TaskTree, task: TaskNode): boolean {
-  return task.id === PROJECT_CONTROL_ID
-    || task.id === PROJECT_PLANNING_LOOP_ID
-    || isDescendantOf(tree, task, PROJECT_PLANNING_LOOP_ID)
-    || task.id === PROJECT_PLANNING_HISTORY_ID
-    || isDescendantOf(tree, task, PROJECT_PLANNING_HISTORY_ID);
-}
-
-function createPlanningLoopRun(tree: TaskTree, loop: TaskNode): TaskNode {
-  const id = nextUniqueTaskId(tree, PROJECT_PLANNING_LOOP_RUN_ID);
-  const run = task(id, {
-    parent_id: loop.id,
-    kind: "loop_task",
-    workflow: loop.workflow ?? "project-planner",
-    wake_on: loop.wake_on,
-    status: "ready",
-    priority: loop.priority ?? "P0",
-    owner: loop.owner ?? "aks-explorer",
-    goal: loop.goal,
-    inputs: [...loop.inputs],
-    outputs: [...loop.outputs],
-    acceptance: [...loop.acceptance],
-    forbidden: [...loop.forbidden],
-    gates: [],
-    conflict_scope: ["project-control:planning-loop"],
-  });
-  addChild(tree, loop, run);
-  return run;
-}
-
-function planningLoopRuns(tree: TaskTree): TaskNode[] {
-  return Object.values(tree.tasks)
-    .filter(isPlanningLoopRunTask)
-    .sort((a, b) => planningLoopRunOrdinal(a.id) - planningLoopRunOrdinal(b.id));
-}
-
-function planningLoopRunOrdinal(id: string): number {
-  if (id === PROJECT_PLANNING_LOOP_RUN_ID) return 1;
-  const match = id.match(new RegExp(`^${PROJECT_PLANNING_LOOP_RUN_ID}-(\\d+)$`));
-  return match ? Number.parseInt(match[1], 10) : 0;
-}
-
-function planningLoopRunFreshnessRank(task: TaskNode): number {
-  const statusRank = task.status === "active" || task.status === "claimed_done" ? 10 : task.status === "ready" ? 5 : 0;
-  return statusRank * 1_000_000 + planningLoopRunOrdinal(task.id);
-}
-
-/**
- * Count consecutive failed (superseded) planning runs from the most recent
- * backwards. The count resets when a run with "accepted" or "decomposed"
- * status is encountered (evidence of genuine progress).
- */
-function consecutiveFailedPlanningRuns(tree: TaskTree): number {
-  const runs = planningLoopRuns(tree);
-  let count = 0;
-  for (let i = runs.length - 1; i >= 0; i--) {
-    if (runs[i].status === "superseded") {
-      count++;
-    } else if (runs[i].status === "accepted" || runs[i].status === "decomposed") {
-      break;
-    }
-    // Skip other statuses (ready/active/claimed_done/blocked/rejected) —
-    // these are live or in-progress, not evidence of failure.
-  }
-  return count;
-}
-
-function ensurePlanningLoopRun(tree: TaskTree, loop: TaskNode): TaskNode {
-  const existingRuns = planningLoopRuns(tree);
-  const liveRun = existingRuns.find(child => isLeaf(child) && ["ready", "active", "claimed_done"].includes(child.status));
-  if (liveRun) return liveRun;
-
-  const reusableRun = existingRuns
-    .filter(child => isLeaf(child) && ["accepted", "blocked", "rejected", "superseded"].includes(child.status))
-    .sort((a, b) => (b.verification?.ts ?? "").localeCompare(a.verification?.ts ?? ""))[0];
-  if (reusableRun) {
-    reusableRun.status = "ready";
-    reusableRun.blocker = undefined;
-    reusableRun.verification = undefined;
-    reusableRun.claimed_by = undefined;
-    reusableRun.lease_expires_at = undefined;
-    reusableRun.gate_status = undefined;
-    reusableRun.kind = "loop_task";
-    reusableRun.workflow = loop.workflow ?? reusableRun.workflow ?? "project-planner";
-    reusableRun.wake_on = loop.wake_on;
-    reusableRun.goal = loop.goal;
-    reusableRun.inputs = [...loop.inputs];
-    reusableRun.outputs = [...loop.outputs];
-    reusableRun.acceptance = [...loop.acceptance];
-    reusableRun.forbidden = [...loop.forbidden];
-    reusableRun.gates = [];
-    reusableRun.conflict_scope = ["project-control:planning-loop"];
-    return reusableRun;
-  }
-
-  return createPlanningLoopRun(tree, loop);
+  return isPlanningControlTask(tree, task);
 }
 
 function supersedeTask(taskNode: TaskNode, reason: string): void {
@@ -1442,98 +1611,28 @@ function supersedeTask(taskNode: TaskNode, reason: string): void {
   };
 }
 
-function suppressStalePlanningLoopBranches(tree: TaskTree): string[] {
-  const loop = tree.tasks[PROJECT_PLANNING_LOOP_ID];
-  if (!loop) return [];
-
-  const liveRuns = planningLoopRuns(tree)
-    .filter(item => isLeaf(item) && ["ready", "active", "claimed_done"].includes(item.status))
-    .sort((a, b) => planningLoopRunFreshnessRank(b) - planningLoopRunFreshnessRank(a));
-  if (liveRuns.length === 0) return [];
-
-  const keepRun = liveRuns[0];
-  const changed: string[] = [];
-  const reason = `Superseded by fresher executable planning loop run ${keepRun.id}; stale control-loop recovery should not block project progress.`;
-
-  for (const duplicate of liveRuns.slice(1)) {
-    supersedeTask(duplicate, reason);
-    changed.push(duplicate.id);
-  }
-
-  const keepSubtree = collectTaskSubtreeIds(tree, keepRun.id);
-  for (const candidate of Object.values(tree.tasks)) {
-    if (keepSubtree.has(candidate.id)) continue;
-    if (!isDescendantOf(tree, candidate, PROJECT_PLANNING_LOOP_ID)) continue;
-    if (!isReviewTask(candidate)) continue;
-    if (isSettled(candidate)) continue;
-    if (!["ready", "active", "claimed_done", "rejected"].includes(candidate.status)) continue;
-    supersedeTask(candidate, reason);
-    changed.push(candidate.id);
-
-    const parent = candidate.parent_id ? tree.tasks[candidate.parent_id] : undefined;
-    if (parent && isPlanningLoopRunTask(parent) && parent.id !== keepRun.id && !isSettled(parent)) {
-      supersedeTask(parent, reason);
-      changed.push(parent.id);
-    }
-  }
-
-  normalizeActiveTaskPointer(tree);
-  return unique(changed);
-}
-
-function attemptWasInterrupted(attempt: TaskAttempt): boolean {
-  return attempt.open_risks.some(risk => /worker session (?:interrupted|cancelled)/i.test(risk))
-    || /\*\*Status:\*\*\s*(?:interrupted|cancelled|canceled)/i.test(attempt.summary);
-}
-
-function interruptedAttemptCount(task: TaskNode): number {
-  return (task.attempts ?? []).filter(attemptWasInterrupted).length;
-}
-
-function recoverStalledPlanningLoopRework(tree: TaskTree): string | null {
-  const loop = tree.tasks[PROJECT_PLANNING_LOOP_ID];
-  if (!loop) return null;
-  for (const candidate of Object.values(tree.tasks)) {
-    if (!isReviewTask(candidate)) continue;
-    if (!isDescendantOf(tree, candidate, PROJECT_PLANNING_LOOP_ID)) continue;
-    if (!["ready", "active", "claimed_done", "rejected"].includes(candidate.status)) continue;
-    if (interruptedAttemptCount(candidate) < MAX_INTERRUPTED_CONTROL_REWORK_ATTEMPTS) continue;
-
-    candidate.status = "superseded";
-    candidate.claimed_by = undefined;
-    candidate.lease_expires_at = undefined;
-    candidate.blocker = `Superseded after ${interruptedAttemptCount(candidate)} interrupted control-loop recovery attempt(s); a fresh planning loop run will continue the project.`;
-    candidate.verification = {
+function retireLegacyPlanningControlTasks(tree: TaskTree): string[] {
+  const retired: string[] = [];
+  const reason = "Superseded by planner control-loop execution; planning state is recorded in planner-runs.jsonl and concrete generated work stays under value-loop task lanes.";
+  for (const taskNode of Object.values(tree.tasks)) {
+    if (!isPlanningControlTask(tree, taskNode)) continue;
+    if (taskNode.id === tree.root_task_id) continue;
+    if (["accepted", "superseded"].includes(taskNode.status)) continue;
+    taskNode.status = "superseded";
+    taskNode.claimed_by = undefined;
+    taskNode.lease_expires_at = undefined;
+    taskNode.blocker = reason;
+    taskNode.verification = {
       ts: nowIso(),
       verifier: "project-execution-engine",
       verdict: "accepted",
-      reason: candidate.blocker,
-      criteria: candidate.acceptance.map(item => ({ item, result: "not_proven" })),
+      reason,
+      criteria: taskNode.acceptance.map(item => ({ item, result: "not_proven" })),
     };
-
-    const parent = candidate.parent_id ? tree.tasks[candidate.parent_id] : undefined;
-    if (parent && isDescendantOf(tree, parent, PROJECT_PLANNING_LOOP_ID)) {
-      parent.status = "superseded";
-      parent.claimed_by = undefined;
-      parent.lease_expires_at = undefined;
-      parent.blocker = candidate.blocker;
-    }
-
-    // Budget cap: stop creating new planning runs after too many consecutive failures
-    const failedCount = consecutiveFailedPlanningRuns(tree);
-    if (failedCount >= MAX_CONSECUTIVE_FAILED_PLANNING_RUNS) {
-      loop.status = "blocked";
-      loop.blocker = `Planning loop exhausted after ${failedCount} consecutive failed runs — requires human review or scope reduction.`;
-      tree.active_task_id = null;
-      return null;
-    }
-
-    const run = createPlanningLoopRun(tree, loop);
-    reopenAncestorPathForReadyWork(tree, run);
-    tree.active_task_id = run.id;
-    return run.id;
+    retired.push(taskNode.id);
   }
-  return null;
+  normalizeActiveTaskPointer(tree);
+  return retired.sort();
 }
 
 function isUnfinishedProjectFrontierTask(tree: TaskTree, taskNode: TaskNode, seen = new Set<string>()): boolean {
@@ -1576,50 +1675,8 @@ function hasImmediateReviewRecoveryWork(tree: TaskTree): boolean {
 }
 
 function ensureFrontierReplanTask(tree: TaskTree): string | null {
-  if (ordinaryBacklogLeaves(tree).length >= ORDINARY_BACKLOG_LOW_WATERMARK) return null;
-  if (tree.project_lifecycle !== "active") return null;
-  const root = tree.tasks[tree.root_task_id];
-  if (!root) return null;
-  if (activeLeaves(tree).length > 0 || hasOrdinaryReadyWork(tree) || hasImmediateReviewRecoveryWork(tree)) return null;
-  const hasBlockedWork = Object.values(tree.tasks)
-    .some(item => item.status === "blocked" && !isReviewTask(item) && !isHumanQuestionTask(item));
-  if (!hasBlockedWork && !hasUnfinishedProjectFrontierWork(tree)) return null;
-  const control = ensureProjectControlTree(tree);
-  if (!control) return null;
-  const loop = control.loop;
-  const existingLoopRun = loop.children
-    .map(id => tree.tasks[id])
-    .find((child): child is TaskNode => Boolean(child && isPlanningLoopRunTask(child) && isLeaf(child) && ["ready", "active", "claimed_done"].includes(child.status)));
-  if (existingLoopRun) return null;
-  const loopHasPendingRework = Object.values(tree.tasks)
-    .some(item => isDescendantOf(tree, item, loop.id) && isReworkReviewTask(item) && !isSettled(item));
-  if (loopHasPendingRework) return null;
-
-  const replans = root.children
-    .map(id => tree.tasks[id])
-    .filter((child): child is TaskNode => Boolean(child && isFrontierReplanTask(child)));
-  const existing = replans.find(child => isLeaf(child) && ["ready", "active", "claimed_done"].includes(child.status));
-  if (existing) {
-    existing.status = "superseded";
-    existing.blocker = `Superseded by stable ${PROJECT_PLANNING_LOOP_ID}; planning executions are now loop runs, not root tasks.`;
-  }
-  const latestSettled = replans
-    .filter(child => ["accepted", "blocked"].includes(child.status))
-    .sort((a, b) => (b.verification?.ts ?? "").localeCompare(a.verification?.ts ?? ""))[0];
-  if (latestSettled?.status === "blocked" && !hasUnfinishedProjectFrontierWork(tree)) return null;
-  const stale = replans.find(child => isLeaf(child) && !isSettled(child));
-  if (stale) {
-    stale.status = "superseded";
-    stale.blocker = `Superseded by stable ${PROJECT_PLANNING_LOOP_ID}; planning executions are now loop runs, not root tasks.`;
-  }
-  const loopRun = ensurePlanningLoopRun(tree, loop);
-  loop.status = "decomposed";
-  loop.blocker = undefined;
-  loop.verification = undefined;
-  loop.claimed_by = undefined;
-  loop.lease_expires_at = undefined;
-  reopenAncestorPathForReadyWork(tree, loopRun);
-  return loopRun.id;
+  void tree;
+  return null;
 }
 
 function stripMarkdown(value: string): string {
@@ -1719,7 +1776,7 @@ function createFeatureQueueAdvanceTask(tree: TaskTree, parent: TaskNode, item: F
     owner: parent.owner ?? "aks-explorer",
     goal: `Advance the AKS feature-learning conveyor by creating the next concrete feature-learning task for ${item.name}.`,
     inputs: unique([
-      ".app/project.md",
+      ".app/project.json",
       ".app/tasks/tree.json",
       "evidence/archive/feature-learning-queue.md",
       "model/knowledge-map/model.json",
@@ -1777,7 +1834,7 @@ function createReworkReview(rejected: TaskNode, reason: string): TaskNode {
     owner: rejected.owner ?? "aks-explorer",
     goal: `Review the rejected attempt for task ${rejected.id} and decide the next executable recovery step.`,
     inputs: unique([
-      ".app/project.md",
+      ".app/project.json",
       ".app/tasks/tree.json",
       ...rejected.inputs,
       ...rejected.outputs,
@@ -1802,8 +1859,13 @@ function createReworkReview(rejected: TaskNode, reason: string): TaskNode {
 function ensureReworkReviewTask(tree: TaskTree, rejected: TaskNode, reason: string): string {
   if (isReviewTask(rejected)) {
     // A failed review task should not create an infinite review-of-review chain.
-    // Retry the same review leaf so the branch stays auditable without starving
-    // unrelated work behind nested recovery tasks.
+    // Retry the same review leaf only a small number of times. After repeated
+    // rejected/errored attempts, park it as superseded so event continuation
+    // cannot turn one bad review into a tight project-wide loop.
+    if (rejectedReviewAttemptCount(rejected) >= MAX_REJECTED_REVIEW_RETRIES) {
+      exhaustRejectedReviewTask(rejected, reason);
+      return rejected.id;
+    }
     rejected.status = "ready";
     rejected.blocker = undefined;
     rejected.claimed_by = undefined;
@@ -1848,7 +1910,6 @@ function ensureParentReviewTask(tree: TaskTree, parent: TaskNode, reason: string
 }
 
 function ensureSettledDecomposedParentReviews(tree: TaskTree): string[] {
-  if (!tree.tasks[PROJECT_PLANNING_LOOP_ID]) return [];
   const hasNonPlanningReady = findReadyLeaves(tree).some(item => !isPlanningLoopTask(item));
   if (hasNonPlanningReady) return [];
 
@@ -1857,6 +1918,10 @@ function ensureSettledDecomposedParentReviews(tree: TaskTree): string[] {
     .filter(parent => parent.children.length > 0)
     .filter(parent => !isControlOrArchivedPlanningTask(tree, parent))
     .filter(parent => !isReviewTask(parent))
+    .filter(parent => !parent.children
+      .map(id => tree.tasks[id])
+      .filter((child): child is TaskNode => Boolean(child))
+      .some(child => isHumanQuestionTask(child) && child.status === "blocked"))
     .filter(parent => parent.children
       .map(id => tree.tasks[id])
       .filter((child): child is TaskNode => Boolean(child))
@@ -1941,8 +2006,82 @@ function isBlockingGate(gate: string): boolean {
   return Boolean(gate.trim()) && !isNonBlockingSafetyGate(gate);
 }
 
+function taskText(task: TaskNode): string {
+  return [
+    task.id,
+    task.kind ?? "",
+    task.goal,
+    task.gates.join("\n"),
+    task.forbidden.join("\n"),
+    task.conflict_scope?.join("\n") ?? "",
+    task.context ? JSON.stringify(task.context) : "",
+  ].filter(Boolean).join("\n");
+}
+
+function isLiveExecutionTask(task: TaskNode): boolean {
+  if (isReviewTask(task) || isGlobalSerializedExecutionTask(task)) return false;
+  if (task.kind === "local_implementation") return false;
+  const intentText = [
+    task.id,
+    task.kind ?? "",
+    task.goal,
+    task.conflict_scope?.join("\n") ?? "",
+    task.context ? JSON.stringify(task.context) : "",
+  ].filter(Boolean).join("\n");
+  const text = taskText(task);
+  const evidenceFeedbackOnly = /(?:feedback[- ]rollup|model[- ]update|model-update|evidence-feedback|diagnos(?:e|is)|classif(?:y|ication))/i.test(intentText)
+    && !/\b(?:run|execute|replay)\s+(?:the\s+)?(?:spec|test|probe|script)|\bcreate\s+(?:an?\s+)?(?:aks\s+)?cluster|\bcloud mutation\b/i.test(intentText);
+  if (evidenceFeedbackOnly) return false;
+  const planningOnly = /\b(?:plan|planning|select|steer|frontier|create|activate|schedule|triage)\b/i.test(text)
+    && /\b(?:do not directly execute|without manually running|do not run (?:live|cloud|staging)|not run tests directly)\b/i.test(text);
+  if (planningOnly) return false;
+  return /"parallel_lane"\s*:\s*"live-verification"/i.test(text)
+    || /\blive[- ]e2e\b/i.test(text)
+    || /\bstaging[- ]rest\b/i.test(text)
+    || /\bcloud:staging\b/i.test(text)
+    || /\bcreatesCluster\b/i.test(text);
+}
+
+function hasRepeatableLiveSpecPolicy(task: TaskNode): boolean {
+  const policy = String(task.context?.live_run_policy ?? task.context?.liveRunPolicy ?? "");
+  return task.workflow === "spec-runner" && /^(repeatable-approved|approved-repeatable)$/i.test(policy);
+}
+
+function hasExplicitLiveExecutionAuthorization(task: TaskNode): boolean {
+  if (hasRepeatableLiveSpecPolicy(task)) return true;
+  const text = task.gates.join("\n");
+  return /AKS_RP_E2E_ALLOW_CLOUD_MUTATION/i.test(text)
+    || (/--execute/i.test(text) && /owner|operator|approved|authori[sz]ed/i.test(text));
+}
+
+function missingLiveExecutionAuthorization(task: TaskNode): boolean {
+  return isLiveExecutionTask(task) && !hasExplicitLiveExecutionAuthorization(task);
+}
+
+function isSatisfiedDependencyGate(gate: string): boolean {
+  return /\b(?:accepted|satisfied|completed)\b/i.test(gate);
+}
+
+function isRepeatableRunnerPolicyGate(gate: string): boolean {
+  return /runner-managed|repeatable/i.test(gate) && /AKS_RP_E2E_ALLOW_CLOUD_MUTATION|native spec-runner|staging/i.test(gate);
+}
+
+function unsatisfiedBlockingGates(task: TaskNode): string[] {
+  const blocking = task.gates.filter(isBlockingGate);
+  if (!hasRepeatableLiveSpecPolicy(task)) return blocking;
+  return blocking.filter(gate => !isSatisfiedDependencyGate(gate) && !isRepeatableRunnerPolicyGate(gate));
+}
+
+function closedGateReason(task: TaskNode): string {
+  if (missingLiveExecutionAuthorization(task)) {
+    return "Live/cloud execution task is missing an explicit owner/operator authorization gate such as --execute plus AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<task-specific-value>.";
+  }
+  return `Closed gate: ${unsatisfiedBlockingGates(task).join("; ") || task.gates.filter(isBlockingGate).join("; ") || task.gates.join("; ")}`;
+}
+
 function hasClosedGate(task: TaskNode): boolean {
-  return task.gates.some(isBlockingGate) && task.gate_status !== "satisfied";
+  if (missingLiveExecutionAuthorization(task)) return true;
+  return unsatisfiedBlockingGates(task).length > 0 && task.gate_status !== "satisfied";
 }
 
 function emitTaskEvent(ctx: WorkflowContext, type: string, task: TaskNode, extra: Record<string, unknown> = {}): void {
@@ -1956,6 +2095,97 @@ function emitTaskEvent(ctx: WorkflowContext, type: string, task: TaskNode, extra
   } catch {
     // Local test contexts may not provide a real dispatcher.
   }
+}
+
+function triggerDataRecord(trigger: TriggerEvent | null): Record<string, unknown> {
+  return trigger?.data && typeof trigger.data === "object" && !Array.isArray(trigger.data) ? trigger.data : {};
+}
+
+function triggerParamsRecord(trigger: TriggerEvent | null): Record<string, unknown> {
+  const data = triggerDataRecord(trigger);
+  const params = data.params;
+  return params && typeof params === "object" && !Array.isArray(params) ? params as Record<string, unknown> : {};
+}
+
+function recordString(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value : "";
+}
+
+function applyEscalationDisposition(
+  ctx: WorkflowContext,
+  config: EngineConfig,
+  tree: TaskTree,
+  trigger: TriggerEvent | null,
+): string[] {
+  if (trigger?.type !== "project.execution.requested") return [];
+  const data = triggerDataRecord(trigger);
+  const params = triggerParamsRecord(trigger);
+  const reason = recordString(data, "reason");
+  if (reason !== "escalation-resolved" && reason !== "escalation-dismissed") return [];
+
+  const escalationId = recordString(params, "escalationId") || recordString(params, "escalation_id");
+  const taskId = recordString(params, "taskId") || recordString(params, "task_id");
+  const outcome = (recordString(params, "outcome") || (reason === "escalation-dismissed" ? "dismissed" : "answered")) as EscalationOutcome;
+  const summary = recordString(params, "summary") || recordString(params, "comment") || "Escalation disposition received.";
+  const resolver = recordString(params, "resolverAgent") || recordString(params, "resolver") || recordString(params, "author");
+  const resumeInstruction = recordString(params, "resumeInstruction") || recordString(params, "resume_instruction");
+  const taskNode = taskId && tree.tasks[taskId]
+    ? tree.tasks[taskId]
+    : Object.values(tree.tasks).find(item => item.escalation_id === escalationId || item.escalation?.id === escalationId);
+  if (!taskNode || !taskNode.escalation) return [];
+
+  const terminalState = outcome === "dismissed" ? "dismissed" : outcome === "needs_human" ? "waiting_human" : "resolved";
+  taskNode.escalation = {
+    ...taskNode.escalation,
+    state: terminalState,
+    updated_at: nowIso(),
+    resolution: {
+      ts: nowIso(),
+      outcome,
+      resolver: resolver || undefined,
+      summary,
+      evidence: params.evidence,
+      resume_instruction: resumeInstruction || undefined,
+    },
+  };
+  taskNode.escalation_id = taskNode.escalation.id;
+
+  if (outcome === "fixed" || outcome === "answered") {
+    if (taskNode.status === "blocked") {
+      taskNode.status = "ready";
+      taskNode.blocker = undefined;
+      if (hasClosedGate(taskNode)) taskNode.gate_status = "satisfied";
+      emitTaskEvent(ctx, "task.unblocked", taskNode, {
+        escalation_id: taskNode.escalation.id,
+        outcome,
+        resume_instruction: resumeInstruction,
+      });
+    }
+  } else if (outcome === "rejected" || outcome === "dismissed") {
+    taskNode.status = "blocked";
+    taskNode.blocker = `Escalation ${outcome}: ${summary}`;
+    emitTaskEvent(ctx, "task.blocked", taskNode, {
+      escalation_id: taskNode.escalation.id,
+      outcome,
+      reason: taskNode.blocker,
+    });
+  } else if (outcome === "superseded") {
+    taskNode.status = "superseded";
+    taskNode.blocker = `Escalation superseded: ${summary}`;
+  }
+
+  appendJournal(config.journalPath, {
+    kind: "task_escalation_disposition_applied",
+    status: taskNode.status,
+    summary,
+    task_id: taskNode.id,
+    escalation_id: taskNode.escalation.id,
+    outcome,
+    resolver,
+  });
+  normalizeActiveTaskPointer(tree);
+  return [taskNode.id];
 }
 
 function requestContinuation(ctx: WorkflowContext, config: EngineConfig, tree: TaskTree, reason: string): void {
@@ -1996,15 +2226,54 @@ function updateProjectActiveTask(config: EngineConfig, projectContent: string, t
       ].filter(Boolean).join("\n")
     : "- none";
 
+  if (config.projectPath.endsWith(".json")) {
+    const project = latestProjectContent.trim().startsWith("{")
+      ? JSON.parse(latestProjectContent) as Record<string, unknown>
+      : {};
+    const currentFocus = project.currentFocus && typeof project.currentFocus === "object" && !Array.isArray(project.currentFocus)
+      ? project.currentFocus as Record<string, unknown>
+      : {};
+    currentFocus.activeTaskIds = active ? [active.id] : [];
+    currentFocus.activeTask = active
+      ? {
+          id: active.id,
+          status: active.status,
+          source: "tasks/tree.json",
+          blocker: active.blocker,
+          outputs: active.outputs,
+        }
+      : null;
+    project.currentFocus = currentFocus;
+    project.taskIndex = ["tasks/README.md", "tasks/tree.json"];
+    project.updatedAt = nowIso();
+    writeFileSync(config.projectPath, `${JSON.stringify(project, null, 2)}\n`, "utf-8");
+    return;
+  }
+
   let next = updateSection(latestProjectContent, "Active Task", `${activeBlock}\n`);
   next = updateSection(next, "Task Index", "- .app/tasks/README.md\n- .app/tasks/tree.json\n");
   writeFileSync(config.projectPath, next, "utf-8");
 }
 
-function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
+function appPath(config: EngineConfig, relativePath: string): string {
+  return join(config.appDir, relativePath);
+}
+
+function projectPath(config: EngineConfig, relativePath: string): string {
+  return join(config.projectDir, relativePath);
+}
+
+function displayTaskPath(config: EngineConfig, path: string): string {
+  if (path.startsWith(".app/")) return `${appPath(config, path.slice(".app/".length))} (app)`;
+  if (path.startsWith("aks-rp-e2e.app/")) return `${join(dirname(config.appDir), path)} (app)`;
+  if (path.startsWith("/")) return path;
+  return `${projectPath(config, path)} (domain)`;
+}
+
+function buildWorkerPrompt(config: EngineConfig, task: TaskNode, frame: ProjectFrame): string {
   const compactLocalTask = isFastLocalUiTask(task);
   const taskTreeCurationGuidance = [
-    `Treat .app/tasks/tree.json as the project's structured understanding, not an attempt log. Each branch should explain a meaningful AKS learning responsibility, decomposition, executable leaf, or review.`,
+    `Treat ${appPath(config, "tasks/tree.json")} as the project's structured understanding, not an attempt log. Each branch should explain a meaningful AKS learning responsibility, decomposition, executable leaf, or review.`,
     `Do not add runtime-shaped or vague branches for retries, planner runs, or "try again" work. If an existing branch is stale, duplicate, misleading, or at the wrong level, supersede it with a reason and attach replacement work under the correct domain/control parent.`,
   ];
   const blockedReviewMode = isBlockedReviewTask(task)
@@ -2014,7 +2283,7 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
         `This task exists because blocked is not a passive stop state. Review the blocker, classify it, and create or describe safe local follow-up work when possible.`,
         `Use these verdicts: confirmed_external, can_unblock_locally, needs_split, wrongly_blocked, needs_human.`,
         ...taskTreeCurationGuidance,
-        `You may edit .app/tasks/tree.json directly, but only to add or update concrete child tasks for the blocked branch you are reviewing. Do not rewrite unrelated branches.`,
+        `You may edit ${appPath(config, "tasks/tree.json")} directly, but only to add or update concrete child tasks for the blocked branch you are reviewing. Do not rewrite unrelated branches.`,
       ]
     : [];
   const parentReviewMode = isParentReviewTask(task)
@@ -2022,7 +2291,7 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
         ``,
         `## Parent Review Mode`,
         `This task exists because child work changed a parent state. Audit the parent from evidence and recommend accept, block, split, or continue.`,
-        `Do not edit .app/tasks/tree.json directly. The engine owns task-tree mutation and parent rollup.`,
+        `Do not edit ${appPath(config, "tasks/tree.json")} directly. The engine owns task-tree mutation and parent rollup.`,
       ]
     : [];
   const reworkReviewMode = isReworkReviewTask(task)
@@ -2031,7 +2300,7 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
         `## Rework Review Mode`,
         `This task exists because a leaf was rejected by verification. Audit the rejection and recover the branch instead of stopping the project.`,
         ...taskTreeCurationGuidance,
-        `You may edit .app/tasks/tree.json directly, but only to add or update concrete child tasks for the rejected branch you are reviewing. Do not rewrite unrelated branches.`,
+        `You may edit ${appPath(config, "tasks/tree.json")} directly, but only to add or update concrete child tasks for the rejected branch you are reviewing. Do not rewrite unrelated branches.`,
         `Do not answer with "no work" or "waiting" as a terminal result. If you cannot continue locally, create a concrete follow-up task, identify the blocker task to address, or record one concrete human/input question.`,
       ]
     : [];
@@ -2042,9 +2311,9 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
         `This is a standing loop task mapped to workflow ${task.workflow ?? "project-planner"}. Treat this execution as one planner run, not as a new project task.`,
         `The project goal is not achieved just because current leaves are blocked. Inspect the domain workspace for safe local work that still advances the project goal.`,
         `Look especially at unknown, failing, blocked, stale, or weakly evidenced feature paths in the model, reports, specs, run plans, probes, and evidence.`,
-        `Speed matters: create a batch of 5-10 proposed ordinary leaf tasks when safe local work exists. Parent generated tasks under meaningful domain containers such as feature-learning-loop, knowledge-model-maintenance, cross-feature-synthesis, or execution-engine-audit. Prefer independent tasks with explicit conflict_scope so the planner can promote them and the worker pickup loop can dispatch them in parallel.`,
+        `Speed matters: create a batch of 5-10 proposed ordinary leaf tasks when safe local work exists. Parent generated tasks under the durable value-loop lanes: feature-knowledge-and-specs, spec-runner-and-replays, evidence-feedback-and-model-update, or user-review-workspace. Prefer independent tasks with explicit conflict_scope so the planner can promote them and the worker pickup loop can dispatch them in parallel.`,
         ...taskTreeCurationGuidance,
-        `You may edit .app/tasks/tree.json directly, but only to add or update concrete proposed child tasks for this project frontier. Do not create new root project-frontier-replan-* tasks. Preserve old planning history; the engine records this execution in .app/planner-runs.jsonl.`,
+        `You may edit ${appPath(config, "tasks/tree.json")} directly, but only to add or update concrete proposed child tasks for this project frontier. Do not create new root project-frontier-replan-* tasks. Preserve old planning history; the engine records this execution in ${appPath(config, "planner-runs.jsonl")}.`,
         `Do not answer with "no work" or "waiting" as a terminal result. If the frontier appears exhausted, create a concrete diagnostic/review task, identify a blocker task to address, or record one concrete human/input question and say CLAIM: blocked.`,
       ]
     : [];
@@ -2056,7 +2325,7 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
         `Use the repeated feature-learning loop: reference packet, input-space enumeration, expectation-space enumeration, evidence/test mapping, gap analysis, test-spec/probe design, execution gate or evidence, model update, and feature closeout.`,
         `Speed matters: create a batch of 3-7 proposed ordinary leaf tasks when safe local feature-learning work exists. Prefer independent tasks with explicit conflict_scope so the planner can promote them and the worker pickup loop can dispatch them in parallel.`,
         ...taskTreeCurationGuidance,
-        `You may edit .app/tasks/tree.json directly, but only to add or update concrete proposed child tasks inside the AKS feature-learning system. Preserve gates, forbidden actions, prior evidence, and unrelated history; the planner will promote clear proposed leaves to ready.`,
+        `You may edit ${appPath(config, "tasks/tree.json")} directly, but only to add or update concrete proposed child tasks inside the AKS feature-learning system. Preserve gates, forbidden actions, prior evidence, and unrelated history; the planner will promote clear proposed leaves to ready.`,
         `If no safe local feature-learning work remains, write exact unblock triggers and say CLAIM: blocked.`,
       ]
     : [];
@@ -2064,8 +2333,8 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
     ? [
         ``,
         `## Fast Local Task Guidance`,
-        `Keep this execution bounded. Do not read the full .app/tasks/tree.json, full quality-panel.js, or broad project history unless a targeted lookup proves insufficient.`,
-        `For .app/tasks/tree.json, inspect only the current task, its parent, and direct children using a small JSON query or targeted search for the task id.`,
+        `Keep this execution bounded. Do not read the full ${appPath(config, "tasks/tree.json")}, full quality-panel.js, or broad project history unless a targeted lookup proves insufficient.`,
+        `For ${appPath(config, "tasks/tree.json")}, inspect only the current task, its parent, and direct children using a small JSON query or targeted search for the task id.`,
         `For source files, search for the relevant function, route, selector, or test name first, then read only the needed section.`,
         `Prefer one small edit plus one focused verification command over broad exploration.`,
       ]
@@ -2078,7 +2347,17 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
     ``,
     `## Task`,
     `id: ${task.id}`,
+    `session: ${task.session_id ?? "(new task session)"}`,
     `goal: ${task.goal}`,
+    ``,
+    `## Workspace Layout`,
+    `- app workspace: ${config.appDir}`,
+    `- domain workspace: ${config.projectDir}`,
+    `- task tree: ${appPath(config, "tasks/tree.json")}`,
+    `- app project state: ${config.projectPath}`,
+    `- planner runs: ${config.plannerRunsPath}`,
+    `- domain-relative paths such as reports/, model/, specs/, replays/, runs/, and evidence/ are under ${config.projectDir}`,
+    `- older task text that says .app/... means ${config.appDir}/..., not ${config.projectDir}/.app/...`,
     ...blockedReviewMode,
     ...parentReviewMode,
     ...reworkReviewMode,
@@ -2087,10 +2366,10 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
     ...compactLocalGuidance,
     ``,
     `## Inputs`,
-    ...task.inputs.map(item => `- ${item}`),
+    ...task.inputs.map(item => `- ${displayTaskPath(config, item)}`),
     ``,
     `## Required Outputs`,
-    ...task.outputs.map(item => `- ${item}`),
+    ...task.outputs.map(item => `- ${displayTaskPath(config, item)}`),
     ``,
     `## Acceptance`,
     ...task.acceptance.map(item => `- ${item}`),
@@ -2102,7 +2381,7 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
       ? `## Project Background\nLocal UI task. Use the task fields above, target files, and cited inputs as the execution source of truth. Avoid broad project exploration; make the smallest change that satisfies acceptance.`
       : [
           `## Project Background`,
-          `This section is background only. The task above and .app/tasks/tree.json are the execution source of truth.`,
+          `This section is background only. The task above and ${appPath(config, "tasks/tree.json")} are the execution source of truth.`,
           frame.currentState || "(none)",
           ``,
           `## Project Next Action`,
@@ -2111,6 +2390,54 @@ function buildWorkerPrompt(task: TaskNode, frame: ProjectFrame): string {
     ``,
     `When finished, answer with CLAIM: done, CLAIM: blocked, or CLAIM: partial, then list outputs and checks.`,
   ].join("\n");
+}
+
+function taskSessionId(task: TaskNode): string | undefined {
+  return typeof task.session_id === "string" && task.session_id.trim() ? task.session_id.trim() : undefined;
+}
+
+function stableTaskSessionId(task: TaskNode): string {
+  const slug = task.id.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 96) || "task";
+  return `s_task_${slug}`;
+}
+
+function ensureTaskSession(task: TaskNode): string {
+  const sessionId = taskSessionId(task) ?? stableTaskSessionId(task);
+  task.session_id = sessionId;
+  task.session_history = [...new Set([...(task.session_history ?? []), sessionId])];
+  task.trace = {
+    ...(task.trace ?? {}),
+    last_session: sessionId,
+  };
+  return sessionId;
+}
+
+function attachTaskSession(task: TaskNode, result: AgentTaskResult): void {
+  const sessionId = typeof result.sessionId === "string" && result.sessionId.trim() ? result.sessionId.trim() : "";
+  if (!sessionId) return;
+  task.session_id = task.session_id ?? sessionId;
+  task.session_history = [...new Set([...(task.session_history ?? []), sessionId])];
+  task.trace = {
+    ...(task.trace ?? {}),
+    last_session: sessionId,
+  };
+}
+
+async function runTaskSession(
+  ctx: WorkflowContext,
+  config: EngineConfig,
+  task: TaskNode,
+  frame: ProjectFrame,
+): Promise<AgentTaskResult> {
+  const sessionCtx = ctx as SessionWorkflowContext;
+  ensureTaskSession(task);
+  const prompt = buildWorkerPrompt(config, task, frame);
+  const runner = sessionCtx.runAgentSession;
+  const result = runner
+    ? await runner(config.worker, prompt, taskSessionId(task))
+    : await ctx.runAgent(config.worker, prompt);
+  attachTaskSession(task, result);
+  return result;
 }
 
 function extractClaim(text: string): TaskAttempt["claim"] {
@@ -2214,7 +2541,17 @@ function rejectedReviewTaskIds(tree: TaskTree): string[] {
     .filter(item => item.status === "rejected")
     .filter(item => isFrontierReplanTask(item) || isPlanningLoopTask(item) || isReworkReviewTask(item) || isBlockedReviewTask(item) || isParentReviewTask(item))
     .sort((a, b) => depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id))
-    .map(item => ensureReworkReviewTask(tree, item, item.blocker ?? "Review claim was rejected and needs recovery."));
+    .flatMap(item => {
+      const id = ensureReworkReviewTask(tree, item, item.blocker ?? "Review claim was rejected and needs recovery.");
+      return tree.tasks[id]?.status === "ready" ? [id] : [];
+    });
+}
+
+function shouldRequestContinuationAfterTask(task: TaskNode | undefined): boolean {
+  if (!task) return true;
+  if (task.verification?.verdict === "rejected" && isReviewTask(task)) return false;
+  if (task.status === "superseded" && isReviewTask(task)) return false;
+  return true;
 }
 
 function buildVerification(tree: TaskTree, previousTree: TaskTree | null, task: TaskNode, attempt: TaskAttempt, verifier: string): Verification {
@@ -2253,6 +2590,136 @@ function buildVerification(tree: TaskTree, previousTree: TaskTree | null, task: 
   };
 }
 
+function createPlannerControlTask(config: EngineConfig): TaskNode {
+  const sessionId = `s_planner_control_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return task("project-planner-control-loop", {
+    parent_id: null,
+    kind: "loop_task",
+    workflow: "project-planner",
+    status: "ready",
+    priority: "P0",
+    owner: config.owner,
+    session_id: sessionId,
+    session_history: [sessionId],
+    goal: "Planner control loop: reconcile the project task tree, keep executable frontier work available, and create/refine concrete AKS domain tasks when the ordinary backlog is thin.",
+    inputs: unique([
+      ".app/project.json",
+      ".app/tasks/tree.json",
+      "reports/current.md",
+      "model/knowledge-map/model.json",
+      "model/knowledge-map/views/path-summary.json",
+      "specs/index.json",
+      "evidence/archive/feature-learning-queue.md",
+    ]),
+    outputs: [".app/tasks/tree.json", ".app/planner-runs.jsonl"],
+    acceptance: [
+      "Audits whether the root project goal is achieved, blocked, or still has local/domain work available.",
+      "Inspects unknown, failing, blocked, or weakly evidenced feature paths for safe local next work.",
+      "Adds a batch of 5-10 concrete proposed child tasks under meaningful domain parents when enough safe local work exists; each task has goal, inputs, outputs, acceptance, gates, forbidden actions, and conflict_scope.",
+      "If fewer than 5 safe tasks exist, adds every concrete safe task it can find and explains why the batch is smaller.",
+      "If no safe local work exists, writes exact evidence and unblock triggers instead of claiming the project goal is achieved.",
+      "Does not create project-control, project-planning-loop-run, or project-frontier-replan task nodes.",
+    ],
+    forbidden: [
+      "Do not run cloud mutation, kubectl against live clusters, staging probes, or `AKS_RP_E2E_DRY_RUN=0`.",
+      "Do not mark external gates satisfied without exact gate evidence.",
+      "Do not treat a blocked active project as complete.",
+      "Do not create planning/control task nodes; planning is the control loop and its history belongs in planner-runs.jsonl.",
+    ],
+    gates: [],
+  });
+}
+
+function shouldRunPlannerControlLoop(tree: TaskTree, config: EngineConfig): boolean {
+  if (config.role !== "planner") return false;
+  if (tree.project_lifecycle !== "active") return false;
+  if (activeLeaves(tree).length > 0) return false;
+  const dispatchableReady = findReadyLeaves(tree).filter(taskNode => isClearEnough(taskNode).ok && !hasClosedGate(taskNode));
+  if (dispatchableReady.length > 0) return false;
+  return ordinaryBacklogLeaves(tree).length < ORDINARY_BACKLOG_LOW_WATERMARK
+    || (dispatchableReady.length === 0 && activeLeaves(tree).length === 0 && hasUnfinishedProjectFrontierWork(tree));
+}
+
+async function runPlannerControlLoop(
+  ctx: WorkflowContext,
+  config: EngineConfig,
+  content: string,
+  frame: ProjectFrame,
+  tree: TaskTree,
+): Promise<{ ran: boolean; taskIds: string[]; message: string }> {
+  if (!shouldRunPlannerControlLoop(tree, config)) {
+    return { ran: false, taskIds: [], message: "planner control loop not needed" };
+  }
+
+  const plannerTask = createPlannerControlTask(config);
+  const beforeWorkerTree = readText(config.treePath);
+  const previousTree = parseTreeSnapshot(beforeWorkerTree);
+  const result = await runTaskSession(ctx, config, plannerTask, frame);
+  const afterWorkerTree = readText(config.treePath);
+  let nextTree = tree;
+  if (afterWorkerTree !== beforeWorkerTree) {
+    try {
+      nextTree = JSON.parse(afterWorkerTree) as TaskTree;
+      normalizeTaskTreeForRuntime(config, nextTree);
+    } catch {
+      appendJournal(config.journalPath, {
+        kind: "planner_control_tree_reload_failed",
+        status: "blocked",
+        summary: "Planner control loop changed tasks/tree.json, but the engine could not parse it. Continuing from the pre-planner tree.",
+      });
+      nextTree = tree;
+    }
+  }
+
+  const text = result.lastAssistantText ?? "";
+  const summary = ctx.summarize(result, { maxLength: 1000 });
+  const evidenceText = [
+    text,
+    summary,
+    JSON.stringify((result as { finishResult?: unknown }).finishResult ?? {}),
+  ].join("\n");
+  const attempt: TaskAttempt = {
+    id: `attempt-${Date.now()}-planner`,
+    ts: nowIso(),
+    agent: config.worker,
+    claim: ["error", "interrupted", "cancelled", "canceled"].includes(result.status) ? "blocked" : claimFromResult(result, evidenceText),
+    summary,
+    outputs: plannerTask.outputs.filter(output => evidenceText.includes(output) || existsSync(join(config.appDir, output))),
+    checks: [],
+    open_risks: result.status === "error"
+      ? ["Worker session errored."]
+      : ["interrupted", "cancelled", "canceled"].includes(result.status)
+      ? ["Worker session interrupted or cancelled."]
+      : [],
+    trace: {
+      last_session: plannerTask.session_id,
+    },
+  };
+  const verification = buildVerification(nextTree, previousTree, plannerTask, attempt, config.owner);
+  appendPlannerRunRecord(config, nextTree, previousTree, plannerTask, attempt, verification);
+  const promoted = promoteClearBacklogLeaves(ctx, nextTree);
+  const blockedReady = blockUnexecutableReadyLeaves(ctx, config, nextTree);
+  normalizeActiveTaskPointer(nextTree);
+  saveTree(config, nextTree);
+  updateProjectActiveTask(config, content, nextTree);
+  appendJournal(config.journalPath, {
+    kind: "planner_control_loop_ran",
+    status: verification.verdict,
+    summary: verification.verdict === "accepted"
+      ? "Planner control loop reconciled/refilled the task tree without creating dispatchable planning tasks."
+      : verification.reason,
+    promoted_task_ids: promoted,
+    blocked_task_ids: blockedReady,
+    created_task_ids: newlyCreatedOrdinaryWorkLeaves(nextTree, previousTree).map(item => item.id),
+  });
+
+  return {
+    ran: true,
+    taskIds: [...promoted, ...findReadyLeaves(nextTree).map(item => item.id)].filter(Boolean),
+    message: `Planner control loop ${verification.verdict}: ${verification.reason}`,
+  };
+}
+
 function blockedFrontierSummary(tree: TaskTree): string {
   const blocked = Object.values(tree.tasks).filter(item => item.status === "blocked" && isLeaf(item) && hasExternalBlockSignal(item));
   const human = blocked.filter(isHumanQuestionTask);
@@ -2266,6 +2733,358 @@ function blockedFrontierSummary(tree: TaskTree): string {
     human.length ? `${human.length} human/input question(s)` : "",
     sample ? `frontier: ${sample}` : "",
   ].filter(Boolean).join("; ") || "no blocked frontier details";
+}
+
+type SpecRunnerTaskConfig = {
+  specId: string;
+  runId: string;
+  requestId: string;
+  target: string;
+  surface: string;
+  host: string;
+};
+
+type SpecRunArtifacts = {
+  runDir: string;
+  statusPath: string;
+  resultPath: string;
+  diagnosisPath: string;
+  summaryPath: string;
+  stepsPath: string;
+  status: Record<string, unknown> | null;
+  result: Record<string, unknown> | null;
+  diagnosis: Record<string, unknown> | null;
+};
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function taskString(task: TaskNode, ...keys: string[]): string {
+  const context = recordValue(task.context);
+  const trace = recordValue(task.trace);
+  for (const key of keys) {
+    const value = context[key] ?? trace[key] ?? (task as unknown as Record<string, unknown>)[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function specIdFromTask(task: TaskNode): string {
+  const explicit = taskString(task, "specId", "spec_id", "spec");
+  if (explicit) return explicit;
+  const match = [
+    task.goal,
+    ...(task.inputs ?? []),
+    ...(task.outputs ?? []),
+  ].join("\n").match(/spec\.[A-Za-z0-9_.-]+/);
+  return match?.[0] ?? "";
+}
+
+function specRunnerConfigFromTask(task: TaskNode): SpecRunnerTaskConfig | null {
+  const workflow = task.workflow || taskString(task, "workflow");
+  const specId = specIdFromTask(task);
+  if (workflow !== "spec-runner" && !specId) return null;
+  if (!specId) return null;
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 17);
+  return {
+    specId,
+    runId: taskString(task, "active_run_id", "runId", "run_id") || `run_${stamp}_${task.id.replace(/[^A-Za-z0-9]+/g, "_").slice(0, 48)}`,
+    requestId: taskString(task, "active_request_id", "requestId", "request_id") || `req_${stamp}_${task.id.replace(/[^A-Za-z0-9]+/g, "_").slice(0, 48)}`,
+    target: taskString(task, "target") || "staging-rest",
+    surface: taskString(task, "surface") || "REST",
+    host: taskString(task, "host") || "devbox",
+  };
+}
+
+function readJsonMaybe(path: string): Record<string, unknown> | null {
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readText(path)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function specRunArtifacts(config: EngineConfig, runId: string): SpecRunArtifacts {
+  const runDir = join(config.projectDir, "runs", "executions", runId);
+  const statusPath = join(runDir, "status.json");
+  const resultPath = join(runDir, "result.json");
+  const diagnosisPath = join(runDir, "diagnosis.json");
+  const summaryPath = join(runDir, "summary.md");
+  const stepsPath = join(runDir, "steps.jsonl");
+  return {
+    runDir,
+    statusPath,
+    resultPath,
+    diagnosisPath,
+    summaryPath,
+    stepsPath,
+    status: readJsonMaybe(statusPath),
+    result: readJsonMaybe(resultPath),
+    diagnosis: readJsonMaybe(diagnosisPath),
+  };
+}
+
+function projectRel(config: EngineConfig, path: string): string {
+  return path.startsWith(config.projectDir)
+    ? path.slice(config.projectDir.length + 1)
+    : path;
+}
+
+function specRunStatus(artifacts: SpecRunArtifacts): string {
+  const resultStatus = artifacts.result?.status;
+  const status = artifacts.status?.status;
+  return typeof resultStatus === "string" ? resultStatus : typeof status === "string" ? status : "";
+}
+
+function specRunPhase(artifacts: SpecRunArtifacts): string {
+  const resultPhase = artifacts.result?.phase;
+  const statusPhase = artifacts.status?.phase;
+  return typeof resultPhase === "string" ? resultPhase : typeof statusPhase === "string" ? statusPhase : "";
+}
+
+function specRunDiagnosis(artifacts: SpecRunArtifacts): string {
+  const diagnosis = artifacts.diagnosis?.diagnosis;
+  return typeof diagnosis === "string" ? diagnosis : "";
+}
+
+function specRunIsPending(artifacts: SpecRunArtifacts): boolean {
+  const status = specRunStatus(artifacts);
+  return !artifacts.result || ["", "queued", "running"].includes(status);
+}
+
+function specRunIsDryRunOnly(artifacts: SpecRunArtifacts): boolean {
+  return specRunStatus(artifacts) === "canceled" || specRunPhase(artifacts) === "dry-run-complete";
+}
+
+function specRunEvidenceRefs(artifacts: SpecRunArtifacts): string[] {
+  const refs = artifacts.result?.evidenceRefs;
+  return Array.isArray(refs) ? refs.filter((item): item is string => typeof item === "string") : [];
+}
+
+function specRunExistingOutputs(config: EngineConfig, task: TaskNode, artifacts: SpecRunArtifacts): string[] {
+  const mandatory = [
+    artifacts.statusPath,
+    artifacts.resultPath,
+    artifacts.diagnosisPath,
+    artifacts.summaryPath,
+    artifacts.stepsPath,
+  ].filter(existsSync).map(path => projectRel(config, path));
+  const evidenceRefs = specRunEvidenceRefs(artifacts).filter(ref => existsSync(join(config.projectDir, ref)));
+  const declared = task.outputs.filter(output => existsSync(join(config.projectDir, output)));
+  return unique([...declared, ...mandatory, ...evidenceRefs]);
+}
+
+function taskDependsOnRun(task: TaskNode, runId: string): boolean {
+  if (!runId) return false;
+  const context = recordValue(task.context);
+  return context.depends_on_run_id === runId
+    || context.active_run_id === runId
+    || task.gates.some(gate => gate.includes(runId))
+    || task.inputs.some(input => input.includes(runId));
+}
+
+function promoteRunDependentTasks(tree: TaskTree, runId: string): string[] {
+  const promoted: string[] = [];
+  for (const task of Object.values(tree.tasks)) {
+    if (!taskDependsOnRun(task, runId)) continue;
+    if (task.status === "accepted" || task.status === "superseded") continue;
+    if (task.workflow === "spec-runner" && task.latest_run_id === runId) continue;
+    task.gate_status = "satisfied";
+    if (task.status === "proposed" || task.status === "blocked") {
+      task.status = "ready";
+      task.blocker = undefined;
+      promoted.push(task.id);
+    }
+  }
+  return promoted;
+}
+
+function buildSpecRunnerVerification(task: TaskNode, attempt: TaskAttempt, artifacts: SpecRunArtifacts, verifier: string): Verification {
+  const status = specRunStatus(artifacts);
+  const phase = specRunPhase(artifacts);
+  const diagnosis = specRunDiagnosis(artifacts);
+  const hasTerminalCore = Boolean(artifacts.result && artifacts.diagnosis && existsSync(artifacts.summaryPath) && existsSync(artifacts.stepsPath));
+  const hasRealTerminalStatus = ["passed", "failed", "blocked", "infra_failed"].includes(status);
+  const dryRunOnly = specRunIsDryRunOnly(artifacts);
+  const diagnosisConcrete = Boolean(diagnosis && diagnosis !== "inconclusive");
+  const accepted = hasTerminalCore && hasRealTerminalStatus && !dryRunOnly && (status === "passed" || diagnosisConcrete);
+  const criteria = [
+    { item: "Real runner execution produced terminal result/diagnosis/summary/steps artifacts.", result: hasTerminalCore ? "pass" : "not_proven" },
+    { item: "Terminal status is from live execution, not dry-run/canceled resolution.", result: hasRealTerminalStatus && !dryRunOnly ? "pass" : "fail" },
+    { item: "Result reaches product assertions or records a concrete diagnosis for follow-up.", result: status === "passed" || diagnosisConcrete ? "pass" : "not_proven" },
+    ...task.acceptance.map(item => ({ item, result: accepted ? "pass" : "not_proven" })),
+  ] satisfies Verification["criteria"];
+  return {
+    ts: nowIso(),
+    verifier,
+    verdict: accepted ? "accepted" : "rejected",
+    reason: accepted
+      ? `Spec runner reached terminal status=${status}, phase=${phase || "unknown"}, diagnosis=${diagnosis || "none"}.`
+      : dryRunOnly
+      ? "Dry-run/canceled resolution is not e2e verification; run the spec without --dry-run and record terminal evidence."
+      : !hasTerminalCore
+      ? "Spec runner has not produced terminal result, diagnosis, summary, and steps artifacts."
+      : status === "not_ready"
+      ? `Spec runner reported not_ready, phase=${phase || "unknown"}, diagnosis=${diagnosis || "none"}; this is missing implementation or setup work, not verified execution.`
+      : !hasRealTerminalStatus
+      ? `Spec runner status ${status || "(missing)"} is not a real terminal e2e status.`
+      : "Spec runner terminal result lacks a concrete diagnosis for model/spec feedback.",
+    criteria,
+  };
+}
+
+async function runSpecRunnerTask(
+  ctx: WorkflowContext,
+  config: EngineConfig,
+  projectContent: string,
+  tree: TaskTree,
+  taskNode: TaskNode,
+  runner: SpecRunnerTaskConfig,
+  attemptOrdinal: number,
+): Promise<{ attempted: boolean; taskId: string }> {
+  const taskId = taskNode.id;
+  leaseTask(taskNode, config.worker);
+  taskNode.workflow = "spec-runner";
+  taskNode.latest_run_id = runner.runId;
+  taskNode.context = {
+    ...recordValue(taskNode.context),
+    active_run_id: runner.runId,
+    active_request_id: runner.requestId,
+    specId: runner.specId,
+    target: runner.target,
+    surface: runner.surface,
+    host: runner.host,
+  };
+  emitTaskEvent(ctx, "task.started", taskNode, {
+    mode: "native-spec-runner",
+    claimed_by: taskNode.claimed_by,
+    lease_expires_at: taskNode.lease_expires_at,
+    runId: runner.runId,
+    specId: runner.specId,
+  });
+  tree = saveTaskBranchIntoLatest(config, tree, taskId);
+  taskNode = tree.tasks[taskId] ?? taskNode;
+  updateProjectActiveTask(config, projectContent, tree);
+
+  let artifacts = specRunArtifacts(config, runner.runId);
+  let command = `bun runner/spec-runner.ts ${runner.specId} --target=${runner.target} --surface=${runner.surface} --host=${runner.host} --run-id=${runner.runId} --request-id=${runner.requestId}`;
+  let exitCode: number | null = null;
+  let stdout = "";
+  let stderr = "";
+
+  if (specRunIsPending(artifacts)) {
+    const hasRunningStatus = artifacts.status && ["queued", "running"].includes(specRunStatus(artifacts));
+    if (hasRunningStatus) {
+      appendJournal(config.journalPath, {
+        kind: "native_spec_runner_pending",
+        status: "active",
+        summary: "Existing spec runner execution is still pending; keeping the task active without spawning a duplicate run.",
+        task_id: taskId,
+        run_id: runner.runId,
+        phase: specRunPhase(artifacts),
+      });
+      taskNode.claimed_by = undefined;
+      taskNode.lease_expires_at = new Date(Date.now() + 15 * 60_000).toISOString();
+      tree = saveTaskBranchIntoLatest(config, tree, taskId);
+      updateProjectActiveTask(config, projectContent, tree);
+      return { attempted: false, taskId };
+    }
+
+    const result = spawnSync("bun", [
+      "runner/spec-runner.ts",
+      runner.specId,
+      `--target=${runner.target}`,
+      `--surface=${runner.surface}`,
+      `--host=${runner.host}`,
+      `--run-id=${runner.runId}`,
+      `--request-id=${runner.requestId}`,
+    ], {
+      cwd: config.projectDir,
+      encoding: "utf8",
+      maxBuffer: 1024 * 1024 * 50,
+      env: process.env,
+    });
+    exitCode = result.status ?? null;
+    stdout = result.stdout ?? "";
+    stderr = result.stderr ?? "";
+    artifacts = specRunArtifacts(config, runner.runId);
+  }
+
+  const status = specRunStatus(artifacts);
+  const phase = specRunPhase(artifacts);
+  const diagnosis = specRunDiagnosis(artifacts);
+  const resultSummary = typeof artifacts.result?.summary === "string" ? artifacts.result.summary : "";
+  const attempt: TaskAttempt = {
+    id: `attempt-${Date.now()}-${attemptOrdinal}`,
+    ts: nowIso(),
+    agent: "native-spec-runner",
+    claim: specRunIsDryRunOnly(artifacts) || specRunIsPending(artifacts) ? "blocked" : "done",
+    summary: [
+      "Native spec-runner execution.",
+      `command: ${command}`,
+      `run: ${runner.runId}`,
+      `request: ${runner.requestId}`,
+      `spec: ${runner.specId}`,
+      `status: ${status || "unknown"}`,
+      `phase: ${phase || "unknown"}`,
+      `diagnosis: ${diagnosis || "none"}`,
+      resultSummary ? `summary: ${resultSummary}` : "",
+      stdout ? `stdout:\n${stdout.slice(-4000)}` : "",
+      stderr ? `stderr:\n${stderr.slice(-4000)}` : "",
+    ].filter(Boolean).join("\n"),
+    outputs: specRunExistingOutputs(config, taskNode, artifacts),
+    checks: [{
+      command,
+      result: exitCode === null ? "not_run" : exitCode === 0 ? "pass" : "fail",
+      exit_code: exitCode ?? undefined,
+    }],
+    open_risks: [],
+  };
+  taskNode.attempts = [...(taskNode.attempts ?? []), attempt];
+  taskNode.status = "claimed_done";
+  taskNode.claimed_by = undefined;
+  taskNode.lease_expires_at = undefined;
+  emitTaskEvent(ctx, "task.claimed", taskNode, { claim: attempt.claim, runId: runner.runId, specId: runner.specId });
+
+  const verification = buildSpecRunnerVerification(taskNode, attempt, artifacts, config.owner);
+  taskNode.verification = verification;
+  if (verification.verdict === "accepted") {
+    taskNode.status = "accepted";
+    taskNode.blocker = undefined;
+    emitTaskEvent(ctx, "task.verified", taskNode, { verdict: verification.verdict, runId: runner.runId });
+    const promoted = promoteRunDependentTasks(tree, runner.runId);
+    if (promoted.length > 0) {
+      appendJournal(config.journalPath, {
+        kind: "run_dependent_tasks_promoted",
+        status: "ready",
+        summary: "Terminal spec-runner evidence satisfied dependent run gates.",
+        run_id: runner.runId,
+        task_ids: promoted,
+      });
+    }
+    rollUpParent(tree, taskNode);
+    verifyClaimedParents(tree, config.owner);
+  } else {
+    taskNode.status = "rejected";
+    taskNode.blocker = verification.reason;
+    const reworkTaskId = ensureReworkReviewTask(tree, taskNode, verification.reason);
+    emitTaskEvent(ctx, "task.rejected", taskNode, { reason: verification.reason, runId: runner.runId });
+    appendJournal(config.journalPath, {
+      kind: "native_spec_runner_rework_created",
+      status: "ready",
+      summary: "Spec runner task verification was rejected; created review/rework task and continued project execution.",
+      task_id: taskNode.id,
+      rework_task_id: reworkTaskId,
+      run_id: runner.runId,
+      reason: verification.reason,
+    });
+  }
+
+  saveTree(config, tree);
+  updateProjectActiveTask(config, projectContent, tree);
+  return { attempted: true, taskId };
 }
 
 function rollUpParent(tree: TaskTree, task: TaskNode): void {
@@ -2379,6 +3198,7 @@ async function runOneTaskAttempt(
     taskNode.blocker = taskNode.blocker ?? `Closed gate: ${taskNode.gates.join("; ")}`;
     taskNode.claimed_by = undefined;
     taskNode.lease_expires_at = undefined;
+    ensureTaskEscalation(ctx, config, taskNode, taskNode.blocker ?? "gate closed");
     emitTaskEvent(ctx, "task.blocked", taskNode, { reason: taskNode.blocker ?? "gate closed" });
     rollUpParent(tree, taskNode);
     tree = saveTaskBranchIntoLatest(config, tree, taskNode.id);
@@ -2386,12 +3206,19 @@ async function runOneTaskAttempt(
     return { attempted: false, taskId: taskNode.id };
   }
 
+  const specRunnerTask = specRunnerConfigFromTask(taskNode);
+  if (specRunnerTask) {
+    return runSpecRunnerTask(ctx, config, projectContent, tree, taskNode, specRunnerTask, attemptOrdinal);
+  }
+
   const taskId = taskNode.id;
   leaseTask(taskNode, config.worker);
+  ensureTaskSession(taskNode);
   emitTaskEvent(ctx, "task.started", taskNode, {
     mode: "worker",
     claimed_by: taskNode.claimed_by,
     lease_expires_at: taskNode.lease_expires_at,
+    session_id: taskNode.session_id,
   });
   tree = saveTaskBranchIntoLatest(config, tree, taskId);
   taskNode = tree.tasks[taskId] ?? taskNode;
@@ -2399,13 +3226,14 @@ async function runOneTaskAttempt(
 
   const beforeWorkerTree = readText(config.treePath);
   const previousTree = parseTreeSnapshot(beforeWorkerTree);
-  const result = await ctx.runAgent(config.worker, buildWorkerPrompt(taskNode, frame));
+  const result = await runTaskSession(ctx, config, taskNode, frame);
   const afterWorkerTree = readText(config.treePath);
   if (afterWorkerTree !== beforeWorkerTree) {
     try {
       tree = JSON.parse(afterWorkerTree) as TaskTree;
-      normalizeTaskTree(tree);
+      normalizeTaskTreeForRuntime(config, tree);
       taskNode = tree.tasks[taskId] ?? taskNode;
+      attachTaskSession(taskNode, result);
     } catch {
       appendJournal(config.journalPath, {
         kind: "task_tree_reload_failed",
@@ -2436,6 +3264,9 @@ async function runOneTaskAttempt(
       : ["interrupted", "cancelled", "canceled"].includes(result.status)
       ? ["Worker session interrupted or cancelled."]
       : [],
+    trace: {
+      last_session: taskNode.session_id,
+    },
   };
   taskNode.attempts = [...(taskNode.attempts ?? []), attempt];
   taskNode.status = "claimed_done";
@@ -2448,7 +3279,10 @@ async function runOneTaskAttempt(
   appendPlannerRunRecord(config, tree, previousTree, taskNode, attempt, verification);
   if (verification.verdict === "accepted") {
     taskNode.status = attempt.claim === "blocked" ? "blocked" : "accepted";
-    if (attempt.claim === "blocked") taskNode.blocker = attempt.summary;
+    if (attempt.claim === "blocked") {
+      taskNode.blocker = attempt.summary;
+      ensureTaskEscalation(ctx, config, taskNode, taskNode.blocker);
+    }
     emitTaskEvent(ctx, "task.verified", taskNode, { verdict: verification.verdict });
     rollUpParent(tree, taskNode);
     verifyClaimedParents(tree, config.owner);
@@ -2500,36 +3334,13 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     updateProjectActiveTask(config, content, tree);
   }
 
-  const recoveredPlanningLoopRunId = recoverStalledPlanningLoopRework(tree);
-  if (recoveredPlanningLoopRunId) {
+  const retiredPlanningControlTasks = retireLegacyPlanningControlTasks(tree);
+  if (retiredPlanningControlTasks.length > 0) {
     appendJournal(config.journalPath, {
-      kind: "planning_loop_rework_superseded",
-      status: "ready",
-      summary: "Superseded a repeatedly interrupted planning-loop recovery review and created a fresh executable planning loop run.",
-      task_id: recoveredPlanningLoopRunId,
-    });
-    saveTree(config, tree);
-    updateProjectActiveTask(config, content, tree);
-  } else {
-    const loop = tree.tasks[PROJECT_PLANNING_LOOP_ID];
-    if (loop && loop.status === "blocked" && loop.blocker?.startsWith("Planning loop exhausted")) {
-      appendJournal(config.journalPath, {
-        kind: "planning_loop_budget_exhausted",
-        status: "blocked",
-        summary: loop.blocker,
-      });
-      saveTree(config, tree);
-      updateProjectActiveTask(config, content, tree);
-    }
-  }
-
-  const suppressedPlanningLoopBranches = suppressStalePlanningLoopBranches(tree);
-  if (suppressedPlanningLoopBranches.length > 0) {
-    appendJournal(config.journalPath, {
-      kind: "stale_planning_loop_branches_superseded",
+      kind: "legacy_planning_control_tasks_retired",
       status: "superseded",
-      summary: "Superseded stale planning-loop recovery branches while a fresher executable planning loop run is live.",
-      task_ids: suppressedPlanningLoopBranches,
+      summary: "Retired legacy planning/control task nodes so planning runs only in the project-planner control loop.",
+      task_ids: retiredPlanningControlTasks,
     });
     saveTree(config, tree);
     updateProjectActiveTask(config, content, tree);
@@ -2539,7 +3350,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appendJournal(config.journalPath, {
       kind: "task_tree_created",
       status: tree.tasks[tree.root_task_id]?.status,
-      summary: "Initialized .app/tasks/tree.json from .app/project.md current state.",
+      summary: "Initialized .app/tasks/tree.json from .app/project.json current state.",
     });
   }
 
@@ -2549,6 +3360,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       status: "blocked",
       summary: "Project frame is closed, but blocked tasks are reviewable. Continuing only through blocked-review/unblock tasks.",
     });
+  }
+
+  const escalationDispositionTasks = applyEscalationDisposition(ctx, config, tree, trigger);
+  if (escalationDispositionTasks.length > 0) {
+    saveTree(config, tree);
+    updateProjectActiveTask(config, content, tree);
   }
 
   if (trigger && !["project.execution.requested", "project.task.execution.requested"].includes(String(trigger.type))) {
@@ -2569,6 +3386,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (!target) {
       return ctx.done(`Task execution event ignored because task ${taskId || "(missing)"} was not found.`);
     }
+    if (isPlanningControlTask(tree, target)) {
+      target.status = "superseded";
+      target.claimed_by = undefined;
+      target.lease_expires_at = undefined;
+      target.blocker = "Superseded legacy planning-control execution event; planning is handled by the project-planner control loop.";
+      saveTree(config, tree);
+      updateProjectActiveTask(config, content, tree);
+      return ctx.done(`Task execution event ignored because ${target.id} is legacy planning-control work, not a runnable leaf.`);
+    }
     if (!isLeaf(target) || !["ready", "active"].includes(target.status)) {
       return ctx.done(`Task execution event ignored because ${target.id} is ${target.status}, not a runnable leaf.`);
     }
@@ -2577,6 +3403,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const completed = tree.tasks[result.taskId];
     const completedStatus = completed?.status ?? "unknown";
     const verificationVerdict = completed?.verification?.verdict ?? null;
+    if (!result.attempted && completedStatus === "active") {
+      return ctx.done(`Task worker reconciled ${result.taskId}; native run is still active and no completion event was emitted.`);
+    }
     try {
       ctx.dispatchEvent("project.task.completed", {
         project: "aks-rp-e2e",
@@ -2586,15 +3415,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         open_task_count: openTaskCount(tree),
         requested_by: "project-execution-engine",
       });
-      ctx.dispatchEvent("project.execution.requested", {
-        project: "aks-rp-e2e",
-        reason: "task-completed",
-        completedTaskId: result.taskId,
-        status: completedStatus,
-        verificationVerdict,
-        maxConcurrent: config.maxConcurrent,
-        requested_by: "project-execution-engine",
-      });
+      if (shouldRequestContinuationAfterTask(completed)) {
+        ctx.dispatchEvent("project.execution.requested", {
+          project: "aks-rp-e2e",
+          reason: "task-completed",
+          completedTaskId: result.taskId,
+          status: completedStatus,
+          verificationVerdict,
+          maxConcurrent: config.maxConcurrent,
+          requested_by: "project-execution-engine",
+        });
+      } else {
+        appendJournal(config.journalPath, {
+          kind: "rejected_review_continuation_suppressed",
+          status: completedStatus,
+          summary: "Suppressed project.execution.requested for a rejected review task to avoid an immediate retry loop.",
+          task_id: result.taskId,
+          verification_verdict: verificationVerdict,
+        });
+      }
     } catch {
       // Local test contexts may not provide a real dispatcher.
     }
@@ -2649,6 +3488,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     updateProjectActiveTask(config, content, tree);
   }
 
+  const plannerControlResult = await runPlannerControlLoop(ctx, config, content, frame, tree);
+  if (plannerControlResult.ran) {
+    tree = loadTree(config);
+  }
+
   const initialReviewTasks = ensureBlockedReviewTasks(tree);
   if (initialReviewTasks.length > 0) {
     appendJournal(config.journalPath, {
@@ -2683,7 +3527,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         task_ids: promoted,
       });
     }
-    const blockedReady = blockUnexecutableReadyLeaves(ctx, tree);
+    const blockedReady = blockUnexecutableReadyLeaves(ctx, config, tree);
     if (blockedReady.length > 0) {
       appendJournal(config.journalPath, {
         kind: "ready_tasks_blocked_before_dispatch",
@@ -2849,6 +3693,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     if (hasClosedGate(next)) {
       next.status = "blocked";
       next.blocker = next.blocker ?? `Closed gate: ${next.gates.join("; ")}`;
+      ensureTaskEscalation(ctx, config, next, next.blocker ?? "gate closed");
       emitTaskEvent(ctx, "task.blocked", next, { reason: next.blocker ?? "gate closed" });
       rollUpParent(tree, next);
       saveTree(config, tree);
@@ -2856,25 +3701,35 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       continue;
     }
 
+    const specRunnerTask = specRunnerConfigFromTask(next);
+    if (specRunnerTask) {
+      attempts++;
+      await runSpecRunnerTask(ctx, config, content, tree, next, specRunnerTask, attempts);
+      continue;
+    }
+
     attempts++;
     const taskId = next.id;
     leaseTask(next, config.worker);
+    ensureTaskSession(next);
     emitTaskEvent(ctx, "task.started", next, {
       mode: "direct",
       claimed_by: next.claimed_by,
       lease_expires_at: next.lease_expires_at,
+      session_id: next.session_id,
     });
     saveTree(config, tree);
     updateProjectActiveTask(config, content, tree);
     const beforeWorkerTree = readText(config.treePath);
     const previousTree = parseTreeSnapshot(beforeWorkerTree);
-    const result = await ctx.runAgent(config.worker, buildWorkerPrompt(next, frame));
+    const result = await runTaskSession(ctx, config, next, frame);
     const afterWorkerTree = readText(config.treePath);
     if (afterWorkerTree !== beforeWorkerTree) {
       try {
         tree = JSON.parse(afterWorkerTree) as TaskTree;
-        normalizeTaskTree(tree);
+        normalizeTaskTreeForRuntime(config, tree);
         next = tree.tasks[taskId] ?? next;
+        attachTaskSession(next, result);
       } catch {
         appendJournal(config.journalPath, {
           kind: "task_tree_reload_failed",
@@ -2900,6 +3755,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       outputs: next.outputs.filter(output => evidenceText.includes(output) || existsSync(join(config.projectDir, output))),
       checks: [],
       open_risks: result.status === "error" ? ["Worker session errored."] : [],
+      trace: {
+        last_session: next.session_id,
+      },
     };
     next.attempts = [...(next.attempts ?? []), attempt];
     next.status = "claimed_done";
@@ -2910,7 +3768,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appendPlannerRunRecord(config, tree, previousTree, next, attempt, verification);
     if (verification.verdict === "accepted") {
       next.status = attempt.claim === "blocked" ? "blocked" : "accepted";
-      if (attempt.claim === "blocked") next.blocker = attempt.summary;
+      if (attempt.claim === "blocked") {
+        next.blocker = attempt.summary;
+        ensureTaskEscalation(ctx, config, next, next.blocker);
+      }
       emitTaskEvent(ctx, "task.verified", next, { verdict: verification.verdict });
       rollUpParent(tree, next);
       verifyClaimedParents(tree, config.owner);
@@ -2985,6 +3846,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 }
 
 if (import.meta.main) {
+  if (process.env.MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT !== "1") {
+    console.error("Direct workflow entrypoint is disabled by default. Set MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT=1 to run it.");
+    process.exit(0);
+  }
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxAttempts: 0",
     agent: "aks-explorer",

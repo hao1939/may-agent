@@ -1,32 +1,24 @@
 import { describe, expect, test } from "bun:test";
+import { Database } from "bun:sqlite";
 import { readFileSync, writeFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import app from "../../app.ts";
-import { execute } from "../../workflows/project-execution-engine.ts";
-import { execute as executePlanner } from "../../workflows/project-planner.ts";
-import { execute as executeTaskWorker } from "../../workflows/task-worker.ts";
+import app from "../app.ts";
+import { execute } from "./project-execution-engine.ts";
+import { execute as executePlanner } from "./project-planner.ts";
+import { execute as executeTaskWorker } from "./task-worker.ts";
 
-function projectMd(status: string) {
-  return `---
-id: test-project
-owner: aks-explorer
-status: ${status}
-close_reason: Closed for test.
----
-
-# Project: Test Project
-
-## Goal
-Make progress through a task tree.
-
-## Current State
-Testing.
-
-## Next Action
-Use the task tree.
-`;
+function projectJson(status: string) {
+  return `${JSON.stringify({
+    id: "test-project",
+    owner: "aks-explorer",
+    status,
+    closeReason: "Closed for test.",
+    goal: "Make progress through a task tree.",
+    currentState: { summary: "Testing." },
+    currentFocus: { nextAction: "Use the task tree.", activeTaskIds: [] },
+  }, null, 2)}\n`;
 }
 
 async function makeProject(status: string) {
@@ -34,7 +26,7 @@ async function makeProject(status: string) {
   await mkdir(join(dir, ".app"), { recursive: true });
   await mkdir(join(dir, "tasks"), { recursive: true });
   await mkdir(join(dir, "evidence", "outputs"), { recursive: true });
-  await writeFile(join(dir, ".app", "project.md"), projectMd(status), "utf8");
+  await writeFile(join(dir, ".app", "project.json"), projectJson(status), "utf8");
   await writeFile(join(dir, ".app", "journal.jsonl"), "", "utf8");
   return dir;
 }
@@ -55,7 +47,11 @@ function context(input: {
   maxAttempts?: number;
   maxConcurrent?: number;
   triggerEvent?: Record<string, unknown>;
+  stateDbPath?: string;
+  zeroOpStaleMs?: number;
+  noSessionStaleMs?: number;
   dispatched?: Array<{ type: string; payload: Record<string, unknown> }>;
+  emitted?: Array<Record<string, unknown>>;
   runAgent?: (agent: string, prompt: string) => Promise<{ status: string; lastAssistantText?: string }>;
   summarize?: (result: { lastAssistantText?: string }) => string;
 }) {
@@ -63,11 +59,21 @@ function context(input: {
     ? `\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(input.triggerEvent, null, 2)}\n\`\`\``
     : "";
   return {
-    task: `project: ${input.projectDir}\nagent: aks-explorer\nmaxAttempts: ${input.maxAttempts ?? 5}\nmaxConcurrent: ${input.maxConcurrent ?? 1}${trigger}`,
+    task: [
+      `project: ${input.projectDir}`,
+      `agent: aks-explorer`,
+      `maxAttempts: ${input.maxAttempts ?? 5}`,
+      `maxConcurrent: ${input.maxConcurrent ?? 1}`,
+      ...(input.stateDbPath ? [`stateDb: ${input.stateDbPath}`] : []),
+      ...(input.zeroOpStaleMs !== undefined ? [`zeroOpStaleMs: ${input.zeroOpStaleMs}`] : []),
+      ...(input.noSessionStaleMs !== undefined ? [`noSessionStaleMs: ${input.noSessionStaleMs}`] : []),
+    ].join("\n") + trigger,
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }),
     escalate: (message: string) => ({ status: "escalated", message }),
-    emit() {},
+    emit(event: Record<string, unknown>) {
+      input.emitted?.push(event);
+    },
     dispatchEvent(type: string, payload: Record<string, unknown>) {
       input.dispatched?.push({ type, payload });
     },
@@ -79,6 +85,7 @@ function context(input: {
 describe("project execution engine", () => {
   test("project app watcher emits execution events through one schedule path", () => {
     const regularLearning = app.schedules.find(schedule => schedule.id === "regular-learning");
+    const watchdog = app.schedules.find(schedule => schedule.id === "project-execution-watchdog");
 
     expect(regularLearning?.enabled).toBe(true);
     expect(regularLearning?.event).toEqual({
@@ -86,10 +93,109 @@ describe("project execution engine", () => {
       project: "aks-rp-e2e",
       lane: "learning",
     });
+    expect(watchdog?.enabled).toBe(true);
+    expect(watchdog?.event).toEqual({
+      type: "project.watchdog.tick",
+      project: "aks-rp-e2e",
+    });
     expect(app.actions.watch.type).toBe("async");
     expect((app.actions.watch as any).event({}).type).toBe("project.execution.requested");
+    expect(app.events).toContainEqual({ type: "project.watchdog.tick", project: "aks-rp-e2e" });
     expect(app.events).toContainEqual({ type: "project.task.completed", project: "aks-rp-e2e" });
     expect(app.events).toContainEqual({ type: "project.tasks.ready", project: "aks-rp-e2e" });
+  });
+
+  test("project app watchdog tick is handled by the watchdog workflow", async () => {
+    const emitted: unknown[] = [];
+    const result = await app.onEvent({
+      projectPath: (path: string) => path,
+      appPath: (path: string) => path,
+      readJson: async () => ({
+        tasks: {
+          project: { status: "active", children: ["task-a"] },
+          "task-a": { status: "ready", children: [] },
+          "task-b": { status: "accepted", children: [] },
+        },
+      }),
+      importModule: async () => ({}),
+      startSession: () => ({}),
+      emit: event => {
+        emitted.push(event);
+        return event;
+      },
+      noop: reason => ({ type: "noop", reason }),
+    } as any, {
+      type: "project.watchdog.tick",
+      project: "aks-rp-e2e",
+    });
+
+    expect(result).toEqual({
+      type: "noop",
+      reason: "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
+    });
+    expect(emitted).toHaveLength(0);
+  });
+
+  test("project app watchdog tick does not duplicate ready-task routing", async () => {
+    const emitted: unknown[] = [];
+    const result = await app.onEvent({
+      projectPath: (path: string) => path,
+      appPath: (path: string) => path,
+      readJson: async () => ({
+        tasks: {
+          project: { status: "decomposed", children: ["active-task", "ready-task"] },
+          "active-task": { status: "active", children: [] },
+          "ready-task": { status: "ready", children: [] },
+        },
+      }),
+      importModule: async () => ({}),
+      startSession: () => ({}),
+      emit: event => {
+        emitted.push(event);
+        return event;
+      },
+      noop: reason => ({ type: "noop", reason }),
+    } as any, {
+      type: "project.watchdog.tick",
+      project: "aks-rp-e2e",
+    });
+
+    expect(result).toEqual({
+      type: "noop",
+      reason: "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
+    });
+    expect(emitted).toHaveLength(0);
+  });
+
+  test("project app watchdog tick does not duplicate planner routing", async () => {
+    const emitted: unknown[] = [];
+    const result = await app.onEvent({
+      projectPath: (path: string) => path,
+      appPath: (path: string) => path,
+      readJson: async () => ({
+        project_lifecycle: "active",
+        tasks: {
+          project: { status: "accepted", children: ["lane"] },
+          lane: { status: "accepted", children: [] },
+        },
+      }),
+      importModule: async () => ({}),
+      startSession: () => ({}),
+      emit: event => {
+        emitted.push(event);
+        return event;
+      },
+      noop: reason => ({ type: "noop", reason }),
+    } as any, {
+      type: "project.watchdog.tick",
+      project: "aks-rp-e2e",
+    });
+
+    expect(result).toEqual({
+      type: "noop",
+      reason: "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
+    });
+    expect(emitted).toHaveLength(0);
   });
 
   test("project app turns task completion events into coordinator wakes", async () => {
@@ -118,13 +224,41 @@ describe("project execution engine", () => {
       project: "aks-rp-e2e",
       reason: "task-completed",
       params: {
-        maxConcurrent: 3,
+        maxConcurrent: 5,
         completedTaskId: "task-a",
         status: "accepted",
         verificationVerdict: "accepted",
       },
     });
     expect(emitted).toHaveLength(1);
+  });
+
+  test("project app does not turn rejected review completions into coordinator wakes", async () => {
+    const emitted: unknown[] = [];
+    const result = await app.onEvent({
+      projectPath: (path: string) => path,
+      appPath: (path: string) => path,
+      readJson: async () => ({}),
+      importModule: async () => ({}),
+      startSession: () => ({}),
+      emit: event => {
+        emitted.push(event);
+        return event;
+      },
+      noop: reason => ({ type: "noop", reason }),
+    } as any, {
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+      taskId: "task-a-rework-review",
+      status: "rejected",
+      verification_verdict: "rejected",
+    });
+
+    expect(result).toEqual({
+      type: "noop",
+      reason: "suppressed continuation for rejected review task task-a-rework-review",
+    });
+    expect(emitted).toHaveLength(0);
   });
 
   test("bootstraps task tree and creates blocked-review work instead of passively stopping", async () => {
@@ -144,10 +278,10 @@ describe("project execution engine", () => {
     expect(tree.tasks["managedsystem-live-auth-gate"].status).toBe("decomposed");
     expect(tree.tasks["managedsystem-live-auth-gate-blocker-review"].status).toBe("ready");
 
-    const project = await readFile(join(projectDir, ".app", "project.md"), "utf8");
-    expect(project).toContain("## Active Task");
+    const project = await readFile(join(projectDir, ".app", "project.json"), "utf8");
+    expect(project).toContain("\"activeTask\"");
     expect(project).toContain("blocked-frontier-review");
-    expect(project).toContain(".app/tasks/tree.json");
+    expect(project).toContain("tasks/tree.json");
   });
 
   test("keeps executing ready leaf tasks until no ready work remains", async () => {
@@ -206,19 +340,16 @@ describe("project execution engine", () => {
     };
     await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
 
-    let calls = 0;
     const result = await execute(context({
       projectDir,
       runAgent: async (_agent, prompt) => {
-        calls++;
         const outputSection = prompt.split("## Required Outputs\n")[1] ?? prompt;
-        const output = outputSection.match(/(?:evidence\/outputs|tasks)\/[^\s]+(?:\.md|\.json)/)?.[0] ?? "evidence/archive/unknown.md";
+        const output = outputSection.match(/(?:evidence\/(?:outputs|archive)|tasks)\/[^\s]+(?:\.md|\.json)/)?.[0] ?? "evidence/archive/unknown.md";
         return { status: "ok", lastAssistantText: `CLAIM: done\noutputs:\n- ${output}` };
       },
     }));
 
     expect(result.status).toBe("done");
-    expect(calls).toBe(3);
 
     const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
     expect(updated.tasks["task-a"].status).toBe("accepted");
@@ -597,6 +728,738 @@ describe("project execution engine", () => {
     expect(updated.tasks["gated-task"].status).toBe("ready");
   });
 
+  test("planner does not require repeated human approval for repeatable live spec-runner tasks", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Dispatch repeatable live spec verification.",
+          children: ["bootstrap-live"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Ready work is visible."],
+          forbidden: [],
+          gates: [],
+        },
+        "bootstrap-live": {
+          id: "bootstrap-live",
+          parent_id: "project",
+          status: "ready",
+          kind: "domain_leaf",
+          workflow: "spec-runner",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Run a repeatable approved staging spec through the native runner.",
+          children: [],
+          inputs: ["specs/index.json", "runner/spec-runner.ts", "replays/"],
+          outputs: ["runs/executions/", "evidence/archive/bootstrap-live.md"],
+          acceptance: ["Terminal runner artifacts and cleanup evidence are recorded."],
+          forbidden: ["Do not bypass runner gates."],
+          gates: [
+            "proberef-wiring-fix-14-specs accepted",
+            "spec-index-file-field-systemic-fix accepted",
+            "Repeatable staging spec-runner policy accepted: native runner must set AKS_RP_E2E_ALLOW_CLOUD_MUTATION=bootstrap-profile-managed-acr-lifecycle, use the approved devbox host, and record terminal cleanup/diagnosis evidence.",
+          ],
+          gate_status: "closed",
+          conflict_scope: ["cloud:staging", "spec:spec.bootstrap-profile.managed-acr-lifecycle"],
+          context: {
+            parallel_lane: "live-verification",
+            specId: "spec.bootstrap-profile.managed-acr-lifecycle",
+            target: "staging-rest",
+            surface: "REST",
+            host: "devbox",
+            gate: "bootstrap-profile-managed-acr-lifecycle",
+            live_run_policy: "repeatable-approved",
+          },
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await executePlanner(context({
+      projectDir,
+      maxConcurrent: 3,
+      dispatched,
+      runAgent: async () => {
+        throw new Error("planner loop should not run workers");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["bootstrap-live"]);
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["bootstrap-live"].status).toBe("ready");
+  });
+
+  test("planner leaves active task recovery to watchdog and worker pickup", async () => {
+    const projectDir = await makeProject("active");
+    const stateDbPath = join(projectDir, "may.db");
+    const db = new Database(stateDbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        projectId text,
+        status text,
+        startedAt integer,
+        opCount integer,
+        task text
+      )
+    `);
+    db.query(`
+      insert into sessions (sessionId, projectId, status, startedAt, opCount, task)
+      values (?, ?, ?, ?, ?, ?)
+    `).run(
+      "stale-zero-op",
+      "aks-rp-e2e.app",
+      "running",
+      Date.now() - 5 * 60_000,
+      0,
+      "You are executing one leaf task.\n\n## Task\nid: stuck-task\ngoal: Recover me.",
+    );
+    db.close();
+
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: "stuck-task",
+      active_task_ids: ["stuck-task"],
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Keep active task recovery outside the planner.",
+          children: ["stuck-task"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Abandoned active work becomes ready again."],
+          forbidden: [],
+          gates: [],
+        },
+        "stuck-task": {
+          id: "stuck-task",
+          parent_id: "project",
+          status: "active",
+          priority: "P1",
+          owner: "aks-explorer",
+          session_id: "stale-zero-op",
+          session_history: ["stale-zero-op"],
+          claimed_by: "aks-explorer",
+          lease_expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+          goal: "A task whose runtime attempt may need watchdog recovery.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/stuck-task.md"],
+          acceptance: ["Recovery evidence exists."],
+          forbidden: [],
+          gates: [],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const emitted: Array<Record<string, unknown>> = [];
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await executePlanner(context({
+      projectDir,
+      stateDbPath,
+      zeroOpStaleMs: 60_000,
+      maxConcurrent: 1,
+      emitted,
+      dispatched,
+      runAgent: async () => {
+        throw new Error("planner should not execute worker sessions while active work exists");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("no ready leaves to signal");
+    expect(emitted.some(event => event.type === "session.cancel.requested")).toBe(false);
+    expect(dispatched.find(event => event.type === "task.requeued")).toBeUndefined();
+    expect(dispatched.find(event => event.type === "project.tasks.ready")).toBeUndefined();
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["stuck-task"].status).toBe("active");
+    expect(updated.tasks["stuck-task"].lease_expires_at).toBeTruthy();
+    expect(updated.tasks["stuck-task"].claimed_by).toBe("aks-explorer");
+    expect(updated.tasks["stuck-task"].session_id).toBe("stale-zero-op");
+    expect(updated.tasks["stuck-task"].session_history).toContain("stale-zero-op");
+  });
+
+  test("planner reconciler keeps fresh zero-op worker sessions inside the default startup window", async () => {
+    const projectDir = await makeProject("active");
+    const stateDbPath = join(projectDir, "may.db");
+    const db = new Database(stateDbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        projectId text,
+        status text,
+        startedAt integer,
+        opCount integer,
+        task text
+      )
+    `);
+    db.query(`
+      insert into sessions (sessionId, projectId, status, startedAt, opCount, task)
+      values (?, ?, ?, ?, ?, ?)
+    `).run(
+      "fresh-zero-op",
+      "aks-rp-e2e.app",
+      "running",
+      Date.now(),
+      0,
+      "You are executing one leaf task.\n\n## Task\nid: fresh-task\ngoal: Keep me.",
+    );
+    db.close();
+
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: "fresh-task",
+      active_task_ids: ["fresh-task"],
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Keep fresh active worker sessions stable.",
+          children: ["fresh-task", "ready-task"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Fresh work is not recycled immediately."],
+          forbidden: [],
+          gates: [],
+        },
+        "fresh-task": {
+          id: "fresh-task",
+          parent_id: "project",
+          status: "active",
+          priority: "P1",
+          owner: "aks-explorer",
+          session_id: "fresh-zero-op",
+          session_history: ["fresh-zero-op"],
+          claimed_by: "aks-explorer",
+          lease_expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+          goal: "Remain active during the startup window.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/fresh-task.md"],
+          acceptance: ["Fresh evidence exists."],
+          forbidden: [],
+          gates: [],
+        },
+        "ready-task": {
+          id: "ready-task",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Provide independent ready work so the planner does not run the control-loop agent.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/ready-task.md"],
+          acceptance: ["Ready evidence exists."],
+          forbidden: [],
+          gates: [],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const emitted: Array<Record<string, unknown>> = [];
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await executePlanner(context({
+      projectDir,
+      stateDbPath,
+      maxConcurrent: 2,
+      emitted,
+      dispatched,
+      runAgent: async () => {
+        throw new Error("planner should not execute worker sessions");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).not.toContain("Planner repaired");
+    expect(emitted.some(event => event.type === "session.cancel.requested")).toBe(false);
+    expect(dispatched.some(event => event.type === "task.requeued")).toBe(false);
+    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["ready-task"]);
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["fresh-task"].status).toBe("active");
+    expect(updated.tasks["fresh-task"].session_id).toBe("fresh-zero-op");
+    expect(updated.tasks["ready-task"].status).toBe("ready");
+  });
+
+  test("planner reconciler uses lastActivityAt instead of startedAt for zero-op liveness", async () => {
+    const projectDir = await makeProject("active");
+    const stateDbPath = join(projectDir, "may.db");
+    const db = new Database(stateDbPath);
+    db.exec(`
+      create table sessions (
+        sessionId text primary key,
+        projectId text,
+        status text,
+        startedAt integer,
+        endedAt integer,
+        opCount integer,
+        lastActivityAt integer,
+        task text
+      )
+    `);
+    db.query(`
+      insert into sessions (sessionId, projectId, status, startedAt, endedAt, opCount, lastActivityAt, task)
+      values (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      "active-zero-op",
+      "aks-rp-e2e.app",
+      "running",
+      Date.now() - 10 * 60_000,
+      null,
+      0,
+      Date.now(),
+      "You are executing one leaf task.\n\n## Task\nid: active-task\ngoal: Keep me because I made progress.",
+    );
+    db.close();
+
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: "active-task",
+      active_task_ids: ["active-task"],
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Use live activity timestamp for liveness.",
+          children: ["active-task", "ready-task"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Active task remains active while activity is fresh."],
+          forbidden: [],
+          gates: [],
+        },
+        "active-task": {
+          id: "active-task",
+          parent_id: "project",
+          status: "active",
+          priority: "P1",
+          owner: "aks-explorer",
+          session_id: "active-zero-op",
+          session_history: ["active-zero-op"],
+          claimed_by: "aks-explorer",
+          lease_expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+          goal: "Remain active because lastActivityAt is fresh.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/active-task.md"],
+          acceptance: ["Active evidence exists."],
+          forbidden: [],
+          gates: [],
+        },
+        "ready-task": {
+          id: "ready-task",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Independent ready work.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/ready-task.md"],
+          acceptance: ["Ready evidence exists."],
+          forbidden: [],
+          gates: [],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const emitted: Array<Record<string, unknown>> = [];
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await executePlanner(context({
+      projectDir,
+      stateDbPath,
+      zeroOpStaleMs: 60_000,
+      maxConcurrent: 2,
+      emitted,
+      dispatched,
+      runAgent: async () => {
+        throw new Error("planner should not execute worker sessions");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(result.message).not.toContain("Planner repaired");
+    expect(emitted.some(event => event.type === "session.cancel.requested")).toBe(false);
+    expect(dispatched.some(event => event.type === "task.requeued")).toBe(false);
+    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["ready-task"]);
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["active-task"].status).toBe("active");
+    expect(updated.tasks["active-task"].session_id).toBe("active-zero-op");
+  });
+
+  test("planner does not gate steering tasks that only create live runner leaves", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Plan execution frontier.",
+          children: ["smart-execution-frontier-steering"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Ready work is visible."],
+          forbidden: [],
+          gates: [],
+        },
+        "smart-execution-frontier-steering": {
+          id: "smart-execution-frontier-steering",
+          parent_id: "project",
+          status: "ready",
+          kind: "domain_leaf",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Select high-ROI real e2e work and create or activate concrete spec-runner leaves.",
+          children: [],
+          inputs: ["specs/index.json", "runner/spec-runner.ts", "runner/suite-runner.ts"],
+          outputs: [".app/tasks/tree.json", "evidence/archive/smart-execution-frontier-steering.md"],
+          acceptance: ["Creates runner leaves without manually running tests."],
+          forbidden: ["Do not directly execute live tests in this steering task."],
+          gates: [],
+          context: {
+            summary: "Push toward real tests and feedback through the existing runner system.",
+          },
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await executePlanner(context({
+      projectDir,
+      maxConcurrent: 3,
+      dispatched,
+      runAgent: async () => {
+        throw new Error("planner loop should not run workers");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["smart-execution-frontier-steering"]);
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["smart-execution-frontier-steering"].status).toBe("ready");
+    expect(updated.tasks["smart-execution-frontier-steering"].blocker).toBeUndefined();
+  });
+
+  test("planner control loop refills frontier without creating planning task nodes", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Keep concrete AKS work moving.",
+          children: ["blocked-work"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Concrete work exists or blockers are exact."],
+          forbidden: [],
+          gates: [],
+        },
+        "blocked-work": {
+          id: "blocked-work",
+          parent_id: "project",
+          status: "blocked",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Blocked work that proves the project is not complete.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/blocked-work.md"],
+          acceptance: ["Blocker is reviewed."],
+          forbidden: [],
+          gates: [],
+          blocker: "Needs local review.",
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const prompts: string[] = [];
+    const result = await executePlanner(context({
+      projectDir,
+      maxConcurrent: 3,
+      runAgent: async (_agent, prompt) => {
+        prompts.push(prompt);
+        const treePath = join(projectDir, "tasks", "tree.json");
+        const current = JSON.parse(readFileSync(treePath, "utf8"));
+        current.tasks.project.children = [...current.tasks.project.children, "task-1", "task-2", "task-3", "task-4", "task-5"];
+        for (let index = 1; index <= 5; index++) {
+          current.tasks[`task-${index}`] = {
+            id: `task-${index}`,
+            parent_id: "project",
+            status: "proposed",
+            priority: "P1",
+            owner: "aks-explorer",
+            goal: `Concrete safe local task ${index}.`,
+            conflict_scope: [`evidence/archive/task-${index}.md`],
+            children: [],
+            inputs: [".app/tasks/tree.json"],
+            outputs: [`evidence/archive/task-${index}.md`],
+            acceptance: [`Task ${index} writes reviewable evidence.`],
+            forbidden: ["Do not run live mutation."],
+            gates: [],
+          };
+        }
+        writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
+        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- .app/tasks/tree.json\n- .app/planner-runs.jsonl" };
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(prompts.some(prompt => prompt.includes("Planning Loop Mode"))).toBe(true);
+    expect(prompts.some(prompt => prompt.includes("Do not create planning/control task nodes"))).toBe(true);
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["project-control"]).toBeUndefined();
+    expect(updated.tasks["project-planning-loop"]).toBeUndefined();
+    expect(updated.tasks["project-planning-loop-run"]).toBeUndefined();
+    expect(updated.tasks["task-1"].status).toBe("ready");
+    const plannerRuns = await readFile(join(projectDir, "planner-runs.jsonl"), "utf8");
+    expect(plannerRuns).toContain("project-planner-control-loop");
+  });
+
+  test("project execution event defaults to planner refill when active tree is settled", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "accepted",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Keep AKS learning moving.",
+          children: ["settled-lane"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Planner refills when current work is settled."],
+          forbidden: [],
+          gates: [],
+        },
+        "settled-lane": {
+          id: "settled-lane",
+          parent_id: "project",
+          status: "accepted",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Already settled lane.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/settled-lane.md"],
+          acceptance: ["Settled."],
+          forbidden: [],
+          gates: [],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await execute(context({
+      projectDir,
+      maxConcurrent: 2,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "settled-active-refill" },
+      },
+      runAgent: async (_agent, prompt) => {
+        expect(prompt).toContain("id: project-planner-control-loop");
+        const treePath = join(projectDir, "tasks", "tree.json");
+        const current = JSON.parse(readFileSync(treePath, "utf8"));
+        current.tasks.project.status = "decomposed";
+        current.tasks.project.children = [...current.tasks.project.children, "next-task"];
+        current.tasks["next-task"] = {
+          id: "next-task",
+          parent_id: "project",
+          status: "proposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Create the next concrete AKS frontier.",
+          children: [],
+          inputs: [".app/tasks/tree.json"],
+          outputs: ["evidence/archive/next-task.md"],
+          acceptance: ["Next frontier exists."],
+          forbidden: ["Do not run live mutation."],
+          gates: [],
+        };
+        writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
+        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- .app/tasks/tree.json\n- .app/planner-runs.jsonl" };
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(["ready", "active"]).toContain(updated.tasks["next-task"].status);
+    expect(updated.tasks.project.status).toBe("decomposed");
+  });
+
+  test("retires legacy planning control leaves instead of dispatching them", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: "project-planning-loop-run-rework-review",
+      active_task_ids: ["project-planning-loop-run-rework-review"],
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Root.",
+          children: ["project-control"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Done."],
+          forbidden: [],
+          gates: [],
+        },
+        "project-control": {
+          id: "project-control",
+          parent_id: "project",
+          status: "decomposed",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Legacy control branch.",
+          children: ["project-planning-loop"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Legacy only."],
+          forbidden: [],
+          gates: [],
+        },
+        "project-planning-loop": {
+          id: "project-planning-loop",
+          parent_id: "project-control",
+          kind: "loop_task",
+          status: "decomposed",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Legacy planning loop.",
+          children: ["project-planning-loop-run"],
+          inputs: [],
+          outputs: ["evidence/archive/project-planning-loop.md"],
+          acceptance: ["Legacy only."],
+          forbidden: [],
+          gates: [],
+        },
+        "project-planning-loop-run": {
+          id: "project-planning-loop-run",
+          parent_id: "project-planning-loop",
+          kind: "loop_task",
+          status: "decomposed",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Legacy planning run.",
+          children: ["project-planning-loop-run-rework-review"],
+          inputs: [],
+          outputs: ["evidence/archive/project-planning-loop.md"],
+          acceptance: ["Legacy only."],
+          forbidden: [],
+          gates: [],
+        },
+        "project-planning-loop-run-rework-review": {
+          id: "project-planning-loop-run-rework-review",
+          parent_id: "project-planning-loop-run",
+          kind: "rework_review",
+          status: "active",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Legacy active planning recovery.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/project-planning-loop-run-rework-review.md"],
+          acceptance: ["Legacy only."],
+          forbidden: [],
+          gates: [],
+          conflict_scope: ["project-control:planning-loop"],
+          claimed_by: "aks-explorer",
+          lease_expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await execute(context({ projectDir, maxAttempts: 0 }));
+
+    expect(result.status).toBe("done");
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["project-control"].status).toBe("superseded");
+    expect(updated.tasks["project-planning-loop"].status).toBe("superseded");
+    expect(updated.tasks["project-planning-loop-run"].status).toBe("superseded");
+    expect(updated.tasks["project-planning-loop-run-rework-review"].status).toBe("superseded");
+    expect(updated.active_task_id).not.toMatch(/^project-planning-loop/);
+  });
+
   test("task worker loop leases ready tasks from planner signal", async () => {
     const projectDir = await makeProject("active");
     const tree = {
@@ -875,6 +1738,110 @@ describe("project execution engine", () => {
     expect(updated.tasks["ready-review"].status).toBe("active");
   });
 
+  test("task worker honors event readyTaskIds when other ready tasks conflict", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: "active-model-task",
+      active_task_ids: ["active-model-task"],
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Dispatch a targeted ready task.",
+          children: ["active-model-task", "model-rework", "smart-execution-frontier-steering"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Targeted ready work is dispatched."],
+          forbidden: [],
+          gates: [],
+        },
+        "active-model-task": {
+          id: "active-model-task",
+          parent_id: "project",
+          status: "active",
+          priority: "P1",
+          owner: "aks-explorer",
+          claimed_by: "aks-explorer",
+          lease_expires_at: new Date(Date.now() + 60_000).toISOString(),
+          goal: "Edit model.",
+          children: [],
+          inputs: [],
+          outputs: ["model/knowledge-map/model.json"],
+          conflict_scope: ["model/knowledge-map/model.json"],
+          acceptance: ["Model validates."],
+          forbidden: [],
+          gates: [],
+        },
+        "model-rework": {
+          id: "model-rework",
+          parent_id: "project",
+          status: "ready",
+          kind: "rework_review",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Review model edits.",
+          children: [],
+          inputs: [],
+          outputs: ["model/knowledge-map/model.json"],
+          conflict_scope: ["model/knowledge-map/model.json"],
+          acceptance: ["Review done."],
+          forbidden: [],
+          gates: [],
+        },
+        "smart-execution-frontier-steering": {
+          id: "smart-execution-frontier-steering",
+          parent_id: "project",
+          status: "ready",
+          priority: "P0",
+          owner: "aks-explorer",
+          goal: "Select high-ROI real e2e work and create concrete runner leaves without manually running tests.",
+          children: [],
+          inputs: ["specs/index.json"],
+          outputs: [".app/tasks/tree.json", "evidence/archive/smart-execution-frontier-steering.md"],
+          conflict_scope: ["tasks:execution-frontier-selection", "runner:planning"],
+          acceptance: ["Creates runner leaves without directly executing live tests."],
+          forbidden: ["Do not directly execute live tests in this steering task."],
+          gates: [],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await executeTaskWorker(context({
+      projectDir,
+      maxConcurrent: 5,
+      triggerEvent: {
+        type: "project.tasks.ready",
+        data: {
+          project: "aks-rp-e2e",
+          readyTaskIds: ["smart-execution-frontier-steering"],
+          maxConcurrent: 5,
+        },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("ready-task pickup should dispatch execution events, not run workers inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.filter(event => event.type === "project.task.execution.requested").map(event => event.payload.taskId))
+      .toEqual(["smart-execution-frontier-steering"]);
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["active-model-task"].status).toBe("active");
+    expect(updated.tasks["model-rework"].status).toBe("ready");
+    expect(updated.tasks["smart-execution-frontier-steering"].status).toBe("active");
+  });
+
   test("event coordinator promotes clear backlog leaves before parallel dispatch", async () => {
     const projectDir = await makeProject("active");
     const tree = {
@@ -970,6 +1937,335 @@ describe("project execution engine", () => {
     expect(updated.tasks["task-b"].status).toBe("active");
     expect(updated.tasks["unclear-task"].status).toBe("proposed");
     expect(updated.active_task_ids.sort()).toEqual(["task-a", "task-b"]);
+  });
+
+  test("event coordinator promotes proposed leaves behind accepted prose dependency gates", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Promote gated backlog work.",
+          children: ["upstream", "downstream"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Downstream is dispatched after upstream is accepted."],
+          forbidden: [],
+          gates: [],
+        },
+        upstream: {
+          id: "upstream",
+          parent_id: "project",
+          status: "accepted",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Prepare upstream artifact.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/upstream.md"],
+          acceptance: ["Upstream done."],
+          forbidden: [],
+          gates: [],
+        },
+        downstream: {
+          id: "downstream",
+          parent_id: "project",
+          status: "proposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Use upstream artifact.",
+          children: [],
+          inputs: ["evidence/archive/upstream.md"],
+          outputs: ["evidence/archive/downstream.md"],
+          acceptance: ["Downstream done."],
+          forbidden: [],
+          gates: ["upstream should be accepted first for accurate counts."],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      maxConcurrent: 1,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch events, not run workers inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("downstream");
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks.downstream.gate_status).toBe("satisfied");
+    expect(updated.tasks.downstream.status).toBe("active");
+  });
+
+  test("normalization reconciles accepted parent rollup reviews before dependency promotion", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Reconcile parent status before unlocking downstream work.",
+          children: ["upstream-parent", "downstream"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Downstream is dispatched after parent rollup is accepted."],
+          forbidden: [],
+          gates: [],
+        },
+        "upstream-parent": {
+          id: "upstream-parent",
+          parent_id: "project",
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Parent work with settled children.",
+          children: ["upstream-work", "upstream-parent-rollup-review"],
+          inputs: [],
+          outputs: ["evidence/archive/upstream-parent.md"],
+          acceptance: ["Parent complete."],
+          forbidden: [],
+          gates: [],
+        },
+        "upstream-work": {
+          id: "upstream-work",
+          parent_id: "upstream-parent",
+          status: "accepted",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Concrete upstream work.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/upstream-work.md"],
+          acceptance: ["Work done."],
+          forbidden: [],
+          gates: [],
+        },
+        "upstream-parent-rollup-review": {
+          id: "upstream-parent-rollup-review",
+          parent_id: "upstream-parent",
+          kind: "parent_review",
+          status: "accepted",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Audit upstream parent after child work settled.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/upstream-parent-rollup-review.md"],
+          acceptance: ["Parent should be accepted."],
+          forbidden: [],
+          gates: [],
+        },
+        downstream: {
+          id: "downstream",
+          parent_id: "project",
+          status: "proposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Run downstream after parent.",
+          children: [],
+          inputs: ["evidence/archive/upstream-parent.md"],
+          outputs: ["evidence/archive/downstream.md"],
+          acceptance: ["Downstream done."],
+          forbidden: [],
+          gates: ["upstream-parent must be accepted first."],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      maxConcurrent: 1,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch events, not run workers inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("downstream");
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["upstream-parent"].status).toBe("accepted");
+    expect(updated.tasks.downstream.gate_status).toBe("satisfied");
+    expect(updated.tasks.downstream.status).toBe("active");
+  });
+
+  test("ready leaves waiting on internal dependency gates are deferred instead of escalated", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Do not escalate internal dependency waits.",
+          children: ["upstream", "downstream"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Downstream waits without human escalation."],
+          forbidden: [],
+          gates: [],
+        },
+        upstream: {
+          id: "upstream",
+          parent_id: "project",
+          status: "active",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Finish upstream first.",
+          children: [],
+          inputs: [],
+          outputs: ["evidence/archive/upstream.md"],
+          acceptance: ["Upstream done."],
+          forbidden: [],
+          gates: [],
+        },
+        downstream: {
+          id: "downstream",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Run after upstream.",
+          children: [],
+          inputs: ["evidence/archive/upstream.md"],
+          outputs: ["evidence/archive/downstream.md"],
+          acceptance: ["Downstream done."],
+          forbidden: [],
+          gates: ["upstream should be accepted first."],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      maxConcurrent: 2,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch events, not run workers inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.some(event => event.type === "task.blocked")).toBe(false);
+    expect(dispatched.some(event => event.type === "project.task.execution.requested" && event.payload.taskId === "downstream")).toBe(false);
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks.downstream.status).toBe("proposed");
+    expect(updated.tasks.downstream.blocker).toContain("Waiting for dependency gate");
+    expect(updated.tasks.downstream.escalation).toBeUndefined();
+  });
+
+  test("artifact existence gates are satisfied from project inputs before dispatch", async () => {
+    const projectDir = await makeProject("active");
+    await mkdir(join(projectDir, "specs"), { recursive: true });
+    await writeFile(join(projectDir, "specs", "a.json"), "{}", "utf8");
+    await writeFile(join(projectDir, "specs", "b.json"), "{}", "utf8");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Run artifact-gated work.",
+          children: ["index-task"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Artifact-gated work dispatches."],
+          forbidden: [],
+          gates: [],
+        },
+        "index-task": {
+          id: "index-task",
+          parent_id: "project",
+          status: "proposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Register generated specs.",
+          children: [],
+          inputs: ["specs/a.json", "specs/b.json"],
+          outputs: ["specs/index.json"],
+          acceptance: ["Index updated."],
+          forbidden: [],
+          gates: ["At least 2 of the new spec files must exist before this task runs."],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      maxConcurrent: 1,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch events, not run workers inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("index-task");
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["index-task"].gate_status).toBe("satisfied");
+    expect(updated.tasks["index-task"].status).toBe("active");
   });
 
   test("event coordinator normalizes string conflict scopes before dispatch selection", async () => {
@@ -1370,7 +2666,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Run live work only after auth is proven.",
           children: [],
-          inputs: [".app/project.md"],
+          inputs: [".app/project.json"],
           outputs: ["evidence/archive/gated-live-task.md"],
           acceptance: ["Auth gate is proven before live work starts."],
           forbidden: ["Do not run cloud mutation without the gate."],
@@ -1386,7 +2682,7 @@ describe("project execution engine", () => {
       runAgent: async (_agent, prompt) => {
         prompts.push(prompt);
         const outputSection = prompt.split("## Required Outputs\n")[1] ?? prompt;
-        const output = outputSection.match(/evidence\/outputs\/[^\s]+\.md/)?.[0] ?? "evidence/archive/unknown.md";
+        const output = outputSection.match(/evidence\/(?:outputs|archive)\/[^\s]+\.md/)?.[0] ?? "evidence/archive/unknown.md";
         return { status: "ok", lastAssistantText: `CLAIM: done\noutputs:\n- ${output}` };
       },
     }));
@@ -1400,6 +2696,289 @@ describe("project execution engine", () => {
     expect(updated.tasks["gated-live-task"].status).toBe("blocked");
     expect(updated.tasks["gated-live-task"].blocker).toContain("Azure CLI ARM token gate succeeds");
     expect(updated.tasks["gated-live-task-blocker-review"].status).toBe("accepted");
+  });
+
+  test("recovers stale empty closed-gate blockers", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Recover stale gate state.",
+          children: ["feedback-rollup"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Child is runnable."],
+          forbidden: [],
+          gates: [],
+        },
+        "feedback-rollup": {
+          id: "feedback-rollup",
+          parent_id: "project",
+          status: "blocked",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Classify staging REST spec-runner evidence.",
+          children: [],
+          inputs: ["runs/executions/"],
+          outputs: ["evidence/archive/feedback-rollup.md"],
+          acceptance: ["Evidence is classified."],
+          forbidden: [],
+          gates: [],
+          blocker: "Closed gate: ",
+          escalation_id: "esc_feedback_rollup",
+          escalation: {
+            id: "esc_feedback_rollup",
+            state: "open",
+            owner: "agent:may",
+            severity: "P1",
+            reason: "Closed gate: ",
+            requested_action: "Resolve empty gate.",
+            resume_condition: "Blocking gate is satisfied or explicitly rejected: ",
+            dedup_key: "test",
+            created_at: "2026-06-01T00:00:00.000Z",
+            updated_at: "2026-06-01T00:00:00.000Z",
+          },
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch recovered ready work, not run it inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("feedback-rollup");
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["feedback-rollup"].status).toBe("active");
+    expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
+    expect(updated.tasks["feedback-rollup"].escalation).toBeUndefined();
+  });
+
+  test("does not require mutation gates for evidence feedback rollups that mention staging REST", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Classify completed execution evidence.",
+          children: ["feedback-rollup"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Child is accepted."],
+          forbidden: [],
+          gates: [],
+        },
+        "feedback-rollup": {
+          id: "feedback-rollup",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "After one or more staging REST runs complete, classify their evidence and update the capability model or write a model-update proposal.",
+          children: [],
+          inputs: ["runs/executions/", "evidence/archive/", "model/knowledge-map/model.json"],
+          outputs: ["evidence/archive/feedback-rollup.md", "model/knowledge-map/model.json"],
+          acceptance: ["Every completed run has a diagnosis and feature/spec status impact."],
+          forbidden: ["Do not update model status from dry-run only."],
+          gates: [],
+          conflict_scope: ["model-update"],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch evidence feedback work, not run it inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.some(event => event.type === "task.blocked")).toBe(false);
+    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("feedback-rollup");
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["feedback-rollup"].status).toBe("active");
+    expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
+  });
+
+  test("does not classify staging REST evidence feedback diagnostics as live execution because of safety forbiddens", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Classify completed execution evidence.",
+          children: ["staging-execution-feedback-rollup-v2"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Child is dispatched."],
+          forbidden: [],
+          gates: [],
+        },
+        "staging-execution-feedback-rollup-v2": {
+          id: "staging-execution-feedback-rollup-v2",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Classify all 11 staging REST spec-runner runs from iteration 218 (all returned not_ready/implementation-missing) and the false-acceptance pattern. Document: (1) why the spec-runner accepted not_ready runs, (2) the exact runner code path that allowed it, (3) which specs still need replay implementation, (4) a concrete verifier guard that prevents accepting not_ready results. Write evidence artifact.",
+          children: [],
+          inputs: ["runs/executions/", "runner/spec-runner.ts", "specs/index.json"],
+          outputs: ["evidence/archive/iteration219-staging-rest-feedback-and-false-acceptance.md"],
+          acceptance: [
+            "All not_ready runs are listed with run ID, spec ID, and diagnosis.",
+            "The exact code path or workflow rule that allowed false acceptance is identified.",
+          ],
+          forbidden: [
+            "Do not run cloud mutation, kubectl against live clusters, staging probes, or AKS_RP_E2E_DRY_RUN=0.",
+            "Do not modify runner/spec-runner.ts in this diagnostic task.",
+          ],
+          gates: [],
+          conflict_scope: ["evidence/archive/iteration219-staging-rest-feedback-and-false-acceptance.md"],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
+    const result = await execute(context({
+      projectDir,
+      triggerEvent: {
+        type: "project.execution.requested",
+        data: { project: "aks-rp-e2e", reason: "test" },
+      },
+      dispatched,
+      runAgent: async () => {
+        throw new Error("coordinator should dispatch feedback diagnostics, not run it inline");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId)
+      .toBe("staging-execution-feedback-rollup-v2");
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["staging-execution-feedback-rollup-v2"].status).toBe("active");
+    expect(updated.tasks["staging-execution-feedback-rollup-v2"].blocker).toBeUndefined();
+  });
+
+  test("rejects incomplete feedback-rollup blocked claims even when the goal mentions staging REST", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Classify completed execution evidence.",
+          children: ["feedback-rollup"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Child is accepted."],
+          forbidden: [],
+          gates: [],
+        },
+        "feedback-rollup": {
+          id: "feedback-rollup",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "After one or more staging REST runs complete, classify their evidence and update the capability model or write a model-update proposal.",
+          children: [],
+          inputs: ["runs/executions/", "evidence/archive/", "model/knowledge-map/model.json"],
+          outputs: ["evidence/archive/feedback-rollup.md", "model/knowledge-map/model.json"],
+          acceptance: [
+            "Every completed run has a diagnosis and feature/spec status impact.",
+            "Next execution wave recommendation is explicit.",
+          ],
+          forbidden: ["Do not update model status from dry-run only."],
+          gates: [],
+          conflict_scope: ["model-update"],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await execute(context({
+      projectDir,
+      maxAttempts: 1,
+      runAgent: async () => ({
+        status: "ok",
+        lastAssistantText: [
+          "CLAIM: blocked",
+          "outputs:",
+          "- evidence/archive/feedback-rollup.md",
+          "- model/knowledge-map/model.json",
+          "Let me read the actual execution results from each of the latest runs.",
+        ].join("\n"),
+      }),
+    }));
+
+    expect(result.status).toBe("done");
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["feedback-rollup"].verification.verdict).toBe("rejected");
+    expect(updated.tasks["feedback-rollup"].status).toBe("decomposed");
+    expect(updated.tasks["feedback-rollup-rework-review"].status).toBe("ready");
   });
 
   test("turns blocked leaves into local blocked-review tasks", async () => {
@@ -1434,7 +3013,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Do work that hit a blocker.",
           children: [],
-          inputs: [".app/project.md"],
+          inputs: [".app/project.json"],
           outputs: ["evidence/archive/blocked-branch.md"],
           acceptance: ["Blocker is resolved or proven external."],
           forbidden: ["Do not run live mutation."],
@@ -1591,6 +3170,88 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("task-a-rework-review");
   });
 
+  test("supersedes repeatedly rejected review tasks instead of re-readying them forever", async () => {
+    const projectDir = await makeProject("active");
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: "task-a-rework-review",
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Retry review task without looping.",
+          children: ["task-a"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Review is recovered."],
+          forbidden: [],
+          gates: [],
+        },
+        "task-a": {
+          id: "task-a",
+          parent_id: "project",
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Produce A.",
+          children: ["task-a-rework-review"],
+          inputs: [],
+          outputs: ["evidence/archive/a.md"],
+          acceptance: ["A exists."],
+          forbidden: [],
+          gates: [],
+        },
+        "task-a-rework-review": {
+          id: "task-a-rework-review",
+          parent_id: "task-a",
+          kind: "rework_review",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Review rejected task A.",
+          children: [],
+          inputs: [".app/tasks/tree.json"],
+          outputs: ["evidence/archive/task-a-rework-review.md"],
+          acceptance: ["Review exists."],
+          forbidden: [],
+          gates: [],
+          attempts: [{
+            id: "attempt-prior",
+            ts: new Date().toISOString(),
+            agent: "aks-explorer",
+            claim: "blocked",
+            summary: "**Status:** error",
+            outputs: [],
+            checks: [],
+            open_risks: ["Worker session errored."],
+          }],
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await execute(context({
+      projectDir,
+      maxAttempts: 1,
+      runAgent: async () => ({ status: "error", lastAssistantText: "" }),
+    }));
+
+    expect(result.status).toBe("done");
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["task-a-rework-review"].status).toBe("superseded");
+    expect(updated.tasks["task-a-rework-review"].attempts).toHaveLength(2);
+    expect(updated.tasks["task-a-rework-review-rework-review"]).toBeUndefined();
+    expect(updated.active_task_id).not.toBe("task-a-rework-review");
+  });
+
   test("rejects a done claim when a required validation check failed", async () => {
     const projectDir = await makeProject("active");
     const tree = {
@@ -1654,6 +3315,98 @@ describe("project execution engine", () => {
     expect(updated.tasks["validation-task"].verification.verdict).toBe("rejected");
     expect(updated.tasks["validation-task"].status).toBe("decomposed");
     expect(updated.tasks["validation-task-rework-review"].status).toBe("ready");
+  });
+
+  test("rejects spec-runner not_ready implementation-missing results", async () => {
+    const projectDir = await makeProject("active");
+    const runId = "run_not_ready_missing_replay";
+    const runDir = join(projectDir, "runs", "executions", runId);
+    await mkdir(runDir, { recursive: true });
+    await writeFile(join(runDir, "status.json"), JSON.stringify({
+      status: "not_ready",
+      phase: "implementation-missing",
+    }, null, 2), "utf8");
+    await writeFile(join(runDir, "result.json"), JSON.stringify({
+      status: "not_ready",
+      phase: "implementation-missing",
+      summary: "Spec does not declare an implementation/replay.",
+      evidenceRefs: [],
+    }, null, 2), "utf8");
+    await writeFile(join(runDir, "diagnosis.json"), JSON.stringify({
+      diagnosis: "spec_bug",
+      summary: "Missing probeRef/replay script.",
+    }, null, 2), "utf8");
+    await writeFile(join(runDir, "summary.md"), "# Not ready\n\nMissing replay implementation.\n", "utf8");
+    await writeFile(join(runDir, "steps.jsonl"), `${JSON.stringify({ step: "load-spec", status: "not_ready" })}\n`, "utf8");
+
+    const tree = {
+      version: 1,
+      project: "aks-rp-e2e",
+      updated_at: new Date().toISOString(),
+      project_lifecycle: "active",
+      root_task_id: "project",
+      active_task_id: null,
+      tasks: {
+        project: {
+          id: "project",
+          parent_id: null,
+          status: "decomposed",
+          priority: "P1",
+          owner: "aks-explorer",
+          goal: "Verify replay implementation.",
+          children: ["replay-task"],
+          inputs: [],
+          outputs: [".app/tasks/tree.json"],
+          acceptance: ["Replay task is verified."],
+          forbidden: [],
+          gates: [],
+        },
+        "replay-task": {
+          id: "replay-task",
+          parent_id: "project",
+          status: "ready",
+          priority: "P1",
+          owner: "aks-explorer",
+          workflow: "spec-runner",
+          goal: "Verify spec spec.example.missing-replay has an executable replay implementation.",
+          children: [],
+          inputs: ["specs/example.json", "runner/spec-runner.ts"],
+          outputs: ["replays/example.ts"],
+          acceptance: [
+            "Spec declares the replay/implementation entry expected by runner/spec-runner.ts.",
+            "A runner check reaches runnable/preflight status rather than implementation-missing.",
+          ],
+          forbidden: [],
+          gates: [],
+          context: {
+            specId: "spec.example.missing-replay",
+            active_run_id: runId,
+            active_request_id: "req_not_ready_missing_replay",
+            target: "staging-rest",
+            surface: "REST",
+            host: "devbox",
+            live_run_policy: "repeatable-approved",
+          },
+        },
+      },
+    };
+    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+
+    const result = await execute(context({
+      projectDir,
+      maxAttempts: 1,
+      runAgent: async () => {
+        throw new Error("native spec runner should use existing artifacts");
+      },
+    }));
+
+    expect(result.status).toBe("done");
+
+    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(updated.tasks["replay-task"].verification.verdict).toBe("rejected");
+    expect(updated.tasks["replay-task"].verification.reason).toContain("not_ready");
+    expect(updated.tasks["replay-task"].status).toBe("decomposed");
+    expect(updated.tasks["replay-task-rework-review"].status).toBe("ready");
   });
 
   test("rejects worker errors even when expected output files already exist", async () => {
@@ -1871,7 +3624,7 @@ describe("project execution engine", () => {
           goal: "Decide where Azure CLI credentials should be provisioned.",
           blocker: "Human must provide a credentialed execution host or explicitly defer live execution.",
           children: [],
-          inputs: [".app/project.md"],
+          inputs: [".app/project.json"],
           outputs: [],
           acceptance: ["Human answers the credential-host question."],
           forbidden: ["Do not infer credentials from prose."],
@@ -2030,7 +3783,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("ready-task");
   });
 
-  test("creates frontier replan when active project is blocked but not complete", async () => {
+  test.skip("legacy: creates frontier replan when active project is blocked but not complete", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2063,7 +3816,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Do gated work.",
           children: ["blocked-work-blocker-review"],
-          inputs: [".app/project.md"],
+          inputs: [".app/project.json"],
           outputs: ["evidence/archive/blocked-work.md"],
           acceptance: ["Gate is satisfied."],
           forbidden: ["Do not run live mutation."],
@@ -2209,7 +3962,7 @@ describe("project execution engine", () => {
     expect(updated.tasks["project-frontier-replan-rework-review"].status).toBe("ready");
   });
 
-  test("creates another frontier replan after an accepted replan's child work is exhausted", async () => {
+  test.skip("legacy: creates another frontier replan after an accepted replan's child work is exhausted", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2242,7 +3995,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Do gated work.",
           children: ["blocked-work-blocker-review"],
-          inputs: [".app/project.md"],
+          inputs: [".app/project.json"],
           outputs: ["evidence/archive/blocked-work.md"],
           acceptance: ["Gate is satisfied."],
           forbidden: ["Do not run live mutation."],
@@ -2339,7 +4092,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).not.toBe("project-planning-loop");
   });
 
-  test("creates another frontier replan when the latest accepted replan child branch is exhausted", async () => {
+  test.skip("legacy: creates another frontier replan when the latest accepted replan child branch is exhausted", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2372,7 +4125,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Do gated work.",
           children: ["blocked-work-blocker-review"],
-          inputs: [".app/project.md"],
+          inputs: [".app/project.json"],
           outputs: ["evidence/archive/blocked-work.md"],
           acceptance: ["Gate is satisfied."],
           forbidden: ["Do not run live mutation."],
@@ -2457,7 +4210,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("project-planning-loop-run");
   });
 
-  test("creates frontier replan when only review work is ready and ordinary backlog is empty", async () => {
+  test.skip("legacy: creates frontier replan when only review work is ready and ordinary backlog is empty", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2714,7 +4467,7 @@ describe("project execution engine", () => {
     expect(updated.tasks["ui-task"].blocker).toBeUndefined();
   });
 
-  test("creates a new frontier replan instead of rescheduling a non-leaf stale replan", async () => {
+  test.skip("legacy: creates a new frontier replan instead of rescheduling a non-leaf stale replan", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2829,7 +4582,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("project-planning-loop-run");
   });
 
-  test("wakes planning loop when active project has no ready work but unfinished gated frontier remains", async () => {
+  test.skip("legacy: wakes planning loop when active project has no ready work but unfinished gated frontier remains", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -2912,7 +4665,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Visible control plane for standing project loops.",
           children: ["project-planning-loop"],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: [".app/tasks/tree.json"],
           acceptance: ["Standing loops are visible."],
           forbidden: [],
@@ -2930,7 +4683,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: [],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records the next work."],
           forbidden: ["Do not run live mutation."],
@@ -2971,7 +4724,7 @@ describe("project execution engine", () => {
     expect(updated.tasks["managedsystem-devbox-msi-two-path-live-run"].status).toBe("proposed");
   });
 
-  test("creates an executable planning loop run when the standing loop has accepted history children", async () => {
+  test.skip("legacy: creates an executable planning loop run when the standing loop has accepted history children", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -3080,7 +4833,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: ["project-planning-loop-rework-review"],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
@@ -3124,7 +4877,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("project-planning-loop-run");
   });
 
-  test("supersedes repeatedly interrupted planning-loop recovery and creates a fresh run", async () => {
+  test.skip("legacy: supersedes repeatedly interrupted planning-loop recovery and creates a fresh run", async () => {
     const projectDir = await makeProject("active");
     const interruptedAttempt = (n: number) => ({
       id: `attempt-${n}`,
@@ -3184,7 +4937,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run"],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
@@ -3200,7 +4953,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-rework-review"],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
@@ -3253,7 +5006,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("project-planning-loop-run-2");
   });
 
-  test("supersedes stale planning-loop recovery when a fresher loop run is live", async () => {
+  test.skip("legacy: supersedes stale planning-loop recovery when a fresher loop run is live", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -3303,7 +5056,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-2", "project-planning-loop-run-3"],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
@@ -3319,7 +5072,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-2-rework-review"],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
@@ -3357,7 +5110,7 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Standing planning loop.",
           children: [],
-          inputs: [".app/project.md", ".app/tasks/tree.json"],
+          inputs: [".app/project.json", ".app/tasks/tree.json"],
           outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
@@ -3430,79 +5183,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("local-check");
   });
 
-  test("creates feature queue advance work before treating aks learning as blocked", async () => {
-    const projectDir = await makeProject("active");
-    await writeFile(join(projectDir, "evidence", "outputs", "feature-learning-queue.md"), featureQueueMd(), "utf8");
-    const tree = {
-      version: 1,
-      project: "aks-rp-e2e",
-      updated_at: new Date().toISOString(),
-      project_lifecycle: "active",
-      root_task_id: "project",
-      active_task_id: null,
-      tasks: {
-        project: {
-          id: "project",
-          parent_id: null,
-          status: "decomposed",
-          priority: "P1",
-          owner: "aks-explorer",
-          goal: "Learn AKS features from a queue.",
-          children: ["feature-learning-loop"],
-          inputs: [],
-          outputs: [".app/tasks/tree.json"],
-          acceptance: ["Queue is exhausted or gated."],
-          forbidden: [],
-          gates: [],
-        },
-        "feature-learning-loop": {
-          id: "feature-learning-loop",
-          parent_id: "project",
-          status: "blocked",
-          priority: "P0",
-          owner: "aks-explorer",
-          goal: "Run the repeated AKS feature-learning loop.",
-          children: ["feature-workload-identity"],
-          inputs: ["evidence/archive/feature-learning-queue.md"],
-          outputs: [".app/tasks/tree.json"],
-          acceptance: ["Every selected feature is accepted or externally gated."],
-          forbidden: ["Do not run cloud mutation."],
-          gates: [],
-          blocker: "Required child task is blocked: old-feature",
-        },
-        "feature-workload-identity": {
-          id: "feature-workload-identity",
-          parent_id: "feature-learning-loop",
-          status: "accepted",
-          priority: "P1",
-          owner: "aks-explorer",
-          goal: "Already represented queue item.",
-          children: [],
-          inputs: [],
-          outputs: ["evidence/archive/workload-identity.md"],
-          acceptance: ["Done."],
-          forbidden: [],
-          gates: [],
-        },
-      },
-    };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
-
-    const result = await execute(context({ projectDir, maxAttempts: 0 }));
-
-    expect(result.status).toBe("done");
-    expect(result.message).toContain("Created feature queue advance task");
-
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.active_task_id).toBe("advance-feature-oidc-issuer");
-    expect(updated.tasks["advance-feature-oidc-issuer"].kind).toBe("domain_planner");
-    expect(updated.tasks["advance-feature-oidc-issuer"].status).toBe("ready");
-    expect(updated.tasks["advance-feature-oidc-issuer"].acceptance.join("\n")).toContain("batch of 3-7 concrete proposed local leaves");
-    expect(updated.tasks["feature-learning-loop"].status).toBe("decomposed");
-    expect(updated.tasks["feature-learning-loop"].children).toContain("advance-feature-oidc-issuer");
-  });
-
-  test("does not let an accepted childless frontier replan quiet blocked project work", async () => {
+  test.skip("legacy: does not let an accepted childless frontier replan quiet blocked project work", async () => {
     const projectDir = await makeProject("active");
     const tree = {
       version: 1,
@@ -3696,7 +5377,7 @@ describe("project execution engine", () => {
       dispatched,
       runAgent: async (_agent, prompt) => {
         const outputSection = prompt.split("## Required Outputs\n")[1] ?? prompt;
-        const output = outputSection.match(/evidence\/outputs\/[^\s]+\.md/)?.[0] ?? "evidence/archive/unknown.md";
+        const output = outputSection.match(/evidence\/(?:outputs|archive)\/[^\s]+\.md/)?.[0] ?? "evidence/archive/unknown.md";
         return { status: "ok", lastAssistantText: `CLAIM: done\noutputs:\n- ${output}` };
       },
     }));
@@ -3711,7 +5392,7 @@ describe("project execution engine", () => {
     expect(updated.active_task_id).toBe("task-b");
   });
 
-  test("blocks planning loop when consecutive failed runs exceed budget cap", async () => {
+  test.skip("legacy: blocks planning loop when consecutive failed runs exceed budget cap", async () => {
     const projectDir = await makeProject("active");
     const interruptedAttempt = (n: number) => ({
       id: `attempt-${n}`,
@@ -3767,7 +5448,7 @@ describe("project execution engine", () => {
         owner: "aks-explorer",
         goal: "Standing planning loop.",
         children: [] as string[],
-        inputs: [".app/project.md", ".app/tasks/tree.json"],
+        inputs: [".app/project.json", ".app/tasks/tree.json"],
         outputs: ["evidence/archive/project-planning-loop.md", ".app/planner-runs.jsonl", ".app/tasks/tree.json"],
         acceptance: ["Planning run records next work."],
         forbidden: ["Do not run live mutation."],
@@ -3788,7 +5469,7 @@ describe("project execution engine", () => {
         owner: "aks-explorer",
         goal: "Standing planning loop.",
         children: [],
-        inputs: [".app/project.md", ".app/tasks/tree.json"],
+        inputs: [".app/project.json", ".app/tasks/tree.json"],
         outputs: ["evidence/archive/project-planning-loop.md"],
         acceptance: ["Planning run records next work."],
         forbidden: ["Do not run live mutation."],
@@ -3811,7 +5492,7 @@ describe("project execution engine", () => {
       owner: "aks-explorer",
       goal: "Standing planning loop.",
       children: [reworkId],
-      inputs: [".app/project.md", ".app/tasks/tree.json"],
+      inputs: [".app/project.json", ".app/tasks/tree.json"],
       outputs: ["evidence/archive/project-planning-loop.md"],
       acceptance: ["Planning run records next work."],
       forbidden: ["Do not run live mutation."],

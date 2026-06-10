@@ -6,8 +6,10 @@ You are the project-local explorer for `aks-rp-e2e`. You build and validate the 
 ## Scope
 - Treat `/app/projects/aks-rp-e2e` as the domain working root.
 - Primary May-agent app files are in `/app/projects/aks-rp-e2e.app/`:
-  `project.md`, `discussion.jsonl`, `journal.jsonl`, and `tasks/tree.json`.
-- Prefer writing durable run evidence under `evidence/archive/`.
+  `project.json`, `discussion.jsonl`, `journal.jsonl`, `planner-runs.jsonl`,
+  and `tasks/tree.json`.
+- Prefer writing durable domain run evidence under
+  `/app/projects/aks-rp-e2e/evidence/archive/`.
 - Use devbox/staging evidence only when the task requires it; quote exact commands and outcomes.
 - Treat handwritten e2ev3 cases as the primary source for inferring feature intent. They were written by AKS developers, so inspect the plan/scenario/steps/assertions before guessing what a feature means.
 - Treat AKS public API specs, public docs, RP/e2ev3 source, and prior execution artifacts as supporting knowledge sources for the capability map.

@@ -104,7 +104,7 @@ function projectExecutionEvent(reason: string, params: unknown = {}): Record<str
     project: "aks-rp-e2e",
     reason,
     params: {
-      maxConcurrent: 3,
+      maxConcurrent: 5,
       ...(params && typeof params === "object" && !Array.isArray(params) ? params as Record<string, unknown> : {}),
     },
   };
@@ -124,7 +124,7 @@ export default defineProjectApp({
   budget: {
     sessionsPerDay: 10,
     tokensPerDay: 500_000,
-    maxConcurrent: 3,
+    maxConcurrent: 5,
   },
 
   schedules: [
@@ -136,6 +136,15 @@ export default defineProjectApp({
         type: "project.tick",
         project: "aks-rp-e2e",
         lane: "learning",
+      },
+    },
+    {
+      id: "project-execution-watchdog",
+      enabled: true,
+      intervalMs: 300_000,
+      event: {
+        type: "project.watchdog.tick",
+        project: "aks-rp-e2e",
       },
     },
     {
@@ -153,11 +162,14 @@ export default defineProjectApp({
   events: [
     { type: "project.comment.created", project: "aks-rp-e2e" },
     { type: "project.tick", project: "aks-rp-e2e" },
+    { type: "project.watchdog.tick", project: "aks-rp-e2e" },
     { type: "project.execution.requested", project: "aks-rp-e2e" },
     { type: "project.tasks.ready", project: "aks-rp-e2e" },
     { type: "project.task.execution.requested", project: "aks-rp-e2e" },
     { type: "project.task.completed", project: "aks-rp-e2e" },
     { type: "project.task.steer", project: "aks-rp-e2e" },
+    "escalation.resolved",
+    "escalation.dismissed",
     { type: "project.action.invoked", project: "aks-rp-e2e", actions: ["execute-run", "advance-project"] },
     { type: "metric.recovered", metricIds: ["aks-rp-e2e.frontier-ready"] },
     { type: "coverage.gap.detected", project: "aks-rp-e2e" },
@@ -189,11 +201,14 @@ export default defineProjectApp({
 
         const replan = await ctx.importModule<{
           loadJsonFile<T>(path: string): T;
-          loadTestSpecsFromIndex(path: string): unknown[];
           createReplan(input: { pathSummary: unknown; specs: unknown[]; selectedPathIds: string[] }): unknown;
         }>(ctx.projectPath("model/tools/src/replan-feature-paths.ts"));
         const pathSummary = replan.loadJsonFile(ctx.projectPath("model/knowledge-map/views/path-summary.json"));
-        const specs = replan.loadTestSpecsFromIndex(ctx.projectPath("specs/index.json"));
+        const index = replan.loadJsonFile<{ specFiles?: Array<string | { file?: string | null }> }>(ctx.projectPath("specs/index.json"));
+        const specs = (index.specFiles ?? [])
+          .map((entry) => (typeof entry === "string" ? entry : entry.file))
+          .filter((file): file is string => Boolean(file))
+          .map((file) => replan.loadJsonFile(ctx.projectPath(`specs/${file}`)));
         return replan.createReplan({ pathSummary, specs, selectedPathIds });
       },
     },
@@ -239,6 +254,10 @@ export default defineProjectApp({
       return ctx.emit(projectExecutionEvent("replan-review-tick", eventData(event)));
     }
 
+    if (event.type === "project.watchdog.tick") {
+      return ctx.noop("project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger");
+    }
+
     if (event.type === "project.action.invoked" && event.action === "execute-run") {
       return ctx.emit(projectExecutionEvent("execute-run-action", {
         selectedPaths: selectedPathList(event.params),
@@ -259,11 +278,39 @@ export default defineProjectApp({
     }
 
     if (event.type === "project.task.completed") {
+      const taskId = eventString(event, "taskId") || eventString(event, "task_id");
+      const status = eventString(event, "status");
+      const verificationVerdict = eventString(event, "verification_verdict");
+      if (verificationVerdict === "rejected" && /(?:rework-review|rollup-review|blocker-review)$/.test(taskId)) {
+        return ctx.noop(`suppressed continuation for rejected review task ${taskId}`);
+      }
       return ctx.emit(projectExecutionEvent("task-completed", {
-        completedTaskId: eventString(event, "taskId") || eventString(event, "task_id"),
-        status: eventString(event, "status"),
-        verificationVerdict: eventString(event, "verification_verdict"),
+        completedTaskId: taskId,
+        status,
+        verificationVerdict,
       }));
+    }
+
+    if (event.type === "escalation.resolved" || event.type === "escalation.dismissed") {
+      const data = eventData(event);
+      const project = eventString(event, "project") || eventString(event, "projectId");
+      const escalationId = eventString(event, "escalationId") || eventString(event, "escalation_id");
+      if (!project && !escalationId.startsWith("esc_aks_rp_e2e_")) {
+        return ctx.noop(`ignored ${event.type} without aks-rp-e2e project marker`);
+      }
+      if (project && project !== "aks-rp-e2e" && project !== "aks-rp-e2e.app") {
+        return ctx.noop(`ignored ${event.type} for project ${project}`);
+      }
+      appendDiscussionRecord(ctx, {
+        ...event,
+        text: [
+          `[${event.type}] ${escalationId || "unknown"}`,
+          eventString(event, "taskId") ? `task: ${eventString(event, "taskId")}` : "",
+          eventString(event, "outcome") ? `outcome: ${eventString(event, "outcome")}` : "",
+          eventString(event, "summary") || eventString(event, "comment"),
+        ].filter(Boolean).join("\n"),
+      });
+      return ctx.emit(projectExecutionEvent(event.type === "escalation.resolved" ? "escalation-resolved" : "escalation-dismissed", data));
     }
 
     if (event.type === "project.execution.requested") {

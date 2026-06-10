@@ -1,0 +1,228 @@
+{
+  "version": 2,
+  "updatedAt": "2026-06-10T00:00:00.000Z",
+  "updatedBy": "project-planning-loop-run-rework-review",
+  "root": {
+    "id": "project",
+    "title": "AKS RP E2E Knowledge & Verification",
+    "status": "active",
+    "children": [
+      {
+        "id": "feature-knowledge-and-specs",
+        "title": "Feature knowledge, specs, and input-expectation paths",
+        "status": "active",
+        "children": [
+          {
+            "id": "go-e2e-source-feature-exploration-batch-1",
+            "title": "Go e2e source feature exploration batch 1",
+            "status": "ready",
+            "priority": "P0"
+          }
+        ]
+      },
+      {
+        "id": "spec-runner-and-replays",
+        "title": "Turn specs into stable replays, harden runner, execute gated specs",
+        "status": "active",
+        "children": [
+          {
+            "id": "managedsystem-rest-add-existing-live-e2e-verification",
+            "title": "ManagedSystem REST add-existing live e2e verification",
+            "status": "accepted",
+            "verdict": "pass",
+            "note": "2 independent Jun 9 pass runs confirmed."
+          },
+          {
+            "id": "managedsystem-runner-executable-spec-inventory",
+            "title": "Inventory executable specs and runner readiness",
+            "status": "accepted",
+            "completedAt": "2026-06-10T00:00:00.000Z",
+            "note": "Produced evidence/archive/managedsystem-runner-executable-spec-inventory.md with full readiness matrix."
+          },
+          {
+            "id": "proberef-wiring-fix-14-specs",
+            "title": "Add probeRef to 14 spec files that have matching replays but no wiring",
+            "status": "accepted",
+            "completedAt": "2026-06-10T01:00:00.000Z",
+            "note": "Original session errored (empty bash calls exhausted turn budget). Recovery completed in rework-review session: 17 spec files wired with probeRef, 3 name-mismatch cases resolved (OIDC, KEDA runtime, NAP cleanup), wiring-check 3/3 PASS. Evidence: evidence/archive/proberef-wiring-fix-14-specs-rework-review.md"
+          },
+          {
+            "id": "keda-profile-state-live-e2e-verification",
+            "title": "KEDA profile state live e2e verification via workload-autoscaler-keda-profile-state replay",
+            "status": "superseded",
+            "supersededReason": "Infra defect (missing index file field) fixed by proberef-wiring-fix-14-specs. Feature verified pass by iteration78+84 staging runs with full enable/disable/re-enable lifecycle evidence. Model path pass. No model-changing value from re-executing.",
+            "reviewEvidence": "evidence/archive/keda-profile-state-live-e2e-verification-rework-review.md",
+            "rejectedRun": "run_20260609134041282_keda_profile_state_live_e2e_verification",
+            "depends_on": "proberef-wiring-fix-14-specs"
+          },
+          {
+            "id": "oidc-signing-key-rotation-live-e2e-verification",
+            "title": "OIDC issuer signing-key rotation live e2e verification",
+            "status": "ready",
+            "priority": "P1",
+            "conflict_scope": "runs/, evidence/archive/*oidc*",
+            "live_gate": "Azure auth + AKS_RP_E2E_ALLOW_CLOUD_MUTATION=oidc-issuer-default-enabled-signing-key-rotation + k8s >=1.34 + --execute. Creates cluster.",
+            "depends_on": "proberef-wiring-fix-14-specs",
+            "note": "Replay has implemented ARM execution path, 0 kubectl. Spec-replay name mismatch resolved: oidc-issuer-signing-key-rotation.json probeRef points to oidc-issuer-default-enabled-signing-key-rotation.ts. probeRef wiring complete."
+          },
+          {
+            "id": "image-cleaner-upgrade-restart-live-e2e-verification",
+            "title": "Image Cleaner upgrade/restart survival live e2e verification",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "runs/, evidence/archive/*image-cleaner*",
+            "live_gate": "Azure auth + AKS_RP_E2E_ALLOW_CLOUD_MUTATION=image-cleaner-upgrade-restart-survival + upgrade target availability + --execute. Creates cluster, performs upgrade + stop/start.",
+            "depends_on": "proberef-wiring-fix-14-specs",
+            "note": "Higher cost (cluster create + upgrade + stop/start) but well-structured replay with 11 ARM refs. probeRef wiring complete."
+          },
+          {
+            "id": "workload-identity-no-oidc-negative-execution-impl",
+            "title": "Implement execution path for workload-identity-no-oidc-negative replay",
+            "status": "active",
+            "priority": "P2",
+            "conflict_scope": "replays/workload-identity-no-oidc-negative.ts, specs/index.json",
+            "note": "Rejected: runner crashed with 'Unknown spec' before spawning probe. Root cause: specs/index.json entry lacks 'file' field. Split into subtasks. Index fix completed systemically by spec-index-file-field-systemic-fix (accepted). ARM PUT execution path remains.",
+            "rejectedRun": "run_20260609132305056_workload_identity_no_oidc_negative_execution_imp",
+            "reviewEvidence": "evidence/archive/workload-identity-no-oidc-negative-execution-impl-rework-review.md",
+            "children": [
+              {
+                "id": "wi-no-oidc-spec-index-file-field-fix",
+                "title": "Add file field to spec.workload-identity.no-oidc-negative in specs/index.json",
+                "status": "superseded",
+                "priority": "P0",
+                "conflict_scope": "specs/index.json",
+                "live_gate": "none — local JSON edit only",
+                "supersededBy": "spec-index-file-field-systemic-fix",
+                "note": "Superseded: the systemic fix spec-index-file-field-systemic-fix added file fields to all 64 specs[] entries, including this one. Verified: bun runner/spec-runner.ts spec.workload-identity.no-oidc-negative --dry-run resolves."
+              },
+              {
+                "id": "spec-index-file-field-systemic-fix",
+                "title": "Add file field to all 56 specs[] entries missing it in specs/index.json",
+                "status": "accepted",
+                "priority": "P0",
+                "conflict_scope": "specs/index.json",
+                "live_gate": "none — local JSON edit only",
+                "completedAt": "2026-06-10T02:00:00.000Z",
+                "note": "Session completed all edits but ran out of turn budget before writing evidence artifact. Evidence produced by rework-review: evidence/archive/spec-index-file-field-systemic-fix-rework-review.md. All 64/64 specs[] entries now have correct file fields. 12 unindexed spec files documented but out of scope.",
+                "reviewEvidence": "evidence/archive/spec-index-file-field-systemic-fix-rework-review.md"
+              },
+              {
+                "id": "wi-no-oidc-negative-arm-put-execution-path",
+                "title": "Replace execute stub in replay with ARM PUT expecting HTTP 400",
+                "status": "ready",
+                "priority": "P2",
+                "conflict_scope": "replays/workload-identity-no-oidc-negative.ts",
+                "live_gate": "Implementation is local. Live run needs Azure auth + AKS_RP_E2E_ALLOW_CLOUD_MUTATION=workload-identity-no-oidc-negative + --execute + target cluster.",
+                "depends_on": "spec-index-file-field-systemic-fix",
+                "note": "Replace runExecute() stub with: acquire ARM token, PUT cluster body with oidcIssuerProfile.enabled=false + securityProfile.workloadIdentity.enabled=true, assert HTTP 400, assert error body contains 'oidcIssuerProfile', write evidence with concrete diagnosis. Dependency satisfied: spec index wiring complete."
+              }
+            ]
+          },
+          {
+            "id": "unindexed-spec-files-index-addition",
+            "title": "Add 12 unindexed spec files to specs/index.json",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "specs/index.json",
+            "live_gate": "none — pure JSON edit",
+            "note": "12 spec files exist in specs/ but are absent from specs/index.json: jwt-authenticator-external-idp-login, jwt-authenticator-incluster-idp-login, managedsystem-cli-add-default-payload, managedsystem-cli-create-default-payload, managedsystem-mode-immutability, managedsystem-runtime-isolation, managedsystem-standalone-e2ev3-enable, managedsystem-vmsize-immutability, managedsystem-vmsize-mutation-negative, planned-maintenance-configuration-crud, trusted-access-lifecycle, trusted-access-token-gateway-runtime. Adding them completes the spec index. Identified by project-planning-loop-run-rework-review."
+          }
+        ]
+      },
+      {
+        "id": "evidence-feedback-and-model-update",
+        "title": "Diagnose run results, update model from real evidence",
+        "status": "active",
+        "children": [
+          {
+            "id": "existing-run-evidence-model-feedback-batch-1",
+            "title": "Update model from existing run evidence (real runs only)",
+            "status": "ready",
+            "priority": "P1"
+          },
+          {
+            "id": "managedsystem-rest-e2e-result-feedback",
+            "title": "ManagedSystem REST e2e result feedback into model",
+            "status": "ready",
+            "priority": "P1"
+          },
+          {
+            "id": "keda-runtime-behavior-stub-evidence-fill",
+            "title": "Audit iteration78 evidence and fill KEDA runtime REST enable behavior observations",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "model/knowledge-map/model.json, evidence/archive/keda-runtime*",
+            "live_gate": "none — pure model/evidence audit",
+            "note": "path.workload-autoscaler.keda-runtime-rest-enable.behavior-stub has 3 behavior variables with 0 observations but references iteration78-workload-autoscaler-runtime-staging evidence. Audit that evidence for KEDA REST enable observations. Fill model if supported. Promote path status if all behaviors align. Identified by project-planning-loop-run-rework-review."
+          }
+        ]
+      },
+      {
+        "id": "user-review-workspace",
+        "title": "Feature page and kanban for human review",
+        "status": "active",
+        "children": [
+          {
+            "id": "user-review-workspace-current-frontier-review",
+            "title": "Current frontier review for human audit",
+            "status": "accepted",
+            "completedAt": "2026-06-10T00:00:00.000Z",
+            "note": "Produced evidence/archive/user-review-workspace-current-frontier-review.md. V3 app split removed all UI files. Domain data intact, UI consumers absent. 4 implementation task leaves created."
+          },
+          {
+            "id": "ui-kanban-standalone-shell",
+            "title": "Restore kanban board as standalone HTML reading tree.json directly with 8 lanes and ready frontier",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "aks-rp-e2e.app/ui/",
+            "live_gate": "none — local HTML/JS only",
+            "note": "Recover proven kanban.js (711 lines) from git a0f3e1c~1. Adapt to read tree.json from local path instead of /api/projects/artifact. Must render backlog, planning, ready, in-progress, review, blocked, done, archive lanes."
+          },
+          {
+            "id": "ui-feature-explorer-standalone",
+            "title": "Restore feature explorer as standalone page reading model/path-summary/specs data",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "aks-rp-e2e.app/ui/",
+            "live_gate": "none — local HTML/JS only",
+            "note": "Recover quality-panel.js feature explorer section from git a0f3e1c~1. Adapt to read features/*.yaml, model/knowledge-map/views/path-summary.json, and specs/index.json from local paths."
+          },
+          {
+            "id": "ui-feature-page-standalone",
+            "title": "Restore dedicated feature page with V4 sections consuming feature packets and spec/evidence data",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "aks-rp-e2e.app/ui/",
+            "live_gate": "none — local HTML/JS only",
+            "depends_on": "ui-feature-explorer-standalone",
+            "note": "Recover feature/index.html, scenario-path-table.js, feature-brief-panel.js, and quality-panel.js feature-detail sections from git a0f3e1c~1. Prior audit (evidence/archive/feature-page-managedsystem-current-audit.md) documents 5 meaningful gaps to address."
+          },
+          {
+            "id": "ui-data-alignment-v3-audit",
+            "title": "Verify all restored UI data source paths align with V3 directory contract",
+            "status": "ready",
+            "priority": "P2",
+            "conflict_scope": "aks-rp-e2e.app/ui/",
+            "live_gate": "none — local review only",
+            "depends_on": "ui-feature-page-standalone",
+            "note": "Confirm no restored UI code references removed .app/ paths (e.g., .app/decisions/, .app/workflows/). All data sources must use V3 domain paths: features/, specs/, model/, runs/, evidence/."
+          }
+        ]
+      }
+    ]
+  },
+  "taskCounts": {
+    "accepted": 443,
+    "superseded": 37,
+    "ready": 12,
+    "active": 5
+  },
+  "newTasksAdded": [
+    "ui-kanban-standalone-shell",
+    "ui-feature-explorer-standalone",
+    "ui-feature-page-standalone",
+    "ui-data-alignment-v3-audit",
+    "unindexed-spec-files-index-addition",
+    "keda-runtime-behavior-stub-evidence-fill"
+  ]
+}

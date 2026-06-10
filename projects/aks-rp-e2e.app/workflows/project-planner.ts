@@ -1,8 +1,8 @@
 /**
  * project-planner — refill/review loop for aks-rp-e2e.
  *
- * This is the simple control loop: normalize/review the task tree, create or
- * promote next tasks, then signal the worker loop when ready leaves exist.
+ * The planner does planner work only: run the execution engine in planner mode
+ * and emit project.tasks.ready when the task tree has ready executable leaves.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -19,6 +19,10 @@ type TaskNode = {
   children?: string[];
   gates?: string[];
   gate_status?: string;
+  kind?: string;
+  conflict_scope?: string[] | string;
+  workflow?: string;
+  context?: Record<string, unknown>;
 };
 
 type TaskTree = {
@@ -30,18 +34,19 @@ function field(raw: string, name: string): string | undefined {
   return match ? match[1].trim() : undefined;
 }
 
-function readReadyLeafIds(appDir: string): string[] {
-  const treePath = join(appDir, "tasks", "tree.json");
-  if (!existsSync(treePath)) return [];
-  const tree = JSON.parse(readFileSync(treePath, "utf-8")) as TaskTree;
-  return Object.values(tree.tasks ?? {})
-    .filter(task => task.status === "ready" && (task.children ?? []).length === 0 && !hasClosedGate(task))
-    .map(task => task.id)
-    .sort();
+function resolveAppDir(projectDir: string, explicitAppDir?: string): string {
+  if (explicitAppDir) return explicitAppDir;
+  const embeddedProjectPath = join(projectDir, ".app", "project.json");
+  const legacyRootTaskDir = join(projectDir, "tasks");
+  if (existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)) return projectDir;
+  if (existsSync(embeddedProjectPath)) return join(projectDir, ".app");
+  return new URL("..", import.meta.url).pathname;
 }
 
-function hasClosedGate(task: TaskNode): boolean {
-  return (task.gates ?? []).some(isBlockingGate) && task.gate_status !== "satisfied";
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && Boolean(item));
+  if (typeof value === "string" && value) return [value];
+  return [];
 }
 
 function isNonBlockingSafetyGate(gate: string): boolean {
@@ -53,8 +58,38 @@ function isNonBlockingSafetyGate(gate: string): boolean {
     || /^do not run (?:cloud|live|staging|kubectl)\b/i.test(text);
 }
 
-function isBlockingGate(gate: string): boolean {
-  return Boolean(gate.trim()) && !isNonBlockingSafetyGate(gate);
+function hasBlockingGate(task: TaskNode): boolean {
+  return normalizeStringArray(task.gates).some(gate => gate.trim() && !isNonBlockingSafetyGate(gate))
+    && task.gate_status !== "satisfied";
+}
+
+function isPlanningControlTask(task: TaskNode): boolean {
+  return task.id === "project-control"
+    || task.id === "project-planning-loop"
+    || task.id === "project-planning-loop-run"
+    || /^project-planning-loop-run-\d+$/.test(task.id)
+    || task.kind === "loop_task"
+    || normalizeStringArray(task.conflict_scope).includes("project-control:planning-loop");
+}
+
+function hasRepeatableLiveSpecPolicy(task: TaskNode): boolean {
+  const policy = String(task.context?.live_run_policy ?? task.context?.liveRunPolicy ?? "");
+  return task.workflow === "spec-runner" && /^(repeatable-approved|approved-repeatable)$/i.test(policy);
+}
+
+function hasClosedGate(task: TaskNode): boolean {
+  return hasBlockingGate(task) && !hasRepeatableLiveSpecPolicy(task);
+}
+
+function readReadyLeafIds(appDir: string): string[] {
+  const treePath = join(appDir, "tasks", "tree.json");
+  if (!existsSync(treePath)) return [];
+  const tree = JSON.parse(readFileSync(treePath, "utf-8")) as TaskTree;
+  return Object.values(tree.tasks ?? {})
+    .filter(task => task.status === "ready" && (task.children ?? []).length === 0)
+    .filter(task => !hasClosedGate(task) && !isPlanningControlTask(task))
+    .map(task => task.id)
+    .sort();
 }
 
 function maxConcurrent(raw: string): number {
@@ -63,16 +98,19 @@ function maxConcurrent(raw: string): number {
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = field(ctx.task, "app") ?? new URL("..", import.meta.url).pathname;
+  const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
+  const triggerBlock = ctx.task.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
   const plannerTask = [
     `app: ${appDir}`,
     `project: ${projectDir}`,
-    `agent: ${field(ctx.task, "agent") ?? ctx.agent}`,
-    `owner: ${field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent}`,
-    `worker: ${field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent}`,
+    `agent: ${field(ctx.task, "agent") ?? "aks-explorer"}`,
+    `owner: ${field(ctx.task, "owner") ?? "aks-explorer"}`,
+    `worker: ${field(ctx.task, "worker") ?? "aks-explorer"}`,
     "maxAttempts: 0",
     `maxConcurrent: ${maxConcurrent(ctx.task)}`,
     "role: planner",
+    "",
+    triggerBlock,
   ].join("\n");
 
   const result = await executeEngine({
@@ -92,7 +130,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         requested_by: "project-planner",
       });
     } catch {
-      // Local tests may not provide a real dispatcher.
+      // Local tests may not provide a dispatcher.
     }
   }
 
@@ -106,7 +144,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
 if (import.meta.main) {
   const result = await execute({
-    task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxConcurrent: 3",
+    task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer",
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }) as WorkflowResult,
     escalate: (message: string) => ({ status: "escalated", message }) as WorkflowResult,

@@ -33,6 +33,9 @@ type TaskNode = {
   kind?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   owner?: string;
+  workflow?: string;
+  session_id?: string;
+  session_history?: string[];
   claimed_by?: string;
   lease_expires_at?: string;
   conflict_scope?: string[] | string;
@@ -44,6 +47,7 @@ type TaskNode = {
   gates?: string[];
   blocker?: string;
   verification?: unknown;
+  trace?: Record<string, unknown>;
 };
 
 type TaskTree = {
@@ -60,12 +64,14 @@ type PickupConfig = {
   journalPath: string;
   worker: string;
   maxConcurrent: number;
+  requestedReadyTaskIds: string[];
   abandonedActiveTaskIds: Set<string>;
 };
 
 type LeasedTask = {
   id: string;
   lease_expires_at?: string;
+  session_id?: string;
 };
 
 function parseTriggerEvent(raw: string): TriggerEvent | null {
@@ -201,13 +207,13 @@ function depthOf(tree: TaskTree, taskId: string): number {
 
 function activeLeaves(tree: TaskTree): TaskNode[] {
   return Object.values(tree.tasks)
-    .filter(task => isLeaf(task) && ["active", "claimed_done"].includes(task.status))
+    .filter(task => isLeaf(task) && ["active", "claimed_done"].includes(task.status) && !isPlanningLoopControlTask(task))
     .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
 }
 
 function readyLeaves(tree: TaskTree): TaskNode[] {
   return Object.values(tree.tasks)
-    .filter(task => isLeaf(task) && task.status === "ready")
+    .filter(task => isLeaf(task) && task.status === "ready" && !isPlanningLoopControlTask(task))
     .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
 }
 
@@ -253,6 +259,42 @@ function taskConflictScope(task: TaskNode): string[] {
 function conflictScopesOverlap(a: TaskNode, b: TaskNode): boolean {
   const right = new Set(taskConflictScope(b));
   return taskConflictScope(a).some(item => right.has(item));
+}
+
+function stableTaskSessionId(task: TaskNode): string {
+  const slug = task.id.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 96) || "task";
+  return `s_task_${slug}`;
+}
+
+function replacementTaskSessionId(task: TaskNode): string {
+  const slug = task.id.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "task";
+  return `s_task_${slug}_retry_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function rotateAbandonedTaskSession(task: TaskNode): void {
+  if (typeof task.session_id === "string" && task.session_id.trim()) {
+    task.session_history = [...new Set([...(task.session_history ?? []), task.session_id.trim()])];
+  }
+  task.session_id = replacementTaskSessionId(task);
+  task.session_history = [...new Set([...(task.session_history ?? []), task.session_id])];
+  task.trace = {
+    ...(task.trace ?? {}),
+    abandoned_session_replaced_at: new Date().toISOString(),
+    last_session: task.session_id,
+  };
+}
+
+function ensureTaskSession(task: TaskNode): void {
+  if (task.workflow === "spec-runner") return;
+  const sessionId = typeof task.session_id === "string" && task.session_id.trim()
+    ? task.session_id.trim()
+    : stableTaskSessionId(task);
+  task.session_id = sessionId;
+  task.session_history = [...new Set([...(task.session_history ?? []), sessionId])];
+  task.trace = {
+    ...(task.trace ?? {}),
+    last_session: sessionId,
+  };
 }
 
 function isClearEnough(task: TaskNode): boolean {
@@ -305,9 +347,11 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: 
     if (!isLeaf(task)) continue;
     const reason = activeLeaseRecoveryReason(config, task);
     if (!reason) continue;
-    if (reason === "zero-op-worker-session-abandoned" && isPlanningLoopControlTask(task)) {
+    if (isPlanningLoopControlTask(task)) {
       task.status = "superseded";
-      task.blocker = "Superseded after watchdog abandoned a stale zero-op planning-loop worker session; planner recovery will continue from current backlog/frontier.";
+      task.blocker = reason === "zero-op-worker-session-abandoned"
+        ? "Superseded after watchdog abandoned a stale zero-op planning-loop worker session; planner recovery will continue from the control loop."
+        : "Superseded stale legacy planning-control task; planning now runs in the project-planner control loop and is not worker-dispatchable.";
       task.verification = {
         ts: new Date().toISOString(),
         verifier: "task-worker",
@@ -320,6 +364,9 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: 
     }
     task.claimed_by = undefined;
     task.lease_expires_at = undefined;
+    if (reason === "zero-op-worker-session-abandoned") {
+      rotateAbandonedTaskSession(task);
+    }
     requeued.push(task.id);
     try {
       ctx.dispatchEvent("task.requeued", {
@@ -327,6 +374,7 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: 
         taskId: task.id,
         status: task.status,
         reason,
+        session_id: task.session_id,
       });
     } catch {
       // Local test contexts may not provide a real dispatcher.
@@ -335,20 +383,23 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: 
   return requeued;
 }
 
-function selectDispatchableLeaves(tree: TaskTree, max: number, excludedIds = new Set<string>()): TaskNode[] {
+function selectDispatchableLeaves(tree: TaskTree, max: number, requestedReadyTaskIds: string[] = [], excludedIds = new Set<string>()): TaskNode[] {
   const active = activeLeaves(tree);
   if (active.some(isGlobalSerializedExecutionTask)) return [];
   const capacity = Math.max(0, max - active.length);
   if (capacity <= 0) return [];
 
   const selected: TaskNode[] = [];
-  const ready = readyLeaves(tree);
-  const hasNonPlanningReady = ready.some(candidate => !isPlanningLoopControlTask(candidate));
+  const requestedOrder = new Map(requestedReadyTaskIds.map((id, index) => [id, index]));
+  const ready = requestedOrder.size > 0
+    ? readyLeaves(tree)
+      .filter(task => requestedOrder.has(task.id))
+      .sort((a, b) => requestedOrder.get(a.id)! - requestedOrder.get(b.id)!)
+    : readyLeaves(tree);
   for (const candidate of ready) {
     if (selected.length >= capacity) break;
     if (excludedIds.has(candidate.id)) continue;
     if (!isClearEnough(candidate) || hasClosedGate(tree, candidate)) continue;
-    if (hasNonPlanningReady && isPlanningLoopControlTask(candidate)) continue;
     if (isGlobalSerializedExecutionTask(candidate)) {
       if (active.length === 0 && selected.length === 0) {
         selected.push(candidate);
@@ -371,6 +422,7 @@ function leaseTask(task: TaskNode, worker: string): void {
   task.status = "active";
   task.claimed_by = worker;
   task.lease_expires_at = new Date(Date.now() + 30 * 60_000).toISOString();
+  ensureTaskSession(task);
 }
 
 function normalizeActiveTaskPointer(tree: TaskTree): void {
@@ -384,7 +436,7 @@ function leaseDispatchableTasks(config: PickupConfig, tree: TaskTree, selected: 
     leaseTask(task, config.worker);
   }
   normalizeActiveTaskPointer(tree);
-  return selected.map(task => ({ id: task.id, lease_expires_at: task.lease_expires_at }));
+  return selected.map(task => ({ id: task.id, lease_expires_at: task.lease_expires_at, session_id: task.session_id }));
 }
 
 function emitTaskExecutionEvents(ctx: WorkflowContext, config: PickupConfig, leased: LeasedTask[]): void {
@@ -397,12 +449,14 @@ function emitTaskExecutionEvents(ctx: WorkflowContext, config: PickupConfig, lea
         mode: "event-dispatch",
         claimed_by: config.worker,
         lease_expires_at: task.lease_expires_at,
+        session_id: task.session_id,
       });
       ctx.dispatchEvent("project.task.execution.requested", {
         project: "aks-rp-e2e",
         taskId: task.id,
         worker: config.worker,
         lease_expires_at: task.lease_expires_at,
+        session_id: task.session_id,
         requested_by: "task-worker",
       });
     } catch {
@@ -424,7 +478,7 @@ function pickupReadyTasks(ctx: WorkflowContext, config: PickupConfig): LeasedTas
       });
     }
 
-    const selected = selectDispatchableLeaves(tree, config.maxConcurrent);
+    const selected = selectDispatchableLeaves(tree, config.maxConcurrent, config.requestedReadyTaskIds);
     const leased = leaseDispatchableTasks(config, tree, selected);
     if (leased.length > 0) {
       appendJournal(config, {
@@ -442,7 +496,14 @@ function pickupReadyTasks(ctx: WorkflowContext, config: PickupConfig): LeasedTas
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
-  const appDir = field(ctx.task, "app") ?? new URL("..", import.meta.url).pathname;
+  const embeddedProjectPath = join(projectDir, ".app", "project.json");
+  const legacyRootTaskDir = join(projectDir, "tasks");
+  const defaultAppDir = existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
+    ? projectDir
+    : existsSync(embeddedProjectPath)
+    ? join(projectDir, ".app")
+    : new URL("..", import.meta.url).pathname;
+  const appDir = field(ctx.task, "app") ?? defaultAppDir;
   const trigger = parseTriggerEvent(ctx.task);
   const triggerType = trigger?.type ?? "";
   const configuredMaxConcurrent = maxConcurrent(ctx.task, trigger);
@@ -454,6 +515,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       journalPath: join(appDir, "journal.jsonl"),
       worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
       maxConcurrent: configuredMaxConcurrent,
+      requestedReadyTaskIds: triggerStringArray(trigger, "readyTaskIds"),
       abandonedActiveTaskIds: abandonedActiveTaskIds(ctx.task, trigger),
     };
     const leased = pickupReadyTasks(ctx, config);
@@ -490,6 +552,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 }
 
 if (import.meta.main) {
+  if (process.env.MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT !== "1") {
+    console.error("Direct workflow entrypoint is disabled by default. Set MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT=1 to run it.");
+    process.exit(0);
+  }
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxConcurrent: 3",
     agent: "aks-explorer",

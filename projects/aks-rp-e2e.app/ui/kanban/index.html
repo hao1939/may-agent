@@ -48,12 +48,14 @@
   .col-title { font-weight: 650; }
   .pill { display: inline-flex; align-items: center; white-space: nowrap; border: 1px solid currentColor; border-radius: 999px; padding: 1px 7px; font-size: 11px; color: var(--muted); }
   .cards { display: grid; align-content: start; gap: 8px; overflow-y: auto; padding-right: 2px; min-height: 0; }
-  .card { border: 1px solid var(--border); border-left: 3px solid var(--task-color, var(--muted)); background: var(--bg); border-radius: 6px; padding: 8px; cursor: pointer; height: 136px; overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 6px; }
+  .card { border: 1px solid var(--border); border-left: 3px solid var(--task-color, var(--muted)); background: var(--bg); border-radius: 6px; padding: 8px; cursor: pointer; height: 148px; overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; gap: 5px; }
   .card:hover { border-color: var(--task-color, var(--blue)); }
   .card.active-card { outline: 1px solid var(--blue); }
   .card-id { font-weight: 650; font-size: 12px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-goal { color: var(--muted); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-scheduler { color: var(--fg); font-size: 11px; line-height: 1.35; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .card-badges { display: flex; gap: 5px; min-width: 0; overflow: hidden; }
+  .escalation-badge { display: inline-flex; max-width: 100%; min-width: 0; color: var(--orange); border: 1px solid rgba(232, 164, 76, .75); background: rgba(232, 164, 76, .1); border-radius: 999px; padding: 1px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card-meta { display: flex; gap: 5px; flex-wrap: nowrap; color: var(--muted); font-size: 11px; overflow: hidden; }
   .card-meta span { display: inline-flex; align-items: center; max-width: 100%; min-width: 0; border: 1px solid var(--border); background: var(--panel2); border-radius: 999px; padding: 1px 6px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tree { display: grid; gap: 6px; max-height: 560px; overflow: auto; padding-right: 4px; }
@@ -72,6 +74,7 @@
   .summary-chip { display: inline-flex; align-items: center; white-space: nowrap; border: 1px solid currentColor; border-radius: 999px; padding: 1px 6px; }
   .detail { position: sticky; top: 74px; display: grid; gap: 12px; }
   .detail-section { border-top: 1px solid var(--border); padding-top: 10px; }
+  .escalation-panel { border-color: rgba(232, 164, 76, .65); }
   .detail h2 { font-size: 16px; margin: 0 0 6px; overflow-wrap: anywhere; }
   .detail-list { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
   .detail-list a { overflow-wrap: anywhere; }
@@ -103,7 +106,7 @@
       <div class="brand-subtitle">Task states, task cards, and project steering</div>
     </div>
     <nav class="nav">
-      <a href="/projects/aks-rp-e2e/ui/">Quality Panel</a>
+      <a href="../">Quality Panel</a>
       <a href="/projects/platform/ui/#/projects/aks-rp-e2e">Dashboard</a>
       <button class="btn" id="refresh-btn">Refresh</button>
     </nav>
@@ -116,6 +119,6 @@
       window.location.replace(`${window.location.pathname}/${window.location.search}${window.location.hash}`);
     }
   </script>
-  <script src="/projects/aks-rp-e2e/kanban/kanban.js"></script>
+  <script src="kanban.js"></script>
 </body>
 </html>

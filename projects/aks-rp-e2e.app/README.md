@@ -24,7 +24,7 @@ The app declaration in `app.ts` points at the sibling domain repo:
 
 App code should treat paths intentionally:
 
-- app/control-plane files: `project.md`, `tasks/tree.json`, `journal.jsonl`,
+- app/control-plane files: `project.json`, `tasks/tree.json`, `journal.jsonl`,
   `planner-runs.jsonl`, `workflows/`, `ui/`;
 - domain workspace files: `../aks-rp-e2e/features/`,
   `../aks-rp-e2e/specs/`, `../aks-rp-e2e/replays/`,
@@ -33,7 +33,7 @@ App code should treat paths intentionally:
 ## Runtime Files
 
 - `app.ts` - Project app declaration, schedules, actions, and event behavior.
-- `project.md` - readable May-agent operating state for this app.
+- `project.json` - readable May-agent operating state for this app.
 - `tasks/tree.json` - current project execution decomposition.
 - `discussion.jsonl` - optional append-only project comment stream.
 - `journal.jsonl` - optional compact app workflow trace.
@@ -41,10 +41,12 @@ App code should treat paths intentionally:
 - `agents/` - app-local agent definitions and triggers.
 - `workflows/` - project-specific workflow implementation.
 - `ui/` - project-specific May-agent UI assets.
-- `runner/` - small app-side adapters that invoke the domain runner.
+- `e2e/` - cross-surface app/UI tests.
 
 May-agent infrastructure owns durable event, session, workflow, and intent
 history. This app does not keep a parallel `events/` or `runs/` directory.
+This app also does not own a `runner/` or `scripts/` directory; runnable test
+logic belongs to the portable domain project.
 
 ## Execution
 
@@ -58,3 +60,9 @@ bun run spec <spec-id> --target=staging-rest --surface=REST --host=devbox
 
 The domain runner writes run artifacts under `../aks-rp-e2e/runs/` and durable
 evidence under `../aks-rp-e2e/evidence/`.
+
+## Tests
+
+Workflow unit tests live beside workflow code in `workflows/*.test.ts`.
+Cross-surface UI/app tests live in `e2e/`. Domain runner, replay, and spec tests
+belong in `../aks-rp-e2e`.

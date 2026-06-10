@@ -7,16 +7,16 @@
     "handler": {
       "workflow": "project-planner",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
+      "projectId": "aks-rp-e2e.app",
       "includeEvent": true,
-      "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxConcurrent: 3",
+      "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxConcurrent: 5",
       "timeoutMs": 3600000
     },
     "on": [
       "project.execution.requested"
     ],
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e.app/tasks/README.md"
     ]
@@ -29,16 +29,16 @@
     "handler": {
       "workflow": "task-worker",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
+      "projectId": "aks-rp-e2e.app",
       "includeEvent": true,
-      "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxConcurrent: 3",
+      "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxConcurrent: 5",
       "timeoutMs": 1800000
     },
     "on": [
       "project.tasks.ready"
     ],
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e.app/tasks/README.md"
     ]
@@ -48,11 +48,11 @@
     "type": "job",
     "enabled": true,
     "description": "Worker loop execution. Executes one leased leaf task from aks-rp-e2e.app/tasks/tree.json and emits task completion.",
-    "maxConcurrentTriggers": 3,
+    "maxConcurrentTriggers": 5,
     "handler": {
       "workflow": "task-worker",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
+      "projectId": "aks-rp-e2e.app",
       "includeEvent": true,
       "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxAttempts: 1\nmaxConcurrent: 1",
       "timeoutMs": 3600000
@@ -61,7 +61,7 @@
       "project.task.execution.requested"
     ],
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e.app/tasks/README.md"
     ]
@@ -69,19 +69,22 @@
   {
     "name": "aks-rp-e2e-project-watchdog",
     "type": "job",
-    "enabled": false,
+    "enabled": true,
     "intervalMs": 300000,
     "offsetMs": 120000,
     "description": "Five-minute liveness guard. If the task tree is fresh or a worker is healthy, it no-ops; otherwise it invokes the execution engine to resume runnable work.",
+    "on": [
+      "project.watchdog.tick"
+    ],
     "handler": {
       "workflow": "project-execution-watchdog",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
-      "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nstaleMs: 300000\nzeroOpStaleMs: 600000\ncontrolZeroOpStaleMs: 120000\nmaxAttempts: 3",
+      "projectId": "aks-rp-e2e.app",
+      "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nmaxAttempts: 2\nmaxConcurrent: 5",
       "timeoutMs": 1800000
     },
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e.app/tasks/README.md"
     ]
@@ -95,7 +98,7 @@
     "handler": {
       "workflow": "project-execution-engine",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
+      "projectId": "aks-rp-e2e.app",
       "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxAttempts: 50\nlane: regular-learning",
       "timeoutMs": 3600000
     },
@@ -104,7 +107,7 @@
       "trigger.aks-rp-e2e-regular-learning"
     ],
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e/model/knowledge-map/README.md"
     ]
@@ -118,7 +121,7 @@
     "handler": {
       "workflow": "project-execution-engine",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
+      "projectId": "aks-rp-e2e.app",
       "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxAttempts: 50\nlane: replan-review",
       "timeoutMs": 3600000
     },
@@ -127,7 +130,7 @@
       "trigger.aks-rp-e2e-weekly-replan-review"
     ],
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e/model/knowledge-map/views/path-summary.json",
       "projects/aks-rp-e2e/suites/README.md"
@@ -141,7 +144,7 @@
     "handler": {
       "workflow": "project-execution-engine",
       "agent": "aks-explorer",
-      "projectId": "aks-rp-e2e",
+      "projectId": "aks-rp-e2e.app",
       "task": "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nowner: aks-explorer\nworker: aks-explorer\nmaxAttempts: 50\nlane: verification",
       "timeoutMs": 3600000
     },
@@ -149,7 +152,7 @@
       "trigger.aks-rp-e2e-verification-signal"
     ],
     "context": [
-      "projects/aks-rp-e2e.app/project.md",
+      "projects/aks-rp-e2e.app/project.json",
       "projects/aks-rp-e2e.app/tasks/tree.json",
       "projects/aks-rp-e2e/replays/execution/automation.md",
       "projects/aks-rp-e2e/replays/README.md"

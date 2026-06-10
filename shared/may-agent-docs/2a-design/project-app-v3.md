@@ -93,7 +93,7 @@ agents repo
   projects/
     aks-rp-e2e.app/
       app.ts
-      project.md
+      project.json
       tasks/
       workflows/
       agents/
@@ -110,8 +110,7 @@ integration. The domain repo owns the project product.
 ```text
 aks-rp-e2e.app/
   app.ts                 # required app declaration and event handler
-  project.md             # readable app/project state for May-agent operation
-  workspace.json         # optional pinned workspace binding state
+  project.json           # structured app/project state and workspace binding
   tasks/
     tree.json            # current task decomposition and review state
     README.md
@@ -119,14 +118,17 @@ aks-rp-e2e.app/
   agents/                # optional app-local agent identities
   handlers/              # app.ts helper modules
   ui/                    # project app UI assets
+  e2e/                   # app/UI cross-surface tests
   discussion.jsonl       # optional append-only human/app comments
   journal.jsonl          # optional compact app-local trace
   archive/               # retired app-control files
 ```
 
-No `events/` or `runs/` folder is required inside the app. May-agent
-infrastructure owns durable event, session, workflow, and intent history. The
-app may keep compact JSONL traces only when they help the app reason.
+No active `runner/`, `scripts/`, `events/`, `runs/`, `evidence/`, `specs/`,
+`replays/`, `features/`, or `model/` folder belongs inside the app. The domain
+project owns those domain tools and artifacts. May-agent infrastructure owns
+durable event, session, workflow, and intent history. The app may keep compact
+JSONL traces only when they help the app reason.
 
 ## Domain Workspace Binding
 
@@ -152,15 +154,19 @@ The binding has two roles:
 - `repo` and `branch` describe the expected source of the domain project.
 - `localPath` tells the runtime where commands should run on this host.
 
-The app should record the observed domain revision when task decisions or
-evidence depend on a specific layout:
+The app should record workspace binding and the observed domain revision in
+`project.json` when task decisions or evidence depend on a specific layout:
 
 ```json
 {
-  "workspace": "aks-rp-e2e",
-  "revision": "dca46cc",
-  "branch": "main",
-  "lastSyncedAt": "2026-06-09T09:30:00Z"
+  "domainProject": {
+    "id": "aks-rp-e2e",
+    "path": "../aks-rp-e2e",
+    "repo": "git@github.com:hao1939/aks-rp-e2e.git",
+    "branch": "main",
+    "observedRevision": "dca46cc",
+    "lastSyncedAt": "2026-06-09T09:30:00Z"
+  }
 }
 ```
 
@@ -251,6 +257,38 @@ Rationale:
 The task tree still represents project understanding, not workflow attempt
 history. Bad or stale branches should be superseded. Runtime attempts stay in
 infra history.
+
+Tasks are the context containers for project work. A task may store compact
+working context inline, or reference larger task-owned context files when the
+context becomes too large for `tree.json`:
+
+```text
+aks-rp-e2e.app/tasks/context/<task-id>.md
+```
+
+This is a storage optimization only. Semantically, the context still belongs to
+the task.
+
+Tasks may also store a primary session pointer. That session is the warm
+working memory for the task and should be reused when the same task continues
+or receives feedback:
+
+```json
+{
+  "id": "spec-runner-current-frontier-review",
+  "context_ref": "tasks/context/spec-runner-current-frontier-review.md",
+  "session": {
+    "primary": "s_123",
+    "status": "warm",
+    "handoff_summary": "Runner scripts need review before product verdicts."
+  }
+}
+```
+
+Important conclusions from the session must still be promoted into task
+context, task fields, domain artifacts, or child tasks. The primary session
+keeps useful implicit working memory; the task remains the auditable source of
+truth.
 
 Task leaves may reference domain files:
 
@@ -362,7 +400,7 @@ Migration steps:
 
 1. Add V3 runtime discovery for `*.app/app.ts` while keeping V2 discovery.
 2. Create `aks-rp-e2e.app/` in the agents/platform repo.
-3. Move `.app/app.ts`, `.app/project.md`, `.app/tasks/`, `.app/workflows/`,
+3. Move `.app/app.ts`, `.app/project.json`, `.app/tasks/`, `.app/workflows/`,
    `.app/agents/`, `.app/ui/`, and app JSONL streams into `aks-rp-e2e.app/`.
 4. Add `workspace` binding to `aks-rp-e2e.app/app.ts`.
 5. Update path helpers and workflow code from `.app` relative paths to

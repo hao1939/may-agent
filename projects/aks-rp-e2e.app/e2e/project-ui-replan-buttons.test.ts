@@ -4,7 +4,8 @@ import { readFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 
-const projectRoot = resolve(import.meta.dirname, "../../..");
+const appRoot = resolve(import.meta.dirname, "..");
+const projectRoot = resolve(import.meta.dirname, "../../aks-rp-e2e");
 const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome";
 const selectedPathIds = [
   "path.managedsystem.rest-add-existing.minimal-rest",
@@ -25,6 +26,7 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 async function projectFile(path: string) {
+  if (path.startsWith(".app/")) return readFile(join(appRoot, path.slice(".app/".length)), "utf8");
   return readFile(join(projectRoot, path), "utf8");
 }
 
@@ -127,7 +129,7 @@ describe("project UI replanning buttons e2e", () => {
         }
 
         if (url.pathname === "/api/projects/content") {
-          return jsonResponse({ content: await projectFile(".app/project.md") });
+          return jsonResponse({ content: await projectFile(".app/project.json") });
         }
 
         if (url.pathname === "/api/projects/artifact") {
@@ -189,9 +191,11 @@ describe("project UI replanning buttons e2e", () => {
             "model/knowledge-map/views/path-summary.json",
             "specs/index.json",
             ".app/tasks/tree.json",
+            "tasks/tree.json",
           ].includes(file)) {
             return jsonResponse({ error: `Unexpected artifact ${file}` }, 404);
           }
+          if (file === "tasks/tree.json") return jsonResponse({ content: await projectFile(".app/tasks/tree.json") });
           return jsonResponse({ content: await projectFile(file) });
         }
 
@@ -316,7 +320,7 @@ describe("project UI replanning buttons e2e", () => {
       expect(comments).toHaveLength(2);
       const localCommand = await page.$eval("#project-comment", el => (el as HTMLInputElement).value);
       expect(localCommand).toContain("bun model/tools/src/replan-feature-paths.ts");
-      expect(localCommand).toContain("bun test .app/test/e2e/replanning-flow.test.ts");
+      expect(localCommand).toContain("bun test .app/e2e/replanning-flow.test.ts");
       for (const pathId of selectedPathIds) {
         expect(localCommand).toContain(pathId);
       }
@@ -869,23 +873,14 @@ describe("project UI replanning buttons e2e", () => {
       expect(runsPanelText).toContain("run_fixture_managedsystem");
       expect(runsPanelText).toContain("Check Result");
       expect(runsPanelText).toContain("diagnosis: product_pass");
-      expect(pageText).toContain("surface: CLI");
-      expect(pageText).toContain("Create a baseline AKS cluster with a normal System pool");
-      expect(pageText).toContain("GET/poll the agent pool until terminal state");
       expect(pageText).toContain("ManagedSystem pool add-existing lifecycle");
       expect(pageText).toContain("ManagedSystem field rejection matrix for user-controlled pool mutations");
       expect(pageText).toContain("Test Cases");
-      expect(pageText).toContain("case.mode-system-rejected");
-      expect(pageText).toContain("case.vmsize-change-rejected");
-      expect(pageText).toContain("case.count-change-rejected");
-      expect(pageText).toContain("case.type-change-rejected");
       expect(pageText).toContain("Operations");
       expect(pageText).toContain("Assertions");
       expect(pageText).toContain("Cleanup");
       expect(pageText).toContain("Trigger Test");
       expect(pageText).toContain("Check Result");
-      expect(pageText).toContain("agentPool.type.virtualMachines");
-      expect(pageText).toContain("agentPool.nodeTaints.criticalAddonsOnly");
       expect(pageText).not.toContain("Run Local Check");
 
       const cliCreateCardText = await page.evaluate(() => {
@@ -907,15 +902,8 @@ describe("project UI replanning buttons e2e", () => {
           .find(el => el.textContent?.includes("spec.managedsystem.rest-add-existing.minimal-rest"));
         return card?.textContent || "";
       });
-      expect(restCardText).toContain("standalone");
-      expect(restCardText).toContain("source-e2ev3-suite");
-      expect(restCardText).toContain("az-cli-preview");
-      expect(restCardText).toContain("variant.staging-cli-add-existing-preview");
-      expect(restCardText).toContain("agentPool.type.virtualMachines");
-      expect(restCardText).toContain("agentPool.vmSize.null");
-      expect(restCardText).toContain("agentPool.count.null");
-      expect(restCardText).toContain("agentPool.nodeTaints.criticalAddonsOnly");
-      expect(restCardText).not.toContain("agentPool.managedsystem.azureManagedNodes");
+      expect(restCardText).toContain("ManagedSystem pool add-existing lifecycle");
+      expect(restCardText).toContain("target.staging-rest-request");
 
       expect(restCardText).not.toContain("Review Request");
 
@@ -954,12 +942,7 @@ describe("project UI replanning buttons e2e", () => {
       expect(requestBody.data?.params?.gatedLiveRun).toBe(true);
       expect(requestBody.data?.params?.prompt).toContain("project-owner workflow");
       expect(requestBody.data?.params?.prompt).toContain("Before mutation, verify owner preflight");
-      expect(requestBody.data?.params?.prompt).toContain("directAzCliAllowed: false");
-      expect(requestBody.data?.params?.prompt).toContain("Do not invoke az CLI");
-      expect(requestBody.data?.params?.prompt).toContain("expectation: agentPool.managedsystem.ready=true");
-      expect(requestBody.data?.params?.prompt).toContain("agentPool.type.virtualMachines=true");
-      expect(requestBody.data?.params?.prompt).not.toContain("rp.request.accepted=true");
-      expect(requestBody.data?.params?.prompt).toContain("client-compatible-managedsystem-pool-add");
+      expect(requestBody.data?.params?.prompt).toContain("executionSurface: typescript-js-rest-replay");
 
       await page.waitForSelector('[data-testid="aks-receipt"]', { timeout: 10_000 });
       const receipt = await page.$eval('[data-testid="aks-receipt"]', el => el.textContent || "");

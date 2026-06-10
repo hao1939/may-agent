@@ -1,0 +1,81 @@
+{
+  "id": "aks-rp-e2e.app",
+  "owner": "aks-explorer",
+  "status": "active",
+  "type": "project-app",
+  "priority": "P1",
+  "iteration": 218,
+  "policy": {
+    "maxConcurrent": 5,
+    "maxTaskAttempts": 2,
+    "mode": "aggressive-push"
+  },
+  "domainProject": {
+    "id": "aks-rp-e2e",
+    "path": "../aks-rp-e2e",
+    "repo": "git@github.com:hao1939/aks-rp-e2e.git",
+    "branch": "main",
+    "observedRevision": "dca46cc",
+    "lastSyncedAt": "2026-06-09T09:41:44Z"
+  },
+  "goal": "Drive AKS RP e2e feature knowledge, runnable test specs, replay execution, evidence diagnosis, and model feedback.",
+  "strategy": [
+    "Learn feature intent from Go e2ev3 source, API/spec, user docs, design notes, implementation references, and existing evidence.",
+    "Ground each feature with a reference packet so pass/fail judgment has a source-of-truth bundle.",
+    "Generate runnable REST-first test specs and TypeScript replays in the domain project.",
+    "Execute specs through the domain runner when gated, then feed verdict-driving evidence back into the model.",
+    "Keep feature extraction, replay implementation, evidence feedback, and user review moving in parallel through the task tree."
+  ],
+  "runtimeBoundary": {
+    "appOwns": [
+      "project.json",
+      "app.ts",
+      "agents/",
+      "workflows/",
+      "tasks/",
+      "ui/",
+      "e2e/",
+      "archive/"
+    ],
+    "domainOwns": [
+      "features/",
+      "specs/",
+      "replays/",
+      "runner/",
+      "runs/",
+      "evidence/",
+      "model/",
+      "suites/"
+    ],
+    "runtimeOwns": [
+      "events",
+      "workflow runs",
+      "large journals",
+      "session transcripts",
+      "agent scratch output"
+    ]
+  },
+  "currentState": {
+    "summary": "The project is active. The current bottleneck is making replay scripts executable and feeding verified evidence back into the model without accepting not_ready or implementation-missing runner results."
+  },
+  "currentFocus": {
+    "summary": "Keep replay implementation and evidence feedback moving through the task tree.",
+    "nextAction": "Execute ready replay implementation, verification, and feedback leaves through the event loop.",
+    "activeTaskIds": [
+      "jwt-incluster-idp-replay-impl-rework-review"
+    ],
+    "activeTask": {
+      "id": "jwt-incluster-idp-replay-impl-rework-review",
+      "status": "active",
+      "source": "tasks/tree.json",
+      "outputs": [
+        "evidence/archive/jwt-incluster-idp-replay-impl-rework-review.md"
+      ]
+    }
+  },
+  "taskIndex": [
+    "tasks/README.md",
+    "tasks/tree.json"
+  ],
+  "updatedAt": "2026-06-10T09:47:59.486Z"
+}

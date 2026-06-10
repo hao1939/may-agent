@@ -97,7 +97,7 @@ function suggestAksRpE2eDirection() {
   const input = document.getElementById('aks-direction-suggestion');
   const suggestion = String(input?.value || '').trim();
   const prompt = suggestion
-    ? `[resume] Direction suggestion for aks-rp-e2e:\n\n${suggestion}\n\nEvaluate this against the current feature status/gaps, source/API/docs references, execution cost, cleanup risk, and existing Next Action. If this is a better project move, update .app/project.md and leave reviewable evidence. If not, explain why in .app/discussion.jsonl.`
+    ? `[resume] Direction suggestion for aks-rp-e2e:\n\n${suggestion}\n\nEvaluate this against the current feature status/gaps, source/API/docs references, execution cost, cleanup risk, and existing Next Action. If this is a better project move, update .app/project.json and leave reviewable evidence. If not, explain why in .app/discussion.jsonl.`
     : '[resume] Review aks-rp-e2e and suggest the next best project move from the current feature status/gaps, source/API/docs references, execution cost, cleanup risk, and existing Next Action.';
   prefillProjectComment(prompt);
 }
@@ -1274,7 +1274,7 @@ async function renderAksRpE2eQualityPanel(el) {
       return `[resume] Produce a manual verification path for aks-rp-e2e feature ${label} (${ids}). Use existing run plans/replays/scripts when available; otherwise draft exact commands, prerequisites, expected observations, cleanup, and evidence files. Do not mutate cloud resources until preflight is clean.`;
     }
     if (kind === 'suggest') {
-      return `[resume] Consider making aks-rp-e2e feature ${label} (${ids}) the next project move. Evaluate status, gap value, source/API/docs grounding, execution cost, environment risk, cleanup risk, and whether it beats current .app/project.md Next Action. Update .app/project.md only if it is a better direction; otherwise explain why in .app/discussion.jsonl.`;
+      return `[resume] Consider making aks-rp-e2e feature ${label} (${ids}) the next project move. Evaluate status, gap value, source/API/docs grounding, execution cost, environment risk, cleanup risk, and whether it beats current .app/project.json Next Action. Update .app/project.json only if it is a better direction; otherwise explain why in .app/discussion.jsonl.`;
     }
     return `[resume] Challenge the current aks-rp-e2e status for feature ${label} (${ids}). Look for misleading evidence, stale results, missing source references, unclaimed branches, cleanup uncertainty, and product/probe/environment/doc mismatches.`;
   }
@@ -1331,7 +1331,7 @@ Prompt: what input shape or operation is missing? (e.g. update-in-place, delete-
 Feature packet: ${packetPath}
 Model: model/knowledge-map/model.json${pathList}${evidenceList}
 
-Evaluate this feature's readiness: does it have source-backed references, enumerated input paths, test specs, and a clear execution path? If yes, update .app/project.md Next Action to target this feature. If not, list what is missing before it can become the next move. Do not skip the evaluation.`;
+Evaluate this feature's readiness: does it have source-backed references, enumerated input paths, test specs, and a clear execution path? If yes, update .app/project.json Next Action to target this feature. If not, list what is missing before it can become the next move. Do not skip the evaluation.`;
     }
     return '';
   }
@@ -1498,7 +1498,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
       return `[resume] Produce the next verification plan for aks-rp-e2e knowledge path ${path.id} (${label}). Include docs/source/API references, exact inputs, expected behavior, scripted probe or manual steps, execution gates, cleanup, evidence files, and model-update rules. Do not run cloud mutation unless explicitly authorized.`;
     }
     if (kind === 'suggest') {
-      return `[resume] Consider path ${path.id} (${label}) as the next aks-rp-e2e project move. Compare it against current gaps by value, source grounding, execution cost, environment risk, cleanup risk, and model impact. Update .app/project.md only if it should become the next direction; otherwise record why not.`;
+      return `[resume] Consider path ${path.id} (${label}) as the next aks-rp-e2e project move. Compare it against current gaps by value, source grounding, execution cost, environment risk, cleanup risk, and model impact. Update .app/project.json only if it should become the next direction; otherwise record why not.`;
     }
     return `[resume] Challenge aks-rp-e2e knowledge path ${path.id} (${label}). Look for incorrect scenario mapping, wrong input DAG selection, weak expected behavior, stale observed evidence, ambiguous alignment color, missing cleanup proof, or conflict with adjacent features.`;
   }
@@ -2597,7 +2597,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
   html += `<div class="aks-panel aks-project-brief">`;
   html += `<div class="aks-kicker">Project Goal</div>`;
   html += `<div class="aks-title">AKS input/expectation knowledge workspace</div>`;
-  html += `<div class="aks-brief-text">${esc(compactExcerpt(goal, 4) || compactExcerpt(currentState || currentPhase, 3) || 'Active project goal is not recorded in .app/project.md.')}</div>`;
+  html += `<div class="aks-brief-text">${esc(compactExcerpt(goal, 4) || compactExcerpt(currentState || currentPhase, 3) || 'Active project goal is not recorded in .app/project.json.')}</div>`;
   html += `<div class="aks-metric-grid">`;
   html += miniMetric('inputs', (model.inputVariables || []).length);
   html += miniMetric('expectations', (model.expectationVariables || []).length);
@@ -2622,11 +2622,11 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
   }
   const nextText = sectionExcerpt(nextAction, 8);
   const phaseText = sectionExcerpt(currentPhase || currentState, 4);
-  html += `<div class="md-rendered aks-next-copy">${renderMarkdownBlock(nextText || phaseText || 'No next action found in .app/project.md.')}</div>`;
+  html += `<div class="md-rendered aks-next-copy">${renderMarkdownBlock(nextText || phaseText || 'No next action found in .app/project.json.')}</div>`;
   html += `<div class="aks-actions">`;
   html += `<button class="aks-btn aks-btn-primary" onclick="prefillProjectComment(${jsStringAttr(reviewAsk)})">Review Domain Direction</button>`;
   html += `<a class="aks-btn" href="/projects/aks-rp-e2e/ui/feature/">Evidence Panel</a>`;
-  html += `<a class="aks-btn" href="/projects/aks-rp-e2e/ui/kanban/">Open Task Kanban</a>`;
+  html += `<a class="aks-btn" href="/projects/aks-rp-e2e.app/ui/kanban/">Open Task Kanban</a>`;
   html += `</div>`;
   html += `</div>`;
 
@@ -2839,7 +2839,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
   html += `<button class="aks-btn" onclick="submitAksRpE2eLiveRunPrompt()">Ask aks-explorer To Run Live</button>`;
   html += `<button class="aks-btn" onclick="clearAksRpE2eReplanSelection()">Clear</button>`;
   if (selectedList) {
-    html += `<button class="aks-btn" onclick="prefillProjectComment(${jsStringAttr(`[resume] Run local replanning e2e for selected paths and inspect generated artifacts:\\n\\ncd /app/projects/aks-rp-e2e && bun model/tools/src/replan-feature-paths.ts --select=${selectedList} --out-dir=.app/decisions/replans/manual-preview && bun test .app/test/e2e/replanning-flow.test.ts`)})">Use Local Command</button>`;
+    html += `<button class="aks-btn" onclick="prefillProjectComment(${jsStringAttr(`[resume] Run local replanning e2e for selected paths and inspect generated artifacts:\\n\\ncd /app/projects/aks-rp-e2e && bun model/tools/src/replan-feature-paths.ts --select=${selectedList} --out-dir=.app/decisions/replans/manual-preview && bun test .app/e2e/replanning-flow.test.ts`)})">Use Local Command</button>`;
   }
   html += `</div>`;
   html += `</div>`;
@@ -3070,7 +3070,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
     { label: 'Design Replan', text: replanAsk },
   ];
   html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">`;
-  html += `<a class="aks-btn aks-btn-primary" href="/projects/aks-rp-e2e/ui/kanban/">Open Task Kanban</a>`;
+  html += `<a class="aks-btn aks-btn-primary" href="/projects/aks-rp-e2e.app/ui/kanban/">Open Task Kanban</a>`;
   html += `<a class="aks-btn" href="/projects/aks-rp-e2e/ui/feature/">Evidence Panel</a>`;
   for (const a of actions) {
     html += `<button class="aks-btn" onclick="prefillProjectComment(${jsStringAttr(a.text)})">${esc(a.label)}</button>`;

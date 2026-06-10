@@ -17,7 +17,8 @@ import { readFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
 
-const projectRoot = resolve(import.meta.dirname, "../../..");
+const appRoot = resolve(import.meta.dirname, "..");
+const projectRoot = resolve(import.meta.dirname, "../../aks-rp-e2e");
 const browserPath = process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome";
 
 type PostedComment = { path?: string; comment?: string };
@@ -30,6 +31,7 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 async function projectFile(path: string) {
+  if (path.startsWith(".app/")) return readFile(join(appRoot, path.slice(".app/".length)), "utf8");
   return readFile(join(projectRoot, path), "utf8");
 }
 
