@@ -653,6 +653,13 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `project.execution.watchdog` | manual/operator recovery for stale zero-op sessions | ⚠️ rare (1 row); not wired to a handler |
 
+**Project lifecycle — planning & watchdog**
+
+| Event type | Emitted by | Status |
+|---|---|---|
+| `project.planning.requested` | project-app and agent sessions when requesting a planning cycle (e.g. after task completion) | ✅ live (~246/day); sources: `project-app:aks-rp-e2e`, `agent:aks-explorer`, `codex-investigation` |
+| `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (~80/12h); single source: `project-app:aks-rp-e2e:schedule:project-execution-watchdog` |
+
 **Project lifecycle — task-driven**
 
 | Event type | Emitted by | Status |
