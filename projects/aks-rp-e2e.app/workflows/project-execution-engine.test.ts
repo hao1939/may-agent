@@ -892,7 +892,7 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("signaled 2 ready task");
+    expect(result.message).toContain("signaled 2 dispatchable ready task");
     expect(
       dispatched.find((event) => event.type === "project.tasks.ready")?.payload
         .readyTaskIds,
@@ -989,14 +989,36 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
+    const readyPayload = dispatched.find(
+      (event) => event.type === "project.tasks.ready",
+    )?.payload;
+    expect(readyPayload?.readyTaskIds).toEqual(["bootstrap-live"]);
+    const pickupResult = await executeTaskWorker(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        triggerEvent: {
+          type: "project.tasks.ready",
+          data: readyPayload,
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "ready-task pickup should dispatch execution events, not run workers inline",
+          );
+        },
+      }),
+    );
+    expect(pickupResult.status).toBe("done");
     expect(
-      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
-        .readyTaskIds,
-    ).toEqual(["bootstrap-live"]);
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("bootstrap-live");
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["bootstrap-live"].status).toBe("ready");
+    expect(updated.tasks["bootstrap-live"].status).toBe("active");
   });
 
   test("planner leaves active task recovery to watchdog and worker pickup", async () => {
@@ -1099,7 +1121,7 @@ describe("project execution engine", () => {
     );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("no ready leaves to signal");
+    expect(result.message).toContain("no dispatchable ready leaves to signal");
     expect(
       emitted.some((event) => event.type === "session.cancel.requested"),
     ).toBe(false);

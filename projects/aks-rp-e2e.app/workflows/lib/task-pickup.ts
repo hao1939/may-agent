@@ -37,6 +37,7 @@ export type TaskNode = {
   outputs?: string[];
   acceptance?: string[];
   gates?: string[];
+  context?: Record<string, unknown>;
   blocker?: string;
   verification?: unknown;
   trace?: Record<string, unknown>;
@@ -409,6 +410,16 @@ function isBlockingGate(gate: string): boolean {
   return Boolean(gate.trim()) && !isNonBlockingSafetyGate(gate);
 }
 
+function hasRepeatableLiveSpecPolicy(task: TaskNode): boolean {
+  const policy = String(
+    task.context?.live_run_policy ?? task.context?.liveRunPolicy ?? "",
+  );
+  return (
+    task.workflow === "spec-runner" &&
+    /^(repeatable-approved|approved-repeatable)$/i.test(policy)
+  );
+}
+
 function dependencyGatesAreSatisfied(tree: TaskTree, task: TaskNode): boolean {
   const gates = normalizeStringArray(task.gates).filter(isBlockingGate);
   if (gates.length === 0) return false;
@@ -420,6 +431,7 @@ function dependencyGatesAreSatisfied(tree: TaskTree, task: TaskNode): boolean {
 
 function hasClosedGate(tree: TaskTree, task: TaskNode): boolean {
   const gates = normalizeStringArray(task.gates).filter(isBlockingGate);
+  if (gates.length > 0 && hasRepeatableLiveSpecPolicy(task)) return false;
   return (
     gates.length > 0 &&
     task.gate_status !== "satisfied" &&
@@ -601,6 +613,17 @@ export function emitTaskExecutionEvents(
       // Local test contexts may not provide a real dispatcher.
     }
   }
+}
+
+export function readDispatchableReadyTaskIds(config: PickupConfig): string[] {
+  if (!existsSync(config.treePath)) return [];
+  return withTreeLock(config, () =>
+    selectDispatchableLeaves(
+      readTree(config),
+      config.maxConcurrent,
+      config.requestedReadyTaskIds,
+    ).map((task) => task.id),
+  );
 }
 
 export function pickupReadyTasks(
