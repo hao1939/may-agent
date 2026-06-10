@@ -1,124 +1,533 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AKS RP E2E - Kanban Board</title>
-<style>
-  :root {
-    --bg: #0d1117; --panel: #161b22; --panel2: #1f242d; --border: #30363d;
-    --fg: #c9d1d9; --muted: #8b949e; --blue: #58a6ff; --green: #3fb950;
-    --red: #f85149; --yellow: #d29922; --purple: #bc8cff; --orange: #e8a44c;
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    --mono: "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.45 var(--font); }
-  a { color: var(--blue); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  button, textarea, input, select { font: inherit; }
-  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--panel); position: sticky; top: 0; z-index: 5; }
-  .brand { display: flex; flex-direction: column; min-width: 0; }
-  .brand-title { font-weight: 650; font-size: 15px; }
-  .brand-subtitle { color: var(--muted); font-size: 12px; }
-  .nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .nav a, .btn { border: 1px solid var(--border); background: var(--panel2); color: var(--fg); padding: 7px 10px; border-radius: 6px; cursor: pointer; text-decoration: none; }
-  .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
-  .btn:disabled { opacity: .55; cursor: not-allowed; }
-  .page { max-width: 1500px; margin: 0 auto; padding: 18px 20px 28px; }
-  .summary-grid { display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(260px, .8fr); gap: 14px; margin-bottom: 14px; }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; min-width: 0; }
-  .panel-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
-  .kicker { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .06em; margin-bottom: 4px; }
-  .title { font-size: 17px; font-weight: 650; overflow-wrap: anywhere; }
-  .muted { color: var(--muted); }
-  .metrics { display: grid; grid-template-columns: repeat(6, minmax(70px, 1fr)); gap: 8px; margin-top: 12px; }
-  .metric { border: 1px solid var(--border); background: var(--bg); border-radius: 6px; padding: 8px; }
-  .metric-value { font-size: 20px; font-weight: 650; }
-  .metric-label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
-  .progress { height: 8px; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; display: flex; background: var(--bg); margin-top: 10px; }
-  .progress span { display: block; min-width: 0; }
-  .progress-accepted { background: var(--green); }
-  .progress-blocked { background: var(--yellow); }
-  .progress-active { background: var(--blue); }
-  .lower-grid { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 14px; align-items: start; margin-top: 14px; }
-  .kanban { display: grid; grid-template-columns: repeat(8, minmax(132px, 1fr)); gap: 10px; }
-  .col { min-width: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; max-height: 620px; overflow: hidden; }
-  .col-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .col-title { font-weight: 650; }
-  .pill { display: inline-flex; align-items: center; white-space: nowrap; border: 1px solid currentColor; border-radius: 999px; padding: 1px 7px; font-size: 11px; color: var(--muted); }
-  .cards { display: grid; align-content: start; gap: 8px; overflow-y: auto; padding-right: 2px; min-height: 0; }
-  .card { border: 1px solid var(--border); border-left: 3px solid var(--task-color, var(--muted)); background: var(--bg); border-radius: 6px; padding: 8px; cursor: pointer; height: 148px; overflow: hidden; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; gap: 5px; }
-  .card:hover { border-color: var(--task-color, var(--blue)); }
-  .card.active-card { outline: 1px solid var(--blue); }
-  .card-id { font-weight: 650; font-size: 12px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card-goal { color: var(--muted); font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card-scheduler { color: var(--fg); font-size: 11px; line-height: 1.35; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .card-badges { display: flex; gap: 5px; min-width: 0; overflow: hidden; }
-  .escalation-badge { display: inline-flex; max-width: 100%; min-width: 0; color: var(--orange); border: 1px solid rgba(232, 164, 76, .75); background: rgba(232, 164, 76, .1); border-radius: 999px; padding: 1px 6px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .card-meta { display: flex; gap: 5px; flex-wrap: nowrap; color: var(--muted); font-size: 11px; overflow: hidden; }
-  .card-meta span { display: inline-flex; align-items: center; max-width: 100%; min-width: 0; border: 1px solid var(--border); background: var(--panel2); border-radius: 999px; padding: 1px 6px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tree { display: grid; gap: 6px; max-height: 560px; overflow: auto; padding-right: 4px; }
-  .tree-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; padding: 8px; cursor: pointer; }
-  .tree-row:hover { border-color: var(--blue); }
-  .tree-row.selected { outline: 1px solid var(--blue); }
-  .tree-main { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start; padding-left: var(--indent, 0px); min-width: 0; }
-  .tree-toggle { width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel2); color: var(--fg); cursor: pointer; line-height: 1; padding: 0; }
-  .tree-toggle:hover { border-color: var(--blue); }
-  .tree-toggle-spacer { width: 24px; height: 24px; display: block; }
-  .tree-copy { min-width: 0; }
-  .tree-id { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
-  .tree-goal { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tree-summary { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 6px; font-size: 11px; }
-  .summary-label { color: var(--muted); }
-  .summary-chip { display: inline-flex; align-items: center; white-space: nowrap; border: 1px solid currentColor; border-radius: 999px; padding: 1px 6px; }
-  .detail { position: sticky; top: 74px; display: grid; gap: 12px; }
-  .detail-section { border-top: 1px solid var(--border); padding-top: 10px; }
-  .escalation-panel { border-color: rgba(232, 164, 76, .65); }
-  .detail h2 { font-size: 16px; margin: 0 0 6px; overflow-wrap: anywhere; }
-  .detail-list { display: grid; gap: 5px; color: var(--muted); font-size: 12px; }
-  .detail-list a { overflow-wrap: anywhere; }
-  .steer-box { display: grid; gap: 8px; }
-  .steer-box textarea { width: 100%; min-height: 140px; resize: vertical; border: 1px solid var(--border); border-radius: 6px; padding: 10px; color: var(--fg); background: var(--bg); }
-  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
-  .status { min-height: 18px; font-size: 12px; color: var(--muted); }
-  .notice { margin-top: 10px; border: 1px solid rgba(210, 153, 34, .65); background: rgba(210, 153, 34, .12); color: var(--fg); border-radius: 6px; padding: 8px 10px; font-size: 12px; }
-  .empty { color: var(--muted); border: 1px dashed var(--border); border-radius: 6px; padding: 12px; text-align: center; }
-  @media (max-width: 1100px) {
-    .summary-grid, .lower-grid { grid-template-columns: 1fr; }
-    .kanban { grid-template-columns: repeat(3, minmax(160px, 1fr)); }
-    .detail { position: static; }
-  }
-  @media (max-width: 700px) {
-    .topbar { align-items: flex-start; flex-direction: column; }
-    .page { padding: 14px 12px; }
-    .metrics { grid-template-columns: repeat(2, minmax(80px, 1fr)); }
-    .kanban { grid-template-columns: 1fr; }
-    .col { max-height: 380px; }
-    .card { min-height: 76px; }
-  }
-</style>
-</head>
-<body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-title">AKS RP E2E - Kanban Board</div>
-      <div class="brand-subtitle">Task states, task cards, and project steering</div>
-    </div>
-    <nav class="nav">
-      <a href="../">Quality Panel</a>
-      <a href="/projects/platform/ui/#/projects/aks-rp-e2e">Dashboard</a>
-      <button class="btn" id="refresh-btn">Refresh</button>
-    </nav>
-  </header>
-  <main class="page" id="kanban-root" data-testid="kanban-page">
-    <div class="panel">Loading task tree...</div>
-  </main>
-  <script>
-    if (!window.location.pathname.endsWith("/")) {
-      window.location.replace(`${window.location.pathname}/${window.location.search}${window.location.hash}`);
-    }
-  </script>
-  <script src="kanban.js"></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AKS RP E2E - Kanban Board</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --panel2: #1f242d;
+        --border: #30363d;
+        --fg: #c9d1d9;
+        --muted: #8b949e;
+        --blue: #58a6ff;
+        --green: #3fb950;
+        --red: #f85149;
+        --yellow: #d29922;
+        --purple: #bc8cff;
+        --orange: #e8a44c;
+        --font:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        --mono:
+          "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo,
+          monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.45 var(--font);
+      }
+      a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      button,
+      textarea,
+      input,
+      select {
+        font: inherit;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+      .brand {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .brand-title {
+        font-weight: 650;
+        font-size: 15px;
+      }
+      .brand-subtitle {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .nav {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .nav a,
+      .btn {
+        border: 1px solid var(--border);
+        background: var(--panel2);
+        color: var(--fg);
+        padding: 7px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .page {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 18px 20px 28px;
+      }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: minmax(280px, 1.4fr) minmax(260px, 0.8fr);
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px;
+        min-width: 0;
+      }
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+      .kicker {
+        color: var(--muted);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        margin-bottom: 4px;
+      }
+      .title {
+        font-size: 17px;
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(70px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .metric {
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 8px;
+      }
+      .metric-value {
+        font-size: 20px;
+        font-weight: 650;
+      }
+      .metric-label {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+      .progress {
+        height: 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        display: flex;
+        background: var(--bg);
+        margin-top: 10px;
+      }
+      .progress span {
+        display: block;
+        min-width: 0;
+      }
+      .progress-accepted {
+        background: var(--green);
+      }
+      .progress-blocked {
+        background: var(--yellow);
+      }
+      .progress-active {
+        background: var(--blue);
+      }
+      .lower-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 420px;
+        gap: 14px;
+        align-items: start;
+        margin-top: 14px;
+      }
+      .kanban {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(132px, 1fr));
+        gap: 10px;
+      }
+      .col {
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        max-height: 620px;
+        overflow: hidden;
+      }
+      .col-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .col-title {
+        font-weight: 650;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 1px 7px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .cards {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        overflow-y: auto;
+        padding-right: 2px;
+        min-height: 0;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--task-color, var(--muted));
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 8px;
+        cursor: pointer;
+        height: 148px;
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+        gap: 5px;
+      }
+      .card:hover {
+        border-color: var(--task-color, var(--blue));
+      }
+      .card.active-card {
+        outline: 1px solid var(--blue);
+      }
+      .card-id {
+        font-weight: 650;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .card-goal {
+        color: var(--muted);
+        font-size: 12px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .card-scheduler {
+        color: var(--fg);
+        font-size: 11px;
+        line-height: 1.35;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .card-badges {
+        display: flex;
+        gap: 5px;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .escalation-badge {
+        display: inline-flex;
+        max-width: 100%;
+        min-width: 0;
+        color: var(--orange);
+        border: 1px solid rgba(232, 164, 76, 0.75);
+        background: rgba(232, 164, 76, 0.1);
+        border-radius: 999px;
+        padding: 1px 6px;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card-meta {
+        display: flex;
+        gap: 5px;
+        flex-wrap: nowrap;
+        color: var(--muted);
+        font-size: 11px;
+        overflow: hidden;
+      }
+      .card-meta span {
+        display: inline-flex;
+        align-items: center;
+        max-width: 100%;
+        min-width: 0;
+        border: 1px solid var(--border);
+        background: var(--panel2);
+        border-radius: 999px;
+        padding: 1px 6px;
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tree {
+        display: grid;
+        gap: 6px;
+        max-height: 560px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+      .tree-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 8px;
+        cursor: pointer;
+      }
+      .tree-row:hover {
+        border-color: var(--blue);
+      }
+      .tree-row.selected {
+        outline: 1px solid var(--blue);
+      }
+      .tree-main {
+        display: grid;
+        grid-template-columns: 24px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+        padding-left: var(--indent, 0px);
+        min-width: 0;
+      }
+      .tree-toggle {
+        width: 24px;
+        height: 24px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--panel2);
+        color: var(--fg);
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+      }
+      .tree-toggle:hover {
+        border-color: var(--blue);
+      }
+      .tree-toggle-spacer {
+        width: 24px;
+        height: 24px;
+        display: block;
+      }
+      .tree-copy {
+        min-width: 0;
+      }
+      .tree-id {
+        font-family: var(--mono);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      .tree-goal {
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tree-summary {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+        font-size: 11px;
+      }
+      .summary-label {
+        color: var(--muted);
+      }
+      .summary-chip {
+        display: inline-flex;
+        align-items: center;
+        white-space: nowrap;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 1px 6px;
+      }
+      .detail {
+        position: sticky;
+        top: 74px;
+        display: grid;
+        gap: 12px;
+      }
+      .detail-section {
+        border-top: 1px solid var(--border);
+        padding-top: 10px;
+      }
+      .escalation-panel {
+        border-color: rgba(232, 164, 76, 0.65);
+      }
+      .detail h2 {
+        font-size: 16px;
+        margin: 0 0 6px;
+        overflow-wrap: anywhere;
+      }
+      .detail-list {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .detail-list a {
+        overflow-wrap: anywhere;
+      }
+      .steer-box {
+        display: grid;
+        gap: 8px;
+      }
+      .steer-box textarea {
+        width: 100%;
+        min-height: 140px;
+        resize: vertical;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .status {
+        min-height: 18px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .notice {
+        margin-top: 10px;
+        border: 1px solid rgba(210, 153, 34, 0.65);
+        background: rgba(210, 153, 34, 0.12);
+        color: var(--fg);
+        border-radius: 6px;
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+      .empty {
+        color: var(--muted);
+        border: 1px dashed var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        text-align: center;
+      }
+      @media (max-width: 1100px) {
+        .summary-grid,
+        .lower-grid {
+          grid-template-columns: 1fr;
+        }
+        .kanban {
+          grid-template-columns: repeat(3, minmax(160px, 1fr));
+        }
+        .detail {
+          position: static;
+        }
+      }
+      @media (max-width: 700px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .page {
+          padding: 14px 12px;
+        }
+        .metrics {
+          grid-template-columns: repeat(2, minmax(80px, 1fr));
+        }
+        .kanban {
+          grid-template-columns: 1fr;
+        }
+        .col {
+          max-height: 380px;
+        }
+        .card {
+          min-height: 76px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-title">AKS RP E2E - Kanban Board</div>
+        <div class="brand-subtitle">
+          Task states, task cards, and project steering
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="../">Quality Panel</a>
+        <a href="/projects/platform/ui/#/projects/aks-rp-e2e">Dashboard</a>
+        <button class="btn" id="refresh-btn">Refresh</button>
+      </nav>
+    </header>
+    <main class="page" id="kanban-root" data-testid="kanban-page">
+      <div class="panel">Loading task tree...</div>
+    </main>
+    <script>
+      if (!window.location.pathname.endsWith("/")) {
+        window.location.replace(
+          `${window.location.pathname}/${window.location.search}${window.location.hash}`,
+        );
+      }
+    </script>
+    <script src="kanban.js"></script>
+  </body>
 </html>

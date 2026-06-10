@@ -14,7 +14,9 @@ import {
 const projectRoot = resolve(import.meta.dirname, "../../aks-rp-e2e");
 
 function loadRunnableSpecsFromIndex(indexPath: string): FeaturePathTestSpec[] {
-  const index = loadJsonFile<{ specFiles?: Array<string | { file?: string | null }> }>(indexPath);
+  const index = loadJsonFile<{
+    specFiles?: Array<string | { file?: string | null }>;
+  }>(indexPath);
   const baseDir = dirname(indexPath);
   return (index.specFiles ?? [])
     .map((entry) => (typeof entry === "string" ? entry : entry.file))
@@ -24,8 +26,12 @@ function loadRunnableSpecsFromIndex(indexPath: string): FeaturePathTestSpec[] {
 
 describe("replanning flow e2e", () => {
   test("learned ManagedSystem paths regenerate into one dry-run TypeScript probe", async () => {
-    const pathSummary = loadJsonFile<PathSummary>(join(projectRoot, "model/knowledge-map/views/path-summary.json"));
-    const specs = loadRunnableSpecsFromIndex(join(projectRoot, "specs/index.json"));
+    const pathSummary = loadJsonFile<PathSummary>(
+      join(projectRoot, "model/knowledge-map/views/path-summary.json"),
+    );
+    const specs = loadRunnableSpecsFromIndex(
+      join(projectRoot, "specs/index.json"),
+    );
     const selectedPathIds = [
       "path.managedsystem.rest-add-existing.minimal-rest",
       "path.managedsystem.mode-immutability",
@@ -41,7 +47,9 @@ describe("replanning flow e2e", () => {
       "path.managedsystem.rest-add-existing.minimal-rest",
       "path.managedsystem.delete-existing",
     ]);
-    expect(plan.groups[1]?.selectedPathIds).toEqual(["path.managedsystem.mode-immutability"]);
+    expect(plan.groups[1]?.selectedPathIds).toEqual([
+      "path.managedsystem.mode-immutability",
+    ]);
     expect(plan.metrics.selectedScenarioCount).toBe(1);
     expect(plan.metrics.behaviorAssertionCount).toBe(12);
     expect(plan.metrics.baselineClusterCrudCount).toBe(3);
@@ -53,7 +61,9 @@ describe("replanning flow e2e", () => {
 
     const probe = renderCombinedProbe(plan);
     expect(probe).toContain("AKS_RP_E2E_DRY_RUN");
-    expect(probe).toContain("path.managedsystem.rest-add-existing.minimal-rest");
+    expect(probe).toContain(
+      "path.managedsystem.rest-add-existing.minimal-rest",
+    );
     expect(probe).toContain("path.managedsystem.mode-immutability");
     expect(probe).toContain("path.managedsystem.delete-existing");
     expect(probe).toContain("managedSystem.rejectedField.httpStatus");
@@ -81,7 +91,11 @@ describe("replanning flow e2e", () => {
     expect(stdout).toContain("[dry-run] PUT");
     expect(stdout).toContain("[dry-run] DELETE");
     expect(stdout).toContain("clusterCrud baseline=3 replanned=2 saved=1");
-    expect(stdout).toContain("group=group.01 paths=path.managedsystem.rest-add-existing.minimal-rest,path.managedsystem.delete-existing");
-    expect(stdout).toContain("group=group.02 paths=path.managedsystem.mode-immutability");
+    expect(stdout).toContain(
+      "group=group.01 paths=path.managedsystem.rest-add-existing.minimal-rest,path.managedsystem.delete-existing",
+    );
+    expect(stdout).toContain(
+      "group=group.02 paths=path.managedsystem.mode-immutability",
+    );
   });
 });

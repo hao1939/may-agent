@@ -11,8 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "bun test ./workflows/*.test.ts ./e2e/replanning-flow.test.ts --timeout 30000",
     "test:ui": "bun test ./e2e/feature-page.test.ts ./e2e/project-ui-replan-buttons.test.ts --timeout 30000",
-    "format": "bun x prettier --write \"package.json\" \"tsconfig.json\" \"scripts/**/*.ts\" \"types/**/*.d.ts\"",
-    "format:check": "bun x prettier --check \"package.json\" \"tsconfig.json\" \"scripts/**/*.ts\" \"types/**/*.d.ts\"",
+    "format": "bun x prettier --write .",
+    "format:check": "bun x prettier --check .",
     "tasks:summary": "bun run ./scripts/task-summary.ts"
   },
   "dependencies": {

@@ -1,304 +1,582 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AKS RP E2E — Feature Workspace</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<style>
-  :root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
-    --fg: #c9d1d9; --fg2: #8b949e; --accent: #58a6ff; --green: #3fb950;
-    --red: #f85149; --yellow: #d29922; --orange: #e8a44c; --purple: #bc8cff;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; padding: 0; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  code { background: var(--bg2); padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: var(--mono); }
-  .md-rendered { line-height: 1.6; }
-  .md-rendered h1, .md-rendered h2, .md-rendered h3, .md-rendered h4 { margin: 12px 0 6px; }
-  .md-rendered p { margin: 6px 0; }
-  .md-rendered ul, .md-rendered ol { margin: 4px 0; padding-left: 20px; }
-  .md-rendered pre { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; overflow-x: auto; font-family: var(--mono); font-size: 12px; }
-  .md-rendered code { background: var(--bg); }
-  #header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
-  #header h1 { font-size: 16px; font-weight: 600; }
-  #header a { font-size: 13px; color: var(--fg2); }
-  #header a:hover { color: var(--accent); }
-  #panel-root { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
-  #comment-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-  #comment-bar input { flex: 1; padding: 8px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; color: var(--fg); font-size: 13px; font-family: var(--font); }
-  #comment-bar input:focus { outline: none; border-color: var(--accent); }
-  #comment-bar button { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: var(--font); }
-  #comment-bar button:hover { opacity: 0.9; }
-  .feature-brief {
-    display: grid;
-    gap: 10px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-  }
-  .feature-brief-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-    align-items: start;
-  }
-  .feature-brief-title { font-size: 18px; font-weight: 650; line-height: 1.25; }
-  .feature-brief-kicker {
-    color: var(--fg2);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-  }
-  .feature-brief-text { color: var(--fg2); font-size: 12px; line-height: 1.5; max-width: 900px; }
-  .feature-brief-metrics { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  .feature-brief-metric {
-    min-width: 76px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    padding: 7px 9px;
-    text-align: right;
-  }
-  .feature-brief-metric strong { display: block; font-size: 17px; line-height: 1; color: var(--fg); }
-  .feature-brief-metric span { color: var(--fg2); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
-  .feature-brief-links { display: flex; gap: 8px; flex-wrap: wrap; }
-  .feature-brief-links a {
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    color: var(--fg);
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-  @media (max-width: 760px) {
-    .feature-brief-head { grid-template-columns: 1fr; }
-    .feature-brief-metrics { justify-content: flex-start; }
-    .feature-brief-metric { text-align: left; }
-  }
-</style>
-</head>
-<body>
-<div id="header">
-  <h1>AKS RP E2E — Feature Workspace</h1>
-  <span style="font-size:12px;color:var(--fg2);margin-right:auto">Feature contract · Input/expectation paths · Verification · Evidence · Review actions</span>
-  <a href="../">← explorer</a>
-  <a href="../kanban/">task kanban →</a>
-</div>
-<div id="panel-root">
-  <div id="comment-bar">
-    <input id="project-comment" placeholder="Discuss this feature — add references, challenge status, suggest next work..." onkeydown="if(event.key==='Enter')addProjectComment()">
-    <button onclick="addProjectComment()">Send</button>
-  </div>
-  <div id="quality-panel" style="color: var(--fg2);">Loading feature brief...</div>
-  <div id="scenario-path-table"></div>
-</div>
-
-<script>
-// ── Globals expected by quality-panel.js ──
-
-const _projectDetailPath = 'projects/aks-rp-e2e';
-
-function esc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function attrEsc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function jsStringAttr(s) {
-  return attrEsc(JSON.stringify(String(s ?? '')));
-}
-
-function renderMarkdownBlock(text) {
-  if (window.marked?.parse) return window.marked.parse(text || '');
-  return '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' + esc(text || '') + '</pre>';
-}
-
-function extractProjectSection(body, headings) {
-  const wanted = new Set((Array.isArray(headings) ? headings : [headings]).map(h => String(h).trim().toLowerCase()));
-  const lines = String(body || '').split(/\r?\n/);
-  let start = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^##\s+(.+?)\s*$/);
-    if (!m) continue;
-    const heading = m[1].trim().toLowerCase();
-    for (const name of wanted) {
-      if (heading === name || heading.startsWith(name + ' ') || heading.startsWith(name + ' (')) {
-        start = i + 1;
-        break;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AKS RP E2E — Feature Workspace</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --bg2: #161b22;
+        --bg3: #21262d;
+        --border: #30363d;
+        --fg: #c9d1d9;
+        --fg2: #8b949e;
+        --accent: #58a6ff;
+        --green: #3fb950;
+        --red: #f85149;
+        --yellow: #d29922;
+        --orange: #e8a44c;
+        --purple: #bc8cff;
+        --font:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        --mono:
+          "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo,
+          monospace;
       }
-    }
-    if (start >= 0) break;
-  }
-  if (start < 0) return '';
-  let end = lines.length;
-  for (let i = start; i < lines.length; i++) {
-    if (/^##\s+/.test(lines[i])) { end = i; break; }
-  }
-  return lines.slice(start, end).join('\n').trim();
-}
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 0;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--bg2);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: var(--mono);
+      }
+      .md-rendered {
+        line-height: 1.6;
+      }
+      .md-rendered h1,
+      .md-rendered h2,
+      .md-rendered h3,
+      .md-rendered h4 {
+        margin: 12px 0 6px;
+      }
+      .md-rendered p {
+        margin: 6px 0;
+      }
+      .md-rendered ul,
+      .md-rendered ol {
+        margin: 4px 0;
+        padding-left: 20px;
+      }
+      .md-rendered pre {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .md-rendered code {
+        background: var(--bg);
+      }
+      #header {
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      #header h1 {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      #header a {
+        font-size: 13px;
+        color: var(--fg2);
+      }
+      #header a:hover {
+        color: var(--accent);
+      }
+      #panel-root {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 24px;
+      }
+      #comment-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      #comment-bar input {
+        flex: 1;
+        padding: 8px 12px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--fg);
+        font-size: 13px;
+        font-family: var(--font);
+      }
+      #comment-bar input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      #comment-bar button {
+        padding: 8px 16px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: var(--font);
+      }
+      #comment-bar button:hover {
+        opacity: 0.9;
+      }
+      .feature-brief {
+        display: grid;
+        gap: 10px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+      }
+      .feature-brief-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: start;
+      }
+      .feature-brief-title {
+        font-size: 18px;
+        font-weight: 650;
+        line-height: 1.25;
+      }
+      .feature-brief-kicker {
+        color: var(--fg2);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .feature-brief-text {
+        color: var(--fg2);
+        font-size: 12px;
+        line-height: 1.5;
+        max-width: 900px;
+      }
+      .feature-brief-metrics {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .feature-brief-metric {
+        min-width: 76px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        padding: 7px 9px;
+        text-align: right;
+      }
+      .feature-brief-metric strong {
+        display: block;
+        font-size: 17px;
+        line-height: 1;
+        color: var(--fg);
+      }
+      .feature-brief-metric span {
+        color: var(--fg2);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .feature-brief-links {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .feature-brief-links a {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--fg);
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      @media (max-width: 760px) {
+        .feature-brief-head {
+          grid-template-columns: 1fr;
+        }
+        .feature-brief-metrics {
+          justify-content: flex-start;
+        }
+        .feature-brief-metric {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <h1>AKS RP E2E — Feature Workspace</h1>
+      <span style="font-size: 12px; color: var(--fg2); margin-right: auto"
+        >Feature contract · Input/expectation paths · Verification · Evidence ·
+        Review actions</span
+      >
+      <a href="../">← explorer</a>
+      <a href="../kanban/">task kanban →</a>
+    </div>
+    <div id="panel-root">
+      <div id="comment-bar">
+        <input
+          id="project-comment"
+          placeholder="Discuss this feature — add references, challenge status, suggest next work..."
+          onkeydown="if (event.key === 'Enter') addProjectComment();"
+        />
+        <button onclick="addProjectComment()">Send</button>
+      </div>
+      <div id="quality-panel" style="color: var(--fg2)">
+        Loading feature brief...
+      </div>
+      <div id="scenario-path-table"></div>
+    </div>
 
-function prefillProjectComment(text) {
-  const input = document.getElementById('project-comment');
-  if (!input) return;
-  input.value = text || '';
-  input.focus();
-}
+    <script>
+      // ── Globals expected by quality-panel.js ──
 
-function loadProjectTab(tab) {
-  if (tab === 'quality' && typeof window.renderAksRpE2eQualityPanel === 'function') {
-    window.renderAksRpE2eQualityPanel(document.getElementById('quality-panel'));
-  }
-}
+      const _projectDetailPath = "projects/aks-rp-e2e";
 
-function featureIdFromPage() {
-  const q = new URLSearchParams(window.location.search || '');
-  return q.get('id') || window.__aksRpE2eFeatureId || sessionStorage.getItem('aksSelectedFeatureId') || 'managedsystem-pool';
-}
+      function esc(s) {
+        if (s == null) return "";
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
 
-function featureLabel(featureId) {
-  if (featureId === 'managedsystem-pool') return 'ManagedSystem Pool';
-  return String(featureId || 'feature').split(/[-_]+/).filter(Boolean).map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-}
+      function attrEsc(s) {
+        if (s == null) return "";
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
 
-function extractFeaturePurpose(packetYaml) {
-  const text = String(packetYaml || '');
-  const block = text.match(/^purpose:\s*>\s*\n([\s\S]*?)(?:\n[a-zA-Z][A-Za-z0-9_]*:|\s*$)/m);
-  if (block) return block[1].replace(/\n\s+/g, ' ').trim();
-  const inline = text.match(/^purpose:\s*(.+)$/m);
-  return inline ? inline[1].trim() : '';
-}
+      function jsStringAttr(s) {
+        return attrEsc(JSON.stringify(String(s ?? "")));
+      }
 
-async function fetchProjectJsonArtifact(file) {
-  const res = await fetch('/api/projects/artifact?path=' + encodeURIComponent(_projectDetailPath) + '&file=' + encodeURIComponent(file));
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || data.error) throw new Error(data.error || 'Failed to load ' + file);
-  return JSON.parse(data.content || '{}');
-}
+      function renderMarkdownBlock(text) {
+        if (window.marked?.parse) return window.marked.parse(text || "");
+        return (
+          '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' +
+          esc(text || "") +
+          "</pre>"
+        );
+      }
 
-async function fetchProjectTextArtifact(file) {
-  const res = await fetch('/api/projects/artifact?path=' + encodeURIComponent(_projectDetailPath) + '&file=' + encodeURIComponent(file));
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || data.error) return '';
-  return data.content || '';
-}
+      function extractProjectSection(body, headings) {
+        const wanted = new Set(
+          (Array.isArray(headings) ? headings : [headings]).map((h) =>
+            String(h).trim().toLowerCase(),
+          ),
+        );
+        const lines = String(body || "").split(/\r?\n/);
+        let start = -1;
+        for (let i = 0; i < lines.length; i++) {
+          const m = lines[i].match(/^##\s+(.+?)\s*$/);
+          if (!m) continue;
+          const heading = m[1].trim().toLowerCase();
+          for (const name of wanted) {
+            if (
+              heading === name ||
+              heading.startsWith(name + " ") ||
+              heading.startsWith(name + " (")
+            ) {
+              start = i + 1;
+              break;
+            }
+          }
+          if (start >= 0) break;
+        }
+        if (start < 0) return "";
+        let end = lines.length;
+        for (let i = start; i < lines.length; i++) {
+          if (/^##\s+/.test(lines[i])) {
+            end = i;
+            break;
+          }
+        }
+        return lines.slice(start, end).join("\n").trim();
+      }
 
-async function renderLeanFeatureBrief(container) {
-  if (!container) return;
-  const featureId = featureIdFromPage();
-  container.innerHTML = '<div class="feature-brief">Loading feature brief...</div>';
-  try {
-    const [pathsData, specsData, packetYaml] = await Promise.all([
-      fetchProjectJsonArtifact('model/knowledge-map/views/path-summary.json').catch(() => ({ paths: [] })),
-      fetchProjectJsonArtifact('specs/index.json').catch(() => ({ specs: [] })),
-      fetchProjectTextArtifact('features/' + featureId + '.yaml'),
-    ]);
-    const paths = (pathsData.paths || []).filter(path => {
-      const text = [path.id, path.featureId, path.featureLabel, path.scenarioTitle].filter(Boolean).join(' ').toLowerCase();
-      return featureId === 'managedsystem-pool' ? text.includes('managedsystem') : text.includes(String(featureId).toLowerCase());
-    });
-    const pathIds = new Set(paths.map(path => path.id));
-    const specs = (specsData.specs || []).filter(spec =>
-      (spec.featurePathIds || []).some(pathId => pathIds.has(pathId)) && spec.status !== 'superseded'
-    );
-    const counts = paths.reduce((acc, path) => {
-      acc[path.status || 'unknown'] = (acc[path.status || 'unknown'] || 0) + 1;
-      return acc;
-    }, {});
-    const purpose = extractFeaturePurpose(packetYaml) || 'Review the feature contract, source-backed test specs, lifecycle, assertions, and evidence before steering the project.';
+      function prefillProjectComment(text) {
+        const input = document.getElementById("project-comment");
+        if (!input) return;
+        input.value = text || "";
+        input.focus();
+      }
 
-    // Derive confidence level from path pass/fail/unknown ratios
-    const total = paths.length || 1;
-    const passRatio = (counts.pass || 0) / total;
-    const failCount = counts.fail || 0;
-    const unknownCount = (counts.unknown || 0) + (counts.blocked || 0);
-    const confidence = failCount > 0 ? 'low' : passRatio >= 0.8 ? 'high' : passRatio >= 0.4 ? 'medium' : 'low';
-    const confidenceColor = confidence === 'high' ? 'var(--green)' : confidence === 'medium' ? 'var(--yellow)' : 'var(--red)';
+      function loadProjectTab(tab) {
+        if (
+          tab === "quality" &&
+          typeof window.renderAksRpE2eQualityPanel === "function"
+        ) {
+          window.renderAksRpE2eQualityPanel(
+            document.getElementById("quality-panel"),
+          );
+        }
+      }
 
-    // Derive recommended next move from highest-priority gap
-    let nextMove = '';
-    if (failCount > 0) {
-      const failPath = paths.find(p => p.status === 'fail');
-      nextMove = 'Classify failure on ' + (failPath ? failPath.id : 'failing path') + ' and generate corrected test script.';
-    } else if (unknownCount > 0) {
-      const unknownPath = paths.find(p => p.status === 'unknown' || p.status === 'blocked');
-      nextMove = 'Generate test script for ' + (unknownPath ? unknownPath.id : 'untested path') + ' and request staging replay.';
-    } else if (passRatio < 1) {
-      nextMove = 'Review evidence completeness and approve model update.';
-    } else {
-      nextMove = 'All paths pass. Review for coverage gaps or add new input paths.';
-    }
+      function featureIdFromPage() {
+        const q = new URLSearchParams(window.location.search || "");
+        return (
+          q.get("id") ||
+          window.__aksRpE2eFeatureId ||
+          sessionStorage.getItem("aksSelectedFeatureId") ||
+          "managedsystem-pool"
+        );
+      }
 
-    container.innerHTML = '<section class="feature-brief" data-testid="feature-brief">' +
-      '<div class="feature-brief-head">' +
-        '<div><div class="feature-brief-kicker">Feature Brief</div>' +
-          '<div class="feature-brief-title">' + esc(featureLabel(featureId)) + '</div>' +
-          '<div class="feature-brief-text">' + esc(purpose) + '</div>' +
-          '<div data-testid="feature-brief-next-move" style="font-size:12px;margin-top:6px;color:var(--fg)"><strong style="color:var(--fg2);font-size:10px;text-transform:uppercase;letter-spacing:.04em">Recommended Next Move</strong><br>' + esc(nextMove) + '</div>' +
-        '</div>' +
-        '<div class="feature-brief-metrics">' +
-          '<div class="feature-brief-metric"><strong>' + esc(paths.length) + '</strong><span>paths</span></div>' +
-          '<div class="feature-brief-metric"><strong>' + esc(specs.length) + '</strong><span>specs</span></div>' +
-          '<div class="feature-brief-metric"><strong style="color:var(--green)">' + esc(counts.pass || 0) + '</strong><span>pass</span></div>' +
-          '<div class="feature-brief-metric"><strong style="color:var(--yellow)">' + esc(unknownCount) + '</strong><span>open</span></div>' +
-          '<div class="feature-brief-metric" data-testid="feature-brief-confidence"><strong style="color:' + confidenceColor + '">' + esc(confidence) + '</strong><span>confidence</span></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="feature-brief-links">' +
-        '<a href="' + _projectDetailPath.replace(/^projects\/aks-rp-e2e$/, '/projects/aks-rp-e2e') + '/features/' + encodeURIComponent(featureId + '.yaml') + '" target="_blank">Feature Packet</a>' +
-        '<a href="/projects/aks-rp-e2e.app/ui/kanban/">Task Kanban</a>' +
-        '<a href="../">Feature Explorer</a>' +
-      '</div>' +
-      '<div id="aks-receipt-container" data-testid="aks-receipt-container"></div>' +
-    '</section>';
-    if (typeof window.renderAksReceipts === 'function') window.renderAksReceipts();
-  } catch (e) {
-    container.innerHTML = '<div class="feature-brief" style="color:var(--red)">Failed to load feature brief: ' + esc(e?.message || String(e)) + '</div><div id="aks-receipt-container" data-testid="aks-receipt-container"></div>';
-  }
-}
+      function featureLabel(featureId) {
+        if (featureId === "managedsystem-pool") return "ManagedSystem Pool";
+        return String(featureId || "feature")
+          .split(/[-_]+/)
+          .filter(Boolean)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ");
+      }
 
-async function addProjectComment() {
-  const input = document.getElementById('project-comment');
-  if (!input || !input.value.trim()) return;
-  // Use quality-panel.js receipt-aware submit if available
-  if (typeof submitAksRpE2eProjectComment === 'function') {
-    return submitAksRpE2eProjectComment(input.value.trim());
-  }
-  try {
-    const res = await fetch('/api/projects/comment', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: _projectDetailPath, comment: input.value.trim() }),
-    });
-    if (res.ok) { input.value = ''; input.placeholder = 'Comment sent ✓'; }
-    else { input.placeholder = 'Failed to send comment'; }
-  } catch (e) { input.placeholder = 'Error: ' + e.message; }
-}
-</script>
-<script src="/projects/aks-rp-e2e/ui/quality-panel.js"></script>
-<script src="/projects/aks-rp-e2e/ui/feature/scenario-path-table.js"></script>
-<script>
-  // Boot: direct feature pages use a compact feature brief plus the dedicated
-  // test-spec workspace. The full legacy feature explorer still lives on
-  // /projects/aks-rp-e2e/ui/#/feature/<id>.
-  (async () => {
-    const el = document.getElementById('quality-panel');
-    await renderLeanFeatureBrief(el);
-    const spt = document.getElementById('scenario-path-table');
-    if (spt && typeof window.renderScenarioPathTable === 'function') {
-      await window.renderScenarioPathTable(spt);
-    }
-  })();
-</script>
-</body>
+      function extractFeaturePurpose(packetYaml) {
+        const text = String(packetYaml || "");
+        const block = text.match(
+          /^purpose:\s*>\s*\n([\s\S]*?)(?:\n[a-zA-Z][A-Za-z0-9_]*:|\s*$)/m,
+        );
+        if (block) return block[1].replace(/\n\s+/g, " ").trim();
+        const inline = text.match(/^purpose:\s*(.+)$/m);
+        return inline ? inline[1].trim() : "";
+      }
+
+      async function fetchProjectJsonArtifact(file) {
+        const res = await fetch(
+          "/api/projects/artifact?path=" +
+            encodeURIComponent(_projectDetailPath) +
+            "&file=" +
+            encodeURIComponent(file),
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.error)
+          throw new Error(data.error || "Failed to load " + file);
+        return JSON.parse(data.content || "{}");
+      }
+
+      async function fetchProjectTextArtifact(file) {
+        const res = await fetch(
+          "/api/projects/artifact?path=" +
+            encodeURIComponent(_projectDetailPath) +
+            "&file=" +
+            encodeURIComponent(file),
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.error) return "";
+        return data.content || "";
+      }
+
+      async function renderLeanFeatureBrief(container) {
+        if (!container) return;
+        const featureId = featureIdFromPage();
+        container.innerHTML =
+          '<div class="feature-brief">Loading feature brief...</div>';
+        try {
+          const [pathsData, specsData, packetYaml] = await Promise.all([
+            fetchProjectJsonArtifact(
+              "model/knowledge-map/views/path-summary.json",
+            ).catch(() => ({ paths: [] })),
+            fetchProjectJsonArtifact("specs/index.json").catch(() => ({
+              specs: [],
+            })),
+            fetchProjectTextArtifact("features/" + featureId + ".yaml"),
+          ]);
+          const paths = (pathsData.paths || []).filter((path) => {
+            const text = [
+              path.id,
+              path.featureId,
+              path.featureLabel,
+              path.scenarioTitle,
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase();
+            return featureId === "managedsystem-pool"
+              ? text.includes("managedsystem")
+              : text.includes(String(featureId).toLowerCase());
+          });
+          const pathIds = new Set(paths.map((path) => path.id));
+          const specs = (specsData.specs || []).filter(
+            (spec) =>
+              (spec.featurePathIds || []).some((pathId) =>
+                pathIds.has(pathId),
+              ) && spec.status !== "superseded",
+          );
+          const counts = paths.reduce((acc, path) => {
+            acc[path.status || "unknown"] =
+              (acc[path.status || "unknown"] || 0) + 1;
+            return acc;
+          }, {});
+          const purpose =
+            extractFeaturePurpose(packetYaml) ||
+            "Review the feature contract, source-backed test specs, lifecycle, assertions, and evidence before steering the project.";
+
+          // Derive confidence level from path pass/fail/unknown ratios
+          const total = paths.length || 1;
+          const passRatio = (counts.pass || 0) / total;
+          const failCount = counts.fail || 0;
+          const unknownCount = (counts.unknown || 0) + (counts.blocked || 0);
+          const confidence =
+            failCount > 0
+              ? "low"
+              : passRatio >= 0.8
+                ? "high"
+                : passRatio >= 0.4
+                  ? "medium"
+                  : "low";
+          const confidenceColor =
+            confidence === "high"
+              ? "var(--green)"
+              : confidence === "medium"
+                ? "var(--yellow)"
+                : "var(--red)";
+
+          // Derive recommended next move from highest-priority gap
+          let nextMove = "";
+          if (failCount > 0) {
+            const failPath = paths.find((p) => p.status === "fail");
+            nextMove =
+              "Classify failure on " +
+              (failPath ? failPath.id : "failing path") +
+              " and generate corrected test script.";
+          } else if (unknownCount > 0) {
+            const unknownPath = paths.find(
+              (p) => p.status === "unknown" || p.status === "blocked",
+            );
+            nextMove =
+              "Generate test script for " +
+              (unknownPath ? unknownPath.id : "untested path") +
+              " and request staging replay.";
+          } else if (passRatio < 1) {
+            nextMove = "Review evidence completeness and approve model update.";
+          } else {
+            nextMove =
+              "All paths pass. Review for coverage gaps or add new input paths.";
+          }
+
+          container.innerHTML =
+            '<section class="feature-brief" data-testid="feature-brief">' +
+            '<div class="feature-brief-head">' +
+            '<div><div class="feature-brief-kicker">Feature Brief</div>' +
+            '<div class="feature-brief-title">' +
+            esc(featureLabel(featureId)) +
+            "</div>" +
+            '<div class="feature-brief-text">' +
+            esc(purpose) +
+            "</div>" +
+            '<div data-testid="feature-brief-next-move" style="font-size:12px;margin-top:6px;color:var(--fg)"><strong style="color:var(--fg2);font-size:10px;text-transform:uppercase;letter-spacing:.04em">Recommended Next Move</strong><br>' +
+            esc(nextMove) +
+            "</div>" +
+            "</div>" +
+            '<div class="feature-brief-metrics">' +
+            '<div class="feature-brief-metric"><strong>' +
+            esc(paths.length) +
+            "</strong><span>paths</span></div>" +
+            '<div class="feature-brief-metric"><strong>' +
+            esc(specs.length) +
+            "</strong><span>specs</span></div>" +
+            '<div class="feature-brief-metric"><strong style="color:var(--green)">' +
+            esc(counts.pass || 0) +
+            "</strong><span>pass</span></div>" +
+            '<div class="feature-brief-metric"><strong style="color:var(--yellow)">' +
+            esc(unknownCount) +
+            "</strong><span>open</span></div>" +
+            '<div class="feature-brief-metric" data-testid="feature-brief-confidence"><strong style="color:' +
+            confidenceColor +
+            '">' +
+            esc(confidence) +
+            "</strong><span>confidence</span></div>" +
+            "</div>" +
+            "</div>" +
+            '<div class="feature-brief-links">' +
+            '<a href="' +
+            _projectDetailPath.replace(
+              /^projects\/aks-rp-e2e$/,
+              "/projects/aks-rp-e2e",
+            ) +
+            "/features/" +
+            encodeURIComponent(featureId + ".yaml") +
+            '" target="_blank">Feature Packet</a>' +
+            '<a href="/projects/aks-rp-e2e.app/ui/kanban/">Task Kanban</a>' +
+            '<a href="../">Feature Explorer</a>' +
+            "</div>" +
+            '<div id="aks-receipt-container" data-testid="aks-receipt-container"></div>' +
+            "</section>";
+          if (typeof window.renderAksReceipts === "function")
+            window.renderAksReceipts();
+        } catch (e) {
+          container.innerHTML =
+            '<div class="feature-brief" style="color:var(--red)">Failed to load feature brief: ' +
+            esc(e?.message || String(e)) +
+            '</div><div id="aks-receipt-container" data-testid="aks-receipt-container"></div>';
+        }
+      }
+
+      async function addProjectComment() {
+        const input = document.getElementById("project-comment");
+        if (!input || !input.value.trim()) return;
+        // Use quality-panel.js receipt-aware submit if available
+        if (typeof submitAksRpE2eProjectComment === "function") {
+          return submitAksRpE2eProjectComment(input.value.trim());
+        }
+        try {
+          const res = await fetch("/api/projects/comment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              path: _projectDetailPath,
+              comment: input.value.trim(),
+            }),
+          });
+          if (res.ok) {
+            input.value = "";
+            input.placeholder = "Comment sent ✓";
+          } else {
+            input.placeholder = "Failed to send comment";
+          }
+        } catch (e) {
+          input.placeholder = "Error: " + e.message;
+        }
+      }
+    </script>
+    <script src="/projects/aks-rp-e2e/ui/quality-panel.js"></script>
+    <script src="/projects/aks-rp-e2e/ui/feature/scenario-path-table.js"></script>
+    <script>
+      // Boot: direct feature pages use a compact feature brief plus the dedicated
+      // test-spec workspace. The full legacy feature explorer still lives on
+      // /projects/aks-rp-e2e/ui/#/feature/<id>.
+      (async () => {
+        const el = document.getElementById("quality-panel");
+        await renderLeanFeatureBrief(el);
+        const spt = document.getElementById("scenario-path-table");
+        if (spt && typeof window.renderScenarioPathTable === "function") {
+          await window.renderScenarioPathTable(spt);
+        }
+      })();
+    </script>
+  </body>
 </html>

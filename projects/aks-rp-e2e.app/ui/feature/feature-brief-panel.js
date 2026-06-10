@@ -57,4 +57,4 @@
 //   "Feature Contract Panel"   — section header
 //   extractRoleClaims          — role-based claim parser
 //   "Source References By Role" — grouped references renderer
-export const FEATURE_BRIEF_PANEL_IMPL = 'quality-panel.js';
+export const FEATURE_BRIEF_PANEL_IMPL = "quality-panel.js";

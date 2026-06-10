@@ -7,7 +7,14 @@
  * worker picker start it again.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
@@ -15,7 +22,8 @@ import { execute as executePlanner } from "./project-planner.ts";
 import { execute as executeTaskWorker } from "./task-worker.ts";
 
 export const name = "project-execution-watchdog";
-export const description = "Resume aks-rp-e2e from the task tree: restart stale active leaves, run ready leaves, or ask the planner to refill.";
+export const description =
+  "Resume aks-rp-e2e from the task tree: restart stale active leaves, run ready leaves, or ask the planner to refill.";
 
 type WatchdogConfig = {
   appDir: string;
@@ -54,12 +62,13 @@ function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
   const explicitAppDir = field(raw, "app");
   const embeddedProjectPath = join(projectDir, ".app", "project.json");
   const legacyRootTaskDir = join(projectDir, "tasks");
-  const appDir = explicitAppDir
-    ?? (existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
+  const appDir =
+    explicitAppDir ??
+    (existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
       ? projectDir
       : existsSync(embeddedProjectPath)
-      ? join(projectDir, ".app")
-      : new URL("..", import.meta.url).pathname);
+        ? join(projectDir, ".app")
+        : new URL("..", import.meta.url).pathname);
 
   return {
     appDir,
@@ -84,14 +93,20 @@ function saveTree(config: WatchdogConfig, tree: TaskTree): void {
   renameSync(tempPath, config.treePath);
 }
 
-function appendJournal(config: WatchdogConfig, entry: Record<string, unknown>): void {
+function appendJournal(
+  config: WatchdogConfig,
+  entry: Record<string, unknown>,
+): void {
   const journalDir = join(config.appDir, ".state");
   if (!existsSync(journalDir)) mkdirSync(journalDir, { recursive: true });
-  appendFileSync(join(journalDir, "journal.jsonl"), `${JSON.stringify({
-    ts: new Date().toISOString(),
-    actor: "project-execution-watchdog",
-    ...entry,
-  })}\n`);
+  appendFileSync(
+    join(journalDir, "journal.jsonl"),
+    `${JSON.stringify({
+      ts: new Date().toISOString(),
+      actor: "project-execution-watchdog",
+      ...entry,
+    })}\n`,
+  );
 }
 
 function isLeaf(task: TaskNode): boolean {
@@ -99,15 +114,21 @@ function isLeaf(task: TaskNode): boolean {
 }
 
 function readyLeaves(tree: TaskTree): TaskNode[] {
-  return Object.values(tree.tasks).filter(task => isLeaf(task) && task.status === "ready");
+  return Object.values(tree.tasks).filter(
+    (task) => isLeaf(task) && task.status === "ready",
+  );
 }
 
 function activeLeaves(tree: TaskTree): TaskNode[] {
-  return Object.values(tree.tasks).filter(task => isLeaf(task) && task.status === "active");
+  return Object.values(tree.tasks).filter(
+    (task) => isLeaf(task) && task.status === "active",
+  );
 }
 
 function hasOpenWork(tree: TaskTree): boolean {
-  return Object.values(tree.tasks).some(task => !["accepted", "superseded"].includes(task.status));
+  return Object.values(tree.tasks).some(
+    (task) => !["accepted", "superseded"].includes(task.status),
+  );
 }
 
 function activeProjectNeedsRefill(tree: TaskTree): boolean {
@@ -118,12 +139,16 @@ function sessionIsRunning(dbPath: string, sessionId: string): boolean {
   if (!existsSync(dbPath)) return false;
   const db = new Database(dbPath, { readonly: true });
   try {
-    const row = db.query(`
+    const row = db
+      .query(
+        `
       select 1
       from sessions
       where sessionId = ? and status = 'running'
       limit 1
-    `).get(sessionId);
+    `,
+      )
+      .get(sessionId);
     return Boolean(row);
   } catch {
     return false;
@@ -132,20 +157,32 @@ function sessionIsRunning(dbPath: string, sessionId: string): boolean {
   }
 }
 
-function activeTaskShouldRestart(config: WatchdogConfig, task: TaskNode): boolean {
-  if (!task.session_id || !sessionIsRunning(config.stateDbPath, task.session_id)) return true;
+function activeTaskShouldRestart(
+  config: WatchdogConfig,
+  task: TaskNode,
+): boolean {
+  if (
+    !task.session_id ||
+    !sessionIsRunning(config.stateDbPath, task.session_id)
+  )
+    return true;
   if (!task.lease_expires_at) return true;
   const expiresAt = Date.parse(task.lease_expires_at);
   return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
 }
 
 function normalizeActivePointers(tree: TaskTree): void {
-  const activeIds = activeLeaves(tree).map(task => task.id).sort();
+  const activeIds = activeLeaves(tree)
+    .map((task) => task.id)
+    .sort();
   tree.active_task_ids = activeIds;
   tree.active_task_id = activeIds[0] ?? readyLeaves(tree)[0]?.id ?? null;
 }
 
-function restartAbandonedActiveTasks(config: WatchdogConfig, tree: TaskTree): string[] {
+function restartAbandonedActiveTasks(
+  config: WatchdogConfig,
+  tree: TaskTree,
+): string[] {
   const restarted: string[] = [];
   for (const task of activeLeaves(tree)) {
     if (!activeTaskShouldRestart(config, task)) continue;
@@ -158,7 +195,11 @@ function restartAbandonedActiveTasks(config: WatchdogConfig, tree: TaskTree): st
   return restarted.sort();
 }
 
-function buildLoopTask(config: WatchdogConfig, eventData: Record<string, unknown>, reason: string): string {
+function buildLoopTask(
+  config: WatchdogConfig,
+  eventData: Record<string, unknown>,
+  reason: string,
+): string {
   return [
     `app: ${config.appDir}`,
     `project: ${config.projectDir}`,
@@ -176,43 +217,66 @@ function buildLoopTask(config: WatchdogConfig, eventData: Record<string, unknown
   ].join("\n");
 }
 
-async function runWorker(ctx: WorkflowContext, config: WatchdogConfig, readyTaskIds: string[], reason: string): Promise<WorkflowResult> {
+async function runWorker(
+  ctx: WorkflowContext,
+  config: WatchdogConfig,
+  readyTaskIds: string[],
+  reason: string,
+): Promise<WorkflowResult> {
   return executeTaskWorker({
     ...ctx,
-    task: buildLoopTask(config, {
-      type: "project.tasks.ready",
-      data: {
-        project: "aks-rp-e2e",
-        reason,
-        readyTaskIds,
-        maxConcurrent: config.maxConcurrent,
+    task: buildLoopTask(
+      config,
+      {
+        type: "project.tasks.ready",
+        data: {
+          project: "aks-rp-e2e",
+          reason,
+          readyTaskIds,
+          maxConcurrent: config.maxConcurrent,
+        },
       },
-    }, reason),
-    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+      reason,
+    ),
+    done: (message: string) =>
+      ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) =>
+      ({ status: "escalated", message }) as unknown as WorkflowResult,
   } as unknown as WorkflowContext);
 }
 
-async function runPlanner(ctx: WorkflowContext, config: WatchdogConfig, reason: string): Promise<WorkflowResult> {
+async function runPlanner(
+  ctx: WorkflowContext,
+  config: WatchdogConfig,
+  reason: string,
+): Promise<WorkflowResult> {
   return executePlanner({
     ...ctx,
-    task: buildLoopTask(config, {
-      type: "project.execution.requested",
-      data: {
-        project: "aks-rp-e2e",
-        reason,
-        maxConcurrent: config.maxConcurrent,
+    task: buildLoopTask(
+      config,
+      {
+        type: "project.execution.requested",
+        data: {
+          project: "aks-rp-e2e",
+          reason,
+          maxConcurrent: config.maxConcurrent,
+        },
       },
-    }, reason),
-    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+      reason,
+    ),
+    done: (message: string) =>
+      ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) =>
+      ({ status: "escalated", message }) as unknown as WorkflowResult,
   } as unknown as WorkflowContext);
 }
 
 function resultMessage(result: WorkflowResult): string {
-  return (result as { message?: string; summary?: string }).message
-    ?? (result as { message?: string; summary?: string }).summary
-    ?? JSON.stringify(result);
+  return (
+    (result as { message?: string; summary?: string }).message ??
+    (result as { message?: string; summary?: string }).summary ??
+    JSON.stringify(result)
+  );
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -226,35 +290,61 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     appendJournal(config, {
       kind: "active_tasks_restarted_from_task_tree",
       status: "ready",
-      summary: "Reset active leaves with missing/expired runtime attempts back to ready.",
+      summary:
+        "Reset active leaves with missing/expired runtime attempts back to ready.",
       task_ids: restarted,
     });
   }
 
-  const readyTaskIds = readyLeaves(tree).map(task => task.id).sort();
+  const readyTaskIds = readyLeaves(tree)
+    .map((task) => task.id)
+    .sort();
   if (readyTaskIds.length > 0) {
-    const result = await runWorker(ctx, config, readyTaskIds, restarted.length > 0 ? "watchdog-restarted-active-tasks" : "watchdog-ready-resume");
-    return ctx.done(`Watchdog ran worker for ${readyTaskIds.length} ready task(s): ${readyTaskIds.slice(0, 8).join(", ")}. Worker result: ${resultMessage(result)}`);
+    const result = await runWorker(
+      ctx,
+      config,
+      readyTaskIds,
+      restarted.length > 0
+        ? "watchdog-restarted-active-tasks"
+        : "watchdog-ready-resume",
+    );
+    return ctx.done(
+      `Watchdog ran worker for ${readyTaskIds.length} ready task(s): ${readyTaskIds.slice(0, 8).join(", ")}. Worker result: ${resultMessage(result)}`,
+    );
   }
 
   if (activeLeaves(tree).length > 0) {
-    return ctx.done(`Watchdog skipped: ${activeLeaves(tree).length} active task(s) still have running attempts.`);
+    return ctx.done(
+      `Watchdog skipped: ${activeLeaves(tree).length} active task(s) still have running attempts.`,
+    );
   }
 
   if (activeProjectNeedsRefill(tree) || hasOpenWork(tree)) {
-    const result = await runPlanner(ctx, config, activeProjectNeedsRefill(tree) ? "watchdog-settled-active-project-refill" : "watchdog-open-work-reconcile");
-    return ctx.done(`Watchdog ran planner. Planner result: ${resultMessage(result)}`);
+    const result = await runPlanner(
+      ctx,
+      config,
+      activeProjectNeedsRefill(tree)
+        ? "watchdog-settled-active-project-refill"
+        : "watchdog-open-work-reconcile",
+    );
+    return ctx.done(
+      `Watchdog ran planner. Planner result: ${resultMessage(result)}`,
+    );
   }
 
-  return ctx.done("Watchdog skipped: project is closed and no open work remains.");
+  return ctx.done(
+    "Watchdog skipped: project is closed and no open work remains.",
+  );
 }
 
 if (import.meta.main) {
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nmaxAttempts: 3",
     agent: "aks-explorer",
-    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+    done: (message: string) =>
+      ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) =>
+      ({ status: "escalated", message }) as unknown as WorkflowResult,
     emit() {},
     dispatchEvent() {},
     runAgent: async () => ({ status: "error", lastAssistantText: "" }),

@@ -6,13 +6,23 @@
  * - project.task.execution.requested: execute exactly one leased leaf.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import { execute as executeEngine } from "./project-execution-engine.ts";
 
 export const name = "task-worker";
-export const description = "Pick ready aks-rp-e2e leaves or execute one leased task event.";
+export const description =
+  "Pick ready aks-rp-e2e leaves or execute one leased task event.";
 
 function field(raw: string, name: string): string | undefined {
   const match = raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
@@ -85,12 +95,16 @@ function parseTriggerEvent(raw: string): TriggerEvent | null {
   }
 }
 
-function triggerNumber(event: TriggerEvent | null, key: string): number | undefined {
-  const value = event?.data && typeof event.data === "object" && key in event.data
-    ? event.data[key]
-    : event?.params && typeof event.params === "object" && key in event.params
-    ? event.params[key]
-    : event?.[key];
+function triggerNumber(
+  event: TriggerEvent | null,
+  key: string,
+): number | undefined {
+  const value =
+    event?.data && typeof event.data === "object" && key in event.data
+      ? event.data[key]
+      : event?.params && typeof event.params === "object" && key in event.params
+        ? event.params[key]
+        : event?.[key];
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim()) {
     const parsed = Number.parseInt(value, 10);
@@ -100,13 +114,21 @@ function triggerNumber(event: TriggerEvent | null, key: string): number | undefi
 }
 
 function triggerStringArray(event: TriggerEvent | null, key: string): string[] {
-  const value = event?.data && typeof event.data === "object" && key in event.data
-    ? event.data[key]
-    : event?.params && typeof event.params === "object" && key in event.params
-    ? event.params[key]
-    : event?.[key];
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && Boolean(item));
-  if (typeof value === "string" && value.trim()) return value.split(",").map(item => item.trim()).filter(Boolean);
+  const value =
+    event?.data && typeof event.data === "object" && key in event.data
+      ? event.data[key]
+      : event?.params && typeof event.params === "object" && key in event.params
+        ? event.params[key]
+        : event?.[key];
+  if (Array.isArray(value))
+    return value.filter(
+      (item): item is string => typeof item === "string" && Boolean(item),
+    );
+  if (typeof value === "string" && value.trim())
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
   return [];
 }
 
@@ -115,16 +137,26 @@ function maxConcurrent(raw: string, trigger: TriggerEvent | null): number {
   return Math.max(1, triggerNumber(trigger, "maxConcurrent") || fromTask || 3);
 }
 
-function abandonedActiveTaskIds(raw: string, trigger: TriggerEvent | null): Set<string> {
-  const fromTask = field(raw, "abandonedActiveTaskIds")
-    ?.split(",")
-    .map(item => item.trim())
-    .filter(Boolean) ?? [];
-  return new Set([...fromTask, ...triggerStringArray(trigger, "abandonedActiveTaskIds")]);
+function abandonedActiveTaskIds(
+  raw: string,
+  trigger: TriggerEvent | null,
+): Set<string> {
+  const fromTask =
+    field(raw, "abandonedActiveTaskIds")
+      ?.split(",")
+      .map((item) => item.trim())
+      .filter(Boolean) ?? [];
+  return new Set([
+    ...fromTask,
+    ...triggerStringArray(trigger, "abandonedActiveTaskIds"),
+  ]);
 }
 
 function normalizeStringArray(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && Boolean(item));
+  if (Array.isArray(value))
+    return value.filter(
+      (item): item is string => typeof item === "string" && Boolean(item),
+    );
   if (typeof value === "string" && value) return [value];
   return [];
 }
@@ -153,7 +185,8 @@ function withTreeLock<T>(config: PickupConfig, operation: () => T): T {
       } catch {
         // Retry until the deadline.
       }
-      if (Date.now() > deadline) throw new Error(`Timed out waiting for task tree lock: ${lockPath}`);
+      if (Date.now() > deadline)
+        throw new Error(`Timed out waiting for task tree lock: ${lockPath}`);
       sleepSync(50);
     }
   }
@@ -176,13 +209,19 @@ function saveTree(config: PickupConfig, tree: TaskTree): void {
   renameSync(tempPath, config.treePath);
 }
 
-function appendJournal(config: PickupConfig, entry: Record<string, unknown>): void {
+function appendJournal(
+  config: PickupConfig,
+  entry: Record<string, unknown>,
+): void {
   ensureDir(dirname(config.journalPath));
-  appendFileSync(config.journalPath, `${JSON.stringify({
-    ts: new Date().toISOString(),
-    actor: "task-worker",
-    ...entry,
-  })}\n`);
+  appendFileSync(
+    config.journalPath,
+    `${JSON.stringify({
+      ts: new Date().toISOString(),
+      actor: "task-worker",
+      ...entry,
+    })}\n`,
+  );
 }
 
 function isLeaf(task: TaskNode): boolean {
@@ -190,14 +229,22 @@ function isLeaf(task: TaskNode): boolean {
 }
 
 function priorityRank(priority?: string): number {
-  return ({ P0: 0, P1: 1, P2: 2, P3: 3 } as const)[priority as "P0" | "P1" | "P2" | "P3"] ?? 3;
+  return (
+    ({ P0: 0, P1: 1, P2: 2, P3: 3 } as const)[
+      priority as "P0" | "P1" | "P2" | "P3"
+    ] ?? 3
+  );
 }
 
 function depthOf(tree: TaskTree, taskId: string): number {
   let depth = 0;
   let current = tree.tasks[taskId];
   const seen = new Set<string>();
-  while (current?.parent_id && tree.tasks[current.parent_id] && !seen.has(current.parent_id)) {
+  while (
+    current?.parent_id &&
+    tree.tasks[current.parent_id] &&
+    !seen.has(current.parent_id)
+  ) {
     seen.add(current.parent_id);
     depth++;
     current = tree.tasks[current.parent_id];
@@ -207,76 +254,120 @@ function depthOf(tree: TaskTree, taskId: string): number {
 
 function activeLeaves(tree: TaskTree): TaskNode[] {
   return Object.values(tree.tasks)
-    .filter(task => isLeaf(task) && ["active", "claimed_done"].includes(task.status) && !isPlanningLoopControlTask(task))
-    .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
+    .filter(
+      (task) =>
+        isLeaf(task) &&
+        ["active", "claimed_done"].includes(task.status) &&
+        !isPlanningLoopControlTask(task),
+    )
+    .sort(
+      (a, b) =>
+        priorityRank(a.priority) - priorityRank(b.priority) ||
+        depthOf(tree, a.id) - depthOf(tree, b.id) ||
+        a.id.localeCompare(b.id),
+    );
 }
 
 function readyLeaves(tree: TaskTree): TaskNode[] {
   return Object.values(tree.tasks)
-    .filter(task => isLeaf(task) && task.status === "ready" && !isPlanningLoopControlTask(task))
-    .sort((a, b) => priorityRank(a.priority) - priorityRank(b.priority) || depthOf(tree, a.id) - depthOf(tree, b.id) || a.id.localeCompare(b.id));
+    .filter(
+      (task) =>
+        isLeaf(task) &&
+        task.status === "ready" &&
+        !isPlanningLoopControlTask(task),
+    )
+    .sort(
+      (a, b) =>
+        priorityRank(a.priority) - priorityRank(b.priority) ||
+        depthOf(tree, a.id) - depthOf(tree, b.id) ||
+        a.id.localeCompare(b.id),
+    );
 }
 
 function isSerializedExecutionTask(task: TaskNode): boolean {
-  return isReviewExecutionTask(task)
-    || isGlobalSerializedExecutionTask(task);
+  return isReviewExecutionTask(task) || isGlobalSerializedExecutionTask(task);
 }
 
 function isReviewExecutionTask(task: TaskNode): boolean {
-  return task.kind === "blocked_review"
-    || task.kind === "parent_review"
-    || task.kind === "rework_review"
-    || task.id === "blocked-frontier-review"
-    || task.id.endsWith("-blocker-review")
-    || task.id.endsWith("-rollup-review")
-    || task.id.endsWith("-rework-review");
+  return (
+    task.kind === "blocked_review" ||
+    task.kind === "parent_review" ||
+    task.kind === "rework_review" ||
+    task.id === "blocked-frontier-review" ||
+    task.id.endsWith("-blocker-review") ||
+    task.id.endsWith("-rollup-review") ||
+    task.id.endsWith("-rework-review")
+  );
 }
 
 function isGlobalSerializedExecutionTask(task: TaskNode): boolean {
-  return task.kind === "frontier_replan"
-    || task.kind === "loop_task"
-    || task.kind === "domain_planner"
-    || task.kind === "human_question"
-    || task.owner === "human"
-    || task.id.startsWith("project-frontier-replan");
+  return (
+    task.kind === "frontier_replan" ||
+    task.kind === "loop_task" ||
+    task.kind === "domain_planner" ||
+    task.kind === "human_question" ||
+    task.owner === "human" ||
+    task.id.startsWith("project-frontier-replan")
+  );
 }
 
 function isPlanningLoopRunTask(task: TaskNode): boolean {
-  return task.id === "project-planning-loop-run" || /^project-planning-loop-run-\d+$/.test(task.id);
+  return (
+    task.id === "project-planning-loop-run" ||
+    /^project-planning-loop-run-\d+$/.test(task.id)
+  );
 }
 
 function isPlanningLoopControlTask(task: TaskNode): boolean {
-  return task.id.startsWith("project-planning-loop")
-    || normalizeStringArray(task.conflict_scope).includes("project-control:planning-loop")
-    || isPlanningLoopRunTask(task);
+  return (
+    task.id.startsWith("project-planning-loop") ||
+    normalizeStringArray(task.conflict_scope).includes(
+      "project-control:planning-loop",
+    ) ||
+    isPlanningLoopRunTask(task)
+  );
 }
 
 function taskConflictScope(task: TaskNode): string[] {
   const explicit = normalizeStringArray(task.conflict_scope);
-  return [...new Set(explicit.length ? explicit : normalizeStringArray(task.outputs))];
+  return [
+    ...new Set(explicit.length ? explicit : normalizeStringArray(task.outputs)),
+  ];
 }
 
 function conflictScopesOverlap(a: TaskNode, b: TaskNode): boolean {
   const right = new Set(taskConflictScope(b));
-  return taskConflictScope(a).some(item => right.has(item));
+  return taskConflictScope(a).some((item) => right.has(item));
 }
 
 function stableTaskSessionId(task: TaskNode): string {
-  const slug = task.id.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 96) || "task";
+  const slug =
+    task.id
+      .replace(/[^A-Za-z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 96) || "task";
   return `s_task_${slug}`;
 }
 
 function replacementTaskSessionId(task: TaskNode): string {
-  const slug = task.id.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "task";
+  const slug =
+    task.id
+      .replace(/[^A-Za-z0-9_-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80) || "task";
   return `s_task_${slug}_retry_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function rotateAbandonedTaskSession(task: TaskNode): void {
   if (typeof task.session_id === "string" && task.session_id.trim()) {
-    task.session_history = [...new Set([...(task.session_history ?? []), task.session_id.trim()])];
+    task.session_history = [
+      ...new Set([...(task.session_history ?? []), task.session_id.trim()]),
+    ];
   }
   task.session_id = replacementTaskSessionId(task);
-  task.session_history = [...new Set([...(task.session_history ?? []), task.session_id])];
+  task.session_history = [
+    ...new Set([...(task.session_history ?? []), task.session_id]),
+  ];
   task.trace = {
     ...(task.trace ?? {}),
     abandoned_session_replaced_at: new Date().toISOString(),
@@ -286,11 +377,14 @@ function rotateAbandonedTaskSession(task: TaskNode): void {
 
 function ensureTaskSession(task: TaskNode): void {
   if (task.workflow === "spec-runner") return;
-  const sessionId = typeof task.session_id === "string" && task.session_id.trim()
-    ? task.session_id.trim()
-    : stableTaskSessionId(task);
+  const sessionId =
+    typeof task.session_id === "string" && task.session_id.trim()
+      ? task.session_id.trim()
+      : stableTaskSessionId(task);
   task.session_id = sessionId;
-  task.session_history = [...new Set([...(task.session_history ?? []), sessionId])];
+  task.session_history = [
+    ...new Set([...(task.session_history ?? []), sessionId]),
+  ];
   task.trace = {
     ...(task.trace ?? {}),
     last_session: sessionId,
@@ -298,9 +392,11 @@ function ensureTaskSession(task: TaskNode): void {
 }
 
 function isClearEnough(task: TaskNode): boolean {
-  return Boolean((task.goal ?? "").trim())
-    && normalizeStringArray(task.acceptance).length > 0
-    && normalizeStringArray(task.outputs).length > 0;
+  return (
+    Boolean((task.goal ?? "").trim()) &&
+    normalizeStringArray(task.acceptance).length > 0 &&
+    normalizeStringArray(task.outputs).length > 0
+  );
 }
 
 function dependencyGateTaskId(gate: string): string | null {
@@ -310,11 +406,13 @@ function dependencyGateTaskId(gate: string): string | null {
 
 function isNonBlockingSafetyGate(gate: string): boolean {
   const text = gate.trim();
-  return /^no\s+(?:cloud|live)\s+mutation\b/i.test(text)
-    || /^no\s+kubectl\b/i.test(text)
-    || /^--check\s+only\b/i.test(text)
-    || /^local\s+(?:check|preflight)\s+only\b/i.test(text)
-    || /^do not run (?:cloud|live|staging|kubectl)\b/i.test(text);
+  return (
+    /^no\s+(?:cloud|live)\s+mutation\b/i.test(text) ||
+    /^no\s+kubectl\b/i.test(text) ||
+    /^--check\s+only\b/i.test(text) ||
+    /^local\s+(?:check|preflight)\s+only\b/i.test(text) ||
+    /^do not run (?:cloud|live|staging|kubectl)\b/i.test(text)
+  );
 }
 
 function isBlockingGate(gate: string): boolean {
@@ -325,23 +423,39 @@ function dependencyGatesAreSatisfied(tree: TaskTree, task: TaskNode): boolean {
   const gates = normalizeStringArray(task.gates).filter(isBlockingGate);
   if (gates.length === 0) return false;
   const dependencyIds = gates.map(dependencyGateTaskId);
-  return dependencyIds.every(id => id && tree.tasks[id]?.status === "accepted");
+  return dependencyIds.every(
+    (id) => id && tree.tasks[id]?.status === "accepted",
+  );
 }
 
 function hasClosedGate(tree: TaskTree, task: TaskNode): boolean {
   const gates = normalizeStringArray(task.gates).filter(isBlockingGate);
-  return gates.length > 0 && task.gate_status !== "satisfied" && !dependencyGatesAreSatisfied(tree, task);
+  return (
+    gates.length > 0 &&
+    task.gate_status !== "satisfied" &&
+    !dependencyGatesAreSatisfied(tree, task)
+  );
 }
 
-function activeLeaseRecoveryReason(config: PickupConfig, task: TaskNode): string | null {
+function activeLeaseRecoveryReason(
+  config: PickupConfig,
+  task: TaskNode,
+): string | null {
   if (task.status !== "active") return null;
-  if (config.abandonedActiveTaskIds.has(task.id)) return "zero-op-worker-session-abandoned";
+  if (config.abandonedActiveTaskIds.has(task.id))
+    return "zero-op-worker-session-abandoned";
   if (!task.lease_expires_at) return "missing-or-expired-active-lease";
   const expires = Date.parse(task.lease_expires_at);
-  return !Number.isFinite(expires) || expires <= Date.now() ? "missing-or-expired-active-lease" : null;
+  return !Number.isFinite(expires) || expires <= Date.now()
+    ? "missing-or-expired-active-lease"
+    : null;
 }
 
-function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: PickupConfig): string[] {
+function requeueStaleActiveLeaves(
+  ctx: WorkflowContext,
+  tree: TaskTree,
+  config: PickupConfig,
+): string[] {
   const requeued: string[] = [];
   for (const task of Object.values(tree.tasks)) {
     if (!isLeaf(task)) continue;
@@ -349,15 +463,19 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: 
     if (!reason) continue;
     if (isPlanningLoopControlTask(task)) {
       task.status = "superseded";
-      task.blocker = reason === "zero-op-worker-session-abandoned"
-        ? "Superseded after watchdog abandoned a stale zero-op planning-loop worker session; planner recovery will continue from the control loop."
-        : "Superseded stale legacy planning-control task; planning now runs in the project-planner control loop and is not worker-dispatchable.";
+      task.blocker =
+        reason === "zero-op-worker-session-abandoned"
+          ? "Superseded after watchdog abandoned a stale zero-op planning-loop worker session; planner recovery will continue from the control loop."
+          : "Superseded stale legacy planning-control task; planning now runs in the project-planner control loop and is not worker-dispatchable.";
       task.verification = {
         ts: new Date().toISOString(),
         verifier: "task-worker",
         verdict: "accepted",
         reason: task.blocker,
-        criteria: normalizeStringArray(task.acceptance).map(item => ({ item, result: "not_proven" })),
+        criteria: normalizeStringArray(task.acceptance).map((item) => ({
+          item,
+          result: "not_proven",
+        })),
       };
     } else {
       task.status = "ready";
@@ -383,19 +501,27 @@ function requeueStaleActiveLeaves(ctx: WorkflowContext, tree: TaskTree, config: 
   return requeued;
 }
 
-function selectDispatchableLeaves(tree: TaskTree, max: number, requestedReadyTaskIds: string[] = [], excludedIds = new Set<string>()): TaskNode[] {
+function selectDispatchableLeaves(
+  tree: TaskTree,
+  max: number,
+  requestedReadyTaskIds: string[] = [],
+  excludedIds = new Set<string>(),
+): TaskNode[] {
   const active = activeLeaves(tree);
   if (active.some(isGlobalSerializedExecutionTask)) return [];
   const capacity = Math.max(0, max - active.length);
   if (capacity <= 0) return [];
 
   const selected: TaskNode[] = [];
-  const requestedOrder = new Map(requestedReadyTaskIds.map((id, index) => [id, index]));
-  const ready = requestedOrder.size > 0
-    ? readyLeaves(tree)
-      .filter(task => requestedOrder.has(task.id))
-      .sort((a, b) => requestedOrder.get(a.id)! - requestedOrder.get(b.id)!)
-    : readyLeaves(tree);
+  const requestedOrder = new Map(
+    requestedReadyTaskIds.map((id, index) => [id, index]),
+  );
+  const ready =
+    requestedOrder.size > 0
+      ? readyLeaves(tree)
+          .filter((task) => requestedOrder.has(task.id))
+          .sort((a, b) => requestedOrder.get(a.id)! - requestedOrder.get(b.id)!)
+      : readyLeaves(tree);
   for (const candidate of ready) {
     if (selected.length >= capacity) break;
     if (excludedIds.has(candidate.id)) continue;
@@ -408,11 +534,21 @@ function selectDispatchableLeaves(tree: TaskTree, max: number, requestedReadyTas
       continue;
     }
     if (isReviewExecutionTask(candidate)) {
-      if ([...active, ...selected].some(other => conflictScopesOverlap(other, candidate))) continue;
+      if (
+        [...active, ...selected].some((other) =>
+          conflictScopesOverlap(other, candidate),
+        )
+      )
+        continue;
       selected.push(candidate);
       continue;
     }
-    if ([...active, ...selected].some(other => conflictScopesOverlap(other, candidate))) continue;
+    if (
+      [...active, ...selected].some((other) =>
+        conflictScopesOverlap(other, candidate),
+      )
+    )
+      continue;
     selected.push(candidate);
   }
   return selected;
@@ -426,20 +562,32 @@ function leaseTask(task: TaskNode, worker: string): void {
 }
 
 function normalizeActiveTaskPointer(tree: TaskTree): void {
-  const activeIds = activeLeaves(tree).map(task => task.id);
+  const activeIds = activeLeaves(tree).map((task) => task.id);
   tree.active_task_ids = activeIds;
   tree.active_task_id = activeIds[0] ?? readyLeaves(tree)[0]?.id ?? null;
 }
 
-function leaseDispatchableTasks(config: PickupConfig, tree: TaskTree, selected: TaskNode[]): LeasedTask[] {
+function leaseDispatchableTasks(
+  config: PickupConfig,
+  tree: TaskTree,
+  selected: TaskNode[],
+): LeasedTask[] {
   for (const task of selected) {
     leaseTask(task, config.worker);
   }
   normalizeActiveTaskPointer(tree);
-  return selected.map(task => ({ id: task.id, lease_expires_at: task.lease_expires_at, session_id: task.session_id }));
+  return selected.map((task) => ({
+    id: task.id,
+    lease_expires_at: task.lease_expires_at,
+    session_id: task.session_id,
+  }));
 }
 
-function emitTaskExecutionEvents(ctx: WorkflowContext, config: PickupConfig, leased: LeasedTask[]): void {
+function emitTaskExecutionEvents(
+  ctx: WorkflowContext,
+  config: PickupConfig,
+  leased: LeasedTask[],
+): void {
   for (const task of leased) {
     try {
       ctx.dispatchEvent("task.started", {
@@ -465,7 +613,10 @@ function emitTaskExecutionEvents(ctx: WorkflowContext, config: PickupConfig, lea
   }
 }
 
-function pickupReadyTasks(ctx: WorkflowContext, config: PickupConfig): LeasedTask[] {
+function pickupReadyTasks(
+  ctx: WorkflowContext,
+  config: PickupConfig,
+): LeasedTask[] {
   return withTreeLock(config, () => {
     const tree = readTree(config);
     const requeued = requeueStaleActiveLeaves(ctx, tree, config);
@@ -473,19 +624,25 @@ function pickupReadyTasks(ctx: WorkflowContext, config: PickupConfig): LeasedTas
       appendJournal(config, {
         kind: "stale_active_tasks_requeued",
         status: "ready",
-        summary: "Requeued active leaf tasks whose execution lease was missing or expired before worker pickup.",
+        summary:
+          "Requeued active leaf tasks whose execution lease was missing or expired before worker pickup.",
         task_ids: requeued,
       });
     }
 
-    const selected = selectDispatchableLeaves(tree, config.maxConcurrent, config.requestedReadyTaskIds);
+    const selected = selectDispatchableLeaves(
+      tree,
+      config.maxConcurrent,
+      config.requestedReadyTaskIds,
+    );
     const leased = leaseDispatchableTasks(config, tree, selected);
     if (leased.length > 0) {
       appendJournal(config, {
         kind: "task_execution_events_dispatched",
         status: "active",
-        summary: "Leased ready leaf tasks and dispatched event-native task execution requests.",
-        task_ids: leased.map(task => task.id),
+        summary:
+          "Leased ready leaf tasks and dispatched event-native task execution requests.",
+        task_ids: leased.map((task) => task.id),
         max_concurrent: config.maxConcurrent,
       });
     }
@@ -498,11 +655,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const embeddedProjectPath = join(projectDir, ".app", "project.json");
   const legacyRootTaskDir = join(projectDir, "tasks");
-  const defaultAppDir = existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
-    ? projectDir
-    : existsSync(embeddedProjectPath)
-    ? join(projectDir, ".app")
-    : new URL("..", import.meta.url).pathname;
+  const defaultAppDir =
+    existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
+      ? projectDir
+      : existsSync(embeddedProjectPath)
+        ? join(projectDir, ".app")
+        : new URL("..", import.meta.url).pathname;
   const appDir = field(ctx.task, "app") ?? defaultAppDir;
   const trigger = parseTriggerEvent(ctx.task);
   const triggerType = trigger?.type ?? "";
@@ -513,16 +671,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       projectDir,
       treePath: join(appDir, "tasks", "tree.json"),
       journalPath: join(appDir, ".state", "journal.jsonl"),
-      worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
+      worker:
+        field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
       maxConcurrent: configuredMaxConcurrent,
       requestedReadyTaskIds: triggerStringArray(trigger, "readyTaskIds"),
       abandonedActiveTaskIds: abandonedActiveTaskIds(ctx.task, trigger),
     };
     const leased = pickupReadyTasks(ctx, config);
     emitTaskExecutionEvents(ctx, config, leased);
-    return ctx.done(leased.length > 0
-      ? `Dispatched ${leased.length} task execution event(s): ${leased.map(task => task.id).join(", ")}.`
-      : "No dispatchable ready task found; worker pickup left the task tree unchanged except stale lease recovery.");
+    return ctx.done(
+      leased.length > 0
+        ? `Dispatched ${leased.length} task execution event(s): ${leased.map((task) => task.id).join(", ")}.`
+        : "No dispatchable ready task found; worker pickup left the task tree unchanged except stale lease recovery.",
+    );
   }
 
   const taskLines = [
@@ -541,26 +702,33 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const result = await executeEngine({
     ...ctx,
     task: `${taskLines.join("\n")}\n\n${triggerBlock}`,
-    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+    done: (message: string) =>
+      ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) =>
+      ({ status: "escalated", message }) as unknown as WorkflowResult,
   } as unknown as WorkflowContext);
 
-  const message = (result as { message?: string; summary?: string }).message
-    ?? (result as { message?: string; summary?: string }).summary
-    ?? JSON.stringify(result);
+  const message =
+    (result as { message?: string; summary?: string }).message ??
+    (result as { message?: string; summary?: string }).summary ??
+    JSON.stringify(result);
   return ctx.done(`Task worker loop advanced: ${message}`);
 }
 
 if (import.meta.main) {
   if (process.env.MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT !== "1") {
-    console.error("Direct workflow entrypoint is disabled by default. Set MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT=1 to run it.");
+    console.error(
+      "Direct workflow entrypoint is disabled by default. Set MAY_AGENT_RUN_WORKFLOW_ENTRYPOINT=1 to run it.",
+    );
     process.exit(0);
   }
   const result = await execute({
     task: "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e\nagent: aks-explorer\nmaxConcurrent: 3",
     agent: "aks-explorer",
-    done: (message: string) => ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) => ({ status: "escalated", message }) as unknown as WorkflowResult,
+    done: (message: string) =>
+      ({ status: "done", message }) as unknown as WorkflowResult,
+    escalate: (message: string) =>
+      ({ status: "escalated", message }) as unknown as WorkflowResult,
     emit() {},
     dispatchEvent() {},
     runAgent: async () => ({ status: "error", lastAssistantText: "" }),

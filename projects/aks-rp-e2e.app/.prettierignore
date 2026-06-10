@@ -1,0 +1,6 @@
+.state/
+archive/
+agents/*/workspace/
+project.json
+tasks/tree.json
+tasks/archive/

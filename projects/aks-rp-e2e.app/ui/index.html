@@ -1,152 +1,338 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AKS RP E2E — Domain Knowledge Workspace</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<style>
-  :root {
-    --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
-    --fg: #c9d1d9; --fg2: #8b949e; --accent: #58a6ff; --green: #3fb950;
-    --red: #f85149; --yellow: #d29922; --orange: #e8a44c; --purple: #bc8cff;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    --mono: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 14px; line-height: 1.5; padding: 0; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  code { background: var(--bg2); padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: var(--mono); }
-  .md-rendered { line-height: 1.6; }
-  .md-rendered h1, .md-rendered h2, .md-rendered h3, .md-rendered h4 { margin: 12px 0 6px; }
-  .md-rendered p { margin: 6px 0; }
-  .md-rendered ul, .md-rendered ol { margin: 4px 0; padding-left: 20px; }
-  .md-rendered pre { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 10px; overflow-x: auto; font-family: var(--mono); font-size: 12px; }
-  .md-rendered code { background: var(--bg); }
-  #header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
-  #header h1 { font-size: 16px; font-weight: 600; }
-  #header a { font-size: 13px; color: var(--fg2); }
-  #header a:hover { color: var(--accent); }
-  #panel-root { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
-  #comment-bar { display: flex; gap: 8px; margin-bottom: 16px; }
-  #comment-bar input { flex: 1; padding: 8px 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; color: var(--fg); font-size: 13px; font-family: var(--font); }
-  #comment-bar input:focus { outline: none; border-color: var(--accent); }
-  #comment-bar button { padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: var(--font); }
-  #comment-bar button:hover { opacity: 0.9; }
-</style>
-</head>
-<body>
-<div id="header">
-  <h1>AKS RP E2E — Domain Knowledge Workspace</h1>
-  <span style="font-size:12px;color:var(--fg2);margin-right:auto">Feature status · Evidence · Gaps · Probes · Replans</span>
-  <a href="kanban/">task kanban →</a>
-  <a href="feature/">feature workspace →</a>
-  <a href="/projects/platform/ui/#/projects/aks-rp-e2e">← dashboard</a>
-</div>
-<div id="panel-root">
-  <div id="project-snapshot" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px;">
-    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
-      <h2 id="snapshot-goal" style="font-size:14px;font-weight:600;margin:0;flex:1 1 300px">AKS Input/Expectation Knowledge Map</h2>
-      <div id="snapshot-counts" style="display:flex;gap:10px;font-size:13px"></div>
-      <a href="/projects/aks-rp-e2e.app/ui/kanban/" style="font-size:12px;white-space:nowrap">task kanban →</a>
-    </div>
-    <p id="snapshot-frontier" style="font-size:12px;color:var(--fg2);margin:8px 0 0"></p>
-  </div>
-  <div id="comment-bar">
-    <input id="project-comment" placeholder="Discuss AKS feature gaps, evidence, probes, or model direction..." onkeydown="if(event.key==='Enter')addProjectComment()">
-    <button onclick="addProjectComment()">Send</button>
-  </div>
-  <div id="quality-panel" style="min-height: 400px; color: var(--fg2);">Loading AKS knowledge map...</div>
-</div>
-
-<script>
-// ── Globals expected by quality-panel.js ──
-
-const _projectDetailPath = 'projects/aks-rp-e2e';
-
-function esc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function attrEsc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function jsStringAttr(s) {
-  return attrEsc(JSON.stringify(String(s ?? '')));
-}
-
-function renderMarkdownBlock(text) {
-  if (window.marked?.parse) return window.marked.parse(text || '');
-  return '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' + esc(text || '') + '</pre>';
-}
-
-function extractProjectSection(body, headings) {
-  const wanted = new Set((Array.isArray(headings) ? headings : [headings]).map(h => String(h).trim().toLowerCase()));
-  const lines = String(body || '').split(/\r?\n/);
-  let start = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^##\s+(.+?)\s*$/);
-    if (!m) continue;
-    const heading = m[1].trim().toLowerCase();
-    for (const name of wanted) {
-      if (heading === name || heading.startsWith(name + ' ') || heading.startsWith(name + ' (')) {
-        start = i + 1;
-        break;
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AKS RP E2E — Domain Knowledge Workspace</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --bg2: #161b22;
+        --bg3: #21262d;
+        --border: #30363d;
+        --fg: #c9d1d9;
+        --fg2: #8b949e;
+        --accent: #58a6ff;
+        --green: #3fb950;
+        --red: #f85149;
+        --yellow: #d29922;
+        --orange: #e8a44c;
+        --purple: #bc8cff;
+        --font:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+          sans-serif;
+        --mono:
+          "SF Mono", SFMono-Regular, Consolas, "Liberation Mono", Menlo,
+          monospace;
       }
-    }
-    if (start >= 0) break;
-  }
-  if (start < 0) return '';
-  let end = lines.length;
-  for (let i = start; i < lines.length; i++) {
-    if (/^##\s+/.test(lines[i])) { end = i; break; }
-  }
-  return lines.slice(start, end).join('\n').trim();
-}
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 0;
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: var(--bg2);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: var(--mono);
+      }
+      .md-rendered {
+        line-height: 1.6;
+      }
+      .md-rendered h1,
+      .md-rendered h2,
+      .md-rendered h3,
+      .md-rendered h4 {
+        margin: 12px 0 6px;
+      }
+      .md-rendered p {
+        margin: 6px 0;
+      }
+      .md-rendered ul,
+      .md-rendered ol {
+        margin: 4px 0;
+        padding-left: 20px;
+      }
+      .md-rendered pre {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        overflow-x: auto;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .md-rendered code {
+        background: var(--bg);
+      }
+      #header {
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      #header h1 {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      #header a {
+        font-size: 13px;
+        color: var(--fg2);
+      }
+      #header a:hover {
+        color: var(--accent);
+      }
+      #panel-root {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 24px;
+      }
+      #comment-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      #comment-bar input {
+        flex: 1;
+        padding: 8px 12px;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--fg);
+        font-size: 13px;
+        font-family: var(--font);
+      }
+      #comment-bar input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      #comment-bar button {
+        padding: 8px 16px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: var(--font);
+      }
+      #comment-bar button:hover {
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <h1>AKS RP E2E — Domain Knowledge Workspace</h1>
+      <span style="font-size: 12px; color: var(--fg2); margin-right: auto"
+        >Feature status · Evidence · Gaps · Probes · Replans</span
+      >
+      <a href="kanban/">task kanban →</a>
+      <a href="feature/">feature workspace →</a>
+      <a href="/projects/platform/ui/#/projects/aks-rp-e2e">← dashboard</a>
+    </div>
+    <div id="panel-root">
+      <div
+        id="project-snapshot"
+        style="
+          background: var(--bg2);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 16px 20px;
+          margin-bottom: 16px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+          "
+        >
+          <h2
+            id="snapshot-goal"
+            style="
+              font-size: 14px;
+              font-weight: 600;
+              margin: 0;
+              flex: 1 1 300px;
+            "
+          >
+            AKS Input/Expectation Knowledge Map
+          </h2>
+          <div
+            id="snapshot-counts"
+            style="display: flex; gap: 10px; font-size: 13px"
+          ></div>
+          <a
+            href="/projects/aks-rp-e2e.app/ui/kanban/"
+            style="font-size: 12px; white-space: nowrap"
+            >task kanban →</a
+          >
+        </div>
+        <p
+          id="snapshot-frontier"
+          style="font-size: 12px; color: var(--fg2); margin: 8px 0 0"
+        ></p>
+      </div>
+      <div id="comment-bar">
+        <input
+          id="project-comment"
+          placeholder="Discuss AKS feature gaps, evidence, probes, or model direction..."
+          onkeydown="if (event.key === 'Enter') addProjectComment();"
+        />
+        <button onclick="addProjectComment()">Send</button>
+      </div>
+      <div id="quality-panel" style="min-height: 400px; color: var(--fg2)">
+        Loading AKS knowledge map...
+      </div>
+    </div>
 
-function prefillProjectComment(text) {
-  const input = document.getElementById('project-comment');
-  if (!input) return;
-  input.value = text || '';
-  input.focus();
-}
+    <script>
+      // ── Globals expected by quality-panel.js ──
 
-function loadProjectTab(tab) {
-  // In standalone mode, the knowledge map is the only tab — just re-render.
-  if (tab === 'quality' && typeof window.renderAksRpE2eQualityPanel === 'function') {
-    window.renderAksRpE2eQualityPanel(document.getElementById('quality-panel'));
-  }
-}
+      const _projectDetailPath = "projects/aks-rp-e2e";
 
-async function addProjectComment() {
-  const input = document.getElementById('project-comment');
-  if (!input || !input.value.trim()) return;
-  try {
-    const res = await fetch(`/api/projects/comment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: _projectDetailPath, comment: input.value.trim() }),
-    });
-    if (res.ok) { input.value = ''; input.placeholder = 'Comment sent ✓'; }
-    else { input.placeholder = 'Failed to send comment'; }
-  } catch (e) { input.placeholder = 'Error: ' + e.message; }
-}
-</script>
-<script src="quality-panel.js"></script>
-<script>
-  // Boot: render the knowledge map into the container.
-  (async () => {
-    const el = document.getElementById('quality-panel');
-    if (typeof window.renderAksRpE2eQualityPanel === 'function') {
-      await window.renderAksRpE2eQualityPanel(el);
-    } else {
-      el.innerHTML = '<div style="color:var(--red)">Failed to load quality-panel.js</div>';
-    }
-  })();
-</script>
-</body>
+      function esc(s) {
+        if (s == null) return "";
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function attrEsc(s) {
+        if (s == null) return "";
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function jsStringAttr(s) {
+        return attrEsc(JSON.stringify(String(s ?? "")));
+      }
+
+      function renderMarkdownBlock(text) {
+        if (window.marked?.parse) return window.marked.parse(text || "");
+        return (
+          '<pre style="white-space:pre-wrap;margin:0;font-family:inherit">' +
+          esc(text || "") +
+          "</pre>"
+        );
+      }
+
+      function extractProjectSection(body, headings) {
+        const wanted = new Set(
+          (Array.isArray(headings) ? headings : [headings]).map((h) =>
+            String(h).trim().toLowerCase(),
+          ),
+        );
+        const lines = String(body || "").split(/\r?\n/);
+        let start = -1;
+        for (let i = 0; i < lines.length; i++) {
+          const m = lines[i].match(/^##\s+(.+?)\s*$/);
+          if (!m) continue;
+          const heading = m[1].trim().toLowerCase();
+          for (const name of wanted) {
+            if (
+              heading === name ||
+              heading.startsWith(name + " ") ||
+              heading.startsWith(name + " (")
+            ) {
+              start = i + 1;
+              break;
+            }
+          }
+          if (start >= 0) break;
+        }
+        if (start < 0) return "";
+        let end = lines.length;
+        for (let i = start; i < lines.length; i++) {
+          if (/^##\s+/.test(lines[i])) {
+            end = i;
+            break;
+          }
+        }
+        return lines.slice(start, end).join("\n").trim();
+      }
+
+      function prefillProjectComment(text) {
+        const input = document.getElementById("project-comment");
+        if (!input) return;
+        input.value = text || "";
+        input.focus();
+      }
+
+      function loadProjectTab(tab) {
+        // In standalone mode, the knowledge map is the only tab — just re-render.
+        if (
+          tab === "quality" &&
+          typeof window.renderAksRpE2eQualityPanel === "function"
+        ) {
+          window.renderAksRpE2eQualityPanel(
+            document.getElementById("quality-panel"),
+          );
+        }
+      }
+
+      async function addProjectComment() {
+        const input = document.getElementById("project-comment");
+        if (!input || !input.value.trim()) return;
+        try {
+          const res = await fetch(`/api/projects/comment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              path: _projectDetailPath,
+              comment: input.value.trim(),
+            }),
+          });
+          if (res.ok) {
+            input.value = "";
+            input.placeholder = "Comment sent ✓";
+          } else {
+            input.placeholder = "Failed to send comment";
+          }
+        } catch (e) {
+          input.placeholder = "Error: " + e.message;
+        }
+      }
+    </script>
+    <script src="quality-panel.js"></script>
+    <script>
+      // Boot: render the knowledge map into the container.
+      (async () => {
+        const el = document.getElementById("quality-panel");
+        if (typeof window.renderAksRpE2eQualityPanel === "function") {
+          await window.renderAksRpE2eQualityPanel(el);
+        } else {
+          el.innerHTML =
+            '<div style="color:var(--red)">Failed to load quality-panel.js</div>';
+        }
+      })();
+    </script>
+  </body>
 </html>

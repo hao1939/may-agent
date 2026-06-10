@@ -10,15 +10,19 @@ import { execute as executePlanner } from "./project-planner.ts";
 import { execute as executeTaskWorker } from "./task-worker.ts";
 
 function projectJson(status: string) {
-  return `${JSON.stringify({
-    id: "test-project",
-    owner: "aks-explorer",
-    status,
-    closeReason: "Closed for test.",
-    goal: "Make progress through a task tree.",
-    currentState: { summary: "Testing." },
-    currentFocus: { nextAction: "Use the task tree.", activeTaskIds: [] },
-  }, null, 2)}\n`;
+  return `${JSON.stringify(
+    {
+      id: "test-project",
+      owner: "aks-explorer",
+      status,
+      closeReason: "Closed for test.",
+      goal: "Make progress through a task tree.",
+      currentState: { summary: "Testing." },
+      currentFocus: { nextAction: "Use the task tree.", activeTaskIds: [] },
+    },
+    null,
+    2,
+  )}\n`;
 }
 
 async function makeProject(status: string) {
@@ -27,7 +31,11 @@ async function makeProject(status: string) {
   await mkdir(join(dir, ".state"), { recursive: true });
   await mkdir(join(dir, "tasks"), { recursive: true });
   await mkdir(join(dir, "evidence", "outputs"), { recursive: true });
-  await writeFile(join(dir, ".app", "project.json"), projectJson(status), "utf8");
+  await writeFile(
+    join(dir, ".app", "project.json"),
+    projectJson(status),
+    "utf8",
+  );
   await writeFile(join(dir, ".state", "journal.jsonl"), "", "utf8");
   return dir;
 }
@@ -53,22 +61,30 @@ function context(input: {
   noSessionStaleMs?: number;
   dispatched?: Array<{ type: string; payload: Record<string, unknown> }>;
   emitted?: Array<Record<string, unknown>>;
-  runAgent?: (agent: string, prompt: string) => Promise<{ status: string; lastAssistantText?: string }>;
+  runAgent?: (
+    agent: string,
+    prompt: string,
+  ) => Promise<{ status: string; lastAssistantText?: string }>;
   summarize?: (result: { lastAssistantText?: string }) => string;
 }) {
   const trigger = input.triggerEvent
     ? `\n\n## Trigger Event\n\`\`\`json\n${JSON.stringify(input.triggerEvent, null, 2)}\n\`\`\``
     : "";
   return {
-    task: [
-      `project: ${input.projectDir}`,
-      `agent: aks-explorer`,
-      `maxAttempts: ${input.maxAttempts ?? 5}`,
-      `maxConcurrent: ${input.maxConcurrent ?? 1}`,
-      ...(input.stateDbPath ? [`stateDb: ${input.stateDbPath}`] : []),
-      ...(input.zeroOpStaleMs !== undefined ? [`zeroOpStaleMs: ${input.zeroOpStaleMs}`] : []),
-      ...(input.noSessionStaleMs !== undefined ? [`noSessionStaleMs: ${input.noSessionStaleMs}`] : []),
-    ].join("\n") + trigger,
+    task:
+      [
+        `project: ${input.projectDir}`,
+        `agent: aks-explorer`,
+        `maxAttempts: ${input.maxAttempts ?? 5}`,
+        `maxConcurrent: ${input.maxConcurrent ?? 1}`,
+        ...(input.stateDbPath ? [`stateDb: ${input.stateDbPath}`] : []),
+        ...(input.zeroOpStaleMs !== undefined
+          ? [`zeroOpStaleMs: ${input.zeroOpStaleMs}`]
+          : []),
+        ...(input.noSessionStaleMs !== undefined
+          ? [`noSessionStaleMs: ${input.noSessionStaleMs}`]
+          : []),
+      ].join("\n") + trigger,
     agent: "aks-explorer",
     done: (message: string) => ({ status: "done", message }),
     escalate: (message: string) => ({ status: "escalated", message }),
@@ -78,15 +94,24 @@ function context(input: {
     dispatchEvent(type: string, payload: Record<string, unknown>) {
       input.dispatched?.push({ type, payload });
     },
-    runAgent: input.runAgent ?? (async () => ({ status: "error", lastAssistantText: "" })),
-    summarize: input.summarize ?? ((result: { lastAssistantText?: string }) => result.lastAssistantText ?? ""),
+    runAgent:
+      input.runAgent ??
+      (async () => ({ status: "error", lastAssistantText: "" })),
+    summarize:
+      input.summarize ??
+      ((result: { lastAssistantText?: string }) =>
+        result.lastAssistantText ?? ""),
   } as any;
 }
 
 describe("project execution engine", () => {
   test("project app watcher emits execution events through one schedule path", () => {
-    const regularLearning = app.schedules.find(schedule => schedule.id === "regular-learning");
-    const watchdog = app.schedules.find(schedule => schedule.id === "project-execution-watchdog");
+    const regularLearning = app.schedules.find(
+      (schedule) => schedule.id === "regular-learning",
+    );
+    const watchdog = app.schedules.find(
+      (schedule) => schedule.id === "project-execution-watchdog",
+    );
 
     expect(regularLearning?.enabled).toBe(true);
     expect(regularLearning?.event).toEqual({
@@ -99,136 +124,180 @@ describe("project execution engine", () => {
       type: "project.watchdog.tick",
       project: "aks-rp-e2e",
     });
-    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-project-planner")?.handler.workflow)
-      .toBe("project-planner");
-    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-project-planner")?.handler.agent)
-      .toBeUndefined();
-    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-project-planner")?.handler.projectId)
-      .toBeUndefined();
-    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-ready-task-picker")?.on)
-      .toEqual(["project.tasks.ready"]);
-    expect(app.workflowHandlers.find(handler => handler.name === "aks-rp-e2e-task-execution-worker")?.maxConcurrentTriggers)
-      .toBe(5);
+    expect(
+      app.workflowHandlers.find(
+        (handler) => handler.name === "aks-rp-e2e-project-planner",
+      )?.handler.workflow,
+    ).toBe("project-planner");
+    expect(
+      app.workflowHandlers.find(
+        (handler) => handler.name === "aks-rp-e2e-project-planner",
+      )?.handler.agent,
+    ).toBeUndefined();
+    expect(
+      app.workflowHandlers.find(
+        (handler) => handler.name === "aks-rp-e2e-project-planner",
+      )?.handler.projectId,
+    ).toBeUndefined();
+    expect(
+      app.workflowHandlers.find(
+        (handler) => handler.name === "aks-rp-e2e-ready-task-picker",
+      )?.on,
+    ).toEqual(["project.tasks.ready"]);
+    expect(
+      app.workflowHandlers.find(
+        (handler) => handler.name === "aks-rp-e2e-task-execution-worker",
+      )?.maxConcurrentTriggers,
+    ).toBe(5);
     expect(app.actions.watch.type).toBe("async");
-    expect((app.actions.watch as any).event({}).type).toBe("project.execution.requested");
-    expect(app.events).toContainEqual({ type: "project.watchdog.tick", project: "aks-rp-e2e" });
-    expect(app.events).toContainEqual({ type: "project.task.completed", project: "aks-rp-e2e" });
-    expect(app.events).toContainEqual({ type: "project.tasks.ready", project: "aks-rp-e2e" });
+    expect((app.actions.watch as any).event({}).type).toBe(
+      "project.execution.requested",
+    );
+    expect(app.events).toContainEqual({
+      type: "project.watchdog.tick",
+      project: "aks-rp-e2e",
+    });
+    expect(app.events).toContainEqual({
+      type: "project.task.completed",
+      project: "aks-rp-e2e",
+    });
+    expect(app.events).toContainEqual({
+      type: "project.tasks.ready",
+      project: "aks-rp-e2e",
+    });
   });
 
   test("project app watchdog tick is handled by the watchdog workflow", async () => {
     const emitted: unknown[] = [];
-    const result = await app.onEvent({
-      projectPath: (path: string) => path,
-      appPath: (path: string) => path,
-      readJson: async () => ({
-        tasks: {
-          project: { status: "active", children: ["task-a"] },
-          "task-a": { status: "ready", children: [] },
-          "task-b": { status: "accepted", children: [] },
+    const result = await app.onEvent(
+      {
+        projectPath: (path: string) => path,
+        appPath: (path: string) => path,
+        readJson: async () => ({
+          tasks: {
+            project: { status: "active", children: ["task-a"] },
+            "task-a": { status: "ready", children: [] },
+            "task-b": { status: "accepted", children: [] },
+          },
+        }),
+        importModule: async () => ({}),
+        startSession: () => ({}),
+        emit: (event) => {
+          emitted.push(event);
+          return event;
         },
-      }),
-      importModule: async () => ({}),
-      startSession: () => ({}),
-      emit: event => {
-        emitted.push(event);
-        return event;
+        noop: (reason) => ({ type: "noop", reason }),
+      } as any,
+      {
+        type: "project.watchdog.tick",
+        project: "aks-rp-e2e",
       },
-      noop: reason => ({ type: "noop", reason }),
-    } as any, {
-      type: "project.watchdog.tick",
-      project: "aks-rp-e2e",
-    });
+    );
 
     expect(result).toEqual({
       type: "noop",
-      reason: "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
+      reason:
+        "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
     });
     expect(emitted).toHaveLength(0);
   });
 
   test("project app watchdog tick does not duplicate ready-task routing", async () => {
     const emitted: unknown[] = [];
-    const result = await app.onEvent({
-      projectPath: (path: string) => path,
-      appPath: (path: string) => path,
-      readJson: async () => ({
-        tasks: {
-          project: { status: "decomposed", children: ["active-task", "ready-task"] },
-          "active-task": { status: "active", children: [] },
-          "ready-task": { status: "ready", children: [] },
+    const result = await app.onEvent(
+      {
+        projectPath: (path: string) => path,
+        appPath: (path: string) => path,
+        readJson: async () => ({
+          tasks: {
+            project: {
+              status: "decomposed",
+              children: ["active-task", "ready-task"],
+            },
+            "active-task": { status: "active", children: [] },
+            "ready-task": { status: "ready", children: [] },
+          },
+        }),
+        importModule: async () => ({}),
+        startSession: () => ({}),
+        emit: (event) => {
+          emitted.push(event);
+          return event;
         },
-      }),
-      importModule: async () => ({}),
-      startSession: () => ({}),
-      emit: event => {
-        emitted.push(event);
-        return event;
+        noop: (reason) => ({ type: "noop", reason }),
+      } as any,
+      {
+        type: "project.watchdog.tick",
+        project: "aks-rp-e2e",
       },
-      noop: reason => ({ type: "noop", reason }),
-    } as any, {
-      type: "project.watchdog.tick",
-      project: "aks-rp-e2e",
-    });
+    );
 
     expect(result).toEqual({
       type: "noop",
-      reason: "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
+      reason:
+        "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
     });
     expect(emitted).toHaveLength(0);
   });
 
   test("project app watchdog tick does not duplicate planner routing", async () => {
     const emitted: unknown[] = [];
-    const result = await app.onEvent({
-      projectPath: (path: string) => path,
-      appPath: (path: string) => path,
-      readJson: async () => ({
-        project_lifecycle: "active",
-        tasks: {
-          project: { status: "accepted", children: ["lane"] },
-          lane: { status: "accepted", children: [] },
+    const result = await app.onEvent(
+      {
+        projectPath: (path: string) => path,
+        appPath: (path: string) => path,
+        readJson: async () => ({
+          project_lifecycle: "active",
+          tasks: {
+            project: { status: "accepted", children: ["lane"] },
+            lane: { status: "accepted", children: [] },
+          },
+        }),
+        importModule: async () => ({}),
+        startSession: () => ({}),
+        emit: (event) => {
+          emitted.push(event);
+          return event;
         },
-      }),
-      importModule: async () => ({}),
-      startSession: () => ({}),
-      emit: event => {
-        emitted.push(event);
-        return event;
+        noop: (reason) => ({ type: "noop", reason }),
+      } as any,
+      {
+        type: "project.watchdog.tick",
+        project: "aks-rp-e2e",
       },
-      noop: reason => ({ type: "noop", reason }),
-    } as any, {
-      type: "project.watchdog.tick",
-      project: "aks-rp-e2e",
-    });
+    );
 
     expect(result).toEqual({
       type: "noop",
-      reason: "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
+      reason:
+        "project.watchdog.tick is consumed by the aks-rp-e2e project-execution-watchdog workflow trigger",
     });
     expect(emitted).toHaveLength(0);
   });
 
   test("project app turns task completion events into coordinator wakes", async () => {
     const emitted: unknown[] = [];
-    const result = await app.onEvent({
-      projectPath: (path: string) => path,
-      appPath: (path: string) => path,
-      readJson: async () => ({}),
-      importModule: async () => ({}),
-      startSession: () => ({}),
-      emit: event => {
-        emitted.push(event);
-        return event;
+    const result = await app.onEvent(
+      {
+        projectPath: (path: string) => path,
+        appPath: (path: string) => path,
+        readJson: async () => ({}),
+        importModule: async () => ({}),
+        startSession: () => ({}),
+        emit: (event) => {
+          emitted.push(event);
+          return event;
+        },
+        noop: (reason) => ({ type: "noop", reason }),
+      } as any,
+      {
+        type: "project.task.completed",
+        project: "aks-rp-e2e",
+        taskId: "task-a",
+        status: "accepted",
+        verification_verdict: "accepted",
       },
-      noop: reason => ({ type: "noop", reason }),
-    } as any, {
-      type: "project.task.completed",
-      project: "aks-rp-e2e",
-      taskId: "task-a",
-      status: "accepted",
-      verification_verdict: "accepted",
-    });
+    );
 
     expect(result).toEqual({
       type: "project.execution.requested",
@@ -246,28 +315,32 @@ describe("project execution engine", () => {
 
   test("project app does not turn rejected review completions into coordinator wakes", async () => {
     const emitted: unknown[] = [];
-    const result = await app.onEvent({
-      projectPath: (path: string) => path,
-      appPath: (path: string) => path,
-      readJson: async () => ({}),
-      importModule: async () => ({}),
-      startSession: () => ({}),
-      emit: event => {
-        emitted.push(event);
-        return event;
+    const result = await app.onEvent(
+      {
+        projectPath: (path: string) => path,
+        appPath: (path: string) => path,
+        readJson: async () => ({}),
+        importModule: async () => ({}),
+        startSession: () => ({}),
+        emit: (event) => {
+          emitted.push(event);
+          return event;
+        },
+        noop: (reason) => ({ type: "noop", reason }),
+      } as any,
+      {
+        type: "project.task.completed",
+        project: "aks-rp-e2e",
+        taskId: "task-a-rework-review",
+        status: "rejected",
+        verification_verdict: "rejected",
       },
-      noop: reason => ({ type: "noop", reason }),
-    } as any, {
-      type: "project.task.completed",
-      project: "aks-rp-e2e",
-      taskId: "task-a-rework-review",
-      status: "rejected",
-      verification_verdict: "rejected",
-    });
+    );
 
     expect(result).toEqual({
       type: "noop",
-      reason: "suppressed continuation for rejected review task task-a-rework-review",
+      reason:
+        "suppressed continuation for rejected review task task-a-rework-review",
     });
     expect(emitted).toHaveLength(0);
   });
@@ -280,17 +353,26 @@ describe("project execution engine", () => {
     expect(result.status).toBe("done");
     expect(result.message).toContain("Created blocked review task");
 
-    const tree = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(tree.project_lifecycle).toBe("closed");
     expect(tree.active_task_id).toBe("blocked-frontier-review");
     expect(tree.tasks.project.status).toBe("decomposed");
     expect(tree.tasks["blocked-frontier-review"].status).toBe("ready");
     expect(tree.tasks["blocked-frontier-review"].kind).toBe("blocked_review");
-    expect(tree.tasks["managedsystem-live-auth-gate"].status).toBe("decomposed");
-    expect(tree.tasks["managedsystem-live-auth-gate-blocker-review"].status).toBe("ready");
+    expect(tree.tasks["managedsystem-live-auth-gate"].status).toBe(
+      "decomposed",
+    );
+    expect(
+      tree.tasks["managedsystem-live-auth-gate-blocker-review"].status,
+    ).toBe("ready");
 
-    const project = await readFile(join(projectDir, ".app", "project.json"), "utf8");
-    expect(project).toContain("\"activeTask\"");
+    const project = await readFile(
+      join(projectDir, ".app", "project.json"),
+      "utf8",
+    );
+    expect(project).toContain('"activeTask"');
     expect(project).toContain("blocked-frontier-review");
     expect(project).toContain("tasks/tree.json");
   });
@@ -349,20 +431,35 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      runAgent: async (_agent, prompt) => {
-        const outputSection = prompt.split("## Required Outputs\n")[1] ?? prompt;
-        const output = outputSection.match(/(?:evidence\/(?:outputs|archive)|tasks)\/[^\s]+(?:\.md|\.json)/)?.[0] ?? "evidence/archive/unknown.md";
-        return { status: "ok", lastAssistantText: `CLAIM: done\noutputs:\n- ${output}` };
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        runAgent: async (_agent, prompt) => {
+          const outputSection =
+            prompt.split("## Required Outputs\n")[1] ?? prompt;
+          const output =
+            outputSection.match(
+              /(?:evidence\/(?:outputs|archive)|tasks)\/[^\s]+(?:\.md|\.json)/,
+            )?.[0] ?? "evidence/archive/unknown.md";
+          return {
+            status: "ok",
+            lastAssistantText: `CLAIM: done\noutputs:\n- ${output}`,
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-b"].status).toBe("accepted");
     expect(updated.tasks["project-rollup-review"].status).toBe("accepted");
@@ -440,28 +537,46 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Dispatched 2 task execution event");
-    const taskEvents = dispatched.filter(event => event.type === "project.task.execution.requested");
-    expect(taskEvents.map(event => event.payload.taskId).sort()).toEqual(["task-a", "task-b"]);
+    const taskEvents = dispatched.filter(
+      (event) => event.type === "project.task.execution.requested",
+    );
+    expect(taskEvents.map((event) => event.payload.taskId).sort()).toEqual([
+      "task-a",
+      "task-b",
+    ]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("active");
     expect(updated.tasks["task-b"].status).toBe("active");
     expect(updated.tasks["task-c"].status).toBe("ready");
@@ -542,28 +657,46 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Dispatched 2 task execution event");
-    const taskEvents = dispatched.filter(event => event.type === "project.task.execution.requested");
-    expect(taskEvents.map(event => event.payload.taskId).sort()).toEqual(["review-a", "review-b"]);
+    const taskEvents = dispatched.filter(
+      (event) => event.type === "project.task.execution.requested",
+    );
+    expect(taskEvents.map((event) => event.payload.taskId).sort()).toEqual([
+      "review-a",
+      "review-b",
+    ]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["review-a"].status).toBe("active");
     expect(updated.tasks["review-b"].status).toBe("active");
     expect(updated.tasks["review-c"].status).toBe("ready");
@@ -625,26 +758,45 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 50,
-      triggerEvent: {
-        type: "timer.tick",
-        data: { entry: "aks-rp-e2e-project-execution" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("legacy timer trigger must not run leaf tasks directly");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 50,
+        triggerEvent: {
+          type: "timer.tick",
+          data: { entry: "aks-rp-e2e-project-execution" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "legacy timer trigger must not run leaf tasks directly",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(result.message).toContain("Ignored non-v2 project execution trigger timer.tick");
-    expect(dispatched.filter(event => event.type === "project.task.execution.requested")).toHaveLength(0);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(result.message).toContain(
+      "Ignored non-v2 project execution trigger timer.tick",
+    );
+    expect(
+      dispatched.filter(
+        (event) => event.type === "project.task.execution.requested",
+      ),
+    ).toHaveLength(0);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("ready");
   });
 
@@ -718,22 +870,36 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      maxConcurrent: 3,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner loop should not run workers");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        dispatched,
+        runAgent: async () => {
+          throw new Error("planner loop should not run workers");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("signaled 2 ready task");
-    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["local-check", "task-a"]);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
+        .readyTaskIds,
+    ).toEqual(["local-check", "task-a"]);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("ready");
     expect(updated.tasks["task-a"].lease_expires_at).toBeUndefined();
     expect(updated.tasks["gated-task"].status).toBe("ready");
@@ -775,7 +941,9 @@ describe("project execution engine", () => {
           children: [],
           inputs: ["specs/index.json", "runner/spec-runner.ts", "replays/"],
           outputs: ["runs/executions/", "evidence/archive/bootstrap-live.md"],
-          acceptance: ["Terminal runner artifacts and cleanup evidence are recorded."],
+          acceptance: [
+            "Terminal runner artifacts and cleanup evidence are recorded.",
+          ],
           forbidden: ["Do not bypass runner gates."],
           gates: [
             "proberef-wiring-fix-14-specs accepted",
@@ -783,7 +951,10 @@ describe("project execution engine", () => {
             "Repeatable staging spec-runner policy accepted: native runner must set AKS_RP_E2E_ALLOW_CLOUD_MUTATION=bootstrap-profile-managed-acr-lifecycle, use the approved devbox host, and record terminal cleanup/diagnosis evidence.",
           ],
           gate_status: "closed",
-          conflict_scope: ["cloud:staging", "spec:spec.bootstrap-profile.managed-acr-lifecycle"],
+          conflict_scope: [
+            "cloud:staging",
+            "spec:spec.bootstrap-profile.managed-acr-lifecycle",
+          ],
           context: {
             parallel_lane: "live-verification",
             specId: "spec.bootstrap-profile.managed-acr-lifecycle",
@@ -796,21 +967,35 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      maxConcurrent: 3,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner loop should not run workers");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        dispatched,
+        runAgent: async () => {
+          throw new Error("planner loop should not run workers");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["bootstrap-live"]);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
+        .readyTaskIds,
+    ).toEqual(["bootstrap-live"]);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["bootstrap-live"].status).toBe("ready");
   });
 
@@ -828,10 +1013,12 @@ describe("project execution engine", () => {
         task text
       )
     `);
-    db.query(`
+    db.query(
+      `
       insert into sessions (sessionId, projectId, status, startedAt, opCount, task)
       values (?, ?, ?, ?, ?, ?)
-    `).run(
+    `,
+    ).run(
       "stale-zero-op",
       "aks-rp-e2e.app",
       "running",
@@ -884,34 +1071,55 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const emitted: Array<Record<string, unknown>> = [];
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      stateDbPath,
-      zeroOpStaleMs: 60_000,
-      maxConcurrent: 1,
-      emitted,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner should not execute worker sessions while active work exists");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        stateDbPath,
+        zeroOpStaleMs: 60_000,
+        maxConcurrent: 1,
+        emitted,
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "planner should not execute worker sessions while active work exists",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("no ready leaves to signal");
-    expect(emitted.some(event => event.type === "session.cancel.requested")).toBe(false);
-    expect(dispatched.find(event => event.type === "task.requeued")).toBeUndefined();
-    expect(dispatched.find(event => event.type === "project.tasks.ready")).toBeUndefined();
+    expect(
+      emitted.some((event) => event.type === "session.cancel.requested"),
+    ).toBe(false);
+    expect(
+      dispatched.find((event) => event.type === "task.requeued"),
+    ).toBeUndefined();
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready"),
+    ).toBeUndefined();
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["stuck-task"].status).toBe("active");
     expect(updated.tasks["stuck-task"].lease_expires_at).toBeTruthy();
     expect(updated.tasks["stuck-task"].claimed_by).toBe("aks-explorer");
     expect(updated.tasks["stuck-task"].session_id).toBe("stale-zero-op");
-    expect(updated.tasks["stuck-task"].session_history).toContain("stale-zero-op");
+    expect(updated.tasks["stuck-task"].session_history).toContain(
+      "stale-zero-op",
+    );
   });
 
   test("planner reconciler keeps fresh zero-op worker sessions inside the default startup window", async () => {
@@ -928,10 +1136,12 @@ describe("project execution engine", () => {
         task text
       )
     `);
-    db.query(`
+    db.query(
+      `
       insert into sessions (sessionId, projectId, status, startedAt, opCount, task)
       values (?, ?, ?, ?, ?, ?)
-    `).run(
+    `,
+    ).run(
       "fresh-zero-op",
       "aks-rp-e2e.app",
       "running",
@@ -998,28 +1208,46 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const emitted: Array<Record<string, unknown>> = [];
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      stateDbPath,
-      maxConcurrent: 2,
-      emitted,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner should not execute worker sessions");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        stateDbPath,
+        maxConcurrent: 2,
+        emitted,
+        dispatched,
+        runAgent: async () => {
+          throw new Error("planner should not execute worker sessions");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).not.toContain("Planner repaired");
-    expect(emitted.some(event => event.type === "session.cancel.requested")).toBe(false);
-    expect(dispatched.some(event => event.type === "task.requeued")).toBe(false);
-    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["ready-task"]);
+    expect(
+      emitted.some((event) => event.type === "session.cancel.requested"),
+    ).toBe(false);
+    expect(dispatched.some((event) => event.type === "task.requeued")).toBe(
+      false,
+    );
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
+        .readyTaskIds,
+    ).toEqual(["ready-task"]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["fresh-task"].status).toBe("active");
     expect(updated.tasks["fresh-task"].session_id).toBe("fresh-zero-op");
     expect(updated.tasks["ready-task"].status).toBe("ready");
@@ -1041,10 +1269,12 @@ describe("project execution engine", () => {
         task text
       )
     `);
-    db.query(`
+    db.query(
+      `
       insert into sessions (sessionId, projectId, status, startedAt, endedAt, opCount, lastActivityAt, task)
       values (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+    `,
+    ).run(
       "active-zero-op",
       "aks-rp-e2e.app",
       "running",
@@ -1113,29 +1343,47 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const emitted: Array<Record<string, unknown>> = [];
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      stateDbPath,
-      zeroOpStaleMs: 60_000,
-      maxConcurrent: 2,
-      emitted,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner should not execute worker sessions");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        stateDbPath,
+        zeroOpStaleMs: 60_000,
+        maxConcurrent: 2,
+        emitted,
+        dispatched,
+        runAgent: async () => {
+          throw new Error("planner should not execute worker sessions");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).not.toContain("Planner repaired");
-    expect(emitted.some(event => event.type === "session.cancel.requested")).toBe(false);
-    expect(dispatched.some(event => event.type === "task.requeued")).toBe(false);
-    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["ready-task"]);
+    expect(
+      emitted.some((event) => event.type === "session.cancel.requested"),
+    ).toBe(false);
+    expect(dispatched.some((event) => event.type === "task.requeued")).toBe(
+      false,
+    );
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
+        .readyTaskIds,
+    ).toEqual(["ready-task"]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["active-task"].status).toBe("active");
     expect(updated.tasks["active-task"].session_id).toBe("active-zero-op");
   });
@@ -1173,34 +1421,62 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Select high-ROI real e2e work and create or activate concrete spec-runner leaves.",
           children: [],
-          inputs: ["specs/index.json", "runner/spec-runner.ts", "runner/suite-runner.ts"],
-          outputs: ["tasks/tree.json", "evidence/archive/smart-execution-frontier-steering.md"],
+          inputs: [
+            "specs/index.json",
+            "runner/spec-runner.ts",
+            "runner/suite-runner.ts",
+          ],
+          outputs: [
+            "tasks/tree.json",
+            "evidence/archive/smart-execution-frontier-steering.md",
+          ],
           acceptance: ["Creates runner leaves without manually running tests."],
-          forbidden: ["Do not directly execute live tests in this steering task."],
+          forbidden: [
+            "Do not directly execute live tests in this steering task.",
+          ],
           gates: [],
           context: {
-            summary: "Push toward real tests and feedback through the existing runner system.",
+            summary:
+              "Push toward real tests and feedback through the existing runner system.",
           },
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      maxConcurrent: 3,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner loop should not run workers");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        dispatched,
+        runAgent: async () => {
+          throw new Error("planner loop should not run workers");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds).toEqual(["smart-execution-frontier-steering"]);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["smart-execution-frontier-steering"].status).toBe("ready");
-    expect(updated.tasks["smart-execution-frontier-steering"].blocker).toBeUndefined();
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
+        .readyTaskIds,
+    ).toEqual(["smart-execution-frontier-steering"]);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["smart-execution-frontier-steering"].status).toBe(
+      "ready",
+    );
+    expect(
+      updated.tasks["smart-execution-frontier-steering"].blocker,
+    ).toBeUndefined();
   });
 
   test("planner control loop refills frontier without creating planning task nodes", async () => {
@@ -1244,48 +1520,80 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const prompts: string[] = [];
-    const result = await executePlanner(context({
-      projectDir,
-      maxConcurrent: 3,
-      runAgent: async (_agent, prompt) => {
-        prompts.push(prompt);
-        const treePath = join(projectDir, "tasks", "tree.json");
-        const current = JSON.parse(readFileSync(treePath, "utf8"));
-        current.tasks.project.children = [...current.tasks.project.children, "task-1", "task-2", "task-3", "task-4", "task-5"];
-        for (let index = 1; index <= 5; index++) {
-          current.tasks[`task-${index}`] = {
-            id: `task-${index}`,
-            parent_id: "project",
-            status: "proposed",
-            priority: "P1",
-            owner: "aks-explorer",
-            goal: `Concrete safe local task ${index}.`,
-            conflict_scope: [`evidence/archive/task-${index}.md`],
-            children: [],
-            inputs: ["tasks/tree.json"],
-            outputs: [`evidence/archive/task-${index}.md`],
-            acceptance: [`Task ${index} writes reviewable evidence.`],
-            forbidden: ["Do not run live mutation."],
-            gates: [],
+    const result = await executePlanner(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        runAgent: async (_agent, prompt) => {
+          prompts.push(prompt);
+          const treePath = join(projectDir, "tasks", "tree.json");
+          const current = JSON.parse(readFileSync(treePath, "utf8"));
+          current.tasks.project.children = [
+            ...current.tasks.project.children,
+            "task-1",
+            "task-2",
+            "task-3",
+            "task-4",
+            "task-5",
+          ];
+          for (let index = 1; index <= 5; index++) {
+            current.tasks[`task-${index}`] = {
+              id: `task-${index}`,
+              parent_id: "project",
+              status: "proposed",
+              priority: "P1",
+              owner: "aks-explorer",
+              goal: `Concrete safe local task ${index}.`,
+              conflict_scope: [`evidence/archive/task-${index}.md`],
+              children: [],
+              inputs: ["tasks/tree.json"],
+              outputs: [`evidence/archive/task-${index}.md`],
+              acceptance: [`Task ${index} writes reviewable evidence.`],
+              forbidden: ["Do not run live mutation."],
+              gates: [],
+            };
+          }
+          writeFileSync(
+            treePath,
+            `${JSON.stringify(current, null, 2)}\n`,
+            "utf8",
+          );
+          return {
+            status: "ok",
+            lastAssistantText:
+              "CLAIM: done\noutputs:\n- tasks/tree.json\n- .state/planner-runs.jsonl",
           };
-        }
-        writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- tasks/tree.json\n- .state/planner-runs.jsonl" };
-      },
-    }));
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(prompts.some(prompt => prompt.includes("Planning Loop Mode"))).toBe(true);
-    expect(prompts.some(prompt => prompt.includes("Do not create planning/control task nodes"))).toBe(true);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      prompts.some((prompt) => prompt.includes("Planning Loop Mode")),
+    ).toBe(true);
+    expect(
+      prompts.some((prompt) =>
+        prompt.includes("Do not create planning/control task nodes"),
+      ),
+    ).toBe(true);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-control"]).toBeUndefined();
     expect(updated.tasks["project-planning-loop"]).toBeUndefined();
     expect(updated.tasks["project-planning-loop-run"]).toBeUndefined();
     expect(updated.tasks["task-1"].status).toBe("ready");
-    const plannerRuns = await readFile(join(projectDir, ".state/planner-runs.jsonl"), "utf8");
+    const plannerRuns = await readFile(
+      join(projectDir, ".state/planner-runs.jsonl"),
+      "utf8",
+    );
     expect(plannerRuns).toContain("project-planner-control-loop");
   });
 
@@ -1329,42 +1637,61 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "settled-active-refill" },
-      },
-      runAgent: async (_agent, prompt) => {
-        expect(prompt).toContain("id: project-planner-control-loop");
-        const treePath = join(projectDir, "tasks", "tree.json");
-        const current = JSON.parse(readFileSync(treePath, "utf8"));
-        current.tasks.project.status = "decomposed";
-        current.tasks.project.children = [...current.tasks.project.children, "next-task"];
-        current.tasks["next-task"] = {
-          id: "next-task",
-          parent_id: "project",
-          status: "proposed",
-          priority: "P1",
-          owner: "aks-explorer",
-          goal: "Create the next concrete AKS frontier.",
-          children: [],
-          inputs: ["tasks/tree.json"],
-          outputs: ["evidence/archive/next-task.md"],
-          acceptance: ["Next frontier exists."],
-          forbidden: ["Do not run live mutation."],
-          gates: [],
-        };
-        writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- tasks/tree.json\n- .state/planner-runs.jsonl" };
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "settled-active-refill" },
+        },
+        runAgent: async (_agent, prompt) => {
+          expect(prompt).toContain("id: project-planner-control-loop");
+          const treePath = join(projectDir, "tasks", "tree.json");
+          const current = JSON.parse(readFileSync(treePath, "utf8"));
+          current.tasks.project.status = "decomposed";
+          current.tasks.project.children = [
+            ...current.tasks.project.children,
+            "next-task",
+          ];
+          current.tasks["next-task"] = {
+            id: "next-task",
+            parent_id: "project",
+            status: "proposed",
+            priority: "P1",
+            owner: "aks-explorer",
+            goal: "Create the next concrete AKS frontier.",
+            children: [],
+            inputs: ["tasks/tree.json"],
+            outputs: ["evidence/archive/next-task.md"],
+            acceptance: ["Next frontier exists."],
+            forbidden: ["Do not run live mutation."],
+            gates: [],
+          };
+          writeFileSync(
+            treePath,
+            `${JSON.stringify(current, null, 2)}\n`,
+            "utf8",
+          );
+          return {
+            status: "ok",
+            lastAssistantText:
+              "CLAIM: done\noutputs:\n- tasks/tree.json\n- .state/planner-runs.jsonl",
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(["ready", "active"]).toContain(updated.tasks["next-task"].status);
     expect(updated.tasks.project.status).toBe("decomposed");
   });
@@ -1448,7 +1775,9 @@ describe("project execution engine", () => {
           goal: "Legacy active planning recovery.",
           children: [],
           inputs: [],
-          outputs: ["evidence/archive/project-planning-loop-run-rework-review.md"],
+          outputs: [
+            "evidence/archive/project-planning-loop-run-rework-review.md",
+          ],
           acceptance: ["Legacy only."],
           forbidden: [],
           gates: [],
@@ -1458,16 +1787,26 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-control"].status).toBe("superseded");
     expect(updated.tasks["project-planning-loop"].status).toBe("superseded");
-    expect(updated.tasks["project-planning-loop-run"].status).toBe("superseded");
-    expect(updated.tasks["project-planning-loop-run-rework-review"].status).toBe("superseded");
+    expect(updated.tasks["project-planning-loop-run"].status).toBe(
+      "superseded",
+    );
+    expect(
+      updated.tasks["project-planning-loop-run-rework-review"].status,
+    ).toBe("superseded");
     expect(updated.active_task_id).not.toMatch(/^project-planning-loop/);
   });
 
@@ -1525,26 +1864,48 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executeTaskWorker(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.tasks.ready",
-        data: { project: "aks-rp-e2e", readyTaskIds: ["task-a", "task-b"], maxConcurrent: 2 },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("ready-task pickup should dispatch execution events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executeTaskWorker(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.tasks.ready",
+          data: {
+            project: "aks-rp-e2e",
+            readyTaskIds: ["task-a", "task-b"],
+            maxConcurrent: 2,
+          },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "ready-task pickup should dispatch execution events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Dispatched 2 task execution event");
-    expect(dispatched.filter(event => event.type === "project.task.execution.requested").map(event => event.payload.taskId).sort()).toEqual(["task-a", "task-b"]);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched
+        .filter((event) => event.type === "project.task.execution.requested")
+        .map((event) => event.payload.taskId)
+        .sort(),
+    ).toEqual(["task-a", "task-b"]);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("active");
     expect(updated.tasks["task-b"].status).toBe("active");
   });
@@ -1623,26 +1984,42 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executeTaskWorker(context({
-      projectDir,
-      maxConcurrent: 3,
-      triggerEvent: {
-        type: "project.tasks.ready",
-        data: { project: "aks-rp-e2e", maxConcurrent: 3 },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("ready-task pickup should dispatch execution events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executeTaskWorker(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        triggerEvent: {
+          type: "project.tasks.ready",
+          data: { project: "aks-rp-e2e", maxConcurrent: 3 },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "ready-task pickup should dispatch execution events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.filter(event => event.type === "project.task.execution.requested").map(event => event.payload.taskId))
-      .toEqual(["review-task", "ready-model-task"]);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched
+        .filter((event) => event.type === "project.task.execution.requested")
+        .map((event) => event.payload.taskId),
+    ).toEqual(["review-task", "ready-model-task"]);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["active-model-task"].status).toBe("active");
     expect(updated.tasks["ready-model-task"].status).toBe("active");
     expect(updated.tasks["review-task"].status).toBe("active");
@@ -1723,27 +2100,43 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executeTaskWorker(context({
-      projectDir,
-      maxConcurrent: 3,
-      triggerEvent: {
-        type: "project.tasks.ready",
-        data: { project: "aks-rp-e2e", maxConcurrent: 3 },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("ready-task pickup should dispatch execution events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executeTaskWorker(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        triggerEvent: {
+          type: "project.tasks.ready",
+          data: { project: "aks-rp-e2e", maxConcurrent: 3 },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "ready-task pickup should dispatch execution events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.filter(event => event.type === "project.task.execution.requested").map(event => event.payload.taskId))
-      .toEqual(["ready-domain-task", "ready-review"]);
+    expect(
+      dispatched
+        .filter((event) => event.type === "project.task.execution.requested")
+        .map((event) => event.payload.taskId),
+    ).toEqual(["ready-domain-task", "ready-review"]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["active-review"].status).toBe("active");
     expect(updated.tasks["ready-domain-task"].status).toBe("active");
     expect(updated.tasks["ready-review"].status).toBe("active");
@@ -1767,7 +2160,11 @@ describe("project execution engine", () => {
           priority: "P1",
           owner: "aks-explorer",
           goal: "Dispatch a targeted ready task.",
-          children: ["active-model-task", "model-rework", "smart-execution-frontier-steering"],
+          children: [
+            "active-model-task",
+            "model-rework",
+            "smart-execution-frontier-steering",
+          ],
           inputs: [],
           outputs: ["tasks/tree.json"],
           acceptance: ["Targeted ready work is dispatched."],
@@ -1816,41 +2213,69 @@ describe("project execution engine", () => {
           goal: "Select high-ROI real e2e work and create concrete runner leaves without manually running tests.",
           children: [],
           inputs: ["specs/index.json"],
-          outputs: ["tasks/tree.json", "evidence/archive/smart-execution-frontier-steering.md"],
-          conflict_scope: ["tasks:execution-frontier-selection", "runner:planning"],
-          acceptance: ["Creates runner leaves without directly executing live tests."],
-          forbidden: ["Do not directly execute live tests in this steering task."],
+          outputs: [
+            "tasks/tree.json",
+            "evidence/archive/smart-execution-frontier-steering.md",
+          ],
+          conflict_scope: [
+            "tasks:execution-frontier-selection",
+            "runner:planning",
+          ],
+          acceptance: [
+            "Creates runner leaves without directly executing live tests.",
+          ],
+          forbidden: [
+            "Do not directly execute live tests in this steering task.",
+          ],
           gates: [],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executeTaskWorker(context({
-      projectDir,
-      maxConcurrent: 5,
-      triggerEvent: {
-        type: "project.tasks.ready",
-        data: {
-          project: "aks-rp-e2e",
-          readyTaskIds: ["smart-execution-frontier-steering"],
-          maxConcurrent: 5,
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executeTaskWorker(
+      context({
+        projectDir,
+        maxConcurrent: 5,
+        triggerEvent: {
+          type: "project.tasks.ready",
+          data: {
+            project: "aks-rp-e2e",
+            readyTaskIds: ["smart-execution-frontier-steering"],
+            maxConcurrent: 5,
+          },
         },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("ready-task pickup should dispatch execution events, not run workers inline");
-      },
-    }));
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "ready-task pickup should dispatch execution events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.filter(event => event.type === "project.task.execution.requested").map(event => event.payload.taskId))
-      .toEqual(["smart-execution-frontier-steering"]);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched
+        .filter((event) => event.type === "project.task.execution.requested")
+        .map((event) => event.payload.taskId),
+    ).toEqual(["smart-execution-frontier-steering"]);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["active-model-task"].status).toBe("active");
     expect(updated.tasks["model-rework"].status).toBe("ready");
-    expect(updated.tasks["smart-execution-frontier-steering"].status).toBe("active");
+    expect(updated.tasks["smart-execution-frontier-steering"].status).toBe(
+      "active",
+    );
   });
 
   test("event coordinator promotes clear backlog leaves before parallel dispatch", async () => {
@@ -1921,29 +2346,52 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Dispatched 2 task execution event");
-    expect(dispatched.filter(event => event.type === "task.promoted").map(event => event.payload.taskId).sort()).toEqual(["task-a", "task-b"]);
-    const taskEvents = dispatched.filter(event => event.type === "project.task.execution.requested");
-    expect(taskEvents.map(event => event.payload.taskId).sort()).toEqual(["task-a", "task-b"]);
+    expect(
+      dispatched
+        .filter((event) => event.type === "task.promoted")
+        .map((event) => event.payload.taskId)
+        .sort(),
+    ).toEqual(["task-a", "task-b"]);
+    const taskEvents = dispatched.filter(
+      (event) => event.type === "project.task.execution.requested",
+    );
+    expect(taskEvents.map((event) => event.payload.taskId).sort()).toEqual([
+      "task-a",
+      "task-b",
+    ]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("active");
     expect(updated.tasks["task-b"].status).toBe("active");
     expect(updated.tasks["unclear-task"].status).toBe("proposed");
@@ -2004,25 +2452,42 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 1,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 1,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("downstream");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("downstream");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks.downstream.gate_status).toBe("satisfied");
     expect(updated.tasks.downstream.status).toBe("active");
   });
@@ -2047,7 +2512,9 @@ describe("project execution engine", () => {
           children: ["upstream-parent", "downstream"],
           inputs: [],
           outputs: ["tasks/tree.json"],
-          acceptance: ["Downstream is dispatched after parent rollup is accepted."],
+          acceptance: [
+            "Downstream is dispatched after parent rollup is accepted.",
+          ],
           forbidden: [],
           gates: [],
         },
@@ -2110,25 +2577,42 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 1,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 1,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("downstream");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("downstream");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["upstream-parent"].status).toBe("accepted");
     expect(updated.tasks.downstream.gate_status).toBe("satisfied");
     expect(updated.tasks.downstream.status).toBe("active");
@@ -2188,28 +2672,51 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.some(event => event.type === "task.blocked")).toBe(false);
-    expect(dispatched.some(event => event.type === "project.task.execution.requested" && event.payload.taskId === "downstream")).toBe(false);
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(dispatched.some((event) => event.type === "task.blocked")).toBe(
+      false,
+    );
+    expect(
+      dispatched.some(
+        (event) =>
+          event.type === "project.task.execution.requested" &&
+          event.payload.taskId === "downstream",
+      ),
+    ).toBe(false);
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks.downstream.status).toBe("proposed");
-    expect(updated.tasks.downstream.blocker).toContain("Waiting for dependency gate");
+    expect(updated.tasks.downstream.blocker).toContain(
+      "Waiting for dependency gate",
+    );
     expect(updated.tasks.downstream.escalation).toBeUndefined();
   });
 
@@ -2252,29 +2759,48 @@ describe("project execution engine", () => {
           outputs: ["specs/index.json"],
           acceptance: ["Index updated."],
           forbidden: [],
-          gates: ["At least 2 of the new spec files must exist before this task runs."],
+          gates: [
+            "At least 2 of the new spec files must exist before this task runs.",
+          ],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 1,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 1,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("index-task");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("index-task");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["index-task"].gate_status).toBe("satisfied");
     expect(updated.tasks["index-task"].status).toBe("active");
   });
@@ -2338,27 +2864,44 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 2,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 2,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Dispatched 1 task execution event");
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("task-b");
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("task-b");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].conflict_scope).toEqual(["replays/a.ts"]);
     expect(updated.tasks["task-b"].conflict_scope).toEqual(["replays/b.ts"]);
     expect(updated.active_task_ids.sort()).toEqual(["task-a", "task-b"]);
@@ -2420,31 +2963,52 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxConcurrent: 3,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch events, not run workers inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch events, not run workers inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Dispatched 2 task execution event");
-    expect(dispatched.find(event => event.type === "task.requeued")?.payload.taskId).toBe("stale-review");
-    expect(dispatched.filter(event => event.type === "project.task.execution.requested").map(event => event.payload.taskId))
-      .toEqual(["stale-review", "task-b"]);
+    expect(
+      dispatched.find((event) => event.type === "task.requeued")?.payload
+        .taskId,
+    ).toBe("stale-review");
+    expect(
+      dispatched
+        .filter((event) => event.type === "project.task.execution.requested")
+        .map((event) => event.payload.taskId),
+    ).toEqual(["stale-review", "task-b"]);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["stale-review"].status).toBe("active");
-    expect(typeof updated.tasks["stale-review"].lease_expires_at).toBe("string");
+    expect(typeof updated.tasks["stale-review"].lease_expires_at).toBe(
+      "string",
+    );
     expect(updated.tasks["task-b"].status).toBe("active");
   });
 
@@ -2505,33 +3069,51 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      triggerEvent: {
-        type: "project.task.execution.requested",
-        data: { project: "aks-rp-e2e", taskId: "task-a" },
-      },
-      dispatched,
-      runAgent: async (_agent, prompt) => {
-        expect(prompt).toContain("id: task-a");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/a.md" };
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        triggerEvent: {
+          type: "project.task.execution.requested",
+          data: { project: "aks-rp-e2e", taskId: "task-a" },
+        },
+        dispatched,
+        runAgent: async (_agent, prompt) => {
+          expect(prompt).toContain("id: task-a");
+          return {
+            status: "ok",
+            lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/a.md",
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("Task worker processed task-a");
-    const completedEvent = dispatched.find(event => event.type === "project.task.completed");
+    const completedEvent = dispatched.find(
+      (event) => event.type === "project.task.completed",
+    );
     expect(completedEvent?.payload.taskId).toBe("task-a");
     expect(completedEvent?.payload.status).toBe("accepted");
-    const continuationEvent = dispatched.find(event => event.type === "project.execution.requested");
+    const continuationEvent = dispatched.find(
+      (event) => event.type === "project.execution.requested",
+    );
     expect(continuationEvent?.payload.reason).toBe("task-completed");
     expect(continuationEvent?.payload.completedTaskId).toBe("task-a");
     expect(continuationEvent?.payload.status).toBe("accepted");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-a"].claimed_by).toBeUndefined();
     expect(updated.tasks["task-b"].status).toBe("ready");
@@ -2596,49 +3178,66 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     let injectedConcurrentCompletion = false;
-    const result = await execute(context({
-      projectDir,
-      triggerEvent: {
-        type: "project.task.execution.requested",
-        data: { project: "aks-rp-e2e", taskId: "task-a" },
-      },
-      runAgent: async () => ({ status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/a.md" }),
-      summarize: output => {
-        if (!injectedConcurrentCompletion) {
-          const treePath = join(projectDir, "tasks", "tree.json");
-          const current = JSON.parse(readFileSync(treePath, "utf8"));
-          current.tasks["task-b"].status = "accepted";
-          delete current.tasks["task-b"].claimed_by;
-          delete current.tasks["task-b"].lease_expires_at;
-          current.tasks["task-b"].attempts = [{
-            id: "attempt-concurrent",
-            ts: new Date().toISOString(),
-            agent: "aks-explorer",
-            claim: "done",
-            summary: "CLAIM: done\noutputs:\n- evidence/archive/b.md",
-            outputs: ["evidence/archive/b.md"],
-            checks: [],
-            open_risks: [],
-          }];
-          current.tasks["task-b"].verification = {
-            ts: new Date().toISOString(),
-            verifier: "aks-explorer",
-            verdict: "accepted",
-            reason: "Concurrent worker accepted task-b.",
-            criteria: [{ item: "B exists.", result: "pass" }],
-          };
-          writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-          injectedConcurrentCompletion = true;
-        }
-        return output.lastAssistantText ?? "";
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        triggerEvent: {
+          type: "project.task.execution.requested",
+          data: { project: "aks-rp-e2e", taskId: "task-a" },
+        },
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/a.md",
+        }),
+        summarize: (output) => {
+          if (!injectedConcurrentCompletion) {
+            const treePath = join(projectDir, "tasks", "tree.json");
+            const current = JSON.parse(readFileSync(treePath, "utf8"));
+            current.tasks["task-b"].status = "accepted";
+            delete current.tasks["task-b"].claimed_by;
+            delete current.tasks["task-b"].lease_expires_at;
+            current.tasks["task-b"].attempts = [
+              {
+                id: "attempt-concurrent",
+                ts: new Date().toISOString(),
+                agent: "aks-explorer",
+                claim: "done",
+                summary: "CLAIM: done\noutputs:\n- evidence/archive/b.md",
+                outputs: ["evidence/archive/b.md"],
+                checks: [],
+                open_risks: [],
+              },
+            ];
+            current.tasks["task-b"].verification = {
+              ts: new Date().toISOString(),
+              verifier: "aks-explorer",
+              verdict: "accepted",
+              reason: "Concurrent worker accepted task-b.",
+              criteria: [{ item: "B exists.", result: "pass" }],
+            };
+            writeFileSync(
+              treePath,
+              `${JSON.stringify(current, null, 2)}\n`,
+              "utf8",
+            );
+            injectedConcurrentCompletion = true;
+          }
+          return output.lastAssistantText ?? "";
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-b"].status).toBe("accepted");
     expect(updated.active_task_ids ?? []).not.toContain("task-a");
@@ -2685,28 +3284,53 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const prompts: string[] = [];
-    const result = await execute(context({
-      projectDir,
-      runAgent: async (_agent, prompt) => {
-        prompts.push(prompt);
-        const outputSection = prompt.split("## Required Outputs\n")[1] ?? prompt;
-        const output = outputSection.match(/evidence\/(?:outputs|archive)\/[^\s]+\.md/)?.[0] ?? "evidence/archive/unknown.md";
-        return { status: "ok", lastAssistantText: `CLAIM: done\noutputs:\n- ${output}` };
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        runAgent: async (_agent, prompt) => {
+          prompts.push(prompt);
+          const outputSection =
+            prompt.split("## Required Outputs\n")[1] ?? prompt;
+          const output =
+            outputSection.match(
+              /evidence\/(?:outputs|archive)\/[^\s]+\.md/,
+            )?.[0] ?? "evidence/archive/unknown.md";
+          return {
+            status: "ok",
+            lastAssistantText: `CLAIM: done\noutputs:\n- ${output}`,
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(prompts.some(prompt => prompt.includes("## Task\nid: gated-live-task\n"))).toBe(false);
-    expect(prompts.some(prompt => prompt.includes("Blocked Review Mode"))).toBe(true);
+    expect(
+      prompts.some((prompt) =>
+        prompt.includes("## Task\nid: gated-live-task\n"),
+      ),
+    ).toBe(false);
+    expect(
+      prompts.some((prompt) => prompt.includes("Blocked Review Mode")),
+    ).toBe(true);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.active_task_id).not.toBe("gated-live-task");
     expect(updated.tasks["gated-live-task"].status).toBe("blocked");
-    expect(updated.tasks["gated-live-task"].blocker).toContain("Azure CLI ARM token gate succeeds");
-    expect(updated.tasks["gated-live-task-blocker-review"].status).toBe("accepted");
+    expect(updated.tasks["gated-live-task"].blocker).toContain(
+      "Azure CLI ARM token gate succeeds",
+    );
+    expect(updated.tasks["gated-live-task-blocker-review"].status).toBe(
+      "accepted",
+    );
   });
 
   test("recovers stale empty closed-gate blockers", async () => {
@@ -2755,7 +3379,8 @@ describe("project execution engine", () => {
             severity: "P1",
             reason: "Closed gate: ",
             requested_action: "Resolve empty gate.",
-            resume_condition: "Blocking gate is satisfied or explicitly rejected: ",
+            resume_condition:
+              "Blocking gate is satisfied or explicitly rejected: ",
             dedup_key: "test",
             created_at: "2026-06-01T00:00:00.000Z",
             updated_at: "2026-06-01T00:00:00.000Z",
@@ -2763,25 +3388,42 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch recovered ready work, not run it inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch recovered ready work, not run it inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("feedback-rollup");
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("feedback-rollup");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["feedback-rollup"].status).toBe("active");
     expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
     expect(updated.tasks["feedback-rollup"].escalation).toBeUndefined();
@@ -2819,35 +3461,63 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "After one or more staging REST runs complete, classify their evidence and update the capability model or write a model-update proposal.",
           children: [],
-          inputs: ["runs/executions/", "evidence/archive/", "model/knowledge-map/model.json"],
-          outputs: ["evidence/archive/feedback-rollup.md", "model/knowledge-map/model.json"],
-          acceptance: ["Every completed run has a diagnosis and feature/spec status impact."],
+          inputs: [
+            "runs/executions/",
+            "evidence/archive/",
+            "model/knowledge-map/model.json",
+          ],
+          outputs: [
+            "evidence/archive/feedback-rollup.md",
+            "model/knowledge-map/model.json",
+          ],
+          acceptance: [
+            "Every completed run has a diagnosis and feature/spec status impact.",
+          ],
           forbidden: ["Do not update model status from dry-run only."],
           gates: [],
           conflict_scope: ["model-update"],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch evidence feedback work, not run it inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch evidence feedback work, not run it inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.some(event => event.type === "task.blocked")).toBe(false);
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId).toBe("feedback-rollup");
+    expect(dispatched.some((event) => event.type === "task.blocked")).toBe(
+      false,
+    );
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("feedback-rollup");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["feedback-rollup"].status).toBe("active");
     expect(updated.tasks["feedback-rollup"].blocker).toBeUndefined();
   });
@@ -2884,8 +3554,14 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Classify all 11 staging REST spec-runner runs from iteration 218 (all returned not_ready/implementation-missing) and the false-acceptance pattern. Document: (1) why the spec-runner accepted not_ready runs, (2) the exact runner code path that allowed it, (3) which specs still need replay implementation, (4) a concrete verifier guard that prevents accepting not_ready results. Write evidence artifact.",
           children: [],
-          inputs: ["runs/executions/", "runner/spec-runner.ts", "specs/index.json"],
-          outputs: ["evidence/archive/iteration219-staging-rest-feedback-and-false-acceptance.md"],
+          inputs: [
+            "runs/executions/",
+            "runner/spec-runner.ts",
+            "specs/index.json",
+          ],
+          outputs: [
+            "evidence/archive/iteration219-staging-rest-feedback-and-false-acceptance.md",
+          ],
           acceptance: [
             "All not_ready runs are listed with run ID, spec ID, and diagnosis.",
             "The exact code path or workflow rule that allowed false acceptance is identified.",
@@ -2895,32 +3571,54 @@ describe("project execution engine", () => {
             "Do not modify runner/spec-runner.ts in this diagnostic task.",
           ],
           gates: [],
-          conflict_scope: ["evidence/archive/iteration219-staging-rest-feedback-and-false-acceptance.md"],
+          conflict_scope: [
+            "evidence/archive/iteration219-staging-rest-feedback-and-false-acceptance.md",
+          ],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      triggerEvent: {
-        type: "project.execution.requested",
-        data: { project: "aks-rp-e2e", reason: "test" },
-      },
-      dispatched,
-      runAgent: async () => {
-        throw new Error("coordinator should dispatch feedback diagnostics, not run it inline");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        triggerEvent: {
+          type: "project.execution.requested",
+          data: { project: "aks-rp-e2e", reason: "test" },
+        },
+        dispatched,
+        runAgent: async () => {
+          throw new Error(
+            "coordinator should dispatch feedback diagnostics, not run it inline",
+          );
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(dispatched.find(event => event.type === "project.task.execution.requested")?.payload.taskId)
-      .toBe("staging-execution-feedback-rollup-v2");
+    expect(
+      dispatched.find(
+        (event) => event.type === "project.task.execution.requested",
+      )?.payload.taskId,
+    ).toBe("staging-execution-feedback-rollup-v2");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["staging-execution-feedback-rollup-v2"].status).toBe("active");
-    expect(updated.tasks["staging-execution-feedback-rollup-v2"].blocker).toBeUndefined();
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["staging-execution-feedback-rollup-v2"].status).toBe(
+      "active",
+    );
+    expect(
+      updated.tasks["staging-execution-feedback-rollup-v2"].blocker,
+    ).toBeUndefined();
   });
 
   test("rejects incomplete feedback-rollup blocked claims even when the goal mentions staging REST", async () => {
@@ -2955,8 +3653,15 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "After one or more staging REST runs complete, classify their evidence and update the capability model or write a model-update proposal.",
           children: [],
-          inputs: ["runs/executions/", "evidence/archive/", "model/knowledge-map/model.json"],
-          outputs: ["evidence/archive/feedback-rollup.md", "model/knowledge-map/model.json"],
+          inputs: [
+            "runs/executions/",
+            "evidence/archive/",
+            "model/knowledge-map/model.json",
+          ],
+          outputs: [
+            "evidence/archive/feedback-rollup.md",
+            "model/knowledge-map/model.json",
+          ],
           acceptance: [
             "Every completed run has a diagnosis and feature/spec status impact.",
             "Next execution wave recommendation is explicit.",
@@ -2967,27 +3672,37 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "ok",
-        lastAssistantText: [
-          "CLAIM: blocked",
-          "outputs:",
-          "- evidence/archive/feedback-rollup.md",
-          "- model/knowledge-map/model.json",
-          "Let me read the actual execution results from each of the latest runs.",
-        ].join("\n"),
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText: [
+            "CLAIM: blocked",
+            "outputs:",
+            "- evidence/archive/feedback-rollup.md",
+            "- model/knowledge-map/model.json",
+            "Let me read the actual execution results from each of the latest runs.",
+          ].join("\n"),
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["feedback-rollup"].verification.verdict).toBe("rejected");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["feedback-rollup"].verification.verdict).toBe(
+      "rejected",
+    );
     expect(updated.tasks["feedback-rollup"].status).toBe("decomposed");
     expect(updated.tasks["feedback-rollup-rework-review"].status).toBe("ready");
   });
@@ -3033,17 +3748,25 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.active_task_id).toBe("blocked-frontier-review");
     expect(updated.tasks["blocked-frontier-review"].status).toBe("ready");
     expect(updated.tasks["blocked-branch"].status).toBe("decomposed");
     expect(updated.tasks["blocked-branch-blocker-review"].status).toBe("ready");
-    expect(updated.tasks["blocked-branch-blocker-review"].forbidden.join("\n")).toContain("Do not run cloud mutation");
+    expect(
+      updated.tasks["blocked-branch-blocker-review"].forbidden.join("\n"),
+    ).toContain("Do not run cloud mutation");
   });
 
   test("converts rejected leaves into rework review instead of stopping", async () => {
@@ -3086,21 +3809,38 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      dispatched,
-      runAgent: async () => ({ status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/wrong.md" }),
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        dispatched,
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText:
+            "CLAIM: done\noutputs:\n- evidence/archive/wrong.md",
+        }),
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("continuation requested");
-    expect(dispatched.some(event => event.type === "project.execution.requested")).toBe(true);
+    expect(
+      dispatched.some((event) => event.type === "project.execution.requested"),
+    ).toBe(true);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("decomposed");
     expect(updated.tasks["task-a"].verification.verdict).toBe("rejected");
     expect(updated.tasks["task-a-rework-review"].status).toBe("ready");
@@ -3163,19 +3903,32 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({ status: "interrupted", lastAssistantText: "**Status:** interrupted (5m10s)" }),
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "interrupted",
+          lastAssistantText: "**Status:** interrupted (5m10s)",
+        }),
+      }),
+    );
 
     expect(result.status).toBe("done");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a-rework-review"].status).toBe("ready");
-    expect(updated.tasks["task-a-rework-review"].verification.verdict).toBe("rejected");
+    expect(updated.tasks["task-a-rework-review"].verification.verdict).toBe(
+      "rejected",
+    );
     expect(updated.tasks["task-a-rework-review"].attempts).toHaveLength(1);
     expect(updated.tasks["task-a-rework-review-rework-review"]).toBeUndefined();
     expect(updated.active_task_id).toBe("task-a-rework-review");
@@ -3233,30 +3986,40 @@ describe("project execution engine", () => {
           acceptance: ["Review exists."],
           forbidden: [],
           gates: [],
-          attempts: [{
-            id: "attempt-prior",
-            ts: new Date().toISOString(),
-            agent: "aks-explorer",
-            claim: "blocked",
-            summary: "**Status:** error",
-            outputs: [],
-            checks: [],
-            open_risks: ["Worker session errored."],
-          }],
+          attempts: [
+            {
+              id: "attempt-prior",
+              ts: new Date().toISOString(),
+              agent: "aks-explorer",
+              claim: "blocked",
+              summary: "**Status:** error",
+              outputs: [],
+              checks: [],
+              open_risks: ["Worker session errored."],
+            },
+          ],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({ status: "error", lastAssistantText: "" }),
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({ status: "error", lastAssistantText: "" }),
+      }),
+    );
 
     expect(result.status).toBe("done");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a-rework-review"].status).toBe("superseded");
     expect(updated.tasks["task-a-rework-review"].attempts).toHaveLength(2);
     expect(updated.tasks["task-a-rework-review-rework-review"]).toBeUndefined();
@@ -3297,33 +4060,45 @@ describe("project execution engine", () => {
           children: [],
           inputs: ["model/knowledge-map/model.json"],
           outputs: ["evidence/archive/validation.md"],
-          acceptance: ["bun model/tools/src/validate.ts model/knowledge-map/model.json exits 0."],
+          acceptance: [
+            "bun model/tools/src/validate.ts model/knowledge-map/model.json exits 0.",
+          ],
           forbidden: [],
           gates: [],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "ok",
-        lastAssistantText: [
-          "CLAIM: done",
-          "outputs:",
-          "- evidence/archive/validation.md",
-          "Commands run:",
-          "- ❌ `bun model/tools/src/validate.ts model/knowledge-map/model.json`",
-        ].join("\n"),
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText: [
+            "CLAIM: done",
+            "outputs:",
+            "- evidence/archive/validation.md",
+            "Commands run:",
+            "- ❌ `bun model/tools/src/validate.ts model/knowledge-map/model.json`",
+          ].join("\n"),
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["validation-task"].verification.verdict).toBe("rejected");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["validation-task"].verification.verdict).toBe(
+      "rejected",
+    );
     expect(updated.tasks["validation-task"].status).toBe("decomposed");
     expect(updated.tasks["validation-task-rework-review"].status).toBe("ready");
   });
@@ -3333,22 +4108,54 @@ describe("project execution engine", () => {
     const runId = "run_not_ready_missing_replay";
     const runDir = join(projectDir, "runs", "executions", runId);
     await mkdir(runDir, { recursive: true });
-    await writeFile(join(runDir, "status.json"), JSON.stringify({
-      status: "not_ready",
-      phase: "implementation-missing",
-    }, null, 2), "utf8");
-    await writeFile(join(runDir, "result.json"), JSON.stringify({
-      status: "not_ready",
-      phase: "implementation-missing",
-      summary: "Spec does not declare an implementation/replay.",
-      evidenceRefs: [],
-    }, null, 2), "utf8");
-    await writeFile(join(runDir, "diagnosis.json"), JSON.stringify({
-      diagnosis: "spec_bug",
-      summary: "Missing probeRef/replay script.",
-    }, null, 2), "utf8");
-    await writeFile(join(runDir, "summary.md"), "# Not ready\n\nMissing replay implementation.\n", "utf8");
-    await writeFile(join(runDir, "steps.jsonl"), `${JSON.stringify({ step: "load-spec", status: "not_ready" })}\n`, "utf8");
+    await writeFile(
+      join(runDir, "status.json"),
+      JSON.stringify(
+        {
+          status: "not_ready",
+          phase: "implementation-missing",
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(runDir, "result.json"),
+      JSON.stringify(
+        {
+          status: "not_ready",
+          phase: "implementation-missing",
+          summary: "Spec does not declare an implementation/replay.",
+          evidenceRefs: [],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(runDir, "diagnosis.json"),
+      JSON.stringify(
+        {
+          diagnosis: "spec_bug",
+          summary: "Missing probeRef/replay script.",
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+    await writeFile(
+      join(runDir, "summary.md"),
+      "# Not ready\n\nMissing replay implementation.\n",
+      "utf8",
+    );
+    await writeFile(
+      join(runDir, "steps.jsonl"),
+      `${JSON.stringify({ step: "load-spec", status: "not_ready" })}\n`,
+      "utf8",
+    );
 
     const tree = {
       version: 1,
@@ -3401,28 +4208,42 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => {
-        throw new Error("native spec runner should use existing artifacts");
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => {
+          throw new Error("native spec runner should use existing artifacts");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["replay-task"].verification.verdict).toBe("rejected");
-    expect(updated.tasks["replay-task"].verification.reason).toContain("not_ready");
+    expect(updated.tasks["replay-task"].verification.reason).toContain(
+      "not_ready",
+    );
     expect(updated.tasks["replay-task"].status).toBe("decomposed");
     expect(updated.tasks["replay-task-rework-review"].status).toBe("ready");
   });
 
   test("rejects worker errors even when expected output files already exist", async () => {
     const projectDir = await makeProject("active");
-    await writeFile(join(projectDir, "evidence", "outputs", "existing.md"), "old output\n", "utf8");
+    await writeFile(
+      join(projectDir, "evidence", "outputs", "existing.md"),
+      "old output\n",
+      "utf8",
+    );
     const tree = {
       version: 1,
       project: "aks-rp-e2e",
@@ -3461,19 +4282,28 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "error",
-        lastAssistantText: "**Status:** error\noutputs:\n- evidence/archive/existing.md",
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "error",
+          lastAssistantText:
+            "**Status:** error\noutputs:\n- evidence/archive/existing.md",
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["errored-task"].verification.verdict).toBe("rejected");
     expect(updated.tasks["errored-task"].status).toBe("decomposed");
     expect(updated.tasks["errored-task-rework-review"].status).toBe("ready");
@@ -3481,7 +4311,11 @@ describe("project execution engine", () => {
 
   test("rejects interrupted workers even when expected output files already exist", async () => {
     const projectDir = await makeProject("active");
-    await writeFile(join(projectDir, "evidence", "outputs", "existing.md"), "old output\n", "utf8");
+    await writeFile(
+      join(projectDir, "evidence", "outputs", "existing.md"),
+      "old output\n",
+      "utf8",
+    );
     const tree = {
       version: 1,
       project: "aks-rp-e2e",
@@ -3520,22 +4354,35 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "interrupted",
-        lastAssistantText: "**Status:** interrupted\noutputs:\n- evidence/archive/existing.md",
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "interrupted",
+          lastAssistantText:
+            "**Status:** interrupted\noutputs:\n- evidence/archive/existing.md",
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["interrupted-output-task"].verification.verdict).toBe("rejected");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["interrupted-output-task"].verification.verdict).toBe(
+      "rejected",
+    );
     expect(updated.tasks["interrupted-output-task"].status).toBe("decomposed");
-    expect(updated.tasks["interrupted-output-task-rework-review"].status).toBe("ready");
+    expect(updated.tasks["interrupted-output-task-rework-review"].status).toBe(
+      "ready",
+    );
   });
 
   test("rejects no-work claims from frontier reviews", async () => {
@@ -3573,32 +4420,46 @@ describe("project execution engine", () => {
           children: [],
           inputs: ["tasks/tree.json"],
           outputs: ["evidence/archive/project-frontier-replan.md"],
-          acceptance: ["Creates concrete next work or a concrete input question."],
+          acceptance: [
+            "Creates concrete next work or a concrete input question.",
+          ],
           forbidden: [],
           gates: [],
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "ok",
-        lastAssistantText: [
-          "CLAIM: done",
-          "No actionable local work remains. Project transitions to waiting.",
-          "outputs:",
-          "- evidence/archive/project-frontier-replan.md",
-        ].join("\n"),
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText: [
+            "CLAIM: done",
+            "No actionable local work remains. Project transitions to waiting.",
+            "outputs:",
+            "- evidence/archive/project-frontier-replan.md",
+          ].join("\n"),
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe("rejected");
-    expect(updated.tasks["project-frontier-replan-rework-review"].status).toBe("ready");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe(
+      "rejected",
+    );
+    expect(updated.tasks["project-frontier-replan-rework-review"].status).toBe(
+      "ready",
+    );
   });
 
   test("does not auto-review concrete human input questions as ordinary no-work", async () => {
@@ -3621,7 +4482,9 @@ describe("project execution engine", () => {
           children: ["credential-question"],
           inputs: [],
           outputs: ["tasks/tree.json"],
-          acceptance: ["Question is answered or project is intentionally deferred."],
+          acceptance: [
+            "Question is answered or project is intentionally deferred.",
+          ],
           forbidden: [],
           gates: [],
         },
@@ -3633,7 +4496,8 @@ describe("project execution engine", () => {
           priority: "P0",
           owner: "human",
           goal: "Decide where Azure CLI credentials should be provisioned.",
-          blocker: "Human must provide a credentialed execution host or explicitly defer live execution.",
+          blocker:
+            "Human must provide a credentialed execution host or explicitly defer live execution.",
           children: [],
           inputs: ["project.json"],
           outputs: [],
@@ -3643,13 +4507,19 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 1 }));
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("human/input question");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["credential-question"].status).toBe("blocked");
     expect(updated.tasks["credential-question-blocker-review"]).toBeUndefined();
     expect(updated.tasks["project-frontier-replan"]).toBeUndefined();
@@ -3709,12 +4579,18 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["parent-task"].status).toBe("decomposed");
     expect(updated.active_task_id).toBe("child-task");
   });
@@ -3773,22 +4649,34 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const prompts: string[] = [];
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async (_agent, prompt) => {
-        prompts.push(prompt);
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/interrupted.md" };
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async (_agent, prompt) => {
+          prompts.push(prompt);
+          return {
+            status: "ok",
+            lastAssistantText:
+              "CLAIM: done\noutputs:\n- evidence/archive/interrupted.md",
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(prompts[0]).toContain("id: interrupted-task");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["interrupted-task"].status).toBe("accepted");
     expect(updated.tasks["ready-task"].status).toBe("ready");
     expect(updated.active_task_id).toBe("ready-task");
@@ -3814,7 +4702,9 @@ describe("project execution engine", () => {
           children: ["blocked-work", "blocked-frontier-review"],
           inputs: [],
           outputs: ["tasks/tree.json"],
-          acceptance: ["Project goal is achieved or blocked with exact unblock triggers."],
+          acceptance: [
+            "Project goal is achieved or blocked with exact unblock triggers.",
+          ],
           forbidden: [],
           gates: [],
           blocker: "Required child task is blocked.",
@@ -3866,49 +4756,80 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const prompts: string[] = [];
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async (_agent, prompt) => {
-        prompts.push(prompt);
-        const treePath = join(projectDir, "tasks", "tree.json");
-        const current = JSON.parse(readFileSync(treePath, "utf8"));
-        current.tasks.project.children = [...current.tasks.project.children, "task-1", "task-2", "task-3", "task-4", "task-5"];
-        for (let index = 1; index <= 5; index++) {
-          current.tasks[`task-${index}`] = {
-            id: `task-${index}`,
-            parent_id: "project",
-            status: "proposed",
-            priority: "P1",
-            owner: "aks-explorer",
-            goal: `Concrete safe local task ${index}.`,
-            conflict_scope: [`evidence/archive/task-${index}.md`],
-            children: [],
-            inputs: ["tasks/tree.json"],
-            outputs: [`evidence/archive/task-${index}.md`],
-            acceptance: [`Task ${index} writes reviewable evidence.`],
-            forbidden: ["Do not run live mutation."],
-            gates: [],
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async (_agent, prompt) => {
+          prompts.push(prompt);
+          const treePath = join(projectDir, "tasks", "tree.json");
+          const current = JSON.parse(readFileSync(treePath, "utf8"));
+          current.tasks.project.children = [
+            ...current.tasks.project.children,
+            "task-1",
+            "task-2",
+            "task-3",
+            "task-4",
+            "task-5",
+          ];
+          for (let index = 1; index <= 5; index++) {
+            current.tasks[`task-${index}`] = {
+              id: `task-${index}`,
+              parent_id: "project",
+              status: "proposed",
+              priority: "P1",
+              owner: "aks-explorer",
+              goal: `Concrete safe local task ${index}.`,
+              conflict_scope: [`evidence/archive/task-${index}.md`],
+              children: [],
+              inputs: ["tasks/tree.json"],
+              outputs: [`evidence/archive/task-${index}.md`],
+              acceptance: [`Task ${index} writes reviewable evidence.`],
+              forbidden: ["Do not run live mutation."],
+              gates: [],
+            };
+          }
+          writeFileSync(
+            treePath,
+            `${JSON.stringify(current, null, 2)}\n`,
+            "utf8",
+          );
+          return {
+            status: "ok",
+            lastAssistantText:
+              "CLAIM: done\noutputs:\n- evidence/archive/project-planning-loop.md\n- .state/planner-runs.jsonl\n- tasks/tree.json",
           };
-        }
-        writeFileSync(treePath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
-        return { status: "ok", lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/project-planning-loop.md\n- .state/planner-runs.jsonl\n- tasks/tree.json" };
-      },
-    }));
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).not.toContain("No open tasks remain");
-    expect(prompts.some(prompt => prompt.includes("Planning Loop Mode"))).toBe(true);
-    expect(prompts.some(prompt => prompt.includes("batch of 5-10 proposed ordinary leaf tasks"))).toBe(true);
+    expect(
+      prompts.some((prompt) => prompt.includes("Planning Loop Mode")),
+    ).toBe(true);
+    expect(
+      prompts.some((prompt) =>
+        prompt.includes("batch of 5-10 proposed ordinary leaf tasks"),
+      ),
+    ).toBe(true);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].kind).toBe("loop_task");
-    expect(updated.tasks["project-planning-loop-run"].verification.verdict).toBe("accepted");
+    expect(
+      updated.tasks["project-planning-loop-run"].verification.verdict,
+    ).toBe("accepted");
     expect(updated.tasks["project-planning-history"]).toBeDefined();
     expect(updated.tasks["task-1"].status).toBe("proposed");
     expect(["blocked", "decomposed"]).toContain(updated.tasks.project.status);
@@ -3955,22 +4876,37 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "ok",
-        lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/project-frontier-replan.md",
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText:
+            "CLAIM: done\noutputs:\n- evidence/archive/project-frontier-replan.md",
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe("rejected");
-    expect(updated.tasks["project-frontier-replan"].blocker).toContain("created 0 new ordinary executable leaf");
-    expect(updated.tasks["project-frontier-replan-rework-review"].status).toBe("ready");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe(
+      "rejected",
+    );
+    expect(updated.tasks["project-frontier-replan"].blocker).toContain(
+      "created 0 new ordinary executable leaf",
+    );
+    expect(updated.tasks["project-frontier-replan-rework-review"].status).toBe(
+      "ready",
+    );
   });
 
   test.skip("legacy: creates another frontier replan after an accepted replan's child work is exhausted", async () => {
@@ -3990,10 +4926,17 @@ describe("project execution engine", () => {
           priority: "P1",
           owner: "aks-explorer",
           goal: "Keep finding safe local work until genuinely blocked.",
-          children: ["blocked-work", "blocked-frontier-review", "project-frontier-replan", "local-task"],
+          children: [
+            "blocked-work",
+            "blocked-frontier-review",
+            "project-frontier-replan",
+            "local-task",
+          ],
           inputs: [],
           outputs: ["tasks/tree.json"],
-          acceptance: ["Project goal is achieved or blocked with exact unblock triggers."],
+          acceptance: [
+            "Project goal is achieved or blocked with exact unblock triggers.",
+          ],
           forbidden: [],
           gates: [],
           blocker: "Required child task is blocked.",
@@ -4027,7 +4970,13 @@ describe("project execution engine", () => {
           acceptance: ["Reviewed."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:01:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:01:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "blocked-frontier-review": {
           id: "blocked-frontier-review",
@@ -4043,7 +4992,13 @@ describe("project execution engine", () => {
           acceptance: ["Reviewed."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:02:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:02:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "project-frontier-replan": {
           id: "project-frontier-replan",
@@ -4059,7 +5014,13 @@ describe("project execution engine", () => {
           acceptance: ["Reviewed."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:00:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:00:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "local-task": {
           id: "local-task",
@@ -4074,31 +5035,59 @@ describe("project execution engine", () => {
           acceptance: ["Done."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:03:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:03:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const prompts: string[] = [];
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async (_agent, prompt) => {
-        prompts.push(prompt);
-        return { status: "ok", lastAssistantText: "CLAIM: blocked\noutputs:\n- evidence/archive/project-planning-loop.md" };
-      },
-    }));
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async (_agent, prompt) => {
+          prompts.push(prompt);
+          return {
+            status: "ok",
+            lastAssistantText:
+              "CLAIM: blocked\noutputs:\n- evidence/archive/project-planning-loop.md",
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    expect(prompts.some(prompt => prompt.includes("id: project-planning-loop"))).toBe(true);
+    expect(
+      prompts.some((prompt) => prompt.includes("id: project-planning-loop")),
+    ).toBe(true);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
-    expect(updated.tasks["project-planning-loop-run"].verification.verdict).toBe("rejected");
-    expect(updated.tasks["project-planning-loop-run"].verification.reason).toContain("Blocked claims must name a concrete external/input/safety wait");
-    expect(updated.tasks["project-planning-loop-run-rework-review"].status).toBe("ready");
+    expect(
+      updated.tasks["project-planning-loop-run"].verification.verdict,
+    ).toBe("rejected");
+    expect(
+      updated.tasks["project-planning-loop-run"].verification.reason,
+    ).toContain(
+      "Blocked claims must name a concrete external/input/safety wait",
+    );
+    expect(
+      updated.tasks["project-planning-loop-run-rework-review"].status,
+    ).toBe("ready");
     expect(updated.tasks[updated.active_task_id].status).toBe("ready");
     expect(updated.active_task_id).not.toBe("project-planning-loop");
   });
@@ -4120,10 +5109,16 @@ describe("project execution engine", () => {
           priority: "P1",
           owner: "aks-explorer",
           goal: "Keep finding safe local work until genuinely blocked.",
-          children: ["blocked-work", "blocked-frontier-review", "project-frontier-replan"],
+          children: [
+            "blocked-work",
+            "blocked-frontier-review",
+            "project-frontier-replan",
+          ],
           inputs: [],
           outputs: ["tasks/tree.json"],
-          acceptance: ["Project goal is achieved or blocked with exact unblock triggers."],
+          acceptance: [
+            "Project goal is achieved or blocked with exact unblock triggers.",
+          ],
           forbidden: [],
           gates: [],
           blocker: "Required child task is blocked.",
@@ -4142,7 +5137,13 @@ describe("project execution engine", () => {
           forbidden: ["Do not run live mutation."],
           gates: ["External gate."],
           blocker: "External gate.",
-          verification: { ts: "2026-06-01T00:00:00.000Z", verifier: "test", verdict: "accepted", reason: "blocked", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:00:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "blocked",
+            criteria: [],
+          },
         },
         "blocked-work-blocker-review": {
           id: "blocked-work-blocker-review",
@@ -4158,7 +5159,13 @@ describe("project execution engine", () => {
           acceptance: ["Reviewed."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:01:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:01:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "blocked-frontier-review": {
           id: "blocked-frontier-review",
@@ -4174,7 +5181,13 @@ describe("project execution engine", () => {
           acceptance: ["Reviewed."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:01:30.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:01:30.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "project-frontier-replan": {
           id: "project-frontier-replan",
@@ -4190,7 +5203,13 @@ describe("project execution engine", () => {
           acceptance: ["Reviewed."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:03:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:03:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "local-task": {
           id: "local-task",
@@ -4205,16 +5224,28 @@ describe("project execution engine", () => {
           acceptance: ["Done."],
           forbidden: [],
           gates: [],
-          verification: { ts: "2026-06-01T00:02:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:02:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
@@ -4292,25 +5323,38 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await executePlanner(context({
-      projectDir,
-      maxConcurrent: 3,
-      dispatched,
-      runAgent: async () => {
-        throw new Error("planner should not execute worker sessions");
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await executePlanner(
+      context({
+        projectDir,
+        maxConcurrent: 3,
+        dispatched,
+        runAgent: async () => {
+          throw new Error("planner should not execute worker sessions");
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
-    expect(dispatched.find(event => event.type === "project.tasks.ready")?.payload.readyTaskIds)
-      .toContain("project-planning-loop-run");
+    expect(
+      dispatched.find((event) => event.type === "project.tasks.ready")?.payload
+        .readyTaskIds,
+    ).toContain("project-planning-loop-run");
   });
 
   test("does not turn accepted work into blocked when its review child is accepted", async () => {
@@ -4351,7 +5395,13 @@ describe("project execution engine", () => {
           forbidden: [],
           gates: [],
           blocker: "Blocked task reviewed by accepted-work-rework-review.",
-          verification: { ts: "2026-06-01T00:00:00.000Z", verifier: "test", verdict: "accepted", reason: "accepted", criteria: [] },
+          verification: {
+            ts: "2026-06-01T00:00:00.000Z",
+            verifier: "test",
+            verdict: "accepted",
+            reason: "accepted",
+            criteria: [],
+          },
         },
         "accepted-work-rework-review": {
           id: "accepted-work-rework-review",
@@ -4370,20 +5420,31 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      runAgent: async () => ({
-        status: "ok",
-        lastAssistantText: "CLAIM: done\noutputs:\n- evidence/archive/accepted-work-rework-review.md",
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        runAgent: async () => ({
+          status: "ok",
+          lastAssistantText:
+            "CLAIM: done\noutputs:\n- evidence/archive/accepted-work-rework-review.md",
+        }),
       }),
-    }));
+    );
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["accepted-work-rework-review"].status).toBe("accepted");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["accepted-work-rework-review"].status).toBe(
+      "accepted",
+    );
     expect(updated.tasks["accepted-work"].status).toBe("accepted");
     expect(updated.tasks["accepted-work"].blocker).toBeUndefined();
   });
@@ -4425,22 +5486,26 @@ describe("project execution engine", () => {
           acceptance: ["Implementation is present."],
           forbidden: [],
           gates: [],
-          blocker: "Worker session was interrupted or cancelled; create a retry/rework task instead of accepting an incomplete claim.",
-          attempts: [{
-            id: "attempt-1",
-            ts: "2026-06-01T00:00:00.000Z",
-            agent: "aks-explorer",
-            claim: "blocked",
-            summary: "Interrupted procedural claim.",
-            outputs: [".app/ui/quality-panel.js"],
-            checks: [],
-            open_risks: ["Worker session interrupted."],
-          }],
+          blocker:
+            "Worker session was interrupted or cancelled; create a retry/rework task instead of accepting an incomplete claim.",
+          attempts: [
+            {
+              id: "attempt-1",
+              ts: "2026-06-01T00:00:00.000Z",
+              agent: "aks-explorer",
+              claim: "blocked",
+              summary: "Interrupted procedural claim.",
+              outputs: [".app/ui/quality-panel.js"],
+              checks: [],
+              open_risks: ["Worker session interrupted."],
+            },
+          ],
           verification: {
             ts: "2026-06-01T00:01:00.000Z",
             verifier: "aks-explorer",
             verdict: "accepted",
-            reason: "Rework review confirmed all acceptance criteria are satisfied; original rejection was procedural.",
+            reason:
+              "Rework review confirmed all acceptance criteria are satisfied; original rejection was procedural.",
             criteria: [{ item: "Implementation is present.", result: "pass" }],
           },
         },
@@ -4468,12 +5533,18 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["ui-task"].status).toBe("accepted");
     expect(updated.tasks["ui-task"].blocker).toBeUndefined();
   });
@@ -4495,7 +5566,11 @@ describe("project execution engine", () => {
           priority: "P1",
           owner: "aks-explorer",
           goal: "Recover from an exhausted blocked frontier.",
-          children: ["blocked-work", "blocked-frontier-review", "project-frontier-replan"],
+          children: [
+            "blocked-work",
+            "blocked-frontier-review",
+            "project-frontier-replan",
+          ],
           inputs: [],
           outputs: ["tasks/tree.json"],
           acceptance: ["A new executable replan is created."],
@@ -4578,14 +5653,20 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("project-planning-loop");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-frontier-replan"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
@@ -4642,10 +5723,16 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Run ManagedSystem live validation only after gate review.",
           children: ["managedsystem-devbox-msi-two-path-live-run"],
-          inputs: ["evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md"],
+          inputs: [
+            "evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md",
+          ],
           outputs: ["evidence/archive/managedsystem-two-path-live-run.md"],
-          acceptance: ["Live run is executed or exact safe follow-up work is created."],
-          forbidden: ["Do not run live mutation without explicit gate satisfaction."],
+          acceptance: [
+            "Live run is executed or exact safe follow-up work is created.",
+          ],
+          forbidden: [
+            "Do not run live mutation without explicit gate satisfaction.",
+          ],
           gates: [],
           progress: { accepted: 0, blocked: 0, total: 1 },
         },
@@ -4657,16 +5744,23 @@ describe("project execution engine", () => {
           owner: "aks-explorer",
           goal: "Review devbox MSI gate and either open the live-run gate or create safe local follow-up work.",
           children: [],
-          inputs: ["evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md"],
-          outputs: ["evidence/archive/managedsystem-devbox-msi-two-path-live-run.md"],
+          inputs: [
+            "evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md",
+          ],
+          outputs: [
+            "evidence/archive/managedsystem-devbox-msi-two-path-live-run.md",
+          ],
           acceptance: ["Gate decision or safe local follow-up is recorded."],
-          forbidden: ["Do not run live mutation without explicit gate satisfaction."],
+          forbidden: [
+            "Do not run live mutation without explicit gate satisfaction.",
+          ],
           gates: [
             "devbox MSI auth is still valid immediately before live execution.",
             "The live run command and cleanup plan are explicit.",
           ],
           gate_status: "closed",
-          blocker: "Waiting for planner/worker to explicitly open the devbox MSI live-run gate after reviewing the accepted auth preflight and run plan.",
+          blocker:
+            "Waiting for planner/worker to explicitly open the devbox MSI live-run gate after reviewing the accepted auth preflight and run plan.",
         },
         "project-control": {
           id: "project-control",
@@ -4695,44 +5789,64 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: [],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records the next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
-          attempts: [{
-            id: "attempt-old",
-            ts: "2026-06-02T00:00:00.000Z",
-            agent: "aks-explorer",
-            claim: "done",
-            summary: "Prior planning run accepted.",
-            outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
-            checks: [],
-            open_risks: [],
-          }],
+          attempts: [
+            {
+              id: "attempt-old",
+              ts: "2026-06-02T00:00:00.000Z",
+              agent: "aks-explorer",
+              claim: "done",
+              summary: "Prior planning run accepted.",
+              outputs: [
+                "evidence/archive/project-planning-loop.md",
+                ".state/planner-runs.jsonl",
+                "tasks/tree.json",
+              ],
+              checks: [],
+              open_risks: [],
+            },
+          ],
           verification: {
             ts: "2026-06-02T00:01:00.000Z",
             verifier: "aks-explorer",
             verdict: "accepted",
             reason: "Prior planning run accepted.",
-            criteria: [{ item: "Planning run records the next work.", result: "pass" }],
+            criteria: [
+              { item: "Planning run records the next work.", result: "pass" },
+            ],
           },
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("project-planning-loop");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop"].verification).toBeUndefined();
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
     expect(updated.active_task_id).toBe("project-planning-loop-run");
-    expect(updated.tasks["managedsystem-devbox-msi-two-path-live-run"].status).toBe("proposed");
+    expect(
+      updated.tasks["managedsystem-devbox-msi-two-path-live-run"].status,
+    ).toBe("proposed");
   });
 
   test.skip("legacy: creates an executable planning loop run when the standing loop has accepted history children", async () => {
@@ -4753,7 +5867,11 @@ describe("project execution engine", () => {
           priority: "P1",
           owner: "aks-explorer",
           goal: "Keep learning.",
-          children: ["blocked-work", "blocked-frontier-review", "project-control"],
+          children: [
+            "blocked-work",
+            "blocked-frontier-review",
+            "project-control",
+          ],
           inputs: [],
           outputs: ["tasks/tree.json"],
           acceptance: ["Done or exactly blocked."],
@@ -4845,7 +5963,11 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-rework-review"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -4874,17 +5996,25 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("project-planning-loop-run");
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
-    expect(updated.tasks["project-planning-loop-run"].parent_id).toBe("project-planning-loop");
+    expect(updated.tasks["project-planning-loop-run"].parent_id).toBe(
+      "project-planning-loop",
+    );
     expect(updated.active_task_id).toBe("project-planning-loop-run");
   });
 
@@ -4949,7 +6079,11 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -4965,7 +6099,11 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-rework-review"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -4987,33 +6125,53 @@ describe("project execution engine", () => {
           goal: "Review failed planning loop run.",
           children: [],
           inputs: [],
-          outputs: ["evidence/archive/project-planning-loop-run-rework-review.md"],
+          outputs: [
+            "evidence/archive/project-planning-loop-run-rework-review.md",
+          ],
           acceptance: ["Review produces recovery."],
           forbidden: [],
           gates: [],
-          attempts: [interruptedAttempt(1), interruptedAttempt(2), interruptedAttempt(3)],
+          attempts: [
+            interruptedAttempt(1),
+            interruptedAttempt(2),
+            interruptedAttempt(3),
+          ],
           verification: {
             ts: "2026-06-03T00:03:00.000Z",
             verifier: "aks-explorer",
             verdict: "rejected",
             reason: "Worker session was interrupted or cancelled.",
-            criteria: [{ item: "Review produces recovery.", result: "not_proven" }],
+            criteria: [
+              { item: "Review produces recovery.", result: "not_proven" },
+            ],
           },
           claimed_by: "aks-explorer",
           lease_expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["project-planning-loop-run"].status).toBe("superseded");
-    expect(updated.tasks["project-planning-loop-run-rework-review"].status).toBe("superseded");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["project-planning-loop-run"].status).toBe(
+      "superseded",
+    );
+    expect(
+      updated.tasks["project-planning-loop-run-rework-review"].status,
+    ).toBe("superseded");
     expect(updated.tasks["project-planning-loop-run-2"].status).toBe("ready");
-    expect(updated.tasks["project-planning-loop-run-2"].parent_id).toBe("project-planning-loop");
+    expect(updated.tasks["project-planning-loop-run-2"].parent_id).toBe(
+      "project-planning-loop",
+    );
     expect(updated.active_task_id).toBe("project-planning-loop-run-2");
   });
 
@@ -5066,9 +6224,16 @@ describe("project execution engine", () => {
           priority: "P0",
           owner: "aks-explorer",
           goal: "Standing planning loop.",
-          children: ["project-planning-loop-run-2", "project-planning-loop-run-3"],
+          children: [
+            "project-planning-loop-run-2",
+            "project-planning-loop-run-3",
+          ],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5084,7 +6249,11 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: ["project-planning-loop-run-2-rework-review"],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5106,7 +6275,9 @@ describe("project execution engine", () => {
           goal: "Review failed planning loop run.",
           children: [],
           inputs: [],
-          outputs: ["evidence/archive/project-planning-loop-run-2-rework-review.md"],
+          outputs: [
+            "evidence/archive/project-planning-loop-run-2-rework-review.md",
+          ],
           acceptance: ["Review produces recovery."],
           forbidden: [],
           gates: [],
@@ -5122,7 +6293,11 @@ describe("project execution engine", () => {
           goal: "Standing planning loop.",
           children: [],
           inputs: ["project.json", "tasks/tree.json"],
-          outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+          outputs: [
+            "evidence/archive/project-planning-loop.md",
+            ".state/planner-runs.jsonl",
+            "tasks/tree.json",
+          ],
           acceptance: ["Planning run records next work."],
           forbidden: ["Do not run live mutation."],
           gates: [],
@@ -5131,15 +6306,25 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["project-planning-loop-run-3"].status).toBe("active");
-    expect(updated.tasks["project-planning-loop-run-2"].status).toBe("superseded");
-    expect(updated.tasks["project-planning-loop-run-2-rework-review"].status).toBe("superseded");
+    expect(updated.tasks["project-planning-loop-run-2"].status).toBe(
+      "superseded",
+    );
+    expect(
+      updated.tasks["project-planning-loop-run-2-rework-review"].status,
+    ).toBe("superseded");
     expect(updated.tasks["project-planning-loop-run-4"]).toBeUndefined();
     expect(updated.active_task_id).toBe("project-planning-loop-run-3");
   });
@@ -5184,12 +6369,18 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["local-check"].status).toBe("ready");
     expect(updated.active_task_id).toBe("local-check");
   });
@@ -5211,7 +6402,11 @@ describe("project execution engine", () => {
           priority: "P1",
           owner: "aks-explorer",
           goal: "Keep finding safe local work until genuinely blocked.",
-          children: ["blocked-work", "blocked-frontier-review", "project-frontier-replan"],
+          children: [
+            "blocked-work",
+            "blocked-frontier-review",
+            "project-frontier-replan",
+          ],
           inputs: [],
           outputs: ["tasks/tree.json"],
           acceptance: ["Blocked work is periodically replanned."],
@@ -5267,19 +6462,24 @@ describe("project execution engine", () => {
           children: [],
           inputs: ["tasks/tree.json"],
           outputs: ["evidence/archive/project-frontier-replan.md"],
-          acceptance: ["Creates a batch of 5-10 proposed concrete ordinary leaf tasks."],
+          acceptance: [
+            "Creates a batch of 5-10 proposed concrete ordinary leaf tasks.",
+          ],
           forbidden: ["Do not run live mutation."],
           gates: [],
-          attempts: [{
-            id: "attempt-empty",
-            ts: "2026-06-01T00:00:00.000Z",
-            agent: "aks-explorer",
-            claim: "done",
-            summary: "CLAIM: done\noutputs:\n- evidence/archive/project-frontier-replan.md",
-            outputs: ["evidence/archive/project-frontier-replan.md"],
-            checks: [],
-            open_risks: [],
-          }],
+          attempts: [
+            {
+              id: "attempt-empty",
+              ts: "2026-06-01T00:00:00.000Z",
+              agent: "aks-explorer",
+              claim: "done",
+              summary:
+                "CLAIM: done\noutputs:\n- evidence/archive/project-frontier-replan.md",
+              outputs: ["evidence/archive/project-frontier-replan.md"],
+              checks: [],
+              open_risks: [],
+            },
+          ],
           verification: {
             ts: "2026-06-01T00:00:00.000Z",
             verifier: "old-verifier",
@@ -5312,13 +6512,21 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
-    expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe("accepted");
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["project-frontier-replan"].verification.verdict).toBe(
+      "accepted",
+    );
     expect(updated.tasks["project-planning-loop"].kind).toBe("loop_task");
     expect(updated.tasks["project-planning-loop"].status).toBe("decomposed");
     expect(updated.tasks["project-planning-loop-run"].status).toBe("ready");
@@ -5379,25 +6587,45 @@ describe("project execution engine", () => {
         },
       },
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
-    const dispatched: Array<{ type: string; payload: Record<string, unknown> }> = [];
-    const result = await execute(context({
-      projectDir,
-      maxAttempts: 1,
-      dispatched,
-      runAgent: async (_agent, prompt) => {
-        const outputSection = prompt.split("## Required Outputs\n")[1] ?? prompt;
-        const output = outputSection.match(/evidence\/(?:outputs|archive)\/[^\s]+\.md/)?.[0] ?? "evidence/archive/unknown.md";
-        return { status: "ok", lastAssistantText: `CLAIM: done\noutputs:\n- ${output}` };
-      },
-    }));
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({
+        projectDir,
+        maxAttempts: 1,
+        dispatched,
+        runAgent: async (_agent, prompt) => {
+          const outputSection =
+            prompt.split("## Required Outputs\n")[1] ?? prompt;
+          const output =
+            outputSection.match(
+              /evidence\/(?:outputs|archive)\/[^\s]+\.md/,
+            )?.[0] ?? "evidence/archive/unknown.md";
+          return {
+            status: "ok",
+            lastAssistantText: `CLAIM: done\noutputs:\n- ${output}`,
+          };
+        },
+      }),
+    );
 
     expect(result.status).toBe("done");
     expect(result.message).toContain("continuation requested");
-    expect(dispatched.some(event => event.type === "project.execution.requested")).toBe(true);
+    expect(
+      dispatched.some((event) => event.type === "project.execution.requested"),
+    ).toBe(true);
 
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     expect(updated.tasks["task-a"].status).toBe("accepted");
     expect(updated.tasks["task-b"].status).toBe("ready");
     expect(updated.active_task_id).toBe("task-b");
@@ -5460,7 +6688,11 @@ describe("project execution engine", () => {
         goal: "Standing planning loop.",
         children: [] as string[],
         inputs: ["project.json", "tasks/tree.json"],
-        outputs: ["evidence/archive/project-planning-loop.md", ".state/planner-runs.jsonl", "tasks/tree.json"],
+        outputs: [
+          "evidence/archive/project-planning-loop.md",
+          ".state/planner-runs.jsonl",
+          "tasks/tree.json",
+        ],
         acceptance: ["Planning run records next work."],
         forbidden: ["Do not run live mutation."],
         gates: [],
@@ -5469,7 +6701,10 @@ describe("project execution engine", () => {
 
     // Add 5 superseded planning runs (ordinals 1-5)
     for (let i = 1; i <= 5; i++) {
-      const runId = i === 1 ? "project-planning-loop-run" : `project-planning-loop-run-${i}`;
+      const runId =
+        i === 1
+          ? "project-planning-loop-run"
+          : `project-planning-loop-run-${i}`;
       tasks[runId] = {
         id: runId,
         parent_id: "project-planning-loop",
@@ -5530,7 +6765,11 @@ describe("project execution engine", () => {
       acceptance: ["Review produces recovery."],
       forbidden: [],
       gates: [],
-      attempts: [interruptedAttempt(1), interruptedAttempt(2), interruptedAttempt(3)],
+      attempts: [
+        interruptedAttempt(1),
+        interruptedAttempt(2),
+        interruptedAttempt(3),
+      ],
       verification: {
         ts: "2026-06-03T00:09:00.000Z",
         verifier: "aks-explorer",
@@ -5554,17 +6793,25 @@ describe("project execution engine", () => {
       active_task_ids: [reworkId],
       tasks,
     };
-    await writeFile(join(projectDir, "tasks", "tree.json"), `${JSON.stringify(tree, null, 2)}\n`, "utf8");
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(tree, null, 2)}\n`,
+      "utf8",
+    );
 
     const result = await execute(context({ projectDir, maxAttempts: 0 }));
 
     expect(result.status).toBe("done");
-    const updated = JSON.parse(await readFile(join(projectDir, "tasks", "tree.json"), "utf8"));
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
     // The rework review should be superseded
     expect(updated.tasks[reworkId].status).toBe("superseded");
     // The planning loop should be blocked (budget exhausted)
     expect(updated.tasks["project-planning-loop"].status).toBe("blocked");
-    expect(updated.tasks["project-planning-loop"].blocker).toContain("Planning loop exhausted");
+    expect(updated.tasks["project-planning-loop"].blocker).toContain(
+      "Planning loop exhausted",
+    );
     // No new planning run should have been created
     expect(updated.tasks["project-planning-loop-run-7"]).toBeUndefined();
     // Active task should not be a planning loop run (loop is blocked)
