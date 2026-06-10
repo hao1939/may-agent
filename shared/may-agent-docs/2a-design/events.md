@@ -460,7 +460,7 @@ a separate boolean for the same decision.
 
 `project.comment.created`, `project.action.requested`, `project.iteration`,
 `project.task.dispatched`, `project.task.finished`, `project.status_changed`,
-`telegram.reply`, `guard.triggered`, and `tool.executed` follow the same
+`telegram.reply`, and `guard.triggered` follow the same
 envelope rule. `guard.triggered` is an unreviewed detector signal. It is useful
 evidence for triage, metrics, and evaluator review, but it is not proof of agent
 fault. A reviewed guard outcome may later produce `learning.feedback`; raw guard
