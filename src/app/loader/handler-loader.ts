@@ -20,7 +20,7 @@ export interface AgentHandlerLoaderOptions {
   agentCrons: Map<string, Cron>;
 }
 
-type CronWithConfigPath = Cron & { getConfigPath?: () => string };
+type CronWithConfigPath = Cron & { getConfigPath?: () => string; hasHandler?: (jobName: string) => boolean };
 
 export async function loadHandlersForAgentCrons(
   opts: AgentHandlerLoaderOptions,
@@ -31,7 +31,7 @@ export async function loadHandlersForAgentCrons(
 
   for (const [agentName, cron] of opts.agentCrons) {
     const entries = cron.getEntries();
-    const handlersNeeded = entries.filter((e) => e.handler);
+    const handlersNeeded = entries.filter((e) => e.handler && !(cron as CronWithConfigPath).hasHandler?.(e.name));
 
     const sessionHelpers = buildSessionHelpers({ bus, persistDir, projectRoot, agentsRoot, sharedRoot, projectsRoot, agentName });
     const sdk = buildAgentSDK({
