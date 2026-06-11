@@ -83,6 +83,32 @@ const metrics: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
+    id: "aks-rp-e2e.task.ready-starvation-with-gaps",
+    name: "AKS RP E2E ready starvation while gaps remain",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "boolean",
+    alertOp: ">",
+    priority: "P1",
+    description:
+      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "aks-rp-e2e.task.capacity-underfilled-with-gaps",
+    name: "AKS RP E2E worker capacity underfilled while gaps remain",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "boolean",
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Planner refill signal: ready plus active leaves are below desired parallelism while knowledge-model path gaps remain.",
+    config: { alert: { mode: "consecutive_failures", count: 3 } },
+  },
+  {
     id: "aks-rp-e2e.model.unknown-path-count",
     name: "AKS RP E2E unknown/source-enumerated paths",
     type: "gauge",
