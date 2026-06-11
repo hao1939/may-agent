@@ -169,7 +169,7 @@ Key structural observations from the full snapshot history:
 - READ_DEDUP source has shifted: evaluator (re-reading periodic-tasks,
   project files) and aks-explorer (re-reading project.md) trade off.
 - PATH_HALLUCINATION is primarily aks-explorer (`/home/` paths).
-- Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7% on 2026-06-12)
+- Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
 **Latest snapshot 2026-06-10 ~10:20Z** (24h window, ~1,838 tool-level):
