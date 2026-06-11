@@ -588,15 +588,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring agent.config-invalid-count-1h: ${e}`); }
 
     try {
-      // Exclude AI/eval handlers from p95 — they are long-running agent sessions
-      // or pollers, not infrastructure reactor latency. Including them makes this
-      // metric unactionable for handler health; measure only infra handlers here.
+      // Exclude long-running agent session handlers from p95 — heartbeats,
+      // eval-poller, and task-execution-workers are agent sessions that run for
+      // minutes/hours, not infrastructure reactor latency. Including them makes
+      // this metric unactionable for handler health.
       const durations = (db.prepare(
         `SELECT json_extract(data, '$.durationMs') as dur FROM events
          WHERE event_type = 'handler.completed' AND timestamp > ?
            AND COALESCE(json_extract(data, '$.handler'), '') != 'heartbeat'
            AND COALESCE(json_extract(data, '$.handler'), '') NOT LIKE 'heartbeat-%'
            AND COALESCE(json_extract(data, '$.handler'), '') != 'eval-poller'
+           AND COALESCE(json_extract(data, '$.handler'), '') NOT LIKE '%-task-execution-worker'
          ORDER BY dur ASC`
       ).all(sixH) as any[]).map(r => r.dur).filter(d => d != null);
       if (durations.length > 0) {
