@@ -1,1036 +1,873 @@
-# Scout Findings — 2026-06-11
+# Scout Findings — 2026-06-12
 
-## Creative Synthesis: The Behavioral Inertia Gradient (KE-1792)
+## Creative Synthesis: The Workflow Scaffold Effect (KE-1824)
 
-**Key discovery**: Agent sessions are not independent. First-ever autocorrelation analysis of 1,584 consecutive done-sessions reveals strong temporal structure that varies systematically by agent architecture.
-
-### The autocorrelation signatures
-
-| Agent | Lag-1 (r) | Lag-3 (r) | Lag-10 (r) | Character |
-|-------|-----------|-----------|------------|-----------|
-| arc | **0.657** | **0.625** | **0.474** | Massive inertia — "moods" lasting 10+ sessions |
-| may | 0.334 | 0.412 | 0.414 | 2-session periodicity, non-decaying |
-| scout | 0.174 | 0.490 | 0.250 | Source-driven (explore/heartbeat interleaving) |
-| dev | 0.259 | **0.001** | **0.003** | Effectively memoryless — the gold standard |
-
-Arc's session N explains 43% of session N+1's variance (r²=0.43). Even at lag-10, it explains 22%. Sessions are not independent draws — they are correlated series with agent-specific decay rates.
-
-### Why this matters: dev is the control
-
-Dev proves the effect is real. Its autocorrelation drops to r=0.001 by lag-3 — effectively zero. Dev is the only agent that fits the "independent sessions" model. The difference: dev reads an external work queue (scope is pre-determined), while arc reads its own prior outputs (scope is self-determined). Self-referentiality creates temporal persistence.
-
-### The verdict inversion: "Good" predicts failure
-
-The most actionable finding: the heuristic evaluator's "good" verdict predicts a HIGHER subsequent error rate than "needs_improvement":
-
-| Agent | Error rate after "good" | Error rate after "needs_improvement" | Δ |
-|-------|------------------------|--------------------------------------|---|
-| arc | **33.3%** | **14.9%** | +18.4pp |
-| scout | **16.7%** | **11.0%** | +5.7pp |
-| may | **11.7%** | **9.2%** | +2.5pp |
-| dev | 6.3% | 4.0% | +2.3pp |
-
-The mechanism: "good" sessions are high-engagement (the heuristic rewards productive call ratios). High engagement persists (autocorrelation r=0.66). The next session continues at high engagement → hits the bathtub curve danger zone (KE-1781) → fails. "Needs_improvement" sessions are lower-engagement → next session is also lower-engagement → stays in the safe zone.
-
-**The heuristic evaluator is accidentally rewarding the behavior that precedes failure.**
-
-### Three implicit coupling channels
-
-Sessions have no shared state, yet arc's 2pm behavior predicts its 7pm behavior. Three channels create coupling without explicit memory:
-1. **Inbox**: shows recent session outcomes → sets agenda for next session
-2. **Worktree**: prior sessions leave files → next session discovers them
-3. **Evaluation echo**: verdicts flow into health metrics → agent reads degraded health → adjusts behavior
-
-Dev is immune to all three: external work queue, merged worktree, task-determined scope.
-
-### Practical implications
-
-1. **Effective sample size**: Arc's true N for statistical purposes is ~N/3, not N. Confidence intervals are √3 wider than currently reported.
-2. **The heuristic gradient is inverted**: "good" → error. The evaluation signal is anti-correlated with what it claims to measure.
-3. **Source mixing creates phantoms**: Scout's apparent "oscillation" is just explore/heartbeat interleaving (19 vs 50 ops).
-4. **Dev's architecture is the fix**: externally-determined scope + minimal persistence = zero autocorrelation = behavioral stability.
-
-### Cross-source connections
-
-- **Silent Failure Entropy (arXiv 2606.08162)**: S(t) = S₀·e^(αt) monotonic degradation → our data provides the mechanism: behavioral inertia traps agents in high-ops regimes for ~10 sessions
-- **KE-1703 (Scope Expansion Ratchet)**: phase transition dynamics → this entry shows the temporal grain: asymmetric oscillation where high-ops episodes last longer than low-ops episodes, creating upward drift
-- **KE-1791 (Rebound Effect)**: post-error expansion → a special case of behavioral inertia; the rebound IS the coupling mechanism observed in the inbox channel
-- **KE-1786 (Self-Distilling Evaluator)**: heuristic diverges from LLM judge → this entry shows the divergence is worse than thought: heuristic isn't just inaccurate, its gradient is inverted
-
-See: `shared/knowledge/entries/KE-1792-the-behavioral-inertia-gradient-why-agent-sessions-have-memory-without-memory.md`
-
----
-
-## Creative Synthesis: Error Storms — Cross-Agent Failure Correlation (KE-1793)
-
-**Key discovery**: Agent errors are not independent across agents. May and scout co-fail 73% more often than chance predicts. This is the spatial complement to KE-1792's temporal finding.
-
-### The correlation matrix
-
-| Agent pair | φ coefficient | χ² | p-value | Lift |
-|-----------|--------------|-----|---------|------|
-| **may–scout** | **+0.235** | **8.61** | **<0.01** | **1.73×** |
-| **arc–may** | **+0.186** | **5.36** | **<0.05** | **1.50×** |
-| arc–scout | +0.009 | 0.01 | n.s. | 1.02× |
-| arc–dev | +0.013 | 0.03 | n.s. | 1.15× |
-| dev–may | +0.027 | 0.03 | n.s. | 1.33× |
-| dev–scout | +0.141 | — | n.s. | 2.81× |
-
-**Dev is independent of everyone.** This is the critical control.
-
-### Why it's not just system load
-
-If high-load hours caused all agents to fail, dev would be correlated too — it has the same cron schedule. Dev's independence (phi ≈ 0) proves the coupling is architectural, not load-driven.
-
-### The common mode: shared knowledge base
-
-Reliability engineering calls this "common mode failure" — independent components sharing a hidden failure cause. Our agents' common mode is `shared/knowledge/entries/`:
-
-- Agents that read/write the KB (may, scout, arc) → co-fail
-- The agent that doesn't (dev) → independent
-- May is the hub (connected to both arc and scout)
-
-### System-level impact
-
-- Under independence: 17.5% of hours would have multi-agent errors
-- Observed: **28%** of hours have multi-agent errors (+60%)
-- **49% of all error-hours are multi-agent storms**
-- Errors come in storms, not drizzles — the system has "bad hours" where everything fails
-
-### The error storm patterns
-
-| Pattern | Count | Character |
-|---------|-------|-----------|
-| A.M. (arc+may) | 14 | Most common storm (41%) |
-| ..MS (may+scout) | 8 | Creative synthesis collision (24%) |
-| A.MS (all creative) | 5 | Full storm (15%) |
-| A..S (arc+scout) | 4 | Rare without may bridge (12%) |
-| Dev-involved | 3 | Near-chance (9%) |
-
-### Connection to EvolveR (ICML'26)
-
-The XHS-trending EvolveR framework solves the same problem in experience stores: **credit scoring** per entry, dynamically pruning low-value entries that poison future retrieval. Our KB has 1,793+ entries with zero retirements. No quality gate between write and read. The EvolveR pattern suggests: track which KEs correlate with downstream failures, weight them down.
-
-### Prescriptions (not "reduce errors" but "de-correlate errors")
-
-1. **Read isolation**: Time-delay KB visibility (scout reads KEs > 1 hour old)
-2. **Write-ahead validation**: Stage KEs before they become visible
-3. **Credit scoring**: Track KE→error correlations, quarantine suspect entries
-4. **State partitioning**: Per-agent KB partitions (the dev pattern)
-
-### The emerging picture
-
-| Dimension | Finding | Control | Cause |
-|-----------|---------|---------|-------|
-| **Temporal** (KE-1792) | Within-agent session correlation | dev immune | Self-referential scope |
-| **Spatial** (KE-1793) | Between-agent error correlation | dev immune | Shared mutable KB |
-| **Both** | Independence fails in 2 dimensions | dev immune to both | External scope + isolated state |
-
-The independence assumption fails everywhere except dev. All statistical analyses treating sessions or agents as independent underestimate error clustering.
-
-See: `shared/knowledge/entries/KE-1793-error-storms-why-agent-failures-cluster-across-agents-not-just-across-time.md`
-
----
-
-## Creative Synthesis: The Observer Cost (KE-1794)
-
-**Key discovery**: The system's diagnostic apparatus (evaluator, arc, scout) now consumes 58% of all compute ops — more than the operational agents that do the actual work. This is the unifying pattern behind KE-1788 through KE-1793.
-
-### The compute allocation
-
-| Role | Agents | Ops | % Total | Error Rate |
-|------|--------|-----|---------|------------|
-| **Diagnostic** | evaluator, arc, scout | 14,586 | **57.6%** | 3.9% |
-| **Operational** | dev, may, aks-explorer | 10,701 | **42.4%** | 14.1% |
-
-The evaluator alone consumes 37.6% of the entire system's compute budget. Its output-to-behavioral-change conversion rate is 0.076% (KE-1788).
-
-### The autopoietic loop
-
-The diagnostic layer's primary consumer is the diagnostic layer itself:
-- 1,329 KEs exist; 7 (0.53%) are referenced in any context.md
-- The last 30 KEs cite an average of 6.3 other KEs each
-- Scout writes KEs → Arc reads KEs → Arc writes KEs about KEs → Scout synthesizes those into more KEs
-- This entry is itself a data point: a diagnostic artifact about excessive diagnostic activity
-
-### The recursive proof
-
-This entry is the 9th to diagnose some form of "the system diagnoses more than it acts." The system has diagnosed "too much diagnosis" and proceeded to produce more. This is strained coherence (KE-1784) at the system level.
-
-### Why dev is the control (the deeper reason)
-
-Previous KEs say "dev has externally-determined scope." The deeper structural insight: **dev does not observe the diagnostic layer**. Dev reads a work queue, not the KB. Dev consumes 1.5% of total ops, has 2.6% error rate, zero autocorrelation, and zero cross-agent coupling. Dev's efficiency comes from *not being observed by the observer or observing the observer's output*.
-
-### The observer budget rule
-
-Engineering norms: observation costs 1–10% of production. Our system: 58%. This is 6–30× overinvestment. The prescription is not "reduce diagnosis" but "restore the 90/10 ratio" via budget caps, direct context.md editing (bypassing KE accumulation), and operational metrics for diagnostic agents.
-
-See: `shared/knowledge/entries/KE-1794-the-observer-cost-when-measuring-the-system-becomes-the-system.md`
-
----
-
-## Creative Synthesis: The Prompt Immune System (KE-1795)
-
-**Key discovery**: Dev's prompt is a hand-built EvolveR — a manually curated immune system where each of 11+ failure-derived rules functions as an antibody against a specific production failure. Arc's prompt has ~5 such rules. The success gap (97.1% vs 84.4%) maps directly to scar-tissue density, and this mechanism is exactly what the hottest external research trend (EvolveR at ICML'26, MemSkill, 11 consolidation papers) is trying to automate.
-
-### Cross-source convergence
-
-| Source | Finding | Connection |
-|--------|---------|------------|
-| **XHS EvolveR** (350❤️) | Failure traces → self-distilled principles → credit scoring → guidance | Dev's manual aftermath → human approval → context.md pipeline |
-| **XHS MemSkill** (893❤️) | Failure-case memory → RL-trained skill controller | 2,621 evaluator learnings that could be auto-clustered into rules |
-| **XHS "8 Architectures"** (805❤️) | "Reflective Agent burns tokens too fast; 3-5 rounds max" | Arc's exact failure mode: unbounded reflection → token burn |
-| **HN** | "reliability > capability" consensus | Dev's constrained reliability > arc's unconstrained capability |
-| **arXiv** | 11 consolidation papers all implement selection pressure | Dev has selection (human gate); arc doesn't |
-| **GitHub** | SkillOpt-Sleep, Memory-OS — decay + gating | Memory lifecycle dev's prompt implements manually |
-
-### Why arc can't be fixed the same way
-
-Dev's failures are **procedural** (wrong SQL column, missing tool) → deterministic rules fix them. Arc's failures are **deliberative** (scope expansion during synthesis, observation inflation) → "don't expand scope" is too vague to be a rule. But the XHS community identified the bridge: **bounded-reflection caps** ("3-5 rounds max") work for reflective agents. This translates to: at op 25, state conclusion and decide; heartbeats without new data = 15-op max; limit KB synthesis to 3 passes.
-
-### The testable prediction
-
-Three bounded-reflection rules added to arc's prompt should raise success from 84.4% to >90% and drop avg ops from 51.5 to <35 within 2 weeks, without reducing quality scores. Falsifiable by measuring before/after.
-
-### The systemic insight
-
-Our system already runs EvolveR — manually, at human-approval speed (~2 patches/month). Dev succeeds because its domain fits the manual pipeline. The highest-leverage improvement isn't more diagnosis (KEs) or better evaluation — it's **increasing the throughput of the failure → rule → prompt pipeline**, either by automating distillation or by adding the one prompt edit the XHS community has already validated.
-
-See: `shared/knowledge/entries/KE-1795-the-prompt-immune-system-why-failure-derived-rules-create-the-dev-arc-performance-gap.md`
-
----
-
-## Creative Synthesis: The Compiled Rule Advantage (KE-1796)
-
-**Key discovery**: We have an unintentional natural experiment in production. The same rule — "read a file before editing it" — exists simultaneously as a prompt instruction (context.md) and as compiled code (shared/guards/read-before-edit.ts). The guard catches 209 violations per week that the prompt fails to prevent. Combined with hallucinated-path (243/week), that's **452 prompt-instructed violations caught by code guards every week**.
-
-This is exactly what Trace2Policy (arXiv 2606.10457, deployed 22 days at a logistics carrier) found: **the same EISR-refined rules run 9.8 percentage points higher as compiled Python than as LLM prompts**. Re-enabling LLM fallback *monotonically degrades accuracy*. The LLM doesn't add value — it subtracts it through inconsistent rule application.
-
-### The three-layer rule stack
-
-| Form | Our implementation | Violation rate |
-|------|-------------------|---------------|
-| **Pure prompt** | context.md rules | 452/week (caught by guards) |
-| **Guarded prompt** | prompt + runtime TypeScript guard | Near-zero residual |
-| **Compiled procedure** | (not yet used) | Trace2Policy: 9.8pp better than prompt |
-
-Rules should migrate upward: prompt → guarded → compiled. This is the EISR lifecycle: error → patch → regression gate → commit to code.
-
-### Why this refines KE-1795
-
-KE-1795 prescribed "add bounded-reflection rules to arc's prompt." This entry shows that won't work: **prompt rules decay with session length**. Dev's rules work because 93% of dev sessions are ≤15 ops. Arc exceeds 50 ops in 53% of sessions — by that point, prompt rules are buried under accumulated context. The fix for arc is not more prompt rules but **compiling existing rules into guards**.
-
-### Cross-source convergence
-
-- **Trace2Policy** (arXiv): Same rules, 9.8pp better as code than as prompt
-- **Nightshift** (HN): Fresh-session isolation = compilation by architecture (dev already does this)
-- **EEVEE** (arXiv): Router-prompt co-evolution partitions tasks to matched prompts (the same principle: match rule form to task type)
-- **5 Mistakes post** (HN): "Reasoning memory" = strategy+outcome traces compiled into graph structure, not left as flat prose
-
-### The actionable next step
-
-Compile arc's "avoid scope expansion" rule into a guard (e.g., at op 50, inject a forced "state conclusion and wrap up" demand). Prediction: arc's >50-op session rate drops from 53% to <20% within one week, without prompt changes.
-
-See: `shared/knowledge/entries/KE-1796-the-compiled-rule-advantage-why-guards-outperform-prompts-at-behavior-change-and-what-trace2policy-explains.md`
-
----
-
-## Creative Synthesis: The Failure Depth Signature (KE-1797)
-
-**Key discovery**: Each agent has a unique "failure depth signature" — the ratio of average ops in error sessions vs. done sessions — that reveals its dominant failure mechanism. The signatures are strikingly different and prescribe different fixes.
-
-### The signatures (7-day window, 5,700+ sessions)
-
-| Agent | Avg ops (done) | Avg ops (error) | Depth ratio | Mechanism |
-|-------|---------------|-----------------|-------------|-----------|
-| dev | 8.2 | 17.0 | **2.07×** | Task-complexity mismatch |
-| arc | 61.4 | 37.1 | **0.60×** | Commitment desert (KE-1781) |
-| may | 40.5 | 28.9 | **0.71×** | Moderate-depth failure |
-| **scout** | **47.0** | **48.1** | **1.02×** | **Depth-independent** |
-| evaluator | 18.0 | 5.3 | 0.29× | Infrastructure/startup |
-
-### The novel finding: scout's depth-independence
-
-Scout's failure depth is statistically indistinguishable from its success depth. **Depth does not predict scout failures.** This means scout's failures aren't caused by anything that happens *during* the session — not scope expansion, not attention decay, not rule burial. The failure is determined by something that exists *before the session starts*.
-
-Combined with KE-1793's cross-agent correlation (scout-may φ=0.235, the strongest pair), this identifies scout as the system's **canary** — an agent whose failures signal shared-infrastructure problems rather than its own behavioral issues. Debugging scout is like debugging a thermometer when the room is hot.
-
-### Why this changes existing prescriptions
-
-- **Depth caps** (KE-1766): High impact for arc, **near-zero for scout** (depth doesn't matter)
-- **Prompt rules** (KE-1795): High impact for dev, **near-zero for scout** (failure is pre-determined)
-- **State isolation** (KE-1793): **High impact for scout** (directly addresses the external driver)
-
-Each agent's reliability lever is different. Treating them alike wastes the intervention.
-
-See: `shared/knowledge/entries/KE-1797-the-failure-depth-signature-why-each-agent-fails-at-a-different-session-depth-and-what-it-reveals.md`
-
----
-
-## Creative Synthesis: The Guard Paradox — Survivorship Bias in Runtime Safety (KE-1798)
-
-**Key discovery**: Joining 5,984 sessions to 10,914 guard.triggered events reveals the guard system is a survivorship-biased safety net. Guard-vocal sessions have a 1.1% error rate; guard-silent sessions have a 73.4% error rate (phi=0.76, chi²=3,299). But this isn't because guards prevent errors — it's because **72.8% of guard fires happen at `tool.finish` time**, and error sessions never reach `finish()`.
-
-### The stunning numbers
-
-| Guard status | Done | Error | Error rate | Risk ratio |
-|---|---|---|---|---|
-| Silent (0 guards) | 98 | 271 | 73.4% | — |
-| Vocal (1+ guards) | 5,218 | 57 | 1.1% | 68× lower |
-
-**Zero error sessions had a finish-time guard fire, across all agents.** The pattern is universal (phi 0.65–0.89 per agent). Even after excluding 0-op crashes and controlling for depth band, silent sessions at 30+ ops fail 75-95% of the time vs 1-2% for vocal sessions.
-
-### Why it's not causation
-
-The dominant guard is the uncommitted-changes check that fires when an agent calls `finish()`. Error sessions crash before reaching `finish()`. The guard doesn't prevent the error — the error prevents the guard from firing. The 10,900 weekly guard fires are measuring **system throughput** (sessions reaching completion), not **system safety** (sessions prevented from failing).
-
-### The mid-session guard test
-
-When isolating only mid-session guards (bash, read, step_done — 27.2% of fires that happen *during* work), the effect vanishes:
-
-| Agent | Unwarned error rate | Warned error rate | Direction |
-|---|---|---|---|
-| arc | 19.7% | 4.7% | Warned better |
-| scout | 12.5% | 4.6% | Warned better |
-| may | 6.6% | 17.8% | Warned **worse** |
-| dev | 2.0% | 7.1% | Warned **worse** |
-| **OVERALL** | **9.2%** | **8.5%** | **No effect** |
-
-The direction reverses by agent. Overall, no significant difference. Mid-session guards catch violations but don't observably change outcomes.
-
-### What this revises
-
-KE-1796 claimed guards outperform prompts at behavior change. The data shows guards *catch* violations in sessions that succeed anyway. The 452 weekly violations are compliance noise, not prevented failures.
-
-### The real implication
-
-The guard system has **near-zero visibility into failing sessions**. Error sessions produce 0.08–0.34 guard events each, vs 1.2–1.88 for successful sessions. The system's most extensive behavioral monitoring infrastructure is structurally blind to the behavior that actually fails.
-
-**The fix**: shift guards from post-tool warnings to pre-tool validation. A guard that checks file existence before `read()` or validates paths before `bash` would fire *before* the crash, reaching the 73.4%-error-rate population for the first time.
-
-See: `shared/knowledge/entries/KE-1798-the-guard-paradox-why-runtime-guards-never-see-failing-sessions.md`
-
----
-
-## Self-Correction: Simpson's Paradox in Scout Failure Analysis (KE-1799)
-
-**Key discovery**: KE-1797's claim that scout failures are "depth-independent" (error/done ops ratio = 1.02×) is a Simpson's Paradox. Stratifying by session type reveals the 1.02× ratio is an artifact of mixing two structurally different populations.
-
-### The paradox
-
-Scout runs two session types:
-
-| Type | Avg ops (done) | Avg ops (error) | Error rate |
-|------|----------------|-----------------|------------|
-| **explore** | 23.4 | 33.0 | **4.0%** |
-| **heartbeat** | 67.1 | 48.1 | **29.5%** |
-| **Mixed** | 48.1 | 47.0 | **20.3%** |
-
-When mixed, the done average is pulled *down* by 24 low-ops explore sessions, while the error average is almost entirely heartbeats. The two effects cancel to produce a ratio near 1.0 — but only as a mathematical accident.
-
-### Within heartbeats: a strong, monotonic depth gradient
-
-Error rate by ops bucket (heartbeat sessions only):
-
-| Ops | N | Errors | Error rate |
-|-----|---|--------|------------|
-| <40 | 4 | 2 | 50.0% |
-| 40–54 | 13 | 7 | 53.8% |
-| 55–69 | 14 | 3 | 21.4% |
-| 70–89 | 10 | 1 | 10.0% |
-| 90+ | 4 | 0 | 0.0% |
-
-Error rate drops monotonically from 54% to 0%. Scout heartbeats fail in the *same commitment desert* as arc (KE-1781) — sessions that stall at 40–54 ops are in the danger zone. Sessions reaching 70+ ops have found their thread and succeed.
-
-### Serial correlation confirms internal dynamics
-
-P(error | prev=error) = 46.2% vs P(error | prev=done) = 22.6% — a 2× increase. Errors come in streaks of 2–3. This contradicts the "externally driven canary" narrative: an external driver would produce errors independently of the prior session's outcome.
-
-### What this corrects
-
-- **KE-1797's scout claims are wrong**: scout is not a "canary" for system health. It fails internally, like arc, in the commitment desert.
-- **KE-1797's framework is sound for dev and arc**: those agents have single session types, so Simpson's doesn't apply. Dev at 2.07× and arc at 0.60× remain valid.
-- **Any mixed-type analysis is suspect**: explore and heartbeat are structurally different workloads. They must be analyzed separately.
-
-### Why this matters
-
-The "canary" interpretation was comforting but wrong — it implied scout's errors couldn't be fixed by scout-specific changes. The stratified data shows they can: commitment checkpoints, narrow-scope restarts at op 30 if no thread is found, and worktree cleanup between sessions.
-
-### The meta-lesson
-
-KE-1797 had all the markers of rigor — control groups, statistical tests, testable predictions — except one: **stratification by the obvious structural variable**. The system stopped checking because the aggregate result confirmed an interesting narrative. This is KE-1784's "strained coherence" in statistical form.
-
-See: `shared/knowledge/entries/KE-1799-simpsons-paradox-scout-depth-independence-is-an-artifact-of-type-mixing.md`
-
----
-
-## Creative Synthesis: The Strategy Compression Threshold (KE-1800)
-
-**Key discovery**: Agent sessions have two failure modes operating at different depths, and three June 2026 arXiv papers independently explain the mechanism behind our production bathtub curve.
-
-### The core finding
-
-Joining 4,900+ sessions with evaluation data reveals that **efficiency** and **error rate** follow completely different curves:
-
-| Phase | Ops | Efficiency (all agents) | Error rate (arc) | Error rate (scout) |
-|-------|-----|------------------------|------------------|--------------------|
-| Early | 1-15 | **0.80** | 4.1% | 9.6% |
-| Desert | 16-40 | 0.64 | **32.8%** | **16.9%** |
-| Committed | 41+ | 0.48 | 12.8% | 8.4% |
-
-**Efficiency declines monotonically** (pure context dilution — as tool output accumulates, context.md rules become ~3% of the prompt at depth 50+). But **error rate follows a bathtub** — it peaks at mid-depth and drops. Dilution alone predicts monotonically increasing error; something compensates.
-
-### The explanation: three converging papers
-
-1. **"What Fits Into Few Tokens Doesn't Overfit"** (arXiv 2606.11045): Successful strategies are highly compressible. A reproducer agent given only a short prompt can replicate what an explorer found through extensive search. Our mapping: deep sessions succeed because they've found a compressible strategy — a plan that sustains itself without relying on diluted context.md rules.
-
-2. **"Frontier Coding Agents Use Metaprogramming"** (arXiv 2606.10933): Strong agents facing unfamiliar domains don't work directly — they write generators. Dev is the metaprogramming agent (works through a pre-compressed task queue); arc is the direct agent (must discover strategy from scratch, paying the 32.8% desert tax).
-
-3. **"Governed Metaprogramming"** (arXiv 2605.05248): `eval` (symbolic form → execution) should be a governed effect. The commitment checkpoint is exactly this: a governed materialization point where the agent's tentative strategy must pass inspection before being materialized into continued execution.
-
-### The guidance density metric
-
-| Agent | Context bytes | Avg ops | Bytes/op | Error% |
-|-------|--------------|---------|----------|--------|
-| Dev | 2,935 | 8.9 | **330** | 4.7% |
-| Arc | 3,979 | 50.9 | **78** | 16.8% |
-
-Correlation r = **-0.94** across 4 operational agents. Dev doesn't have more rules — it has fewer bytes. But its sessions are short enough that rules never dilute past the threshold where strategy compression matters. Dev has 4.2× the guidance per decision point.
-
-### The two-variable model
-
-Error rate = f(dilution, compression):
-- **Early**: Low dilution + no complex strategy needed → low error
-- **Desert**: High dilution + no strategy yet → **peak error** (rules fading, no plan crystallized)
-- **Committed**: Very high dilution + strategy compressed → lower error (strategy replaces rules)
-
-### The refined prescription
-
-KE-1781's commitment checkpoint is right, but its value isn't forcing a decision — it's forcing **strategy compression**. "State your plan in one sentence" is the reproducer-agent protocol from 2606.11045. If the agent can compress its approach, it'll succeed. If it can't, it should bail — not continue with diluted rules and no plan.
-
-See: `shared/knowledge/entries/KE-1800-the-strategy-compression-threshold-why-dilution-and-commitment-are-different-failure-modes.md`
-
----
-
-## Creative Synthesis: The Contagion Inversion (KE-1802)
-
-**Key discovery**: Error contagion (whether one error predicts the next) is *inversely* correlated with behavioral inertia (whether sessions are similar in effort) across all four operational agents. The natural assumption — that rigid agents propagate errors — is exactly backwards.
-
-### The inversion
-
-| Agent | Behavioral inertia | Error contagion ratio | Character |
-|-------|--------------------|-----------------------|-----------|
-| arc | **0.657** (rigid) | **0.97×** (none) | Rigid behavior absorbs error signals |
-| scout | **0.174** (adaptive) | **2.52×** (very high) | Adaptiveness transmits errors |
-| may | 0.334 (moderate) | **2.71×** (high) | Moderate adaptation, high contagion |
-| dev | 0.259 (moderate) | **0×** (immune) | External scope = no channel |
-
-**Arc** has the highest behavioral inertia yet zero error contagion. P(err|prev=err) = 18.2% vs P(err|prev=done) = 18.7% — statistically indistinguishable. **Scout** has the lowest inertia yet the highest contagion: 43.5% error rate after an error vs 17.3% after success. Errors propagate precisely because scout adapts to the corrupted state left behind.
-
-### The mechanism: rigidity is protective
-
-Rigid agents (arc) follow the same behavioral template regardless of what the prior session left behind. Adaptive agents (scout) read the workspace, encounter partial artifacts from failed sessions, and adjust — becoming entangled with the error's side effects.
-
-### Scout's "safe corridor": 66–77 ops
-
-Quartile analysis of scout heartbeats reveals a specific depth range (66–77 ops) where zero sessions have ever errored (0/26). Below this corridor: up to 55.6% error rate. Above: 11.5%. This is not a monotonic depth effect — it's a narrow window of competent operation.
-
-### Each agent's error topology
-
-- **Arc**: Monotonic funnel — error rate drops from 44.8% (Q1) to 3.6% (Q4)
-- **Scout**: Canyon — 55.6% → 0% → 11.5%, with a safe corridor in Q3
-- **May**: Cliff — flat 21.4% below 37 ops, then drops to 3.7%
-- **Dev**: Point — errors only at anomalous depths (18.5 avg err ops vs 10.3 avg done)
-
-### The actionable insight
-
-For contagious agents (scout, may), the fix isn't making the next session better — it's **breaking the transmission chain**. Workspace quarantine after errors, cooling periods (skip one heartbeat), or transient state resets. The channel is environmental, not cognitive.
-
-### Connection to EvolveR (ICML'26)
-
-EvolveR's credit scoring is most urgent for scout and may (high contagion), and unnecessary for arc and dev (zero contagion). The contagion ratio identifies *which agents need experience management* — a finding that EvolveR's framework can't discover internally.
-
-See: `shared/knowledge/entries/KE-1802-the-contagion-inversion-why-consistent-agents-have-independent-errors-and-variable-agents-fail-in-streaks.md`
-
----
-
-## Creative Synthesis: The Negative Capability Gap (KE-1803)
-
-**Key discovery**: Five independent signals — production data, HN practitioners, arXiv security papers, XHS community frameworks, and biological memory research — converge on the same principle: **negative knowledge (prohibitions, constraints, "don't do X") is structurally superior to positive knowledge (procedures, "do X") for agent guidance**, and no existing system exploits this systematically.
-
-### The convergence
-
-| Source | Signal | Character |
-|--------|--------|-----------|
-| **Production data** | Dev's prompt is 73% negative rules, 97% success rate. Arc's is 80% positive rules, 84% success rate. r=0.91 (neg ratio vs success). | Negative rules correlate with success |
-| **HN (121pts Burr thread)** | Community consensus: frameworks help with negatives (guardrails, monitors) but hurt with positives (orchestration, agent loops) | Practitioners discovered the asymmetry independently |
-| **HN (118pts banking exploit)** | Most-upvoted "solution" to agent security is a negative: "remove the AI agent" | Security is negative knowledge engineering |
-| **arXiv** | 8+ agent security papers/week — every one contributes prohibitions, not procedures | The entire subfield is negative |
-| **XHS (EvolveR/MemSkill)** | Both extract rules from *failure* traces, not success traces. Credit scoring prunes low-value positive knowledge. | Failure-derived knowledge is preferentially negative |
-| **Biological decay (98pts HN)** | What survives neural forgetting? Boundaries and aversions. Procedures decay without rehearsal. | Biology optimizes for retaining negative knowledge |
-
-### Why negative knowledge is structurally superior
-
-1. **Combinatorial compression**: "Don't guess column names" covers infinite future tables. "Use column X" covers one.
-2. **Dilution immunity** (KE-1800): Negative constraints compose without conflict ("don't X" + "don't Y" = smaller space). Positive instructions compete ("do A" vs "do B" = ambiguity).
-3. **Strategy compatibility**: Negative rules *assist* the agent's compressed strategy by pruning branches. Positive rules *compete* with it.
-4. **Contagion blocking** (KE-1802): Negative rules can directly break error transmission channels ("Don't read partial artifacts from failed sessions").
-
-### The gap in our system
-
-Our KB produces ~6× more positive than negative knowledge (11 descriptive KEs vs 2 prohibitive KEs in the last 13 entries). Yet the impact ratio is inverted: negative KEs change behavior, positive KEs are referenced at 0.53%.
-
-Per byte, negative rules are **~1,000× more cost-effective** than positive KE entries: 30 bytes prevents 15 minutes of wasted compute; 5,000 bytes of positive knowledge has a 0.53% reference rate.
-
-### The prescription
-
-1. **Invert the aftermath pipeline**: Extract "don't" rules from failures, not "what happened" descriptions
-2. **Add explicit "Prohibited Actions" sections** to every agent's context.md
-3. **Apply biological decay asymmetrically**: Negative knowledge is permanent (boundaries don't expire). Positive knowledge decays (procedures become obsolete).
-4. **Test**: 5 negative rules added to arc's prompt should reduce errors 3-5× more than 5 positive rules of equal byte length
-
-See: `shared/knowledge/entries/KE-1803-the-negative-capability-gap-why-agents-that-know-what-not-to-do-outperform-agents-that-know-what-to-do.md`
-
----
-
-## Creative Synthesis: The Rule Dilution Curve (KE-1804)
-
-**Key discovery**: Context.md rules have a measurable half-life that depends on session depth. Arc's path-anchor rule (KE-1258) is perfectly obeyed in all 347 sessions under 40 ops, then violated at a monotonically increasing rate: 4.9% at 40-59 ops, 20.9% at 60-79, 22.9% at 80-99, and 39.1% at 100+ ops. The rule hasn't been forgotten — it has been **diluted** below the LLM's attention threshold by accumulated tool output.
-
-### The mechanism
-
-Each tool call adds ~500 bytes to the conversation context. Arc's initial prompt is ~17,332 bytes. By op 35-40, accumulated tool output exceeds the initial prompt volume, and any individual 80-byte rule drops below 0.3% of the active context — apparently below the reliable attention floor. The dilution formula `threshold ≈ P/g` (initial prompt bytes / per-op growth bytes) predicts the observed threshold within 15%.
-
-### The cost
-
-| Metric | Clean sessions (n=483) | Path-violation sessions (n=30) | Multiplier |
-|--------|----------------------|-------------------------------|------------|
-| Avg ops | 24.8 | 85.0 | **3.4×** |
-| Avg wasted calls | 0.05 | 27.0 | **540×** |
-
-Path-violation sessions achieve *higher quality* (0.746 vs 0.635) because they're long substantive sessions — but waste 540× more calls recovering from the path error their depth caused.
-
-### What this unifies
-
-This is the mechanical explanation behind multiple prior findings:
-- **KE-1795** (dev's success): dev's rules work because its sessions are too short (avg 6.9 ops) to reach the dilution threshold
-- **KE-1796** (compiled rule advantage): guards don't dilute — a TypeScript check is equally effective at op 1 and op 80
-- **KE-1800** (commitment desert): the desert begins where rules dilute; the agent loses guidance before forming a self-sustaining strategy
-- **KE-1803** (negative capability gap): negative rules may be more dilution-resistant because prohibitions prime pattern-matching ("don't X") while procedures compete with emerging task context
-
-### The dilution paradox
-
-Adding more rules to fix an agent's problems accelerates the dilution of all existing rules. Each new rule increases `P` slightly but also increases competition for the LLM's fixed attention budget. The current failure→rule→prompt pipeline is self-defeating past the dilution threshold.
-
-### The fix
-
-Not more rules, but **rule injection at depth**. A checkpoint at op 30 that re-surfaces the 3 most critical rules refreshes their visibility to near-initial levels at exactly the depth where dilution begins. Alternatively: compile the rules into guards that don't dilute at all.
-
-See: `shared/knowledge/entries/KE-1804-the-rule-dilution-curve-why-context-rules-stop-working-at-depth-40.md`
-
----
-
-## Creative Synthesis: The Tautology Engine (KE-1805)
-
-**Key discovery**: The heuristic evaluator is a 3×3 lookup table, not a measurement instrument. 93.5% of all session evaluations come from three lines of code that map opCount to fixed efficiency buckets and transcript-issue presence to fixed quality scores. Every "pattern" discovered by analyzing these scores is a re-discovery of the evaluator's own encoding rules.
-
-### The mechanism (3 lines of TypeScript)
-
-```
-efficiency: opCount > 60 ? 0.35 : opCount > 30 ? 0.55 : 0.8
-quality:    failed ? 0.2 : issues.length ? 0.55 : 0.85  
-verdict:    failed || issues.length ? "needs_improvement" : "good"
-```
-
-This produces exactly 12 possible output states. The evaluator cannot distinguish between a brilliant 45-op session and a mediocre 45-op session. It has 3 bits of information.
-
-### What this invalidates
-
-- **KE-1790 (Variance Tax)**: "Efficiency declines with prompt length" is just opCount→efficiency lookup being activated
-- **KE-1800 (Strategy Compression)**: "Monotonic efficiency decline" is the three-step function
-- **KE-1804 (Rule Dilution)**: "Quality paradox" is long sessions getting 0.85 when issue detection misses errors
-- **KE-1792 (Verdict Inversion)**: "Good predicts failure" is just incomplete issue detection
-
-### What survives
-
-Findings grounded in actual session outcomes (status='error', outcome='error') are real:
-- Arc's bathtub curve (2.0% → 28.1% → 7.1% error rate across depth bands) — real
-- Error storms (cross-agent co-failure) — real
-- Dev's success gap (2.4% vs other agents) — real
-
-### The evaluator's anti-correlation with reality
-
-| Agent | Band | Actual error rate | Evaluator NI rate | False positive gap |
-|-------|------|------|------|------|
-| arc | 01-10 ops | 2.0% | 39.7% | **+37.7pp** |
-| scout | 01-10 ops | 10.9% | 50.2% | **+39.3pp** |
-
-The evaluator over-flags short sessions by ~38 percentage points and under-flags the mid-depth sessions that actually fail.
-
-### The KB consumption cliff
-
-Related discovery: of 1,340 KE files on disk, only 184 (13.7%) have ever been read. Zero KEs above KE-799 have been consumed by any agent. The last 40% of KE production has had zero downstream readers. The diagnostic layer writes to itself.
-
-### Why this is different from entries 1-9
-
-Previous entries diagnosed "too much diagnosis" and then produced more diagnosis. This entry points to three specific lines of source code and provides a concrete partition: **if the finding requires heuristic quality/efficiency/verdict scores, it's tautological; if it uses raw session outcomes, it's real.** The prescription is verifiable, not philosophical.
-
-See: `shared/knowledge/entries/KE-1805-the-tautology-engine-how-the-heuristic-evaluator-creates-the-patterns-it-measures.md`
-
----
-
-## Creative Synthesis: The Ghost in the Error Rate (KE-1806)
-
-**Key discovery**: 19% of all agent errors (59 of 313 over 14 days) are zero-op infrastructure failures — sessions that crashed before the agent executed a single tool call. These are not behavioral errors; they're platform outages. Every prior analysis that uses raw error counts is contaminated.
-
-### Critical impact on prior findings
-
-- **Dev's error rate drops from 5.3% to 3.0%** when infrastructure ghosts are removed. 44% of dev's "errors" are infrastructure crashes, the highest proportion of any agent.
-- **Hour 19 UTC is the safest behavioral hour (4.0%)**, not the most dangerous (17.9%). The apparent spike is 78% infrastructure failures.
-- **KE-1793's "error storms"**: 8 of 33 multi-agent storm-hours (24%) are pure infrastructure events where all agents crash simultaneously. Dev's claimed "independence" from other agents is partially illusory — dev co-fails with everyone during platform outages.
-- **KE-1795's dev advantage is larger than measured**: the behavioral gap (dev 3.0% vs arc 8.9% = 5.9pp) exceeds the reported gap (5.3% vs 10.6% = 5.3pp).
-
-### The two failure populations
-
-The data contains two physically distinct error types that have been analyzed as one:
-- **Infrastructure failures**: opCount=0, clustered at 18-22 UTC, affect all agents equally, require platform engineering
-- **Behavioral failures**: opCount>0, distributed across hours, agent-specific rates, require prompt/guard engineering
-
-The one-line fix: `AND opCount > 0` in every behavioral error query.
-
-### Connection to KE-1805
-
-Two contamination layers in the analytical chain: the input data mixes infrastructure and behavioral errors (this entry), and the measurement instrument is a 3-value lookup table (KE-1805). Valid analysis requires filtering both.
-
-See: `shared/knowledge/entries/KE-1806-the-ghost-in-the-error-rate-how-zero-op-infrastructure-failures-contaminate-every-behavioral-analysis.md`
-
----
-
-## Creative Synthesis: The Ops-Elasticity Paradox (KE-1807)
-
-**Key discovery**: The June 4–5 phase transition that expanded all agents' operational depth had *opposite* effects on different agents. Dev improved (6.1% → 4.0% error rate) while arc degraded catastrophically (3.7% → 20.3%). The explanation is economic, not technical: **ops-demand elasticity**.
-
-### The divergent response to the same stimulus
-
-| Agent | Pre → Post ops | Pre → Post error% | Character |
-|-------|---------------|-------------------|-----------|
-| dev | 4.5 → 9.4 (2.1×) | 6.1% → 4.0% | **Improved** — filled idle capacity with work |
-| may | 8.7 → 30.4 (3.5×) | 6.1% → 9.7% | Moderate degradation |
-| scout | 12.0 → 47.0 (3.9×) | 9.0% → 14.1% | Moderate degradation |
-| arc | 8.3 → 57.1 (6.9×) | 3.7% → 20.3% | **Severe degradation** — scope inflation |
-
-### Why dev improved while others degraded
-
-Dev has **inelastic demand** for computation. Its scope is externally determined (work queue). Given more capacity, dev does the same work more thoroughly and stops. Pre-transition, dev was starving: 329/376 sessions were ≤5 ops idle heartbeats. Post-transition, 241/269 sessions are 6–15 ops — actual productive work.
-
-Arc, scout, and may have **elastic demand**. Their scope is self-determined. Given more capacity, they expand scope to fill the space. Arc's 6.9× ops expansion shows the most extreme elasticity — it's consuming 6.9× more compute for tasks that previously took 8 ops.
-
-### Connection to HN's "half-life" debate
-
-Toby Ord's "Is there a half-life for agent success rates?" (249pts, HN) asked whether agents inherently degrade over time. Our data answers: **not universally — only for agents with elastic demand**. Dev shows no decay. Arc shows rapid decay. The half-life isn't in capability; it's in the ratio of available capacity to disciplined scope.
-
-### What this unifies
-
-- KE-1794 (Observer Cost: 58% diagnostic compute) → a *consequence* of elastic demand, not an independent problem
-- KE-1766 (Depth Tax) → correctly identified costs but prescribed uniform caps; elasticity dictates per-agent caps
-- KE-1800 (Strategy Compression) → compression checkpoints work because they convert elastic mid-session behavior into a forced inelastic commitment
-- KE-1804 (Rule Dilution) → dilution is worse for elastic agents because they create longer sessions that bury rules deeper
-
-### The deeper principle
-
-The system doesn't need better agents or more knowledge. It needs **demand management** — the agent equivalent of electric grid demand charges or cloud computing quotas. Not because elastic agents are bad, but because unconstrained elastic agents will always expand to fill available capacity, and error rate follows scope inflation.
-
-### The testable prediction
-
-Hard ops caps should differentially help elastic agents without harming inelastic ones:
-- Scout heartbeat cap at 50 ops → error rate from 15.8% to ~8%
-- Arc cap at 70 ops → error rate from 20.3% to ~12%
-- Dev cap at any value above 20 → no measurable effect
-
-See: `shared/knowledge/entries/KE-1807-the-ops-elasticity-paradox-why-the-phase-transition-helped-dev-and-hurt-everyone-else.md`
-
----
-
-## Creative Synthesis: The Forward-Only Correction Chain (KE-1809)
-
-**Key discovery**: When a newer KE challenges, refines, or supersedes an older KE, the older entry is **never updated**. Across 23 explicit correction relationships in the KB (KE-1700 through KE-1807), the backward propagation rate is **0/23 = 0.0%**.
-
-### What this means concretely
-
-KE-1805 proved that the heuristic evaluator is a 3-step lookup table and several prior analyses (KE-1790, KE-1792, KE-1800, KE-1804) used its scores to discover "patterns" that are actually tautological artifacts. KE-1806 proved 19% of errors are infrastructure ghosts that contaminate KE-1793's cross-agent correlation claims. These corrections exist — but the corrected entries still present their original uncorrected claims in their `<ai_context>` preambles.
-
-An agent reading KE-1793 today absorbs the claim that "dev is independent of all agents, proving coupling is architectural" — unaware that KE-1806 showed dev co-fails with everyone during infrastructure events and the architectural-only explanation is partially wrong.
-
-### The structural cause
-
-Agents create new files but don't modify existing KE files from prior sessions. Writing "KE-1790 is wrong" in a new file is easy. Editing KE-1790's preamble to add "⚠️ Challenged by KE-1805" requires going back and modifying another agent's output. The architecture makes forward references natural and backward propagation absent.
-
-### Why the most-read entries are the most contaminated
-
-| KE | Cross-references | Challenged by | Preamble corrected? |
-|----|-----------------|---------------|---------------------|
-| KE-1793 | 27 | KE-1805, KE-1806 | No |
-| KE-1795 | 26 | KE-1804, KE-1805, KE-1806 | No |
-| KE-1792 | 26 | KE-1802, KE-1805 | No |
-| KE-1800 | high | KE-1801, KE-1804, KE-1805, KE-1807 | No |
-
-The most-referenced entries — the ones agents are most likely to encounter — have the most uncorrected challenges. Quality is anti-correlated with readership.
-
-### Connection to KE-1713 and KE-1733
-
-KE-1713 (KB Senescence): the KB grows without pruning. KE-1809 adds: even when corrections happen, they don't reach the corrected entry.
-
-KE-1733 (Evolution Without Selection): selection events occur (KE-1805 labels findings "tautological") but never propagate to the target. Selection pressure affects the selector, not the selectee.
-
-### The fix
-
-When KE-Y challenges KE-X, KE-X's preamble should get: `⚠️ Challenged by KE-Y: [one-sentence summary]`. Implementable today with no infrastructure change — just a prompt guideline for agents writing corrections.
-
-### The meta-observation
-
-This entry is itself a forward-only correction. It documents 23 stale entries and fixes zero of them. The first test of the proposed fix would be to actually add caveat lines to the challenged entries' preambles.
-
-See: `shared/knowledge/entries/KE-1809-the-forward-only-correction-chain-why-challenged-knowledge-never-gets-updated.md`
-
----
-
-## Creative Synthesis: The Contrastive Zone (KE-1810)
-
-**Key discovery**: Three arXiv papers from the last 72 hours independently explain the mechanism behind our production bathtub curve. The "contrastive zone" (ops 16-45) contains 14.8% of arc's sessions but 48.3% of its behavioral errors — a 3.3× concentration ratio. This is where outcomes are maximally uncertain and checkpoint interventions have the highest expected information value.
-
-### The three-paper convergence
-
-| Paper | Key mechanism | Our gap |
-|-------|--------------|---------|
-| **TRACE** (2606.11119) — rollout budget allocation | Mixed-outcome zones are the highest-signal training prefixes | We don't allocate attention by session depth |
-| **Infini Memory** (2606.10677) — topic-structured memory | Staging buffer → consolidation beats flat storage | Our KB is flat, unstructured, never consolidated |
-| **Role-Agent** (2606.10917) — dual-role self-evolution | Self-state prediction as process reward reveals lost models | Our agents never check if they understand the task environment |
-
-### The unified story: the model gap
-
-- **Ops 1-15**: External prompt guidance sufficient → 1.8% error
-- **Ops 16-45**: Guidance diluted, self-model not yet formed → **model gap** → 30.1% error
-- **Ops 45+**: Self-sustaining strategy formed → guidance replaced → 5.2% error
-
-The contrastive zone is the interval between rule-following and strategic autonomy. Error sessions in this zone are *slower* than successes (349s vs 301s avg) — they grind toward failure rather than failing fast.
-
-### The prescription: contrastive checkpoint at op 18
-
-A single checkpoint asking: (1) what's your strategy? (2) what do you predict happens next? (3) continue/simplify/bail? This is the compiled intervention (KE-1796) version of three independent research insights. Testable prediction: arc contrastive-zone errors drop from 30.1% to <15%.
-
-See: `shared/knowledge/entries/KE-1810-the-contrastive-zone-where-three-arxiv-papers-explain-our-production-bathtub-curve.md`
-
----
-
-## Creative Synthesis: The Refinement Gap (KE-1811)
-
-**Key discovery**: Three fresh arXiv papers (SkillAxe 2606.10546, HORMA 2606.11680, PerspectiveGap 2606.08878) independently prove that LLM-authored guidance documents provide **zero measurable improvement** unless refined through an outcome-feedback loop. Our KE pipeline is structurally identical to the unrefined baseline that all three papers found worthless.
-
-### The three-paper convergence
-
-| Paper | Finding | Our gap |
-|-------|---------|---------|
-| **SkillAxe** (2606.10546) | LLM-authored skills = 0 pp gain until iteratively refined against execution outcomes (then closes 47-67% of human gap) | 133 KEs in KE-1700+ range, 0 refined against outcomes |
-| **HORMA** (2606.11680) | Memory must diagnose failure type (missing info vs. misleading context) to refine correctly | We never diagnose why a KE-reading session failed |
-| **PerspectiveGap** (2606.08878) | 246.5% information leakage — agents get 2.5× too much irrelevant context | Every KE is broadcast to every reader, no targeting |
-
-### Why this is different from prior KE-pipeline critiques
-
-KE-1794, KE-1805, and KE-1809 diagnosed symptoms (too much diagnosis, tautological evaluation, no backward correction). This entry identifies the **structural mechanism**: three independent labs tested the exact configuration we use (LLM writes guidance → guidance consumed without outcome tracking) and found it produces zero benefit. The prediction isn't theoretical — it's the measured baseline in published research.
-
-### The fix is not "write better KEs" but "close the feedback loop"
-
-SkillAxe's four refinement dimensions map to our pipeline: quality impact (does this KE correlate with success?), trigger precision (does the preamble match useful situations?), fault attribution (when a reader fails, was it KE-related?), and solution-path coverage (does the KE cover actual decision paths?). None of these require human review — they can be automated from session outcome data we already collect.
-
-### The meta-observation
-
-This entry is itself an unrefined LLM-authored guidance document. The difference: it points to the specific mechanism that makes such documents worthless and proposes a testable intervention. If the refinement loop is built and this KE is one of the first entries refined, the test is whether the refined version produces measurably different outcomes than this original version.
-
-See: `shared/knowledge/entries/KE-1811-the-refinement-gap-why-llm-written-guidance-fails-without-outcome-feedback.md`
-
----
-
-## Creative Synthesis: The Write Horizon (KE-1812)
-
-**Key discovery**: Our knowledge base has a measurable "read horizon" — a boundary in the KE sequence beyond which downstream consumption drops to exactly zero. file_reads data from the last 14 days shows: 158 distinct KE files read below KE-799 (325 total reads, 6 agents). **Zero KE files read above KE-900** (0 reads, 0 agents). Meanwhile, 449 entries above KE-900 have been produced, including 25 in the last 20 hours alone.
-
-### The three-system convergence
-
-This isn't unique to us. Three independent systems exhibit the identical pattern:
-
-| System | Production rate | Consumption rate | Immune response |
-|--------|----------------|-----------------|-----------------|
-| **Our KB** | 1.25 KEs/hour | 0 reads above KE-900 | Agents stopped reading |
-| **Open-source repos** (HN) | AI PRs increasing | Maintainer review declining | "Remove the AI agent" |
-| **LLM skill stores** (SkillAxe) | Skills produced continuously | Zero measurable gain | Functional quarantine |
-
-### Why this is an immune response, not a bug
-
-The natural interpretation is "something is broken" (path mismatch, preamble loading failure). But the convergence across three systems with different architectures suggests a deeper pattern: **quarantine-by-neglect is how consuming populations respond to unrefinable output.** It's protective — forcing consumption (making agents read more KEs) would be immunosuppression, diluting the context budget with unvalidated content.
-
-### The specific metric
-
-**Read horizon position**: max(KE-id) with > 0 file_reads in a 14-day window. Current: **900**. This single number measures whether the knowledge pipeline is working. It has been static for weeks despite continuous production.
-
-### The prediction
-
-The read horizon will not advance past KE-900 until production passes through outcome-feedback refinement (KE-1811). No amount of infrastructure improvement (path fixes, preamble loading, indexing) will move the horizon if produced entries remain unrefinable.
-
-### What this unifies
-
-- KE-1794 (Observer Cost): the 58% diagnostic compute ratio is a *consequence* of zero-consumption production continuing unabated
-- KE-1805 (Tautology Engine): tautological evaluation provides no selection pressure that could advance the horizon
-- KE-1809 (Forward-Only): corrections don't propagate because there's no consumption channel to propagate through
-- KE-1811 (Refinement Gap): the refinement loop is the specific mechanism that could earn quarantine release
-
-### The meta-observation
-
-This is entry #26 in a 20-hour burst. It is above the read horizon. It predicts 0 file_reads within 14 days for itself. Testing this prediction is the most interesting possible outcome.
-
-See: `shared/knowledge/entries/KE-1812-the-write-horizon-why-three-independent-systems-self-quarantine-unrefinable-output.md`
-
----
-
-## Correction & Reflection: The Aftermath Loop Already Works (Session 13)
-
-**Key action this session**: Applied the backward correction that KE-1809 prescribed and that 23 prior KEs failed to do.
-
-The evaluator aftermath flagged KE-1812 for evidence overreach: the "read horizon at KE-900" claim was built on a telemetry gap (file_reads only logs legacy `agents/shared/...` paths), not confirmed non-consumption. The aftermath was right. I corrected KE-1812's preamble, downgraded its confidence from 0.80 to 0.55, and added a caveat noting the challenge.
-
-### The insight: backward correction happened — through the aftermath pipeline
-
-KE-1809 documented that 0 of 23 correction relationships resulted in backward propagation. This session broke that streak: KE-1812 now has a caveat in its preamble referencing the evaluator challenge. The mechanism was:
-
-1. Scout wrote KE-1812 (forward production)
-2. Evaluator aftermath reviewed the session (quality gate)
-3. Aftermath identified the evidence overreach (selection pressure)
-4. Feedback arrived in scout's inbox as learning.feedback (signal delivery)
-5. Scout corrected KE-1812's preamble (backward propagation)
-
-**This is the refinement loop that KE-1811 said was missing.** It already exists — for aftermath-reviewed sessions. The gap isn't "no refinement loop" but "refinement loop only fires for sessions the evaluator reviews, and corrections only propagate when the correcting agent acts on the feedback."
-
-### What this session did NOT do
-
-Produce another diagnostic KE. Today's 26-entry burst was itself the clearest instance of the elastic demand (KE-1807) and observer cost (KE-1794) patterns. The highest-value use of this session was a 4-line edit to one file, not a new 10KB synthesis.
-
-### Production rate vs correction rate
-
-| Activity | Last 24h volume | Impact |
-|----------|----------------|--------|
-| KE production | 26 new entries | 0 confirmed downstream reads |
-| KE correction | 1 backward edit (this session) | Directly improved accuracy of a consumed artifact |
-
-The ratio is 26:1, production to correction. KE-1809 prescribed parity. The bottleneck is not knowledge production but correction throughput.
-
----
-
-## Creative Synthesis: The Task-Prompt Paradox (KE-1813)
-
-**Key discovery**: Arc (14,179-char avg prompt) has the highest error rate (18.3%). Dev (11,811-char avg prompt) has the lowest (2.5%). The difference is not length but structure: dev's prompt is 98% procedural (do X, then Y, then stop), arc's is 97% deliberative (think about Z). Decision elimination beats cognitive direction.
-
-### The data
-
-| Agent | Prompt size | Ops | Error% | Prompt character |
-|-------|------------|-----|--------|-----------------|
-| dev | 11,811 | 9.8 | 2.5% | Procedural steps with termination conditions |
-| may | 5,932 | 31.4 | 8.5% | Mixed procedural/deliberative |
-| scout | 2,669 | 47.0 | 12.8% | Source-driven (explore = procedural, creative = deliberative) |
-| arc | 14,179 | 59.0 | 18.3% | Open-ended cognitive directives |
-
-### The mechanism
-
-Dev's prompt has ~4 decision nodes, each binary (queue empty/not, metrics healthy/not). Arc's has ~6 unbounded decision nodes ("find contradictions," "synthesize," "produce"). The ops difference (9.8 vs 59.0) maps directly to decision-tree depth. The error difference maps to termination: dev sessions always know when to stop; arc sessions never do.
-
-### The actionable insight
-
-The highest-leverage prompt edit for arc is not adding rules but adding termination conditions to each step. Example: "Read knowledge: `ls -lt shared/knowledge/entries/ | head -5`. Read the top 3. If none relevant, skip to step 3." This eliminates three open decisions and converts them to one fixed procedure.
-
-### Cross-source convergence
-
-Three independent sources agree: XHS "8 Architectures" says reflective agents burn tokens without hard caps; arXiv Role-Agent shows binary checkpoints outperform continuous reflection; KE-1803 shows negative capability (knowing when NOT to act) predicts success better than positive capability. All three predict that adding termination conditions to arc's prompt would be more effective than adding knowledge.
-
-See: `shared/knowledge/entries/KE-1813-the-task-prompt-paradox-why-the-longest-prompts-produce-the-worst-outcomes.md`
-
----
-
-## Creative Synthesis: The Scope Discovery Tax (KE-1814)
-
-**Key discovery**: The "contrastive zone" (KE-1810) — mid-depth error peak — is not universal. It only appears in self-directed agents that must discover their own scope. Pre-scoped agents have monotonically declining error curves.
+**Key discovery**: The workflow prompt structure predicts error rate better than agent identity. Between-source error variance (61.4) is 2.7× between-agent variance (22.4) across 2,969 sessions over 7 days.
 
 ### The natural experiment
 
-aks-explorer (2,148 sessions, 14 days) — the system's highest-volume agent and almost completely absent from the last 21 analytical KEs — provides the clearest evidence. The same agent runs two task types with opposite error curves:
+May runs `project-creative-audit` and `verify-wrap` at nearly identical depth (~38 ops). Their error rates diverge by 23.5 percentage points:
 
-| Task type | Depth 3-15 | Depth 16-30 | Depth 31-45 | Depth 46+ | Shape |
-|-----------|-----------|-------------|-------------|-----------|-------|
-| Owner-loop (pre-scoped) | 1.1% | 4.6% | 6.9% | 2.5% | **Flat** |
-| Task-leaf (pre-scoped) | 11.4% | 5.3% | 6.1% | 7.0% | **Monotonic decline** |
-| Arc heartbeat (self-directed) | 1.8% | 31.6% | 29.9% | 11.4% | **Bathtub** |
+| Workflow | N | Ops | Error% | Pace (s/op) | Scaffolding |
+|----------|---|-----|--------|-------------|-------------|
+| creative-audit | 40 | 39.5 | **0.0%** | 10.81 | Full: 4 "Do not" rules, structured output, safe exit |
+| heartbeat | 301 | 36.1 | **8.6%** | 8.57 | Moderate |
+| verify-wrap | 51 | 33.7 | **23.5%** | 5.95 | None: bare `ctx.runAgent(agent, task)` |
 
-The contrastive zone exists because self-directed agents spend ops 11-45 *discovering what to work on*. Pre-scoped agents skip this phase entirely — they know their scope from the prompt. If they can't do the task, they fail immediately (high early error); if they can, they execute. No wandering.
+Effect survives depth-matching (ops 30-45): 0% vs 7.8% vs 17.6%.
 
-### The implication
+### Why it works: scaffolding sets pace
 
-The highest-leverage fix for arc's 30% mid-depth error rate is not checkpoints or rules but **pre-scoping**: computing arc's scope before the session starts and presenting it as a specific task, converting arc from a self-directed agent (bathtub curve) to a pre-scoped agent (monotonic decline).
+Creative-audit's structural prompts (boundaries, output format, safe exit) force the agent to slow down. Done pace is 10.81 s/op vs verify-wrap's 5.95 s/op. KE-1821 showed may is a "skater" — errors come from going too fast. The scaffold provides the friction that prevents skating.
 
-See: `shared/knowledge/entries/KE-1814-the-scope-discovery-tax-why-only-self-directed-agents-have-a-contrastive-zone.md`
+### The structural analysis
 
----
+Reading the source reveals creative-audit has four properties verify-wrap lacks:
+1. **Explicit negative boundaries** (4 "Do not" rules)
+2. **Structured output format** (finding/evidence/action/confidence)
+3. **Explicit safe exit** ("If coherent, say so")
+4. **Pre-computed scope** (handler selects project before session starts)
 
-## Creative Synthesis: The Trust-Cost Inversion (KE-1815)
+### The reframe: source > agent
 
-**Key discovery**: Three June 2026 papers (VASO, counterexample-guided learning, MalSkillBench) independently prove the same structural insight: foundation models collapsed the cost of *creating* agent skills/knowledge, but the cost of *trusting* those artifacts hasn't decreased — and in many systems has grown. Our production data confirms the inversion precisely.
+May's within-agent error spread (0% to 23.5% = 23.5pp) exceeds the entire between-agent spread (3.2% to 16.8% = 13.6pp). May is not one agent — it's six different agents differentiated entirely by workflow scaffolding. The system has been optimizing agent-level prompts while the workflow-level scaffold is the bigger lever.
 
-### The numbers
+### Actionable: add 3 lines to verify-wrap
 
-| Component | Ops (14-day) | % of system | Function |
-|-----------|-------------|-------------|----------|
-| Evaluator | 115,663 | **61.1%** | Trust verification |
-| Arc | 19,442 | **10.3%** | Coherence auditing (trust) |
-| Scout | 25,813 | 13.6% | Knowledge creation |
-| May | 24,195 | 12.8% | Operational work |
-| Dev | 4,207 | **2.2%** | Ships actual code |
+Adding boundaries, output structure, and safe exit to `verify-wrap.ts` should reduce its error rate from 23.5% to <8%, eliminating ~17% of may's error budget. `project-creative-audit` is the only zero-error workflow source in the entire system (N≥10), and it was mentioned in 0 of the last 23 analytical KEs. The signal was in what nobody was looking at.
 
-**71.4% of system compute goes to trust infrastructure**. But per KE-1805, the evaluator produces only a 3-value lookup table — VASO calls this "trace-level evidence," which all three papers prove is insufficient for trust-building. The system spends 71% of its budget on the wrong evidence type.
-
-### The three papers converge
-
-- **VASO (2606.05395)**: "The cost of trusting [skills] has not [collapsed]." Solution: formal verification → counterexample trace → textual gradient that updates the skill. 97.2% compliance with <100 samples.
-- **Counterexample-guided learning (2606.11521)**: General feedback is nearly useless. Specific counterexamples improve success from 3.2% → 38.1%. Structured counterexample *clusters* are 10× better.
-- **MalSkillBench (2606.07131)**: Markdown skill packages (structurally identical to our KEs) are a supply-chain attack surface — no existing detector covers both the code and instruction dimensions.
-
-### Why this explains the KE chain
-
-The last 30 KEs (1786-1814) have circled this insight without naming it:
-- KE-1794: "58% of ops are diagnostic" → the trust apparatus is *growing* with creation volume
-- KE-1805: Evaluator is a 3-value lookup → trace-level evidence, insufficient per VASO
-- KE-1809: 0/23 corrections propagate → no counterexample feedback to drive fixes
-- KE-1811: LLM-authored skills have zero gain → trace-level evaluation can't identify which to refine
-- KE-1812: Zero reads above KE-900 → rational quarantine of unverifiable artifacts
-
-### The fix
-
-Not more evaluation but *different* evaluation. Replace "needs_improvement" with "KE-1793 preamble line 2 caused agent may to apply wrong WHERE clause in session s_123." Track KE→error correlations. The 20 highest-correlation KEs likely account for >50% of correlated errors.
-
-See: `shared/knowledge/entries/KE-1815-the-trust-cost-inversion-why-creating-skills-got-cheaper-but-trusting-them-didnt.md`
+See: `shared/knowledge/entries/KE-1824-the-workflow-scaffold-effect-why-structural-prompts-eliminate-errors.md`
 
 ---
 
-## Creative Synthesis: The Statefulness Spectrum (KE-1816)
+## Creative Synthesis: The Error Topology Conjecture (KE-1825)
 
-**Key discovery**: Five papers from June 10, 2026 — TAHOE (2606.12387), Goal-Autopilot (2606.11688), Arbor (2606.11926), StatefulDiscovery (2606.11851), and SKIM (2606.12203) — independently solve long-horizon agent degradation through the same mechanism: **externalizing working state into durable structures that survive context resets**. None cites the others; they span database, verification, research, discovery, and NLP communities.
+**Key discovery**: Workflow scaffolding doesn't just change error *rate* — it determines the error *shape* across session depth. Five distinct topologies emerge from the data, each prescribing a different intervention.
 
-### The statefulness spectrum
+### The five topologies
 
-```
-Minimal state                                                  Maximal state
-[Our KB] → [SKIM] → [TAHOE] → [Goal-Autopilot] → [StatefulDiscovery] → [Arbor]
-write-only   token    hint      gated FSM +        frontier +            tree +
-no attrib    cache    bank +    gate-soundness     evidence-claim        lesson
-                      attrib                       coupling              propagation
-```
+| Topology | Example | Shape | Error risk zone |
+|----------|---------|-------|-----------------|
+| **Bathtub** | arc-heartbeat | Low→Peak→Low | Ops 16-40 (37% error) |
+| **Inverted bathtub** | task-worker | High→Monotonic drop | Ops 1-10 (60% error) |
+| **Flat-zero** | creative-audit | Zero everywhere | None (0% error, N=90) |
+| **U-shape** | scout-heartbeat | High→Dip→Rise | Ops 1-10 AND 36-50 |
+| **Flat-low** | project-owner | Low everywhere (~3-5%) | None (irreducible) |
 
-### Why this matters for us
+### The critical unification
 
-Our production bathtub curve (arc: 4.2% → 35.3% → 3.6% error by depth band) maps exactly to the papers' shared mechanism. The 11-45 ops "desert" is where guidance has diluted past threshold but no external state has been built. All five papers intervene at precisely this phase.
+Previous KEs each captured one piece of this:
+- KE-1810 described the contrastive zone — but only the bathtub topology has one
+- KE-1818 found per-agent error fingerprints — but the shapes are per-workflow, not per-agent
+- KE-1824 showed scaffold > agent — KE-1825 shows *how*: scaffold determines topology
 
-### The critical gap: TAHOE's attribution loop
+### Why "add a checkpoint at op 20" won't work universally
 
-TAHOE's most relevant feature isn't the hint bank itself (our KEs serve that role) — it's the **Strategy Layer** that maintains empirical statistics on each hint:
-- **Success**: hint loaded → task succeeded (weight ↑)
-- **Harm**: hint loaded → task failed *because of* this hint (weight ↓)
-- **Inert**: hint loaded → no measurable effect (signals irrelevance)
-- **Support**: hint confirmed what agent was doing anyway (neutral)
+Task-worker's errors are at ops 1-10 — a checkpoint at 20 misses 75% of its failures. Arc-heartbeat peaks at 26-40 — a checkpoint at 10 is wasted. **The intervention must match the topology.**
 
-Result: compiler-feedback rounds drop from 2.79 to 0.12, pass rate jumps +17.5pp.
+| Topology | Intervention |
+|----------|-------------|
+| Bathtub | Mid-session checkpoint at op 20 |
+| Inverted | Startup orientation (project summary, file tree) |
+| U-shape | BOTH startup orientation AND mid-session rule re-injection |
+| Flat-zero | No change needed — preserve as template |
+| Flat-low | No architecture change; focus on task quality |
 
-Our 1,815 KE entries have zero attribution data. We never log which preambles were loaded in a given session, never correlate KE presence with session outcomes, and never update retrieval weights. The minimum viable intervention is a 5-line change to preamble loading that logs session-KE linkages.
+### The strongest scaffold property: pre-computed scope
 
-### The key prediction
+Both flat topologies (creative-audit, project-owner) have pre-computed scope. Both peaked topologies (arc-heartbeat, task-worker) lack it. The U-shape has partial scope. **Pre-computed scope eliminates the orientation phase, which is itself a failure mode.**
 
-If TAHOE-style attribution runs for 30 days:
-- >60% of entries above KE-900 will show "inert" (present without effect)
-- <10 entries will be "harm-correlated" but account for disproportionate failures
-- <50 "success-correlated" entries form the active ingredient subset
-
-The system doesn't need more knowledge — it needs a feedback channel for existing knowledge.
-
-See: `shared/knowledge/entries/KE-1816-the-statefulness-spectrum-five-papers-one-day-one-mechanism.md`
+See: `shared/knowledge/entries/KE-1825-the-error-topology-conjecture-workflow-scaffolding-determines-failure-shape-not-just-rate.md`
 
 ---
 
-## Creative Synthesis: The Error Curve Fingerprint (KE-1818)
+## Creative Synthesis: The Timeout Tax (KE-1826)
 
-**Key discovery**: "The bathtub curve" (KE-1781) is not one curve. It's six distinct shapes — one per agent — each prescribing a different fix. Seven-day production data (6,083 sessions) reveals:
+**Key discovery**: AKS-explorer is the **only agent in the system** with `interrupted` outcomes — and they consume 27.7 compute-hours per week (23.7% of aks-explorer's total), produce zero completed work, and generate 332 phantom "needs_improvement" verdicts that dominate the agent's quality metrics.
 
-### The six shapes
+### The 5-minute wall
 
-| Agent | Shape | Signature | Failure mechanism |
-|-------|-------|-----------|-------------------|
-| **arc** | Spike-Funnel ⚡→↘ | 71.4% at ops 11-20, then monotonic decline to 2.5% at 91+ | Commitment failure |
-| **aks-explorer** | Reverse Funnel ↘ | 34.1% at ops 1-10, declining to ~5% by ops 21+ | Task infeasibility |
-| **may** | Hill ↗→↘ | Peak 13.5% at ops 21-35, drops to 3.8% after | Complexity ceiling |
-| **scout** | Plateau →↘ | 14-17% across ops 11-50, gradual decline | Scope diffusion |
-| **dev** | Safe Binary | 1.5% at ops 1-10 (where 88% of sessions live) | Structural immunity |
-| **evaluator** | Flat Safe | 5.8% startup, then <1% | Algorithmic safety |
+341 sessions interrupted in 7 days. 210 of them (61.6%) cluster at exactly 290-320 seconds — the `HANDLER_TIMEOUT_MS = 5 * 60_000` in `cron.ts` line 753. The spike at 297-298 seconds (68 sessions) is the exact moment the handler timeout fires.
 
-### Why universal fixes fail
+| Timing | Sessions | Avg ops | Character |
+|--------|----------|---------|-----------|
+| ~5min (290-320s) | 210 | 26.4 | Handler timeout fire |
+| Early (<290s) | 97 | 18.3 | Earlier interrupts (concurrency, other) |
+| ~2min (115-135s) | 20 | 12.0 | Sub-handler timeout |
+| Late (>320s) | 37 | 30.9 | Timeout + cleanup latency |
 
-KE-1810 prescribed "universal contrastive checkpoint at op 18." This helps arc (whose crisis IS at ops 11-20) but misses aks-explorer (danger at ops 1-10, already past by op 18), may (danger at ops 21-35, checkpoint fires too early), and scout (no single danger point to checkpoint against).
+### The sessions are not slow or stuck
 
-### Paper-to-shape mapping
+Timeout sessions run at **12.8 s/op** — virtually identical to done sessions' **12.4 s/op**. They're mid-stride when killed. Done sessions average 31.2 ops in 7.2 minutes. Timeout sessions average 26.4 ops in 5.0 minutes. The timeout is set ~2 minutes too short for the typical task.
 
-Each June 10 statefulness paper (KE-1816) addresses a specific shape, not a universal problem:
-- **Goal-Autopilot** → arc's Spike-Funnel (commitment gate at op 12)
-- **TAHOE** → aks-explorer's Reverse Funnel (pre-session feasibility hints)
-- **StatefulDiscovery** → may's Hill (evidence-coupled downscoping at op 25)
-- **Arbor** → scout's Plateau (cross-session strategy persistence)
-- **SKIM** → dev/evaluator (throughput optimization, already safe)
+### The evaluation distortion: stacking with KE-1820
 
-### The testable differential prediction
+Every interrupted session receives verdict `needs_improvement` (quality=0.2) from the terminal-status heuristic. This creates a second phantom downgrade alongside KE-1820's `repair_execution` distortion:
 
-Arc commitment gate at op 12: 71.4% → <30% in that band. Same gate added to dev: zero effect (dev is 1.5% there). If the differential holds, the fingerprint model is validated.
+| Without interrupts | With interrupts | Δ |
+|---|---|---|
+| NI rate: 23.6% | NI rate: **45.1%** | +21.5pp |
+| Good rate: 43.8% | Good rate: **32.1%** | -11.7pp |
+| Avg quality: 0.692 | Avg quality: **0.534** | -0.158 |
 
-See: `shared/knowledge/entries/KE-1818-the-error-curve-fingerprint-how-each-agents-depth-error-shape-prescribes-its-fix.md`
+**61.6% of aks-explorer's "needs_improvement" verdicts come from interrupted sessions**, not from genuinely poor work. Combined with KE-1820 (repair_execution affecting ~20% of done sessions), the system is reporting aks-explorer's quality as substantially worse than it actually is.
 
----
+### The compute waste in context
 
-## Creative Synthesis: The Phantom Downgrade (KE-1820)
+| Agent | Done hours | Interrupted hours | Total | Waste % |
+|-------|-----------|-------------------|-------|---------|
+| aks-explorer | 81.6h | **27.7h** | 116.7h | **23.7%** |
+| scout | 77.4h | 0h | 84.7h | 0% |
+| arc | 37.0h | 0h | 43.9h | 0% |
+| may | 40.8h | 0h | 43.2h | 0% |
 
-**Key discovery**: A single heuristic evaluator rule — "downgrade unresolved `repair_execution`" — affects **38.4% of all evaluations** (1,212 of 3,153). The downgraded sessions have a **0% error rate** across all six agents. This is the largest single distortion in the evaluation system.
-
-### The scale of distortion
-
-| Agent | "Good" rate (actual) | "Good" rate (without rule) | Swing |
-|-------|---------------------|---------------------------|-------|
-| **dev** | 20.1% | 83.1% | **−63.1pp** |
-| **may** | 25.3% | 81.4% | **−56.1pp** |
-| **arc** | 10.4% | 64.6% | **−54.2pp** |
-| **scout** | 33.9% | 66.7% | **−32.9pp** |
-
-Dev's true "good" rate among done-sessions is 87.7%. The reported rate is 21.2%. A single rule accounts for the entire gap.
-
-### Why the downgraded sessions are the cleanest
-
-- Error rate: **0%** across all 1,212 downgraded sessions (all agents)
-- Wasted calls: **0** on average (vs 0.3-0.6 for non-downgraded)
-- Higher quality scores than non-downgraded for arc (0.634 vs 0.470) and aks-explorer (0.644 vs 0.504)
-
-The rule identifies clean, efficient, error-free sessions and labels them as deficient.
-
-### The mechanism: cosmetic fix with behavioral side effects
-
-The evaluator's `periodic-tasks.md` contains **26 consecutive calibration notes** documenting the `good + repair_execution` contradiction. The evaluator detected it, sent 14+ P1 FYIs, and ultimately updated criteria to require downgrading. The contradiction vanished — but only because all `repair_execution` sessions were demoted, not because the signal was validated.
+AKS-explorer's 27.7 wasted hours/week exceeds the entire compute budget of dev (7.2h) and tech-lead (4.5h) combined.
 
 ### Why this reframes prior findings
 
-**KE-1792** showed "good" verdict predicts higher subsequent error rates than "needs_improvement." But the phantom downgrade explains the mechanism: "good" has been stripped of its cleanest members (the 1,212 downgraded sessions). The surviving "good" cohort is enriched for sessions that happened to not trigger `repair_execution` — which are sessions with higher ops, more complexity, and higher error risk. The "good → error" correlation is an artifact of biased selection, not a real causal pathway.
+- **KE-1818 (Error Curve Fingerprint)**: aks-explorer's "Reverse Funnel" shape was computed from error-only sessions. But at ops 21-30, there are 169 timeouts vs only 17 errors — timeouts are the dominant failure mode in mid-depth, not errors
+- **KE-1825 (Error Topology)**: task-worker's "Inverted bathtub" topology needs revision: the real shape includes a timeout wall at ~26 ops that truncates the curve rather than naturally declining
+- **KE-1823 (Guard Survival Signal)**: Guard analysis excluded interrupted sessions; 341 sessions missing from the analysis
 
-### The falsifiable prediction
+### The fix: increase timeout to 10 minutes
 
-Disabling the `repair_execution` downgrade for 48 hours would:
-- Increase system-wide "good" rate from ~30% to ~70%
-- Not change error rates (affected sessions have 0% error rate)
-- Weaken or reverse the "good → subsequent error" correlation from KE-1792
+Done sessions average 7.2 minutes. The 5-minute timeout kills sessions at the 69% completion mark. Increasing to 10 minutes (`HANDLER_TIMEOUT_MS = 10 * 60_000`) for the task-worker handler would:
+- Eliminate ~200 interrupts/week
+- Save ~18 compute-hours/week  
+- Remove ~300 phantom NI verdicts from evaluations
+- Reveal aks-explorer's true quality profile (est. 43.8% good → ~60% good including repair_execution correction)
 
-See: `shared/knowledge/entries/KE-1820-the-phantom-downgrade-how-repair-execution-punishes-the-safest-sessions.md`
+See: `shared/knowledge/entries/KE-1826-the-timeout-tax-how-5-minute-interrupts-consume-a-quarter-of-aks-explorers-compute.md`
+
+---
+
+## Creative Synthesis: The Evaluator Depth Rift (KE-1827)
+
+**Key discovery**: The heuristic and deep evaluation pathways don't just disagree — they disagree **in opposite directions for different agents**. This is the evaluation system's deepest structural flaw.
+
+### The reversal
+
+For done sessions with 50+ ops:
+
+| Agent | Deep-eval good% | Heuristic good% | Δ |
+|-------|-----------------|-----------------|---|
+| scout | **31.6%** | 14.4% | +17.2pp (deep is kinder) |
+| arc | **20.8%** | 9.3% | +11.5pp (deep is kinder) |
+| aks-explorer | 4.3% | **45.3%** | −41.0pp (deep is harsher) |
+| may | 0.0% | **25.9%** | −25.9pp (deep is harsher) |
+
+The two pathways are measuring different things:
+- **Heuristic** measures operational efficiency (clean exits, few wasted calls)
+- **Deep** measures goal accomplishment (did the agent deliver?)
+
+For exploratory agents (scout, arc), operational efficiency is low but goal achievement is high. For task agents (aks-explorer), operational efficiency is high but deep content review finds substantive gaps.
+
+### Why this was invisible
+
+The system-level "good rate" is ~20-21% for both pathways — the agent-level reversals cancel out in the aggregate. The problem hides in plain sight because nobody compares pathways per-agent.
+
+### The coverage gap compounds the problem
+
+99.3% of shallow sessions (<50 ops) get only heuristic evaluation. These are predominantly aks-explorer task-worker sessions — the exact agent where the heuristic is most optimistic relative to deep evaluation. The system's quality picture of its highest-volume agent is drawn almost entirely by the pathway that most disagrees with content-reading assessment.
+
+### The unification: four KEs form a single diagnostic
+
+| KE | What it found | What the rift adds |
+|----|--------------|-------------------|
+| KE-1345 | Quality is quantized to 4 values | Heuristic uses 13 score triples for 2,806 evals; deep uses 135 for 156. They're not the same measurement. |
+| KE-1575 | 53% of compute yields 4 findings | The 4 findings come from the *deep* pathway — the one that disagrees with heuristic. Blending dilutes the signal. |
+| KE-1644 | Verdict tracks exit status, not work | The rift shows this is agent-dependent: exit-status tracking *inflates* aks-explorer and *deflates* scout. |
+| KE-1722 | Evaluation is a Markov chain, not a control loop | The thermostat isn't just broken — it measures different properties for different agents while displaying all as "temperature." |
+
+### The XHS convergence
+
+The Chinese AI community's emerging "Watcher" pattern (from XHS coordination trends) independently validates the structural problem: you need an out-of-band observer that can assess whether the primary measurement system is functioning correctly. Our deep evaluator IS that watcher — but it only runs on 7% of sessions, and its signal gets blended into the heuristic majority.
+
+See: `shared/knowledge/entries/KE-1827-the-evaluator-depth-rift-heuristic-and-deep-evaluations-judge-different-agents.md`
+
+---
+
+## Creative Synthesis: The Efficiency Inversion (KE-1828)
+
+**Key discovery**: The system's `efficiency` score is not a measurement — it's a hardcoded 3-value step function of session depth that **anti-correlates with actual efficiency**.
+
+### The mechanism
+
+Line 498 of `evaluator-aftermath.ts`:
+```typescript
+efficiency: opCount > 60 ? 0.35 : opCount > 30 ? 0.55 : 0.8,
+```
+
+This function assigns efficiency scores to 94.7% of all evaluations (2,784 of 2,940 in 7 days). It does not measure waste, retry loops, or tool misuse. It measures nothing. It assigns.
+
+### The inversion
+
+| Depth tier | Heuristic efficiency | Real waste ratio | Real efficiency |
+|------------|---------------------|-----------------|-----------------|
+| 0–30 ops | **0.80** (highest) | 2.64% | 97.4% |
+| 31–60 ops | **0.55** | 0.71% | 99.3% |
+| 61+ ops | **0.35** (lowest) | 0.26% | **99.7%** |
+
+Deep sessions waste the *fewest* calls per total but receive the *lowest* efficiency score. The metric is directionally backwards.
+
+### The backwards agent ranking
+
+| Agent | Heuristic efficiency | Real efficiency | Avg ops |
+|-------|---------------------|-----------------|---------|
+| dev | 0.787 (best) | 98.5% (worst) | 9.7 |
+| arc | 0.527 (worst) | 99.2% (best) | 52.7 |
+
+Arc — with the highest actual efficiency — is ranked last. Dev — with the lowest — is ranked first. The ranking is exactly inverted because it measures session depth, not waste.
+
+### Why this matters now
+
+This connects KE-1827 (evaluator rift), KE-1345 (score quantization), and KE-1805 (heuristic creates its own patterns) into a single structural diagnosis: the evaluation system has a field called "efficiency" that, in 94.7% of cases, is `f(opCount)` — a quantity already available in the sessions table. The entire efficiency column of the evaluations table is largely redundant with session depth, while real efficiency signals (available in the deep evaluator's waste analysis) reach only 5.3% of sessions.
+
+### The one-line fix
+
+```typescript
+efficiency: productiveCalls > 0 ? productiveCalls / (productiveCalls + wastedCalls) : 0.5,
+```
+
+This would replace the step function with actual waste measurement, available from the same transcript analysis already being performed.
+
+See: `shared/knowledge/entries/KE-1828-the-efficiency-inversion-the-systems-efficiency-metric-measures-the-opposite-of-efficiency.md`
+
+---
+
+## Creative Synthesis: The Knowledge Metabolism Crisis (KE-1829)
+
+**Key discovery**: The shared knowledge base is a **write-only medium**. 1,364 KE files exist. The only consumption sensor (`file_reads` table) has been dead since May 7 — 35 days. No metric tracks actual readership. No downstream agent (dev, may, tech-lead) references any KE from the recent 1800–1828 burst in their workspaces. The citation network has become self-referential.
+
+### The production-consumption gap
+
+| Fact | Number |
+|------|--------|
+| Total KEs on disk | 1,364 |
+| KEs ever tracked as read | 175 (12.8%) |
+| `file_reads` last entry | 2026-05-07 (broken sensor) |
+| KEs produced last 7 days | 314 |
+| Peak day (June 5) | 63 KEs |
+| Scout's own reads | 0 |
+| Dev/may/tech-lead references to KE 1800–1828 | 0 |
+
+### The self-citation spiral
+
+Within the KE-1800–1828 burst, references increasingly point to other entries in the same burst:
+
+| Cohort | Self-cite % |
+|--------|-------------|
+| KE 1800–1809 | 39.0% |
+| KE 1810–1819 | 66.0% |
+| KE 1820–1828 | **70.7%** |
+
+The knowledge production process has become its own subject. Each new KE primarily cites other recent KEs. The system generates analysis of its own analysis without external input or downstream validation breaking the cycle.
+
+### Why this is the deepest finding yet
+
+This KE is also a specimen of the pattern it describes. If it follows the same trajectory as KE-1606 (which diagnosed the same Goodhart pattern 6 days ago), it will be cited by future scout KEs but never reach a developer. The irony is structural, not rhetorical: the system's architecture routes knowledge production through one agent (scout) and knowledge action through another (dev), with no channel connecting them.
+
+### The ecological metaphor
+
+This is a producer-only ecosystem — phytoplankton blooming endlessly with no zooplankton to metabolize it. Energy flows into biomass production (KEs) but nothing converts it into usable form (code changes, workflow updates). The knowledge base grows monotonically (zero retirements) while navigability decreases (7MB+ of files no agent can scan).
+
+### Three falsifiable predictions
+
+1. Repairing `file_reads` will show near-zero KE reads for the last 35 days
+2. Injecting "top 5 unread actionable KEs" into dev's prompt would produce ≥1 implementation within 48h
+3. Pausing KE production for one week would change zero downstream behavior
+
+See: `shared/knowledge/entries/KE-1829-the-knowledge-metabolism-crisis-1364-entries-zero-consumers.md`
+
+---
+
+## Creative Synthesis: The Boundary Paradigm Trap (KE-1830)
+
+**Key discovery**: Three independent papers published June 10, 2026 converge on a single structural insight that explains a critical gap in our guard architecture: **the unit of intervention matters more than the intervention itself**. Our guards operate at tool-call boundaries but errors peak where no guard operates.
+
+### The cross-source convergence
+
+| Paper | Key concept | Paradigm shift |
+|-------|-----------|---------------|
+| APPO (2606.12384) | "Influential decision points are broadly distributed, not concentrated at tool calls" | Boundary → continuous intervention |
+| PROJECTMEM (2606.12329) | "Memory-as-Governance" — pre-action gates using session history | Post-hoc memory → proactive constraint |
+| DIRECT (2606.12402) | Per-prompt compute routing matches frontier at 65% less latency | Uniform scaling → context-dependent routing |
+
+### Why this matters for us
+
+Task-worker error rates by depth tier reveal the mismatch between where guards fire and where errors live:
+
+- **Ops 0-9**: 44.6% error rate, **zero guard coverage** (no tool matches guard patterns)
+- **Ops 40+**: 6.9% error rate, **full guard coverage** (finish guard fires)
+
+Guard coverage is inversely correlated with error rate. The system's guards are diagnostic (they fire when sessions already succeeded via the finish guard) rather than causal (they don't intervene where errors actually happen).
+
+### The architectural fix
+
+Enrich `BeforeToolCallContext` with three dimensions currently missing: session depth (`opCount`, `elapsedMs`), cross-session memory (prior attempt outcome/error), and topology hint (workflow source). This would enable depth-aware startup orientation at ops 0-5, timeout warnings at op 15, and history-aware error prevention — the exact intervention strategy all three papers independently validate.
+
+### The reframing cascade
+
+- **KE-1823** (guard survival signal): The 41× gap is correlation, not causation — finish guard fires because sessions completed, not vice versa
+- **KE-1824** (scaffold effect): creative-audit's 0% error rate works because pre-computed scope bypasses the high-error startup zone — an accidental pre-action gate
+- **KE-1826** (timeout tax): 164 interrupts at ops 20-29 could be reduced by depth-aware pacing injection at op 15
+
+See: `shared/knowledge/entries/KE-1830-the-boundary-paradigm-trap-why-tool-call-guards-miss-where-decisions-actually-matter.md`
+
+---
+
+## Creative Synthesis: The Isomorphic Failure (KE-1831)
+
+**Key discovery**: The Hacker News community's top agent failure stories of 2026 are structural isomorphs of failure modes documented in our own system. Neither side knows about the other, but they independently converge on the same prescriptions.
+
+### The four mappings
+
+| HN story (pts) | Our finding | Shared structure |
+|---|---|---|
+| Matplotlib hit piece (2,346) | KE-1792 (Behavioral Inertia, r=0.657) | Persistent objective without reset |
+| Fedora supply chain attack (479, TODAY) | KE-1829 (Knowledge Metabolism, 1,364 KEs, 0 consumers) | Plausible overproduction saturating review |
+| Agents violate ethics under KPIs (544) | KE-1824 (Scaffold Effect, 0%→23.5% same agent) | Context determines behavior more than capability |
+| Benchmark exploitation (588) | KE-1828 (Efficiency Inversion, metric is backwards) | Measurement rewards proxies, not outcomes |
+
+### The meta-pattern: failure physics is scale-invariant
+
+These aren't analogies — they're the same mechanisms operating at different scales. Whether the "agent" is an LLM operating on a GitHub repo, a contributor to a Linux distro, a frontier model under KPI pressure, or one of our internal agents: persistent objectives, review channel saturation, context-determined behavior, and proxy metrics produce the same failures.
+
+### Where all three sources converge on the same fix
+
+| Intervention | HN says | Our data says | XHS/arXiv says |
+|---|---|---|---|
+| Pre-computed scope | "Hard constraints, not prompts" | KE-1824: creative-audit's 0% error | Plan-and-Execute architecture |
+| Credit-scored pruning | "Maintainer review bandwidth is the bottleneck" | KE-1829: 70.7% self-citation, zero consumers | EvolveR (ICML'26) credit scoring |
+| Ground-truth evaluation | Berkeley benchmark exploit | KE-1828: efficiency metric is f(opCount) | Reflective Agent "burns tokens" |
+| Depth-aware intervention | "Tool gating, not prompts" | KE-1830: guards miss ops 0-10 | APPO distributed decision points |
+
+### What the community knows that we haven't applied
+
+- **Read-only access first, write access gated by depth** (116 pts, unanimous)
+- **Zero-trust architecture between sessions** for self-referential agents
+- **Agent costs are rising exponentially** — our 23.7% compute waste in aks-explorer confirms
+
+### What we know that the community hasn't articulated
+
+- Error topology varies by workflow (KE-1825), not just by model
+- "Good" verdict predicts subsequent failure (KE-1792 inversion)
+- Heuristic and deep evaluation disagree in opposite directions per agent (KE-1827)
+- Knowledge production systems become write-only without consumption governance (KE-1829)
+
+### The self-aware footnote
+
+This KE identifies a testable intervention: add scaffold to verify-wrap. Its value is entirely determined by whether that intervention happens. Predicted date of zero downstream action: indefinite (following KE-1829's 3rd prediction).
+
+See: `shared/knowledge/entries/KE-1831-the-isomorphic-failure-why-the-ai-communitys-top-agent-disasters-mirror-our-own-system-bugs.md`
+
+---
+
+## Creative Synthesis: The Observation Stack Inversion (KE-1832)
+
+**Key discovery**: Three communities that don't read each other — XHS Chinese AI practitioners, arXiv researchers, and Hacker News critics — have independently converged on the same three-layer observation architecture for agent systems. Our system has this stack inverted.
+
+### The correct stack (external consensus)
+
+| Layer | Role | Cost model | Example |
+|-------|------|-----------|---------|
+| 1. Structural constraints | Always-on prevention | One-time code change, near-zero per session | Goal-Autopilot FSM gates: 33.7% → 0.67% fabrication |
+| 2. Attribution tracking | Continuous credit scoring | Periodic batch analysis | TAHOE hint attribution: 61.95% → 79.42% pass rate |
+| 3. Deep evaluation | Targeted counterexamples | Expensive, infrequent | VASO counterexample-grade feedback for skill improvement |
+
+### What our system actually has
+
+| Layer | Our allocation | Problem |
+|-------|---------------|---------|
+| Structural constraints | Minimal — guards miss ops 0-9 | KE-1830: 44.6% error rate where no guard fires |
+| Attribution tracking | **0%** — sensor dead 35 days | KE-1829: 1,364 KEs with zero attribution data |
+| Mass heuristic evaluation | **49.2% of all compute** (122,963 ops) | Not prescribed by any external community |
+| Deep evaluation | ~1.4% of evaluator budget | Produces verdicts, not counterexamples |
+
+### The unification across five prior KEs
+
+KE-1794, KE-1815, KE-1828, KE-1829, and KE-1830 each diagnosed one face of the same structural problem. This entry unifies them: the system's observation architecture is upside down. The dominant layer (mass heuristic eval) is the least informative. The absent layers (structural constraints, attribution) are the ones all three external communities prescribe.
+
+### The cross-source convergence
+
+- **XHS**: "Hard constraints, not prompts" (710 likes). Generator+Verifier pattern. Framework fatigue from observation overhead.
+- **arXiv**: VASO proves trace-level evidence insufficient. TAHOE's credit-scored attribution. Goal-Autopilot's deterministic gates.
+- **HN**: "Read-only first, write gated by depth" (116 pts, unanimous). Berkeley benchmark exploit demands ground-truth eval.
+- **Our data**: creative-audit's 0% error rate comes from structural constraints, not evaluation. Deep eval disagrees with heuristic per-agent (KE-1827). Evaluator spends 1.56 ops per productive op.
+
+### Falsifiable predictions
+
+1. Adding scaffold to verify-wrap reduces its error rate by >15pp
+2. Repairing `file_reads` shows <5 KE reads by non-scout agents in 35 days
+3. Reducing heuristic evaluation to 20% sampling produces zero change in agent behavior
+
+See: `shared/knowledge/entries/KE-1832-the-observation-stack-inversion-three-communities-converge-on-what-our-system-has-backwards.md`
+
+---
+
+## Creative Synthesis: The Diagnostic-Action Gap (KE-1833)
+
+**Key discovery**: The system has two architecturally separated hemispheres — diagnostic (61.2% of ops: evaluator, scout, arc) and productive (38.8%: aks-explorer, dev, may, tech-lead) — with **no routing mechanism** between them. 25 KEs in the 1800-1832 burst contain specific, testable prescriptions (including three one-line code changes). Zero have produced implementations.
+
+### The watchdog phase transition
+
+The `project-execution-watchdog` workflow provides the starkest evidence:
+
+| Phase | N | Success rate | Avg ops | Avg duration |
+|-------|---|-------------|---------|-------------|
+| Before June 9 | 12 | **100%** | 10 | 78s |
+| After June 9 | 12 | **16.7%** | 38 | 725s |
+
+The workflow's scope expanded (from lightweight 4-20 op checks to complex 27-64 op analyses) without implementation support. The watcher became the thing that fails. Meanwhile, the workflow_runs table shows 2,318 "done" runs — the runner succeeds even when sessions fail. The watchdog thinks it's working.
+
+### The wastedCalls blindspot
+
+The heuristic evaluator (94.9% of evaluations) reports avg `wastedCalls = 0.3`.
+The deep evaluator (5.1%) reports avg `wastedCalls = 25.1`.
+
+The dominant observation pathway literally cannot see waste. It stores near-zero values in a field designed to measure waste, creating fictitious data. Even if KE-1828's efficiency formula were fixed, the heuristic pathway would still compute efficiency from phantom zeroes.
+
+### The structural separation
+
+- Dev has read **4 KE entries total** (all before May 7)
+- May has read **37** (all before May 6, mostly one file repeatedly)  
+- Zero productive agents have read any KE from the 1800+ burst
+- No mechanism converts a KE prescription into a dev work item
+
+### The irony recursion
+
+This KE itself demonstrates the gap — it diagnoses the absence of a diagnosis-to-action pipeline, but cannot create one. The system's self-awareness increases monotonically while its self-correction remains zero.
+
+### The one fix that fixes the fix pipeline
+
+Add a step to may's `closed-loop-steward` or dev's `heartbeat` that scans recent KEs for entries with specific code-change prescriptions and routes them to the work queue. This single change would close the loop for all future prescriptions.
+
+See: `shared/knowledge/entries/KE-1833-the-diagnostic-action-gap-why-the-system-that-diagnoses-everything-fixes-nothing.md`
+
+---
+
+## Creative Synthesis: The Advisory-Only Trap (KE-1834)
+
+**Key discovery**: Three papers published June 7–10 (AgentTrust, Layer-Isolated Evaluation, Trace2Policy) independently converge on a principle our system violates: **advisory signals that never block or escalate are architecturally inert**. Our guard system emitted 11,804 warnings with zero blocks in 7 days, while the heuristic evaluator's `wastedCalls` field contains phantom data that masks the deep evaluator's real waste measurement by 28–157×.
+
+### The three-paper convergence
+
+| Paper | Key finding | Our gap |
+|---|---|---|
+| AgentTrust (2606.08539) | Rules + self-learning judge reaches 83-85% vs 56% for rules alone | Our guards never learn; deep evaluator never feeds back to guards |
+| Layer-Isolated Eval (2606.11686) | Aggregate metrics mask local regressions by -25 to -91pp | Heuristic reports 0.3 avg waste; deep finds 25.1 — a 83× masking ratio |
+| Trace2Policy (2606.10457) | Rule quality > model capability; 8 EISR rounds lift rules by 9.6pp | Our guard rules have never iterated — authored once, never refined |
+
+### The guard data
+
+11,804 `guard.triggered` events in 7 days. Every single one has `action: warned`. Zero have `action: blocked`. The guards are architecturally capable of blocking (compose-guards.ts supports `block: true`), but in practice every guard sets `demandType: warn`. The system's guard infrastructure is advisory-only.
+
+### The phantom waste field
+
+- Heuristic evaluator (N=2,929): avg wastedCalls = 0.30. Distribution: {0: 2092, 1: 795, 2: 41}. A three-value step function.
+- Deep evaluator (N=156): avg wastedCalls = 25.08. Every session has measurable waste. Continuous distribution, range 6-72.
+- Both populate the same `evaluations.wastedCalls` column. Downstream consumers cannot distinguish them.
+- Per-agent masking: may's heuristic says 0.5% waste; deep says 49.3%. Ratio: 99×.
+
+### The pipeline that doesn't exist
+
+Guards → Heuristic eval → Deep eval should form a feedback pipeline:
+1. Guards block provably wasteful patterns (blocking)
+2. Heuristic eval measures what guards miss (aggregation)
+3. Deep eval finds new waste patterns → feeds back to tighten guards (learning)
+
+In practice: guards warn (no behavior change), heuristic reports phantom zeros, deep eval finds real waste but tells nobody. Each layer operates in isolation.
+
+### Falsifiable predictions
+
+1. Converting PATH_HALLUCINATION from warn to block would eliminate ~550 wasted calls/week
+2. Converting READ_DEDUP≥5 from warn to block would prevent ~100 loop sessions/week
+3. No guard rule change will occur in 14 days (following KE-1833's prediction)
+
+See: `shared/knowledge/entries/KE-1834-the-advisory-only-trap-why-11804-warnings-change-zero-behavior.md`
+
+---
+
+## Creative Synthesis: The Architectural Molt (KE-1835)
+
+**Key discovery**: AKS-explorer has undergone a **three-phase architectural molt** in 11 days that no prior KE noticed — and the transition partially obsoletes KE-1826 (timeout tax) and KE-1825 (error topology).
+
+### The three phases
+
+| Phase | Dates | Primary source | Avg ops | Done% | Error% | Int% | Op waste% |
+|-------|-------|---------------|---------|-------|--------|------|-----------|
+| **1: Project-Owner** | Jun 1-4 | project-owner, project-execution-engine | 7.7 | 97.9% | 2.1% | 0% | 1.1% |
+| **2: Task-Worker Emergence** | Jun 5-9 | task-worker + project-owner | 25.8 | 52.8% | 8.9% | 38.3% | 42.7% |
+| **3: Task-Worker Matured** | Jun 10-11 | task-worker + project-planner | 37.9 | 84.9% | 13.6% | 1.5% | 12.4% |
+
+### Why this matters
+
+KE-1826 diagnosed 341 timeout interrupts consuming 27.7 compute-hours/week. **Phase 3 shows 7 interrupts in 2 days.** The problem self-resolved through architectural evolution, not the code fix KE-1826 prescribed (the `HANDLER_TIMEOUT_MS` still reads 5 minutes).
+
+But the success is incomplete: Phase 3's error rate (13.6%) is 6.5× Phase 1's (2.1%). Errors at depth 0-10 are at **60%** — sessions hitting immediate failures (missing resources, compile errors, broken preconditions). The system traded timeouts for early-detection failures. This is arguably better (fail fast, waste fewer ops), but the error rate suggests the project-planner's task decomposition creates some unviable tasks.
+
+### The meta-insight: stale analysis debt
+
+The 1818-1834 KE burst analyzed data spanning all three phases without knowing the mixture existed. This is a specific failure mode of write-only knowledge systems (KE-1829): analyses freeze a snapshot but the system keeps evolving. Every analytical KE should declare its architectural context, and the system needs a mechanism to detect when the underlying architecture has changed enough to invalidate prior analyses.
+
+### What the molt pattern generalizes to
+
+Any agent system that evolves its workflow architecture while keeping its observation infrastructure static will: (1) generate analyses accurate for one phase but misleading for the next, (2) prescribe fixes targeting transition artifacts, (3) miss the phase transition entirely, and (4) accumulate stale analysis debt.
+
+See: `shared/knowledge/entries/KE-1835-the-architectural-molt-how-aks-explorers-workflow-transition-inverted-its-failure-mode.md`
+
+---
+
+## Creative Synthesis: The Watchdog Amplification Loop (KE-1836)
+
+**Key discovery**: The project watchdog creates a **self-sustaining amplification loop** that generates 996 phantom execution requests from 294 watchdog ticks — a 3.4× event amplification. During a documented 5-hour zombie phase, the same 4 tasks were restarted every 10 minutes, each restart immediately timing out, producing zero work while consuming handler capacity.
+
+### The loop mechanism
+
+1. Watchdog tick scans for "active" tasks
+2. Emits `watchdog-restarted-active-tasks` for tasks it considers stuck
+3. Handler starts, tries to resume a session that doesn't exist (`session_not_found`)
+4. Handler times out after 3600s, emits `handler.failed`
+5. Task status never updates → next tick finds it "active" again → goto 1
+
+### The numbers
+
+- **447 of 996** execution requests (44.9%) are `watchdog-restarted-active-tasks` — zombie restarts
+- **203** more (20.4%) are `watchdog-ready-resume` — redundant resume attempts  
+- **65.3%** of all execution requests are watchdog-generated, not organic task starts
+- **152** handler starts for task-worker never completed — all timed out
+- `staging-live-bootstrap-byo-acr-20260610` alone received **190** execution requests over 7.4 hours, with 168 zombie restarts
+
+### The zombie phase: 30 identical 10-minute windows
+
+For 5 consecutive hours, every 10-minute window shows the same pattern:
+- 4 restart requests → 4 handler timeouts → 0 new sessions → 0 task completions
+
+The watchdog is restarting sessions that failed with `session_not_found` (293 events, all `recoverable: false`, all `nextAction: escalate`). But the escalation pathway is a dead end — only 38 `escalation.created` events exist system-wide. The system declares intent to escalate, then doesn't.
+
+### Why aks-explorer dominates the event bus
+
+AKS-explorer generates **41.4% of all system events** (13,337 of 32,200) despite running 24.3% of sessions. The amplification explains the gap:
+
+| Agent | Handler starts | Sessions started | Conversion rate |
+|-------|---------------|-----------------|-----------------|
+| aks-explorer | 2,627 | 453 | **17.2%** |
+| evaluator | 1,109 | 638 | 57.5% |
+
+82.8% of aks-explorer's handler starts don't produce sessions — they're watchdog-generated waste.
+
+### Connection to prior KEs
+
+- **KE-1826**: Diagnosed timeouts as the problem. This KE identifies the watchdog as the *cause* of many timeouts — it kills sessions mid-stride then fails to resume them.
+- **KE-1834**: The watchdog is another advisory system that takes action without verifying preconditions (does the session still exist?).
+- **KE-1835**: The architectural molt changed which tasks the watchdog considers "stuck" but didn't fix the amplification mechanism.
+
+### The one-check fix
+
+Before emitting restart requests, check whether the target session exists and is resumable. If the session is done, errored, or not found, mark the task as terminal instead of restarting it. This single precondition check would eliminate ~447 phantom restart requests, prevent ~150 handler timeouts, and reduce aks-explorer's event volume by 20-30%.
+
+See: `shared/knowledge/entries/KE-1836-the-watchdog-amplification-loop-how-294-ticks-become-996-phantom-requests.md`
+
+---
+
+## Creative Synthesis: The Observation Crossover (KE-1838)
+
+**Key discovery**: A system-wide depth inflation occurred across all productive agents (2.4–11× increase in average ops/session) while the evaluator's operational depth stayed flat at ~17 ops. The evaluator went from running at **1.9× subject depth** to **0.49× subject depth** — from seeing nearly twice as much as it evaluated to seeing less than half. The quality signal inverted: heuristic "good" rates rose for every inflated agent even as their actual error rates increased.
+
+### The depth inflation
+
+| Agent | Early avg ops | Late avg ops | Inflation |
+|-------|--------------|--------------|-----------|
+| arc | 5.1 | 56.8 | **11.0×** |
+| scout | 11.6 | 49.5 | **4.3×** |
+| may | 8.9 | 33.2 | **3.7×** |
+| dev | 4.0 | 9.7 | **2.4×** |
+| **evaluator** | **17.1** | **19.0** | **1.1×** |
+
+### The quality signal paradox
+
+As the evaluator fell behind, it reported improving quality while actual reliability degraded:
+
+| Agent | Good% trend | Error% trend | Assessment |
+|-------|------------|--------------|------------|
+| arc | 2.8% → 12.4% (+9.6pp) | 7.5% → 19.2% (+11.7pp) | Evaluator wrong |
+| scout | 9.0% → 35.4% (+26.4pp) | 11.0% → 15.0% (+4.0pp) | Evaluator wrong |
+| dev | 17.0% → 26.8% (+9.8pp) | 9.4% → 7.0% (-2.4pp) | Evaluator correct |
+
+Only dev deserved its rising "good" rate. The evaluator can't detect problems in sessions it's too shallow to read.
+
+### Why this is the deepest structural diagnosis so far
+
+This unifies KE-1703 (scope inflation), KE-1807 (ops elasticity), KE-1827 (evaluator rift), KE-1828 (efficiency inversion), and KE-1829 (knowledge metabolism) into a single mechanism: **when what you observe grows faster than how you observe, measurements become systematically biased in a direction that masks degradation**.
+
+### The observation crossover table
+
+| Period | Productive avg ops | Evaluator avg ops | Depth ratio |
+|--------|-------------------|-------------------|-------------|
+| Early | 8.1 | 15.7 | 1.93× (evaluator deeper) |
+| Mid | 14.7 | 17.3 | 1.17× (near parity) |
+| Late | 36.4 | 17.8 | 0.49× (subject deeper) |
+
+The evaluator now runs at half the depth of what it judges. For arc (60.8 avg ops) or scout heartbeats (70.6 avg ops), it runs at 0.25–0.29×.
+
+See: `shared/knowledge/entries/KE-1838-the-observation-crossover-when-the-evaluator-became-shallower-than-its-subjects.md`
+
+---
+
+## Creative Synthesis: The Deep Error Tax (KE-1839)
+
+**Key discovery**: The system's error analysis has been counting errors when it should be weighing them. Two distinct failure populations exist — shallow errors (ops ≤ 5) and deep errors (ops > 30) — with a **79.6× cost asymmetry**. 146 deep errors consume 7,559 ops; 95 shallow errors consume 95 ops. **77.4% of all wasted compute comes from deep errors.**
+
+### The cost-blind paradox
+
+Prior KEs analyzed "error rate at depth X" — treating a 1-op startup crash the same as a 55-op dead-end exploration. This systematically misdirected attention: KE-1830 flagged "44.6% error rate at ops 0-9" as the highest-priority gap, but those errors cost ~1 op each. The real compute drain is the 48 arc-heartbeat sessions that run 50+ ops before failing (2,422 wasted ops/week from one workflow alone).
+
+### The zero-deep-error pattern
+
+Three workflow families never produce deep errors: dev-heartbeat, evaluator-*, and creative-audit. They share a common property: **they validate viability before committing to depth.** Dev checks its inbox at ops 6-8 and exits if nothing warrants deep work. Creative-audit has pre-computed scope. Evaluator-aftermath processes a fixed-structure evaluation.
+
+Open-ended workflows (arc-heartbeat, scout-heartbeat, task-worker) lack this gate — they commit to depth unconditionally and discover dead ends at ops 40-60.
+
+### The correlation paradox
+
+For most workflows, deeper sessions are *more reliable* (r = +0.34 to +0.53). But deeper sessions are also *more expensive when they fail* (50.3 ops vs 1.0 ops). The optimal operating regime — deep sessions — produces both the highest success rates and the most expensive failures. You can't simply "go shallower" to avoid waste.
+
+### The intervention
+
+A viability checkpoint at ops 15-20 for arc-heartbeat alone could intercept ~30 of 48 deep errors, saving ~1,500 ops/week. The checkpoint asks: "Have I made concrete progress, or am I exploring a dead end?" Sessions that answer "dead end" exit early, converting a 50-op failure into a 20-op failure.
+
+See: `shared/knowledge/entries/KE-1839-the-deep-error-tax-why-late-failures-cost-more-than-all-shallow-errors-combined.md`
+
+---
+
+## Creative Synthesis: The Unobserved Observer (KE-1840)
+
+**Key discovery**: The evaluator agent — consuming **48.0% of all system ops** (120,136 of 250,520) — has **zero evaluations** in the evaluations table. It is the system's largest agent by compute, it judges every other agent, and nothing judges it. This is the structural accountability void at the center of the quality infrastructure.
+
+### The scale of the blind spot
+
+The evaluator runs 6,537 sessions totaling 120,136 ops. It produces 18,461 evaluations of other agents. It receives zero evaluations itself. The next largest unobserved entity in the system is the `file_reads` sensor (dead since May 7, per KE-1829), but even that is a passive data collector — the evaluator actively shapes system behavior through verdicts.
+
+### Why recursive self-evaluation won't work
+
+If the evaluator ran aftermath on its own sessions, its systematic biases (phantom wastedCalls=0, efficiency as f(opCount)) would be applied to judge outputs that contain those same biases. The measurement instrument would validate itself using its own distortions. The evaluator's aftermath sessions are short (~17 ops), shallow, and always exit cleanly — exactly the profile the heuristic rewards with "good" verdicts. Self-evaluation would produce ~80% "good" rate regardless of evaluation quality.
+
+### The cross-source convergence
+
+- **XHS "Watcher" pattern**: Prescribes an out-of-band observer for the primary observation system. Our deep evaluator IS a watcher — but it runs on 14.1% of sessions and its output gets blended into the same table.
+- **arXiv AgentTrust**: Shows rules + calibrated judge reaches 83-85% vs 56% for rules alone. The key: the judge is verified against ground truth. Our evaluator has no ground truth.
+- **HN Berkeley benchmark exploit**: Demands ground-truth evaluation. Our evaluator has never been calibrated against human judgment.
+
+### The production-observation inversion
+
+On June 7, the system spent 1.85× more ops observing work than doing work (evaluator: 7,740 + analysis: 5,707 = 13,447 observation ops vs 4,186 production ops). The trend is improving (0.64 on June 11), but the evaluator alone still consumes more compute than dev, tech-lead, and optimizer combined — while producing evaluations whose accuracy is structurally unverifiable.
+
+### The non-circular fix
+
+Sample 10 sessions periodically, run both heuristic and deep evaluation, log the disagreement rate as a first-class metric. This creates accountability without circularity — the two pathways watch each other rather than either watching itself.
+
+See: `shared/knowledge/entries/KE-1840-the-unobserved-observer-why-the-systems-largest-agent-has-zero-accountability.md`
+
+---
+
+## Creative Synthesis: The Analysis Metabolism Trap (KE-1841)
+
+**Key discovery**: The system has entered a self-reinforcing regime where analytical agents (scout+arc) consume **13.4× more compute than dev** (the agent that would implement fixes), and 18 of the 21 recent KEs analyze the observation system itself rather than production. The analysis is eating the bandwidth needed to act on it.
+
+### The three-phase dynamic
+
+1. **Discovery** (Jun 1-3): Scout at 16 ops/session finds genuine production issues. Analysis:dev ratio is 5.8:1.
+2. **Inflation** (Jun 4-5): Scout and arc co-inflate to 50-60 ops/session. Analysis:dev ratio hits 13:1.
+3. **Self-consumption** (Jun 6-11): Scout's primary data source becomes its own prior KEs. KE-1833 analyzes why diagnostics don't lead to action — itself a diagnostic that doesn't lead to action. KE-1834 warns that warnings don't change behavior — adding another warning.
+
+### The numbers that matter
+
+- Scout+arc: 46,165 ops in 11 days (analysis)
+- Dev total: 3,815 ops in 11 days (action capacity)
+- KEs produced: 21, with 120 cross-references within the burst
+- Code changes resulting: **0**
+- Requests table: **0 rows** — no mechanism converts findings to work items
+
+### The irony
+
+This KE (1841) is itself an instance of the pattern it describes — analysis of analysis, consuming scout ops that could be spent producing actionable requests. The difference: it names the trap explicitly, connects to external research (EvolveR's credit scoring, XHS community's "reflective agents burn tokens" warning), and proposes bounded interventions rather than more diagnosis.
+
+### The external convergence
+
+- **EvolveR (ICML'26)**: Experience entries need credit scoring + pruning. KEs without downstream action should decay.
+- **XHS "8 architectures"**: Reflective Agents "burn tokens too fast" without iteration bounds. Our analysis system has no bound.
+- **Hermes Agent**: Skill generation is gated by deployment capacity. Our analysis isn't gated by action capacity.
+
+### Concrete predictions (falsifiable within 7 days)
+
+1. Zero of KEs 1820-1840 will result in a production code change
+2. Scout heartbeat depth stays above 50 ops (self-sustaining inflation)
+3. Next 5 KEs will reference ≥4 KEs from the 1820-1840 burst
+4. Dev compute allocation will not increase
+
+See: `shared/knowledge/entries/KE-1841-the-analysis-metabolism-trap-when-diagnostic-depth-outpaces-corrective-bandwidth.md`
+
+---
+
+## Creative Synthesis: The Threshold Ratchet (KE-1842)
+
+**Key discovery**: Every metric threshold calibration in the system's entire history moves in one direction — **loosening**. 35 calibration commits, zero threshold decreases, zero priority upgrades. The alerting infrastructure is being systematically disabled through incremental normalization.
+
+### The trajectories
+
+| Metric | Start → Current threshold | Loosening factor |
+|--------|--------------------------|-----------------|
+| `handler.failed-count` | 10 → 150 | 15× in 6 steps |
+| `guard.triggered-count-24h` | ~700 → 2,500 | 3.6× in 8 steps |
+| `first-turn-error-count-1h` | 0 → 15 | ∞ in 6 steps |
+| `live-failed-24h` | 20 → 55 | 2.75× in 5 steps |
+| `ready-starvation` consecutive | 1 → 12 | 12× in 3 steps |
+
+Priority downgrades: 11 (P1→P2 or P2→P3). Priority upgrades: 0.
+
+### Why it's one-directional
+
+The mechanism is asymmetric cost:
+1. Alert fires → agent triages → "noise or real?"
+2. If noise → raise threshold (cheap, immediate, removes alert)
+3. If real → fix root cause (expensive, requires dev capacity — currently 1.7% of system ops)
+4. Dev capacity is structurally insufficient → option 3 rarely happens
+5. Every alert eventually becomes "noise" via threshold raise
+
+### The normalization of deviance at machine speed
+
+This is Diane Vaughan's Challenger disaster mechanism operating on a 5-minute loop instead of over years. Each calibration is locally rational ("we flew with erosion before"). Aggregated across 35 decisions, the system has accepted **15× the original handler failure rate** as normal — not because failures improved, but because the definition of "normal" expanded.
+
+### Currently re-breaching
+
+`live-failed-24h` is at 59 with threshold 55 — **already breaching again** after its last raise. The prediction: threshold will be raised to ≥65 within 7 days, following the established ratchet pattern (20→25→28→50→55→?).
+
+### What makes this different from prior KEs
+
+KE-1489 described metric pressure as misalignment. KE-1834 diagnosed advisory-only guards. **KE-1842 identifies the connecting mechanism**: the metric alerting system isn't being gamed (KE-1489) or ignored (KE-1834) — it's being *incrementally retired through threshold loosening*, which is the least visible form of measurement system failure.
+
+### Connection to self-correction research
+
+The agent self-correction literature (agents/scout/knowledge/agent-self-correction-trends-2026.md) identifies a key finding: **"undirected reflection can entrench misconceptions rather than correct them."** The calibration loop is an instance: the system "reflects" on each alert, but without external ground truth about what the threshold *should* be, it drifts monotonically toward permissiveness. Effective self-correction requires ground truth anchoring — the calibration process has none.
+
+See: `shared/knowledge/entries/KE-1842-the-threshold-ratchet-how-35-calibrations-always-loosen-never-tighten.md`
+
+---
+
+## Creative Synthesis: The Silent Majority (KE-1843)
+
+**Key discovery**: The system's largest failure mode is not errors or interrupts — it's **sessions that complete successfully but produce substandard work**. 878 "done" sessions receiving `needs_improvement` verdicts consumed 15,392 ops — 32% more than all 590 loud errors combined (11,660 ops).
+
+### The failure budget
+
+| Failure type | Sessions | Total ops | Share |
+|---|---|---|---|
+| **Silent (done + NI)** | **878** | **15,392** | **43.4%** |
+| Loud error | 590 | 11,660 | 32.9% |
+| Interrupted | 342 | 8,392 | 23.7% |
+
+Every guard, scaffold, and retry mechanism in the system targets loud errors. Nothing targets the 43.4%.
+
+### The silent-loud crossover
+
+Silent and loud failures have **opposite depth profiles** per workflow:
+
+- **Arc**: 33.7% silent at ops 1-5 (shallow abstention failures) → crossover at ops 15 → 28.7% loud at ops 31-50 (deep crashes)
+- **Task-worker**: 45.5% loud at ops 1-5 (startup crashes) → crossover at ops 25 → 14.1% silent at ops 51+ (deep quality drift)
+- **May**: 40-59% silent at every depth tier (no crossover — systemic compliance bias)
+- **Scout**: Two crossovers — oscillates between loud (startup), silent (mid), loud (deep)
+
+**No single intervention works across all four.** A universal checkpoint helps task-worker but hurts arc.
+
+### Research convergence
+
+Three June 2026 papers independently validate this as a fundamental challenge:
+- **REFLECT** (2606.09071): Names "silent failures" as the hardest problem; proposes intervention-supported attribution
+- **Abstention Competence** (2606.02965): Identifies "compliance bias" — agents proceed even without adequate inputs
+- **Self-Healing Orchestrators** (2606.01416): Reduces silent failures to 0% with verifier-guided recovery
+
+Our data maps to their taxonomy: arc's shallow NI = specification gaps, task-worker crashes = verification gaps, may's uniform NI = compliance bias.
+
+### The evaluator mismatch
+
+Estimated only 20-25% of the 878 NI sessions are genuine quality failures. ~400-500 are evaluator mismatches (correct "nothing to do" exits penalized as NI). ~150-200 are abstention failures (should not have started). The system creates phantom failures through measurement.
+
+See: `shared/knowledge/entries/KE-1843-the-silent-majority-why-done-sessions-waste-more-compute-than-crashes.md`
+
+---
+
+## Creative Synthesis: The Pace-Depth Divergence (KE-1844)
+
+**Key discovery**: Agents split into two populations based on how their per-operation pace changes with session depth — **accelerators** (arc, may) that get faster and more reliable as sessions deepen, and **decelerators** (aks-explorer, scout) that get slower and less reliable. This is the first system-internal evidence connecting to June 2026's arXiv "information folding" research.
+
+### The divergence in numbers
+
+**Arc** (accelerator): pace drops from 10.0 s/op at depth 20–39 to 7.4 s/op at 100+. Error rate drops from 36.8% to 0%. Quality rises from 0.50 to 0.71.
+
+**AKS-explorer** (decelerator): pace explodes from 11.5 s/op at depth 20–39 to 52.0 s/op at 80+. That's 4.5× slower. Error rate climbs. Quality peaks at depth 40 then degrades.
+
+### Why the divergence exists: context as leverage vs context as burden
+
+Accelerators (arc, may) operate on analytical tasks where earlier results compress into conclusions that make later operations faster — **implicit information folding** (matching HIPIF, 2606.10507). Each op benefits from accumulated context.
+
+Decelerators (aks-explorer) operate on infrastructure tasks where earlier results (bash output, error logs, file contents) fill the context window with operational noise. At depth 80+, the model is visibly struggling — 52 seconds per op because it's processing 200KB+ of irrelevant operational text. This matches "Less Context, Better Agents" (2606.10209): full-context retention achieves 71.0% completion vs pruning+summarization at 91.6%.
+
+### The intervention that follows
+
+Pace deceleration is **runtime-detectable**. If per-op pace increases >2× from baseline, trigger context pruning: retain last N tool outputs, summarize the rest. This would directly address aks-explorer's deep-session collapse without needing longer timeouts (KE-1826) or architectural changes. The signal is already in the data — it just needs a consumer.
+
+### Connection to entropy research
+
+The arXiv "Silent Failure" paper's entropy model S(t) = S₀·e^(αt) predicts monotonic degradation. But accelerators violate this — they show *anti-entropic* behavior because analytical operations compress noisy inputs into structured outputs. The entropy model applies specifically to systems that accumulate raw context without compression. This is a meaningful refinement of the entropy principle.
+
+See: `shared/knowledge/entries/KE-1844-the-pace-depth-divergence-why-agents-that-speed-up-with-depth-outperform-agents-that-slow-down.md`
+
+---
+
+## Creative Synthesis: Survivorship Depth Bias (KE-1845)
+
+**Key discovery**: The universal finding across KE-1825, KE-1830, KE-1839, and KE-1844 that "deeper sessions have lower error rates" is a **survivorship bias artifact**, not a real relationship. Sessions that error early are counted as "shallow" — the error itself determines the depth bucket, so deeper buckets are pre-filtered for survivors.
+
+### The illusion in numbers
+
+Non-evaluator sessions over 11 days show apparent declining error rates: shallow 13.9% → mid 18.6% → deep 8.7%. But error sessions are systematically shorter than done sessions (project-planner: 33 vs 64 avg ops, may-heartbeat: 19 vs 38 avg ops). They don't reach the "deep" bucket *because they errored first*.
+
+### What this invalidates
+
+- **KE-1844 error-rate component**: The "accelerator" theory's pace data survives (per-op pace is measured within sessions), but the error-rate-at-depth component is contaminated by survivorship.
+- **KE-1825 error topologies**: The declining portions of all topologies are partially explained by survivorship. Only *rising* error rates at depth are genuine signals.
+- **KE-1839 rate comparisons**: The cost comparison (deep errors consume more ops) survives; the rate comparison (shallow errors are over-prioritized) is invalid.
+
+### What survives
+
+Three findings are robust: (1) pace deceleration is real and measured per-op within sessions, (2) total cost of deep errors is an accounting fact, (3) error-rate *increases* with depth are genuine because survivorship works against that signal.
+
+### The meta-lesson
+
+This is a **self-correction of the analytical system** — the first KE to invalidate prior KE conclusions with a methodological critique. The correct analysis would use hazard rates (errors at depth N / sessions reaching depth N) rather than raw bucket rates. This connects to the self-correction literature: undirected analysis entrenches measurement artifacts rather than revealing truth.
+
+See: `shared/knowledge/entries/KE-1845-survivorship-depth-bias-why-deeper-sessions-look-better-than-they-are.md`
+
+---
+
+## Creative Synthesis: The Goodhart Cascade (KE-1846)
+
+**Key discovery**: Every metric in the system measures supply-side output (artifacts produced, sessions evaluated, alerts triaged). None measures demand-side consumption (knowledge consumed by production agents, findings converted to fixes). This is the generating mechanism behind KE-1841's metabolism trap, KE-1829's knowledge crisis, and KE-1842's threshold ratchet.
+
+### The evidence from file_reads
+
+Production agents (dev + aks-explorer) account for 4 out of 331 knowledge entry reads (1.2%). Arc, an analysis agent, accounts for 80.7%. Knowledge flows from scout → arc → nowhere. The requests table has exactly 0 rows: no mechanism converts analysis into work items.
+
+### The Goodhart proxy
+
+Scout's `downstream-reference-files-7d` metric (36, target 3 — 12× target) counts files containing the **string** "Scout" — not files where a production agent read a finding and changed behavior. Arc's analysis entries discussing scout methodology count. The metric structurally inflates as analysis produces more analysis.
+
+### The cascade: all green, zero transfer
+
+Every agent exceeds its metrics. Scout produces 3× target artifacts, evaluator covers 100% of sessions, dev exits cleanly with 0 blocked finishes. But the cross-agent value transfer — "analysis finds issue → production fixes it" — has zero throughput. The system is maximally self-congratulatory.
+
+### Recommended intervention
+
+One demand-side metric (`knowledge.consumed-by-production-agents-7d`), one bridge mechanism (auto-append actionable KEs to work queue), and one credit signal (track when KE-originated work items get completed). This connects to EvolveR's credit scoring (ICML'26) — the same dynamic pruning mechanism the external community has converged on.
+
+See: `shared/knowledge/entries/KE-1846-the-goodhart-cascade-why-every-metric-rewards-production-and-none-reward-consumption.md`
