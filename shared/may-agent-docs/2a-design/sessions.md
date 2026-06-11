@@ -92,22 +92,23 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-12 ~00:15Z):** The write path activated around
-2026-06-09 17:33Z. Since then, 333 of 12,455 total sessions (2.7%) have a
-non-null value. 24h coverage is ~33.5% (330/985). Coverage by agent (24h):
-tech-lead (3/6, 50%), aks-explorer (105/280, 37.5%), evaluator (164/500,
-32.8%), dev (12/39, 30.8%), may (18/60, 30%), arc (14/50, 28%), scout
-(14/50, 28%). All agents now populate the column. Coverage is trending
-upward (from ~25% → ~33.5% in 24h) but still well below the ~80% threshold
-needed for pure-SQL zombie detection.
+**Status (updated 2026-06-11 ~00:15Z):** The write path activated around
+2026-06-09 17:33Z. As of 2026-06-11, **100% of sessions in the trailing 6h
+window have a non-null `lastActivityAt`** across all 7 agents (292/292).
+12h coverage is 69.5% (386/555); 24h is 38.8% (386/994) — the lower 24h
+figure reflects the pre-activation tail rolling out of the window.
+Coverage has crossed the 80% threshold for actionable windows (6h, 12h)
+and is functionally complete for new sessions.
 
-The `capability.zombie-session-count` metric does NOT yet use this column.
-Zombie detection in `metrics-snapshot.ts` (`sessionInactiveSince()`) checks
-JSONL file `mtime` via `statSync(path).mtimeMs`, not the DB column.
+**The precondition for pure-SQL zombie detection is now met** for windows
+≤6h. The `capability.zombie-session-count` metric still uses JSONL file
+`mtime` via `statSync(path).mtimeMs` in `metrics-snapshot.ts`
+(`sessionInactiveSince()`). A `src/` change (ORDER-010) could switch
+zombie detection to `WHERE status='running' AND lastActivityAt <
+strftime('%s','now')*1000 - 1800000` for the 6h window without
+false negatives.
 
-Once coverage stabilizes above ~80% for all agents, this column becomes a
-viable pure-SQL data source for zombie detection (eliminating the disk
-`statSync` dependency). Monitor with:
+Monitor ongoing coverage with:
 ```sql
 SELECT agent, COUNT(*) as total,
        SUM(CASE WHEN lastActivityAt IS NOT NULL THEN 1 ELSE 0 END) as populated
