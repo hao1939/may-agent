@@ -92,12 +92,11 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-12 ~16:15Z):** The write path activated around
-2026-06-09 17:33Z. As of 2026-06-12 16:15Z, **100% of sessions in
+**Status (updated 2026-06-11 ~16:45Z):** The write path activated around
+2026-06-09 17:33Z. As of 2026-06-11 16:45Z, **100% of sessions in
 6h and 12h trailing windows have a non-null `lastActivityAt`** across all
-8 agents (12h: 601/601). 24h coverage is **98.1% (1072/1093)** —
-the remaining ~2% are the oldest sessions in the 24h window from the
-pre-activation transition period, continuing to age out.
+8 agents. 24h coverage is **99.9% (1102/1103)** — effectively complete;
+the pre-activation transition period has fully aged out.
 
 **The precondition for pure-SQL zombie detection is now met** for windows
 up to **24h** (≥95% coverage). The `capability.zombie-session-count`
