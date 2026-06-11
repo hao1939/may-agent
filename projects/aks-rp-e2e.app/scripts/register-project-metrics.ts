@@ -93,7 +93,7 @@ const metrics: MetricDef[] = [
     priority: "P1",
     description:
       "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active.",
-    config: { alert: { mode: "consecutive_failures", count: 1 } },
+    config: { alert: { mode: "consecutive_failures", count: 3 } },
   },
   {
     id: "aks-rp-e2e.task.capacity-underfilled-with-gaps",
