@@ -542,8 +542,10 @@ activity:
 - `project.owner.incomplete` records the specific design breach where an owner
   finished successfully but the project still has `status: active` with no open
   tasks.
-- `project.health.checked` carries `projectPolicy`, status, task counts, and
-  finding count for every scanned project.
+- `project.health.checked` ~~carries `projectPolicy`, status, task counts, and
+  finding count for every scanned project.~~ **Emission removed** (commit
+  73d989fdb, 2026-06-10). Was a periodic snapshot at ~2,931/day with zero
+  consumers. See ruflo-learning-loop iter-13.
 - `project.health.finding` carries `projectPolicy` and finding evidence so
   policy-specific behavior can be inspected without splitting handlers.
 - Project-health `metric.breach` / `metric.recovered` events remain normal
@@ -643,8 +645,9 @@ CREATE TABLE projects (
 - **Project handler:** `agents/may/handlers/project.ts`
 - **Project steward:** `agents/may/handlers/project-steward.ts` scans project
   docs/tasks read-only and reports deterministic findings as
-  `project.health.checked` / `project.health.finding` events plus project
-  health metrics. It does not dispatch work or edit project files.
+  `project.health.finding` events plus project health metrics. (The former
+  `project.health.checked` periodic snapshot was removed in commit 73d989fdb,
+  2026-06-10.) It does not dispatch work or edit project files.
 - **Project creative audit:** `agents/may/handlers/project-creative-audit.ts`
   and `agents/may/workflows/project-creative-audit.ts` provide the fallback for
   unknown issues. The handler selects one open project on a cooldown and runs a

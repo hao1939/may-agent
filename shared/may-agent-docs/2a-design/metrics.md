@@ -223,8 +223,10 @@ metrics-snapshot handler
 ```
 
 `project-steward` is another producer for project health signals. It scans
-project docs/tasks read-only, emits `project.health.checked` and
-`project.health.finding`, and records/evaluates project metrics such as
+project docs/tasks read-only and emits `project.health.finding` events (the
+former `project.health.checked` periodic snapshot was removed in commit
+73d989fdb, 2026-06-10 — see ruflo-learning-loop iter-13). It records/evaluates
+project metrics such as
 `project.health.finding-count`, `project.task-parser-error-count`, and
 `project.owner-judgment-needed-count`. Active projects with no tasks are owner
 judgment findings, not missing workflow findings. The steward does not mutate
