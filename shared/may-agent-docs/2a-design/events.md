@@ -591,7 +591,7 @@ path: validate at the edge, persist via the bus, and let subscribers react.
 - Event payload examples should use the envelope shape above, not flattened
   domain fields.
 
-## Operational Status (appendix, refreshed 2026-06-15)
+## Operational Status (appendix, refreshed 2026-06-11)
 
 This section reflects what the runtime actually emits and consumes, so readers do
 not mistake the taxonomy above for a live wiring diagram. Keep this table in sync
@@ -608,7 +608,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 |---|---|---|
 | `handler.started` | cron runner on every handler invocation | ✅ live (28.6k rows) |
 | `handler.completed` | cron runner at handler success | ✅ live (28.6k rows) |
-| `handler.failed` | cron runner at handler throw — rarely thrown because handler bodies catch internally | ⚠️ rarely emitted (15 rows) |
+| `handler.failed` | cron runner at handler throw | ✅ live (182 rows as of 2026-06-11); no longer rare — `aks-rp-e2e-task-execution-worker` accounts for 144 of 182 (127 on June 11 alone); remaining failures spread across `metrics-snapshot`, `metric-alert-reactor`, `closed-loop-steward`, `scout-explore-xhs` |
 | `handler.skipped` | cron runner when handler is skipped (debounce, no-op) | ✅ live (9.8k rows) |
 | `handler.workflow_dispatched` | cron runner when handler dispatches a workflow session | ✅ live (10.5k rows) |
 | `handler.routed` | handler routing infrastructure | ✅ live (35 rows) |
