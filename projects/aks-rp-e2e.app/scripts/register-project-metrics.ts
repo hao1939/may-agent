@@ -92,8 +92,8 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P1",
     description:
-      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active.",
-    config: { alert: { mode: "consecutive_failures", count: 3 } },
+      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active. Count raised to 12 (~1h) because the planner/worker pipeline naturally drains the ready queue between ~5-10min planner cycles; only sustained inability to refill is a real signal.",
+    config: { alert: { mode: "consecutive_failures", count: 12 } },
   },
   {
     id: "aks-rp-e2e.task.capacity-underfilled-with-gaps",
@@ -206,12 +206,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E live runs failed/blocked in 24h",
     type: "gauge",
     target: 0,
-    threshold: 28,
+    threshold: 35,
     unit: "count",
     alertOp: ">",
     priority: "P2",
     description:
-      "Health signal: too many failed/blocked live runs means runner/spec/infra diagnosis is needed. Structural floor ~21 (16 ARM-auth-env + 5 gating/infra); threshold 28 gives 7 units headroom for real test failures during active development.",
+      "Health signal: too many failed/blocked live runs means runner/spec/infra diagnosis is needed. Structural floor ~15 (12 ARM-auth-env + 3 gating/infra); threshold 35 gives 20 units headroom for real test failures during active development across ~42+ live runs/day.",
   },
   {
     id: "aks-rp-e2e.run.live-idle-with-runnable-work",
