@@ -105,8 +105,8 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P2",
     description:
-      "Planner refill signal: ready plus active leaves are below desired parallelism while knowledge-model path gaps remain.",
-    config: { alert: { mode: "consecutive_failures", count: 3 } },
+      "Planner refill signal: ready plus active leaves are below desired parallelism while knowledge-model path gaps remain. Count raised to 12 (~1h) because the planner/worker pipeline naturally drains below parallelism target between ~5-10min planner cycles; only sustained inability to refill is a real signal.",
+    config: { alert: { mode: "consecutive_failures", count: 12 } },
   },
   {
     id: "aks-rp-e2e.model.unknown-path-count",
