@@ -180,12 +180,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E live runs failed/blocked in 24h",
     type: "gauge",
     target: 0,
-    threshold: 25,
+    threshold: 28,
     unit: "count",
     alertOp: ">",
     priority: "P2",
     description:
-      "Health signal: too many failed/blocked live runs means runner/spec/infra diagnosis is needed. Baseline ~18 due to ARM auth env limitations; threshold gives headroom for normal jitter.",
+      "Health signal: too many failed/blocked live runs means runner/spec/infra diagnosis is needed. Structural floor ~21 (16 ARM-auth-env + 5 gating/infra); threshold 28 gives 7 units headroom for real test failures during active development.",
   },
   {
     id: "aks-rp-e2e.run.live-idle-with-runnable-work",
