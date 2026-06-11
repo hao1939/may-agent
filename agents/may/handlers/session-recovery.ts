@@ -20,6 +20,7 @@ import type { CronEntry } from "@may-agent/sdk";
 
 const MAX_RECOVERY_ATTEMPTS = 2;
 const STALE_AUTOCLOSE_MS = 30 * 60_000;
+const STALE_IDLE_AUTOCLOSE_MS = 45 * 60_000; // sessions idle >45min with autoClose:"immediate"
 const MAX_STALE_AUTOCLOSE_REAPS = 5;
 
 /** Key: "agent:taskPrefix", Value: recovery attempt count. */
@@ -179,10 +180,64 @@ function reapStaleAutocloseSessions(ctx: HandlerContext): void {
   }
 }
 
+/**
+ * Reap sessions that have autoClose:"immediate" and have been idle (no DB
+ * activity) for STALE_IDLE_AUTOCLOSE_MS, even if they produced assistant
+ * output. These are typically sessions killed by handler timeout where the
+ * DB row was never cleaned up.
+ */
+function reapIdleAutocloseSessions(ctx: HandlerContext): void {
+  const now = Date.now();
+  const db = ctx.sdk.getDb();
+  const idleCutoff = now - STALE_IDLE_AUTOCLOSE_MS;
+  const stale = db.prepare(
+    `SELECT sessionId, agent, task, status, startedAt, lastActivityAt
+     FROM sessions
+     WHERE status IN ('running', 'idle')
+       AND lastActivityAt < ?
+       AND startedAt < ?
+     ORDER BY lastActivityAt ASC
+     LIMIT ?`,
+  ).all(idleCutoff, idleCutoff, MAX_STALE_AUTOCLOSE_REAPS) as (RunningSessionRow & { lastActivityAt?: number })[];
+
+  const persistDir = ctx.sdk.paths.persist ?? join(ctx.sdk.paths.root, ".state");
+
+  for (const row of stale) {
+    if (!row.sessionId || !row.agent) continue;
+
+    // Only reap autoClose:"immediate" sessions
+    const meta = parseMeta(persistDir, row.sessionId);
+    if (!meta || meta.autoClose !== "immediate") continue;
+    if (meta.status !== "running") continue;
+
+    const error = "Auto-closed idle immediate session (no activity for >45min, likely handler timeout)";
+    const result = db.prepare(
+      `UPDATE sessions
+       SET status = 'error', endedAt = ?, error = ?, outcome = 'error'
+       WHERE sessionId = ?
+         AND status IN ('running', 'idle')`,
+    ).run(now, error, row.sessionId) as { changes?: number };
+
+    if ((result.changes ?? 0) <= 0) continue;
+
+    ctx.sdk.emit("session.end", {
+      sessionId: row.sessionId,
+      agent: row.agent,
+      status: "error",
+      outcome: "error",
+      error,
+      autoClosed: true,
+      reason: "idle_immediate_autoclose",
+    });
+    ctx.sdk.log("info", `[session-recovery] Auto-closed idle immediate session ${row.sessionId} (idle since ${new Date(row.lastActivityAt ?? row.startedAt).toISOString()})`);
+  }
+}
+
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (event?: EventEnvelope) => {
     if (!event || event.type === "timer.tick") {
       reapStaleAutocloseSessions(ctx);
+      reapIdleAutocloseSessions(ctx);
       return;
     }
 
