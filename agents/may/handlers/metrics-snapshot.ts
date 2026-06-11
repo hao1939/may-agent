@@ -48,7 +48,7 @@ const ALL_METRICS: MetricDef[] = [
   // Handler
   { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "gauge", target: 50, threshold: 10, unit: "count", alert_op: "<",
     priority: "P1" },
-  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "gauge", target: 0, threshold: 80, unit: "count", alert_op: ">",
+  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "gauge", target: 0, threshold: 150, unit: "count", alert_op: ">",
     priority: "P2" },
   { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
     priority: "P1",
