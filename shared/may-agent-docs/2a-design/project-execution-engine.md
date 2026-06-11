@@ -863,6 +863,16 @@ Dispatch rules:
   newer claim changes task state.
   Only the latest running session for the task counts, so an old hung zero-op
   session does not kill a newer real attempt.
+- **Watchdog execution-request dedup (KE-1837).** Each watchdog-emitted
+  `project.task.execution.requested` must carry a deterministic `dedup_key`
+  of the form `watchdog:<projectId>:<taskId>`. Before emitting, the watchdog
+  must check whether a pending event with the same `dedup_key` already exists
+  in the events table within a configurable cooldown window (default 30 min).
+  If one exists, skip the emit. This prevents the amplification loop where
+  280 watchdog ticks produce 891 execution requests (3.2× amplification,
+  KE-1836) because the same stuck task is re-requested every tick without
+  dedup. The escalation path already uses `dedup_key` (line 364/379 above);
+  this extends the same pattern to execution requests.
 - The watchdog's healthy check must be scheduler-aware. A fresh task-tree
   timestamp is healthy only when there is no dispatchable ready leaf, no
   expired or missing active lease, and no unused worker capacity for
