@@ -57,8 +57,8 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-11: 0 of 12,327 `call` sessions have a
-non-null `parentSessionId`; all 13 sessions with `parentSessionId` are `job` or `chat` kind.
+(kind=`chat`) sessions. Verified 2026-06-12: 0 of 13,168 `call` sessions have a
+non-null `parentSessionId`; all 14 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
 
@@ -92,12 +92,12 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-11 ~15:00Z):** The write path activated around
-2026-06-09 17:33Z. As of 2026-06-11 15:00Z, **100% of sessions in
+**Status (updated 2026-06-12 ~16:15Z):** The write path activated around
+2026-06-09 17:33Z. As of 2026-06-12 16:15Z, **100% of sessions in
 6h and 12h trailing windows have a non-null `lastActivityAt`** across all
-8 agents (12h: 575/575). 24h coverage has risen to **95.4% (1019/1068)**
-as pre-activation sessions age out; the remaining ~5% are the oldest
-sessions in the 24h window from the transition period.
+8 agents (12h: 601/601). 24h coverage is **98.1% (1072/1093)** —
+the remaining ~2% are the oldest sessions in the 24h window from the
+pre-activation transition period, continuing to age out.
 
 **The precondition for pure-SQL zombie detection is now met** for windows
 up to **24h** (≥95% coverage). The `capability.zombie-session-count`
