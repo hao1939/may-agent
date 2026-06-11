@@ -622,7 +622,7 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.8k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.6k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (210 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (446 rows as of 2026-06-12, ~11/hour); all `category: session_not_found` — spans planner_control, aks-explorer task sessions, and various project task sessions (no longer aks-rp-e2e exclusive); 446 unique session IDs across retention window, dominated by replay (183), rework (63), rollup (44), and staging-live (24) task types |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (470 rows as of 2026-06-11 ~08:20Z, ~10.7/hour over 44h span); all `category: session_not_found` — spans planner_control, aks-explorer task sessions, and various project task sessions (no longer aks-rp-e2e exclusive) |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (3 rows) |
 
 **Human control intents**
@@ -758,11 +758,9 @@ Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (446 rows as of 2026-06-12, ~11/hour —
+when the target session cannot be found (470 rows as of 2026-06-11 ~08:20Z, ~10.7/hour —
 spans planner_control sessions, aks-explorer task sessions, and various project
-task sessions; no longer exclusive to aks-rp-e2e). The dominant categories are
-replay (183), rework (63), rollup (44), and staging-live (24) task session IDs
-across the retention window — each a unique session name that was never registered in the sessions table.
+task sessions; no longer exclusive to aks-rp-e2e).
 
 ### Consumer Reality
 
