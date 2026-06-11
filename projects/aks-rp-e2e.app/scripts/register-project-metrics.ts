@@ -90,9 +90,9 @@ const metrics: MetricDef[] = [
     threshold: 0,
     unit: "boolean",
     alertOp: ">",
-    priority: "P1",
+    priority: "P2",
     description:
-      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active. Count raised to 12 (~1h) because the planner/worker pipeline naturally drains the ready queue between ~5-10min planner cycles; only sustained inability to refill is a real signal.",
+      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active. Priority P1→P2 because: (1) P0 no-work-with-gaps already covers true starvation (zero ready AND active), (2) 5 alerts in one day all auto-resolve when planner refills, proving this is normal pipeline oscillation not real starvation, (3) count=12 (~1h) calibration insufficient — workers consume tasks faster than 10-18min planner cycles produce them, so ready=0 is the natural steady state. P2 keeps the signal visible in heartbeat without triggering expensive triage sessions.",
     config: { alert: { mode: "consecutive_failures", count: 12 } },
   },
   {
