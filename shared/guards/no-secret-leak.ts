@@ -27,6 +27,8 @@ const BLOCK_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   // Stripe
   { name: "Stripe secret key", pattern: /sk_live_[A-Za-z0-9]{24,}/ },
   { name: "Stripe restricted key", pattern: /rk_live_[A-Za-z0-9]{24,}/ },
+  // Telegram bot token: numeric_id:alphanumeric_35chars
+  { name: "Telegram bot token", pattern: /\b\d{8,10}:[A-Za-z0-9_-]{35}\b/ },
   // Generic private key blocks
   { name: "Private key", pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/ },
 ];
@@ -35,12 +37,16 @@ const BLOCK_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
 const WARN_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
   // Generic bearer tokens (long hex/base64 strings after Authorization header)
   { name: "Bearer token", pattern: /Authorization:\s*Bearer\s+[A-Za-z0-9._~+/=-]{30,}/ },
+  // Azure/JWT bearer tokens (eyJ... base64-encoded JWTs outside Authorization headers)
+  { name: "Azure JWT", pattern: /eyJ[A-Za-z0-9_-]{20,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/ },
   // Generic API key assignment with long value
   { name: "Generic API key assignment", pattern: /(?:api[_-]?key|apikey|secret|token)\s*[=:]\s*["'][A-Za-z0-9_-]{20,}["']/i },
   // Slack tokens
   { name: "Slack token", pattern: /xox[bpors]-[A-Za-z0-9-]{10,}/ },
   // npm tokens
   { name: "npm token", pattern: /npm_[A-Za-z0-9]{36}/ },
+  // env dump with sensitive var names (catches `env | grep` leaking secrets)
+  { name: "Env var leak", pattern: /(?:TELEGRAM_BOT_TOKEN|OPENAI_API_KEY|ANTHROPIC_API_KEY|AWS_SECRET_ACCESS_KEY)\s*=\s*\S{10,}/ },
 ];
 
 /**

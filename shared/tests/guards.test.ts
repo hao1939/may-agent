@@ -246,6 +246,41 @@ describe("no-secret-leak guard", () => {
     expect(demands).toHaveLength(1);
     expect(demands[0].type).toBe("block");
   });
+
+  it("blocks on Telegram bot token", () => {
+    const event = makeStepDoneEvent([], { lastAssistantText: "TELEGRAM_BOT_TOKEN=1234567890:ABCDefghIJKLMnopQRSTuvwxyz012345678" });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("block");
+    expect(demands[0].reason).toContain("Telegram");
+  });
+
+  it("warns on Azure JWT token", () => {
+    // Minimal 3-part JWT: header.payload.signature
+    const header = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9";
+    const payload = "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4ifQ";
+    const sig = "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+    const event = makeStepDoneEvent([], { lastAssistantText: `token: ${header}.${payload}.${sig}` });
+    const demands = guard.handle(event);
+    expect(demands).toHaveLength(1);
+    expect(demands[0].type).toBe("warn");
+    expect(demands[0].reason).toContain("Azure JWT");
+  });
+
+  it("warns on env var dump with TELEGRAM_BOT_TOKEN", () => {
+    // Token value is too short for the Telegram bot token block pattern, but matches env var warn
+    const event = makeStepDoneEvent([], { lastAssistantText: "TELEGRAM_BOT_TOKEN=SomeSecretTokenValue1234" });
+    const demands = guard.handle(event);
+    expect(demands.length).toBeGreaterThanOrEqual(1);
+    expect(demands[0].type).toBe("warn");
+    expect(demands[0].reason).toContain("Env var leak");
+  });
+
+  it("warns on env var dump with OPENAI_API_KEY", () => {
+    const event = makeStepDoneEvent([], { lastAssistantText: "OPENAI_API_KEY=some-very-long-api-key-value-here" });
+    const demands = guard.handle(event);
+    expect(demands.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 // ===== verify-after-write guard =====
@@ -253,7 +288,7 @@ describe("verify-after-write guard", () => {
   let guard: any;
 
   beforeAll(async () => {
-    const mod = await import("../guards/verify-after-write.ts");
+    const mod = await import("../guards/verify-after-write.disabled.ts");
     guard = mod.guard;
   });
 
