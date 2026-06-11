@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ⚠️ Partially populated: 251/12,373 sessions (2.0%) have a non-null value (as of 2026-06-11). Write path activated ~2026-06-09 17:33Z; 24h coverage ~25%. All 7 agents now populate; coverage is 16–31% per agent. Zombie detection uses JSONL file mtime instead (see Known Issues).
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ✅ Fully populated for new sessions (100% of 6h window, all 7 agents, verified 2026-06-11). Write path activated ~2026-06-09 17:33Z. Pure-SQL zombie detection precondition met for ≤6h windows. See Known Issues for transition details.
 );
 ```
 
