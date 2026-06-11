@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ✅ Fully populated for new sessions (100% of 6h and 12h windows, all 7 agents, verified 2026-06-11). Write path activated ~2026-06-09 17:33Z. Pure-SQL zombie detection precondition met for ≤12h windows. See Known Issues for transition details.
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ✅ Fully populated for new sessions (100% of 6h, 12h, and 24h windows, all 8 agents, verified 2026-06-11). Write path activated ~2026-06-09 17:33Z. Pure-SQL zombie detection precondition met for ≤24h windows. See Known Issues for transition details.
 );
 ```
 
@@ -92,20 +92,21 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-11 ~08:20Z):** The write path activated around
-2026-06-09 17:33Z. As of 2026-06-11, **100% of sessions in both the 6h
-and 12h trailing windows have a non-null `lastActivityAt`** across all 7
-agents (6h: 162/162, 12h: 359/359). The pre-activation tail has fully
-rolled out of the 12h window. 24h coverage is ~62% (590/946) and rising
-as older sessions age out of the retention window.
+**Status (updated 2026-06-11 ~15:00Z):** The write path activated around
+2026-06-09 17:33Z. As of 2026-06-11 15:00Z, **100% of sessions in
+6h and 12h trailing windows have a non-null `lastActivityAt`** across all
+8 agents (12h: 575/575). 24h coverage has risen to **95.4% (1019/1068)**
+as pre-activation sessions age out; the remaining ~5% are the oldest
+sessions in the 24h window from the transition period.
 
 **The precondition for pure-SQL zombie detection is now met** for windows
-≤12h. The `capability.zombie-session-count` metric still uses JSONL file
-`mtime` via `statSync(path).mtimeMs` in `metrics-snapshot.ts`
-(`sessionInactiveSince()`). A `src/` change (ORDER-010) could switch
-zombie detection to `WHERE status='running' AND lastActivityAt <
-strftime('%s','now')*1000 - 1800000` for the 12h window without
-false negatives.
+up to **24h** (≥95% coverage). The `capability.zombie-session-count`
+metric still uses JSONL file `mtime` via `statSync(path).mtimeMs` in
+`metrics-snapshot.ts` (`sessionInactiveSince()`). A `src/` change
+(ORDER-010) could switch zombie detection to
+`WHERE status='running' AND lastActivityAt <
+strftime('%s','now')*1000 - 1800000` for the 24h window without
+meaningful false negatives.
 
 Monitor ongoing coverage with:
 ```sql
