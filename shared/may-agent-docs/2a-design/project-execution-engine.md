@@ -269,6 +269,13 @@ and verification, not through unreviewed wholesale rewrites.
 
 ## Task Lifecycle
 
+> **Cross-reference**: `task-tree-engine.md` defines a simpler status vocabulary
+> (`backlog`, `review`) for the same task tree. That doc is the **tool spec** —
+> what the tree library enforces. This doc is the **workflow spec** — what
+> planners and workers follow. Mapping: `proposed`/`ready` here = `backlog`
+> there; `claimed_done` here = `review` there. See KE-1858 for the full
+> comparison.
+
 Use a small state machine:
 
 ```text

@@ -2,9 +2,18 @@
 
 ## Purpose
 
-The task tree is a project's structured understanding: how the goal decomposes,
-which claims are verified, which branches were replaced, and where work is
-blocked. It is not a TODO list or an attempt log.
+The task tree is a project's shared thinking surface: how the agent
+understands the goal, how it wants the project to be done, which claims are
+verified, which branches were replaced, and where work is blocked. It is not a
+TODO list, scheduler queue, or attempt log.
+
+The tree is also the main human steering surface. A human should be able to
+review any branch, understand why it exists, and attach feedback directly to
+that context. The planner consumes that feedback when it updates the tree.
+
+Accepted tasks are durable project knowledge. They record understanding,
+milestones, and facts the agent can reuse later; they are not merely completed
+work to hide as soon as execution finishes.
 
 The tree is managed exclusively by tools. No direct JSON editing.
 
@@ -15,6 +24,13 @@ The tree is managed exclusively by tools. No direct JSON editing.
 > evidence.
 
 ## Node Lifecycle
+
+> **Cross-reference**: `project-execution-engine.md` defines a different status
+> vocabulary (`proposed`, `ready`, `claimed_done`, `rejected`) for the same task
+> tree. This doc (task-tree-engine) is the **tool spec** — what the tree library
+> enforces. The execution-engine doc is the **workflow spec** — what planners
+> and workers follow. Mapping: `backlog` here = `proposed`/`ready` there;
+> `review` here = `claimed_done` there. See KE-1858 for the full comparison.
 
 ```
 backlog → active → review → accepted
@@ -30,7 +46,7 @@ backlog → active → review → accepted
 | `backlog` | Work to be done | Planner creates or reworks it |
 | `active` | Worker is executing | Worker claims it |
 | `review` | Worker finished, claim needs verification | Worker submits it |
-| `accepted` | Planner verified the claim | Planner accepts it |
+| `accepted` | Planner verified the claim; durable project understanding | Planner accepts it |
 | `blocked` | Concrete external blocker confirmed by planner | Planner sets it |
 | `superseded` | Replaced by better understanding | Planner replaces it |
 | `decomposed` | Not a leaf; children represent the work | Planner decomposes it |
@@ -68,7 +84,8 @@ backlog → active → review → accepted
 - Creates new `backlog` tasks
 - Supersedes outdated branches
 - Applies parent transitions based on tool rollup hints
-- Triggers archive of completed subtrees
+- Records accepted knowledge summaries and evidence
+- Triggers archive of low-value detail while preserving useful milestones
 - Owns all tree shape mutations
 
 ### Tool
@@ -78,8 +95,8 @@ backlog → active → review → accepted
   based on child state. It computes rollup hints; the planner applies
   parent transitions.
 - Auto-collapses superseded chains (structural cleanup, not judgment)
-- Archives accepted subtrees only when planner triggers or integrity
-  check triggers with explicit summary
+- Archives accepted detail only when the planner asks for compaction with an
+  explicit knowledge summary
 
 ## Structural Invariants
 
@@ -93,7 +110,8 @@ The tool enforces on every mutation:
 6. `superseded` must have `supersededBy` and `reason`.
 7. `blocked` must have `blocker` with `condition` and `category`.
 8. `decomposed` nodes have children; leaf nodes do not.
-9. `superseded` and `accepted` are immutable.
+9. `superseded` and accepted knowledge claims are immutable. Tool-owned
+   archival metadata may be added without changing the accepted claim.
 10. No references to non-existent nodes.
 11. No circular dependencies.
 
@@ -110,13 +128,59 @@ rollup hints; the planner decides:
 
 This keeps the planner as the brain. The tool never makes project judgments.
 
+## Accepted Knowledge
+
+An `accepted` node means the planner verified the worker claim and turned it
+into project knowledge. Accepted nodes should answer:
+
+- What did we learn or prove?
+- What evidence supports the claim?
+- What can future work reuse?
+- Does this close the parent branch, or does it reveal more work?
+
+Useful accepted nodes stay visible in the live tree as milestones. Examples:
+
+- a golden path that future features should reuse
+- a feature behavior verified by real staging execution
+- a reusable runner/script pattern
+- a project decision that changes how future tasks should be planned
+
+Low-value accepted detail should be archived. Examples:
+
+- mechanical subtasks after their parent summary captures the result
+- repeated execution attempts
+- obsolete rework branches
+- raw logs already linked from evidence
+
+Accepted knowledge fields:
+
+```json
+{
+  "status": "accepted",
+  "summary": "REST add-existing ManagedSystem pool lifecycle passed on staging.",
+  "evidence": ["runs/managedsystem-rest-add-existing/run.json"],
+  "reusable_for": [
+    "managedsystem delete lifecycle",
+    "managedsystem immutability checks"
+  ],
+  "accepted_at": "2026-06-12T...",
+  "accepted_by": "planner"
+}
+```
+
+The tree should preserve the accepted backbone of project understanding. It
+should archive noisy detail, not erase what the project has learned.
+
+Accepted knowledge is immutable after acceptance. Later work can supersede it
+with better understanding, but should not silently rewrite the original claim.
+
 ## Tool API
 
 ```typescript
 // Planner mutations
 tree.create(parentId, task)                    // add backlog leaf
 tree.decompose(nodeId, children)               // split leaf into children
-tree.accept(nodeId, reason)                    // verify and accept claim
+tree.accept(nodeId, reason, knowledge)         // verify and accept claim
 tree.rework(nodeId, reason)                    // review → back to backlog
 tree.supersede(nodeId, reason, replacementIds) // replace with better work
 tree.block(nodeId, blocker)                    // confirm external blocker
@@ -127,8 +191,11 @@ tree.claim(nodeId)                             // backlog → active
 tree.submit(nodeId, result, evidence)          // active → review
 
 // Cleanup (planner-triggered)
-tree.archive(nodeId, summary)                  // collapse accepted subtree
+tree.archive(nodeId, summary)                  // collapse low-value accepted detail
 tree.prune(nodeId, reason)                     // remove irrelevant subtree
+
+// Human steering
+tree.attachFeedback(nodeId, feedbackRef)       // link human/agent feedback event
 
 // Derived queries (tool-owned projections)
 tree.status()                  // compact summary
@@ -140,7 +207,21 @@ tree.stale(olderThan)          // untouched nodes
 tree.check()                   // integrity validation
 ```
 
-## Kanban Projection
+## Tree UI and Kanban Projection
+
+The tree view is the primary human/agent reasoning surface. It should show:
+
+- the task goal or claim as the primary text
+- the reason this branch exists
+- accepted knowledge summaries and evidence links
+- child status summaries for decomposed parents
+- task-linked human feedback controls
+- derived readiness only as a badge on backlog leaves
+
+Task IDs, leases, conflict scopes, and scheduler details are secondary
+metadata. They should not dominate the tree view.
+
+Kanban is a workflow projection, not the source of truth.
 
 `tree.kanban()` computes lanes and readiness badges. The UI renders without
 recomputing.
@@ -212,6 +293,8 @@ No persisted ready state. No stale readiness.
 
 ### State checks
 - `review` nodes have `result` and `evidence`.
+- `accepted` nodes have `summary` and evidence references, unless the accepted
+  node is a pure rollup with `archive_summary`.
 - `superseded` nodes have `supersededBy` and `reason`.
 - `blocked` nodes have `blocker.condition`.
 - `decomposed` nodes have children.
@@ -269,18 +352,23 @@ express why:
 
 ## Compaction
 
-### Archive accepted subtrees (planner-triggered)
+### Archive accepted detail (planner-triggered)
 
-When the planner decides a subtree is complete:
+When the planner decides an accepted subtree is complete and the child detail
+is no longer useful as live project understanding:
 
 ```typescript
 tree.archive("managedsystem-pool", {
-  summary: "9/9 paths pass, 8 evidence refs",
+  summary: "ManagedSystem pool REST lifecycle knowledge accepted; 9/9 paths pass, 8 evidence refs",
 });
 ```
 
-Children move to `tasks/archive.json`. The parent keeps the summary.
-`tree.status()` hides archived details; `tree.detail(nodeId)` retrieves them.
+Children move to `tasks/archive.json`. The parent keeps the accepted knowledge
+summary, evidence refs, and reusable-for hints. `tree.status()` hides archived
+details; `tree.detail(nodeId)` retrieves them.
+
+Do not archive a useful milestone just because it is done. Archive only when a
+short accepted summary preserves the knowledge better than the full subtree.
 
 ### Collapse superseded chains (tool-automatic)
 
@@ -289,9 +377,11 @@ to archive. This is structural cleanup — no judgment needed.
 
 ### Archive location
 
-Live tree: `tasks/tree.json` — current thinking, ≤50 visible nodes.
-Archive: `tasks/archive.json` — collapsed accepted subtrees and superseded
-chains with evidence links. Detail retrievable via `tree.detail(nodeId)`.
+Live tree: `tasks/tree.json` — current thinking, active work, and accepted
+knowledge milestones, ideally ≤50 visible nodes.
+Archive: `tasks/archive.json` — collapsed low-value accepted detail and
+superseded chains with evidence links. Detail retrievable via
+`tree.detail(nodeId)`.
 
 The live tree should always be readable by a human in under a minute.
 
@@ -328,6 +418,9 @@ The live tree should always be readable by a human in under a minute.
       "id": "feature-a",
       "goal": "Feature A full lifecycle",
       "status": "accepted",
+      "summary": "Feature A lifecycle is verified by staging REST replay.",
+      "evidence": ["runs/feature-a-basic/run.json"],
+      "reusable_for": ["Feature A negative cases", "Feature A cleanup checks"],
       "archived": true,
       "archive_summary": "4 tasks accepted, 8 evidence refs",
       "parent_id": "goal",
@@ -377,6 +470,10 @@ The live tree should always be readable by a human in under a minute.
 | `depends_on` | no | Node IDs that must be accepted first |
 | `result` | no | Worker result (required at review) |
 | `evidence` | no | Evidence refs (required at review) |
+| `summary` | no | Accepted knowledge summary or review result summary |
+| `reusable_for` | no | Future tasks/branches that can reuse this knowledge |
+| `accepted_at` | no | ISO timestamp when planner accepted the claim |
+| `accepted_by` | no | Planner/owner that accepted the claim |
 | `supersededBy` | no | Replacement node IDs (required when superseded) |
 | `reason` | no | Why superseded/blocked/reworked |
 | `blocker` | no | `{ condition, category }` (required when blocked) |

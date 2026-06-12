@@ -5,10 +5,11 @@ triggers: task tree, status vocabulary, design doc contradiction, tree.json, pro
 
 # KE-1858: Task Tree Status Vocabulary Split Between Two Design Docs
 
-**Status**: open
+**Status**: partially-resolved
 **Discovered**: 2026-06-12
 **Agent**: arc (heartbeat coherence audit)
 **Scope**: design doc contradiction + runtime drift
+**Resolved**: 2026-06-12 — cross-references added to both docs (task-tree-engine.md, project-execution-engine.md). Vocabulary mapping documented. Runtime `done` and persisted `ready` drift remain open.
 
 ## Observation
 
