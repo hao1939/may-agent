@@ -607,24 +607,24 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `handler.started` | cron runner on every handler invocation | ✅ live (30.3k rows) |
-| `handler.completed` | cron runner at handler success | ✅ live (30.2k rows) |
-| `handler.failed` | cron runner at handler throw | ✅ live (182 rows); `aks-rp-e2e-task-execution-worker` accounts for 144 of 182; remaining failures spread across `metrics-snapshot` (5), `metric-alert-reactor` (5), `scout-explore-xhs` (6), `scout-explore-arxiv` (4), `feedback-echo-sync` (4), and others |
-| `handler.skipped` | cron runner when handler is skipped (debounce, no-op) | ✅ live (8.2k rows) |
-| `handler.workflow_dispatched` | cron runner when handler dispatches a workflow session | ✅ live (14.1k rows) |
-| `handler.routed` | handler routing infrastructure | ✅ live (47 rows) |
+| `handler.started` | cron runner on every handler invocation | ✅ live (30.7k rows) |
+| `handler.completed` | cron runner at handler success | ✅ live (30.6k rows) |
+| `handler.failed` | cron runner at handler throw | ✅ live (220 rows); `aks-rp-e2e-task-execution-worker` accounts for 173 of 220; remaining failures spread across `scout-explore-xhs` (11), `metrics-snapshot` (5), `metric-alert-reactor` (5), `scout-explore-arxiv` (4), `feedback-echo-sync` (4), `aks-rp-e2e-project-planner` (4), and others |
+| `handler.skipped` | cron runner when handler is skipped (debounce, no-op) | ✅ live (8.3k rows) |
+| `handler.workflow_dispatched` | cron runner when handler dispatches a workflow session | ✅ live (14.9k rows) |
+| `handler.routed` | handler routing infrastructure | ✅ live (39 rows) |
 
 **Session lifecycle**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `session.start` | runtime session lifecycle | ✅ live (7.3k rows) |
-| `session.end` | runtime session lifecycle | ✅ live (7.2k rows) |
-| `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.6k rows) |
-| `session.receipt` | runtime on session completion receipt | ✅ live (5.8k rows) |
-| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (607 rows, ~11.6/hour averaged over 7-day retention window); all `category: session_not_found` — spans planner sessions, aks-explorer task sessions, and various project task sessions |
-| `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (9 rows) |
+| `session.start` | runtime session lifecycle | ✅ live (7.5k rows) |
+| `session.end` | runtime session lifecycle | ✅ live (7.4k rows) |
+| `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.7k rows) |
+| `session.receipt` | runtime on session completion receipt | ✅ live (5.9k rows) |
+| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (251 rows) |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (818 rows, ~12/hour averaged over 7-day retention window); all `category: session_not_found` — spans planner sessions, aks-explorer task sessions, and various project task sessions |
+| `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
 
@@ -632,7 +632,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 |---|---|---|
 | `chat.start.requested` | canonical human-surface chat create-or-bind intent | ✅ live (14 rows) |
 | `session.steer.requested` | canonical human-surface session steering intent | ✅ live (10 rows) |
-| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (248 rows); see session lifecycle above |
+| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (251 rows); see session lifecycle above |
 | `session.cancel_all.requested` | canonical broad cancel intent | ❌ intended; 0 rows in DB |
 | `runtime.reload.requested` | canonical runtime reload intent | ✅ live (13 rows) |
 | `runtime.restart.requested` | canonical runtime restart intent | ✅ live (1 row) |
@@ -759,10 +759,9 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (607 rows as of 2026-06-11 ~16:45Z, ~11.6/hour averaged over 7-day retention window —
+when the target session cannot be found (818 rows as of 2026-06-12 ~16:45Z, ~12/hour averaged over 7-day retention window —
 spans planner sessions, aks-explorer task sessions, and various project
-task sessions). Rate declined from ~25/hour (2026-06-11) to ~11.5/hour; the earlier
-figure was measured over a shorter window that included a burst period.
+task sessions). Rate stable at ~12/hour.
 
 ### Consumer Reality
 
