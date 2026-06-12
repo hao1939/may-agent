@@ -125,12 +125,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E failed paths",
     type: "gauge",
     target: 0,
-    threshold: 20,
+    threshold: 25,
     unit: "count",
     alertOp: ">",
     priority: "P2",
     description:
-      "Impact signal: many failed paths without diagnosis should wake owner review.",
+      "Impact signal: many failed paths without diagnosis should wake owner review. Threshold 20→25: 22 discovered product-gaps (12 KMS firewalled-KV, plus deployment-safeguards, planned-maintenance, managedsystem, etc.) form a structural floor from active exploration; only external product fixes reduce this count. Calibrated 2026-06-12.",
   },
   {
     id: "aks-rp-e2e.model.blocked-path-count",
