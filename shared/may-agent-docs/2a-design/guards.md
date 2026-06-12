@@ -172,29 +172,35 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-12 ~08:30Z** (24h window, ~2,299 total):
+**Latest snapshot 2026-06-13 ~12:00Z** (24h window, ~2,428 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,210 | 53.2% |
-| SESSION_BASH_CAT | 343 | 15.1% |
-| other (workflow guards + misc) | 256 | 11.2% |
-| READ_DEDUP | 199 | 8.7% |
-| SESSION_READ | 180 | 7.9% |
-| PATH_HALLUCINATION | 60 | 2.6% |
-| SESSION_BASH_GREP | 51 | 2.2% |
+| commit-guard (combined) | 1,302 | 53.6% |
+| READ_DEDUP | 446 | 18.4% |
+| SESSION_BASH_CAT | 341 | 14.0% |
+| SESSION_READ | 179 | 7.4% |
+| PATH_HALLUCINATION | 65 | 2.7% |
+| SESSION_BASH_GREP | 52 | 2.1% |
+| C1.1 Edit-Without-Read | 33 | 1.4% |
+| C7.1 Hallucinated Path | 9 | 0.4% |
 
-Total: ~2,299/day (under 2,500 threshold with ~8% headroom).
+Total: ~2,428/day (under 2,500 threshold with **~3% headroom**).
 
-Notable changes vs 2026-06-10 snapshot:
-- **PATH_HALLUCINATION dropped 63%** (163 → 60) — aks-explorer `/home/` path
-  hallucinations significantly reduced. Possible cause: improved agent context
-  or skill patches.
-- **READ_DEDUP dropped 28%** (277 → 199) — fewer repeated file reads.
-- commit-guard share stable at ~53% (structural floor from shared-worktree
-  dirty files). This is ambient noise, not behavioral deterioration.
-- Volume increased ~14% (2,023 → 2,299) — driven by higher session count,
-  not worsening per-session behavior.
+Notable changes vs 2026-06-12 snapshot:
+- **READ_DEDUP surged 124%** (199 → 446) — now the #2 signal by volume,
+  overtaking SESSION_BASH_CAT. aks-explorer is the dominant source
+  (328/446, 74%), repeatedly re-reading replay files during task sessions.
+  arc (62) and evaluator (50) are secondary contributors.
+- **Threshold headroom tightened** from ~8% to ~3% (2,428 vs 2,500).
+  If aks-explorer READ_DEDUP trend continues, guard-count could breach
+  threshold within 24-48h.
+- commit-guard combined up 7.6% (1,210 → 1,302) — share stable at ~53%.
+- SESSION_BASH_CAT stable (343 → 341). SESSION_READ stable (180 → 179).
+- PATH_HALLUCINATION stable (60 → 65) — the drop observed 2026-06-12
+  has held.
+- C1.1 Edit-Without-Read now broken out: 33 triggers (aks-explorer 21,
+  scout 9). Previously counted in "other".
 
 ### Known issue: guard name conflation
 
