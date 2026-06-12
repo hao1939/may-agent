@@ -26,7 +26,7 @@ CREATE TABLE sessions (
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
-  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ✅ Fully populated for new sessions (100% of 6h, 12h, and 24h windows, all 8 agents, verified 2026-06-11). Write path activated ~2026-06-09 17:33Z. Pure-SQL zombie detection precondition met for ≤24h windows. See Known Issues for transition details.
+  lastActivityAt  INTEGER           -- last tool-call timestamp (ms); added via migration. ✅ Fully populated for new sessions (100% of 6h/12h/24h windows, all 7 active agents, verified 2026-06-13). Write path activated ~2026-06-09 17:33Z. Pure-SQL zombie detection precondition met for ≤24h windows. See Known Issues for transition details.
 );
 ```
 
@@ -56,9 +56,11 @@ Root (May heartbeat)
 
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
-`parentSessionId` is only populated by `agents.fork()` (kind=`job`) and `may-console`
-(kind=`chat`) sessions. Verified 2026-06-12: 0 of 13,168 `call` sessions have a
-non-null `parentSessionId`; all 14 sessions with `parentSessionId` are `job` or `chat` kind.
+`parentSessionId` is only populated by `agents.fork()` (kind=`job`) sessions.
+Verified 2026-06-13: 0 of 13,220 `call` sessions have a non-null
+`parentSessionId`; all 10 sessions with `parentSessionId` are `job` kind
+(4 earlier `job`/`chat` rows aged out via 14-day retention since the
+2026-06-12 census).
 
 ## Persistence
 
@@ -92,11 +94,11 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-11 ~16:45Z):** The write path activated around
-2026-06-09 17:33Z. As of 2026-06-11 16:45Z, **100% of sessions in
-6h and 12h trailing windows have a non-null `lastActivityAt`** across all
-8 agents. 24h coverage is **99.9% (1102/1103)** — effectively complete;
-the pre-activation transition period has fully aged out.
+**Status (updated 2026-06-13):** The write path activated around
+2026-06-09 17:33Z. As of 2026-06-13, **100% coverage across all 7 active
+agents** in 6h/12h windows. 24h coverage is **99.8% (1319/1321)** —
+the 2 unpopulated rows are evaluator sessions (likely sub-second heuristic
+evals). The pre-activation transition period has fully aged out.
 
 **The precondition for pure-SQL zombie detection is now met** for windows
 up to **24h** (≥95% coverage). The `capability.zombie-session-count`
