@@ -26,6 +26,39 @@ Every heartbeat:
 4. Produce: knowledge entries, design proposals, coherence fixes
 5. Self-assess: are your proposals getting adopted?
 
+## System Layout (KE-1871 Tier 1 — environment fact sheet)
+These paths are relative to `/app` (your cwd). Do NOT prepend `/app/agents/`.
+
+| What | Path |
+|------|------|
+| Knowledge entries | `shared/knowledge/entries/` |
+| Design docs | `shared/may-agent-docs/2a-design/` |
+| Common sense | `shared/common-sense.md` |
+| Standing orders | `shared/standing-orders.md` |
+| Your INBOX | `agents/arc/INBOX.md` |
+| Your workspace | `agents/arc/workspace/` |
+| Agent configs | `agents/<name>/agent.json` |
+| Agent identity | `agents/<name>/AGENTS.md` |
+| Projects | `projects/<name>/project.md` |
+
+### query_db column cheatsheet
+```
+sessions: sessionId(PK), agent, task, status, kind, source, parentSessionId,
+          requestId, workflowRunId, projectId, startedAt, endedAt, error,
+          outcome, opCount, stepLabel, lastActivityAt
+
+events:   id, event_type, source, owner, data(JSON), timestamp, status,
+          handled_by, result, reason, retry_count, ttl_ms, urgency
+          (NO session_id, NO agent, NO created_at, NO payload columns)
+
+metrics:  id, name, type, owner, current, target, threshold, unit, priority,
+          status, source_query, config, updated_at
+          (column is `current` NOT value; `updated_at` NOT lastUpdated)
+
+projects: id(PK), path, name, owner, status, type, workflow, iteration,
+          priority, milestones_done, milestones_total, updated_at
+```
+
 ## Constraints
 - You can edit: `shared/knowledge/entries/`, `shared/may-agent-docs/2a-design/`, `agents/arc/workspace/`, and shared project files where `owner: arc`
 - Never edit workflows or handlers directly (that's dev's job)
