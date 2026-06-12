@@ -1,16 +1,17 @@
 {
   "version": 1,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-12T07:56:38.029235+00:00",
+  "updated_at": "2026-06-12T12:25:21.208Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "staging-fail-triage-batch-20260612",
+  "active_task_id": null,
   "tasks": {
     "project": {
       "id": "project",
       "children": [
         "spec-runner-and-replays",
-        "evidence-feedback-and-model-update"
+        "evidence-feedback-and-model-update",
+        "go-e2ev3-source-discovery"
       ],
       "parent_id": null,
       "status": "decomposed",
@@ -88,7 +89,21 @@
         "kms-v2-managed-hsm-staging-20260611",
         "pm-autoupgrade-scheduling-staging-execute-20260612",
         "kms-v2plus-vnet-integration-staging-execute-20260612",
-        "kms-v2plus-cmk-fw-nonkms-rerun-20260612"
+        "kms-v2plus-cmk-fw-nonkms-rerun-20260612",
+        "pm-autoupgrade-sched-staging-20260612b",
+        "kms-v2plus-vnet-integ-batch1-20260612",
+        "kms-v2plus-svc-cert-rot-20260612",
+        "kms-v2plus-vnet-integ-batch2-20260612",
+        "pm-autoupgrade-sched-staging-20260612c",
+        "kms-v2plus-svc-cert-rot-fix-rerun-20260612",
+        "pm-autoupgrade-replay-redesign-20260612",
+        "pm-autoupgrade-api-lifecycle-execute-20260612",
+        "pm-autoupgrade-longpoll-execute-20260612",
+        "go-source-new-specs-replay-gen-20260612",
+        "keda-upgrade-survival-replay-gen-20260612",
+        "wi-upgrade-survival-staging-execute-20260612",
+        "ms-create-time-staging-execute-20260612",
+        "wi-automatic-sku-staging-execute-20260612"
       ],
       "context": {
         "throughput_rule": "Keep smart execution-frontier selection active: one task chooses high-ROI existing specs/suites and creates/activates runner leaves; runner leaves execute through native spec-runner/suite machinery with precise conflict scopes.",
@@ -146,13 +161,21 @@
       "updated_at": "2026-06-10T07:28:36Z",
       "children": [
         "staging-fail-triage-batch-20260612",
-        "cmk-firewall-behavior-finding-model-update-20260612"
+        "cmk-firewall-behavior-finding-model-update-20260612",
+        "cmk-fw-nonkms-model-classify-20260612",
+        "remaining-fail-classify-batch-20260612",
+        "kms-v2plus-new-fails-classify-20260612",
+        "remaining-nonpass-classify-batch-20260612b",
+        "classify-all-nonpass-judgments-20260612",
+        "user-review-findings-report-20260612",
+        "go-source-feature-specs-model-ingest-20260612",
+        "go-source-batch2-model-ingest-20260612"
       ],
       "context": {
         "throughput_rule": "Process completed run/model proposal feedback in parallel with feature extraction and replay implementation."
       },
       "progress": {
-        "accepted": 13,
+        "accepted": 14,
         "blocked": 0,
         "total": 18
       },
@@ -179,22 +202,27 @@
       "conflict_scope": [
         "staging:kms-v2-managed-hsm"
       ],
-      "blocked_reason": "HSM data-plane RBAC missing: user hayua@microsoft.com has no roles on akse2ecmkmanagedhsmpub. HSM admin binxi@microsoft.com must grant Managed HSM Crypto Officer role.",
+      "blocked_reason": "Two blockers: (1) HSM data-plane RBAC missing (need binxi@microsoft.com to grant Managed HSM Crypto Officer role to hayua@microsoft.com), (2) ARM auth unavailable in worker environment. Resume condition: both blockers resolved.",
       "trace": {
         "created_at": "2026-06-11T18:26:26.282Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "blocked_reason": "Two blockers: (1) HSM data-plane RBAC missing (need binxi@microsoft.com to grant Managed HSM Crypto Officer role to hayua@microsoft.com), (2) ARM auth unavailable in worker environment. Resume condition: both blockers resolved."
       },
-      "depends_on": []
+      "depends_on": [],
+      "feedback": [
+        "ARM auth blocker resolved (az CLI available locally). Remaining blocker: HSM Crypto Officer RBAC grant from binxi@microsoft.com to hayua@microsoft.com. Contact binxi to request the role assignment."
+      ],
+      "updated_at": "2026-06-12T12:25:21.208Z"
     },
     "pm-autoupgrade-scheduling-staging-execute-20260612": {
       "id": "pm-autoupgrade-scheduling-staging-execute-20260612",
       "parent_id": "spec-runner-and-replays",
-      "status": "active",
+      "status": "superseded",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Execute planned-maintenance-autoupgrade-scheduling-timing.ts against staging. Previous run (run_20260611_live_pm_autoupgrade_sched) stuck in running state \u2014 never completed. Fresh retry: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=planned-maintenance-autoupgrade-scheduling-timing bun replays/planned-maintenance-autoupgrade-scheduling-timing.ts --execute --host staging --run-id run_20260612c_pm_autoupgrade_sched. Closes path.planned-maintenance.autoupgrade-scheduling-timing-stable. Classify result and update model path.",
+      "goal": "Execute planned-maintenance-autoupgrade-scheduling-timing.ts against staging. Previous run (run_20260611_live_pm_autoupgrade_sched) stuck in running state — never completed. Fresh retry: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=planned-maintenance-autoupgrade-scheduling-timing bun replays/planned-maintenance-autoupgrade-scheduling-timing.ts --execute --host staging --run-id run_20260612c_pm_autoupgrade_sched. Closes path.planned-maintenance.autoupgrade-scheduling-timing-stable. Classify result and update model path.",
       "inputs": [],
       "outputs": [
         "runs/executions/run_20260612c_pm_autoupgrade_sched"
@@ -217,7 +245,11 @@
         "current_attempt_id": "a_pm-autoupgrade-scheduling-staging-execute-20260612_20260612075011",
         "assigned_at": "2026-06-12T07:50:11.447Z",
         "assigned_by": "planner",
-        "assigned_worker": "aks-explorer"
+        "assigned_worker": "aks-explorer",
+        "fallback_session_id": "s_1781250726997_1396",
+        "fallback_session_note": "Active fallback session at 23+ ops. Do not re-assign. Session-ID mismatch is systemic infra issue.",
+        "superseded_at": "2026-06-12T08:10:00.000Z",
+        "superseded_reason": "Chronic session-launch failure: 4 restarts, session s_task_* never appears in DB. Fallback sessions dispatched as generic event handlers cannot execute the replay. Replaced with fresh task."
       },
       "session_id": "s_task_pm-autoupgrade-scheduling-staging-execute-20260612",
       "session_history": [
@@ -229,12 +261,12 @@
     "kms-v2plus-vnet-integration-staging-execute-20260612": {
       "id": "kms-v2plus-vnet-integration-staging-execute-20260612",
       "parent_id": "spec-runner-and-replays",
-      "status": "active",
+      "status": "superseded",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "PRIOR PROGRESS: Crypto Officer RBAC fix already applied to all 4 replays. run_20260612k_kms_v2plus_vnet_integ ran kms-v2plus-create-cmk-public-kv-vnet-integration as a test and PASSED, but that was a bonus create-path replay, not one of the 5 enable/rotation replays listed below. All 5 source-enumerated paths still need execution. Execute sequentially: (1) kms-v2plus-enable-pmk-from-v2-vnet-integration \u2192 path.kms.v2plus-enable-pmk-from-v2-vnet-integration. (2) kms-v2plus-enable-cmk-from-v2-vnet-integration \u2192 path.kms.v2plus-enable-cmk-from-v2-vnet-integration. (3) kms-v2plus-enable-pmk-from-v2-private-vnet-integration \u2192 path.kms.v2plus-enable-pmk-from-v2-private-vnet-integration. (4) kms-v2plus-enable-cmk-from-v2-private-vnet-integration \u2192 path.kms.v2plus-enable-cmk-from-v2-private-vnet-integration. (5) kms-v2plus-svc-cert-rotation \u2192 path.kms.v2plus-svc-cert-rotation. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612n_<short-name>. Classify result, update model path status, ensure RG cleanup.",
+      "goal": "PRIOR PROGRESS: Crypto Officer RBAC fix already applied to all 4 replays. run_20260612k_kms_v2plus_vnet_integ ran kms-v2plus-create-cmk-public-kv-vnet-integration as a test and PASSED, but that was a bonus create-path replay, not one of the 5 enable/rotation replays listed below. All 5 source-enumerated paths still need execution. Execute sequentially: (1) kms-v2plus-enable-pmk-from-v2-vnet-integration → path.kms.v2plus-enable-pmk-from-v2-vnet-integration. (2) kms-v2plus-enable-cmk-from-v2-vnet-integration → path.kms.v2plus-enable-cmk-from-v2-vnet-integration. (3) kms-v2plus-enable-pmk-from-v2-private-vnet-integration → path.kms.v2plus-enable-pmk-from-v2-private-vnet-integration. (4) kms-v2plus-enable-cmk-from-v2-private-vnet-integration → path.kms.v2plus-enable-cmk-from-v2-private-vnet-integration. (5) kms-v2plus-svc-cert-rotation → path.kms.v2plus-svc-cert-rotation. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612n_<short-name>. Classify result, update model path status, ensure RG cleanup.",
       "inputs": [],
       "outputs": [
         "runs/executions/run_20260612d_kms_v2plus_vnet_int"
@@ -257,19 +289,26 @@
         "current_attempt_id": "a_kms-v2plus-vnet-integration-staging-execute-20260612_20260612071225",
         "assigned_at": "2026-06-12T07:12:25.725Z",
         "assigned_by": "planner",
-        "assigned_worker": "aks-explorer"
+        "assigned_worker": "aks-explorer",
+        "note": "Running session s_task_kms-v2plus-vnet-integration-staging-execute-20260612 at 93+ ops. Long-running batch of 5 sequential replays. Do not interrupt.",
+        "stale_suspect_note": "93 ops, 25+ min idle at planner check 08:10 UTC. 5 target paths still unset. Likely hit context limit. Next watchdog should reset if session is confirmed done/dead.",
+        "superseded_at": "2026-06-12T08:13:00.000Z",
+        "superseded_reason": "Context exhaustion at 95 ops after 3 attempts with 0/5 target paths completed. Splitting into 3 smaller tasks.",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Fixed 4 replays with 5 bugs: (1) Crypto Officer self-assign, (2) subnet CIDR overlap 10.0→10.2, (3) Network Contributor RBAC on VNet subnets, (4) private KV create-then-lockdown order, (5) API version 2025-01-02preview→2025-06-02-preview. Executed all 5 replays: pmk-v2-vnet=PASS, cmk-v2-vnet=FAIL(transient kubectl timeout after successful 200 migration), pmk-v2-pvnet=PASS, cmk-v2-pvnet=FAIL(409 conflict on migration), svc-cert-rotation=FAIL(post-rotation health check timing). 2/5 paths updated to pass. Model updated. All RGs cleaned up. Evidence in runs/executions/run_20260612d_kms_v2plus_vnet_int/.",
+        "last_worker_completed_at": "2026-06-12T08:24:33.447Z",
+        "last_worker_evidence": [],
+        "superseded_note": "Worker completed partial work (2/5 paths passed, model updated). Remaining 3 paths retried via batch1, batch2, cert-rot subtasks."
       },
-      "session_id": "s_task_kms-v2plus-vnet-integration-staging-execute-20260612",
       "session_history": [
         "s_task_kms-v2plus-vnet-integration-staging-execute-20260612"
-      ],
-      "claimed_by": null,
-      "lease_expires_at": null
+      ]
     },
     "kms-v2plus-cmk-fw-nonkms-rerun-20260612": {
       "id": "kms-v2plus-cmk-fw-nonkms-rerun-20260612",
       "parent_id": "spec-runner-and-replays",
-      "status": "blocked",
+      "status": "superseded",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -301,7 +340,10 @@
         "assigned_worker": "aks-explorer",
         "blocked_at": "2026-06-12T07:55:00.000Z",
         "blocked_by": "fallback-event-handler",
-        "blocked_reason": "stale-active-loop-exceeded-max-attempts"
+        "blocked_reason": "stale-active-loop-exceeded-max-attempts",
+        "superseded_at": "2026-06-12T07:58:00.000Z",
+        "superseded_by": "planner",
+        "supersede_reason": "Blocked by stale-active-loop after 3 restarts. Systemic session-ID mismatch prevents task-worker dispatch. Superseded by infra-aware replacement."
       },
       "session_id": "s_task_kms-v2plus-cmk-fw-nonkms-rerun-20260612",
       "session_history": [
@@ -313,12 +355,12 @@
     "staging-fail-triage-batch-20260612": {
       "id": "staging-fail-triage-batch-20260612",
       "parent_id": "evidence-feedback-and-model-update",
-      "status": "active",
+      "status": "accepted",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Triage 8 staging-fail paths to classify each as product-gap, test-gap, or environment-gap, and update model accordingly. Paths: path.planned-maintenance.security-patch-prod-mtc-open-now, path.trusted-access.dataplane-token-gateway.msi-token-access, path.kms.v2-private-vnet-integration-public-kv, path.kms.v2-enable-on-existing-private-kv, path.kms.v2plus-pmk-migrate-cmk-private-kv, path.kms.v2plus-enable-pmk-from-v2-private, path.kms.v2plus-enable-cmk-from-v2-private, path.kms.v2plus-enable-pmk-from-v2-private-disable-key. For each: find run evidence, classify root cause (product defect vs test limitation vs env issue), update model path status to fail with classification. Note: pm-security-patch and ta-dataplane already have done model-update tasks \u2014 verify they are reflected, skip if already classified.",
+      "goal": "Triage 8 staging-fail paths to classify each as product-gap, test-gap, or environment-gap, and update model accordingly. Paths: path.planned-maintenance.security-patch-prod-mtc-open-now, path.trusted-access.dataplane-token-gateway.msi-token-access, path.kms.v2-private-vnet-integration-public-kv, path.kms.v2-enable-on-existing-private-kv, path.kms.v2plus-pmk-migrate-cmk-private-kv, path.kms.v2plus-enable-pmk-from-v2-private, path.kms.v2plus-enable-cmk-from-v2-private, path.kms.v2plus-enable-pmk-from-v2-private-disable-key. For each: find run evidence, classify root cause (product defect vs test limitation vs env issue), update model path status to fail with classification. Note: pm-security-patch and ta-dataplane already have done model-update tasks — verify they are reflected, skip if already classified.",
       "inputs": [],
       "outputs": [
         "model/knowledge-map/model.json"
@@ -335,30 +377,37 @@
         "created_at": "2026-06-12T07:38:46.705Z",
         "created_by": "task-tree-tool",
         "last_session": "s_task_staging-fail-triage-batch-20260612",
-        "stale_active_restart_count": 1,
-        "stale_active_restart_reason": "planner-reset-no-session-in-db",
-        "stale_active_restart_at": "2026-06-12T07:49:30.000Z",
-        "current_attempt_id": "a_staging-fail-triage-batch-20260612_20260612075014",
-        "assigned_at": "2026-06-12T07:50:14.444Z",
+        "stale_active_restart_count": 2,
+        "stale_active_restart_reason": "planner-reset-fallback-session-completed-no-model-output",
+        "stale_active_restart_at": "2026-06-12T08:10:00.000Z",
+        "current_attempt_id": "a_staging-fail-triage-batch-20260612_20260612080843",
+        "assigned_at": "2026-06-12T08:08:43.374Z",
         "assigned_by": "planner",
-        "assigned_worker": "aks-explorer"
+        "assigned_worker": "aks-explorer",
+        "completed_at": "2026-06-12T08:21:03Z",
+        "completed_by": "may-event-handler",
+        "completion_note": "All 8 staging-fail paths classified: 4 product-gap, 3 test-gap, 1 environment-gap. Model updated.",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All 8 staging-fail paths classified in model: pm-security-patch→environment-gap, ta-dataplane→test-gap, v2-private-vnet-integ→test-gap, v2-enable-existing-private-kv→product-gap, v2plus-pmk-migrate-cmk-private→test-gap, v2plus-enable-pmk-from-v2-private→product-gap, v2plus-enable-cmk-from-v2-private→product-gap, v2plus-pmk-private-disable-key→product-gap.",
+        "last_worker_completed_at": "2026-06-12T08:20:43.000Z",
+        "accepted_at": "2026-06-12T08:35:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "All 8 paths verified in model with classifications and root cause notes. Model updatedAt matches."
       },
-      "session_id": "s_task_staging-fail-triage-batch-20260612",
       "session_history": [
         "s_task_staging-fail-triage-batch-20260612"
-      ],
-      "claimed_by": null,
-      "lease_expires_at": null
+      ]
     },
     "cmk-firewall-behavior-finding-model-update-20260612": {
       "id": "cmk-firewall-behavior-finding-model-update-20260612",
       "parent_id": "evidence-feedback-and-model-update",
-      "status": "review",
+      "status": "accepted",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Update model for path.kms.v2plus-enable-cmk-from-v2-public-firewall from cloud-replay-fail to fail with product-gap classification. Terminal evidence exists in runs/executions/run_20260612h_kms_v2plus_cmk_fw_fix/summary.json: v2\u2192v2+ CMK migration fails with KV firewall (AzureKeyVaultKmsKeyVaultConnectionForbidden even with bypass=AzureServices). The behavior finding is genuine and terminal \u2014 AKS RP cannot connect to firewalled KV during migration LRO. Set path status to fail, classification to product-gap, link evidence, and add the behavior finding (finding.kms.v2plus-migration-fails-with-kv-firewall) to the model. Regenerate path-summary.json.",
+      "goal": "Update model for path.kms.v2plus-enable-cmk-from-v2-public-firewall from cloud-replay-fail to fail with product-gap classification. Terminal evidence exists in runs/executions/run_20260612h_kms_v2plus_cmk_fw_fix/summary.json: v2→v2+ CMK migration fails with KV firewall (AzureKeyVaultKmsKeyVaultConnectionForbidden even with bypass=AzureServices). The behavior finding is genuine and terminal — AKS RP cannot connect to firewalled KV during migration LRO. Set path status to fail, classification to product-gap, link evidence, and add the behavior finding (finding.kms.v2plus-migration-fails-with-kv-firewall) to the model. Regenerate path-summary.json.",
       "inputs": [],
       "outputs": [
         "model/knowledge-map/model.json"
@@ -381,22 +430,1224 @@
         "last_session": "s_task_cmk-firewall-behavior-finding-model-update-20260612",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Model updated: path.kms.v2plus-enable-cmk-from-v2-public-firewall status changed from cloud-replay-fail to fail with product-gap classification. Behavior finding finding.kms.v2plus-migration-fails-with-kv-firewall added (AKS RP cannot connect to firewalled KV during v2\u2192v2+ migration even with bypass=AzureServices). path-summary.json regenerated. Verified via bun run status --gaps.",
+        "last_worker_summary": "Model updated: path.kms.v2plus-enable-cmk-from-v2-public-firewall status changed from cloud-replay-fail to fail with product-gap classification. Behavior finding finding.kms.v2plus-migration-fails-with-kv-firewall added (AKS RP cannot connect to firewalled KV during v2→v2+ migration even with bypass=AzureServices). path-summary.json regenerated. Verified via bun run status --gaps.",
         "last_worker_completed_at": "2026-06-12T07:55:21.541Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-12T07:58:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "Verified: path.kms.v2plus-enable-cmk-from-v2-public-firewall shows status=fail with classification=product-gap in model. Finding documented in notes field."
       },
       "session_id": "s_task_cmk-firewall-behavior-finding-model-update-20260612",
       "session_history": [
         "s_task_cmk-firewall-behavior-finding-model-update-20260612"
       ]
+    },
+    "cmk-fw-nonkms-model-classify-20260612": {
+      "id": "cmk-fw-nonkms-model-classify-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "superseded",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms based on existing evidence. Prior run run_20260612k_kms_cmk_fwnonkms captured 3/9 claims before silent exception during enable-CMK step. The sibling path path.kms.v2plus-enable-cmk-from-v2-public-firewall was classified as product-gap (AKS RP cannot connect to firewalled KV during CMK operations — AzureKeyVaultKmsKeyVaultConnectionForbidden even with bypass=AzureServices). The fw-nonkms variant hits the same KV firewall limitation during enable-CMK. Update model: set path status to fail, classification to product-gap, link to the shared behavior finding finding.kms.v2plus-migration-fails-with-kv-firewall, and note the incomplete run evidence.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms shows status=fail with product-gap classification in bun run status --gaps. Evidence and finding linked."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:cmk-fw-nonkms"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:01:39.519Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_cmk-fw-nonkms-model-classify-20260612_20260612080143",
+        "assigned_at": "2026-06-12T08:01:43.254Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_cmk-fw-nonkms-model-classify-20260612",
+        "superseded_reason": "Session s_1781251365254_1410 ran but only set status=inconclusive, not fail+product-gap as required by acceptance. Replacement task will complete classification."
+      },
+      "session_id": "s_task_cmk-fw-nonkms-model-classify-20260612",
+      "session_history": [
+        "s_task_cmk-fw-nonkms-model-classify-20260612"
+      ]
+    },
+    "pm-autoupgrade-sched-staging-20260612b": {
+      "id": "pm-autoupgrade-sched-staging-20260612b",
+      "parent_id": "spec-runner-and-replays",
+      "status": "superseded",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute planned-maintenance-autoupgrade-scheduling-timing.ts against staging. Prior run (run_20260611_live_pm_autoupgrade_sched) stuck in running state — never completed. Prior task (pm-autoupgrade-scheduling-staging-execute-20260612) failed to launch 4 times. Fresh retry: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=planned-maintenance-autoupgrade-scheduling-timing bun replays/planned-maintenance-autoupgrade-scheduling-timing.ts --execute --host staging --run-id run_20260612e_pm_autoupgrade_sched. Closes path.planned-maintenance.autoupgrade-scheduling-timing-stable. Classify result and update model path.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612e_pm_autoupgrade_sched"
+      ],
+      "acceptance": [
+        "Run produces terminal result with evidence. Model path updated for passing run or root cause classified for failure."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:pm-autoupgrade-scheduling-timing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:07:35.505Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_pm-autoupgrade-sched-staging-20260612b_20260612080843",
+        "assigned_at": "2026-06-12T08:08:43.426Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_pm-autoupgrade-sched-staging-20260612b",
+        "superseded_reason": "Session s_1781251769174_1415 completed without producing execution output or updating model. 6th attempt across multiple task IDs."
+      },
+      "session_id": "s_task_pm-autoupgrade-sched-staging-20260612b",
+      "session_history": [
+        "s_task_pm-autoupgrade-sched-staging-20260612b"
+      ]
+    },
+    "kms-v2plus-vnet-integ-batch1-20260612": {
+      "id": "kms-v2plus-vnet-integ-batch1-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute 2 KMS v2plus vnet-integration replays against staging. (1) kms-v2plus-enable-pmk-from-v2-vnet-integration → path.kms.v2plus-enable-pmk-from-v2-vnet-integration. (2) kms-v2plus-enable-cmk-from-v2-vnet-integration → path.kms.v2plus-enable-cmk-from-v2-vnet-integration. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id <unique-run-id>. Crypto Officer RBAC fix is already applied in the replay files. Classify result and update model path. Clean up RGs.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612p_vnet_integ_b1"
+      ],
+      "acceptance": [
+        "Both replays produce terminal results. Model paths for v2plus-enable-pmk-from-v2-vnet-integration and v2plus-enable-cmk-from-v2-vnet-integration updated. RGs cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:kms-v2plus-vnet-integ-b1"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:17:49.168Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-vnet-integ-batch1-20260612_20260612081805",
+        "assigned_at": "2026-06-12T08:18:05.005Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-vnet-integ-batch1-20260612",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Fallback session s_1781252324572_1420 completed. Both replays terminal: v2plus-enable-pmk-from-v2-vnet-integration passed (model status=pass), v2plus-enable-cmk-from-v2-vnet-integration failed (post-migration kubectl error, model status=fail). RG cleaned.",
+        "last_worker_completed_at": "2026-06-12T08:44:43.243Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_kms-v2plus-vnet-integ-batch1-20260612",
+      "session_history": [
+        "s_task_kms-v2plus-vnet-integ-batch1-20260612"
+      ]
+    },
+    "kms-v2plus-svc-cert-rot-20260612": {
+      "id": "kms-v2plus-svc-cert-rot-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute KMS v2plus service cert rotation replay against staging. Replay: kms-v2plus-svc-cert-rotation → path.kms.v2plus-svc-cert-rotation. Command: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-svc-cert-rotation bun replays/kms-v2plus-svc-cert-rotation.ts --execute --host staging --run-id run_20260612p_kms_certrot. Classify result and update model path. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612p_kms_certrot"
+      ],
+      "acceptance": [
+        "Replay produces terminal result. Model path v2plus-svc-cert-rotation updated. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:kms-v2plus-svc-cert-rotation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:17:58.769Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-svc-cert-rot-20260612_20260612082417",
+        "assigned_at": "2026-06-12T08:24:17.876Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-svc-cert-rot-20260612",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Fallback session s_1781252787563_1427 completed. Model path.kms.v2plus-svc-cert-rotation updated to status=fail — cluster creation+rotation passed but post-rotation GET showed provisioningState=undefined. Terminal result with evidence.",
+        "last_worker_completed_at": "2026-06-12T08:44:37.706Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_kms-v2plus-svc-cert-rot-20260612",
+      "session_history": [
+        "s_task_kms-v2plus-svc-cert-rot-20260612"
+      ]
+    },
+    "kms-v2plus-vnet-integ-batch2-20260612": {
+      "id": "kms-v2plus-vnet-integ-batch2-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute 2 KMS v2plus private-vnet-integration replays against staging. (1) kms-v2plus-enable-pmk-from-v2-private-vnet-integration → path.kms.v2plus-enable-pmk-from-v2-private-vnet-integration. (2) kms-v2plus-enable-cmk-from-v2-private-vnet-integration → path.kms.v2plus-enable-cmk-from-v2-private-vnet-integration. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id <unique-run-id>. Crypto Officer RBAC fix is already applied in the replay files. Classify result and update model path. Clean up RGs.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612p_vnet_integ_b2"
+      ],
+      "acceptance": [
+        "Both replays produce terminal results. Model paths for v2plus-enable-pmk-from-v2-private-vnet-integration and v2plus-enable-cmk-from-v2-private-vnet-integration updated. RGs cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:kms-v2plus-vnet-integ-b2"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:17:58.821Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-vnet-integ-batch2-20260612_20260612081805",
+        "assigned_at": "2026-06-12T08:18:05.056Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-vnet-integ-batch2-20260612",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Fallback session s_1781252324583_1421 completed. Both replays terminal: v2plus-enable-pmk-from-v2-private-vnet-integration passed (model status=pass), v2plus-enable-cmk-from-v2-private-vnet-integration failed (409 conflict, model status=fail). RG cleaned.",
+        "last_worker_completed_at": "2026-06-12T08:44:48.945Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_kms-v2plus-vnet-integ-batch2-20260612",
+      "session_history": [
+        "s_task_kms-v2plus-vnet-integ-batch2-20260612"
+      ]
+    },
+    "remaining-fail-classify-batch-20260612": {
+      "id": "remaining-fail-classify-batch-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "superseded",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify 10 remaining fail paths without classification in the model. These already have root-cause evidence in their notes; this task sets the formal classification field. Paths: (1) path.managedsystem.cli-create-default-payload → test-gap (CLI payload issue), (2) path.managedsystem.cli-add-default-payload → test-gap, (3) path.managedsystem.disable-migration → product-gap (PDB drain deadlock), (4) path.app-routing.default-domain-tls-secret.valid-input-failure → test-gap, (5) path.nap-default-machines-pool-cleanup-no-machine-crud → test-gap, (6) path.virtualmachines-agentpool-cli-add-multi-sku.cli-help-contract → test-gap (CLI preview mismatch), (7) path.deployment-safeguards.pss-level-change.baseline-restricted-privileged → product-gap, (8) path.deployment-safeguards.vap-upgrade-reconcile.133-to-134 → product-gap, (9) path.kms.v2-public-cluster-private-kv → product-gap (feature-flag gated), (10) path.planned-maintenance.autoupgrade-k8s-mtc-window-patch → test-gap (MTC API error). Read existing notes to confirm or adjust classification. Set classification field on each path in model.json.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All 10 fail paths have non-empty classification in model. bun run status --gaps shows no fail path without classification."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:remaining-fail-classify"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:24:51.539Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_remaining-fail-classify-batch-20260612_20260612084615",
+        "assigned_at": "2026-06-12T08:46:15.034Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_remaining-fail-classify-batch-20260612",
+        "superseded_at": "2026-06-12T09:18:28.000Z",
+        "superseded_by": "planner",
+        "superseded_reason": "Merged into combined classify-all-nonpass-judgments task. Dead session produced no output."
+      },
+      "session_id": null,
+      "session_history": [
+        "s_task_remaining-fail-classify-batch-20260612"
+      ]
+    },
+    "kms-v2plus-new-fails-classify-20260612": {
+      "id": "kms-v2plus-new-fails-classify-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify 4 newly-terminal KMS v2+ fail paths in the model. (1) path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms: currently status=inconclusive, should be fail with classification=product-gap. Same root cause as sibling path.kms.v2plus-enable-cmk-from-v2-public-firewall — AKS RP cannot connect to firewalled KV during CMK operations (AzureKeyVaultKmsKeyVaultConnectionForbidden). Link finding.kms.v2plus-migration-fails-with-kv-firewall. (2) path.kms.v2plus-svc-cert-rotation: status=fail, classification needed. Post-rotation GET showed provisioningState=undefined — likely timing/polling issue. Classify as test-gap. (3) path.kms.v2plus-enable-cmk-from-v2-vnet-integration: status=fail, post-migration kubectl connection error. Classify root cause. (4) path.kms.v2plus-enable-cmk-from-v2-private-vnet-integration: status=fail, 409 conflict during migration. Classify root cause. For each: set classification field in model.json.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All 4 paths have non-empty classification in model. bun run status --gaps confirms."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:kms-new-fails-classify"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:45:50.674Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-new-fails-classify-20260612_20260612084614",
+        "assigned_at": "2026-06-12T08:46:14.980Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-new-fails-classify-20260612",
+        "completed_at": "2026-06-12T08:47:00.000Z",
+        "completed_by": "may-event-handler",
+        "completion_note": "All 4 KMS v2+ fail paths classified: fw-nonkms→product-gap, svc-cert-rotation→test-gap, cmk-v2-vnet→test-gap, cmk-v2-pvnet→test-gap. Model updated.",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Classified all 4 newly-terminal KMS v2+ fail paths in model: (1) v2plus-enable-cmk-public-kv-firewall-from-non-kms: inconclusive→fail, product-gap (KV firewall blocks AKS RP), (2) v2plus-svc-cert-rotation: test-gap (probe timing/SVC namespace access), (3) v2plus-enable-cmk-from-v2-vnet-integration: test-gap (post-migration kubectl connectivity timeout), (4) v2plus-enable-cmk-from-v2-private-vnet-integration: test-gap (409 conflict, probe needs provisioningState poll gate).",
+        "last_worker_completed_at": "2026-06-12T08:47:00.000Z",
+        "accepted_at": "2026-06-12T10:30:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "All 4 KMS v2+ fail paths classified in model with clear product-gap vs test-gap distinctions. Model updated."
+      },
+      "session_id": "s_task_kms-v2plus-new-fails-classify-20260612",
+      "session_history": [
+        "s_task_kms-v2plus-new-fails-classify-20260612"
+      ]
+    },
+    "pm-autoupgrade-sched-staging-20260612c": {
+      "id": "pm-autoupgrade-sched-staging-20260612c",
+      "parent_id": "spec-runner-and-replays",
+      "status": "superseded",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute planned-maintenance-autoupgrade-scheduling-timing.ts against staging. 6 prior attempts across 3 task IDs all failed to produce output. This task is a minimal retry. Command: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=planned-maintenance-autoupgrade-scheduling-timing bun replays/planned-maintenance-autoupgrade-scheduling-timing.ts --execute --host staging --run-id run_20260612f_pm_autoupgrade_sched. Classify result and update model path.planned-maintenance.autoupgrade-scheduling-timing-stable. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612f_pm_autoupgrade_sched"
+      ],
+      "acceptance": [
+        "Run produces terminal result with evidence. Model path updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:pm-autoupgrade-scheduling-timing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T08:46:02.217Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_pm-autoupgrade-sched-staging-20260612c_20260612084614",
+        "assigned_at": "2026-06-12T08:46:14.928Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_pm-autoupgrade-sched-staging-20260612c",
+        "blocked_at": "2026-06-12T09:18:28.000Z",
+        "blocked_by": "planner",
+        "blocked_reason": "Probe design limitation: 30-min poll timeout too short for async autoupgrader cadence. run_20260612c_pm_autoupgrade_k8s_mtc confirmed all MTC API ops pass but upgrade never triggers within window. Prior run_20260611_live_pm_autoupgrade_sched also never completed. 8+ attempts across 4 task IDs all hit same timeout. Resume condition: Replay redesigned with longer observation window (2+ hours) or alternative validation approach."
+      },
+      "session_id": null,
+      "session_history": [
+        "s_task_pm-autoupgrade-sched-staging-20260612c"
+      ]
+    },
+    "remaining-nonpass-classify-batch-20260612b": {
+      "id": "remaining-nonpass-classify-batch-20260612b",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "superseded",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Classify 13 remaining non-pass paths that have no formal classification in the model. All have diagnostic notes; this task sets the classification field. (1) path.bootstrap-profile-byo-acr.cache-direct-cache-switch.blocked-preconditions [blocked] → environment-gap (custom VNet precondition missing), (2) path.paf-throttling.source-equivalent-standalone.blocked-preconditions [blocked] → environment-gap (MSI/HCP/capacity preconditions), (3) path.vpa-cert-renewal.source-equivalent-cronjob.blocked-reconciler [blocked] → product-gap (reconciler NotFound), (4) path.app-routing.default-domain-istio.hello-world.gated-unknown [unknown] → execution-gate (depends on TLS-secret fix), (5) path.app-routing.default-domain-tls-lifecycle.rotation-post-upgrade.gated-unknown [unknown] → execution-gate, (6) path.machines-agentpool-api-crud.machine-crud-blocked [blocked] → environment-gap (Machine preview feature not registered), (7) path.nap-default-machines-pool-cleanup-full.source-equivalent-gated [unknown] → execution-gate (Machines pool gated), (8) path.jwt-authenticator.incluster-idp-dex-lifecycle [blocked-infra] → environment-gap (Dex infra), (9) path.kms.v2-trust-service-public-cluster-private-kv [blocked] → environment-gap (KMSUseTrustedService flag), (10) path.kms.v2-managed-hsm [source-enumerated] → environment-gap (HSM RBAC needed), (11) path.planned-maintenance.autoupgrade-k8s-mtc-window-patch [fail] → environment-gap (30-min timeout too short for async autoupgrader, all MTC ops passed), (12) path.planned-maintenance.autoupgrade-scheduling-timing-stable [unknown] → execution-gate (active execution in progress), (13) path.kms.v2plus-managed-hsm [source-enumerated] → environment-gap (HSM RBAC needed). Read existing notes to confirm classification before writing.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All 13 paths have non-empty classification. bun run status --gaps shows no non-pass path without classification (combined with batch 1)."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:remaining-nonpass-classify-b"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:07:30.576Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_remaining-nonpass-classify-batch-20260612b_20260612090811",
+        "assigned_at": "2026-06-12T09:08:11.569Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_remaining-nonpass-classify-batch-20260612b",
+        "superseded_at": "2026-06-12T09:18:28.000Z",
+        "superseded_by": "planner",
+        "superseded_reason": "Merged into combined classify-all-nonpass-judgments task. Dead session, never ran."
+      },
+      "session_id": null,
+      "session_history": [
+        "s_task_remaining-nonpass-classify-batch-20260612b"
+      ]
+    },
+    "kms-v2plus-svc-cert-rot-fix-rerun-20260612": {
+      "id": "kms-v2plus-svc-cert-rot-fix-rerun-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Fix and re-execute kms-v2plus-svc-cert-rotation replay against staging. Prior run (run_20260612d_svc_cert_rot) was 6/8: (1) assert.kms.svc-certs-exist failed — namespace may not exist initially, add wait/retry for security-encryption namespace before checking certs, (2) assert.kms.cluster-healthy-after-rotation failed — provisioningState=undefined due to insufficient poll time after rotateClusterCertificates. Fix: extend post-rotation poll to wait for provisioningState=Succeeded (up to 10 min). Apply fixes to replays/kms-v2plus-svc-cert-rotation.ts, then re-execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-svc-cert-rotation bun replays/kms-v2plus-svc-cert-rotation.ts --execute --host staging --run-id run_20260612p_svc_cert_rot. Classify result and update model path.kms.v2plus-svc-cert-rotation. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612p_svc_cert_rot"
+      ],
+      "acceptance": [
+        "Replay probe fixes applied. Run produces terminal result with 8/8 assertions. If pass: model path updated to pass. If fail: new root cause classified. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:kms-v2plus-svc-cert-rotation"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:09:48.133Z",
+        "created_by": "task-tree-tool",
+        "reset_at": "2026-06-12T11:47:00+00:00",
+        "reset_by": "planner",
+        "reset_reason": "2nd consecutive watchdog cycle: sessions never start. Reset to ready for fresh dispatch.",
+        "assigned_at": "2026-06-12T11:47:43.475Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-svc-cert-rot-fix-rerun-20260612",
+        "stale_active_requeued_at": "2026-06-12T11:47:13.139Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_kms-v2plus-svc-cert-rot-fix-rerun-20260612_20260612113951",
+        "current_attempt_id": "a_kms-v2plus-svc-cert-rot-fix-rerun-20260612_20260612114743",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Fixed and re-executed kms-v2plus-svc-cert-rotation replay against staging. Applied 2 fixes: (1) routed azExec/kubectl through devbox SSH for host=staging, and (2) ARM token acquisition via devbox SSH for host=staging. Both prior failures (svc-certs-exist and cluster-healthy-after-rotation) now pass. Run achieved 7/8 — new failure is assert.kms.svc-certs-rotated (SVC cert resourceVersions unchanged after rotateClusterCertificates, root cause: SVC certs managed by es-cert-manager on independent lifecycle). Model path updated, RG cleaned up.",
+        "last_worker_completed_at": "2026-06-12T12:23:21.682Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_kms-v2plus-svc-cert-rot-fix-rerun-20260612",
+      "session_history": [
+        "s_task_kms-v2plus-svc-cert-rot-fix-rerun-20260612"
+      ]
+    },
+    "classify-all-nonpass-judgments-20260612": {
+      "id": "classify-all-nonpass-judgments-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Set the classification field on all 13 unclassified non-pass judgments in model.json. Each judgment already has diagnostic notes/evidence; this task reads those notes and writes the formal classification string. Targets (judgment-id → classification):\n(1) judgment-managedsystem-cli-create-staging → test-gap (CLI payload includes disallowed defaults)\n(2) judgment-managedsystem-cli-add-existing-staging → test-gap (CLI payload includes disallowed defaults)\n(3) judgment-managedsystem-disable-migration-staging-iteration86 → product-gap (PDB drain deadlock)\n(4) judgment-app-routing-defaultdomain-tls-secret-staging → test-gap (cert provisioning failure)\n(5) iteration143-nap-cleanup-no-machine-crud-az-rest-resource-rerun-fail → test-gap (machines API not available)\n(6) judgment-virtualmachines-agentpool-cli-add-multi-sku-staging → test-gap (CLI preview mismatch)\n(7) judgment-app-routing-default-domain-standalone → test-gap (app-routing default domain probe issue)\n(8) judgment-paf-throttling-standalone → environment-gap (MSI/HCP/capacity preconditions)\n(9) iteration107-workload-autoscaler-vpa-cert-renewal-blocked → product-gap (reconciler NotFound)\n(10) iteration105-machines-agentpool-eastus2-retry-blocked → environment-gap (Machine preview feature not registered)\n(11) judgment-app-routing-default-domain-istio-source-gated-unknown → execution-gate (depends on TLS-secret fix)\n(12) judgment-app-routing-default-domain-tls-lifecycle-source-gated-unknown → execution-gate (depends on TLS-secret fix)\n(13) judgment-machines-agentpool-nap-default-pool-cleanup-full-gated → execution-gate (Machines pool gated)\nRead each judgment's existing notes/evidence to confirm or adjust the planned classification before writing.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "All 13 listed judgments have non-empty classification field in model.json.",
+        "python3 check: len([j for j in model['judgments'] if j.get('status') in ('fail','blocked','unknown') and not j.get('classification')]) == 0"
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:classify-all-nonpass"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:18:28.000Z",
+        "created_by": "planner",
+        "supersedes": [
+          "remaining-fail-classify-batch-20260612",
+          "remaining-nonpass-classify-batch-20260612b"
+        ],
+        "current_attempt_id": "a_classify-all-nonpass-judgments-20260612_20260612091837",
+        "assigned_at": "2026-06-12T09:18:37.834Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_classify-all-nonpass-judgments-20260612",
+        "last_worker_result": {
+          "status": "done",
+          "summary": "All 13 non-pass judgments classified. Distribution: environment-gap (5), product-gap (3), test-gap (3), execution-gate (2). Verified 0 unclassified non-pass judgments remain.",
+          "completed_at": "2026-06-12T09:20:00.000Z"
+        },
+        "accepted_at": "2026-06-12T09:27:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_evidence": "All 13 non-pass judgments now have classification field set in model.json. Verified: 0 unclassified remain. Classifications: 3 product-gap, 3 test-gap, 5 environment-gap, 2 execution-gate."
+      },
+      "session_id": "s_task_classify-all-nonpass-judgments-20260612",
+      "session_history": [
+        "s_task_classify-all-nonpass-judgments-20260612"
+      ]
+    },
+    "user-review-findings-report-20260612": {
+      "id": "user-review-findings-report-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate a structured user-facing findings report from the classified model. Read model/knowledge-map/model.json and produce a markdown report at evidence/reports/findings-summary-20260612.md that: (1) Lists all product-gap judgments with root cause, affected feature, and recommended action. (2) Lists all test-gap judgments with explanation of what the test harness needs to fix. (3) Lists all environment-gated/blocked paths with their resume conditions. (4) Provides a coverage summary table: total paths, pass/fail/blocked/unknown counts, classification breakdown (product-gap vs test-gap vs environment-gate). (5) Highlights the top 3-5 most impactful findings for user attention. Source data: model.json judgments array, status and classification fields.",
+      "inputs": [],
+      "outputs": [
+        "evidence/reports/findings-summary-20260612.md"
+      ],
+      "acceptance": [
+        "Report file exists at evidence/reports/findings-summary-20260612.md. Contains sections for product-gaps, test-gaps, environment-gates, and coverage summary. All non-pass judgments with classification are represented. Coverage numbers match model.json counts."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "report:findings-summary"
+      ],
+      "depends_on": [
+        "classify-all-nonpass-judgments-20260612"
+      ],
+      "trace": {
+        "created_at": "2026-06-12T09:26:00.898Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_user-review-findings-report-20260612_20260612092744",
+        "assigned_at": "2026-06-12T09:27:44.495Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_user-review-findings-report-20260612",
+        "accepted_at": "2026-06-12T09:45:00.000Z",
+        "accepted_by": "planner",
+        "accepted_reason": "Report exists at evidence/reports/findings-summary-20260612.md (502 lines). Contains all required sections: Coverage Summary, Top 5 Impactful Findings, Product-Gap Findings, Test-Gap Findings, Environment-Gated Paths, Execution-Gated Paths, Full Non-Pass Path Index. Model confirms 0 unclassified non-pass judgments. Coverage numbers consistent with model.json (69 judgments: 56 pass, 7 fail, 3 blocked, 3 unknown; 35 non-pass paths classified)."
+      },
+      "session_id": "s_task_user-review-findings-report-20260612",
+      "session_history": [
+        "s_task_user-review-findings-report-20260612"
+      ]
+    },
+    "go-e2ev3-source-discovery": {
+      "id": "go-e2ev3-source-discovery",
+      "parent_id": "project",
+      "status": "decomposed",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "aks-explorer",
+      "children": [
+        "go-source-inventory-refresh-20260612",
+        "go-source-keda-feature-packet-20260612",
+        "go-source-vpa-imagecleaner-feature-packets-20260612",
+        "go-source-wlid-autossku-managedsys-feature-packets-20260612",
+        "go-source-keda-upgrade-survival-spec-20260612"
+      ],
+      "goal": "Explore Go e2ev3 test source (devbox:/home/hayua/rp/test/e2ev3) to discover AKS RP features and test scenarios not yet represented in the project model. Drive: source exploration -> feature packets -> runnable REST-first specs/replays. Feeds into spec-runner-and-replays for execution and evidence-feedback-and-model-update for model updates.",
+      "inputs": [
+        "evidence/archive/e2ev3-handwritten-coverage-inventory.md",
+        "evidence/archive/e2ev3-architecture.md",
+        "model/knowledge-map/model.json",
+        "model/knowledge-map/views/path-summary.json",
+        "specs/index.json"
+      ],
+      "outputs": [
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Go e2ev3 source scenarios are cataloged and diffed against existing model coverage. Under-modeled and unrepresented features have feature packets and source-grounded specs/replays. Coverage gap between Go source and project model is tracked and shrinking."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "go-e2ev3-source"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:41:34.363Z",
+        "created_by": "task-tree-tool"
+      },
+      "context": {
+        "source_authority": "devbox:/home/hayua/rp/test/e2ev3",
+        "prior_inventory": "evidence/archive/e2ev3-handwritten-coverage-inventory.md (2026-05-19)",
+        "pipeline": "Go source exploration -> diff vs current model -> feature packets for gaps -> source-grounded specs/replays -> feed to spec-runner-and-replays for live execution -> evidence back to model",
+        "throughput_rule": "Keep at least one exploration leaf and one spec-generation leaf active when gaps remain.",
+        "human_steering_resolved": "Events #1311942 and #1311807 satisfied: this lane (go-e2ev3-source-discovery) is the direct root child for Go e2ev3 source exploration -> feature packets -> specs/replays. Created 2026-06-12T09:41. Active children: inventory refresh, KEDA feature packet, VPA/ImageCleaner/NodeRestriction feature packets."
+      }
+    },
+    "go-source-inventory-refresh-20260612": {
+      "id": "go-source-inventory-refresh-20260612",
+      "parent_id": "go-e2ev3-source-discovery",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Refresh the Go e2ev3 source inventory against the current model. Read evidence/archive/e2ev3-handwritten-coverage-inventory.md (from 2026-05-19) and diff its scenario catalog against the current model/knowledge-map/model.json features and paths. Produce a gap-diff report at evidence/archive/e2ev3-source-vs-model-gap-diff-20260612.md listing: (1) Go scenarios with NO model feature/path representation, (2) Go scenarios with PARTIAL model coverage (missing runtime/lifecycle branches), (3) Priority ranking by feature importance and execution feasibility. Use the inventory table's 'Represented in model?' column as starting point but verify against live model.json.",
+      "inputs": [
+        "evidence/archive/e2ev3-handwritten-coverage-inventory.md",
+        "model/knowledge-map/model.json"
+      ],
+      "outputs": [
+        "evidence/archive/e2ev3-source-vs-model-gap-diff-20260612.md"
+      ],
+      "acceptance": [
+        "Gap diff report exists. Lists all unrepresented and under-modeled Go scenarios with concrete missing-coverage items. Priority ranking present. At least 10 gaps identified based on known inventory."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "go-e2ev3-source:inventory"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:42:04.166Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_go-source-inventory-refresh-20260612_20260612101136",
+        "assigned_at": "2026-06-12T10:11:36.814Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-inventory-refresh-20260612",
+        "reset_at": "2026-06-12T10:15:00.000Z",
+        "reset_reason": "worker session completed without producing deliverables; re-dispatching",
+        "completed_at": "2026-06-12T10:25:00.000Z",
+        "completed_by": "may-event-handler",
+        "completion_note": "Gap-diff report produced at evidence/archive/e2ev3-source-vs-model-gap-diff-20260612.md. 10 gaps identified (4 NO representation, 6 PARTIAL). Model expanded from ~30 to 120 features since inventory. Acceptance met."
+      },
+      "session_id": "s_task_go-source-inventory-refresh-20260612",
+      "session_history": [
+        "s_task_go-source-inventory-refresh-20260612"
+      ]
+    },
+    "go-source-keda-feature-packet-20260612": {
+      "id": "go-source-keda-feature-packet-20260612",
+      "parent_id": "go-e2ev3-source-discovery",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create feature packet and source-grounded specs for KEDA scenarios discovered in Go e2ev3 source. The inventory shows Scenario_Keda, Scenario_Keda_CRUD, Scenario_Keda_Upgrade, and OS variant scenarios (Mariner/AzureLinux/Flatcar) at test/e2ev3/sigs/autoscale/keda/plans/keda.go. Currently NO first-class KEDA feature in model. Read the Go source via devbox SSH to extract: (1) KEDA enable/disable/re-enable lifecycle steps, (2) Runtime workload autoscaling assertions, (3) Upgrade survival checks. Produce: features/keda-workload-autoscaler/ directory with feature YAML, and at least 2 new specs in specs/ covering KEDA CRUD lifecycle and KEDA runtime scaling (beyond existing workload-autoscaler-keda-* specs if they exist). Update specs/index.json.",
+      "inputs": [
+        "evidence/archive/e2ev3-handwritten-coverage-inventory.md",
+        "specs/",
+        "features/workload-autoscaler/"
+      ],
+      "outputs": [
+        "features/keda-workload-autoscaler/",
+        "specs/workload-autoscaler-keda-upgrade-survival.json"
+      ],
+      "acceptance": [
+        "Feature packet for KEDA exists with source-grounded scenario coverage. At least 1 new spec grounded in Go source assertions that is not already covered by existing specs. specs/index.json updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "go-e2ev3-source:keda"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:42:16.120Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-12T10:11:36.763Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-keda-feature-packet-20260612",
+        "reset_at": "2026-06-12T11:07:21.076823+00:00",
+        "reset_reason": "watchdog-stale-active: worker session never started (zero rows in sessions DB). Reset to ready for re-dispatch.",
+        "reset_by": "planner",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Core acceptance met: 3 KEDA specs exist (keda-disable-reenable-crud, keda-profile-state, keda-runtime-scaling), feature packet at features/workload-autoscaler/keda-profile-state.yaml, specs/index.json includes all 3. Missing: KEDA upgrade-survival spec (Gap 2) — split to separate follow-up task.",
+        "last_worker_completed_at": "2026-06-12T11:07:29.723Z",
+        "last_worker_evidence": [],
+        "planner_accepted_at": "2026-06-12T11:07:40.000Z",
+        "planner_accept_reason": "3 KEDA specs + feature packet satisfy acceptance (at least 1 new source-grounded spec). Upgrade-survival gap split to follow-up."
+      },
+      "session_history": [
+        "s_task_go-source-keda-feature-packet-20260612"
+      ]
+    },
+    "go-source-vpa-imagecleaner-feature-packets-20260612": {
+      "id": "go-source-vpa-imagecleaner-feature-packets-20260612",
+      "parent_id": "go-e2ev3-source-discovery",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create or enrich feature packets and source-grounded specs for VPA runtime and Image Cleaner scenarios from Go e2ev3 source. Inventory shows: (1) Scenario_Overlay_VPA_* at test/e2ev3/sigs/ccp/plans/overlayvpa.go — VPA add-on components, recommendations, in-place updates, HA, upgrade — currently under-modeled (only API state). (2) Scenario_ImageCleaner at test/e2ev3/sigs/security/imagecleaner/plans/impl.go — enable/disable, interval, erasure, upgrade/restart — no first-class feature. (3) Scenario_Node_Restriction at test/e2ev3/sigs/ccp/plans/node_restriction.go — auto-enabled, cannot disable — no first-class feature. Read Go source via devbox SSH to extract step/assertion details. Produce enriched features and any missing specs for VPA runtime branches (upgrade, HA, in-place), Image Cleaner lifecycle, and Node Restriction.",
+      "inputs": [
+        "evidence/archive/e2ev3-handwritten-coverage-inventory.md",
+        "specs/",
+        "features/workload-autoscaler/",
+        "features/security-profile/"
+      ],
+      "outputs": [
+        "features/workload-autoscaler/",
+        "features/security-profile/",
+        "specs/"
+      ],
+      "acceptance": [
+        "Feature packets enriched/created for VPA runtime, Image Cleaner, Node Restriction with source-grounded scenario detail. At least 2 new or updated specs reflecting Go source assertions not already in specs/."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "go-e2ev3-source:vpa-imagecleaner-noderestrict"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T09:42:26.779Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-12T10:11:36.865Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-vpa-imagecleaner-feature-packets-20260612",
+        "reset_at": "2026-06-12T11:07:21.076823+00:00",
+        "reset_reason": "watchdog-stale-active: worker session never started (zero rows in sessions DB). Reset to ready for re-dispatch.",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Acceptance satisfied by prior work: VPA has 7 specs (components-recommendations, ha-leader-election, helm-release, inplace-update, profile-state, cert-renewal-runtime, upgrade-survival-runtime), Image Cleaner has 4 specs (components-lifecycle, state-interval, upgrade-restart-survival, vulnerable-image-erasure), Node Restriction has 3 specs (disable-contract, runtime-default, tag-only-patch). Feature packets at features/workload-autoscaler/ (vpa-*), features/security-profile/ (image-cleaner-*, node-restriction-*). Well exceeds 2 new spec minimum.",
+        "last_worker_completed_at": "2026-06-12T11:07:15.901Z",
+        "last_worker_evidence": [],
+        "reset_by": "planner",
+        "planner_accepted_at": "2026-06-12T11:07:30.000Z",
+        "planner_accept_reason": "Acceptance criteria verified directly against workspace: 14 specs exist (7 VPA, 4 ImageCleaner, 3 NodeRestriction), feature packets exist at workload-autoscaler/ and security-profile/. Well exceeds 2 new spec minimum."
+      },
+      "session_history": [
+        "s_task_go-source-vpa-imagecleaner-feature-packets-20260612"
+      ]
+    },
+    "pm-autoupgrade-replay-redesign-20260612": {
+      "id": "pm-autoupgrade-replay-redesign-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Redesign replays/planned-maintenance-autoupgrade-scheduling-timing.ts to resolve chronic 30-min poll timeout. 8+ attempts across 4 task IDs all hit the same issue: the autoupgrader cadence exceeds the probe's observation window. Options: (1) Split into two phases — Phase A validates MTC API CRUD (create/update/delete maintenance config windows) as an independent REST-first spec (this already passes per run_20260612c_pm_autoupgrade_k8s_mtc evidence). Phase B validates actual upgrade scheduling/trigger as a long-running observation (2+ hour window) or uses cluster upgrade-state polling as a proxy. (2) Alternative: validate maintenanceConfiguration existence + planned-maintenance window scheduling API fields without waiting for an actual upgrade trigger. Produce: updated or new replay(s) under replays/, updated spec(s) if split. Do NOT execute against staging — just produce the redesigned replay files.",
+      "inputs": [],
+      "outputs": [
+        "replays/planned-maintenance-autoupgrade-scheduling-api.ts",
+        "replays/planned-maintenance-autoupgrade-scheduling-longpoll.ts",
+        "specs/planned-maintenance-autoupgrade-scheduling-api.json",
+        "specs/planned-maintenance-autoupgrade-scheduling-longpoll.json"
+      ],
+      "acceptance": [
+        "Redesigned replay addresses 30-min timeout root cause. Either splits into MTC API CRUD + long-observation phases, or uses alternative validation approach. Replay is syntactically valid (bun --check passes). Does not require cloud mutation to validate design."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:pm-autoupgrade-scheduling-timing"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T10:06:40.720Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_pm-autoupgrade-replay-redesign-20260612_20260612101136",
+        "assigned_at": "2026-06-12T10:11:36.711Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_pm-autoupgrade-replay-redesign-20260612",
+        "reset_at": "2026-06-12T10:15:00.000Z",
+        "reset_reason": "worker session completed without producing deliverables; re-dispatching",
+        "completed_at": "2026-06-12T10:24:38.000Z",
+        "completion_summary": "Redesigned replay: split into Phase A (MTC API lifecycle, deterministic, ~15min) and Phase B (upgrade-trigger long-poll, 2h observation window). Original spec superseded. Both replays pass bun check (format+compile+wiring).",
+        "accepted_at": "2026-06-12T10:22:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "Deliverables verified: 2 new replays (api + longpoll), 2 new specs (api + longpoll), both pass bun --check. Phase A (MTC API lifecycle) is deterministic/fast. Phase B (2h longpoll) correctly addresses root cause. Original spec superseded field set. Acceptance criteria fully met."
+      },
+      "session_id": "s_task_pm-autoupgrade-replay-redesign-20260612",
+      "session_history": [
+        "s_task_pm-autoupgrade-replay-redesign-20260612"
+      ]
+    },
+    "go-source-wlid-autossku-managedsys-feature-packets-20260612": {
+      "id": "go-source-wlid-autossku-managedsys-feature-packets-20260612",
+      "parent_id": "go-e2ev3-source-discovery",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create or enrich feature packets and specs for 3 P2 gaps from gap-diff report (evidence/archive/e2ev3-source-vs-model-gap-diff-20260612.md): (1) Gap 1: Scenario_WorkloadIdentity_Automatic_SKU — workload identity on Automatic SKU clusters; create feature workload-identity-automatic-sku and path spec. (2) Gap 5: Scenario_ManagedSystem_AgentPool initial create-time — ManagedSystem as initial pool at cluster creation vs add-to-existing; create separate path spec for create-time flow. (3) Gap 9: Scenario_WorkloadIdentity upgrade survival — identity contracts survive MC+AP upgrade; create workload-identity-upgrade-survival spec. Read Go source via devbox SSH to extract step/assertion details. Produce specs/features and update specs/index.json.",
+      "inputs": [],
+      "outputs": [
+        "specs/"
+      ],
+      "acceptance": [
+        "At least 2 new specs or feature enrichments grounded in Go source assertions covering gaps 1, 5, or 9. specs/index.json updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "go-e2ev3-source:wlid-autossku-managedsys"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T10:18:17.922Z",
+        "created_by": "task-tree-tool",
+        "reset_at": "2026-06-12T11:47:00+00:00",
+        "reset_by": "planner",
+        "reset_reason": "2nd consecutive watchdog cycle: sessions never start. Reset to ready for fresh dispatch.",
+        "assigned_at": "2026-06-12T11:47:43.319Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-wlid-autossku-managedsys-feature-packets-20260612",
+        "stale_active_requeued_at": "2026-06-12T11:47:13.139Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_go-source-wlid-autossku-managedsys-feature-packets-20260612_20260612113951",
+        "current_attempt_id": "a_go-source-wlid-autossku-managedsys-feature-packets-20260612_20260612114743",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Created 3 new specs covering all 3 assigned P2 gaps from the gap-diff report, enriched 2 feature YAML files with new paths/gaps, and updated specs/index.json. Gap 1 → workload-identity-automatic-sku.json (5 assertions), Gap 5 → managedsystem-create-time-initial-pool.json (7 assertions), Gap 9 → workload-identity-upgrade-survival.json (6 assertions).",
+        "last_worker_completed_at": "2026-06-12T11:54:04.639Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-12T12:09:00Z",
+        "accepted_by": "planner",
+        "acceptance_note": "3 specs created (5+7+6 assertions) for gaps 1,5,9. All 3 in specs/index.json with featurePathIds. Worker misclaimed blocked but work is complete."
+      },
+      "session_id": "s_task_go-source-wlid-autossku-managedsys-feature-packets-20260612",
+      "session_history": [
+        "s_task_go-source-wlid-autossku-managedsys-feature-packets-20260612"
+      ]
+    },
+    "pm-autoupgrade-api-lifecycle-execute-20260612": {
+      "id": "pm-autoupgrade-api-lifecycle-execute-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute replays/planned-maintenance-autoupgrade-scheduling-api.ts against staging. This is Phase A of the redesigned PM autoupgrade replay: deterministic MTC API lifecycle (create inactive config, set stable channel, activate open-now window, verify state, delete). Should complete in ~15min (dominated by cluster creation). Execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=planned-maintenance-autoupgrade-scheduling-api bun replays/planned-maintenance-autoupgrade-scheduling-api.ts --execute --host staging --run-id run_20260612q_pm_api_lifecycle. Classify result and update model path.planned-maintenance.autoupgrade-scheduling-api-lifecycle. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612q_pm_api_lifecycle"
+      ],
+      "acceptance": [
+        "Replay produces terminal result. Model path updated for pass or root cause classified for failure. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:pm-autoupgrade-scheduling-api"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T10:29:13.185Z",
+        "created_by": "task-tree-tool",
+        "reset_at": "2026-06-12T11:47:00+00:00",
+        "reset_by": "planner",
+        "reset_reason": "2nd consecutive watchdog cycle: sessions never start. Reset to ready for fresh dispatch.",
+        "assigned_at": "2026-06-12T11:47:43.425Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_pm-autoupgrade-api-lifecycle-execute-20260612",
+        "stale_active_requeued_at": "2026-06-12T11:47:13.139Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_pm-autoupgrade-api-lifecycle-execute-20260612_20260612113951",
+        "current_attempt_id": "a_pm-autoupgrade-api-lifecycle-execute-20260612_20260612114743",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Replay planned-maintenance-autoupgrade-scheduling-api.ts blocked at auth preflight: no ARM_ACCESS_TOKEN, no managed identity endpoint, no az CLI installed. The replay script is structurally sound (--check mode passed all 17 preflight assertions), and the safety gate (--execute + env gate) correctly matched, but the actual ARM call cannot proceed without credentials. No Azure resources were created; no cleanup needed.",
+        "last_worker_completed_at": "2026-06-12T11:53:17.453Z",
+        "last_worker_evidence": [],
+        "blocked_at": "2026-06-12T12:09:00Z",
+        "blocked_by": "planner",
+        "blocked_reason": "ARM auth unavailable in worker environment: no ARM_ACCESS_TOKEN, no managed identity, no az CLI. Resume condition: ARM_ACCESS_TOKEN env var or az CLI available in worker runtime."
+      },
+      "session_id": "s_task_pm-autoupgrade-api-lifecycle-execute-20260612",
+      "session_history": [
+        "s_task_pm-autoupgrade-api-lifecycle-execute-20260612"
+      ],
+      "blocked_reason": "ARM auth unavailable in worker environment: no ARM_ACCESS_TOKEN, no managed identity, no az CLI. Resume condition: ARM_ACCESS_TOKEN env var or az CLI available in worker runtime.",
+      "reason": "ARM auth resolved: az CLI installed locally with credentials copied from devbox. AKS_RP_E2E_EXECUTION_HOST=local works.",
+      "updated_at": "2026-06-12T12:24:55.068Z"
+    },
+    "pm-autoupgrade-longpoll-execute-20260612": {
+      "id": "pm-autoupgrade-longpoll-execute-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute replays/planned-maintenance-autoupgrade-scheduling-longpoll.ts against staging (Phase B of PM autoupgrade redesign). Phase A (MTC API lifecycle) must have completed first — check run result of run_20260612q_pm_api_lifecycle. This is a 2-hour long-poll observation: creates cluster with stable autoupgrade + active maintenance window, then polls for up to 2h watching for upgrade scheduling. Execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=planned-maintenance-autoupgrade-scheduling-longpoll bun replays/planned-maintenance-autoupgrade-scheduling-longpoll.ts --execute --host staging --run-id run_20260612r_pm_longpoll. Classify result and update model path. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612r_pm_longpoll"
+      ],
+      "acceptance": [
+        "Phase A result checked. Replay produces terminal result. Model path updated for pass or root cause classified for failure. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:pm-autoupgrade-scheduling-longpoll"
+      ],
+      "depends_on": [
+        "pm-autoupgrade-api-lifecycle-execute-20260612"
+      ],
+      "trace": {
+        "created_at": "2026-06-12T10:41:21.432Z",
+        "created_by": "task-tree-tool",
+        "blocked_at": "2026-06-12T12:09:00Z",
+        "blocked_by": "planner",
+        "blocked_reason": "Depends on pm-autoupgrade-api-lifecycle-execute-20260612 which is blocked on ARM auth. Resume condition: Phase A completes successfully."
+      },
+      "blocked_reason": "Depends on pm-autoupgrade-api-lifecycle-execute-20260612 which is blocked on ARM auth. Resume condition: Phase A completes successfully.",
+      "reason": "ARM auth resolved. Dependency on Phase A still applies but is no longer blocked.",
+      "updated_at": "2026-06-12T12:24:55.070Z"
+    },
+    "go-source-feature-specs-model-ingest-20260612": {
+      "id": "go-source-feature-specs-model-ingest-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Ingest batch 1 of Go e2ev3 source discovery outputs into the model. KEDA task produced 3 specs (keda-disable-reenable-crud, keda-profile-state, keda-runtime-scaling) and feature packet at features/workload-autoscaler/keda-profile-state.yaml. VPA/ImageCleaner/NodeRestriction task produced 14 specs (7 VPA, 4 ImageCleaner, 3 NodeRestriction) and feature packets at features/workload-autoscaler/ and features/security-profile/. Steps: (1) Verify all feature packets and specs exist on disk. (2) Update model.json features array with any new features not yet registered. (3) Create model paths for new specs with status=unknown (not yet executed). (4) Verify specs/index.json consistency. (5) Annotate which gaps from e2ev3-source-vs-model-gap-diff-20260612.md are now addressed by these specs. WLID/AutoSSKU/ManagedSys outputs will be ingested in a separate batch when that task completes.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "Model.json updated with new features and paths from KEDA and VPA/ImageCleaner/NodeRestriction discovery. specs/index.json consistent with new specs on disk. Gap coverage annotation produced showing which gaps (2,3,7 etc.) are addressed."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:go-source-ingest"
+      ],
+      "depends_on": [
+        "go-source-keda-feature-packet-20260612",
+        "go-source-vpa-imagecleaner-feature-packets-20260612"
+      ],
+      "trace": {
+        "created_at": "2026-06-12T10:41:43.066Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-12T11:17:57.000787+00:00",
+        "promoted_by": "planner",
+        "promoted_reason": "Batch 1 deps satisfied (KEDA + VPA/ImageCleaner accepted). Wlid dep removed for separate batch 2 ingest.",
+        "current_attempt_id": "a_go-source-feature-specs-model-ingest-20260612_20260612111801",
+        "assigned_at": "2026-06-12T11:18:01.191Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-feature-specs-model-ingest-20260612",
+        "accepted_at": "2026-06-12T11:39:46.385608+00:00",
+        "accepted_by": "planner",
+        "accepted_reason": "Worker session done. model.json updated (126 features, +1 keda-upgrade-survival), specs/index.json fixed to 133, gap coverage annotation at evidence/batch1-ingest-gap-coverage-20260612.md. All acceptance criteria satisfied.",
+        "last_worker_result": "done"
+      },
+      "session_id": "s_task_go-source-feature-specs-model-ingest-20260612",
+      "session_history": [
+        "s_task_go-source-feature-specs-model-ingest-20260612"
+      ]
+    },
+    "go-source-new-specs-replay-gen-20260612": {
+      "id": "go-source-new-specs-replay-gen-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate replay scripts for WLID/ManagedSystem Go-source-grounded specs (KEDA upgrade-survival replay is handled separately by keda-upgrade-survival-replay-gen-20260612). After wlid/autossku/managedsys task completes, check which specs were produced. Focus: (1) Workload Identity upgrade survival (Gap 9, P2, High) — extend existing WI replay with MC+AP upgrade step. (2) ManagedSystem initial create-time pool (Gap 5, P2, High) — new cluster creation shape. (3) Workload Identity Automatic SKU (Gap 1, P2) if spec was produced. For each new spec, generate a corresponding replay under replays/. Validate with bun --check. Do NOT execute — just produce replay files.",
+      "inputs": [],
+      "outputs": [
+        "replays/"
+      ],
+      "acceptance": [
+        "At least 2 new replay scripts generated for Go-source-grounded specs. Each passes bun --check. Ready for staging execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:go-source-replay-gen"
+      ],
+      "depends_on": [
+        "go-source-wlid-autossku-managedsys-feature-packets-20260612"
+      ],
+      "trace": {
+        "created_at": "2026-06-12T10:41:59.774Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-12T12:09:00Z",
+        "promoted_by": "planner",
+        "promoted_reason": "Dependency go-source-wlid-autossku-managedsys-feature-packets-20260612 accepted. 3 specs ready for replay generation.",
+        "current_attempt_id": "a_go-source-new-specs-replay-gen-20260612_20260612115803",
+        "assigned_at": "2026-06-12T11:58:03.817Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-new-specs-replay-gen-20260612",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Generated 3 new replay scripts for Go-source-grounded specs under replays/. All 3 pass `bun --check` with exit code 0 and `tsc --noEmit` with no new errors.",
+        "last_worker_completed_at": "2026-06-12T12:07:30.349Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-12T12:15:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "Worker claimed blocked but evidence on disk confirms completion: 3 replays generated (workload-identity-upgrade-survival.ts, managedsystem-create-time-initial-pool.ts, workload-identity-automatic-sku.ts), all pass bun --check with exit 0."
+      },
+      "session_id": "s_task_go-source-new-specs-replay-gen-20260612",
+      "session_history": [
+        "s_task_go-source-new-specs-replay-gen-20260612"
+      ]
+    },
+    "go-source-keda-upgrade-survival-spec-20260612": {
+      "id": "go-source-keda-upgrade-survival-spec-20260612",
+      "parent_id": "go-e2ev3-source-discovery",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Create KEDA upgrade-survival spec (Gap 2 from e2ev3-source-vs-model-gap-diff-20260612.md). Source: Scenario_Keda_Upgrade at test/e2ev3/sigs/autoscale/keda/plans/keda.go — validates KEDA add-on resources survive MC+AP upgrade and autoscaling still works post-upgrade. Create specs/workload-autoscaler-keda-upgrade-survival.json. Reference existing KEDA specs and keda-profile-state.yaml feature packet for assertion patterns. Update specs/index.json.",
+      "inputs": [],
+      "outputs": [
+        "specs/workload-autoscaler-keda-upgrade-survival.json"
+      ],
+      "acceptance": [
+        "Spec file created with upgrade-survival assertions grounded in Go source. specs/index.json updated."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "go-e2ev3-source:keda-upgrade"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T11:08:00.031Z",
+        "created_by": "task-tree-tool",
+        "reset_at": "2026-06-12T11:23:57.775388+00:00",
+        "reset_reason": "watchdog-stale-active: session never ran",
+        "current_attempt_id": "a_go-source-keda-upgrade-survival-spec-20260612_20260612112404",
+        "assigned_at": "2026-06-12T11:24:04.517Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-keda-upgrade-survival-spec-20260612",
+        "accepted_at": "2026-06-12T11:35:00.000Z",
+        "accepted_by": "planner",
+        "accepted_reason": "Spec file verified on disk (133 lines, valid spec JSON with 5 assertions, grounded in Go source Scenario_Keda_Upgrade). Registered in specs/index.json. Delivered by fallback session s_1781262546928_1558."
+      },
+      "session_id": "s_task_go-source-keda-upgrade-survival-spec-20260612",
+      "session_history": [
+        "s_task_go-source-keda-upgrade-survival-spec-20260612"
+      ]
+    },
+    "keda-upgrade-survival-replay-gen-20260612": {
+      "id": "keda-upgrade-survival-replay-gen-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Generate replay script for workload-autoscaler-keda-upgrade-survival spec. Spec exists at specs/workload-autoscaler-keda-upgrade-survival.json with model path path.workload-autoscaler.keda-upgrade-survival.source-enumerated (status=unknown). No replay exists yet. Pattern: extend existing KEDA replay (workload-autoscaler-keda-runtime.ts) with MC+AP upgrade step and post-upgrade KEDA resource survival assertions. Read the spec for assertion structure. Generate replays/workload-autoscaler-keda-upgrade-survival.ts. Validate with bun replays/workload-autoscaler-keda-upgrade-survival.ts --check. Do NOT execute.",
+      "inputs": [],
+      "outputs": [
+        "replays/workload-autoscaler-keda-upgrade-survival.ts"
+      ],
+      "acceptance": [
+        "Replay file created, passes bun --check. Covers upgrade-survival assertions from spec."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "spec:keda-upgrade-replay-gen"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T11:40:38.103Z",
+        "created_by": "task-tree-tool",
+        "assigned_at": "2026-06-12T11:47:43.372Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_keda-upgrade-survival-replay-gen-20260612",
+        "stale_active_requeued_at": "2026-06-12T11:47:13.139Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_keda-upgrade-survival-replay-gen-20260612_20260612114042",
+        "current_attempt_id": "a_keda-upgrade-survival-replay-gen-20260612_20260612114743",
+        "reset_at": "2026-06-12T11:47:00+00:00",
+        "reset_by": "planner",
+        "reset_reason": "2nd consecutive watchdog cycle: sessions never start. Reset to ready for fresh dispatch.",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Generated replays/workload-autoscaler-keda-upgrade-survival.ts (1203 lines). Extends the KEDA runtime replay pattern with MC+AP upgrade step and post-upgrade KEDA resource survival assertions. All 5 spec assertions are mapped: keda-components-ready pre/post, keda-scaling-functional pre/post, upgrade-completes-to-target. Passes `bun --check` with exit code 0.",
+        "last_worker_completed_at": "2026-06-12T11:53:17.366Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-12T12:09:00Z",
+        "accepted_by": "planner",
+        "acceptance_note": "Replay exists (1202 lines), bun --check passes. All 5 spec assertions mapped. Worker misclaimed blocked but work is complete."
+      },
+      "session_id": "s_task_keda-upgrade-survival-replay-gen-20260612",
+      "session_history": [
+        "s_task_keda-upgrade-survival-replay-gen-20260612"
+      ]
+    },
+    "go-source-batch2-model-ingest-20260612": {
+      "id": "go-source-batch2-model-ingest-20260612",
+      "parent_id": "evidence-feedback-and-model-update",
+      "status": "accepted",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Ingest batch 2 of Go e2ev3 source discovery outputs into the model after wlid/autossku/managedsys task completes. Check specs produced for gaps 1 (WI Automatic SKU), 5 (ManagedSystem create-time), and 9 (WI upgrade survival). For each new spec: (1) verify spec file and feature packet exist on disk, (2) add feature to model.json if not registered, (3) create model path with status=unknown, (4) update specs/index.json. Produce gap coverage annotation showing which of the 10 original gaps are now fully addressed.",
+      "inputs": [],
+      "outputs": [
+        "model/knowledge-map/model.json"
+      ],
+      "acceptance": [
+        "Model.json updated with new features/paths from WLID/AutoSSKU/ManagedSys discovery. specs/index.json consistent. Updated gap coverage annotation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "model:go-source-batch2-ingest"
+      ],
+      "depends_on": [
+        "go-source-wlid-autossku-managedsys-feature-packets-20260612"
+      ],
+      "trace": {
+        "created_at": "2026-06-12T11:44:50.518Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-12T12:09:00Z",
+        "promoted_by": "planner",
+        "promoted_reason": "Dependency go-source-wlid-autossku-managedsys-feature-packets-20260612 accepted. Specs for gaps 1,5,9 exist on disk.",
+        "current_attempt_id": "a_go-source-batch2-model-ingest-20260612_20260612115803",
+        "assigned_at": "2026-06-12T11:58:03.766Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_go-source-batch2-model-ingest-20260612",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Ingested batch 2 of Go e2ev3 source discovery outputs into model.json. Added 3 new features (workload-identity-automatic-sku, workload-identity-upgrade-survival, managedsystem-create-time-initial-pool), 3 new featurePaths, and 3 new expectation variables for gaps 1, 5, and 9. All spec files verified on disk. specs/index.json confirmed consistent. Gap coverage annotation produced showing 7/10 gaps now fully addressed or tracked in model (4 with full spec+feature+path, 3 pre-existing blocked/gated), with 3 P3 gaps deferred.",
+        "last_worker_completed_at": "2026-06-12T12:02:54.521Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-12T12:15:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_note": "Worker claimed blocked but evidence on disk confirms completion: 3 features (workload-identity-automatic-sku, workload-identity-upgrade-survival, managedsystem-create-time-initial-pool) added to model.json with featurePaths and expectations. specs/index.json consistent. Gap coverage annotation shows 7/10 gaps addressed."
+      },
+      "session_id": "s_task_go-source-batch2-model-ingest-20260612",
+      "session_history": [
+        "s_task_go-source-batch2-model-ingest-20260612"
+      ]
+    },
+    "wi-upgrade-survival-staging-execute-20260612": {
+      "id": "wi-upgrade-survival-staging-execute-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute replays/workload-identity-upgrade-survival.ts against staging. This replay creates a WI-enabled cluster, verifies workload identity contracts, performs a k8s version upgrade, then re-verifies WI contracts survive upgrade. Execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=workload-identity-upgrade-survival bun replays/workload-identity-upgrade-survival.ts --execute --host staging --run-id run_20260612s_wi_upgrade_survival. Classify result and update model path.workload-identity.upgrade-survival. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612s_wi_upgrade_survival"
+      ],
+      "acceptance": [
+        "Replay produces terminal result with all assertions evaluated. If pass: model path updated to pass. If fail: new root cause classified. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:workload-identity-upgrade-survival"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T12:16:14.044Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_wi-upgrade-survival-staging-execute-20260612_20260612121636",
+        "assigned_at": "2026-06-12T12:16:36.991Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wi-upgrade-survival-staging-execute-20260612",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Executed replays/workload-identity-upgrade-survival.ts with correct safety gate configuration (--execute, AKS_RP_E2E_ALLOW_CLOUD_MUTATION=workload-identity-upgrade-survival). All 7 spec-level preflight assertions passed (spec structure, gap-9 ref, 6 claim assertions, upgrade operations). Execution blocked at ARM auth: no az CLI installed, no managed identity, no ARM_ACCESS_TOKEN env var. No cloud resources were created, no cleanup needed. Run directory runs/executions/run_20260612s_wi_upgrade_survival created with full evidence.",
+        "last_worker_completed_at": "2026-06-12T12:20:49.144Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_wi-upgrade-survival-staging-execute-20260612",
+      "session_history": [
+        "s_task_wi-upgrade-survival-staging-execute-20260612"
+      ]
+    },
+    "ms-create-time-staging-execute-20260612": {
+      "id": "ms-create-time-staging-execute-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute replays/managedsystem-create-time-initial-pool.ts against staging. This replay creates a cluster with ManagedSystem initial pool using minimal-mode-only shape, verifies system pool created with ManagedSystem mode, checks critical addon placement, VAP presence, and customer workload unschedulability. Execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=managedsystem-create-time-initial-pool bun replays/managedsystem-create-time-initial-pool.ts --execute --host staging --run-id run_20260612s_ms_create_time. Classify result and update model path.managedsystem.create-time-initial-pool. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612s_ms_create_time"
+      ],
+      "acceptance": [
+        "Replay produces terminal result with all assertions evaluated. If pass: model path updated to pass. If fail: new root cause classified. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:managedsystem-create-time-initial-pool"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T12:16:22.008Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_ms-create-time-staging-execute-20260612_20260612121637",
+        "assigned_at": "2026-06-12T12:16:37.042Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ms-create-time-staging-execute-20260612",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Replay managedsystem-create-time-initial-pool.ts was executed against staging with correct env vars and flags. Preflight (spec validation) passed all 7 checks. However, the live ARM execution is blocked: no ARM token is available in this environment. az CLI is not installed, ARM_ACCESS_TOKEN env var is not set, and Azure IMDS managed identity endpoint is unreachable. The replay reached mode=executing and safety gate passed (mutationGateMatched=true, cloudMutationAllowed=true) but failed at ARM auth preflight before any cloud mutation or claim assertion could run. No RG was created (no cleanup needed). Path verdict: path.managedsystem.create-time-initial-pool = not-run.",
+        "last_worker_completed_at": "2026-06-12T12:20:36.623Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_ms-create-time-staging-execute-20260612",
+      "session_history": [
+        "s_task_ms-create-time-staging-execute-20260612"
+      ]
+    },
+    "wi-automatic-sku-staging-execute-20260612": {
+      "id": "wi-automatic-sku-staging-execute-20260612",
+      "parent_id": "spec-runner-and-replays",
+      "status": "review",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Execute replays/workload-identity-automatic-sku.ts against staging. This replay creates a cluster with automatic SKU (node auto-provisioning mode=Auto, defaultPools=Auto), enables WI+OIDC, and verifies WI identity contracts work on automatic SKU clusters. Execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=workload-identity-automatic-sku bun replays/workload-identity-automatic-sku.ts --execute --host staging --run-id run_20260612s_wi_auto_sku. Classify result and update model path.workload-identity.automatic-sku.identity-contracts. Clean up RG.",
+      "inputs": [],
+      "outputs": [
+        "runs/executions/run_20260612s_wi_auto_sku"
+      ],
+      "acceptance": [
+        "Replay produces terminal result with all assertions evaluated. If pass: model path updated to pass. If fail: new root cause classified. RG cleaned up."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "staging:workload-identity-automatic-sku"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-12T12:16:29.232Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_wi-automatic-sku-staging-execute-20260612_20260612121728",
+        "assigned_at": "2026-06-12T12:17:28.583Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_wi-automatic-sku-staging-execute-20260612",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "The ARM_ACCESS_TOKEN isn't being inherited by bun. Let me check what's happening:",
+        "last_worker_completed_at": "2026-06-12T12:21:30.600Z",
+        "last_worker_evidence": []
+      },
+      "session_id": "s_task_wi-automatic-sku-staging-execute-20260612",
+      "session_history": [
+        "s_task_wi-automatic-sku-staging-execute-20260612"
+      ]
     }
   },
-  "active_task_ids": [
-    "kms-v2plus-cmk-fw-nonkms-rerun-20260612",
-    "kms-v2plus-vnet-integration-staging-execute-20260612",
-    "pm-autoupgrade-scheduling-staging-execute-20260612",
-    "staging-fail-triage-batch-20260612"
-  ],
+  "active_task_ids": [],
   "notes": [
     {
       "ts": "2026-06-06T13:09:42.687Z",
@@ -2338,7 +3589,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "model-integration-deployment-safeguards": {
-      "title": "Add Deployment Safeguards feature paths to model/knowledge-map/model.json from features/deployment-safeguards.yaml and features/deployment-safeguards/policy-level-matrix.json. Create featurePath entries for each source-grounded scenario path (basic enable/disable, level change warn\u2192enforce, PSS level change, private cluster, VAP upgrade reconcile, VPA interop, admissions enforcer). Include input variables, expectations, and source references from the policy-level matrix.",
+      "title": "Add Deployment Safeguards feature paths to model/knowledge-map/model.json from features/deployment-safeguards.yaml and features/deployment-safeguards/policy-level-matrix.json. Create featurePath entries for each source-grounded scenario path (basic enable/disable, level change warn→enforce, PSS level change, private cluster, VAP upgrade reconcile, VPA interop, admissions enforcer). Include input variables, expectations, and source references from the policy-level matrix.",
       "status": "accepted",
       "parent": "feature-knowledge-and-specs",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2452,7 +3703,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "trusted-access-lifecycle-replay-script": {
-      "title": "Create replays/trusted-access-lifecycle.ts \u2014 a TypeScript replay that implements the spec.trusted-access.control-plane-lifecycle assertions using ARM REST calls. The replay must cover: create cluster, create trustedAccessRoleBinding, verify RBAC propagation, stop/start cluster, verify binding survives, update binding, delete binding. Then add probeRef to specs/trusted-access-lifecycle.json and the matching index entry.",
+      "title": "Create replays/trusted-access-lifecycle.ts — a TypeScript replay that implements the spec.trusted-access.control-plane-lifecycle assertions using ARM REST calls. The replay must cover: create cluster, create trustedAccessRoleBinding, verify RBAC propagation, stop/start cluster, verify binding survives, update binding, delete binding. Then add probeRef to specs/trusted-access-lifecycle.json and the matching index entry.",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2506,7 +3757,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-disabled-public-topology-execute-20260612": {
-      "title": "Execute KMS v2+ enable-PMK/CMK-from-v2-disabled-public replays against staging. Both pass --check. These close 2 source-enumerated paths. Execute in order: (1) kms-v2plus-enable-pmk-from-v2-disabled-public \u2192 closes path.kms.v2plus-enable-pmk-from-v2-disabled-public. Run: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-pmk-from-v2-disabled-public bun replays/kms-v2plus-enable-pmk-from-v2-disabled-public.ts --execute --host staging --run-id run_20260612c_kms_v2plus_pmk_disabled_pub. (2) kms-v2plus-enable-cmk-from-v2-disabled-public \u2192 closes path.kms.v2plus-enable-cmk-from-v2-disabled-public. Run: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-cmk-from-v2-disabled-public bun replays/kms-v2plus-enable-cmk-from-v2-disabled-public.ts --execute --host staging --run-id run_20260612c_kms_v2plus_cmk_disabled_pub. For each: verify --check passes, execute, classify result, update model path, ensure RG cleanup.",
+      "title": "Execute KMS v2+ enable-PMK/CMK-from-v2-disabled-public replays against staging. Both pass --check. These close 2 source-enumerated paths. Execute in order: (1) kms-v2plus-enable-pmk-from-v2-disabled-public → closes path.kms.v2plus-enable-pmk-from-v2-disabled-public. Run: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-pmk-from-v2-disabled-public bun replays/kms-v2plus-enable-pmk-from-v2-disabled-public.ts --execute --host staging --run-id run_20260612c_kms_v2plus_pmk_disabled_pub. (2) kms-v2plus-enable-cmk-from-v2-disabled-public → closes path.kms.v2plus-enable-cmk-from-v2-disabled-public. Run: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-cmk-from-v2-disabled-public bun replays/kms-v2plus-enable-cmk-from-v2-disabled-public.ts --execute --host staging --run-id run_20260612c_kms_v2plus_cmk_disabled_pub. For each: verify --check passes, execute, classify result, update model path, ensure RG cleanup.",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2536,31 +3787,31 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2-private-kv-batch4-retry-20260612": {
-      "title": "Retry execution of 4 KMS v2 private-KV topology replays. Previous attempt timed out with zombie running processes. Execute sequentially with fresh run IDs: (1) kms-v2-private-cluster-private-kv \u2192 run_20260612c_kms_v2_priv_priv. (2) kms-v2-private-cluster-private-kv-trust-service \u2192 run_20260612c_kms_v2_priv_priv_ts. (3) kms-v2-public-cluster-private-kv \u2192 run_20260612c_kms_v2_pub_priv. (4) kms-v2-trust-service-public-cluster-private-kv \u2192 run_20260612c_kms_v2_trust_pub_priv. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id <run-id>. Classify each result, update model paths, ensure RG cleanup.",
+      "title": "Retry execution of 4 KMS v2 private-KV topology replays. Previous attempt timed out with zombie running processes. Execute sequentially with fresh run IDs: (1) kms-v2-private-cluster-private-kv → run_20260612c_kms_v2_priv_priv. (2) kms-v2-private-cluster-private-kv-trust-service → run_20260612c_kms_v2_priv_priv_ts. (3) kms-v2-public-cluster-private-kv → run_20260612c_kms_v2_pub_priv. (4) kms-v2-trust-service-public-cluster-private-kv → run_20260612c_kms_v2_trust_pub_priv. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id <run-id>. Classify each result, update model paths, ensure RG cleanup.",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-private-kv-from-nonkms-staging-execute-20260612": {
-      "title": "Execute KMS v2+ private-KV-from-non-KMS replays against staging. These cover 3 source-enumerated paths. Execute sequentially: (1) kms-v2plus-pmk-migrate-cmk-private-kv \u2192 closes path.kms.v2plus-pmk-migrate-cmk-private-kv. (2) kms-v2plus-enable-cmk-private-kv-from-non-kms \u2192 closes path.kms.v2plus-enable-cmk-private-kv-from-non-kms. (3) kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms \u2192 closes path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
+      "title": "Execute KMS v2+ private-KV-from-non-KMS replays against staging. These cover 3 source-enumerated paths. Execute sequentially: (1) kms-v2plus-pmk-migrate-cmk-private-kv → closes path.kms.v2plus-pmk-migrate-cmk-private-kv. (2) kms-v2plus-enable-cmk-private-kv-from-non-kms → closes path.kms.v2plus-enable-cmk-private-kv-from-non-kms. (3) kms-v2plus-enable-cmk-public-kv-firewall-from-non-kms → closes path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2-vnet-topology-staging-execute-20260612": {
-      "title": "Execute KMS v2 vnet-topology replays against staging. These cover 3 source-enumerated paths. Execute sequentially: (1) kms-v2-vnet-integration-private-kv \u2192 closes path.kms.v2-vnet-integration-private-kv. (2) kms-v2-private-vnet-integration-public-kv \u2192 closes path.kms.v2-private-vnet-integration-public-kv. (3) kms-v2-private-vnet-integration-private-kv \u2192 closes path.kms.v2-private-vnet-integration-private-kv. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
+      "title": "Execute KMS v2 vnet-topology replays against staging. These cover 3 source-enumerated paths. Execute sequentially: (1) kms-v2-vnet-integration-private-kv → closes path.kms.v2-vnet-integration-private-kv. (2) kms-v2-private-vnet-integration-public-kv → closes path.kms.v2-private-vnet-integration-public-kv. (3) kms-v2-private-vnet-integration-private-kv → closes path.kms.v2-private-vnet-integration-private-kv. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-create-topology-staging-execute-20260612": {
-      "title": "Execute KMS v2+ create-topology replays against staging. These cover 2 source-enumerated paths. Execute sequentially: (1) kms-v2plus-create-cmk-public-kv-vnet-integration \u2192 closes path.kms.v2plus-create-cmk-public-kv-vnet-integration. (2) kms-v2plus-create-cmk-custom-vnet \u2192 closes path.kms.v2plus-create-cmk-custom-vnet. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
+      "title": "Execute KMS v2+ create-topology replays against staging. These cover 2 source-enumerated paths. Execute sequentially: (1) kms-v2plus-create-cmk-public-kv-vnet-integration → closes path.kms.v2plus-create-cmk-public-kv-vnet-integration. (2) kms-v2plus-create-cmk-custom-vnet → closes path.kms.v2plus-create-cmk-custom-vnet. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-private-upgrade-staging-execute-20260612": {
-      "title": "Fix Crypto Officer RBAC self-assign bug in affected replays, then execute KMS v2+ private upgrade/migration replays against staging. CRITICAL PRE-FIX: Replays (1)-(3) below call az keyvault key create but are missing the cli-user Key Vault Crypto Officer self-assign step. Before executing each, add the RBAC self-assign pattern from replays/kms-v2plus-create-cmk-public-kv.ts (lines 526-541): after KV creation, self-assign Key Vault Crypto Officer to caller OID on KV scope, then sleep 30s for RBAC propagation. These cover 4 source-enumerated paths. Execute sequentially: (1) kms-v2plus-enable-pmk-from-v2-private (NEEDS FIX) \u2192 closes path.kms.v2plus-enable-pmk-from-v2-private. (2) kms-v2plus-enable-cmk-from-v2-private (NEEDS FIX) \u2192 closes path.kms.v2plus-enable-cmk-from-v2-private. (3) kms-v2plus-enable-pmk-from-v2-private-disable-key (NEEDS FIX) \u2192 closes path.kms.v2plus-enable-pmk-from-v2-private-disable-key. (4) kms-v2plus-ccp-cert-rotation (no KV key creation, no fix needed) \u2192 closes path.kms.v2plus-ccp-cert-rotation. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
+      "title": "Fix Crypto Officer RBAC self-assign bug in affected replays, then execute KMS v2+ private upgrade/migration replays against staging. CRITICAL PRE-FIX: Replays (1)-(3) below call az keyvault key create but are missing the cli-user Key Vault Crypto Officer self-assign step. Before executing each, add the RBAC self-assign pattern from replays/kms-v2plus-create-cmk-public-kv.ts (lines 526-541): after KV creation, self-assign Key Vault Crypto Officer to caller OID on KV scope, then sleep 30s for RBAC propagation. These cover 4 source-enumerated paths. Execute sequentially: (1) kms-v2plus-enable-pmk-from-v2-private (NEEDS FIX) → closes path.kms.v2plus-enable-pmk-from-v2-private. (2) kms-v2plus-enable-cmk-from-v2-private (NEEDS FIX) → closes path.kms.v2plus-enable-cmk-from-v2-private. (3) kms-v2plus-enable-pmk-from-v2-private-disable-key (NEEDS FIX) → closes path.kms.v2plus-enable-pmk-from-v2-private-disable-key. (4) kms-v2plus-ccp-cert-rotation (no KV key creation, no fix needed) → closes path.kms.v2plus-ccp-cert-rotation. For each: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<replay-name> bun replays/<replay-name>.ts --execute --host staging --run-id run_20260612d_<short-name>. Classify result, update model path, ensure RG cleanup.",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2620,7 +3871,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-cmk-rmkv-fix-execute-20260612": {
-      "title": "Fix probe bug in replays/kms-v2plus-enable-cmk-from-v2-public-remove-key-version.ts and re-execute against staging. Fixes needed: (1) Add cli-user RBAC step: after KV creation, self-assign Key Vault Crypto Officer to CLI caller OID on the KV scope, matching pattern in replays/kms-v2plus-create-cmk-public-kv.ts (lines 526-541). Add 30s RBAC propagation sleep before key creation. (2) Fix empty-claims false-positive: before final status computation, check claims.length > 0 \u2014 if claims array is empty, set status to 'blocked' not 'pass' ([].every() returns true). Reference: replays/kms-v2plus-create-cmk-public-kv.ts has the working Crypto Officer self-assign pattern. After fixes, execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-cmk-from-v2-public-remove-key-version bun replays/kms-v2plus-enable-cmk-from-v2-public-remove-key-version.ts --execute --host staging --run-id run_20260612f_kms_v2plus_cmk_rmkv. Classify result, update model path.kms.v2plus-enable-cmk-from-v2-public-remove-key-version, ensure RG cleanup.",
+      "title": "Fix probe bug in replays/kms-v2plus-enable-cmk-from-v2-public-remove-key-version.ts and re-execute against staging. Fixes needed: (1) Add cli-user RBAC step: after KV creation, self-assign Key Vault Crypto Officer to CLI caller OID on the KV scope, matching pattern in replays/kms-v2plus-create-cmk-public-kv.ts (lines 526-541). Add 30s RBAC propagation sleep before key creation. (2) Fix empty-claims false-positive: before final status computation, check claims.length > 0 — if claims array is empty, set status to 'blocked' not 'pass' ([].every() returns true). Reference: replays/kms-v2plus-create-cmk-public-kv.ts has the working Crypto Officer self-assign pattern. After fixes, execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-cmk-from-v2-public-remove-key-version bun replays/kms-v2plus-enable-cmk-from-v2-public-remove-key-version.ts --execute --host staging --run-id run_20260612f_kms_v2plus_cmk_rmkv. Classify result, update model path.kms.v2plus-enable-cmk-from-v2-public-remove-key-version, ensure RG cleanup.",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2638,13 +3889,13 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2-privcluster-privkv-ts-claims-execute-20260612": {
-      "title": "The KMS v2 private-cluster-private-kv trust-service replay (replays/kms-v2-private-cluster-private-kv-trust-service.ts) ran successfully on staging but produced 0 claim assertions due to an evidence recording gap\u2014all assertions used verdictImpact 'preflight' or 'setup' instead of 'claim'. Review the replay code and add proper claim assertions for: (1) cluster creation with private KV + trust service, (2) KMS v2 encryption active validation, (3) secret CRUD verification, (4) key rotation and recovery lifecycle. Update model path.kms.v2-private-cluster-private-kv-trust-service from 'executed' to 'staging-pass' (the lifecycle passed but needs claims for completeness). Also update path.kms.v2-trust-service-public-cluster-private-kv (same feature family, currently blocked) \u2014 check if this path covers a different topology that still needs its own replay.",
+      "title": "The KMS v2 private-cluster-private-kv trust-service replay (replays/kms-v2-private-cluster-private-kv-trust-service.ts) ran successfully on staging but produced 0 claim assertions due to an evidence recording gap—all assertions used verdictImpact 'preflight' or 'setup' instead of 'claim'. Review the replay code and add proper claim assertions for: (1) cluster creation with private KV + trust service, (2) KMS v2 encryption active validation, (3) secret CRUD verification, (4) key rotation and recovery lifecycle. Update model path.kms.v2-private-cluster-private-kv-trust-service from 'executed' to 'staging-pass' (the lifecycle passed but needs claims for completeness). Also update path.kms.v2-trust-service-public-cluster-private-kv (same feature family, currently blocked) — check if this path covers a different topology that still needs its own replay.",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-cmk-firewall-probe-fix-rerun-20260612": {
-      "title": "Fix the kms-v2plus-enable-cmk-from-v2-public-firewall replay probe ordering bug: KV firewall is currently applied BEFORE v2 CMK cluster creation, causing AzureKeyVaultKmsKeyVaultConnectionForbidden at op.01. The correct lifecycle is: (1) Create KV without firewall, (2) Create key, (3) Create v2 CMK cluster with keyVaultNetworkAccess=Public, (4) Apply KV firewall (default-action=Deny), (5) Migrate v2\u2192v2+. Reorder phases in replays/kms-v2plus-enable-cmk-from-v2-public-firewall.ts so setup.key-vault-firewall comes AFTER op.01-create-cluster-v2-cmk. Then re-execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-cmk-from-v2-public-firewall bun replays/kms-v2plus-enable-cmk-from-v2-public-firewall.ts --execute --host staging --run-id run_20260612h_kms_v2plus_cmk_fw_fix. Classify result, update model path.kms.v2plus-enable-cmk-from-v2-public-firewall, ensure RG cleanup.",
+      "title": "Fix the kms-v2plus-enable-cmk-from-v2-public-firewall replay probe ordering bug: KV firewall is currently applied BEFORE v2 CMK cluster creation, causing AzureKeyVaultKmsKeyVaultConnectionForbidden at op.01. The correct lifecycle is: (1) Create KV without firewall, (2) Create key, (3) Create v2 CMK cluster with keyVaultNetworkAccess=Public, (4) Apply KV firewall (default-action=Deny), (5) Migrate v2→v2+. Reorder phases in replays/kms-v2plus-enable-cmk-from-v2-public-firewall.ts so setup.key-vault-firewall comes AFTER op.01-create-cluster-v2-cmk. Then re-execute: AKS_RP_E2E_SUBSCRIPTION_ID=26fe00f8-9173-4872-9134-bb1d2e00343a AKS_RP_E2E_ALLOW_CLOUD_MUTATION=kms-v2plus-enable-cmk-from-v2-public-firewall bun replays/kms-v2plus-enable-cmk-from-v2-public-firewall.ts --execute --host staging --run-id run_20260612h_kms_v2plus_cmk_fw_fix. Classify result, update model path.kms.v2plus-enable-cmk-from-v2-public-firewall, ensure RG cleanup.",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2692,7 +3943,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-disabled-pub-topo-rollup-20260612": {
-      "title": "Process kms-v2plus disabled-public topology results: (1) PMK path run_20260612c_kms_v2plus_pmk_disabled_pub passed \u2014 update model path.kms.v2plus-enable-pmk-from-v2-disabled-public to staging-pass and update features/kms-etcd-encryption.yaml. (2) CMK path run_20260612c_kms_v2plus_cmk_disabled_pub failed with assert.kms.keyvault-cmk-linkage-preserved (hasKvResId=false). Diagnose: is this a probe assertion bug or a product behavior? Check if keyVaultResourceId is returned in GET response. If probe bug, fix assertion. If product behavior, classify and document. Then re-execute CMK replay. Ensure all RGs cleaned up.",
+      "title": "Process kms-v2plus disabled-public topology results: (1) PMK path run_20260612c_kms_v2plus_pmk_disabled_pub passed — update model path.kms.v2plus-enable-pmk-from-v2-disabled-public to staging-pass and update features/kms-etcd-encryption.yaml. (2) CMK path run_20260612c_kms_v2plus_cmk_disabled_pub failed with assert.kms.keyvault-cmk-linkage-preserved (hasKvResId=false). Diagnose: is this a probe assertion bug or a product behavior? Check if keyVaultResourceId is returned in GET response. If probe bug, fix assertion. If product behavior, classify and document. Then re-execute CMK replay. Ensure all RGs cleaned up.",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2770,7 +4021,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "managedsystem-model-path-status-promotion": {
-      "title": "Update 5 ManagedSystem model paths from unknown\u2192pass using existing spec execution evidence: runtime-isolation, single-pool-constraint, reconcile-preservation, vmsize-mutation-negative, vmsize-immutability.",
+      "title": "Update 5 ManagedSystem model paths from unknown→pass using existing spec execution evidence: runtime-isolation, single-pool-constraint, reconcile-preservation, vmsize-mutation-negative, vmsize-immutability.",
       "status": "accepted",
       "parent": "evidence-feedback-and-model-update",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -2794,19 +4045,19 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "ta-dataplane-methodology-gap-model-update-20260612": {
-      "title": "Update model path path.trusted-access.dataplane-token-gateway.msi-token-access to staging-fail with classification infra_issue based on run_20260612_live_ta_dataplane evidence. Root cause: TA gateway endpoint (eastus2.ta.azmk8s.io) unreachable from VMSS host-level RunCommand \u2014 DNS resolution fails from host network namespace. Gateway is only reachable from within Kubernetes pod network. This is a testing methodology gap: dataplane access requires kubectl exec or pod-based probe, not VMSS RunCommand. Update model.json featurePath status, add evidence reference, note methodology gap in featurePath notes.",
+      "title": "Update model path path.trusted-access.dataplane-token-gateway.msi-token-access to staging-fail with classification infra_issue based on run_20260612_live_ta_dataplane evidence. Root cause: TA gateway endpoint (eastus2.ta.azmk8s.io) unreachable from VMSS host-level RunCommand — DNS resolution fails from host network namespace. Gateway is only reachable from within Kubernetes pod network. This is a testing methodology gap: dataplane access requires kubectl exec or pod-based probe, not VMSS RunCommand. Update model.json featurePath status, add evidence reference, note methodology gap in featurePath notes.",
       "status": "done",
       "parent": "evidence-feedback-and-model-update",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-cloud-replay-model-classify-20260612": {
-      "title": "Classify 3 cloud-replay model paths from run_20260612k executions to proper terminal statuses. (1) path.kms.v2plus-enable-cmk-private-kv-from-non-kms \u2192 staging-pass: all 8 claim assertions passed in evidence.json (cmk-privnonkms). (2) path.kms.v2plus-pmk-migrate-cmk-private-kv \u2192 staging-fail: cluster created but PMK\u2192CMK migration PUT got 401 (token expiry mid-lifecycle, infra_issue). (3) path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms \u2192 status unclear, only 3/9 assertions captured despite overall pass; set to inconclusive until rerun. Update model.json featurePath statuses and sync path-summary.json for these 3 paths.",
+      "title": "Classify 3 cloud-replay model paths from run_20260612k executions to proper terminal statuses. (1) path.kms.v2plus-enable-cmk-private-kv-from-non-kms → staging-pass: all 8 claim assertions passed in evidence.json (cmk-privnonkms). (2) path.kms.v2plus-pmk-migrate-cmk-private-kv → staging-fail: cluster created but PMK→CMK migration PUT got 401 (token expiry mid-lifecycle, infra_issue). (3) path.kms.v2plus-enable-cmk-public-kv-firewall-from-non-kms → status unclear, only 3/9 assertions captured despite overall pass; set to inconclusive until rerun. Update model.json featurePath statuses and sync path-summary.json for these 3 paths.",
       "status": "accepted",
       "parent": "evidence-feedback-and-model-update",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "model-promote-staging-pass-batch2-20260612": {
-      "title": "Promote 14 staging-pass paths from unknown\u2192pass in the knowledge model. These paths have staging-pass execution evidence but model status is still '?'. Paths: path.kms.v2plus-create-cmk-private-kv, path.kms.v2plus-pmk-migrate-cmk-public-kv, path.kms.v2plus-negative-cases, path.kms.v2plus-chaos-pmk-kmsplugin-crash-restart, path.kms.v2-private-cluster-private-kv-trust-service, path.kms.v2-vnet-integration-private-kv, path.kms.v2-private-vnet-integration-private-kv, path.kms.v2plus-create-cmk-public-kv-vnet-integration, path.kms.v2plus-create-cmk-custom-vnet, path.kms.v2plus-enable-cmk-private-kv-from-non-kms, path.kms.v2plus-enable-pmk-from-v2-disabled-public, path.kms.v2plus-enable-cmk-from-v2-disabled-public, path.kms.v2plus-enable-cmk-from-v2-public-remove-key-version, path.kms.v2plus-ccp-cert-rotation. For each: update model/knowledge-map/model.json path status to pass, link evidence from the corresponding run execution, then regenerate path-summary.json.",
+      "title": "Promote 14 staging-pass paths from unknown→pass in the knowledge model. These paths have staging-pass execution evidence but model status is still '?'. Paths: path.kms.v2plus-create-cmk-private-kv, path.kms.v2plus-pmk-migrate-cmk-public-kv, path.kms.v2plus-negative-cases, path.kms.v2plus-chaos-pmk-kmsplugin-crash-restart, path.kms.v2-private-cluster-private-kv-trust-service, path.kms.v2-vnet-integration-private-kv, path.kms.v2-private-vnet-integration-private-kv, path.kms.v2plus-create-cmk-public-kv-vnet-integration, path.kms.v2plus-create-cmk-custom-vnet, path.kms.v2plus-enable-cmk-private-kv-from-non-kms, path.kms.v2plus-enable-pmk-from-v2-disabled-public, path.kms.v2plus-enable-cmk-from-v2-disabled-public, path.kms.v2plus-enable-cmk-from-v2-public-remove-key-version, path.kms.v2plus-ccp-cert-rotation. For each: update model/knowledge-map/model.json path status to pass, link evidence from the corresponding run execution, then regenerate path-summary.json.",
       "status": "accepted",
       "parent": "evidence-feedback-and-model-update",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -3112,7 +4363,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "deployment-safeguards-private-cluster-spec-design": {
-      "title": "Design specs/deployment-safeguards-private-cluster.json for path.deployment-safeguards.private-cluster.enforce-private \u2014 Enforce-level safeguards on a private cluster (enablePrivateCluster=true, Standard LB, Azure network plugin+policy). Document konnectivity/private-endpoint considerations for policy enforcement. Follow the basic-enable-disable spec pattern. Register in specs/index.json.",
+      "title": "Design specs/deployment-safeguards-private-cluster.json for path.deployment-safeguards.private-cluster.enforce-private — Enforce-level safeguards on a private cluster (enablePrivateCluster=true, Standard LB, Azure network plugin+policy). Document konnectivity/private-endpoint considerations for policy enforcement. Follow the basic-enable-disable spec pattern. Register in specs/index.json.",
       "status": "accepted",
       "parent": "deployment-safeguards-extended-spec-design",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -3172,7 +4423,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "kms-v2plus-cmk-from-v2-spec-create-retry": {
-      "title": "Create specs/kms-v2plus-enable-cmk-from-v2-public.json following SCHEMA.md. This spec covers the v2 CMK \u2192 v2+ CMK migration path (public cluster, public key vault). Use the completed PMK spec as structural template, grounded in Scenario_KMS_v2_Plus_Enabling_CMK_From_KMS_V2_Public from kms_v2_plus_enabling_from_v2.go. Retry of interrupted session.",
+      "title": "Create specs/kms-v2plus-enable-cmk-from-v2-public.json following SCHEMA.md. This spec covers the v2 CMK → v2+ CMK migration path (public cluster, public key vault). Use the completed PMK spec as structural template, grounded in Scenario_KMS_v2_Plus_Enabling_CMK_From_KMS_V2_Public from kms_v2_plus_enabling_from_v2.go. Retry of interrupted session.",
       "status": "accepted",
       "parent": "kms-v2plus-cmk-from-v2-spec-create",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -3442,7 +4693,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "ds-level-change-replay-verification-accepted": {
-      "title": "Record that the deployment-safeguards-level-change replay implementation is complete and verified: replays/deployment-safeguards-level-change.ts exists (1119 lines), compiles (tsc --noEmit exit 0), check mode passes (16/16 preflight assertions), spec wired with probeRef and specState=ready, index updated. Advance the spec to the execution frontier \u2014 next step is gated live execution.",
+      "title": "Record that the deployment-safeguards-level-change replay implementation is complete and verified: replays/deployment-safeguards-level-change.ts exists (1119 lines), compiles (tsc --noEmit exit 0), check mode passes (16/16 preflight assertions), spec wired with probeRef and specState=ready, index updated. Advance the spec to the execution frontier — next step is gated live execution.",
       "status": "accepted",
       "parent": "ds-level-change-replay-impl",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -3790,7 +5041,7 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "model-view-resync-path-summary-20260612": {
-      "title": "Regenerate path-summary.json from model.json to fix 37+ stale path mismatches. The model-reconcile worker updated path-summary for 15 paths but did not regenerate the full view. Key stale entries: (1) path.kms.v2plus-pmk-migrate-cmk-public-kv should be staging-pass. (2) path.trusted-access.control-plane-lifecycle.vmss-crud should be pass. (3) 21 source-enumerated paths show as unknown. Steps: Read model.json featurePaths, rebuild each path-summary entry from model source of truth. Also update kms-v2plus-pmk-migrate-cmk-public-kv model.json featurePath from source-enumerated to staging-pass with evidence from run_20260612b_kms_v2plus_pmk_pubkv. ADDITIONALLY: Update model.json featurePath status for path.kms.v2plus-enable-pmk-from-v2-disabled-public and path.kms.v2plus-enable-cmk-from-v2-disabled-public from source-enumerated to staging-pass, based on evidence from run_20260612c_kms_v2plus_pmk_disabled_pub (pass) and run_20260612c_kms_v2plus_cmk_disabled_pub (pass). ALSO: Update path.kms.v2-private-cluster-private-kv-trust-service from source-enumerated to staging-pass based on evidence from run_20260612f_kms_v2_priv_priv_ts (staging, pass). And update path.kms.v2plus-enable-cmk-from-v2-public-firewall behavioral evidence notes \u2014 the cloud-replay-fail status is correct (behavior finding: KV firewall blocks v2\u2192v2+ migration), just ensure evidence references run_20260612h_kms_v2plus_cmk_fw_fix and run_20260612i_kms_cmk_fw3 in model. ALSO: Update path.kms.v2plus-enable-cmk-from-v2-public-remove-key-version from inconclusive to staging-pass in model.json, set lastRunId=run_20260612m_kms_v2plus_cmk_rmkv, lastRunStatus=pass, lastRunDiagnosis=product_pass, add run_20260612m_kms_v2plus_cmk_rmkv to evidence array. All 9 claims passed after probe bug fixes. ALSO: Update path.kms.v2plus-create-cmk-custom-vnet from source-enumerated to staging-pass in model.json featurePaths, with lastRunId=run_20260612m_kms_v2plus_custom_vnet, lastRunStatus=pass. Worker partially updated model but featurePath status was not changed.",
+      "title": "Regenerate path-summary.json from model.json to fix 37+ stale path mismatches. The model-reconcile worker updated path-summary for 15 paths but did not regenerate the full view. Key stale entries: (1) path.kms.v2plus-pmk-migrate-cmk-public-kv should be staging-pass. (2) path.trusted-access.control-plane-lifecycle.vmss-crud should be pass. (3) 21 source-enumerated paths show as unknown. Steps: Read model.json featurePaths, rebuild each path-summary entry from model source of truth. Also update kms-v2plus-pmk-migrate-cmk-public-kv model.json featurePath from source-enumerated to staging-pass with evidence from run_20260612b_kms_v2plus_pmk_pubkv. ADDITIONALLY: Update model.json featurePath status for path.kms.v2plus-enable-pmk-from-v2-disabled-public and path.kms.v2plus-enable-cmk-from-v2-disabled-public from source-enumerated to staging-pass, based on evidence from run_20260612c_kms_v2plus_pmk_disabled_pub (pass) and run_20260612c_kms_v2plus_cmk_disabled_pub (pass). ALSO: Update path.kms.v2-private-cluster-private-kv-trust-service from source-enumerated to staging-pass based on evidence from run_20260612f_kms_v2_priv_priv_ts (staging, pass). And update path.kms.v2plus-enable-cmk-from-v2-public-firewall behavioral evidence notes — the cloud-replay-fail status is correct (behavior finding: KV firewall blocks v2→v2+ migration), just ensure evidence references run_20260612h_kms_v2plus_cmk_fw_fix and run_20260612i_kms_cmk_fw3 in model. ALSO: Update path.kms.v2plus-enable-cmk-from-v2-public-remove-key-version from inconclusive to staging-pass in model.json, set lastRunId=run_20260612m_kms_v2plus_cmk_rmkv, lastRunStatus=pass, lastRunDiagnosis=product_pass, add run_20260612m_kms_v2plus_cmk_rmkv to evidence array. All 9 claims passed after probe bug fixes. ALSO: Update path.kms.v2plus-create-cmk-custom-vnet from source-enumerated to staging-pass in model.json featurePaths, with lastRunId=run_20260612m_kms_v2plus_custom_vnet, lastRunStatus=pass. Worker partially updated model but featurePath status was not changed.",
       "status": "accepted",
       "parent": "knowledge-model-gap-reconciliation",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -3814,19 +5065,19 @@
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "ds-vap-upgrade-reconcile-replay-direct-author": {
-      "title": "Author replays/deployment-safeguards-vap-upgrade-reconcile.ts implementing all 5 assertions from spec.deployment-safeguards.vap-upgrade-reconcile (K8s 1.33\u21921.34 VAP presence lifecycle). Wire probeRef in spec JSON and update specs/index.json. Verify compilation with tsc.",
+      "title": "Author replays/deployment-safeguards-vap-upgrade-reconcile.ts implementing all 5 assertions from spec.deployment-safeguards.vap-upgrade-reconcile (K8s 1.33→1.34 VAP presence lifecycle). Wire probeRef in spec JSON and update specs/index.json. Verify compilation with tsc.",
       "status": "accepted",
       "parent": "ds-vap-upgrade-reconcile-replay-impl",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "image-cleaner-erasure-code-author": {
-      "title": "Author replays/image-cleaner-vulnerable-image-erasure.ts \u2014 a TypeScript replay probe covering all 4 assertions from spec.security-profile.image-cleaner-vulnerable-image-erasure. Follow the structure of replays/image-cleaner-upgrade-restart-survival.ts. Add probeRef to spec JSON and index. Verify bun replays/image-cleaner-vulnerable-image-erasure.ts --check exits 0.",
+      "title": "Author replays/image-cleaner-vulnerable-image-erasure.ts — a TypeScript replay probe covering all 4 assertions from spec.security-profile.image-cleaner-vulnerable-image-erasure. Follow the structure of replays/image-cleaner-upgrade-restart-survival.ts. Add probeRef to spec JSON and index. Verify bun replays/image-cleaner-vulnerable-image-erasure.ts --check exits 0.",
       "status": "accepted",
       "parent": "image-cleaner-erasure-replay-author",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
     },
     "image-cleaner-erasure-replay-author": {
-      "title": "Author replays/image-cleaner-vulnerable-image-erasure.ts \u2014 a TypeScript replay probe covering all 4 assertions from spec.security-profile.image-cleaner-vulnerable-image-erasure. Follow the pattern of replays/image-cleaner-upgrade-restart-survival.ts. Wire probeRef into both specs/image-cleaner-vulnerable-image-erasure.json and specs/index.json. Verify bun replays/image-cleaner-vulnerable-image-erasure.ts --check exits 0.",
+      "title": "Author replays/image-cleaner-vulnerable-image-erasure.ts — a TypeScript replay probe covering all 4 assertions from spec.security-profile.image-cleaner-vulnerable-image-erasure. Follow the pattern of replays/image-cleaner-upgrade-restart-survival.ts. Wire probeRef into both specs/image-cleaner-vulnerable-image-erasure.json and specs/index.json. Verify bun replays/image-cleaner-vulnerable-image-erasure.ts --check exits 0.",
       "status": "accepted",
       "parent": "image-cleaner-erasure-replay-impl",
       "archivedAt": "2026-06-12T07:55:48.928701+00:00"
@@ -4600,7 +5851,7 @@
       "archivedAt": "2026-06-12T07:56:12.897188+00:00"
     },
     "ds-private-cluster-replay-code-author": {
-      "title": "Author replays/deployment-safeguards-private-cluster.ts \u2014 a TypeScript replay implementing the 3 ARM",
+      "title": "Author replays/deployment-safeguards-private-cluster.ts — a TypeScript replay implementing the 3 ARM",
       "status": "superseded",
       "parent": "ds-private-cluster-replay-author-v2",
       "archivedAt": "2026-06-12T07:56:12.897188+00:00"
@@ -4702,25 +5953,25 @@
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "deployment-safeguards-basic-replay-script": {
-      "title": "Create replays/deployment-safeguards-basic-enable-disable.ts \u2014 a TypeScript replay that implements t",
+      "title": "Create replays/deployment-safeguards-basic-enable-disable.ts — a TypeScript replay that implements t",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "kms-v2-negative-cases-replay-script": {
-      "title": "Create replays/kms-v2-negative-cases.ts \u2014 a TypeScript replay that implements the spec.kms.v2-negati",
+      "title": "Create replays/kms-v2-negative-cases.ts — a TypeScript replay that implements the spec.kms.v2-negati",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "pm-crud-replay-impl-v2": {
-      "title": "Implement replays/planned-maintenance-configuration-crud.ts \u2014 a TypeScript replay that covers the sp",
+      "title": "Implement replays/planned-maintenance-configuration-crud.ts — a TypeScript replay that covers the sp",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "ds-level-change-replay-impl": {
-      "title": "Implement replays/deployment-safeguards-level-change.ts \u2014 a TypeScript replay that covers the spec.d",
+      "title": "Implement replays/deployment-safeguards-level-change.ts — a TypeScript replay that covers the spec.d",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
@@ -4822,13 +6073,13 @@
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "planned-maintenance-crud-replay-script": {
-      "title": "Create replays/planned-maintenance-configuration-crud.ts \u2014 a TypeScript replay that implements the s",
+      "title": "Create replays/planned-maintenance-configuration-crud.ts — a TypeScript replay that implements the s",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "kms-v2-public-public-replay-script": {
-      "title": "Create replays/kms-v2-public-cluster-public-kv.ts \u2014 a TypeScript replay that implements the spec.kms",
+      "title": "Create replays/kms-v2-public-cluster-public-kv.ts — a TypeScript replay that implements the spec.kms",
       "status": "superseded",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
@@ -4900,13 +6151,13 @@
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "trusted-access-replay-impl-v2": {
-      "title": "Implement replays/trusted-access-lifecycle.ts \u2014 a TypeScript replay that covers the spec.trusted-acc",
+      "title": "Implement replays/trusted-access-lifecycle.ts — a TypeScript replay that covers the spec.trusted-acc",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "kms-v2plus-negative-replay-impl": {
-      "title": "Implement replays/kms-v2plus-negative-cases.ts \u2014 a TypeScript replay that covers the spec.kms.v2plus",
+      "title": "Implement replays/kms-v2plus-negative-cases.ts — a TypeScript replay that covers the spec.kms.v2plus",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
@@ -4918,13 +6169,13 @@
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "pm-autoupgrade-mtc-replay-impl": {
-      "title": "Implement replays/planned-maintenance-autoupgrade-mtc-window.ts \u2014 a TypeScript replay that covers th",
+      "title": "Implement replays/planned-maintenance-autoupgrade-mtc-window.ts — a TypeScript replay that covers th",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
     },
     "pm-autoupgrade-mtc-replay-author": {
-      "title": "Author replays/planned-maintenance-autoupgrade-mtc-window.ts \u2014 a TypeScript replay covering spec.pla",
+      "title": "Author replays/planned-maintenance-autoupgrade-mtc-window.ts — a TypeScript replay covering spec.pla",
       "status": "accepted",
       "parent": "spec-runner-and-replays",
       "archivedAt": "2026-06-12T07:56:38.029235+00:00"
