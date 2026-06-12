@@ -11,160 +11,224 @@ The tree is managed exclusively by tools. No direct JSON editing.
 ## Node Lifecycle
 
 ```
-proposed → ready → active → claimed → accepted
-                                    → rejected → superseded
-                              → superseded (with replacement)
+backlog → active → review → accepted
+                          → backlog      (rework)
+                          → blocked      (real external blocker)
+                          → superseded   (replaced by better understanding)
 ```
 
-Every node is exactly one of:
-- **proposed** — planned, not yet dispatchable (may have `depends_on`)
-- **ready** — dispatchable (all `depends_on` accepted)
-- **active** — currently being worked on
-- **claimed** — worker finished, result + evidence attached, awaiting verification
-- **accepted** — planner verified the claim
-- **rejected** — planner rejected the claim (needs rework or supersede)
-- **superseded** — replaced by better understanding (links to replacement)
-- **blocked** — concrete external blocker identified
-- **decomposed** — not a leaf; children represent the work
+Four durable statuses, one derived:
 
-Nodes that are not one of these states indicate a tree integrity violation.
+| Status | Meaning | Who sets it |
+|--------|---------|-------------|
+| `backlog` | Work to be done | Planner creates it |
+| `active` | Worker is executing | Worker claims it |
+| `review` | Worker finished, claim needs verification | Worker submits it |
+| `accepted` | Planner verified the claim | Planner accepts it |
+| `blocked` | Concrete external blocker identified | Planner or worker |
+| `superseded` | Replaced by better understanding | Planner replaces it |
+| `decomposed` | Not a leaf; children represent the work | Planner decomposes it |
+
+**`ready` is not persisted.** It is derived by the tool:
+
+```
+ready = backlog leaf
+      + all depends_on are accepted
+      + no conflict_scope overlap with active tasks
+      + not blocked
+```
+
+The tool computes readiness on demand via `tree.next()` and
+`tree.readiness(taskId)`. No stale-ready bugs.
+
+## Roles
+
+### Worker
+- Asks for one runnable backlog leaf via `tree.next()`
+- Marks it `active`
+- Executes the task
+- Submits to `review` with result + evidence
+- Does NOT replan, decompose, or create sibling tasks
+
+### Planner
+- Reviews `review` tasks and decides: accept, rework, block, supersede, or
+  decompose further
+- Creates new `backlog` tasks
+- Supersedes outdated branches
+- Rolls up parent status
+- Owns all tree mutations except active/review transitions
+
+### Tool
+- Enforces invariants on every mutation
+- Computes derived state (readiness, parent rollup, Kanban projection)
+- Runs integrity checks
+- Archives completed subtrees
 
 ## Structural Invariants
 
-The tool enforces these on every mutation:
+The tool enforces on every mutation:
 
 1. Every node has exactly one parent (except root).
-2. Node IDs are unique across the entire tree.
-3. `ready` only when all `depends_on` nodes are `accepted`.
-4. `active` only when dispatched (at most one active worker per node).
-5. `claimed` must have `result` and `evidence` fields.
-6. `superseded` must have `supersededBy` (replacement node IDs) and `reason`.
+2. Node IDs are unique.
+3. `active` must have been `backlog` with computed readiness satisfied.
+4. `review` must have `result` and `evidence` fields.
+5. `accepted` can only come from `review` (planner verified).
+6. `superseded` must have `supersededBy` and `reason`.
 7. `blocked` must have `blocker` with `condition` and `category`.
 8. `decomposed` nodes have children; leaf nodes do not.
-9. Parent status is derived, never set directly:
+9. Parent status is derived:
    - All children accepted → parent auto-accepts
-   - Any child rejected → parent needs review
-   - Any child blocked → parent shows blocked
-10. `superseded` and `accepted` nodes are immutable.
-11. No node may reference a non-existent node in `depends_on`, `supersededBy`,
-    or `children`.
-12. No circular dependencies in `depends_on`.
-13. No circular parent-child relationships.
+   - Any child blocked → parent reflects blocked
+   - Mix of backlog/active/review → parent stays decomposed
+10. `superseded` and `accepted` are immutable.
+11. No references to non-existent nodes.
+12. No circular dependencies.
 
 ## Tool API
 
 ```typescript
-// Core mutations
-tree.create(parentId, task)                    // add a leaf under parent
-tree.decompose(nodeId, children)               // convert leaf to parent
-tree.claim(nodeId, result, evidence)            // worker reports result
-tree.verify(nodeId, verdict, reason)            // planner accepts/rejects
-tree.supersede(nodeId, reason, replacementIds)  // replace with better work
-tree.block(nodeId, blocker)                     // mark blocked with condition
-tree.unblock(nodeId, reason)                    // clear blocker
+// Planner mutations
+tree.create(parentId, task)                    // add backlog leaf
+tree.decompose(nodeId, children)               // split leaf into children
+tree.accept(nodeId, reason)                    // verify and accept claim
+tree.rework(nodeId, reason)                    // reject → back to backlog
+tree.supersede(nodeId, reason, replacementIds) // replace with better work
+tree.block(nodeId, blocker)                    // mark with concrete blocker
+tree.unblock(nodeId, reason)                   // clear blocker
+
+// Worker mutations
+tree.claim(nodeId)                             // backlog → active
+tree.submit(nodeId, result, evidence)          // active → review
 
 // Cleanup
-tree.archive(nodeId)           // collapse accepted subtree to summary
-tree.prune(nodeId, reason)     // remove irrelevant subtree
+tree.archive(nodeId)                           // collapse accepted subtree
+tree.prune(nodeId, reason)                     // remove irrelevant subtree
 
-// Queries
-tree.status()                  // compact summary: what's done, next, blocked
-tree.next()                    // dispatchable leaves ordered by priority
-tree.stale(olderThan)          // nodes untouched for too long
-tree.check()                   // integrity validation (returns violations)
+// Derived queries (tool-owned, not recomputed by UI)
+tree.status()                  // compact summary
+tree.next()                    // runnable backlog leaves (readiness computed)
+tree.readiness(nodeId)         // why this task is or isn't ready
+tree.kanban()                  // Kanban projection
+tree.stale(olderThan)          // untouched nodes
+tree.check()                   // integrity validation
 ```
 
-No `tree.editRaw()`. No direct file writes. The tool owns the JSON.
+## Kanban Projection
+
+The Kanban board is a read-only projection from tree state. The tool computes
+it via `tree.kanban()`. The UI renders it without recomputing counts.
+
+| Lane | Source |
+|------|--------|
+| Backlog | `backlog` nodes |
+| In Progress | `active` nodes |
+| Review | `review` nodes |
+| Blocked | `blocked` nodes |
+| Done | `accepted` nodes (recent, not yet archived) |
+| Archive | `superseded` + archived accepted |
+
+Only leaf nodes appear as cards. `decomposed` parents are structural — they
+appear in the tree view, not the Kanban.
+
+## Readiness Computation
+
+`tree.next()` returns runnable tasks, computed fresh each call:
+
+```typescript
+function isReady(node): boolean {
+  if (node.status !== "backlog") return false;
+  if (node.children.length > 0) return false;        // not a leaf
+  for (dep of node.depends_on) {
+    if (tasks[dep].status !== "accepted") return false; // dependency unmet
+  }
+  for (active of activeTasks) {
+    if (active.conflict_scope === node.conflict_scope) return false;
+  }
+  return true;
+}
+```
+
+No persisted `ready` state. No stale readiness. The tool always computes
+from current tree state.
+
+`tree.readiness(nodeId)` explains why a task is or isn't ready:
+
+```json
+{
+  "ready": false,
+  "reasons": [
+    "depends_on 'setup-cluster' is not accepted (status: active)",
+    "conflict_scope 'staging-cluster' has active task 'run-spec-a'"
+  ]
+}
+```
 
 ## Integrity Checker
 
-`tree.check()` validates the full tree and returns violations:
+`tree.check()` validates the full tree:
 
 ### Structural checks
-- Every `children` reference points to an existing node.
-- Every `depends_on` reference points to an existing node.
-- Every `supersededBy` reference points to an existing node.
-- No circular dependencies.
-- No orphan nodes (every non-root node has a parent).
-- No duplicate node IDs.
-- Root node exists and is reachable.
+- Every reference (children, depends_on, supersededBy) points to existing node.
+- No circular dependencies or parent-child cycles.
+- No orphan nodes.
+- No duplicate IDs.
+- Root exists and is reachable.
 
 ### State checks
-- `ready` nodes: all `depends_on` are `accepted`.
-- `claimed` nodes: `result` and `evidence` are non-empty.
-- `superseded` nodes: `supersededBy` and `reason` are non-empty.
-- `blocked` nodes: `blocker.condition` is non-empty.
-- `decomposed` nodes: have at least one child.
-- Leaf nodes: have no children.
-- `active` nodes: at most one per `conflict_scope`.
+- `review` nodes have `result` and `evidence`.
+- `superseded` nodes have `supersededBy` and `reason`.
+- `blocked` nodes have `blocker.condition`.
+- `decomposed` nodes have children.
+- Leaves have no children.
 
 ### Derived state checks
-- Parent with all children `accepted`: parent should be `accepted` or
-  `decomposed` (pending rollup).
-- Parent with any child `rejected`: parent should be flagged for review.
-- Parent with any child `blocked`: parent should reflect blocked state.
-
-### Staleness checks
-- `proposed` nodes older than 7 days without activity.
-- `active` nodes older than 24 hours without progress.
-- `blocked` nodes older than 14 days without review.
+- Parent with all children `accepted`: should auto-accept or be pending rollup.
+- Parent with any child `blocked`: should reflect blocked.
 
 ### Design compliance checks
-- No node in an undefined state.
-- No `unknown`, `maybe-later`, or empty-string status.
-- No superseded chain longer than 3 (should be collapsed).
-- No parent with more than 15 children (should be grouped).
-- No tree depth greater than 5 (should be flattened).
+- No undefined or ambiguous statuses.
+- No `no_work`, `waiting`, `unknown`, `maybe-later`, or empty status.
+- No superseded chain longer than 3 (auto-collapse).
+- No parent with more than 15 children (should group).
+- No depth greater than 5 (should flatten).
 - Total visible (non-archived) nodes should not exceed 50.
 
-The checker runs:
-- On every mutation (fast path: check only affected nodes + parents)
-- On demand via `tree.check()` (full scan)
-- As part of `bun run check` for the project
+### Staleness checks
+- `backlog` nodes older than 7 days.
+- `active` nodes older than 24 hours.
+- `blocked` nodes older than 14 days.
 
-## Outdated and Orphan Task Handling
+## Outdated and Orphan Handling
 
 ### Superseded by better understanding
 
-When a task is replaced by a different approach:
-
 ```typescript
 tree.supersede("test-ms-via-cli", {
-  reason: "CLI has default-payload bug, REST is the proven path",
+  reason: "CLI default-payload bug, REST is the proven path",
   replacementIds: ["test-ms-via-rest"],
 });
 ```
 
-The tool:
-1. Sets node status to `superseded`
-2. Records `supersededBy` and `reason`
-3. Makes node immutable
-4. If node has non-terminal children, cascades: each becomes `superseded`
-   with reason `parent-superseded`
-
-### Orphaned by parent changes
-
-When a parent is superseded, all non-terminal children are automatically
-superseded with `reason: "parent-superseded"`. No orphans.
+Cascades: non-terminal children become `superseded` with reason
+`parent-superseded`.
 
 ### Stale by time
 
-`tree.stale(olderThan)` returns nodes that haven't been touched:
-- The planner reviews each stale node
-- Still relevant → touch (update `updatedAt`)
-- No longer relevant → `tree.prune(nodeId, reason)`
-- Blocked → `tree.block(nodeId, blocker)` with concrete condition
+`tree.stale(olderThan)` returns untouched nodes. The planner reviews each:
+- Still relevant → touch
+- Irrelevant → prune
+- Blocked → add concrete blocker
 
-### The rule
+### No fake terminal states
 
-Every node must be one of:
-- Dispatchable (proposed/ready)
-- In progress (active/claimed)
-- Terminal (accepted/rejected/superseded)
-- Explicitly blocked with a concrete condition
+The tool rejects ambiguous states. If work cannot proceed:
+- Concrete blocker → `tree.block(nodeId, { condition, category })`
+- Wrong approach → `tree.supersede(nodeId, reason, replacements)`
+- Needs rethinking → `tree.rework(nodeId, reason)` (back to backlog)
+- Genuinely done → `tree.accept(nodeId, reason)`
 
-Ambiguous states like "unknown", "maybe later", "no work", "waiting" are
-integrity violations. The tool rejects them.
+"No work", "waiting", or vague "rejected" are not valid. The planner must
+express why as concrete backlog, a concrete blocker, or a supersession.
 
 ## Compaction
 
@@ -176,44 +240,21 @@ When a parent and all children are `accepted`:
 tree.archive("managedsystem-pool");
 ```
 
-Before:
-```
-✓ ManagedSystem Pool (decomposed, 4 children)
-  ✓ REST add-existing (accepted, 3 evidence)
-  ✓ Mode immutability (accepted, 2 evidence)
-  ✓ Delete existing (accepted, 2 evidence)
-  ✓ Single pool constraint (accepted, 1 evidence)
-```
-
-After:
-```
-✓ ManagedSystem Pool [archived: 4 accepted, 8 evidence refs]
-```
-
-Children move to `archive` section. Parent keeps summary metrics.
-`tree.status()` hides archived details. `tree.detail(nodeId)` shows them.
+Collapses to summary. Children move to archive. `tree.status()` hides details;
+`tree.detail(nodeId)` shows them.
 
 ### Collapse superseded chains
 
-```
-A superseded by B, B superseded by C
-→ collapse to: C (supersedes A, B)
-```
-
-Intermediate nodes move to archive.
-
-### Prune rejected-and-replaced
-
-If a task was rejected and its replacement was accepted, the rejected node is
-pure history. Archive it automatically.
+A → B → C becomes just C with note "supersedes A, B". Intermediate nodes
+archive automatically.
 
 ### Limits
 
 | Limit | Value | Enforcement |
 |-------|-------|-------------|
-| Max visible nodes | 50 | Integrity checker warns |
-| Max children per parent | 15 | Integrity checker warns, planner should group |
-| Max depth | 5 | Integrity checker warns, planner should flatten |
+| Max visible nodes | 50 | Checker warns |
+| Max children per parent | 15 | Checker warns, planner groups |
+| Max depth | 5 | Checker warns, planner flattens |
 | Max superseded chain | 3 | Auto-collapse |
 
 ## Data Structure
@@ -221,57 +262,47 @@ pure history. Archive it automatically.
 ```json
 {
   "version": 1,
-  "projectId": "example",
-  "updatedAt": "2026-06-12T...",
-  "root": "goal",
-  "nodes": {
+  "project": "example",
+  "updated_at": "2026-06-12T...",
+  "root_task_id": "goal",
+  "tasks": {
     "goal": {
       "id": "goal",
-      "title": "Project goal",
+      "goal": "Project goal description",
       "status": "decomposed",
+      "parent_id": null,
       "children": ["feature-a", "feature-b"],
-      "createdAt": "2026-06-01T...",
-      "updatedAt": "2026-06-12T..."
-    },
-    "feature-a": {
-      "id": "feature-a",
-      "title": "Feature A full lifecycle",
-      "status": "accepted",
-      "archived": true,
-      "archiveSummary": { "accepted": 3, "evidenceRefs": 5 },
-      "parent": "goal",
-      "children": [],
-      "createdAt": "2026-06-01T...",
-      "updatedAt": "2026-06-10T..."
+      "created_at": "2026-06-01T...",
+      "updated_at": "2026-06-12T..."
     },
     "feature-b": {
       "id": "feature-b",
-      "title": "Feature B coverage",
+      "goal": "Feature B coverage",
       "status": "decomposed",
-      "parent": "goal",
+      "parent_id": "goal",
       "children": ["fb-spec-1", "fb-spec-2"],
-      "createdAt": "2026-06-05T...",
-      "updatedAt": "2026-06-12T..."
+      "created_at": "2026-06-05T...",
+      "updated_at": "2026-06-12T..."
     },
     "fb-spec-1": {
       "id": "fb-spec-1",
-      "title": "Feature B basic behavior",
-      "status": "ready",
-      "parent": "feature-b",
+      "goal": "Feature B basic behavior",
+      "status": "backlog",
+      "parent_id": "feature-b",
       "children": [],
       "depends_on": [],
-      "createdAt": "2026-06-10T...",
-      "updatedAt": "2026-06-10T..."
+      "created_at": "2026-06-10T...",
+      "updated_at": "2026-06-10T..."
     },
     "fb-spec-2": {
       "id": "fb-spec-2",
-      "title": "Feature B negative cases",
-      "status": "proposed",
-      "parent": "feature-b",
+      "goal": "Feature B negative cases",
+      "status": "backlog",
+      "parent_id": "feature-b",
       "children": [],
       "depends_on": ["fb-spec-1"],
-      "createdAt": "2026-06-10T...",
-      "updatedAt": "2026-06-10T..."
+      "created_at": "2026-06-10T...",
+      "updated_at": "2026-06-10T..."
     }
   },
   "archive": {}
@@ -283,40 +314,38 @@ pure history. Archive it automatically.
 | Field | Required | Description |
 |-------|----------|-------------|
 | `id` | yes | Unique node identifier |
-| `title` | yes | Human-readable description |
-| `status` | yes | Current state (see lifecycle) |
-| `parent` | yes (except root) | Parent node ID |
+| `goal` | yes | What this task accomplishes |
+| `status` | yes | backlog, active, review, accepted, blocked, superseded, decomposed |
+| `parent_id` | yes (except root) | Parent node ID |
 | `children` | yes | Child node IDs (empty for leaves) |
-| `createdAt` | yes | ISO timestamp |
-| `updatedAt` | yes | ISO timestamp (updated on every mutation) |
-| `depends_on` | no | Node IDs that must be accepted before this is ready |
-| `result` | no | Worker result (required when claimed) |
-| `evidence` | no | Evidence refs (required when claimed) |
+| `created_at` | yes | ISO timestamp |
+| `updated_at` | yes | ISO timestamp |
+| `depends_on` | no | Node IDs that must be accepted first |
+| `result` | no | Worker result (required at review) |
+| `evidence` | no | Evidence refs (required at review) |
 | `supersededBy` | no | Replacement node IDs (required when superseded) |
-| `reason` | no | Why superseded/rejected/pruned |
+| `reason` | no | Why superseded/blocked/reworked |
 | `blocker` | no | `{ condition, category }` (required when blocked) |
 | `conflict_scope` | no | Mutex group for parallel dispatch |
 | `archived` | no | True when subtree is collapsed |
-| `archiveSummary` | no | Metrics for archived subtrees |
-| `priority` | no | Dispatch priority within ready set |
+| `archive_summary` | no | Metrics for archived subtrees |
+| `priority` | no | Dispatch priority within backlog |
 
-## Integration with `bun run check`
+## Integration
 
-The project check pipeline should include tree integrity:
+The tree integrity checker runs as part of `bun run check`:
 
 ```
 format → whitespace → compile → wiring → schema → tree → typecheck
 ```
 
-`tree` step runs `tree.check()` and fails if any violation is found.
-Warnings for staleness and limit thresholds. Errors for structural violations.
+Fails on structural violations. Warns on staleness and limit thresholds.
 
 ## Open Questions
 
-- Should the archive be in the same file or a separate `archive.json`?
-- Should `tree.status()` output be the same format as `bun run status` or
-  separate?
-- How should the tree relate to domain-specific models (like `model.json` in
-  aks-rp-e2e)? Should it be a projection, a parallel structure, or independent?
-- What is the maximum tree.json file size before it becomes a performance
-  concern for agents reading it?
+- Should the archive be in the same file or separate?
+- How should the tree relate to domain-specific models (e.g. model.json)?
+  Recommendation: the tree is for project-level work coordination; domain
+  models track domain knowledge. They may reference each other but are not
+  projections of each other.
+- What is the maximum tree.json size before agent context becomes a concern?
