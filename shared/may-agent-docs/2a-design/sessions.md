@@ -22,7 +22,7 @@ CREATE TABLE sessions (
   projectId       TEXT,
   startedAt       INTEGER NOT NULL,
   endedAt         INTEGER,
-  error           TEXT,             -- ⚠️ universally NULL due to db-writer race (KE-1558); use meta.json on disk for error text
+  error           TEXT,             -- ⚠️ nearly always NULL (~99.8%) due to db-writer race (KE-1558); session-recovery handler is the exception (see Known Issues)
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
