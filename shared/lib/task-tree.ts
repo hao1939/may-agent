@@ -148,11 +148,14 @@ export function create(
     updated_at: now(),
   };
 
-  parent.children.push(task.id);
-  if (parent.status !== "decomposed" && isLeaf(parent)) {
-    // parent was a leaf, now has children
-    parent.status = "decomposed";
+  // Check parent can accept children before adding
+  if (parent.status === "decomposed" || (parent.status === "accepted" && parent.archived)) {
+    // OK — parent is already structural
+  } else if (parent.status === "backlog" && isLeaf(parent)) {
+    throw new Error(`Cannot add child to backlog leaf '${parentId}'. Decompose it first.`);
   }
+
+  parent.children.push(task.id);
   parent.updated_at = now();
   t.updated_at = now();
   return t;
@@ -182,6 +185,8 @@ export function decompose(
 export function accept(tree: TaskTree, nodeId: string, knowledge: Knowledge): TaskTree {
   const t = clone(tree);
   const node = getNode(t, nodeId);
+  // Accept from review (normal leaf path) or decomposed (parent rollup after
+  // all children accepted — planner summarizes the branch as knowledge).
   if (node.status !== "review" && node.status !== "decomposed") {
     throw new Error(`Can only accept review or decomposed nodes, got ${node.status}`);
   }
@@ -249,6 +254,11 @@ export function block(tree: TaskTree, nodeId: string, blocker: Blocker): TaskTre
   const node = getNode(t, nodeId);
   if (!blocker.condition) throw new Error("Blocker must have a condition");
   if (!blocker.category) throw new Error("Blocker must have a category");
+  // Can only block backlog or review nodes. Active nodes should submit
+  // a blocked_claim via review; the planner then decides to block.
+  if (node.status !== "backlog" && node.status !== "review") {
+    throw new Error(`Can only block backlog or review nodes, got ${node.status}`);
+  }
 
   node.status = "blocked";
   node.blocker = blocker;
@@ -623,15 +633,32 @@ export function check(tree: TaskTree): Violation[] {
   }
 
   // Depth check
-  function getDepth(nodeId: string, seen = new Set<string>()): number {
+  function getDepth(nodeId: string, seen?: Set<string>): number {
+    if (!seen) seen = new Set();
     if (seen.has(nodeId) || !tree.tasks[nodeId]) return 0;
     seen.add(nodeId);
     const children = tree.tasks[nodeId].children;
     if (children.length === 0) return 1;
-    return 1 + Math.max(...children.map((c) => getDepth(c, seen)));
+    return 1 + Math.max(...children.map((c) => getDepth(c, new Set(seen))));
   }
   const maxDepth = tree.root_task_id ? getDepth(tree.root_task_id) : 0;
   if (maxDepth > 5) warn("depth-exceeded", `Max depth ${maxDepth} exceeds limit of 5`);
+
+  // Circular dependency check
+  function hasCycle(nodeId: string, path: Set<string>): boolean {
+    if (path.has(nodeId)) return true;
+    path.add(nodeId);
+    for (const dep of tree.tasks[nodeId]?.depends_on || []) {
+      if (tree.tasks[dep] && hasCycle(dep, new Set(path))) {
+        err("circular-dependency", `Circular dependency involving '${dep}'`, nodeId);
+        return true;
+      }
+    }
+    return false;
+  }
+  for (const nodeId of allIds) {
+    hasCycle(nodeId, new Set());
+  }
 
   // Breadth check
   for (const [nodeId, node] of Object.entries(tree.tasks)) {

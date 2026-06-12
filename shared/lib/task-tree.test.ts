@@ -32,7 +32,7 @@ const knowledge: Knowledge = {
 };
 
 describe("create", () => {
-  test("adds backlog leaf under parent", () => {
+  test("adds backlog leaf under decomposed parent", () => {
     const t = create(emptyTree(), "root", { id: "task-1", goal: "Do something" });
     expect(t.tasks["task-1"].status).toBe("backlog");
     expect(t.tasks["task-1"].parent_id).toBe("root");
@@ -46,6 +46,11 @@ describe("create", () => {
 
   test("rejects missing parent", () => {
     expect(() => create(emptyTree(), "nonexistent", { id: "task-1", goal: "Orphan" })).toThrow("not found");
+  });
+
+  test("rejects adding child to backlog leaf", () => {
+    const t = create(emptyTree(), "root", { id: "task-1", goal: "Leaf" });
+    expect(() => create(t, "task-1", { id: "child", goal: "Child" })).toThrow("Decompose it first");
   });
 });
 
@@ -155,6 +160,12 @@ describe("block + unblock", () => {
     const t = create(emptyTree(), "root", { id: "task", goal: "Task" });
     expect(() => block(t, "task", { condition: "", category: "infra" })).toThrow("condition");
     expect(() => block(t, "task", { condition: "needs approval", category: "" })).toThrow("category");
+  });
+
+  test("block only from backlog or review", () => {
+    let t = create(emptyTree(), "root", { id: "task", goal: "Task" });
+    t = claim(t, "task");
+    expect(() => block(t, "task", { condition: "x", category: "y" })).toThrow("backlog or review");
   });
 
   test("unblock transitions blocked → backlog", () => {
