@@ -172,35 +172,34 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-13 ~16:15Z** (24h window, ~2,566 total):
+**Latest snapshot 2026-06-14 ~22:30Z** (24h window, ~2,733 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,397 | 54.4% |
-| READ_DEDUP | 471 | 18.4% |
-| SESSION_BASH_CAT | 342 | 13.3% |
-| SESSION_READ | 180 | 7.0% |
-| PATH_HALLUCINATION | 74 | 2.9% |
-| SESSION_BASH_GREP | 53 | 2.1% |
-| hallucinated-path (workflow) | 9 | 0.4% |
+| commit-guard (combined) | 1,556 | 56.9% |
+| READ_DEDUP | 437 | 16.0% |
+| SESSION_BASH_CAT | 349 | 12.8% |
+| SESSION_READ | 212 | 7.8% |
+| PATH_HALLUCINATION | 75 | 2.7% |
+| read-before-edit | 52 | 1.9% |
+| SESSION_BASH_GREP | 43 | 1.6% |
+| hallucinated-path (workflow) | 9 | 0.3% |
 
-Total: ~2,566/day (threshold breach continues, **structural floor > threshold**).
+Total: ~2,733/day (threshold breach continues, **structural floor > threshold**).
 
-Notable changes vs 2026-06-13 ~15:30Z snapshot:
-- **Guard count continues above threshold** (2,523 → 2,566, +1.7%).
-  12h half-window extrapolates to ~2,814/24h, confirming the noise floor
-  now structurally exceeds the 2,500 threshold.
-- **READ_DEDUP still rising** — 462 → 471 (+2.0%). aks-explorer replay
-  re-reads remain the dominant source (KE-1867).
-- commit-guard combined grew from 1,371 → 1,397 (+1.9%) — proportional
-  to session volume, per-session rate stable.
-- SESSION_BASH_CAT stable (339 → 342). SESSION_READ stable (176 → 180).
-- The breach is structural and persistent: the noise floor (~2,500-2,800/day)
-  exceeds the 2,500 threshold. Either threshold needs a second raise
-  (to ~3,000), or READ_DEDUP guard needs per-file count calibration
-  for aks-explorer replay files (KE-1867 option 2). The current threshold
-  creates a permanently-breached metric that provides no signal value —
-  a threshold below the noise floor is by definition uninformative.
+Notable changes vs 2026-06-13 ~16:15Z snapshot:
+- **Guard count still above threshold** (2,566 → 2,733, +6.5%).
+  The noise floor remains structurally above the 2,500 threshold.
+- **READ_DEDUP declined slightly** — 471 → 437 (−7.2%). Still the #2
+  signal; aks-explorer replay re-reads remain the dominant source (KE-1867).
+- commit-guard combined grew from 1,397 → 1,556 (+11.4%) — proportional
+  to higher session volume (1,534 sessions/24h).
+- **read-before-edit emerged at 52 triggers** (not separately tracked
+  in prior snapshots — previously folded into "other").
+- SESSION_BASH_CAT stable (342 → 349). SESSION_READ up (180 → 212).
+- The breach remains structural. The noise floor (~2,700/day) exceeds the
+  2,500 threshold. Recommendation unchanged: either raise threshold to
+  ~3,000 or calibrate READ_DEDUP per-file limits for replay files (KE-1867).
 
 ### Known issue: guard name conflation
 

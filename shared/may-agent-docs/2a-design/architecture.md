@@ -72,7 +72,7 @@ The infra also provides what the agent cannot provide for itself:
 - **Resource management**: model routing, rate limit handling — transparent to the agent
 
 Future investment areas:
-- **Memory across sessions**: projects, journals, and `last-session.md` provide continuity today; richer cross-session memory is a future area.
+- **Memory across sessions**: projects, journals, and `context.md` provide continuity today. (`last-session.md` is auto-generated at session end — a snapshot, not durable memory; see KE-916.) Richer cross-session memory is a future area.
 
 The agent just works. The infra triggers, frames, protects, records, and connects the dots.
 
@@ -504,17 +504,19 @@ CREATE TABLE projects (id, name, owner, status, path, updated_at);
 
 #### Files (git-tracked, hot-reloadable)
 
-| Data | Location |
-|------|----------|
-| Agent identity | `agents/<name>/AGENTS.md` |
-| Domain knowledge | `agents/<name>/DOMAIN.md` |
-| Lessons | `agents/<name>/LESSONS.md` |
-| Heartbeat instructions | `agents/<name>/heartbeat.md` |
-| Config | `agents/<name>/agent.json` |
-| Workflows | `agents/<name>/workflows/*.ts` |
-| Projects | `projects/<id>/project.md` |
-| Work queue | `shared/work-queue.md` |
-| Session transcripts | Pi-coding-agent SessionManager format |
+| Data | Location | Notes |
+|------|----------|-------|
+| Agent identity | `agents/<name>/AGENTS.md` | Role and standing plan |
+| Agent context | `agents/<name>/context.md` | Durable cross-session facts (auto-loaded) |
+| Skills | `agents/<name>/skills/` | Reusable agent capabilities |
+| Domain knowledge | `agents/<name>/DOMAIN.md` | Legacy; some agents only |
+| Lessons | `agents/<name>/LESSONS.md` | Legacy; some agents only |
+| Heartbeat instructions | `agents/<name>/heartbeat.md` | |
+| Config | `agents/<name>/agent.json` | |
+| Workflows | `agents/<name>/workflows/*.ts` | |
+| Projects | `projects/<id>/project.md` | Canonical location since V3 |
+| Work queue | `shared/work-queue.md` | |
+| Session transcripts | Pi-coding-agent SessionManager format | |
 
 #### DB (queryable, time-series)
 
