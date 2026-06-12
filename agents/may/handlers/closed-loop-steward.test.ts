@@ -143,6 +143,37 @@ describe("closed-loop-steward handler", () => {
     }));
   });
 
+  it("does not route project health metrics through generic metric triage", async () => {
+    const stewardContext = makeStewardContext([
+      {
+        id: 412,
+        metric_id: "project.owner-judgment-needed-count",
+        message: "Project owner judgment needed",
+        created_at: Date.now() - 60_000,
+        metricName: "Project tasks needing owner judgment",
+        explicitOwner: "may",
+        projectOwner: null,
+        current: 2,
+        threshold: 0,
+        target: 0,
+        priority: "P2",
+        alertOp: ">",
+      },
+    ]);
+    const runWorkflow = vi.fn(() => Promise.resolve({ status: "done", runId: "wr_1" }));
+    const ctx = makeCtx(stewardContext, runWorkflow);
+    const handler = create(ctx, { handlerConfig: {} } as any);
+
+    await handler();
+
+    expect(runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
+      handler: "closed-loop-steward",
+      routedTriageCount: 0,
+      remainingAlertCount: 1,
+    }));
+  });
+
   it("warns may not to attempt direct DB writes during the audit", async () => {
     const stewardContext = {
       ...makeStewardContext([

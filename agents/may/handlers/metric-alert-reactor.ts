@@ -1,10 +1,14 @@
 /**
- * metric-alert-reactor — Handler that reacts to metric.breach events.
+ * metric-alert-reactor — Handler that reacts to metric.breach and metric.stalled events.
  *
- * Listens on: metric.breach
+ * Listens on: metric.breach, metric.stalled
  * Action: Forks the owning agent for P0 breaches. P1/P2 breaches get explicit
  * owner triage after they remain open long enough to need a durable judgment.
  * P3 alerts stay visible through metric alert context and the steward cron.
+ *
+ * Stall events (metric.stalled) are routed through the same dedup and triage
+ * pipeline as breaches, with a distinct task header so stall and breach events
+ * for the same metric use separate dedup keys.
  *
  * This keeps important issues auditable while preserving metric-context-based
  * handling for low-priority metric drift.
@@ -16,10 +20,16 @@
 import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
 import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
+import { tryAutoHandle } from "./metric-auto-handlers.ts";
 
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 const DIRECT_TRIAGE_AFTER_MS = 10 * 60 * 1000;
 const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
+const OWNER_AUTO_HANDLED_METRICS = new Set([
+  "project.health.finding-count",
+  "project.owner-judgment-needed-count",
+  "project.owner-incomplete-count",
+]);
 
 function parseJsonObject(raw: string | null | undefined): Record<string, unknown> {
   if (!raw) return {};
@@ -115,7 +125,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
               priority: String(metric.priority ?? "P2"),
             },
           };
-          return processBreachEvent(ctx, syntheticEvent, configuredAgents);
+          return processAlertEvent(ctx, syntheticEvent, configuredAgents);
         });
         await Promise.allSettled(promises);
       } catch (e: unknown) {
@@ -125,11 +135,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       return;
     }
 
-    await processBreachEvent(ctx, event, configuredAgents);
+    await processAlertEvent(ctx, event, configuredAgents);
   };
 };
 
-async function processBreachEvent(ctx: HandlerContext, event: EventEnvelope, configuredAgents: Set<string>) {
+async function processAlertEvent(ctx: HandlerContext, event: EventEnvelope, configuredAgents: Set<string>) {
 
     const normalized = metricBreachData(event);
     const { metricId, metricName, current, threshold, target, message, priority: eventPriority } = normalized.payload as {
@@ -146,6 +156,12 @@ async function processBreachEvent(ctx: HandlerContext, event: EventEnvelope, con
 
     if (!metricId) {
       emitSkip(ctx, null, "Missing metricId in event data.");
+      return;
+    }
+    if (OWNER_AUTO_HANDLED_METRICS.has(metricId)) {
+      emitSkip(ctx, metricId, `${metricId} is handled by may's project metric auto-handler.`, {
+        route: "project",
+      });
       return;
     }
 
@@ -259,13 +275,28 @@ async function processBreachEvent(ctx: HandlerContext, event: EventEnvelope, con
       // DB unavailable for dedup — proceed for explicit P0 events.
     }
 
+    // --- Auto-handler short-circuit ---
+    const currentValue = numberOrNull(current);
+    if (currentValue != null) {
+      const autoHandled = await tryAutoHandle(ctx, metricId, currentValue, priority);
+      if (autoHandled) {
+        emitSkip(ctx, metricId, `Auto-handled ${metricId} without LLM triage.`, { handler: "metric-auto-handler", priority });
+        return;
+      }
+    }
+
+    // Determine event type: metric.stalled events get distinct labeling
+    const isStallEvent = event.type === "metric.stalled";
+    const eventTypeLabel = isStallEvent ? "metric.stalled" : "metric.breach";
+    const taskLabel = isStallEvent ? "metric stall triage" : "metric alert triage";
+
     const task = [
-      `Run metric alert triage for ${metricId}.`,
+      `Run ${taskLabel} for ${metricId}.`,
       "",
       "## Trigger Event",
       "```json",
       JSON.stringify({
-        type: "metric.breach",
+        type: eventTypeLabel,
         source: "metric-alert-reactor",
         owner: `agent:${owner}`,
         timestamp: Date.now(),
@@ -294,10 +325,11 @@ async function processBreachEvent(ctx: HandlerContext, event: EventEnvelope, con
         metricId,
         owner,
         priority,
+        eventType: eventTypeLabel,
         workflowRunId: result.runId ?? null,
         status: result.status,
       });
-      ctx.sdk.log("info", `[metric-alert-reactor] Ran metric-alert-triage for ${owner} to handle ${metricId}`);
+      ctx.sdk.log("info", `[metric-alert-reactor] Ran metric-alert-triage (${eventTypeLabel}) for ${owner} to handle ${metricId}`);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       ctx.sdk.log("info", `[metric-alert-reactor] Failed to run ${owner}: ${msg}`);

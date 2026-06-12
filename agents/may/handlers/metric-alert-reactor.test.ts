@@ -132,6 +132,35 @@ describe("metric-alert-reactor handler", () => {
     expect(trigger.data).not.toHaveProperty("owner");
   });
 
+  it("leaves known project health metrics to may's project auto-handler", async () => {
+    const ctx = makeCtx();
+    const handler = create(ctx, {} as any);
+
+    await handler({
+      type: "metric.breach",
+      source: "metrics-snapshot",
+      owner: "agent:may",
+      timestamp: Date.now(),
+      data: {
+        metricId: "project.owner-judgment-needed-count",
+        metricName: "Project tasks needing owner judgment",
+        current: 2,
+        threshold: 0,
+        target: 0,
+        message: "project owner judgment needed",
+        priority: "P2",
+      },
+    });
+
+    expect(ctx.sdk.query.metricAlertReactorState).not.toHaveBeenCalled();
+    expect(ctx.sdk.runWorkflow).not.toHaveBeenCalled();
+    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.skipped", expect.objectContaining({
+      handler: "metric-alert-reactor",
+      metricId: "project.owner-judgment-needed-count",
+      route: "project",
+    }));
+  });
+
   it("treats an empty direct trigger as an unresolved-alert scan", async () => {
     const ctx = makeCtx();
     ctx.sdk.query.alerts = vi.fn(() => ({

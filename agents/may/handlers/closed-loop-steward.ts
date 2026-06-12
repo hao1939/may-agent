@@ -76,6 +76,11 @@ const DEFAULT_ALERT_LIMIT = 12;
 const DEFAULT_DELIVERY_FAILURE_LIMIT = 12;
 const DEFAULT_TRIAGE_LIMIT = 3;
 const RETRIAGE_COOLDOWN_MS = 15 * 60_000;
+const OWNER_AUTO_HANDLED_METRICS = new Set([
+  "project.health.finding-count",
+  "project.owner-judgment-needed-count",
+  "project.owner-incomplete-count",
+]);
 
 function emitSkip(ctx: HandlerContext, reason: string, data: Record<string, unknown> = {}): void {
   ctx.sdk.log("info", `[closed-loop-steward] ${reason}`);
@@ -206,7 +211,11 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
           : `  validation: awaiting a newer metrics snapshot after judgment`
         : `  validation: no judgment to validate`;
       const priority = alert.priority ?? "P2";
-      if ((priority === "P0" || priority === "P1" || priority === "P2") && !activeTriageRun) {
+      if (OWNER_AUTO_HANDLED_METRICS.has(alert.metric_id)) {
+        // May owns these metrics and has a typed project auto-handler for the
+        // original metric event. Keep generic alert triage as a fallback for
+        // unknown metrics, not for known project reconciliation signals.
+      } else if ((priority === "P0" || priority === "P1" || priority === "P2") && !activeTriageRun) {
         if (!judgmentData) {
           triageCandidates.push({ alert, owner, reason: "missing metric.alert_judged event" });
         } else if (
@@ -282,6 +291,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     const routedAlertIds = new Set(routedTriageCandidates.map((candidate) => candidate.alert.id));
     const remainingActionableAlerts = alertContexts.filter(({ alert }) => {
       const priority = alert.priority ?? "P2";
+      if (OWNER_AUTO_HANDLED_METRICS.has(alert.metric_id)) return false;
       if (priority === "P3") return false;
       return !routedAlertIds.has(alert.id);
     });

@@ -367,10 +367,11 @@
     "handler": "metric-alert-reactor",
     "agent": "may",
     "enabled": true,
-    "description": "React to P0 metric breaches by forking the owning agent with a remediation task. P1/P2/P3 alerts stay visible in metric context for the closed-loop steward. Polls unresolved alerts every 5min.",
+    "description": "React to metric.breach and metric.stalled events by forking the owning agent with a remediation task. P0 breaches get immediate fork; P1/P2 get explicit triage after grace period. P3 alerts stay visible through metric context. Polls unresolved alerts every 5min.",
     "intervalMs": 300000,
     "on": [
-      "metric.breach"
+      "metric.breach",
+      "metric.stalled"
     ],
     "context": [
       "projects/system-operations/project.md",
@@ -706,6 +707,7 @@
     "handler": "feedback-echo-sync",
     "enabled": true,
     "description": "Hourly sync of evaluator feedback into agent last-eval.md files (direct handler, no LLM session)",
+    "context": ["agents/shared/feedback-echo.ts", "projects/agent-system-evolution/project.md"],
     "lastModified": "2026-06-05T17:09:42.095Z"
   }
 ]
