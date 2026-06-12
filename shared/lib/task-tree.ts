@@ -135,6 +135,17 @@ export function create(
   if (t.tasks[task.id]) throw new Error(`Node already exists: ${task.id}`);
   const parent = getNode(t, parentId);
 
+  // Check parent can accept children before adding
+  const allowedParentStatuses: TaskStatus[] = ["decomposed"];
+  if (parent.status === "accepted" && parent.archived) {
+    // archived accepted parent can receive new children (reopen)
+  } else if (!allowedParentStatuses.includes(parent.status)) {
+    throw new Error(
+      `Cannot add child to '${parentId}' with status '${parent.status}'. ` +
+      (parent.status === "backlog" ? "Decompose it first." : "Parent must be decomposed.")
+    );
+  }
+
   t.tasks[task.id] = {
     id: task.id,
     goal: task.goal,
@@ -147,13 +158,6 @@ export function create(
     created_at: now(),
     updated_at: now(),
   };
-
-  // Check parent can accept children before adding
-  if (parent.status === "decomposed" || (parent.status === "accepted" && parent.archived)) {
-    // OK — parent is already structural
-  } else if (parent.status === "backlog" && isLeaf(parent)) {
-    throw new Error(`Cannot add child to backlog leaf '${parentId}'. Decompose it first.`);
-  }
 
   parent.children.push(task.id);
   parent.updated_at = now();
@@ -210,8 +214,8 @@ export function rework(tree: TaskTree, nodeId: string, reason: string): TaskTree
 
   node.status = "backlog";
   node.reason = reason;
-  node.result = undefined;
-  node.evidence = undefined;
+  delete (node as Record<string, unknown>).result;
+  delete (node as Record<string, unknown>).evidence;
   node.updated_at = now();
   t.updated_at = now();
   return t;
@@ -455,8 +459,8 @@ export function kanban(tree: TaskTree): KanbanCard[] {
         const r = readiness(tree, node.id);
         if (r.ready) badges.push("runnable");
         else {
-          if (r.reasons.some((r) => r.includes("depends_on"))) badges.push("dependency-blocked");
-          if (r.reasons.some((r) => r.includes("conflict_scope"))) badges.push("conflict-blocked");
+          if (r.reasons.some((reason) => reason.includes("depends_on"))) badges.push("dependency-blocked");
+          if (r.reasons.some((reason) => reason.includes("conflict_scope"))) badges.push("conflict-blocked");
         }
         // staleness badge
         if (node.updated_at) {

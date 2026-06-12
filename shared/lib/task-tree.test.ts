@@ -52,6 +52,12 @@ describe("create", () => {
     const t = create(emptyTree(), "root", { id: "task-1", goal: "Leaf" });
     expect(() => create(t, "task-1", { id: "child", goal: "Child" })).toThrow("Decompose it first");
   });
+
+  test("rejects adding child to active node", () => {
+    let t = create(emptyTree(), "root", { id: "task-1", goal: "Task" });
+    t = claim(t, "task-1");
+    expect(() => create(t, "task-1", { id: "child", goal: "Child" })).toThrow("must be decomposed");
+  });
 });
 
 describe("decompose", () => {
