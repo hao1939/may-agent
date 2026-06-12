@@ -72,17 +72,26 @@ The DB is the queryable index. Disk is the source of truth for message history.
 
 ## Known Issues
 
-### `error` column is always NULL (KE-1558)
+### `error` column is nearly always NULL (KE-1558)
 
-The `sessions.error` column in SQLite is universally NULL — including for all
-error sessions. A write-order race between `manager.ts` (writes errorText
-correctly) and `db-writer.ts` (overwrites with NULL via `session.end` event,
-which lacks the `error` field) causes the manager's value to be lost.
-`updateSessionDb()` uses bare `error = ?` instead of `COALESCE(?, error)`.
+The `sessions.error` column in SQLite is NULL for the vast majority of error
+sessions (~99.8% as of 2026-06-12: 648/649 error sessions have NULL).
+A write-order race between `manager.ts` (writes errorText correctly) and
+`db-writer.ts` (overwrites with NULL via `session.end` event, which lacks the
+`error` field) causes the manager's value to be lost. `updateSessionDb()` uses
+bare `error = ?` instead of `COALESCE(?, error)`.
 
-**Workaround:** Read `.state/sessions/history/<id>/meta.json` on disk for the
-actual error text. The `error` field in `meta.json` contains the correct value
-(e.g., "Agent ended on an empty tool-use assistant turn").
+**Exception:** The session-recovery handler (`agents/may/handlers/session-recovery.ts`)
+writes error text directly via `db.prepare().run()`, bypassing the db-writer
+race. Sessions auto-closed by this handler (e.g., "Auto-closed idle immediate
+session (no activity for >45min, likely handler timeout)") do retain their
+`error` column value because no subsequent `session.end` → `db-writer` path
+overwrites them.
+
+**Workaround:** For sessions closed through the normal `manager.ts` path, read
+`.state/sessions/history/<id>/meta.json` on disk for the actual error text.
+The `error` field in `meta.json` contains the correct value (e.g., "Agent ended
+on an empty tool-use assistant turn").
 
 **Fix pending:** Requires either adding `error` to the `session.end` bus event
 data, or changing the UPDATE to use COALESCE. Both are `src/` changes requiring
