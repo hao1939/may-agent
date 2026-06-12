@@ -172,32 +172,35 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-13 ~13:00Z** (24h window, ~2,403 total):
+**Latest snapshot 2026-06-13 ~15:30Z** (24h window, ~2,523 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,299 | 54.1% |
-| READ_DEDUP | 438 | 18.2% |
-| SESSION_BASH_CAT | 332 | 13.8% |
-| SESSION_READ | 171 | 7.1% |
-| PATH_HALLUCINATION | 70 | 2.9% |
-| SESSION_BASH_GREP | 51 | 2.1% |
-| read-before-edit | 33 | 1.4% |
+| commit-guard (combined) | 1,371 | 54.3% |
+| READ_DEDUP | 462 | 18.3% |
+| SESSION_BASH_CAT | 339 | 13.4% |
+| SESSION_READ | 176 | 7.0% |
+| PATH_HALLUCINATION | 74 | 2.9% |
+| SESSION_BASH_GREP | 53 | 2.1% |
 | hallucinated-path (workflow) | 9 | 0.4% |
 
-Total: ~2,403/day (under 2,500 threshold with **~4% headroom**).
+Total: ~2,523/day (**breached 2,500 threshold** at ~15:15Z).
 
-Notable changes vs 2026-06-13 ~12:00Z snapshot:
-- **READ_DEDUP stabilized** (446 → 438, −1.8%) — the predicted breach
-  within 24-48h did not materialize. aks-explorer remains the dominant
-  source (306/438, 70%), followed by arc (71) and evaluator (51).
-- **Total volume down slightly** (2,428 → 2,403, −1.0%). Headroom
-  improved from ~3% to ~4%.
-- commit-guard combined stable (1,302 → 1,299). Share steady at ~54%.
-- SESSION_BASH_CAT stable (341 → 332). SESSION_READ stable (179 → 171).
-- PATH_HALLUCINATION up slightly (65 → 70); read-before-edit stable (33).
-- Guard count is in a steady-state band of ~2,400/day. No threshold
-  breach expected unless a new agent-level behavior change shifts volume.
+Notable changes vs 2026-06-13 ~13:00Z snapshot:
+- **Guard count breached threshold** (2,403 → 2,523 → current 2,531,
+  +5.3% in ~2.5h). The ~4% headroom was consumed by a combination of
+  READ_DEDUP surge (438 → 462, +5.5%) and commit-guard growth
+  (1,299 → 1,371, +5.5%).
+- **READ_DEDUP continues rising** — aks-explorer replay re-reads remain
+  the dominant source (KE-1867). The "stabilized" assessment from the
+  13:00Z snapshot was premature.
+- commit-guard combined grew from 1,299 → 1,371 — consistent with higher
+  session volume. Per-session rate stable.
+- SESSION_BASH_CAT stable (332 → 339). SESSION_READ stable (171 → 176).
+- The breach is structural: the noise floor (~2,400-2,500/day) now equals
+  the threshold. Either the threshold needs raising again, or the
+  READ_DEDUP guard needs per-file count calibration for aks-explorer
+  replay files (KE-1867 option 2).
 
 ### Known issue: guard name conflation
 
