@@ -172,35 +172,32 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-13 ~12:00Z** (24h window, ~2,428 total):
+**Latest snapshot 2026-06-13 ~13:00Z** (24h window, ~2,403 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,302 | 53.6% |
-| READ_DEDUP | 446 | 18.4% |
-| SESSION_BASH_CAT | 341 | 14.0% |
-| SESSION_READ | 179 | 7.4% |
-| PATH_HALLUCINATION | 65 | 2.7% |
-| SESSION_BASH_GREP | 52 | 2.1% |
-| C1.1 Edit-Without-Read | 33 | 1.4% |
-| C7.1 Hallucinated Path | 9 | 0.4% |
+| commit-guard (combined) | 1,299 | 54.1% |
+| READ_DEDUP | 438 | 18.2% |
+| SESSION_BASH_CAT | 332 | 13.8% |
+| SESSION_READ | 171 | 7.1% |
+| PATH_HALLUCINATION | 70 | 2.9% |
+| SESSION_BASH_GREP | 51 | 2.1% |
+| read-before-edit | 33 | 1.4% |
+| hallucinated-path (workflow) | 9 | 0.4% |
 
-Total: ~2,428/day (under 2,500 threshold with **~3% headroom**).
+Total: ~2,403/day (under 2,500 threshold with **~4% headroom**).
 
-Notable changes vs 2026-06-12 snapshot:
-- **READ_DEDUP surged 124%** (199 → 446) — now the #2 signal by volume,
-  overtaking SESSION_BASH_CAT. aks-explorer is the dominant source
-  (328/446, 74%), repeatedly re-reading replay files during task sessions.
-  arc (62) and evaluator (50) are secondary contributors.
-- **Threshold headroom tightened** from ~8% to ~3% (2,428 vs 2,500).
-  If aks-explorer READ_DEDUP trend continues, guard-count could breach
-  threshold within 24-48h.
-- commit-guard combined up 7.6% (1,210 → 1,302) — share stable at ~53%.
-- SESSION_BASH_CAT stable (343 → 341). SESSION_READ stable (180 → 179).
-- PATH_HALLUCINATION stable (60 → 65) — the drop observed 2026-06-12
-  has held.
-- C1.1 Edit-Without-Read now broken out: 33 triggers (aks-explorer 21,
-  scout 9). Previously counted in "other".
+Notable changes vs 2026-06-13 ~12:00Z snapshot:
+- **READ_DEDUP stabilized** (446 → 438, −1.8%) — the predicted breach
+  within 24-48h did not materialize. aks-explorer remains the dominant
+  source (306/438, 70%), followed by arc (71) and evaluator (51).
+- **Total volume down slightly** (2,428 → 2,403, −1.0%). Headroom
+  improved from ~3% to ~4%.
+- commit-guard combined stable (1,302 → 1,299). Share steady at ~54%.
+- SESSION_BASH_CAT stable (341 → 332). SESSION_READ stable (179 → 171).
+- PATH_HALLUCINATION up slightly (65 → 70); read-before-edit stable (33).
+- Guard count is in a steady-state band of ~2,400/day. No threshold
+  breach expected unless a new agent-level behavior change shifts volume.
 
 ### Known issue: guard name conflation
 
