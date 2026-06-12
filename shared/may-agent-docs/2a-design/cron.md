@@ -174,7 +174,7 @@ Handlers are **hot-reloaded** — edit the file, next tick picks up changes. No 
 ## Handler Lifecycle Events
 
 Every handler fire emits lifecycle events. The full set observed in production
-(24h sample, 2026-06-10):
+(24h sample, last updated 2026-06-13):
 
 ```
 handler.started              → handler.completed | handler.failed
@@ -185,18 +185,19 @@ handler.routed               (rare — handler forwarded to another handler)
 
 | Event | Typical 24h volume | Purpose |
 |-------|-------------------|---------|
-| `handler.started` | ~4800 | Handler fire began |
-| `handler.completed` | ~4800 | Handler fire finished successfully |
-| `handler.skipped` | ~1150 | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
-| `handler.workflow_dispatched` | ~2800 | Workflow-backed handler dispatched an agent session |
-| `handler.failed` | ~10 | Handler fire threw an error |
-| `handler.routed` | ~8 | Handler forwarded work to another handler |
+| `handler.started` | ~5000 | Handler fire began |
+| `handler.completed` | ~5000 | Handler fire finished successfully |
+| `handler.skipped` | ~1400 | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
+| `handler.workflow_dispatched` | ~2600 | Workflow-backed handler dispatched an agent session |
+| `handler.failed` | ~40 | Handler fire threw an error (dominated by task-execution-worker timeouts) |
+| `handler.routed` | ~2 | Handler forwarded work to another handler |
 
-The `handler.skipped` events are significant — roughly 20% of handler starts
+The `handler.skipped` events are significant — roughly 28% of handler starts
 result in a skip. This is healthy behavior (handlers checking preconditions and
 bailing early), not waste. Top skip reasons include: session-recovery filtering
 non-recoverable events, classifiers choosing no action, and metric auto-handlers
-already covering an alert.
+already covering an alert. The skip rate has increased from ~20% (2026-06-10) as
+the project execution engine's dedup and precondition checks have broadened.
 
 These events drive the `handler.success-rate`, `handler.fires-per-hour`, and
 `handler.p95-duration` metrics.
