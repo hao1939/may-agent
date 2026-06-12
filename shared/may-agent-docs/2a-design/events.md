@@ -623,7 +623,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.7k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (5.9k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (251 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (1,100 rows as of 2026-06-12, ~14/hour 7d avg, ~35/hour 6h — rate increasing); all `session_not_found` — ~55% planner sessions, ~40% task sessions, ~5% problem-solver sessions |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,130 rows as of 2026-06-13, ~492/24h, ~20/hour); all `session_not_found` — ~59% planner sessions, ~35% task sessions, ~8% problem-solver sessions; rate is steady, not increasing |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -658,11 +658,11 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.planning.requested` | project-app and agent sessions when requesting a planning cycle (e.g. after task completion) | ✅ live (654 rows); sources: `project-app:aks-rp-e2e`, `agent:aks-explorer`, `codex-investigation` |
-| `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (571 rows, ~12/hour, #15 by 24h volume); single project `aks-rp-e2e`, 5-min interval cron |
+| `project.planning.requested` | project-app and agent sessions when requesting a planning cycle (e.g. after task completion) | ✅ live (~1.5k rows, ~756/24h as of 2026-06-13); sources: `project-app:aks-rp-e2e`, `agent:aks-explorer`, `codex-investigation` |
+| `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (~580 rows, ~276/24h, ~12/hour); single project `aks-rp-e2e`, 5-min interval cron |
 | `project.tick` | project-app scheduled tick (e.g. `lane: "learning"`, `lane: "replan-review"`); emitted by `app.ts` in `aks-rp-e2e.app` and `platform/.app` | ✅ live (4 rows); from `project-app:aks-rp-e2e:schedule:regular-learning` |
-| `project.problem.requested` | project-app problem-solver trigger when tasks fail with a common root cause | ✅ live (1 row); from `control` (codex-initiated); owner `agent:may` routes to problem-solver workflow |
-| `project.problem.escalated` | project-app problem-solver when a fix is found and applied | ✅ live (1 row); from `agent:aks-explorer` after resolving ARM auth blocker |
+| `project.problem.requested` | project-app problem-solver trigger when tasks fail with a common root cause | ✅ live (~81 rows, ~81/24h as of 2026-06-13); owner `agent:may` routes to problem-solver workflow |
+| `project.problem.escalated` | project-app problem-solver when a fix is found and applied | ✅ live (~69 rows, ~69/24h as of 2026-06-13) |
 
 **Project lifecycle — task-driven**
 
