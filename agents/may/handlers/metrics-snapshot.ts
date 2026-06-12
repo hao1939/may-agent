@@ -702,7 +702,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
-           AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)`,
+           AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
+           AND NOT (s.status = 'interrupted' AND s.error IS NULL)`,
         threeH, sevenMinutesAgo,
       );
       const triaged = count(
@@ -714,6 +715,7 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND COALESCE(s.endedAt, s.startedAt) <= ?
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
+           AND NOT (s.status = 'interrupted' AND s.error IS NULL)
            AND e.verdict IN ('needs_improvement', 'skipped')`,
         threeH, sevenMinutesAgo,
       );
