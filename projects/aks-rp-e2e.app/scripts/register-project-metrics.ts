@@ -32,7 +32,7 @@ const metrics: MetricDef[] = [
     unit: "count",
     alertOp: "<",
     priority: "P3",
-    description: "Dashboard counter for dispatchable task-tree leaves.",
+    description: "Dashboard counter for planner-assignable task-tree leaves.",
   },
   {
     id: "aks-rp-e2e.task.active-count",
@@ -43,7 +43,7 @@ const metrics: MetricDef[] = [
     unit: "count",
     alertOp: "<",
     priority: "P3",
-    description: "Dashboard counter for currently leased task-tree leaves.",
+    description: "Dashboard counter for currently assigned task-tree leaves.",
   },
   {
     id: "aks-rp-e2e.task.blocked-count",
@@ -90,9 +90,9 @@ const metrics: MetricDef[] = [
     threshold: 0,
     unit: "boolean",
     alertOp: ">",
-    priority: "P2",
+    priority: "P3",
     description:
-      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active. Priority P1→P2 because: (1) P0 no-work-with-gaps already covers true starvation (zero ready AND active), (2) 5 alerts in one day all auto-resolve when planner refills, proving this is normal pipeline oscillation not real starvation, (3) count=12 (~1h) calibration insufficient — workers consume tasks faster than 10-18min planner cycles produce them, so ready=0 is the natural steady state. P2 keeps the signal visible in heartbeat without triggering expensive triage sessions.",
+      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active. Priority P1→P2→P3 because: (1) P0 no-work-with-gaps already covers true starvation (zero ready AND active), (2) 16 alerts over two days all auto-resolve when planner refills, proving this is normal pipeline oscillation not real starvation, (3) count=12 (~1h) calibration insufficient — workers consume tasks faster than planner cycles produce them, so ready=0 is the natural steady state, (4) P2 was still triggering triage sessions despite description saying it should not. P3 makes this dashboard-only. Review: promote back to P2 if ready=0 persists >4h with active=0.",
     config: { alert: { mode: "consecutive_failures", count: 12 } },
   },
   {
