@@ -14,10 +14,12 @@ Work arrives as tasks. Simple tasks just get done. For complex work that spans m
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
-- `paused` = waiting, with explicit resume trigger
+- `waiting` = suspended, with explicit resume trigger
+- `paused` = temporarily stopped by owner
 - `blocked` = needs external help
 - `pending-review` = needs human approval
-- `done` = finished
+- `done` = goal achieved
+- `closed` = resolved (done, superseded, or rejected)
 
 **Project comments:** Anyone can append suggestions to a project's `## Comments` section. The owner reads and uses judgment — comments are input, not instructions.
 
