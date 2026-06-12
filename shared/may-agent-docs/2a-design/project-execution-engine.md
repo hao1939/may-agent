@@ -1189,7 +1189,8 @@ projects/<name>.app/
   workflows/
     project-planner.ts
     task-worker.ts
-    project-execution-engine.ts
+    problem-solver.ts
+    project-execution-watchdog.ts
 ```
 
 `tasks/tree.json` inside the project app is the canonical current task state.
@@ -1422,14 +1423,17 @@ trace fields.
 Implement this first as app-local workflows:
 
 ```text
-projects/aks-rp-e2e/.app/workflows/project-planner.ts
-projects/aks-rp-e2e/.app/workflows/task-worker.ts
-projects/aks-rp-e2e/.app/workflows/project-execution-engine.ts
+projects/aks-rp-e2e.app/workflows/project-planner.ts
+projects/aks-rp-e2e.app/workflows/task-worker.ts
+projects/aks-rp-e2e.app/workflows/problem-solver.ts
+projects/aks-rp-e2e.app/workflows/project-execution-watchdog.ts
 ```
 
-`project-execution-engine.ts` remains the compatibility/helper implementation
-for planner refill/review and single-task execution while the runtime-facing
-workflows expose the simpler two-loop model. The planner reads
+`project-execution-engine.ts` was the original compatibility/helper implementation
+and has been replaced by `problem-solver.ts` (handles failure/blocked diagnosis)
+and `project-execution-watchdog.ts` (handles stale-lease and liveness detection).
+The old file is archived at `projects/aks-rp-e2e.app/archive/old-workflows/`.
+The planner reads
 `.app/tasks/tree.json` and emits `project.task.execution.requested` for
 dispatchable ready leaves up to `max_concurrent`. Ready-task pickup is no longer
 a separate event. `task-worker.ts` consumes one task execution event, requeues
