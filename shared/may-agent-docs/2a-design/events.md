@@ -670,12 +670,13 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `project.task.execution.requested` | project task engine requesting task execution | ✅ live (2.5k rows) |
 | `project.tasks.ready` | project task engine when tasks become ready | ✅ live (1.5k rows) |
 | `project.task.completed` | project task engine when a task completes | ✅ live (1.9k rows) |
+| `project.task.assigned` | project-planner when assigning a task to a worker agent | ✅ live (43 rows); from `agent:aks-explorer` project-planner sessions |
 
 **Project health**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); 34k rows remain in DB but will age out via 7-day retention by ~2026-06-17 |
+| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); 27.6k rows remain in DB, aging out via 7-day retention |
 | `project.health.finding` | project health checker on detected issues | ✅ live (223 rows) |
 
 **Task lifecycle (generic)**
@@ -689,6 +690,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `task.rejected` | task execution engine when task is rejected | ✅ live (1.1k rows) |
 | `task.requeued` | task execution engine when task is requeued for retry | ✅ live (389 rows) |
 | `task.blocked` | task execution engine when task is blocked | ✅ live (16 rows) |
+| `task.deferred` | task execution engine when a task is deferred (e.g. waiting for dependency gate) | ⚠️ rare (1 row); from `agent:aks-explorer` |
 
 **Evaluation lifecycle**
 
@@ -739,6 +741,12 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `heartbeat.diagnostics_completed` | heartbeat diagnostics phase end | ✅ live (104 rows) |
 | `heartbeat.skipped` | heartbeat skipped (agent busy, debounce) | ✅ live (21 rows) |
 
+**Session recovery**
+
+| Event type | Emitted by | Status |
+|---|---|---|
+| `session.recovery_failed` | session-recovery handler (`agent:may`) when a task's original session or task record is missing | ⚠️ rare (3 rows); distinct from `session.resume_failed` (which fires when a resume target sessionId is not found) |
+
 **Learning and feedback**
 
 | Event type | Emitted by | Status |
@@ -755,6 +763,16 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `restart` | daemon restart signal | ✅ live (5 rows) |
 | `reload` | daemon reload signal | ✅ live (1 row) |
 | `codex.probe` | codex integration probe (external tooling handshake) | ⚠️ rare (1 row); ephemeral diagnostic |
+| `cancel` | legacy cancel signal from session watchdog / operator | ⚠️ legacy (10 rows, no `source`); superseded by `session.cancel.requested` |
+
+### Data Quality: Malformed event_type rows
+
+As of 2026-06-12, 7 events have an entire JSON blob stored in `event_type`
+instead of a plain dot-separated string (e.g.
+`{"type":"project.execution.requested","project":"aks-rp-e2e",...}`). These
+were injected via codex/operator and bypass the normal emit path. They are not
+harmful but will not match any handler's `on:` filter. Query to find them:
+`SELECT * FROM events WHERE event_type LIKE '{%'`.
 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
