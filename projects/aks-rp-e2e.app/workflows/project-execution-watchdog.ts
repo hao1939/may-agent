@@ -1,33 +1,24 @@
 /**
- * project-execution-watchdog — simple liveness guard for aks-rp-e2e.
+ * project-execution-watchdog — liveness observer for aks-rp-e2e.
  *
- * Source of truth: tasks/tree.json.
- * Runtime sessions are disposable attempts attached to tasks. If an active leaf
- * has no healthy runtime attempt, put the task back to ready and let the normal
- * worker picker start it again.
+ * The planner owns tasks/tree.json. This workflow only observes runtime
+ * sessions and wakes planning when the planner should review.
  */
 
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
-  readDispatchableReadyTaskIds,
   withTreeLock,
-  type PickupConfig,
+  type TaskTreeConfig,
   type TaskTree,
-} from "./lib/task-pickup.ts";
+} from "./lib/task-tree-store.ts";
+import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
 
 export const name = "project-execution-watchdog";
 export const description =
-  "Repair stale aks-rp-e2e task leases and emit the normal planner/worker events.";
+  "Observe aks-rp-e2e task/session liveness and wake planning when review is needed.";
 
 type WatchdogConfig = {
   appDir: string;
@@ -38,23 +29,9 @@ type WatchdogConfig = {
   maxConcurrent: number;
 };
 
-function field(raw: string, name: string): string | undefined {
-  const match = raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
-  return match ? match[1].trim() : undefined;
-}
-
 function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
   const projectDir = field(raw, "project") ?? "/app/projects/aks-rp-e2e";
-  const explicitAppDir = field(raw, "app");
-  const embeddedProjectPath = join(projectDir, ".app", "project.json");
-  const legacyRootTaskDir = join(projectDir, "tasks");
-  const appDir =
-    explicitAppDir ??
-    (existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir)
-      ? projectDir
-      : existsSync(embeddedProjectPath)
-        ? join(projectDir, ".app")
-        : new URL("..", import.meta.url).pathname);
+  const appDir = resolveAppDir(projectDir, field(raw, "app"));
 
   return {
     appDir,
@@ -66,7 +43,7 @@ function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
   };
 }
 
-function pickupConfig(config: WatchdogConfig): PickupConfig {
+function buildTaskTreeConfig(config: WatchdogConfig): TaskTreeConfig {
   return {
     appDir: config.appDir,
     projectDir: config.projectDir,
@@ -74,37 +51,12 @@ function pickupConfig(config: WatchdogConfig): PickupConfig {
     journalPath: join(config.appDir, ".state", "journal.jsonl"),
     worker: config.agent,
     maxConcurrent: config.maxConcurrent,
-    requestedReadyTaskIds: [],
-    abandonedActiveTaskIds: new Set(),
   };
 }
 
 function readTree(path: string): TaskTree | null {
   if (!existsSync(path)) return null;
-  return JSON.parse(readFileSync(path, "utf-8")) as TaskTree;
-}
-
-function saveTree(config: WatchdogConfig, tree: TaskTree): void {
-  tree.updated_at = new Date().toISOString();
-  const tempPath = `${config.treePath}.${process.pid}.${Date.now()}.tmp`;
-  writeFileSync(tempPath, `${JSON.stringify(tree, null, 2)}\n`, "utf-8");
-  renameSync(tempPath, config.treePath);
-}
-
-function appendJournal(
-  config: WatchdogConfig,
-  entry: Record<string, unknown>,
-): void {
-  const journalDir = join(config.appDir, ".state");
-  if (!existsSync(journalDir)) mkdirSync(journalDir, { recursive: true });
-  appendFileSync(
-    join(journalDir, "journal.jsonl"),
-    `${JSON.stringify({
-      ts: new Date().toISOString(),
-      actor: "project-execution-watchdog",
-      ...entry,
-    })}\n`,
-  );
+  return readJson<TaskTree | null>(path, null);
 }
 
 function isLeaf(task: TaskTree["tasks"][string]): boolean {
@@ -113,7 +65,8 @@ function isLeaf(task: TaskTree["tasks"][string]): boolean {
 
 function readyLeaves(tree: TaskTree): Array<TaskTree["tasks"][string]> {
   return Object.values(tree.tasks).filter(
-    (task) => isLeaf(task) && task.status === "ready",
+    (task) =>
+      isLeaf(task) && (task.status === "ready" || task.status === "backlog"),
   );
 }
 
@@ -155,70 +108,33 @@ function sessionIsRunning(dbPath: string, sessionId: string): boolean {
   }
 }
 
-function activeTaskShouldRestart(
+function activeTaskRestartReason(
   config: WatchdogConfig,
   task: TaskTree["tasks"][string],
-): boolean {
-  if (
-    !task.session_id ||
-    !sessionIsRunning(config.stateDbPath, task.session_id)
-  )
-    return true;
-  if (!task.lease_expires_at) return true;
-  const expiresAt = Date.parse(task.lease_expires_at);
-  return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
+): string | null {
+  if (!task.session_id) return "missing-session";
+  if (!sessionIsRunning(config.stateDbPath, task.session_id))
+    return "session-not-running";
+  return null;
 }
 
-function normalizeActivePointers(tree: TaskTree): void {
-  const activeIds = activeLeaves(tree)
-    .map((task) => task.id)
-    .sort();
-  tree.active_task_ids = activeIds;
-  tree.active_task_id = activeIds[0] ?? readyLeaves(tree)[0]?.id ?? null;
-}
-
-function restartAbandonedActiveTasks(
+function staleActiveTasks(
   config: WatchdogConfig,
   tree: TaskTree,
-): string[] {
-  const restarted: string[] = [];
+): Array<{ taskId: string; reason: string }> {
+  const stale: Array<{ taskId: string; reason: string }> = [];
   for (const task of activeLeaves(tree)) {
-    if (!activeTaskShouldRestart(config, task)) continue;
-    task.status = "ready";
-    task.claimed_by = undefined;
-    task.lease_expires_at = undefined;
-    restarted.push(task.id);
+    const reason = activeTaskRestartReason(config, task);
+    if (reason) stale.push({ taskId: task.id, reason });
   }
-  if (restarted.length > 0) normalizeActivePointers(tree);
-  return restarted.sort();
-}
-
-function emitTaskExecutionRequests(
-  ctx: WorkflowContext,
-  config: WatchdogConfig,
-  taskIds: string[],
-  reason: string,
-): void {
-  for (const taskId of taskIds) {
-    try {
-      ctx.dispatchEvent("project.task.execution.requested", {
-        project: "aks-rp-e2e",
-        reason,
-        taskId,
-        worker: config.agent,
-        maxConcurrent: config.maxConcurrent,
-        requested_by: "project-execution-watchdog",
-      });
-    } catch {
-      // Local tests may not provide a dispatcher.
-    }
-  }
+  return stale.sort((a, b) => a.taskId.localeCompare(b.taskId));
 }
 
 function emitPlanningRequested(
   ctx: WorkflowContext,
   config: WatchdogConfig,
   reason: string,
+  details: Record<string, unknown> = {},
 ): void {
   try {
     ctx.dispatchEvent("project.planning.requested", {
@@ -226,6 +142,7 @@ function emitPlanningRequested(
       reason,
       maxConcurrent: config.maxConcurrent,
       requested_by: "project-execution-watchdog",
+      ...details,
     });
   } catch {
     // Local tests may not provide a dispatcher.
@@ -234,25 +151,16 @@ function emitPlanningRequested(
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const config = parseInput(ctx.task, ctx.agent);
-  const sharedConfig = pickupConfig(config);
+  const sharedConfig = buildTaskTreeConfig(config);
   const recovery = withTreeLock(sharedConfig, () => {
     const tree = readTree(config.treePath);
     if (!tree) return null;
 
-    const restarted = restartAbandonedActiveTasks(config, tree);
-    if (restarted.length > 0) {
-      saveTree(config, tree);
-      appendJournal(config, {
-        kind: "active_tasks_restarted_from_task_tree",
-        status: "ready",
-        summary:
-          "Reset active leaves with missing/expired runtime attempts back to ready.",
-        task_ids: restarted,
-      });
-    }
-
     return {
-      restarted,
+      readyTaskIds: readyLeaves(tree)
+        .map((task) => task.id)
+        .sort(),
+      staleActiveTasks: staleActiveTasks(config, tree),
       activeCount: activeLeaves(tree).length,
       hasOpenWork: hasOpenWork(tree),
       needsRefill: activeProjectNeedsRefill(tree),
@@ -261,16 +169,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (!recovery)
     return ctx.done("Watchdog skipped: task tree does not exist yet.");
 
-  const readyTaskIds = readDispatchableReadyTaskIds(sharedConfig);
-  if (readyTaskIds.length > 0) {
-    const reason =
-      recovery.restarted.length > 0
-        ? "watchdog-restarted-active-tasks"
-        : "watchdog-ready-resume";
-    emitTaskExecutionRequests(ctx, config, readyTaskIds, reason);
-    return ctx.done(
-      `Watchdog requested execution for ${readyTaskIds.length} dispatchable ready task(s): ${readyTaskIds.slice(0, 8).join(", ")}.`,
-    );
+  if (recovery.staleActiveTasks.length > 0) {
+    const reason = "watchdog-stale-active-review";
+    emitPlanningRequested(ctx, config, reason, {
+      staleActiveTasks: recovery.staleActiveTasks,
+    });
+    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+  }
+
+  if (recovery.readyTaskIds.length > 0) {
+    const reason = "watchdog-ready-work";
+    emitPlanningRequested(ctx, config, reason, {
+      readyTaskIds: recovery.readyTaskIds,
+    });
+    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+  }
+
+  if (recovery.activeCount > 0 && recovery.activeCount < config.maxConcurrent) {
+    const reason = "watchdog-capacity-underfilled";
+    emitPlanningRequested(ctx, config, reason);
+    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
   }
 
   if (recovery.activeCount > 0) {

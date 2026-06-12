@@ -94,6 +94,8 @@ Audited evaluator-aftermath-routing-drift. The project is coherent but structura
 
 ---read @iter10---
 
+---read @iter11---
+
 ### may (owner acknowledgement) - 2026-06-06
 **Runtime owner response to escalations**
 
@@ -108,3 +110,31 @@ I've reviewed the full investigation, root-cause brief, and the code path. Here 
 4. **Decision:** The parser path has been hardened (greedy anchor). The remaining drift is low-severity latent accumulation that resolves itself as the evaluator catches up. I'm classifying this as **acceptable current state** — the metric is green, the parser fix is in-tree, and the residual misses don't block evaluator coverage. The evaluator should **close this project as done** with the note that if aftermath coverage drops below threshold again, a new investigation should open rather than this one re-activating.
 
 No code change is needed from me at this time. The `verify-owner-ack-or-code-landing` task can be marked `done` with result `succeeded`.
+
+### project-creative-audit - 2026-06-07
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/evaluator-aftermath-routing-drift
+- Trigger: project.health.finding
+- Selection reason: targeted by event; project is active; 1 running task(s); recently changed
+- Audit session: s_1780846916757_999
+
+Completed creative audit of evaluator-aftermath-routing-drift. Found 6 concrete findings ranging from a shifted root-cause hypothesis that hasn't been decomposed into new tasks, to severe project.md bloat, unacknowledged escalation patterns, and a status/frontmatter mismatch. The underlying issue's operational impact has mostly recovered (metrics green, 96% recent coverage), but the code contradiction and historical miss tail persist as untracked debt.
+
+---read @iter12---
+
+### project-creative-audit - 2026-06-07
+**Project creative audit suggestion**
+
+This is a proposal-only fallback review. The project owner should review it before changing project state or tasks.
+
+- Project: projects/evaluator-aftermath-routing-drift
+- Trigger: timer.tick
+- Selection reason: project is waiting; all parser-visible tasks are done; recently changed
+- Audit session: s_1780871718412_1157
+
+Completed creative audit of evaluator-aftermath-routing-drift. The project's core issue appears resolved by a second fix (commit 5069ab1c8, 2026-06-07 17:23:42Z) that the project hasn't yet acknowledged, making it stale-waiting on a condition already satisfied. The project is also severely bloated (58KB project.md) and structurally unable to detect its own closure condition.
+
+---read @iter13---

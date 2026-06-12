@@ -1,0 +1,60 @@
+import puppeteer from 'puppeteer-core';
+
+const SEARCHES = [
+  "Fable 5 社会分层 最贵 AI 2026",
+  "agent skill 自进化 进化 2026 六月",
+  "ByteDance 字节 AI agent 2026",
+  "MiMo Code 小米 AI编程 2026"
+];
+
+async function run() {
+  const browser = await puppeteer.connect({
+    browserWSEndpoint: 'ws://localhost:9222/devtools/browser/' + 
+      (await (await fetch('http://localhost:9222/json/version')).json()).webSocketDebuggerUrl.split('/').pop()
+  });
+  
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1280, height: 900 });
+  
+  for (const query of SEARCHES) {
+    console.log(`\n=== SEARCHING: ${query} ===`);
+    try {
+      const url = `https://www.xiaohongshu.com/search_result?keyword=${encodeURIComponent(query)}&source=web_search_result_notes`;
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 25000 });
+      await new Promise(r => setTimeout(r, 3000));
+      
+      for (let i = 0; i < 3; i++) {
+        await page.evaluate(() => window.scrollBy(0, 800));
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      
+      const posts = await page.evaluate(() => {
+        const items = [];
+        const allSections = document.querySelectorAll('section, article, [class*="note"], [class*="feed"]');
+        allSections.forEach(el => {
+          const title = el.querySelector('[class*="title"], h3, [class*="desc"]')?.textContent?.trim();
+          const likes = el.querySelector('[class*="like"], [class*="count"], [class*="engagement"]')?.textContent?.trim();
+          const author = el.querySelector('[class*="author"], [class*="name"], [class*="nick"]')?.textContent?.trim();
+          if (title && title.length > 5) {
+            items.push({ title: title.substring(0, 120), likes: likes || '?', author: author || '?' });
+          }
+        });
+        return items;
+      });
+      
+      if (posts.length > 0) {
+        console.log(`Found ${posts.length} posts:`);
+        posts.forEach((p, i) => console.log(`  ${i+1}. [${p.likes}] ${p.title} — ${p.author}`));
+      } else {
+        console.log('No posts found');
+      }
+    } catch (err) {
+      console.log(`Error: ${err.message}`);
+    }
+  }
+  
+  await page.close();
+  console.log('\n=== DONE ===');
+}
+
+run().catch(e => console.error(e));

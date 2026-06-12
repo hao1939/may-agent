@@ -1,3 +1,187 @@
+# Proposed Strategies — 2026-05-29 06:21Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical latest `good` evaluation rows that still have history artifacts available:
+- `.state/sessions/history/s_1780035845718_1/session.jsonl` (may)
+- `.state/sessions/history/s_1780032240295_17/session.jsonl` (may)
+- `.state/sessions/history/s_1780030437908_10/session.jsonl` (dev)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 3
+- Sessions with zero extracted positive `strategy` lessons: 0
+- Total extracted strategy lessons: 3
+
+## Lessons
+
+### 1. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh May samples `s_1780035845718_1` and `s_1780032240295_17` both emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
+
+### 2. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh dev sample `s_1780030437908_10` emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic across successful coordination and diagnosis sessions.
+
+## Calibration Notes
+- Positive extraction improved to 3/3 coverage on the freshest history-backed `good` sample set this cycle.
+- The two newest canonical `good` rows overall (`s_1780034884796_3`, `s_1780034522694_1`) did not yet have `.state/sessions/history/<id>/session.jsonl` artifacts, so calibration had to use the freshest history-backed subset rather than the freshest evaluation rows strictly by timestamp.
+- Optimization noise still coexists with positive tactics on successful May work: both May samples emitted positive `strategy` lessons alongside optimization warnings, so ranking remains imperfect even when recall is healthy.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1780035845718_1/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson (`Uses DB schema/error hints to recover into a successful follow-up query`) plus recovery/optimization output, with `scanned_lines: 43`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1780032240295_17/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson (`Uses DB schema/error hints to recover into a successful follow-up query`) plus optimization output, with `scanned_lines: 25`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1780030437908_10/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson (`Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`) with `scanned_lines: 13`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `7`, `4`, and `8` respectively.
+- `query_db` confirmed canonical latest evaluation rows `verdict='good'`, `quality=0.85`, and `efficiency=0.8` for all three sampled sessions.
+
+---
+
+# Proposed Strategies — 2026-05-29 03:54Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical latest `good` evaluation rows:
+- `.state/sessions/history/s_1780021214429_694/session.jsonl` (may)
+- `.state/sessions/history/s_1780017530228_676/session.jsonl` (dev)
+- `.state/sessions/history/s_1780014734697_660/session.jsonl` (may)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted positive `strategy` lessons: 1
+- Total extracted strategy lessons: 2
+
+## Lessons
+
+### 1. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh May sample `s_1780021214429_694` emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
+
+### 2. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh dev sample `s_1780017530228_676` emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic across successful coordination and diagnosis sessions.
+
+## Calibration Notes
+- Positive extraction stayed live on the freshest batch at 2/3 coverage.
+- The remaining gap is still real on concise successful May work: `s_1780014734697_660` returned `{"lessons":[]}` despite a canonical `good` evaluation row and nine success-language matches.
+- Optimization noise still coexists with positive tactics on successful sessions: `s_1780021214429_694` emitted one positive strategy lesson only alongside `Ignored tool outputs (4 instances)`.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1780021214429_694/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson (`Uses DB schema/error hints to recover into a successful follow-up query`) plus 1 `optimization` lesson, with `scanned_lines: 23`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1780017530228_676/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson (`Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`) with `scanned_lines: 13`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1780014734697_660/session.jsonl --type strategy` returned `{"lessons":[]}` with `scanned_lines: 12`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `5`, `8`, and `9` respectively.
+- `query_db` confirmed canonical latest evaluation rows `verdict='good'`, `quality=0.85`, and `efficiency=0.8` for all three sampled sessions.
+
+---
+
+# Proposed Strategies — 2026-05-23 20:53Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical `good` evaluation rows:
+- `.state/sessions/history/s_1779562349790_1533/session.jsonl` (may)
+- `.state/sessions/history/s_1779562099682_1530/session.jsonl` (may)
+- `.state/sessions/history/s_1779558750559_1512/session.jsonl` (dev)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 1
+- Sessions with zero extracted positive `strategy` lessons: 2
+- Total extracted strategy lessons: 1
+
+## Lessons
+
+### 1. Front-load a short GOAL / PLAN / DONE WHEN frame before tool use
+**Evidence:** The fresh dev sample `s_1779558750559_1512` emitted `Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`.
+
+**Strategy:**
+- Open substantive sessions with a compact goal, plan, and done-when framing block.
+- Use that frame to keep later tool choices anchored to a concrete completion target.
+- Preserve this as a reusable positive tactic across successful diagnosis and coordination sessions.
+
+## Calibration Notes
+- Positive extraction weakened on the newest batch: only 1/3 fresh `good` sessions produced any positive `strategy` lesson.
+- The two freshest May `good` sessions collapsed to zero positive output or optimization-only output despite success-language counts of `3` and `8`, so the under-detection problem is no longer limited to compact scout/arc samples.
+- Optimization noise is still crowding out positive tactics on successful sessions: `s_1779562349790_1533` emitted only optimization warnings (`Repetitive bash calls`, `Ignored tool outputs`) and `s_1779562099682_1530` emitted no lessons at all.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779562349790_1533/session.jsonl --type strategy` returned only optimization lessons (`Repetitive bash calls`, `Ignored tool outputs`) with `scanned_lines: 21`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779562099682_1530/session.jsonl --type strategy` returned `{"lessons":[]}` with `scanned_lines: 10`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779558750559_1512/session.jsonl --type strategy` returned 1 `type: "strategy"` lesson (`Starts with an explicit GOAL/PLAN/DONE WHEN frame before tool use`) plus optimization output, with `scanned_lines: 27`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `3`, `8`, and `14` respectively.
+- `query_db` confirmed canonical latest evaluation rows `verdict='good'`, `quality=0.85`, and `efficiency=0.8` for all three sampled sessions.
+
+---
+
+# Proposed Strategies — 2026-05-21 09:33Z
+
+## Scope
+Ran `extract-strategy.cjs --type strategy` on the 3 freshest recent non-evaluator successful history logs with canonical `good` evaluation rows:
+- `.state/sessions/history/s_1779344935107_35/session.jsonl` (aks-explorer)
+- `.state/sessions/history/s_1779353910331_91/session.jsonl` (arc)
+- `.state/sessions/history/s_1779353910471_94/session.jsonl` (scout)
+
+## Output Summary
+- Logs scanned: 3
+- Sessions with at least one positive `strategy` lesson: 2
+- Sessions with zero extracted positive `strategy` lessons: 1
+- Total extracted strategy lessons: 4
+
+## Lessons
+
+### 1. Turn evidence gathering into one concrete action before finishing
+**Evidence:** The fresh aks-explorer sample `s_1779344935107_35` and scout sample `s_1779353910471_94` both emitted `Turns evidence gathering into one concrete action before finishing`.
+
+**Strategy:**
+- After enough evidence is gathered, convert the scan into one concrete outward action (`message`, `edit`, or `write`) before reporting success.
+- Treat the evidence-to-action transition as a reusable completion tactic for coordination and alert-triage work.
+- Preserve this separately from generic optimization noise.
+
+### 2. Use DB schema/error hints to drive the next successful query
+**Evidence:** The fresh scout sample `s_1779353910471_94` emitted `Uses DB schema/error hints to recover into a successful follow-up query`.
+
+**Strategy:**
+- When `query_db` returns schema guidance or a missing-column/table hint, pivot to the hinted names immediately.
+- Preserve schema-guided recovery as a positive tactic when it quickly leads to a successful follow-up query.
+- Distinguish this from blind retry loops: the signal is error-guided correction followed by successful data retrieval.
+
+### 3. Bracket edits with read-before and read-after verification
+**Evidence:** The fresh aks-explorer sample `s_1779344935107_35` emitted `Brackets edit on probes/managedsystem-rest-add-existing.ts with read-before and read-after verification`.
+
+**Strategy:**
+- Read the target file before editing to anchor the patch.
+- Read the same file again after the edit to structurally verify the exact change before reporting completion.
+- Preserve this as a positive tactic distinct from generic high-activity sessions.
+
+## Calibration Notes
+- Positive extraction remains live on the newest batch at 2/3 coverage.
+- The remaining gap is concentrated in a compact arc success transcript: `s_1779353910331_91` still returned `{"lessons":[]}` despite a canonical `good` evaluation row and six success-language matches.
+- Optimization noise still coexists with positive tactics on successful sessions: both productive samples also emitted optimization warnings, so positive tactics remain detectable but not cleanly ranked to the top.
+
+## Verification Snapshot
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779344935107_35/session.jsonl --type strategy` returned 2 `type: "strategy"` lessons plus recovery/optimization output, with `scanned_lines: 104`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779353910331_91/session.jsonl --type strategy` returned `{"lessons":[]}` with `scanned_lines: 15`.
+- `node agents/evaluator/skills/extract-strategy.cjs --logPath .state/sessions/history/s_1779353910471_94/session.jsonl --type strategy` returned 2 `type: "strategy"` lessons plus optimization output, with `scanned_lines: 51`.
+- `grep -Eic 'success|passed|written|verified|done|complete|completed'` on the same three transcripts returned claim counts `30`, `6`, and `8` respectively.
+- `query_db` confirmed canonical latest evaluation rows `verdict='good'`, `quality=0.85`, and efficiencies `0.55`, `0.8`, and `0.8` for the three sampled sessions.
+
+---
+
 # Proposed Strategies — 2026-05-18 00:50Z
 
 ## Scope

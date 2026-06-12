@@ -169,7 +169,14 @@ export const create: HandlerModule["create"] = (ctx, entry) => {
 Current mechanical handlers may still use `sdk.getDb()` directly. That should
 remain an escape hatch, not the default for new judgment/action handlers.
 
-Handlers are **hot-reloaded** — edit the file, next tick picks up changes. No restart needed.
+Named handler files are **hot-reloaded** — edit the file, next tick picks up
+changes. No restart needed.
+
+Trigger declarations are a separate reload surface. Editing `cron.json` changes
+the wake policy and is picked up by the scheduler config watcher. Editing a
+project app manifest (`projects/*.app/app.ts`) changes app-owned handlers,
+schedules, actions, or event routing and is picked up by the project-app
+manifest watcher or explicit runtime reload.
 
 ## Handler Lifecycle Events
 

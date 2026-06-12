@@ -217,6 +217,38 @@ Escalation should be observable in three places:
 
 The UI should make correlation explicit: click an escalation, see the source session lines, owner session, resolution event, child escalation chain, and resume attempt.
 
+## Project Task Integration
+
+For Project App V3 task-tree projects, escalation is attached to the blocked task
+itself. Do not create top-level `escalation-*` task branches or a separate
+project-control lane.
+
+Minimum task overlay:
+
+```json
+{
+  "status": "blocked",
+  "blocker": "Needs owner approval.",
+  "session_id": "s_task_live_run",
+  "escalation_id": "esc_aks_rp_e2e_live_run",
+  "escalation": {
+    "id": "esc_aks_rp_e2e_live_run",
+    "state": "open",
+    "owner": "human:project-owner",
+    "severity": "P1",
+    "reason": "Needs owner approval.",
+    "requested_action": "Approve the run or provide an alternate target.",
+    "resume_condition": "Owner answers.",
+    "dedup_key": "project:task:blocker"
+  }
+}
+```
+
+Resolution should wake the project owner loop, not mutate project state from the
+router directly. The project engine reads the resolution event, updates the task
+overlay, and then either moves the task back to `ready`, keeps it `blocked`,
+marks it `superseded`, or waits for a child human escalation.
+
 ## Metrics
 
 Metrics should measure lifecycle health, not replace judgment:

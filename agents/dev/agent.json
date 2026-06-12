@@ -10,6 +10,7 @@
   ],
   "contextFiles": [
     "agents/dev/context.md",
+    "agents/dev/last-eval.md",
     "shared/common-sense.md"
   ]
 }

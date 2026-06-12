@@ -194,6 +194,14 @@ rollup hints; the planner decides:
 
 This keeps the planner as the brain. The tool never makes project judgments.
 
+A project may expose a narrow candidate-generation tool for liveness, such as
+"seed backlog from known model gaps." Such a tool is still a task-tree tool: it
+creates only reviewable backlog nodes from explicit project data, avoids
+duplicate open work, writes audit context, and never accepts, blocks, or
+supersedes work. The planner or planner workflow may use it as a fallback when
+the frontier is empty or underfilled, but later review remains a planner
+decision.
+
 ## Accepted Knowledge
 
 An `accepted` node means the planner verified the worker claim and turned it

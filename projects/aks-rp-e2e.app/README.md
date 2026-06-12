@@ -52,6 +52,8 @@ App code should treat paths intentionally:
 - `.state/` - ignored app sandbox for runtime scratch, including
   `discussion.jsonl`, `journal.jsonl`, `planner-runs.jsonl`, temporary files,
   and caches.
+- `archive/` - retired app-control files kept for reference only; code here is
+  not bundled, typechecked, or used as an active workflow.
 
 May-agent infrastructure owns durable event, session, workflow, and intent
 history. This app does not keep a parallel `events/` or `runs/` directory.
@@ -62,6 +64,17 @@ The project owner is inferred by convention from the app-local `agents/`
 folder. Because this app has a single local agent, `agents/aks-explorer/`,
 workflow handlers and tasks do not need to repeat `aks-explorer` as their
 default owner/agent.
+
+The active execution model is deliberately small:
+
+- `project-planner` handles `project.planning.requested`.
+  It sends the owner a compact planning packet, runs event review, then runs
+  the task-tree update/assignment step.
+- `task-worker` handles `project.task.assigned`.
+- `project-execution-watchdog` observes task/session liveness and wakes
+  planning when the planner should review.
+- App-level `onEvent` handles audit/wake events such as `task.started`,
+  legacy task execution requests, and `project.task.completed`.
 
 Deleting `.state/` must not lose the project goal, task decomposition, feature
 knowledge, specs, replay scripts, evidence, or durable steering decisions. If
@@ -90,6 +103,23 @@ Useful commands:
 - `bun run test` - run stable workflow and replanning tests.
 - `bun run test:ui` - run state-sensitive UI e2e tests.
 - `bun run tasks:summary` - print task-tree counts and roots.
+
+## Runtime Reload
+
+The app has separate reload surfaces:
+
+- Editing `workflows/*.ts` is picked up on the next workflow dispatch.
+- Editing an existing named platform handler is picked up on that handler's next
+  fire.
+- Editing `app.ts` changes schedules, `workflowHandlers`, actions, event
+  selectors, and `onEvent`. The platform re-installs project app manifests via
+  the project-app manifest watcher; `/reload` or `runtime.reload.requested` is
+  the immediate operator path.
+
+To add or update a project workflow handler, add or edit the workflow file under
+`workflows/`, update the `workflowHandlers` entry in `app.ts`, then let the
+watcher reload it or issue `/reload`. Existing running sessions are not
+cancelled by this reload; new triggers use the updated manifest.
 
 ## Domain Execution
 

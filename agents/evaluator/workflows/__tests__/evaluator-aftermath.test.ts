@@ -427,6 +427,224 @@ describe("evaluator aftermath transcript checks", () => {
     expect(transcriptIssues(transcript)).toEqual([]);
   });
 
+  it("does not flag schema/query error when agent finishes successfully after the error", () => {
+    // Scenario: agent hits schema error, learns correct schema from hint, proceeds
+    // to do useful work without issuing another query_db, and calls finish(success)
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: true,
+        content: [{ type: "text", text: '{"error":"no such column: summary","schema":{"sessions":["sessionId","agent","status"]}}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: { path: "agents/scout/knowledge/db-schema.md", content: "sessions: sessionId, agent, status" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f1",
+            name: "finish",
+            arguments: { status: "success", summary: "Documented DB schema from error hints" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("does not flag schema/query error when agent finishes partial after the error", () => {
+    // Scenario: agent explores DB, hits error, finishes partial with useful work done
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT name FROM metrics" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: false,
+        content: [{ type: "text", text: '{"error":"no such table: metrics"}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f1",
+            name: "finish",
+            arguments: { status: "partial", summary: "metrics table does not exist; documented findings" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("still flags schema/query error when agent finishes with failure or blocked status", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: true,
+        content: [{ type: "text", text: '{"error":"no such column: summary"}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f1",
+            name: "finish",
+            arguments: { status: "failure", summary: "Could not query DB" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toContain("schema/query error in transcript");
+  });
+
+  it("still flags schema/query error when agent finishes blocked after the error", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: true,
+        content: [{ type: "text", text: '{"error":"no such column: summary"}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f1",
+            name: "finish",
+            arguments: { status: "blocked", summary: "Cannot proceed without correct schema" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toContain("schema/query error in transcript");
+  });
+
+  it("does not flag schema/query error in non-JSONL transcript when finish call follows", () => {
+    // Fallback path for non-JSONL transcripts
+    const transcript = [
+      'no such column: summary',
+      '{"name":"finish","arguments":{"status":"success","summary":"done"}}',
+    ].join("\n");
+
+    expect(transcriptIssues(transcript)).toEqual([]);
+  });
+
+  it("classifyVerdict returns good for schema-error-then-finish(success) sessions", () => {
+    const transcript = [
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "q1",
+            name: "query_db",
+            arguments: { sql: "SELECT summary FROM sessions" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "toolResult",
+        toolCallId: "q1",
+        toolName: "query_db",
+        isError: true,
+        content: [{ type: "text", text: '{"error":"no such column: summary","schema":{"sessions":["sessionId","agent"]}}' }],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "w1",
+            name: "write",
+            arguments: { path: "agents/scout/knowledge/finding.md", content: "schema note" },
+          },
+        ],
+      }),
+      JSON.stringify({
+        role: "assistant",
+        content: [
+          {
+            type: "toolCall",
+            id: "f1",
+            name: "finish",
+            arguments: { status: "success", summary: "Done; recorded schema findings" },
+          },
+        ],
+      }),
+    ].join("\n");
+
+    const verdict = classifyVerdict({ status: "done", opCount: 10 }, transcript);
+
+    expect(verdict.verdict).toBe("good");
+    expect(verdict.issues).not.toContain("schema/query error in transcript");
+  });
+
   it("flags metric health claims without live evidence", () => {
     const verdict = classifyVerdict(
       { status: "done", opCount: 0 },

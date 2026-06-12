@@ -6,6 +6,7 @@ type: continuous
 priority: P1
 iteration: 1
 project_policy: maintenance
+close_reason: Ops monitoring fully absorbed into may heartbeat routine. Project was a self-referential alert loop generator. See journal 2026-06-06.
 ---
 
 # Project: System Operations
@@ -147,6 +148,13 @@ Absorbed watch items:
   goal: Standing ops monitoring task — watch for alerts, route work, validate chains. This task stays open to prevent reconciler replan loops.
 
 ## Journal
+
+### 2026-06-06 — Re-closed after audit review
+- Reopened for unread creative audit comment (iter3). Audit identified 5 issues: dominant noise loop (92% of alerts), 4-day daily report gap, untracked recommendations, self-referential triggers, rising guard-count trend.
+- All 5 findings **confirm the closure rationale** — this project was a noise generator, not an operational tool. Ops monitoring is better served by may's heartbeat routine without a separate project.
+- 3 unresolved alerts (1495-1497) are all self-referential (project.owner-incomplete, owner-judgment-needed, health.finding). They exist because this project was active with no open work — closing resolves them.
+- Guard-count and daily-report-gap observations are valid operational concerns but belong to may's standing ops behavior, not a dedicated project.
+- Set frontmatter `status: closed` with `close_reason`.
 
 ### 2026-06-06 — CLOSED: Self-referential alert loop (14th cycle)
 - This project has been stuck in a self-referential alert loop since creation: all tasks done → steward flags "no open work" → metric breach → may woken to judge → sets to waiting → repeat.

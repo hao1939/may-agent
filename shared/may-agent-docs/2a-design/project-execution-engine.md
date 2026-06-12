@@ -27,14 +27,14 @@ too large or unclear to execute.
 
 Keep the model small:
 
-| Term | Meaning |
-|------|---------|
-| Project | Durable goal container, current truth, gates, and task tree root. |
-| Task | Recursive work unit. A subtask is just a task with `parent_id`. |
+| Term         | Meaning                                                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Project      | Durable goal container, current truth, gates, and task tree root.                                                                  |
+| Task         | Recursive work unit. A subtask is just a task with `parent_id`.                                                                    |
 | Control loop | Runtime/app behavior that reviews/refills the task tree, wakes workers, and handles liveness without becoming normal project work. |
-| Attempt | One agent/session attempt to execute, decompose, or verify a task. |
-| Claim | What an agent says happened: done, blocked, partial, decomposed. |
-| Verdict | The verifier's decision on a claim: accepted, rejected, blocked. |
+| Attempt      | One agent/session attempt to execute, decompose, or verify a task.                                                                 |
+| Claim        | What an agent says happened: done, blocked, partial, decomposed.                                                                   |
+| Verdict      | The verifier's decision on a claim: accepted, rejected, blocked.                                                                   |
 
 Do not add separate terminology such as epic/story/workstream for v1. If a
 task is too large, create child tasks.
@@ -292,17 +292,17 @@ superseded
 
 Meanings:
 
-| Status | Meaning |
-|--------|---------|
-| proposed | Candidate work or decomposition that has not yet been trusted as executable project understanding. |
-| ready | Clear, safe, and small enough to run; the tree says this leaf is useful next work. |
-| active | Assigned to an attempt. |
-| decomposed | Valid parent understanding whose children explain how to resolve it. |
-| claimed_done | Worker claims the task is complete; verifier has not accepted it. |
-| accepted | Acceptance criteria are verified. |
-| rejected | Claim failed verification and needs rework/replan. |
-| blocked | A concrete external/input/safety wait prevents direct execution. Local rework, unclear scope, failed validation, stale evidence, and parent bookkeeping are not blocked states. |
-| superseded | Replaced by newer understanding, duplicate work, or a corrected strategy; keep a reason and replacement link when possible. |
+| Status       | Meaning                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| proposed     | Candidate work or decomposition that has not yet been trusted as executable project understanding.                                                                              |
+| ready        | Clear, safe, and small enough to run; the tree says this leaf is useful next work.                                                                                              |
+| active       | Assigned to an attempt.                                                                                                                                                         |
+| decomposed   | Valid parent understanding whose children explain how to resolve it.                                                                                                            |
+| claimed_done | Worker claims the task is complete; verifier has not accepted it.                                                                                                               |
+| accepted     | Acceptance criteria are verified.                                                                                                                                               |
+| rejected     | Claim failed verification and needs rework/replan.                                                                                                                              |
+| blocked      | A concrete external/input/safety wait prevents direct execution. Local rework, unclear scope, failed validation, stale evidence, and parent bookkeeping are not blocked states. |
+| superseded   | Replaced by newer understanding, duplicate work, or a corrected strategy; keep a reason and replacement link when possible.                                                     |
 
 Important:
 
@@ -324,15 +324,15 @@ condition outside the current local task loop:
 
 Everything else should stay executable or recoverable:
 
-| Case | State/action |
-|------|--------------|
-| Validation or required check failed | Mark the task `rejected` and create/activate rework. |
+| Case                                                                 | State/action                                                                                                                                                                    |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Validation or required check failed                                  | Mark the task `rejected` and create/activate rework.                                                                                                                            |
 | Worker session errored, timed out, was interrupted, or was cancelled | Mark the task `rejected` and create/activate rework. Runtime interruption is not domain blocker evidence, even if an expected output path already exists from an older attempt. |
-| Task is vague, too broad, or missing output/acceptance | Reject or split it; create a concrete ready child. |
-| Evidence is stale or insufficient | Create a ready audit/verification task. |
-| Parent has blocked/rejected children | Keep parent `decomposed`; show descendant status in the tree. |
-| Review/planner says "no work" or "waiting" | Reject unless it creates a concrete external blocker, human question, supersession, or follow-up task. |
-| Parking-lot/future work | Use `proposed`, `superseded`, or an explicit human-triggered task, not `blocked`. |
+| Task is vague, too broad, or missing output/acceptance               | Reject or split it; create a concrete ready child.                                                                                                                              |
+| Evidence is stale or insufficient                                    | Create a ready audit/verification task.                                                                                                                                         |
+| Parent has blocked/rejected children                                 | Keep parent `decomposed`; show descendant status in the tree.                                                                                                                   |
+| Review/planner says "no work" or "waiting"                           | Reject unless it creates a concrete external blocker, human question, supersession, or follow-up task.                                                                          |
+| Parking-lot/future work                                              | Use `proposed`, `superseded`, or an explicit human-triggered task, not `blocked`.                                                                                               |
 
 A task may remain `blocked` after a review child is attached, but only when the
 task itself still carries a concrete external/input/safety wait. Review children
@@ -390,12 +390,12 @@ Escalation creation rules:
 
 Resolution rules:
 
-| Outcome | Engine action |
-|---------|---------------|
-| `fixed` or `answered` | Mark the escalation `resolved`, clear the blocker, satisfy the gate when applicable, move the leaf to `ready`, and wake worker pickup. |
-| `rejected` or `dismissed` | Keep the task `blocked` with the rejection/dismissal reason and leave it visible for review. |
-| `needs_human` | Keep the task blocked and the escalation in `waiting_human`; do not resume the source task yet. |
-| `superseded` | Mark the task `superseded` when the original work is no longer relevant. |
+| Outcome                   | Engine action                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `fixed` or `answered`     | Mark the escalation `resolved`, clear the blocker, satisfy the gate when applicable, move the leaf to `ready`, and wake worker pickup. |
+| `rejected` or `dismissed` | Keep the task `blocked` with the rejection/dismissal reason and leave it visible for review.                                           |
+| `needs_human`             | Keep the task blocked and the escalation in `waiting_human`; do not resume the source task yet.                                        |
+| `superseded`              | Mark the task `superseded` when the original work is no longer relevant.                                                               |
 
 Resolution does not mean the project is done. It means the original task has
 new context. The project owner loop must resume the task's durable `session_id`
@@ -427,16 +427,16 @@ The Kanban board is the primary operational view. It answers:
 
 Recommended Kanban lanes:
 
-| Lane | Tree projection |
-|------|-----------------|
-| Planning | serialized `frontier_replan` and `domain_planner` leaf tasks while they are `proposed`, `ready`, or `active`. |
-| Backlog | `proposed` ordinary leaf tasks created by planning but not yet promoted by the planner loop. |
-| Ready | executable `ready` leaf tasks. Review-task kind does not change this lane. |
-| In Progress | ordinary `active` leaf tasks currently being worked. Serialized planner work stays in Planning. |
-| Review | `claimed_done` and `rejected` tasks that need verification, audit, or rework decision. |
-| Blocked | Concrete external/input/safety blocked tasks grouped by blocker or unblock trigger. Rework and parent rollup blockers stay in Review or the tree. |
-| Done | `accepted` leaf tasks with output/evidence links. |
-| Archive | `superseded` leaf tasks, usually collapsed unless auditing history. |
+| Lane        | Tree projection                                                                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Planning    | serialized `frontier_replan` and `domain_planner` leaf tasks while they are `proposed`, `ready`, or `active`.                                     |
+| Backlog     | `proposed` ordinary leaf tasks created by planning but not yet promoted by the planner loop.                                                      |
+| Ready       | executable `ready` leaf tasks. Review-task kind does not change this lane.                                                                        |
+| In Progress | ordinary `active` leaf tasks currently being worked. Serialized planner work stays in Planning.                                                   |
+| Review      | `claimed_done` and `rejected` tasks that need verification, audit, or rework decision.                                                            |
+| Blocked     | Concrete external/input/safety blocked tasks grouped by blocker or unblock trigger. Rework and parent rollup blockers stay in Review or the tree. |
+| Done        | `accepted` leaf tasks with output/evidence links.                                                                                                 |
+| Archive     | `superseded` leaf tasks, usually collapsed unless auditing history.                                                                               |
 
 `decomposed` is not a Kanban lane. It is a structural state meaning the parent
 task has been split into child tasks. Decomposed parents, feature groups, and
@@ -543,29 +543,18 @@ A task must be clear enough for one bounded agent run:
   "owner": "aks-explorer",
   "gate_status": "closed",
   "goal": "Verify whether live ManagedSystem execution can proceed.",
-  "inputs": [
-    "decisions/replans/live-selected/",
-    "aks-rp-e2e.app/project.md"
-  ],
-  "outputs": [
-    "evidence/archive/managedsystem-live-auth-gate.md"
-  ],
+  "inputs": ["decisions/replans/live-selected/", "aks-rp-e2e.app/project.md"],
+  "outputs": ["evidence/archive/managedsystem-live-auth-gate.md"],
   "acceptance": [
     "Runs `az account get-access-token --resource https://management.azure.com/ -o json` or records that `az` is unavailable.",
     "Does not start cloud mutation.",
     "Writes exact command, exit code, and stdout/stderr summary."
   ],
-  "forbidden": [
-    "Do not run live replays with `AKS_RP_E2E_DRY_RUN=0`."
-  ],
-  "gates": [
-    "Azure CLI exists in the selected execution environment."
-  ],
+  "forbidden": ["Do not run live replays with `AKS_RP_E2E_DRY_RUN=0`."],
+  "gates": ["Azure CLI exists in the selected execution environment."],
   "context": {
     "summary": "Live execution is allowed only after a fresh non-mutating auth check.",
-    "constraints": [
-      "No cloud mutation from the auth-gate task."
-    ],
+    "constraints": ["No cloud mutation from the auth-gate task."],
     "evidence": [
       "evidence/archive/20260602T100036Z-devbox-msi-auth-preflight.md"
     ],
@@ -794,11 +783,11 @@ worker never creates the next project plan
 
 Use these event edges:
 
-| Event | Handler role | Responsibility |
-|-------|--------------|----------------|
-| `project.planning.requested` | Planner | Review/refill `.app/tasks/tree.json`; emit `project.task.execution.requested` for dispatchable executable leaves. |
-| `project.task.execution.requested` | Worker execution | Claim exactly one requested ready leaf under the task-tree lock, execute the claimed leaf, update the leaf branch, and emit completion. |
-| `project.task.completed` | Native app handler / liveness fallback | Convert completion into a fresh `project.planning.requested` planner wake. |
+| Event                              | Handler role                           | Responsibility                                                                                                                          |
+| ---------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `project.planning.requested`       | Planner                                | Review/refill `.app/tasks/tree.json`; emit `project.task.execution.requested` for dispatchable executable leaves.                       |
+| `project.task.execution.requested` | Worker execution                       | Claim exactly one requested ready leaf under the task-tree lock, execute the claimed leaf, update the leaf branch, and emit completion. |
+| `project.task.completed`           | Native app handler / liveness fallback | Convert completion into a fresh `project.planning.requested` planner wake.                                                              |
 
 The project has two standing control loops:
 
@@ -967,24 +956,24 @@ must inspect the blocked frontier breadth-first. For each blocked task it asks:
 
 Use a small blocker classification:
 
-| Classification | Meaning |
-|----------------|---------|
-| external_gate | A real external credential, rollout, owner, capacity, or environment condition is missing. |
-| stale | The blocker may no longer be true and needs a fresh non-mutating check. |
-| unclear | The blocker is not specific enough to act on. |
-| too_coarse | The task mixes multiple branches and should be split. |
-| missing_evidence | The task claim may be right, but evidence is insufficient. |
-| unsafe | Work could mutate cloud/staging or bypass a product/safety gate. |
+| Classification   | Meaning                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| external_gate    | A real external credential, rollout, owner, capacity, or environment condition is missing. |
+| stale            | The blocker may no longer be true and needs a fresh non-mutating check.                    |
+| unclear          | The blocker is not specific enough to act on.                                              |
+| too_coarse       | The task mixes multiple branches and should be split.                                      |
+| missing_evidence | The task claim may be right, but evidence is insufficient.                                 |
+| unsafe           | Work could mutate cloud/staging or bypass a product/safety gate.                           |
 
 The review verdict should be one of:
 
-| Verdict | Engine action |
-|---------|---------------|
-| confirmed_external | Keep the task blocked with exact resume condition and evidence. |
-| can_unblock_locally | Create a ready child task for safe local unblock work. |
-| needs_split | Create child tasks and mark the parent decomposed. |
-| wrongly_blocked | Correct the task state and continue selection. |
-| needs_human | Keep blocked with one concrete question or decision request. |
+| Verdict             | Engine action                                                   |
+| ------------------- | --------------------------------------------------------------- |
+| confirmed_external  | Keep the task blocked with exact resume condition and evidence. |
+| can_unblock_locally | Create a ready child task for safe local unblock work.          |
+| needs_split         | Create child tasks and mark the parent decomposed.              |
+| wrongly_blocked     | Correct the task state and continue selection.                  |
+| needs_human         | Keep blocked with one concrete question or decision request.    |
 
 Blocked-review tasks are ordinary leaf tasks with stricter safety rules. They
 write an evidence artifact and recommend accept/block/split/continue outcomes,
@@ -1040,13 +1029,13 @@ Before execution, the engine asks whether the task is executable:
 
 Outcomes:
 
-| Outcome | Engine action |
-|---------|---------------|
-| clear | Mark ready or execute. |
-| too_large | Create child tasks and mark parent decomposed. |
-| vague_but_inferable | Rewrite task with sharper fields. |
-| needs_human | Mark blocked only with a concrete question. |
-| unsafe | Mark blocked only with an explicit safety gate/resume condition. |
+| Outcome             | Engine action                                                    |
+| ------------------- | ---------------------------------------------------------------- |
+| clear               | Mark ready or execute.                                           |
+| too_large           | Create child tasks and mark parent decomposed.                   |
+| vague_but_inferable | Rewrite task with sharper fields.                                |
+| needs_human         | Mark blocked only with a concrete question.                      |
+| unsafe              | Mark blocked only with an explicit safety gate/resume condition. |
 
 The LLM should make reasonable decomposition choices from available context.
 Ask the human only when the decision changes scope, cost, safety, or product
@@ -1061,15 +1050,15 @@ high-cost work, opens cloud mutation, or produces many child tasks.
 
 Recommended review policy:
 
-| Event | Review required |
-|-------|-----------------|
-| Initial project to top-level tasks | Yes |
-| Task split with cloud mutation | Yes |
-| Task split with more than 7 children | Yes |
-| Task split that changes project direction | Yes |
-| Low-risk split into local evidence/model tasks | Optional |
-| Leaf completion claim | Always verify |
-| Parent rollup | Verify when children are accepted/blocked |
+| Event                                          | Review required                           |
+| ---------------------------------------------- | ----------------------------------------- |
+| Initial project to top-level tasks             | Yes                                       |
+| Task split with cloud mutation                 | Yes                                       |
+| Task split with more than 7 children           | Yes                                       |
+| Task split that changes project direction      | Yes                                       |
+| Low-risk split into local evidence/model tasks | Optional                                  |
+| Leaf completion claim                          | Always verify                             |
+| Parent rollup                                  | Verify when children are accepted/blocked |
 
 Reviewer can be a separate agent or the same model in verifier mode. The role
 boundary matters more than the physical agent identity.
@@ -1099,9 +1088,7 @@ The worker must return a claim record:
   "agent": "aks-explorer",
   "claim": "blocked",
   "summary": "Azure CLI is unavailable; auth gate could not run.",
-  "outputs": [
-    "evidence/archive/managedsystem-live-auth-gate.md"
-  ],
+  "outputs": ["evidence/archive/managedsystem-live-auth-gate.md"],
   "checks": [
     {
       "command": "az account get-access-token --resource https://management.azure.com/ -o json",
@@ -1109,9 +1096,7 @@ The worker must return a claim record:
       "exit_code": 127
     }
   ],
-  "open_risks": [
-    "Live execution not attempted."
-  ]
+  "open_risks": ["Live execution not attempted."]
 }
 ```
 
@@ -1246,9 +1231,7 @@ Recommended `.app/tasks/tree.json` envelope:
       "parent_id": null,
       "status": "active",
       "goal": "Build AKS RP input/expectation knowledge map and use it to plan higher-value tests.",
-      "children": [
-        "managedsystem-two-path-live-run"
-      ],
+      "children": ["managedsystem-two-path-live-run"],
       "acceptance": [
         "No ready or active work remains, or remaining work is explicitly blocked/superseded."
       ]
@@ -1258,9 +1241,7 @@ Recommended `.app/tasks/tree.json` envelope:
       "parent_id": "project",
       "status": "blocked",
       "goal": "Run the selected ManagedSystem two-path replan when execution gates pass.",
-      "children": [
-        "managedsystem-live-auth-gate"
-      ],
+      "children": ["managedsystem-live-auth-gate"],
       "progress": {
         "accepted": 0,
         "blocked": 1,
@@ -1334,36 +1315,48 @@ Parent verdict: blocked because required child `managedsystem-live-auth-gate` is
 User steering should be event-based. The UI should not directly mutate
 `.app/tasks/tree.json`.
 
-Preferred event shape:
+Preferred `/api/events` shape:
 
 ```json
 {
-  "type": "project.task.steer",
-  "project": "aks-rp-e2e",
-  "task_id": "managedsystem-two-path-live-run",
-  "action": "split",
-  "comment": "Create a child task to identify a credentialed execution host before retrying live execution."
+  "type": "project.planning.requested",
+  "source": "web-ui",
+  "owner": "agent:aks-explorer",
+  "urgency": "high",
+  "data": {
+    "project": "aks-rp-e2e",
+    "reason": "human-steering",
+    "params": {
+      "task_id": "managedsystem-two-path-live-run",
+      "action": "split",
+      "comment": "Create a child task to identify a credentialed execution host before retrying live execution."
+    }
+  }
 }
 ```
 
+For HTTP ingress, `data` is the durable payload. Do not rely on top-level
+`project`, `reason`, or `params` alone. Explicit human steering should use
+high urgency so it does not wait behind routine watchdog/refill events.
+
 Useful steering actions:
 
-| Action | Meaning |
-|--------|---------|
-| comment | Attach human context to a task. |
-| create_task | Add a new child task under a parent. |
-| split | Ask the planner to decompose a task. |
-| reprioritize | Move a task earlier or later in selection order. |
-| pause | Pause a task or subtree. |
-| resume | Resume a paused/blocked task when the condition changed. |
-| block | Mark a task blocked with a reason. |
-| supersede | Replace a task or subtree with a new direction. |
-| accept | Human accepts a verifier result or task state. |
-| reject | Human rejects a claim/verdict and explains why. |
+| Action       | Meaning                                                  |
+| ------------ | -------------------------------------------------------- |
+| comment      | Attach human context to a task.                          |
+| create_task  | Add a new child task under a parent.                     |
+| split        | Ask the planner to decompose a task.                     |
+| reprioritize | Move a task earlier or later in selection order.         |
+| pause        | Pause a task or subtree.                                 |
+| resume       | Resume a paused/blocked task when the condition changed. |
+| block        | Mark a task blocked with a reason.                       |
+| supersede    | Replace a task or subtree with a new direction.          |
+| accept       | Human accepts a verifier result or task state.           |
+| reject       | Human rejects a claim/verdict and explains why.          |
 
-The app handles the steering event by appending the human text to
-`.app/discussion.jsonl`, updating `.app/tasks/tree.json` when appropriate, and
-emitting infra task events for audit.
+The planner handles the steering context during the next planning pass. The app
+or runtime may append an audit copy to `.state/discussion.jsonl`, but discussion
+is not the transport and `project.task.steer` is not required.
 
 Steering should target a task id whenever possible. A task-targeted comment is
 much easier for the engine to apply than a project-wide instruction.
@@ -1408,12 +1401,14 @@ Example:
 
 ```md
 ## Active Task
+
 - id: managedsystem-live-auth-gate
 - status: blocked
 - source: .app/tasks/tree.json
 - output: evidence/archive/managedsystem-live-auth-gate.md
 
 ## Task Index
+
 - .app/tasks/README.md
 - .app/tasks/tree.json
 ```

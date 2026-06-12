@@ -4,7 +4,7 @@ import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath";
 export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
-export const HEURISTIC_VERSION = 10;
+export const HEURISTIC_VERSION = 11;
 
 export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
 
@@ -272,22 +272,39 @@ function escapeRegExp(value: string): string {
 function hasUnresolvedSchemaQueryIssue(transcript: string, ownText: string): boolean {
   const records = parseJsonlTranscript(transcript);
   if (records) {
-    let lastSchemaError = -1;
-    let lastRecoveringQuery = -1;
-    let queryIndex = 0;
+    let lastSchemaErrorIdx = -1;
+    let lastRecoveryIdx = -1;
+    let recordIdx = 0;
 
     for (const record of records) {
-      if (record?.role !== "toolResult" || record?.toolName !== "query_db") continue;
-      const text = contentText(record.content);
-      const isSchemaError =
-        record?.isError === true || /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text);
+      // Track schema errors in query_db results
+      if (record?.role === "toolResult" && record?.toolName === "query_db") {
+        const text = contentText(record.content);
+        const isSchemaError =
+          record?.isError === true || /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text);
 
-      if (isSchemaError) lastSchemaError = queryIndex;
-      else lastRecoveringQuery = queryIndex;
-      queryIndex += 1;
+        if (isSchemaError) lastSchemaErrorIdx = recordIdx;
+        else lastRecoveryIdx = recordIdx;
+      }
+
+      // A finish(success|partial) call is recovery evidence — the agent completed
+      // its work despite the schema error (e.g. it got what it needed from the
+      // error's schema hint, or the query was ancillary exploration).
+      if (record?.role === "assistant") {
+        for (const call of toolCalls(record.content)) {
+          if (call?.name === "finish") {
+            const status = String(call?.arguments?.status ?? "");
+            if (status === "success" || status === "partial") {
+              lastRecoveryIdx = recordIdx;
+            }
+          }
+        }
+      }
+
+      recordIdx += 1;
     }
 
-    if (lastSchemaError !== -1) return lastSchemaError > lastRecoveringQuery;
+    if (lastSchemaErrorIdx !== -1) return lastSchemaErrorIdx > lastRecoveryIdx;
     return false;
   }
 
@@ -295,7 +312,7 @@ function hasUnresolvedSchemaQueryIssue(transcript: string, ownText: string): boo
   if (lastSchemaError === -1) return false;
 
   const afterLastSchemaError = ownText.slice(lastSchemaError);
-  return !/\{"name":"query_db","arguments":\{/.test(afterLastSchemaError);
+  return !/\{"name":"(?:query_db|finish)","arguments":\{/.test(afterLastSchemaError);
 }
 
 function hasUnresolvedFinishBlockedIssue(ownText: string): boolean {

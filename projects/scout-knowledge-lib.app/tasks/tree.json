@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "updated_at": "2026-06-12T16:35:00.000Z",
+  "tasks": {
+    "project": {
+      "id": "project",
+      "parent_id": null,
+      "children": [
+        "existing-knowledge-migration",
+        "library-inventory-and-index",
+        "dedupe-and-quality",
+        "source-grounded-synthesis",
+        "adoption-and-reuse-feedback"
+      ],
+      "status": "decomposed",
+      "kind": "project",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Maintain Scout's knowledge library as a project workspace rather than implicit heartbeat side effects.",
+      "inputs": [
+        "knowledge/",
+        "knowledge/INDEX.md",
+        "reports/",
+        "agents/scout/AGENTS.md",
+        "agents/scout/heartbeat.md"
+      ],
+      "outputs": ["knowledge/", "reports/", "tasks/tree.json"],
+      "acceptance": [
+        "Scout can maintain the knowledge library through project events, not only heartbeat.",
+        "The library index remains useful for agents looking for reusable knowledge.",
+        "Maintenance favors consolidation, source grounding, and downstream reuse over creating shallow new files."
+      ],
+      "context": {
+        "migration_note": "2026-06-12: moved Scout knowledge library from /app/agents/scout/knowledge to /app/projects/scout-knowledge-lib/knowledge with a compatibility symlink at the old path.",
+        "domain_workspace": "/app/projects/scout-knowledge-lib",
+        "compatibility_path": "/app/agents/scout/knowledge",
+        "migration_first_principle": "First preserve and index existing knowledge. Consolidation happens only after source-aware review."
+      }
+    },
+    "existing-knowledge-migration": {
+      "id": "existing-knowledge-migration",
+      "parent_id": "project",
+      "children": [],
+      "status": "done",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "scout",
+      "goal": "Move existing Scout knowledge into the project-owned domain workspace without losing provenance.",
+      "inputs": [
+        "agents/scout/knowledge/",
+        "projects/scout-second-brain-learning/outputs/"
+      ],
+      "outputs": [
+        "projects/scout-knowledge-lib/knowledge/",
+        "projects/scout-knowledge-lib/reports/migration/scout-second-brain-learning/",
+        "agents/scout/knowledge"
+      ],
+      "acceptance": [
+        "Existing knowledge files are preserved under the project workspace.",
+        "The old agent-local knowledge path remains available as a compatibility symlink.",
+        "Historical second-brain outputs are copied as migration evidence rather than merged blindly into durable notes."
+      ],
+      "evidence": [
+        "projects/scout-knowledge-lib/reports/migration/scout-second-brain-learning/README.md",
+        "projects/scout-knowledge-lib/reports/library-inventory-2026-06-12.md"
+      ],
+      "result": "Completed initial migration: 61 knowledge files preserved, 15 historical second-brain outputs copied into reports/migration, and agents/scout/knowledge now points to the project knowledge workspace."
+    },
+    "library-inventory-and-index": {
+      "id": "library-inventory-and-index",
+      "parent_id": "project",
+      "children": [],
+      "status": "done",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Review knowledge/INDEX.md and library navigation so agents can find existing notes before creating duplicates.",
+      "inputs": ["knowledge/INDEX.md", "knowledge/"],
+      "outputs": [
+        "knowledge/INDEX.md",
+        "reports/library-inventory-2026-06-12.md"
+      ],
+      "acceptance": [
+        "Index covers the current markdown notes in the library.",
+        "Index links validate against existing files.",
+        "Known duplicate clusters are recorded for task-tracked consolidation."
+      ],
+      "evidence": [
+        "projects/scout-knowledge-lib/knowledge/INDEX.md",
+        "projects/scout-knowledge-lib/reports/library-inventory-2026-06-12.md"
+      ],
+      "result": "Completed migration inventory and rebuilt the library index. Duplicate-looking files remain intentionally visible for source-aware consolidation."
+    },
+    "dedupe-and-quality": {
+      "id": "dedupe-and-quality",
+      "parent_id": "project",
+      "children": [
+        "consolidate-agent-architecture-cluster",
+        "consolidate-evaluation-cluster",
+        "consolidate-multi-agent-trends-cluster",
+        "review-temp-notes"
+      ],
+      "status": "decomposed",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Find duplicate, stale, or low-context knowledge notes and consolidate them without losing source-grounded findings.",
+      "inputs": ["knowledge/"],
+      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "acceptance": [
+        "At least one concrete duplicate/stale cluster is improved or an exact no-op reason is recorded.",
+        "No shallow bulk rewrites are made just to satisfy a metric."
+      ]
+    },
+    "consolidate-agent-architecture-cluster": {
+      "id": "consolidate-agent-architecture-cluster",
+      "parent_id": "dedupe-and-quality",
+      "children": [],
+      "status": "backlog",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Review overlapping agent architecture notes and decide which note should become canonical.",
+      "inputs": [
+        "knowledge/agent-architecture-trends.md",
+        "knowledge/agent-architectures.md",
+        "knowledge/agent-patterns.md",
+        "knowledge/agent_patterns.md",
+        "knowledge/agent_architectures_01.md"
+      ],
+      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "acceptance": [
+        "Canonical architecture note is identified or created by merging source-grounded content.",
+        "Superseded notes are archived, redirected, or explicitly retained with a reason.",
+        "knowledge/INDEX.md reflects the chosen navigation."
+      ]
+    },
+    "consolidate-evaluation-cluster": {
+      "id": "consolidate-evaluation-cluster",
+      "parent_id": "dedupe-and-quality",
+      "children": [],
+      "status": "backlog",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Review overlapping evaluation notes and separate durable evaluation patterns from dated XHS trend observations.",
+      "inputs": [
+        "knowledge/agent-evaluation.md",
+        "knowledge/agent-evaluation-trends.md",
+        "knowledge/agent-evaluation-trends-updated.md",
+        "knowledge/xhs-eval-synthesis-2024.md",
+        "knowledge/xhs_eval_trends_may2024.md"
+      ],
+      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "acceptance": [
+        "Durable evaluation concepts and dated trend reports are easy to distinguish.",
+        "Repeated claims are consolidated without losing source basis.",
+        "knowledge/INDEX.md reflects the chosen navigation."
+      ]
+    },
+    "consolidate-multi-agent-trends-cluster": {
+      "id": "consolidate-multi-agent-trends-cluster",
+      "parent_id": "dedupe-and-quality",
+      "children": [],
+      "status": "backlog",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Review multi-agent trend notes that were generated across different naming styles and research passes.",
+      "inputs": [
+        "knowledge/multi-agent-*",
+        "knowledge/multi_agent_*",
+        "knowledge/xhs_multi_agent_trends.md",
+        "knowledge/findings/multi-agent-*"
+      ],
+      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "acceptance": [
+        "Current multi-agent coordination understanding has a clear canonical entry point.",
+        "Dated findings remain available as provenance when they are still useful.",
+        "Duplicate or stale trend summaries are reduced."
+      ]
+    },
+    "review-temp-notes": {
+      "id": "review-temp-notes",
+      "parent_id": "dedupe-and-quality",
+      "children": [],
+      "status": "backlog",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Decide whether temporary notes are durable knowledge, report material, or safe to archive.",
+      "inputs": ["knowledge/temp-ideas.md", "knowledge/temp.txt"],
+      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "acceptance": [
+        "Temporary files no longer sit ambiguously in the durable knowledge namespace.",
+        "Any useful content is preserved in an appropriate note or report."
+      ]
+    },
+    "source-grounded-synthesis": {
+      "id": "source-grounded-synthesis",
+      "parent_id": "project",
+      "children": [],
+      "status": "backlog",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Convert current research signals into reusable, source-grounded synthesis notes when existing notes do not already cover the insight.",
+      "inputs": ["knowledge/", "agents/scout/workspace/digest/"],
+      "outputs": ["knowledge/", "reports/synthesis-review.md"],
+      "acceptance": [
+        "New or updated synthesis cites source context and links related notes.",
+        "Existing notes are updated before creating a new one."
+      ]
+    },
+    "adoption-and-reuse-feedback": {
+      "id": "adoption-and-reuse-feedback",
+      "parent_id": "project",
+      "children": [],
+      "status": "backlog",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Review whether Scout and other agents are reusing the library, then feed findings into library structure and task priorities.",
+      "inputs": ["knowledge/", "reports/", "agents/scout/last-eval.md"],
+      "outputs": ["reports/reuse-feedback.md", "tasks/tree.json"],
+      "acceptance": [
+        "Reuse/adoption evidence changes the next maintenance priority or records why no action is needed."
+      ]
+    }
+  }
+}

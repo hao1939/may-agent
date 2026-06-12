@@ -36,6 +36,8 @@ System architecture and subsystem designs.
 | [session-eval-trail.md](2a-design/session-eval-trail.md) | Session evaluation trail: summary projection plus append-only line evidence beside raw session logs |
 | [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Practice learning loop: sessions become eval trails, human feedback, evolution candidates, and project changes |
 | [runtime.md](2a-design/runtime.md) | Runtime internals: input routing, event loop, LLM call structure |
+| [human-control-surfaces.md](2a-design/human-control-surfaces.md) | Shared CLI, Telegram, Web, and console contract: targeted sessions and event-shaped human intents |
+| [may-console.md](2a-design/may-console.md) | May Console: terminal REPL over the daemon socket, session switching, direct steering |
 | [metrics.md](2a-design/metrics.md) | Metrics: schema, pipeline, alerts, registry, balanced pairs, blind spots |
 | [cron.md](2a-design/cron.md) | Cron system: scheduling, handler execution, hot-reload |
 | [heartbeat.md](2a-design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |

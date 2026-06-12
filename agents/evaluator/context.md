@@ -63,3 +63,8 @@ Before starting new work, check for existing deliverables:
 grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md
 ```
 If a related output exists, read it first to avoid duplicating work.
+
+## Knowledge Quality (from scout-second-brain-learning)
+- **AI-First Preambles**: Every knowledge artifact should start with an `<ai_context>` block (1-2 sentence summary + triggers for when to reference it). Enables fast relevance scanning without full-file reads.
+- **In-place Updates**: When new information arrives on an existing topic, edit the existing entry rather than creating duplicates. One file per topic = single source of truth.
+- **Source-Grounded Claims**: Major claims/patterns must include a source reference (URL, session ID, or metric name) so insights remain traceable.

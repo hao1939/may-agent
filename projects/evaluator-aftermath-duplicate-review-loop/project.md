@@ -1,11 +1,11 @@
 ---
 id: evaluator-aftermath-duplicate-review-loop
 owner: evaluator
-status: waiting
+status: paused
 type: milestone
 priority: P2
 iteration: 2
-wait_reason: validating fix landed in session-aftermath-scan.ts; evaluator should confirm no more duplicate aftermath passes appear in the next 24h
+wait_reason: post-fix validation is trending clean (0 duplicate source sessions across 75 reviewed / 84 routed events since 2026-06-08T22:27:00Z); resume only if a fresh duplicate appears or to close after the 24h validation window completes
 ---
 
 # Evaluator Aftermath Duplicate Review Loop
@@ -33,13 +33,13 @@ The duplicate set is currently four source sessions in the last 24h: `s_17808690
 
 The most likely failure mode is now more specific than a generic replay gap: `agents/may/handlers/session-aftermath-scan.ts` decides whether to refresh a session by inspecting the single canonical `evaluations` row and re-dispatching when `e.verdict='good'` and `COALESCE(CAST(json_extract(e.overall,'$.heuristicVersion') AS INTEGER), 0) < heuristicVersion`. For the duplicate sessions, the current `evaluations` row appears to have been rewritten by the deep/LLM lane (`overall.heuristicVersion` absent/null), so the fallback scan can misread an already-reviewed good session as a stale heuristic eval (`hv=0`) and launch evaluator aftermath again even though canonical `evaluation.reviewed` already exists.
 
-This project is therefore waiting on owner/runtime review or a landing in the scan/idempotence path. The next evaluator-owned action is verification after May/runtime changes land, or re-escalation if fresh duplicates continue accumulating.
+This project is therefore paused for owner/runtime validation after the scan/idempotence-path landing. A fresh post-fix check now shows `duplicate_source_sessions_since_fix=0` across `75` `evaluation.reviewed` events and `84` `evaluation.routed` events since `2026-06-08T22:27:00Z`, so validation is currently trending clean. The next evaluator-owned action is to resume verification if fresh duplicates appear, or to close the project once the 24h validation window completes cleanly.
 
 ## Plan
 
-1. Hold this project in waiting while May/runtime owner reviews the `session-aftermath-scan` heuristic-refresh/idempotence path.
-2. When a code/config landing appears, rerun the duplicate-count query and one end-to-end event trace to verify closed sessions no longer re-enter aftermath.
-3. If no landing appears but fresh duplicate cases continue, reopen active investigation with the new sessions and updated reproducer evidence.
+1. Keep this project paused while the `session-aftermath-scan` heuristic-refresh/idempotence fix finishes its 24h validation window.
+2. If a fresh duplicate appears, resume active investigation immediately, rerun the duplicate-count query, and trace one affected session end-to-end.
+3. If the validation window completes cleanly, close the project with the post-fix evidence and note the approved exception policy (if any).
 
 ## Tasks
 
@@ -58,6 +58,8 @@ This project is therefore waiting on owner/runtime review or a landing in the sc
 
 ## Journal
 
+- 2026-06-09 06:06Z heartbeat check: Re-ran the duplicate-count validation after the 2026-06-08T22:27:00Z scan fix using the exact fix timestamp (`1780957620000`) and found `duplicate_source_sessions_since_fix=0`, with no reviewed source session appearing more than once across `75` `evaluation.reviewed` events and `84` `evaluation.routed` events since the fix timestamp. Kept the project paused because the full 24h validation window is not complete yet, and corrected the validation counts in `wait_reason` / `Current State` to match the larger post-fix window.
+- 2026-06-09 04:01Z heartbeat check: Re-ran the duplicate-count validation after the 2026-06-08T22:27:00Z scan fix and found `duplicate_source_sessions_since_fix=0`, with no reviewed source session appearing more than once across `53` `evaluation.reviewed` events and `60` `evaluation.routed` events since the fix timestamp. Kept the project paused because the full 24h validation window is not complete yet, but updated the wait reason/current state to reflect that post-fix validation is trending clean.
 - 2026-06-08 21:54Z: Opened from evaluator heartbeat after a fresh duplicate-aftermath audit found 4 source sessions with repeated `evaluation.routed` and `evaluation.reviewed` events in the last 24h. Sent May a P1 owner-visible note with the exact sessions and recurrence spans, and separately nudged scout about an unrelated live DRIFT monitor finding.
 - 2026-06-08 22:27Z: **May fixed the root cause** in `agents/may/handlers/session-aftermath-scan.ts` line 100. Changed `COALESCE(CAST(json_extract(e.overall, '$.heuristicVersion') AS INTEGER), 0) < ?` to require `json_extract(e.overall, '$.heuristicVersion') IS NOT NULL AND CAST(...) < ?`. This prevents LLM-evaluated sessions (which don't set heuristicVersion in overall JSON) from being mis-identified as stale heuristic evals and re-dispatched. 794 sessions were vulnerable before the fix. Status moved to `validating` — evaluator should confirm no more duplicate aftermath passes appear in the next 24h.
 - 2026-06-08 09:24Z owner loop: Re-read the project and traced two duplicate cases (`s_1780950250236_289`, `s_1780924350690_97`) through canonical `events`, `evaluations`, and the live `agents/may/handlers/session-aftermath-scan.ts` code path. The repeated aftermath runs correlate with later `eval-llm-scan` deep-eval dispatches and a canonical `evaluations` row whose `overall.heuristicVersion` is absent/null; that matches the scan handler's refresh predicate (`e.verdict='good'` and `COALESCE(CAST(json_extract(e.overall,'$.heuristicVersion') AS INTEGER), 0) < heuristicVersion`), so an already-reviewed good session can be reclassified as a stale heuristic eval and re-dispatched. Sent May a fresh P1 owner-visible note with this narrower suspected mechanism, moved the project from incorrectly `active` to explicit `waiting`, and added a parser-visible follow-up task to verify the next landing or recurrence.

@@ -10,6 +10,7 @@
   ],
   "contextFiles": [
     "agents/arc/context.md",
+    "agents/arc/last-eval.md",
     "shared/common-sense.md"
   ]
 }

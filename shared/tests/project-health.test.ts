@@ -12,6 +12,7 @@ import {
   saveWorkflowRunFile,
   simpleHash,
   upsertProject,
+  pruneMissingProjectCache,
   validateProjectFormat,
   MAX_LAUNCHES_PER_TICK,
   type ProjectInfo,
@@ -130,7 +131,7 @@ describe('project-health', () => {
         projects: {
           'projects/test-proj': {
             ...newProjectHealthEntry(),
-            lastLaunch: now - 30_000,
+            lastLaunch: now - 6 * 60 * 1000, // 6 min ago — past hard cooldown (5min) but within soft cooldown (30min)
           },
         },
       };
@@ -443,6 +444,42 @@ describe('project-health', () => {
       expect(args[3]).toBe('bob'); // owner
       expect(args[9]).toBe(1); // milestones_done
       expect(args[10]).toBe(2); // milestones_total
+    });
+
+    it('prunes stale top-level project cache rows without touching non-project rows', () => {
+      const root = path.join(tmpdir(), `project-cache-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      const liveDir = path.join(root, 'projects', 'live-proj');
+      fs.mkdirSync(liveDir, { recursive: true });
+      fs.writeFileSync(path.join(liveDir, 'project.md'), '---\nid: live-proj\nowner: bob\nstatus: active\n---\n');
+
+      const rows = new Map<string, { id: string; path: string }>([
+        ['live-proj', { id: 'live-proj', path: 'projects/live-proj' }],
+        ['stale-proj', { id: 'stale-proj', path: 'projects/stale-proj' }],
+        ['shared-proj', { id: 'shared-proj', path: 'shared/projects/shared-proj' }],
+      ]);
+      const mockDb = {
+        prepare: vi.fn(() => ({
+          all: () => [...rows.values()].filter((row) => row.path.startsWith('projects/')),
+        })),
+        run: vi.fn((_sql: string, params: string[]) => rows.delete(params[0])),
+      };
+      const projects: ProjectInfo[] = [{
+        relPath: 'projects/live-proj',
+        projectFile: path.join(liveDir, 'project.md'),
+        content: '---\nid: live-proj\nowner: bob\nstatus: active\n---\n',
+        status: 'active',
+        owner: 'bob',
+        blockerReason: '',
+        workflow: '',
+      }];
+
+      const deleted = pruneMissingProjectCache(mockDb, root, projects);
+
+      expect(deleted).toBe(1);
+      expect(rows.has('live-proj')).toBe(true);
+      expect(rows.has('stale-proj')).toBe(false);
+      expect(rows.has('shared-proj')).toBe(true);
+      fs.rmSync(root, { recursive: true, force: true });
     });
   });
 

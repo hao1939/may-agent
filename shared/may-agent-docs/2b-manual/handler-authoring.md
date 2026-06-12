@@ -164,9 +164,11 @@ state via:
 - `sdk.getDb()` raw SQL for richer state,
 - emitting events and reading them back via `sdk.query.events(...)`.
 
-This applies to handler files only — not to workflow files (which are loaded
-once per dispatch) or SDK helpers (resolved through node_modules and
-cached normally).
+This module-state reset applies to handler files. Workflow files are also
+resolved and imported when a workflow run is dispatched, so editing workflow
+code is picked up by the next dispatch, but module-level state inside one
+workflow run remains normal JavaScript state for that run. SDK helpers resolved
+through `node_modules` are cached normally.
 
 ## What You Have Access To
 
@@ -238,6 +240,12 @@ if (!owner || !metricId) {
 ## Hot Reload
 
 Handlers are hot-reloaded on every tick. Edit the file → next fire picks up changes. No restart needed.
+
+Workflow-backed handlers have two reload surfaces:
+
+- Editing the workflow file is picked up by the next workflow dispatch.
+- Editing the trigger declaration (`cron.json` or project app `app.ts`) changes
+  the wake policy and requires the trigger/app reload path.
 
 ## Lifecycle Events
 

@@ -5,11 +5,16 @@ status: waiting
 type: milestone
 priority: P2
 iteration: 8
-stop_reason: "Behavior installed and validated in a real Scout heartbeat; remaining work is gradual adoption, not an active push."
-resume_condition: "Resume if Scout creates ceremonial metric-dismissal work again, knowledge-practice-loaded drops below 1, or knowledge-preamble-coverage stops improving after real Scout knowledge sessions."
+wait_reason: sourced-artifacts-24h=0 is an activity gap (no recent Scout knowledge session), not a behavior regression. Behavior install remains intact. Resume only if behavior regresses or adoption stalls across multiple consecutive sessions.
+migrated_to: scout-knowledge-lib.app
 ---
 
 # Project: Scout Second Brain Learning
+
+Migration note, 2026-06-12: the durable Scout knowledge library has been
+extracted to `projects/scout-knowledge-lib/`, with May-agent control-plane state
+in `projects/scout-knowledge-lib.app/`. This historical project remains as
+context for why the library practices exist.
 
 ## Goal
 
@@ -21,6 +26,7 @@ misleading than before, and live signals can show whether the practice is
 adopted and useful.
 
 ## Current State
+
 Waiting after a clean validation heartbeat.
 
 The first real heartbeat after the behavior install was mixed: Scout touched
@@ -44,12 +50,19 @@ Baseline from manual metrics snapshot on 2026-05-09:
 - `scout.sourced-artifacts-24h = 10` — sourced output is healthy.
 - `scout.downstream-reference-files-7d = 35` — downstream reuse signal is healthy.
 
+2026-05-21 runtime fix: the Scout watch metrics are now first-class
+`metrics-snapshot` built-ins. `project-steward` also treats disabled, missing,
+or stale project-scoped watch metrics as `project.health.finding`, so this
+waiting project wakes when its watch contract stops being observable.
+
 ## Context
 
 Reference repo:
+
 - https://github.com/eugeniughelbur/obsidian-second-brain
 
 Initial hypothesis:
+
 - The repo's useful ideas are not "use Obsidian"; they are knowledge operations:
   update existing notes instead of creating duplicates, keep source-grounded
   research notes, run vault-health checks, reconcile contradictions, and keep
@@ -86,12 +99,12 @@ Initial hypothesis:
 
 ## Watch Conditions
 
-- Reactivate immediately if `scout.knowledge-practice-loaded < 1`.
+These are owner-checked conditions (no formal watch metrics required):
+
+- Reactivate immediately if Scout's AGENTS.md or heartbeat.md lose the knowledge-management behavior.
 - Reactivate if Scout creates another ceremonial metric-dismissal project.
-- Reactivate if `scout.knowledge-preamble-coverage` stops improving across real
-  Scout knowledge-producing sessions; fix adoption through normal high-value
-  edits, not bulk metric gaming.
-- Reactivate if `scout.downstream-reference-files-7d` drops below threshold.
+- Reactivate if preamble coverage stops improving across real Scout knowledge-producing sessions.
+- Reactivate if downstream reuse of Scout knowledge files visibly degrades.
 
 ## Acceptance Criteria
 
@@ -121,6 +134,7 @@ Initial hypothesis:
   create the simplest useful signal or record the gap.
 
 ## Artifacts
+
 - outputs/knowledge-operations-guide.md
 - outputs/pilot-practices-selection.md
 - outputs/pilot-guidelines.md
@@ -136,6 +150,7 @@ Initial hypothesis:
 ## Journal
 
 2026-05-09:
+
 - Installed Scout knowledge-management behavior and live metrics.
 - First live validation found a real prompt failure: Scout created a ceremonial
   metric-dismissal project for a real adoption signal.
@@ -149,6 +164,7 @@ Initial hypothesis:
   - Snapshot 2026-05-09 (later): `scout.knowledge-preamble-coverage` is `0.2982`.
 
 2026-05-11:
+
 - Migrated the waiting project from experimental `goal-driver` back to the
   default `project` workflow. The behavior-change push is complete; future
   resumes should use the normal project driver.

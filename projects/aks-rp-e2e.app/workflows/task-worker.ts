@@ -1,122 +1,211 @@
 /**
- * task-worker — workflow adapter for aks-rp-e2e task pickup/execution.
+ * task-worker — workflow adapter for aks-rp-e2e task execution.
  *
- * Handles project.task.execution.requested by claiming exactly one ready leaf
- * under the task-tree lock, then executing that claimed task.
+ * Handles project.task.assigned by waking the assigned task session. The
+ * planner owns the task tree; this workflow executes and reports completion.
  */
 
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
-import { execute as executeEngine } from "./project-execution-engine.ts";
 import {
-  abandonedActiveTaskIds,
+  taskEventSnapshot,
+  type TaskTreeConfig,
+  type TaskNode,
+} from "./lib/task-tree-store.ts";
+import {
+  completeTask,
+  readTask,
+  taskTreeConfig,
+  type TaskCompletionClaim,
+} from "./lib/task-tree-tools.ts";
+import {
+  field,
   maxConcurrent,
   parseTriggerEvent,
-  tryClaimReadyTask,
-  type PickupConfig,
-} from "./lib/task-pickup.ts";
+  resolveAppDir,
+  resultText,
+  triggerString,
+  type TriggerEvent,
+} from "./lib/workflow-input.ts";
 
 export const name = "task-worker";
 export const description =
-  "Claim and execute one aks-rp-e2e ready leaf from a task execution event.";
+  "Execute one aks-rp-e2e task from a planner assignment event.";
 
-function field(raw: string, name: string): string | undefined {
-  const match = raw.match(new RegExp(`^${name}:\\s*(.+)$`, "m"));
-  return match ? match[1].trim() : undefined;
-}
+type SessionWorkflowContext = WorkflowContext & {
+  runAgentSession?: (
+    agent: string,
+    prompt: string,
+    sessionId: string,
+  ) => Promise<unknown>;
+};
 
-function resolveAppDir(projectDir: string, explicitAppDir?: string): string {
-  if (explicitAppDir) return explicitAppDir;
-  const embeddedProjectPath = join(projectDir, ".app", "project.json");
-  const legacyRootTaskDir = join(projectDir, "tasks");
-  if (existsSync(embeddedProjectPath) && existsSync(legacyRootTaskDir))
-    return projectDir;
-  if (existsSync(embeddedProjectPath)) return join(projectDir, ".app");
-  return new URL("..", import.meta.url).pathname;
-}
-
-function pickupConfig(
+function buildTaskTreeConfig(
   ctx: WorkflowContext,
   appDir: string,
   projectDir: string,
   configuredMaxConcurrent: number,
-  trigger: ReturnType<typeof parseTriggerEvent>,
-): PickupConfig {
+): TaskTreeConfig {
   return {
+    ...taskTreeConfig({
+      appDir,
+      projectDir,
+      worker:
+        field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
+      maxConcurrent: configuredMaxConcurrent,
+    }),
     appDir,
     projectDir,
     treePath: join(appDir, "tasks", "tree.json"),
     journalPath: join(appDir, ".state", "journal.jsonl"),
     worker: field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent,
     maxConcurrent: configuredMaxConcurrent,
-    requestedReadyTaskIds: [],
-    abandonedActiveTaskIds: abandonedActiveTaskIds(ctx.task, trigger),
   };
 }
 
-function triggerValue(
-  trigger: ReturnType<typeof parseTriggerEvent>,
-  key: string,
-): string {
+function buildWorkerPrompt(input: {
+  appDir: string;
+  projectDir: string;
+  task: unknown;
+  attemptId: string;
+}): string {
+  return `Task Worker Mode
+
+You are executing exactly one aks-rp-e2e task assigned by the project planner.
+Do not reshape the tree, create sibling branches, roll up parents, or run
+planner work from this session.
+
+Use the task as the context container. Read the relevant domain files, do the
+task body, write the requested output/evidence, then finish your response with
+one explicit line:
+
+  RESULT: done | partial | blocked
+
+Use RESULT: blocked only for a real blocker with a concrete resume condition.
+If the work is too large or wrongly decomposed, record a blocked summary that
+explains the exact decomposition problem. The planner reviews the latest task
+state after worker progress and decides whether to accept, retry, repair,
+replace, split, or keep the task blocked.
+
+App: ${input.appDir}
+Domain workspace: ${input.projectDir}
+Attempt: ${input.attemptId}
+
+Assigned task:
+\`\`\`json
+${JSON.stringify(input.task, null, 2)}
+\`\`\``.trim();
+}
+
+async function runTaskAgent(input: {
+  ctx: WorkflowContext;
+  worker: string;
+  sessionId: string;
+  prompt: string;
+}): Promise<unknown> {
+  const sessionCtx = input.ctx as SessionWorkflowContext;
+  return sessionCtx.runAgentSession
+    ? sessionCtx.runAgentSession(input.worker, input.prompt, input.sessionId)
+    : input.ctx.runAgent(input.worker, input.prompt);
+}
+
+function workerResultFromSession(
+  result: unknown,
+  text: string,
+): TaskCompletionClaim {
+  const status = (result as { status?: string })?.status;
+  if (/(?:RESULT|CLAIM):\s*done/i.test(text)) return "done";
+  if (/(?:RESULT|CLAIM):\s*partial/i.test(text)) return "partial";
+  if (/(?:RESULT|CLAIM):\s*blocked/i.test(text)) return "blocked";
+  if (status === "success" || status === "ok" || status === "partial")
+    return "partial";
+  return "blocked";
+}
+
+function emitTaskCompleted(
+  ctx: WorkflowContext,
+  task: TaskNode,
+  input: {
+    attemptId: string;
+    result: TaskCompletionClaim;
+    summary: string;
+  },
+): void {
+  try {
+    ctx.dispatchEvent("project.task.completed", {
+      project: "aks-rp-e2e",
+      ...taskEventSnapshot(task),
+      attemptId: input.attemptId,
+      attempt_id: input.attemptId,
+      result: input.result,
+      claim: input.result,
+      summary: input.summary,
+    });
+  } catch {
+    // Local test contexts may not provide a real dispatcher.
+  }
+}
+
+function taskAttemptId(task: TaskNode): string {
+  const trace = task.trace;
   const value =
-    trigger?.data && typeof trigger.data === "object" && key in trigger.data
-      ? trigger.data[key]
-      : trigger?.params &&
-          typeof trigger.params === "object" &&
-          key in trigger.params
-        ? trigger.params[key]
-        : trigger?.[key];
+    trace && typeof trace === "object" && !Array.isArray(trace)
+      ? trace.current_attempt_id
+      : undefined;
   return typeof value === "string" ? value : "";
 }
 
-async function runExecutionMode(
+async function runAssignedMode(
   ctx: WorkflowContext,
   appDir: string,
   projectDir: string,
-  configuredMaxConcurrent: number,
-  config: PickupConfig,
-  trigger: ReturnType<typeof parseTriggerEvent>,
+  config: TaskTreeConfig,
+  trigger: TriggerEvent | null,
 ): Promise<WorkflowResult> {
   const taskId =
-    triggerValue(trigger, "taskId") ||
-    triggerValue(trigger, "task_id") ||
+    triggerString(trigger, "taskId") ||
+    triggerString(trigger, "task_id") ||
     field(ctx.task, "taskId");
   if (!taskId)
     return ctx.done(
-      "Task execution event ignored because it did not include taskId.",
+      "Task assignment event ignored because it did not include taskId.",
+    );
+  const attemptId =
+    triggerString(trigger, "attemptId") || triggerString(trigger, "attempt_id");
+  if (!attemptId)
+    return ctx.done(
+      `Task assignment for ${taskId} ignored because it did not include attemptId.`,
     );
 
-  const claim = tryClaimReadyTask(ctx, config, taskId);
-  if (claim.claimed === false)
-    return ctx.done(`Task execution event ignored because ${claim.reason}.`);
+  const task = readTask(config, taskId);
+  if (!task) return ctx.done(`Assigned task ${taskId} was not found.`);
+  if (task.status !== "active")
+    return ctx.done(`Assigned task ${taskId} is ${task.status}, not active.`);
+  if (taskAttemptId(task) !== attemptId)
+    return ctx.done(`Assigned task ${taskId} attempt ${attemptId} is stale.`);
 
-  const taskLines = [
-    `app: ${appDir}`,
-    `project: ${projectDir}`,
-    `agent: ${field(ctx.task, "agent") ?? ctx.agent}`,
-    `owner: ${field(ctx.task, "owner") ?? field(ctx.task, "agent") ?? ctx.agent}`,
-    `worker: ${field(ctx.task, "worker") ?? field(ctx.task, "agent") ?? ctx.agent}`,
-    "maxAttempts: 1",
-    `maxConcurrent: ${configuredMaxConcurrent}`,
-    "role: task-worker",
-  ];
-  const triggerBlock = ctx.task.match(/## Trigger Event[\s\S]*$/)?.[0] ?? "";
-
-  const result = await executeEngine({
-    ...ctx,
-    task: `${taskLines.join("\n")}\n\n${triggerBlock}`,
-    done: (message: string) =>
-      ({ status: "done", message }) as unknown as WorkflowResult,
-    escalate: (message: string) =>
-      ({ status: "escalated", message }) as unknown as WorkflowResult,
-  } as unknown as WorkflowContext);
-
-  const message =
-    (result as { message?: string; summary?: string }).message ??
-    (result as { message?: string; summary?: string }).summary ??
-    JSON.stringify(result);
-  return ctx.done(`Task worker loop advanced: ${message}`);
+  const result = await runTaskAgent({
+    ctx,
+    worker: config.worker,
+    sessionId:
+      task.session_id || `s_task_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}`,
+    prompt: buildWorkerPrompt({ appDir, projectDir, task, attemptId }),
+  });
+  const message = resultText(result);
+  const claim = workerResultFromSession(result, message);
+  const completedTask = completeTask(config, {
+    taskId: task.id,
+    claim,
+    summary: message || "Worker session returned without a completion summary.",
+  });
+  emitTaskCompleted(ctx, completedTask, {
+    attemptId,
+    result: claim,
+    summary: message || "Worker session returned without a completion summary.",
+  });
+  return ctx.done(
+    `Task worker handled ${task.id} attempt ${attemptId}; result is ${claim}. Agent result: ${message}`,
+  );
 }
 
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
@@ -124,27 +213,19 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
   const trigger = parseTriggerEvent(ctx.task);
   const configuredMaxConcurrent = maxConcurrent(ctx.task, trigger);
-  const config = pickupConfig(
+  const config = buildTaskTreeConfig(
     ctx,
     appDir,
     projectDir,
     configuredMaxConcurrent,
-    trigger,
   );
 
-  if (trigger?.type === "project.task.execution.requested") {
-    return runExecutionMode(
-      ctx,
-      appDir,
-      projectDir,
-      configuredMaxConcurrent,
-      config,
-      trigger,
-    );
+  if (trigger?.type === "project.task.assigned") {
+    return runAssignedMode(ctx, appDir, projectDir, config, trigger);
   }
 
   return ctx.done(
-    `Task worker ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.execution.requested.`,
+    `Task worker ignored trigger ${String(trigger?.type ?? "unknown")}; use project.task.assigned.`,
   );
 }
 

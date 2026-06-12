@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AKS RP E2E - Kanban Board</title>
+    <title>AKS RP E2E - Project Task Tree</title>
     <style>
       :root {
         --bg: #0d1117;
@@ -104,7 +104,7 @@
       }
       .summary-grid {
         display: grid;
-        grid-template-columns: minmax(280px, 1.4fr) minmax(260px, 0.8fr);
+        grid-template-columns: minmax(320px, 1fr) minmax(320px, 0.8fr);
         gap: 14px;
         margin-bottom: 14px;
       }
@@ -137,9 +137,42 @@
       .muted {
         color: var(--muted);
       }
+      .active-task-list {
+        display: grid;
+        gap: 6px;
+        max-height: 190px;
+        overflow: auto;
+        padding-right: 4px;
+      }
+      .active-task-row {
+        display: grid;
+        grid-template-columns: minmax(120px, 0.42fr) minmax(0, 1fr);
+        gap: 8px;
+        align-items: baseline;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .active-task-row span,
+      .active-task-row strong {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .active-task-row span {
+        font-family: var(--mono);
+        color: var(--blue);
+      }
+      .active-task-row strong {
+        color: var(--muted);
+        font-weight: 400;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
       .metrics {
         display: grid;
-        grid-template-columns: repeat(6, minmax(70px, 1fr));
+        grid-template-columns: repeat(4, minmax(70px, 1fr));
         gap: 8px;
         margin-top: 12px;
       }
@@ -157,6 +190,136 @@
         color: var(--muted);
         font-size: 11px;
         text-transform: uppercase;
+      }
+      .metrics-panel {
+        margin-bottom: 14px;
+      }
+      .metric-groups {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .metric-group {
+        display: grid;
+        align-content: start;
+        gap: 10px;
+        min-width: 0;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        border-radius: 6px;
+        padding: 10px;
+      }
+      .metric-group-title {
+        font-weight: 650;
+        overflow-wrap: anywhere;
+      }
+      .metric-group-copy {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        margin-top: 2px;
+      }
+      .metric-tiles {
+        display: grid;
+        gap: 7px;
+      }
+      .metric-tile {
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--muted);
+        border-radius: 6px;
+        background: var(--panel);
+        padding: 8px;
+        min-width: 0;
+      }
+      .metric-good {
+        border-left-color: var(--green);
+      }
+      .metric-alert {
+        border-left-color: var(--yellow);
+        background: rgba(210, 153, 34, 0.08);
+      }
+      .metric-topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+      }
+      .metric-name {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .metric-state {
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.4;
+        padding: 0 6px;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .metric-alert .metric-state {
+        color: var(--yellow);
+      }
+      .metric-good .metric-state {
+        color: var(--green);
+      }
+      .metric-number {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-top: 4px;
+      }
+      .metric-detail {
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .metric-footer {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: end;
+        border-top: 1px solid var(--border);
+        margin-top: 12px;
+        padding-top: 12px;
+      }
+      .metric-alerts-ok,
+      .metric-alert-row {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .metric-alerts-list {
+        display: grid;
+        gap: 5px;
+        margin-top: 6px;
+      }
+      .metric-alert-row {
+        display: grid;
+        grid-template-columns: minmax(120px, 0.5fr) minmax(0, 1fr);
+        gap: 8px;
+        align-items: baseline;
+      }
+      .metric-alert-row span,
+      .metric-alert-row strong {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .metric-alert-row strong {
+        color: var(--fg);
+        font-weight: 500;
+      }
+      .metric-actions {
+        justify-content: flex-end;
       }
       .progress {
         height: 8px;
@@ -267,14 +430,6 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
-      .card-scheduler {
-        color: var(--fg);
-        font-size: 11px;
-        line-height: 1.35;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
       .card-badges {
         display: flex;
         gap: 5px;
@@ -328,7 +483,7 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 8px;
-        align-items: center;
+        align-items: start;
         border: 1px solid var(--border);
         background: var(--bg);
         border-radius: 6px;
@@ -373,15 +528,34 @@
       }
       .tree-id {
         font-family: var(--mono);
-        font-size: 12px;
+        font-size: 11px;
+        color: var(--muted);
         overflow-wrap: anywhere;
+        margin-top: 3px;
       }
       .tree-goal {
+        color: var(--fg);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+      .tree-description {
         color: var(--muted);
         font-size: 12px;
-        white-space: nowrap;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
+        margin-top: 3px;
+      }
+      .tree-badges {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 180px;
       }
       .tree-summary {
         display: flex;
@@ -412,6 +586,9 @@
         border-top: 1px solid var(--border);
         padding-top: 10px;
       }
+      .knowledge-panel {
+        border-color: rgba(63, 185, 80, 0.65);
+      }
       .escalation-panel {
         border-color: rgba(232, 164, 76, 0.65);
       }
@@ -433,9 +610,15 @@
         display: grid;
         gap: 8px;
       }
-      .steer-box textarea {
+      .steering-panel {
+        display: grid;
+        align-content: start;
+        gap: 10px;
+      }
+      .steer-box textarea,
+      .steering-panel textarea {
         width: 100%;
-        min-height: 140px;
+        min-height: 120px;
         resize: vertical;
         border: 1px solid var(--border);
         border-radius: 6px;
@@ -445,6 +628,7 @@
       }
       .actions {
         display: flex;
+        align-items: center;
         flex-wrap: wrap;
         gap: 8px;
       }
@@ -474,6 +658,9 @@
         .lower-grid {
           grid-template-columns: 1fr;
         }
+        .metric-groups {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
         .kanban {
           grid-template-columns: repeat(3, minmax(160px, 1fr));
         }
@@ -492,6 +679,13 @@
         .metrics {
           grid-template-columns: repeat(2, minmax(80px, 1fr));
         }
+        .metric-groups,
+        .metric-footer {
+          grid-template-columns: 1fr;
+        }
+        .metric-actions {
+          justify-content: flex-start;
+        }
         .kanban {
           grid-template-columns: 1fr;
         }
@@ -507,9 +701,9 @@
   <body>
     <header class="topbar">
       <div class="brand">
-        <div class="brand-title">AKS RP E2E - Kanban Board</div>
+        <div class="brand-title">AKS RP E2E - Project Task Tree</div>
         <div class="brand-subtitle">
-          Task states, task cards, and project steering
+          Agent thinking, accepted knowledge, execution projection, and steering
         </div>
       </div>
       <nav class="nav">

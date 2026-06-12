@@ -78,6 +78,137 @@ Examples:
 
 Read-model rule: view endpoints may read the DB and project files directly, but should return explicit projections rather than leaking schema details as the public API.
 
+## Current API Inventory
+
+This inventory reflects the route table in `src/app/http/server.ts` as of
+2026-06-08. It is intentionally grouped by role instead of by implementation
+order.
+
+| Role | Current endpoints | Boundary read |
+|------|-------------------|---------------|
+| Platform health | `GET /api/liveness`, `GET /api/stats`, `GET /api/digest` | Infra/read model. |
+| Event stream and ingress | `GET /api/events`, `POST /api/events`, `GET /ws` | Events can be queried, streamed, and emitted through the daemon socket. |
+| Agent views | `GET /api/agents`, `/activity`, `/timeline`, `/health`, `/:agent/detail`, `/:agent/about`, `/:agent/default-session` | WebUI projections over agents, sessions, and files. |
+| Agent/session steering | `POST /api/agents/:agent/message`, `POST /api/agents/:agent/heartbeat-now`, `POST /api/sessions/:id/message`, `POST /api/sessions/:id/cancel` | Convenience steering endpoints. They should keep routing through the daemon socket and leave durable events/traces. |
+| Session diagnostics | `GET /api/sessions/:id`, `/transcript`, `/raw-log`, `/eval`, `POST /api/sessions/:id/eval`, `/eval/comment` | Read models plus evaluator dispatch convenience. |
+| Metrics and alerts | `GET /api/metrics`, `GET /api/metrics/:id/history`, `POST /api/metrics/:id/threshold`, `POST /api/alerts/:id/resolve` | Mixed: reads are projections; threshold/resolve currently update DB directly and emit best-effort events. |
+| Projects | `GET /api/projects`, `/content`, `/artifact`, `/detail`, `/lineage`, `/journal`, `/discussion`, `/sessions`, `POST /api/projects/comment` | WebUI project projections plus a comment convenience endpoint. |
+| Terminals | `GET/POST /api/terminals`, terminal websocket, resize, restart | Local WebUI operator tool, not project/domain API. |
+| Static project UI | `/projects/<name>/...` | Static files from project-owned UI directories. `/api/*` remains infra-owned. |
+| Benchmarks/browse/learning/trace | `/api/benchmarks*`, `/api/browse`, `/api/learning`, `/api/loop-trace` | Diagnostics/read-model surfaces; keep or migrate behind explicit view endpoints. |
+
+No generic project action endpoint is part of the current accepted API. A
+hardcoded `/api/projects/action` experiment was rejected because it put
+project-domain execution inside the HTTP adapter and bypassed the event-first
+boundary.
+
+## API Convergence Proposal
+
+Keep the HTTP adapter small:
+
+1. **Reads return views.** Project dashboards, feature maps, session timelines,
+   metrics, and diagnostics should be explicit read models. They may aggregate
+   DB rows and project artifacts, but they should not become hidden project
+   controllers.
+2. **Writes enter through events or established infra commands.** If a browser
+   action starts work, changes ownership, runs a project behavior, or asks an
+   agent to do something, the durable activation path is an event/control frame
+   through the daemon.
+3. **Project code owns project meaning.** The HTTP adapter must not know AKS,
+   evaluator calibration, platform operations, or any other project domain.
+4. **Compatibility endpoints are allowed when they are simpler for users.**
+   Their implementation should still route through the daemon/event path and
+   should not introduce a second semantics.
+
+### Event Ingress
+
+Add one generic event ingress endpoint:
+
+```http
+POST /api/events
+```
+
+Body:
+
+```json
+{
+  "type": "project.action.requested",
+  "source": "web-ui",
+  "owner": "agent:aks-explorer",
+  "data": {
+    "projectPath": "projects/aks-rp-e2e",
+    "action": "replan",
+    "params": {
+      "selectedPathIds": ["path.managedsystem.rest-add-existing.minimal-rest"]
+    }
+  }
+}
+```
+
+Rules:
+
+- Dot-named events must use the canonical envelope from `events.md`:
+  `type`, `source`, `owner`, `data`.
+- The HTTP adapter validates the envelope and sends it to the daemon socket.
+- The response only means the event was accepted by the transport; it does not
+  mean downstream handlers finished.
+- Event-specific fields stay under `data`.
+
+### Project UI Activation
+
+Do not add `/api/projects/action`.
+
+For project UIs:
+
+- Read current state from project artifacts or view endpoints.
+- For side-effecting requests, emit a canonical event through `POST /api/events`.
+- Let the project app or project handler decide whether to start an agent
+  session, run a workflow, write evidence, or ignore the request.
+
+Recommended event names:
+
+| Event | Meaning |
+|-------|---------|
+| `project.comment.created` | Human comment/direction for a project. |
+| `project.action.requested` | UI or operator requested a named project behavior. |
+| `project.tick` | Timer-triggered project lane. |
+| `project.task.dispatched` / `project.task.finished` | Task-driven project execution lifecycle. |
+
+### Existing Convenience Routes
+
+Keep these as user-friendly aliases while converging the internals:
+
+| Route | Target behavior |
+|-------|-----------------|
+| `POST /api/projects/comment` | Emit `project.comment.created`; project app/handler decides wake behavior. |
+| `POST /api/agents/:agent/message` | Resolve or start an agent chat through the daemon; leave canonical message/session trace events. |
+| `POST /api/sessions/:id/message` | Steer/resume the existing session through the daemon. |
+| `POST /api/sessions/:id/cancel` | Send the established session cancel control event. |
+| `POST /api/agents/:agent/heartbeat-now` | Emit canonical `heartbeat.trigger`. |
+| `POST /api/metrics/:id/threshold` and `/api/alerts/:id/resolve` | Either become established infra primitives with durable trace events or move behind event ingress. |
+
+### Route Shape Target
+
+Near-term target:
+
+```text
+GET  /api/events
+POST /api/events
+
+GET  /api/projects...
+POST /api/projects/comment      # compatibility alias for project.comment.created
+
+GET  /api/views/...             # new explicit read models as pages are touched
+POST /api/agents/:agent/message # compatibility steering alias
+POST /api/sessions/:id/message  # compatibility steering alias
+POST /api/sessions/:id/cancel   # established infra command
+```
+
+Avoid adding new route families until they answer one of two questions:
+
+- "What read model does the UI need?"
+- "What canonical event/control action is being accepted?"
+
 ## Layout
 
 Target layout:

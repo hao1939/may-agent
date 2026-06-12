@@ -44,6 +44,45 @@ type Schedule = {
   };
 };
 
+type EventSelector =
+  | string
+  | {
+      type?: string;
+      project?: string;
+      actions?: string[];
+      metricIds?: string[];
+    };
+
+type AppAction = {
+  type?: string;
+  event?: (params: unknown) => Record<string, unknown>;
+};
+
+type EventGraph = {
+  handlers?: Record<
+    string,
+    {
+      emits?: string[];
+      description?: string;
+    }
+  >;
+  adapters?: Array<{
+    event?: string;
+    emits?: string[];
+    description?: string;
+  }>;
+  externalEvents?: string[];
+  intentionalCycles?: Array<{
+    id?: string;
+    events?: string[];
+    reason?: string;
+  }>;
+  limits?: {
+    maxDirectHandlersPerEvent?: number;
+    maxAdapterEmits?: number;
+  };
+};
+
 type ProjectApp = {
   id?: string;
   workspace?: {
@@ -54,12 +93,18 @@ type ProjectApp = {
   };
   workflowHandlers?: WorkflowHandler[];
   schedules?: Schedule[];
+  events?: EventSelector[];
+  actions?: Record<string, AppAction>;
+  eventGraph?: EventGraph;
 };
 
 type TaskNode = {
   id?: string;
   status?: string;
   children?: string[];
+  depends_on?: string[] | string;
+  gates?: unknown;
+  gate_status?: unknown;
   workflow?: string | null;
 };
 
@@ -250,6 +295,8 @@ function validateWorkflowHandlers(
 
     if (!Array.isArray(handler.on))
       fail(`workflow handler ${handler.name} must declare on[]`);
+    else if (handler.enabled !== false && handler.on.length === 0)
+      fail(`workflow handler ${handler.name} must be triggered by an event`);
     if (!handler.handler?.task)
       fail(`workflow handler ${handler.name} missing handler.task`);
     if (
@@ -279,6 +326,226 @@ function validateSchedules(projectApp: ProjectApp): void {
   }
 }
 
+function eventTypeFromSelector(selector: EventSelector): string | null {
+  if (typeof selector === "string") return selector;
+  return typeof selector.type === "string" && selector.type.trim()
+    ? selector.type.trim()
+    : null;
+}
+
+function addMapValue(map: Map<string, string[]>, key: string, value: string) {
+  const values = map.get(key) ?? [];
+  values.push(value);
+  map.set(key, values);
+}
+
+function emittedActionEvents(projectApp: ProjectApp): Array<{
+  action: string;
+  event: string;
+}> {
+  const emitted: Array<{ action: string; event: string }> = [];
+  for (const [actionName, action] of Object.entries(projectApp.actions ?? {})) {
+    if (action.type !== "async" || typeof action.event !== "function") continue;
+    try {
+      const event = action.event({});
+      if (typeof event?.type === "string") {
+        emitted.push({ action: actionName, event: event.type });
+      } else {
+        fail(`async action ${actionName} did not return event.type`);
+      }
+    } catch (err) {
+      fail(
+        `async action ${actionName} failed while validating event graph: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+  return emitted;
+}
+
+function canonicalCycle(events: string[]): string {
+  if (events.length === 0) return "";
+  const rotations = events.map((_, index) => [
+    ...events.slice(index),
+    ...events.slice(0, index),
+  ]);
+  rotations.sort((a, b) => a.join("\u0000").localeCompare(b.join("\u0000")));
+  return rotations[0].join(" -> ");
+}
+
+function findEventCycles(edges: Map<string, Set<string>>): string[][] {
+  const cycles = new Map<string, string[]>();
+  const nodes = [...edges.keys()].sort();
+
+  function visit(start: string, current: string, path: string[]) {
+    for (const next of edges.get(current) ?? []) {
+      if (next === start) {
+        const cycle = [...path, current];
+        cycles.set(canonicalCycle(cycle), cycle);
+        continue;
+      }
+      if (path.includes(next)) continue;
+      visit(start, next, [...path, current]);
+    }
+  }
+
+  for (const node of nodes) visit(node, node, []);
+  return [...cycles.values()];
+}
+
+function cycleAllowed(cycle: string[], graph: EventGraph): boolean {
+  const cycleSet = new Set(cycle);
+  return (graph.intentionalCycles ?? []).some((intentional) => {
+    const allowed = new Set(intentional.events ?? []);
+    return (
+      Boolean(intentional.id) &&
+      Boolean(intentional.reason) &&
+      cycle.every((event) => allowed.has(event)) &&
+      [...allowed].some((event) => cycleSet.has(event))
+    );
+  });
+}
+
+function validateEventGraph(projectApp: ProjectApp): void {
+  const graph = projectApp.eventGraph;
+  if (!graph) {
+    warn("app.ts missing eventGraph; event loop integrity cannot be audited");
+    return;
+  }
+
+  const handlerConsumers = new Map<string, string[]>();
+  for (const handler of projectApp.workflowHandlers ?? []) {
+    if (handler.enabled === false) continue;
+    for (const event of Array.isArray(handler.on) ? handler.on : []) {
+      if (typeof event === "string" && event.trim()) {
+        addMapValue(handlerConsumers, event, handler.name ?? "unnamed-handler");
+      }
+    }
+  }
+
+  const maxDirectHandlers = graph.limits?.maxDirectHandlersPerEvent ?? 1;
+  for (const [event, handlers] of handlerConsumers) {
+    if (handlers.length > maxDirectHandlers) {
+      fail(
+        `event ${event} has ${handlers.length} direct workflow handlers (${handlers.join(", ")}); max is ${maxDirectHandlers}`,
+      );
+    }
+  }
+
+  const adapterConsumers = new Map<string, string[]>();
+  for (const adapter of graph.adapters ?? []) {
+    if (!adapter.event) {
+      fail("eventGraph adapter missing event");
+      continue;
+    }
+    if (!Array.isArray(adapter.emits)) {
+      fail(`eventGraph adapter ${adapter.event} missing emits[]`);
+      continue;
+    }
+    if (adapter.emits.length === 0) {
+      fail(`eventGraph adapter ${adapter.event} must emit at least one event`);
+      continue;
+    }
+    if (adapter.emits.length > (graph.limits?.maxAdapterEmits ?? 3)) {
+      fail(
+        `eventGraph adapter ${adapter.event} emits ${adapter.emits.length} events; keep adapter fan-out simple`,
+      );
+    }
+    addMapValue(adapterConsumers, adapter.event, "adapter");
+  }
+
+  for (const handler of projectApp.workflowHandlers ?? []) {
+    if (handler.enabled === false || !handler.name) continue;
+    const graphHandler = graph.handlers?.[handler.name];
+    if (!graphHandler) {
+      fail(`eventGraph missing handler entry for ${handler.name}`);
+      continue;
+    }
+    if (!Array.isArray(graphHandler.emits)) {
+      fail(`eventGraph handler ${handler.name} missing emits[]`);
+      continue;
+    }
+    if (graphHandler.emits.length === 0) {
+      fail(`eventGraph handler ${handler.name} must emit at least one event`);
+    }
+  }
+  for (const handlerName of Object.keys(graph.handlers ?? {})) {
+    const exists = (projectApp.workflowHandlers ?? []).some(
+      (handler) => handler.enabled !== false && handler.name === handlerName,
+    );
+    if (!exists)
+      fail(`eventGraph handler ${handlerName} has no enabled workflow handler`);
+  }
+
+  const consumed = new Set([
+    ...handlerConsumers.keys(),
+    ...adapterConsumers.keys(),
+    ...(graph.externalEvents ?? []),
+  ]);
+
+  for (const selector of projectApp.events ?? []) {
+    const event = eventTypeFromSelector(selector);
+    if (!event) {
+      fail("app.ts events entry missing event type");
+      continue;
+    }
+    if (!adapterConsumers.has(event) && !handlerConsumers.has(event)) {
+      fail(
+        `app.ts subscribes to event ${event}, but eventGraph has no adapter or workflow route for it`,
+      );
+    }
+  }
+
+  for (const schedule of projectApp.schedules ?? []) {
+    const event = schedule.event?.type;
+    if (!event) continue;
+    if (!consumed.has(event)) {
+      fail(
+        `schedule ${schedule.id ?? "unnamed"} emits unhandled event ${event}`,
+      );
+    }
+  }
+
+  for (const action of emittedActionEvents(projectApp)) {
+    if (!consumed.has(action.event)) {
+      fail(`action ${action.action} emits unhandled event ${action.event}`);
+    }
+  }
+
+  const edges = new Map<string, Set<string>>();
+  function edge(from: string, to: string) {
+    if (!edges.has(from)) edges.set(from, new Set());
+    edges.get(from)!.add(to);
+  }
+
+  for (const handler of projectApp.workflowHandlers ?? []) {
+    if (handler.enabled === false || !handler.name) continue;
+    const emits = graph.handlers?.[handler.name]?.emits ?? [];
+    for (const input of Array.isArray(handler.on) ? handler.on : []) {
+      if (typeof input !== "string") continue;
+      for (const output of emits) edge(input, output);
+    }
+  }
+
+  for (const adapter of graph.adapters ?? []) {
+    if (!adapter.event || !Array.isArray(adapter.emits)) continue;
+    for (const output of adapter.emits) edge(adapter.event, output);
+  }
+
+  for (const [from, outputs] of edges) {
+    for (const output of outputs) {
+      if (!consumed.has(output)) {
+        fail(`eventGraph edge ${from} -> ${output} produces unhandled event`);
+      }
+    }
+  }
+
+  for (const cycle of findEventCycles(edges)) {
+    if (!cycleAllowed(cycle, graph)) {
+      fail(`eventGraph has undeclared event cycle: ${canonicalCycle(cycle)}`);
+    }
+  }
+}
+
 function validateTaskTree(
   tree: TaskTree | null,
   appWorkflowNames: Set<string>,
@@ -294,6 +561,31 @@ function validateTaskTree(
     for (const childId of task.children ?? []) {
       if (!taskIds.has(childId))
         fail(`task ${taskId} references missing child ${childId}`);
+    }
+    if ("gates" in task)
+      fail(
+        `task ${taskId} uses legacy gates; use depends_on, forbidden, blocker, context, and conflict_scope`,
+      );
+    if ("gate_status" in task)
+      fail(
+        `task ${taskId} uses legacy gate_status; ready/proposed/blocked must carry the state`,
+      );
+    const dependsOn = Array.isArray(task.depends_on)
+      ? task.depends_on
+      : typeof task.depends_on === "string"
+        ? [task.depends_on]
+        : [];
+    for (const dependencyId of dependsOn) {
+      if (!taskIds.has(dependencyId))
+        fail(`task ${taskId} depends_on missing task ${dependencyId}`);
+    }
+    if (
+      task.status === "ready" &&
+      dependsOn.some(
+        (dependencyId) => tasks[dependencyId]?.status !== "accepted",
+      )
+    ) {
+      fail(`ready task ${taskId} has unsatisfied depends_on`);
     }
     if (
       task.workflow &&
@@ -336,6 +628,7 @@ const workflowNames = listWorkflowNames();
 validateProjectAndApp(projectJson, projectApp, owner);
 validateWorkflowHandlers(projectApp, workflowNames);
 validateSchedules(projectApp);
+validateEventGraph(projectApp);
 validateTaskTree(taskTree, workflowNames);
 
 for (const message of warnings) {

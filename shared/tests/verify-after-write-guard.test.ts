@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 
 // Import the guard module
-const guardModule = await import("../guards/verify-after-write.ts");
+const guardModule = await import("../guards/verify-after-write.disabled.ts");
 const guard = guardModule.guard;
 
 function makeEvent(overrides: any = {}): any {

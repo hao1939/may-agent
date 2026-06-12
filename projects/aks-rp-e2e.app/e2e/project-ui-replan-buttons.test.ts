@@ -3,6 +3,10 @@ import puppeteer from "puppeteer-core";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join, resolve } from "node:path";
+import {
+  kanbanTaskTreeState,
+  taskTreeConfig,
+} from "../workflows/lib/task-tree-tools.ts";
 
 const appRoot = resolve(import.meta.dirname, "..");
 const projectRoot = resolve(import.meta.dirname, "../../aks-rp-e2e");
@@ -17,6 +21,23 @@ const selectedPathIds = [
 type PostedComment = {
   path?: string;
   comment?: string;
+  type?: string;
+  reason?: string;
+  action?: string;
+  urgency?: string;
+  data?: {
+    project?: string;
+    reason?: string;
+    action?: string;
+    params?: {
+      task_id?: string;
+      comment?: string;
+    };
+  };
+  params?: {
+    task_id?: string;
+    comment?: string;
+  };
 };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -160,6 +181,56 @@ describe("project UI replanning buttons e2e", () => {
           });
         }
 
+        if (url.pathname === "/api/metrics") {
+          return jsonResponse({
+            metrics: [
+              {
+                id: "aks-rp-e2e.task.active-count",
+                name: "AKS RP E2E active task count",
+                type: "gauge",
+                current: 2,
+                target: 5,
+                threshold: -1,
+                alert_op: "<",
+                priority: "P3",
+                description: "currently assigned task-tree leaves",
+                alertOpen: false,
+              },
+              {
+                id: "aks-rp-e2e.model.unknown-path-count",
+                name: "AKS RP E2E unknown/source-enumerated paths",
+                type: "gauge",
+                current: 66,
+                target: 0,
+                threshold: 999999,
+                alert_op: ">",
+                priority: "P3",
+                description: "paths still needing verification",
+                alertOpen: false,
+              },
+              {
+                id: "aks-rp-e2e.run.live-idle-with-runnable-work",
+                name: "AKS RP E2E live execution idle with runnable work",
+                type: "health",
+                current: 1,
+                target: 0,
+                threshold: 0,
+                alert_op: ">",
+                priority: "P1",
+                description: "runner liveness signal",
+                alertOpen: true,
+                alertMessage: "live execution idle with runnable work",
+              },
+            ],
+            alerts: [
+              {
+                metricId: "aks-rp-e2e.run.live-idle-with-runnable-work",
+                message: "live execution idle with runnable work",
+              },
+            ],
+          });
+        }
+
         if (url.pathname === "/api/projects/artifact") {
           const file = url.searchParams.get("file") || "";
           if (file === "runs/index.jsonl") {
@@ -250,6 +321,7 @@ describe("project UI replanning buttons e2e", () => {
               "specs/index.json",
               ".app/tasks/tree.json",
               "tasks/tree.json",
+              "tasks/kanban.json",
             ].includes(file)
           ) {
             return jsonResponse({ error: `Unexpected artifact ${file}` }, 404);
@@ -257,6 +329,10 @@ describe("project UI replanning buttons e2e", () => {
           if (file === "tasks/tree.json")
             return jsonResponse({
               content: await projectFile(".app/tasks/tree.json"),
+            });
+          if (file === "tasks/kanban.json")
+            return jsonResponse({
+              content: await projectFile(".app/tasks/kanban.json"),
             });
           return jsonResponse({ content: await projectFile(file) });
         }
@@ -280,6 +356,24 @@ describe("project UI replanning buttons e2e", () => {
             data.params && typeof data.params === "object"
               ? (data.params as Record<string, unknown>)
               : params;
+          const bodyData =
+            body.data && typeof body.data === "object"
+              ? (body.data as Record<string, unknown>)
+              : {};
+          if (
+            body.type === "project.planning.requested" &&
+            bodyData.reason === "human-steering"
+          ) {
+            comments.push(body as PostedComment);
+            return jsonResponse({
+              ok: true,
+              triggered: true,
+              eventType: body.type,
+              reason: bodyData.reason,
+              workflowStarted: true,
+              workflowRunId: "kanban-planner-run",
+            });
+          }
           if (eventParams.source === "feature-page") {
             comments.push(body as PostedComment);
             return jsonResponse({
@@ -502,70 +596,63 @@ describe("project UI replanning buttons e2e", () => {
         (el) => el.textContent || "",
       );
       expect(text).toContain("Current Work");
+      expect(text).toContain("Project Metrics");
+      expect(text).toContain("Health And Progress");
+      expect(text).toContain("Unknown paths");
+      expect(text).toContain("Open Alerts");
       expect(text).toContain("Kanban Board");
-      expect(text).toContain("Planning");
       expect(text).toContain("Backlog");
       expect(text).toContain("In Progress");
       expect(text).toContain("Archive");
       expect(text).toContain("Task Tree");
-      expect(text).toContain("Talk With The Agent");
+      expect(text).toContain("Human Steering");
 
-      const tree = JSON.parse(await projectFile(".app/tasks/tree.json"));
-      const tasks = Object.values(tree.tasks ?? {}) as Array<{
-        id?: string;
-        status?: string;
-        kind?: string;
-        children?: string[];
-      }>;
-      const leafWorkflowTasks = tasks.filter(
-        (task) =>
-          task.id !== tree.root_task_id && !(task.children ?? []).length,
-      );
-      const planningCount = leafWorkflowTasks.filter(
-        (task) =>
-          ["frontier_replan", "domain_planner"].includes(task.kind || "") &&
-          ["proposed", "ready", "active"].includes(task.status || ""),
-      ).length;
-      const activeCount = leafWorkflowTasks.filter(
-        (task) =>
-          task.status === "active" &&
-          !["frontier_replan", "domain_planner"].includes(task.kind || ""),
-      ).length;
-      const planningLaneCount = await page.$eval(
-        '[data-testid="kanban-planning"] .pill',
+      const metricText = await page.$eval(
+        '[data-testid="project-metrics"]',
         (el) => el.textContent || "",
       );
-      expect(Number(planningLaneCount)).toBe(planningCount);
+      expect(metricText).toContain("66");
+      expect(metricText).toContain("live execution idle with runnable work");
+
+      const { tree, kanban } = kanbanTaskTreeState(
+        taskTreeConfig({
+          appDir: appRoot,
+          projectDir: projectRoot,
+          worker: "aks-explorer",
+          maxConcurrent: 5,
+        }),
+      );
+      const planningCount = kanban.column_counts.planning;
+      if (planningCount > 0) {
+        const planningLaneCount = await page.$eval(
+          '[data-testid="kanban-planning"] .pill',
+          (el) => el.textContent || "",
+        );
+        expect(Number(planningLaneCount)).toBe(planningCount);
+      } else {
+        expect(await page.$$('[data-testid="kanban-planning"]')).toHaveLength(
+          0,
+        );
+      }
+      const activeCount = kanban.column_counts["in-progress"];
       const inProgressCount = await page.$eval(
         '[data-testid="kanban-in-progress"] .pill',
         (el) => el.textContent || "",
       );
       expect(Number(inProgressCount)).toBe(activeCount);
-      const proposedLeafCount = leafWorkflowTasks.filter(
-        (task) => task.status === "proposed",
-      ).length;
+      const proposedLeafCount = kanban.column_counts.backlog;
       const backlogCount = await page.$eval(
         '[data-testid="kanban-backlog"] .pill',
         (el) => el.textContent || "",
       );
       expect(Number(backlogCount)).toBe(proposedLeafCount);
-      const activePlanningCount = leafWorkflowTasks.filter(
-        (task) =>
-          ["frontier_replan", "domain_planner"].includes(task.kind || "") &&
-          task.status === "active",
-      ).length;
-      const readyLeafCount = leafWorkflowTasks.filter(
-        (task) =>
-          task.status === "ready" &&
-          !["frontier_replan", "domain_planner"].includes(task.kind || ""),
-      ).length;
       const warning = await page.$$(
         '[data-testid="planning-empty-backlog-warning"]',
       );
       expect(warning.length).toBe(
-        activePlanningCount > 0 &&
+        planningCount > 0 &&
           proposedLeafCount === 0 &&
-          readyLeafCount === 0 &&
+          kanban.column_counts.ready === 0 &&
           activeCount === 0
           ? 1
           : 0,
@@ -621,8 +708,32 @@ describe("project UI replanning buttons e2e", () => {
         () => comments.length === before + 1,
         "kanban steering comment was not posted",
       );
-      expect(comments.at(-1)?.path).toBe("projects/aks-rp-e2e");
-      expect(comments.at(-1)?.comment).toContain("action: split");
+      expect(comments.at(-1)?.type).toBe("project.planning.requested");
+      expect(comments.at(-1)?.urgency).toBe("high");
+      expect(comments.at(-1)?.data?.project).toBe("aks-rp-e2e");
+      expect(comments.at(-1)?.data?.reason).toBe("human-steering");
+      expect(comments.at(-1)?.data?.params?.comment).toContain("action: split");
+      expect(comments.at(-1)?.data?.params?.task_id).toBeTruthy();
+
+      await page.evaluate(() => {
+        const button = [...document.querySelectorAll("button")].find(
+          (el) => el.textContent?.trim() === "Review Metrics",
+        );
+        (button as HTMLButtonElement | undefined)?.click();
+      });
+      const globalTextarea = await page.$eval(
+        '[data-testid="global-steer-textarea"]',
+        (el) => (el as HTMLTextAreaElement).value,
+      );
+      expect(globalTextarea).toContain("action: review_metrics");
+      await page.click('[data-testid="send-global-steering"]');
+      await waitFor(
+        () => comments.length === before + 2,
+        "kanban metric steering was not posted",
+      );
+      expect(comments.at(-1)?.data?.params?.comment).toContain(
+        "action: review_metrics",
+      );
     } finally {
       await browser.close();
     }

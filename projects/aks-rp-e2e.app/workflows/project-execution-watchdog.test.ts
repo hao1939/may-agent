@@ -38,7 +38,6 @@ function task(id: string, status: string, extra: Record<string, unknown> = {}) {
     outputs: [`evidence/archive/${id}.md`],
     acceptance: ["Done."],
     forbidden: [],
-    gates: [],
     ...extra,
   };
 }
@@ -68,6 +67,21 @@ async function writeTree(
   await writeFile(
     join(projectDir, "tasks", "tree.json"),
     `${JSON.stringify(tree, null, 2)}\n`,
+    "utf8",
+  );
+}
+
+async function writeModelWithGap(projectDir: string) {
+  await mkdir(join(projectDir, "model", "knowledge-map"), { recursive: true });
+  await writeFile(
+    join(projectDir, "model", "knowledge-map", "model.json"),
+    `${JSON.stringify(
+      {
+        featurePaths: [{ id: "path.feature-a.create", status: "unknown" }],
+      },
+      null,
+      2,
+    )}\n`,
     "utf8",
   );
 }
@@ -117,10 +131,10 @@ describe("project execution watchdog", () => {
     });
   });
 
-  test("wakes worker pickup when ready leaves exist", async () => {
+  test("wakes planner when backlog leaves exist", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
-      "ready-task": task("ready-task", "ready"),
+      "backlog-task": task("backlog-task", "backlog"),
     });
 
     const dispatched: Array<{
@@ -131,23 +145,28 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog requested execution for 1 dispatchable ready task(s): ready-task",
+      "Watchdog emitted project.planning.requested: watchdog-ready-work.",
     );
-    expect(
-      dispatched.some(
-        (event) =>
-          event.type === "project.task.execution.requested" &&
-          event.payload.taskId === "ready-task",
-      ),
-    ).toBe(true);
+    expect(dispatched).toEqual([
+      {
+        type: "project.planning.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-ready-work",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+          readyTaskIds: ["backlog-task"],
+        },
+      },
+    ]);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["ready-task"].status).toBe("ready");
+    expect(updated.tasks["backlog-task"].status).toBe("backlog");
   });
 
-  test("restarts an active leaf whose runtime session is no longer running", async () => {
+  test("wakes planner for an active leaf whose runtime session is no longer running", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
     writeSession(stateDbPath, "s_done", "done");
@@ -156,8 +175,6 @@ describe("project execution watchdog", () => {
       {
         "active-task": task("active-task", "active", {
           session_id: "s_done",
-          claimed_by: "aks-explorer",
-          lease_expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
         }),
       },
       {
@@ -176,24 +193,93 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog requested execution for 1 dispatchable ready task(s): active-task",
+      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
     );
-    expect(
-      dispatched.some(
-        (event) =>
-          event.type === "project.task.execution.requested" &&
-          event.payload.taskId === "active-task",
-      ),
-    ).toBe(true);
+    expect(dispatched).toEqual([
+      {
+        type: "project.planning.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-stale-active-review",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+          staleActiveTasks: [
+            {
+              taskId: "active-task",
+              reason: "session-not-running",
+            },
+          ],
+        },
+      },
+    ]);
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["active-task"].status).toBe("ready");
-    expect(updated.tasks["active-task"].claimed_by).toBeUndefined();
+    expect(updated.tasks["active-task"].status).toBe("active");
+    expect(updated.tasks["active-task"].trace?.stale_active_restart_count).toBe(
+      undefined,
+    );
   });
 
-  test("wakes planner when open work has no dispatchable ready leaves", async () => {
+  test("does not mutate repeatedly stale active leaves", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_done", "done");
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_done",
+          trace: {
+            stale_active_restart_count: 2,
+          },
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, dispatched }),
+    );
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain(
+      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+    );
+    expect(dispatched).toEqual([
+      {
+        type: "project.planning.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-stale-active-review",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+          staleActiveTasks: [
+            {
+              taskId: "active-task",
+              reason: "session-not-running",
+            },
+          ],
+        },
+      },
+    ]);
+
+    const updated = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(updated.tasks["active-task"].status).toBe("active");
+    expect(updated.tasks["active-task"].blocker).toBeUndefined();
+  });
+
+  test("wakes planner when open work has no ready assignable leaves", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "blocked-task": task("blocked-task", "blocked", {
@@ -224,7 +310,7 @@ describe("project execution watchdog", () => {
     ]);
   });
 
-  test("leaves a running active leaf alone", async () => {
+  test("leaves running active leaves alone when capacity is full", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
     writeSession(stateDbPath, "s_running", "running");
@@ -233,8 +319,6 @@ describe("project execution watchdog", () => {
       {
         "active-task": task("active-task", "active", {
           session_id: "s_running",
-          claimed_by: "aks-explorer",
-          lease_expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
         }),
       },
       {
@@ -248,7 +332,7 @@ describe("project execution watchdog", () => {
       payload: Record<string, unknown>;
     }> = [];
     const result = await execute(
-      context({ projectDir, stateDbPath, dispatched }),
+      context({ projectDir, stateDbPath, maxConcurrent: 1, dispatched }),
     );
 
     expect(result).toEqual({
@@ -257,5 +341,48 @@ describe("project execution watchdog", () => {
         "Watchdog skipped: 1 active task(s) still have running attempts.",
     });
     expect(dispatched).toHaveLength(0);
+  });
+
+  test("wakes planner when active work underfills capacity", async () => {
+    const projectDir = await makeProject();
+    const stateDbPath = join(projectDir, "may.db");
+    writeSession(stateDbPath, "s_running", "running");
+    await writeTree(
+      projectDir,
+      {
+        "active-task": task("active-task", "active", {
+          session_id: "s_running",
+        }),
+      },
+      {
+        active_task_id: "active-task",
+        active_task_ids: ["active-task"],
+      },
+    );
+
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute(
+      context({ projectDir, stateDbPath, maxConcurrent: 3, dispatched }),
+    );
+
+    expect(result).toEqual({
+      status: "done",
+      message:
+        "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+    });
+    expect(dispatched).toEqual([
+      {
+        type: "project.planning.requested",
+        payload: {
+          project: "aks-rp-e2e",
+          reason: "watchdog-capacity-underfilled",
+          maxConcurrent: 3,
+          requested_by: "project-execution-watchdog",
+        },
+      },
+    ]);
   });
 });
