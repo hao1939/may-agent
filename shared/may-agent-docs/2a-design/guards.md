@@ -172,30 +172,29 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-10 ~10:20Z** (24h window, ~1,838 tool-level):
+**Latest snapshot 2026-06-12 ~08:30Z** (24h window, ~2,299 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 924 | 50.3% |
-| READ_DEDUP | 277 | 15.1% |
-| SESSION_BASH_CAT | 276 | 15.0% |
-| PATH_HALLUCINATION | 163 | 8.9% |
-| SESSION_READ | 158 | 8.6% |
-| SESSION_BASH_GREP | 43 | 2.3% |
+| commit-guard (combined) | 1,210 | 53.2% |
+| SESSION_BASH_CAT | 343 | 15.1% |
+| other (workflow guards + misc) | 256 | 11.2% |
+| READ_DEDUP | 199 | 8.7% |
+| SESSION_READ | 180 | 7.9% |
+| PATH_HALLUCINATION | 60 | 2.6% |
+| SESSION_BASH_GREP | 51 | 2.2% |
 
-Workflow guards: read-before-edit 98, hallucinated-path 87.
-Total: ~1,838 tool + ~185 workflow ≈ **2,023/day** (under new 2,500 threshold).
+Total: ~2,299/day (under 2,500 threshold with ~8% headroom).
 
-Guard volume by agent (24h): evaluator 1,010 (50%), aks-explorer 800
-(40%), arc 66, scout 52, dev 47, may 41, tech-lead 2.
-
-Notable patterns from 2026-06-10:
-- **PATH_HALLUCINATION remains elevated** (163, all aks-explorer `/home/` paths).
-- **Workflow guards elevated** (185), split between read-before-edit (98)
-  and hallucinated-path (87) — both concentrated on aks-explorer.
-- commit-guard share stable at ~50% (structural floor from shared-worktree
+Notable changes vs 2026-06-10 snapshot:
+- **PATH_HALLUCINATION dropped 63%** (163 → 60) — aks-explorer `/home/` path
+  hallucinations significantly reduced. Possible cause: improved agent context
+  or skill patches.
+- **READ_DEDUP dropped 28%** (277 → 199) — fewer repeated file reads.
+- commit-guard share stable at ~53% (structural floor from shared-worktree
   dirty files). This is ambient noise, not behavioral deterioration.
-- Volume is under the new 2,500 threshold with ~20% headroom.
+- Volume increased ~14% (2,023 → 2,299) — driven by higher session count,
+  not worsening per-session behavior.
 
 ### Known issue: guard name conflation
 
