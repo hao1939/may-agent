@@ -2,8 +2,9 @@
 
 ## Status
 
-Proposal. This document does not replace `projects.md` yet. Keep both designs
-visible until the runtime and migration plan converge.
+Historical proposal for embedded `projects/<name>/.app/` apps. V3 is now the
+target design for portable domain projects such as `aks-rp-e2e`; use
+`project-app-v3.md` as the source of truth for sibling `*.app/` project apps.
 
 ## Thesis
 
@@ -59,12 +60,40 @@ schedule / comment / metric / UI request
 
 State changes should be consequences of events, not polling decisions.
 
-For long-running project work, see `project-execution-engine.md`. That design
-defines the breadth-first task tree, lazy decomposition loop, claim/verification
-protocol, and parent rollup workflow that can run inside a project app.
-The project app should request that workflow by emitting a project-specific
-execution event, for example `project.execution.requested`; the project-local
-trigger entry can bind that event to the workflow-backed handler.
+For long-running project work, the project app should use two simple event
+loops: a sequential planner loop and parallel worker loops. The app requests
+planning by emitting `project.planning.requested`; the planner updates the
+task tree and emits `project.task.execution.requested` for dispatchable leaves.
+Each worker handles one requested leaf and emits `project.task.completed`.
+Completion may wake the planner again. `project.execution.requested` is legacy
+terminology; planning is the durable coordinator event.
+
+The agent is the brain. Workflow code should not contain the project strategy,
+domain judgment, replan policy, or branch-repair decision tree. Workflow code
+only wakes the right agent session, supplies current context, exposes safe
+task-tree primitives, and enforces hard invariants such as locking,
+dispatchability, lease ownership, and event emission. Task-tree processing code
+should be tools for the LLM, not the workflow.
+
+For task-tree apps, the live shape is:
+
+```text
+project.planning.requested
+  -> thin planner workflow
+  -> project-owner agent session
+  -> task-tree tools / direct reviewed tree edits
+  -> planner workflow dispatches ready leaves
+
+project.task.execution.requested
+  -> thin worker workflow claims one ready leaf
+  -> task-owned agent session
+  -> domain work + task-tree completion tool
+  -> worker workflow emits project.task.completed
+```
+
+This keeps the reusable code small and auditable. The reusable code answers
+"is this task lockable, dispatchable, completed, or stale?" The agent answers
+"what should this project do next?"
 
 For task-based projects, `.app/tasks/tree.json` is more than a queue. It is the
 project's structured understanding: how the goal is currently decomposed, which
@@ -90,29 +119,35 @@ specific question, or a superseded task linked to its replacement. A project may
 pause on a concrete blocked/input frontier; it should not pause on a vague
 no-op.
 
-The worker does not own task-tree mutation. A worker executes one leaf and
-returns a claim plus evidence; the project execution engine verifies the claim,
-updates the task, rolls up the parent, creates parent-review or blocked-review
-tasks when needed, and requests another `project.execution.requested` event if
-an infra wake budget interrupts while runnable work remains.
+The planner owns task-tree mutation and project reasoning. It reviews completed
+task results, verifies claims, repairs or supersedes bad branches, rolls up
+parents, creates parent-review or blocked-review tasks when needed, promotes
+clear proposed leaves to ready, and emits worker requests up to the allowed
+capacity. Planning/replan/review behavior stays serialized. In implementation,
+the planner workflow is only the session adapter; the project-owner agent makes
+those planning decisions using task-tree tools.
 
-Parallel work should use the native event mechanism. The project app emits
-`project.execution.requested` to wake a coordinator. The coordinator leases
-dispatchable ready leaves up to `max_concurrent` and emits
-`project.task.execution.requested` for each leased task. Each task worker handles
-one leaf, emits `project.task.completed`, and the native app event handler
-converts completion into another `project.execution.requested` coordinator wake.
-Planning/replan/review tasks stay serialized; ordinary independent leaf
-execution can run in parallel when their `conflict_scope` and output paths do
-not overlap. Because `.app/tasks/tree.json` remains the canonical project-local task
-state, each worker save must merge that worker's task branch into the latest
-tree snapshot under a project tree lock. Parallelism must not allow a later
-worker save to overwrite another independent worker's accepted, blocked, or
-replanned branch.
+The worker owns only one task execution. It claims exactly one requested leaf
+under the task-tree lock, executes that task, writes task-local attempt/result
+evidence, releases the lease, and emits `project.task.completed`. The worker
+must not reshape the tree, create sibling branches, roll up parents, or emit
+planner wake events directly. The app event layer or workflow trigger mapping
+turns `project.task.completed` into the next planner wake. In implementation,
+the worker workflow is only the lease/session adapter; the task-owned agent
+does the work and records completion through a task-tree completion primitive.
+
+Parallel work should use the native event mechanism. The planner emits
+`project.task.execution.requested` for each dispatchable ready leaf up to
+`max_concurrent`; worker handlers run in parallel when their `conflict_scope`
+and output paths do not overlap. Because `.app/tasks/tree.json` remains the
+canonical project-local task state, each worker save must merge that worker's
+task branch into the latest tree snapshot under a project tree lock.
+Parallelism must not allow a later worker save to overwrite another independent
+worker's accepted, blocked, or replanned branch.
 
 For aggressive project-push apps, an accepted frontier replan is not itself a
 stop condition when it produced child work, those children are now settled, and
-the project root remains blocked or rejected. The coordinator should create the
+the project root remains blocked or rejected. The planner should create the
 next frontier replan on the next wake so the agent keeps searching for safe
 local/domain work until it reaches a concrete blocked replan, a concrete
 human/input question, a satisfied project goal, or an infra guard.
@@ -132,8 +167,8 @@ shared Kanban, but the generic task board is not a domain artifact.
 For task-based project apps, the shared UI should render `.app/tasks/tree.json` as a
 human review surface rather than exposing only raw JSON:
 
-- A Kanban projection for execution state: Planning, Backlog, Ready, In
-  Progress, Review, Blocked, Done, and Archive.
+- A Kanban projection for execution state: Backlog, In Progress,
+  Review, Blocked, and Done.
 - A tree projection for decomposition and rollup audit.
 - A current-state banner that says what the project is working on, what is
   ready, what needs review, or which concrete blocked/input frontier is next.
@@ -146,8 +181,11 @@ or rollup nodes, so they stay in the tree projection rather than appearing as
 Backlog cards.
 
 Backlog is fed by planning. Frontier replans and domain planners should create
-ordinary next-work leaves as `proposed`; the coordinator promotes clear
-proposed leaves to `ready` before dispatch. Active serialized planners stay in
+ordinary next-work leaves as `proposed`; the planner promotes clear proposed
+leaves to `ready` before dispatch only when `depends_on` is satisfied.
+`ready` means dispatchable now. A task waiting for another task stays
+`proposed` with `depends_on`; a task waiting on a real external/human/environment
+condition stays `blocked` with a concrete `blocker`. Active serialized planners stay in
 the Planning lane, not In Progress. In Progress is for ordinary active worker
 tasks, where parallel execution is expected when conflict scopes allow it.
 
@@ -164,7 +202,7 @@ project, the top-level tree should represent the repeated learning system, not
 the latest set of artifacts. In `aks-rp-e2e`, that means a feature-learning
 loop: maintain the model, maintain a prioritized feature queue, run the same
 reference/input/expectation/evidence/gap/replay/model-update pattern for each
-feature, and synthesize cross-feature findings. Recent failures, blocked gates,
+feature, and synthesize cross-feature findings. Recent failures, external blockers,
 and bug reports attach inside that loop as evidence or feature-specific work.
 
 In test-driven learning projects, the project-local UI and task tree should
@@ -184,7 +222,7 @@ share one test-spec contract. A test spec is reviewable only when it shows:
   spec has evidence and through which surface it was exercised;
 - a test-case matrix when repeated parameter or negative-validation cases share
   the same lifecycle and assertion pattern;
-- execution strategy, gates, and forbidden surfaces;
+- execution strategy, dependencies, live-run context, and forbidden surfaces;
 - run artifacts and evidence with duplicate references removed;
 - non-goals for adjacent behavior.
 
@@ -195,7 +233,7 @@ domain tasks under the affected feature, not hidden UI bugs and not new
 top-level project-control branches.
 
 For `aks-rp-e2e`, the feature queue is an execution conveyor. When one selected
-feature is accepted or externally gated, the project app should return to the
+feature is accepted or externally blocked, the project app should return to the
 queue and schedule the next safe local feature before deciding the project is
 blocked. A rollup review can close the current batch, but it must not freeze the
 project while `evidence/archive/feature-learning-queue.md` still lists safe
@@ -217,13 +255,15 @@ The proposed standard runtime boundary is:
 projects/<name>/
   .app/
     app.ts              # required: app declaration and event handler
-    project.md          # required: human-readable goal, state, plan, gates
+    project.md          # required: human-readable goal, state, plan, blockers
     tasks/              # optional: project task tree and task UI state
     discussion.jsonl    # optional: append-only project comment stream
     journal.jsonl       # optional: append-only app-local workflow trace
     archive/            # optional: retired runtime files kept for audit only
     agents/             # optional project-local agents
     workflows/          # optional project-local workflows
+    workflows/lib/       # optional safe tool primitives for workflows/agents
+    scripts/             # optional app-local CLI tools for agent sessions
     handlers/           # optional helper modules for app.ts
     ui/                 # optional project-local runtime UI assets
 ```
@@ -244,9 +284,9 @@ of truth for runtime delivery.
 ## Control-Plane State Files
 
 `.app/project.md` is intentionally Markdown. It is the prominent, readable
-project frame: goal, current state, plan, gates, next action, and links into the
-domain workspace. Agents should be able to open one file and understand why the
-project exists and what state it is in.
+project frame: goal, current state, plan, blockers, next action, and links into
+the domain workspace. Agents should be able to open one file and understand why
+the project exists and what state it is in.
 
 `.app/discussion.jsonl` and `.app/journal.jsonl` are intentionally JSONL. They
 are append-only streams that are easier for handlers, UIs, and LLM tools to
@@ -263,7 +303,7 @@ Recommended journal records:
 
 ```jsonl
 {"ts":"2026-05-30T04:05:00Z","iteration":190,"actor":"aks-explorer","kind":"step","status":"started","summary":"Processing two-path ManagedSystem live-run request."}
-{"ts":"2026-05-30T04:07:00Z","iteration":190,"actor":"aks-explorer","kind":"result","status":"blocked","summary":"ARM token gate failed because az is unavailable.","refs":["evidence/archive/iteration190-live-selected-two-path-blocker.md"]}
+{"ts":"2026-05-30T04:07:00Z","iteration":190,"actor":"aks-explorer","kind":"result","status":"blocked","summary":"ARM token precondition failed because az is unavailable.","refs":["evidence/archive/iteration190-live-selected-two-path-blocker.md"]}
 {"ts":"2026-05-30T04:08:00Z","iteration":190,"actor":"workflow","kind":"discussion_ack","through":"c_20260530_001"}
 ```
 
@@ -296,17 +336,17 @@ tests, execute them, diagnose results, and update the model.
 
 Recommended generic roles:
 
-| Role | Meaning |
-|------|---------|
-| Domain identity | Stable project goal, scope, non-goals, success criteria |
-| Current truth | Latest conclusions, frontier, gates, and next domain question |
-| Sources / inputs | Requirements, external references, datasets, specs, examples |
-| Domain model | Structured representation of the project domain |
-| Work area | Active investigations, drafts, replays, experiments |
-| Evidence | Raw logs, traces, captures, generated run output |
-| Outputs | Accepted deliverables and polished results |
-| Decisions | Durable commitments, no-rerun gates, ADR-style records |
-| Reviews | Human or agent critique, audits, challenge findings |
+| Role             | Meaning                                                          |
+| ---------------- | ---------------------------------------------------------------- |
+| Domain identity  | Stable project goal, scope, non-goals, success criteria          |
+| Current truth    | Latest conclusions, frontier, blockers, and next domain question |
+| Sources / inputs | Requirements, external references, datasets, specs, examples     |
+| Domain model     | Structured representation of the project domain                  |
+| Work area        | Active investigations, drafts, replays, experiments              |
+| Evidence         | Raw logs, traces, captures, generated run output                 |
+| Outputs          | Accepted deliverables and polished results                       |
+| Decisions        | Durable commitments, no-rerun decisions, ADR-style records       |
+| Reviews          | Human or agent critique, audits, challenge findings              |
 
 Those roles can map to different folder names per project. A research project,
 execution project, product project, and evaluation project should not be forced
@@ -390,7 +430,10 @@ export default defineProjectApp({
       });
     }
 
-    if (event.type === "project.action.requested" && event.data.action === "replan") {
+    if (
+      event.type === "project.action.requested" &&
+      event.data.action === "replan"
+    ) {
       return ctx.startSession({
         agent: "aks-explorer",
         task: "Handle the replan request from the project UI and write evidence.",
@@ -425,7 +468,7 @@ return [
 ];
 ```
 
-The runtime may reject intents that violate hard limits, safety gates, or
+The runtime may reject intents that violate hard limits, safety rules, or
 capability boundaries.
 
 Project UI requests follow the same containment rule as timer, comment, and
@@ -437,8 +480,8 @@ HTTP function calls.
 Project code should use runtime path helpers instead of raw relative paths:
 
 ```ts
-ctx.projectPath("model/tools/replan-feature-paths.ts") // domain workspace
-ctx.appPath("journal.jsonl")                          // .app/ control plane
+ctx.projectPath("model/tools/replan-feature-paths.ts"); // domain workspace
+ctx.appPath("journal.jsonl"); // .app/ control plane
 ```
 
 ## Runtime Responsibilities
@@ -453,7 +496,7 @@ It should:
 4. Deliver matching events to app handlers.
 5. Execute validated intents.
 6. Enforce hard global limits: concurrency, budgets, kill switches, auth and
-   mutation gates.
+   mutation limits.
 7. Record generic event/session/intent observability.
 8. Serve project files, project UI assets, and HTTP event ingress.
 
@@ -510,7 +553,8 @@ coverage.gap.detected
 
 The project app decides how to handle each delivered event. If a comment should
 wake an owner session, that behavior lives in `.app/app.ts`. If a metric should
-be ignored while a gate is closed, that decision also lives in `.app/app.ts`.
+be ignored while an external blocker is unresolved, that decision also lives in
+`.app/app.ts`.
 
 Event subscriptions should use selectors, not only event-type strings, when the
 event type can fan out broadly:
@@ -518,10 +562,14 @@ event type can fan out broadly:
 ```ts
 events: [
   { type: "project.comment.created", project: "aks-rp-e2e" },
-  { type: "project.action.requested", project: "aks-rp-e2e", actionNames: ["execute-run"] },
+  {
+    type: "project.action.requested",
+    project: "aks-rp-e2e",
+    actionNames: ["execute-run"],
+  },
   { type: "metric.recovered", metricIds: ["aks-rp-e2e.frontier-ready"] },
   { type: "coverage.gap.detected", project: "aks-rp-e2e" },
-]
+];
 ```
 
 String subscriptions remain shorthand for project-scoped events generated by the
@@ -620,28 +668,28 @@ projects/aks-rp-e2e/
 
 Possible migration from the current layout:
 
-| Current | V2 role |
-|---------|---------|
-| `project.md` | `.app/project.md` |
-| `discussion.md` | `.app/archive/discussion.md`; live stream continues in `.app/discussion.jsonl` |
-| `journal.md` | `.app/archive/journal.md`; live trace continues in `.app/journal.jsonl` |
-| `journal.raw.md` | `.app/archive/journal.raw.md` |
-| `agents/` | `.app/agents/` |
-| `workflows/` | `.app/workflows/` |
-| `knowledge-map/` | `model/` |
-| `capability-model/` | `model/tools/` |
-| project task breakdowns | `.app/tasks/tree.json` and `.app/tasks/README.md` |
-| `sources/feature-packets/` | `features/` |
-| `scenarios/test-specs/` | `specs/` |
-| `scenarios/run-plans/` | `suites/` |
-| `probes/`, `probe-lib/` | `replays/` |
-| `scenarios/execution/` | `replays/execution/` |
-| `evidence/test-runs/` | `runs/` |
-| `outputs/*.json`, raw logs | `evidence/archive/` |
-| polished `outputs/*.md` summaries | `reports/` |
-| domain gate/status commitments | `decisions/` |
-| execution replans | `.app/decisions/replans/` |
-| May UI integration | `.app/ui/` if runtime UI, or `model/views/` if domain viewer |
+| Current                                     | V2 role                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------ |
+| `project.md`                                | `.app/project.md`                                                              |
+| `discussion.md`                             | `.app/archive/discussion.md`; live stream continues in `.app/discussion.jsonl` |
+| `journal.md`                                | `.app/archive/journal.md`; live trace continues in `.app/journal.jsonl`        |
+| `journal.raw.md`                            | `.app/archive/journal.raw.md`                                                  |
+| `agents/`                                   | `.app/agents/`                                                                 |
+| `workflows/`                                | `.app/workflows/`                                                              |
+| `knowledge-map/`                            | `model/`                                                                       |
+| `capability-model/`                         | `model/tools/`                                                                 |
+| project task breakdowns                     | `.app/tasks/tree.json` and `.app/tasks/README.md`                              |
+| `sources/feature-packets/`                  | `features/`                                                                    |
+| `scenarios/test-specs/`                     | `specs/`                                                                       |
+| `scenarios/run-plans/`                      | `suites/`                                                                      |
+| `probes/`, `probe-lib/`                     | `replays/`                                                                     |
+| `scenarios/execution/`                      | `replays/execution/`                                                           |
+| `evidence/test-runs/`                       | `runs/`                                                                        |
+| `outputs/*.json`, raw logs                  | `evidence/archive/`                                                            |
+| polished `outputs/*.md` summaries           | `reports/`                                                                     |
+| durable domain decisions/status commitments | `decisions/`                                                                   |
+| execution replans                           | `.app/decisions/replans/`                                                      |
+| May UI integration                          | `.app/ui/` if runtime UI, or `model/views/` if domain viewer                   |
 
 The exact tree should be chosen by the project owner. The important rules are
 that AKS domain knowledge is not hidden inside May-agent runtime files, and
@@ -667,9 +715,44 @@ with `type: "project.action.requested"` and the project-specific request under
 When the UI is intentionally waking an already-defined project workflow rather
 than asking the project app to interpret a domain action, it may emit that typed
 workflow event directly. Example: the `aks-rp-e2e` feature page's Trigger Test
-button emits `project.execution.requested` with `reason:
-"feature-test.requested"` and the exact spec/target under `data.params`.
-It must not create a discussion entry as a hidden transport fallback.
+button emits `project.planning.requested` with `reason:
+"feature-test.requested"` and the exact spec/target under `data.params`. It
+must not create a discussion entry as a hidden transport fallback.
+
+Human task-tree steering follows the same rule. A Kanban/task-tree feedback box
+should emit `project.planning.requested` directly with `reason:
+"human-steering"` and structured task context under `data.params` when crossing
+`/api/events`:
+
+```json
+{
+  "type": "project.planning.requested",
+  "source": "web-ui",
+  "owner": "agent:aks-explorer",
+  "urgency": "high",
+  "data": {
+    "project": "aks-rp-e2e",
+    "reason": "human-steering",
+    "action": "task-feedback",
+    "params": {
+      "task_id": "project",
+      "comment": "Reflect on this branch and add missing Go-test discovery work.",
+      "context": {
+        "ui": "kanban"
+      }
+    }
+  }
+}
+```
+
+Top-level `project`, `reason`, or `params` are not enough for HTTP ingress:
+they may be accepted by the HTTP route but lost from the durable event payload.
+Use `urgency: "high"` for explicit human steering so it is not delayed behind
+routine scheduler/watchdog wakes.
+
+Do not wrap explicit planner steering in `project.comment.created` or
+`project.task.steer`. Those events may remain compatibility/audit aliases, but
+the canonical control event is `project.planning.requested`.
 
 ### Phase 1: Runtime support
 
@@ -737,22 +820,22 @@ async onEvent(ctx: ProjectAppContext, event: EventEnvelope): Promise<Intent[]>
 
 V1 intent types:
 
-| Intent | Meaning |
-|--------|---------|
-| `start-session` | Launch an agent session with a task |
-| `emit` | Emit an event into the bus |
-| `write-app-state` | Patch `.app/state.json` |
-| `noop` | Explicit no-op with a reason (for observability) |
+| Intent            | Meaning                                          |
+| ----------------- | ------------------------------------------------ |
+| `start-session`   | Launch an agent session with a task              |
+| `emit`            | Emit an event into the bus                       |
+| `write-app-state` | Patch `.app/state.json`                          |
+| `noop`            | Explicit no-op with a reason (for observability) |
 
 Future intent types (not v1):
 
-| Intent | Meaning |
-|--------|---------|
-| `start-workflow` | Launch a named workflow |
-| `schedule-once` | Schedule a one-shot event at a future time |
-| `escalate` | Signal to human/operator |
+| Intent           | Meaning                                    |
+| ---------------- | ------------------------------------------ |
+| `start-workflow` | Launch a named workflow                    |
+| `schedule-once`  | Schedule a one-shot event at a future time |
+| `escalate`       | Signal to human/operator                   |
 
-The runtime may reject intents that violate budget, safety gates, or capability
+The runtime may reject intents that violate budget, safety rules, or capability
 boundaries. Rejected intents are logged with the rejection reason.
 
 ## UI Integration
@@ -883,7 +966,7 @@ does not parse `project.md` for domain status.
   pattern), or should that be a separate helper?
 - How should the migration shim handle projects that have both legacy
   `project.md` tasks and a new `.app/app.ts`?
-- What safety gates are universal runtime rules versus app-owned rules?
+- What safety rules are universal runtime rules versus app-owned rules?
 
 ## Final Principle
 
