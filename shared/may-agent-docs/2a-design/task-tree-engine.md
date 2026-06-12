@@ -41,33 +41,34 @@ backlog → active → review → accepted
 
 ### Persisted statuses
 
-| Status | Meaning | Who sets it |
-|--------|---------|-------------|
-| `backlog` | Work to be done | Planner creates or reworks it |
-| `active` | Worker is executing | Worker claims it |
-| `review` | Worker finished, claim needs verification | Worker submits it |
-| `accepted` | Planner verified the claim; durable project understanding | Planner accepts it |
-| `blocked` | Concrete external blocker confirmed by planner | Planner sets it |
-| `superseded` | Replaced by better understanding | Planner replaces it |
-| `decomposed` | Not a leaf; children represent the work | Planner decomposes it |
+| Status       | Meaning                                                   | Who sets it                   |
+| ------------ | --------------------------------------------------------- | ----------------------------- |
+| `backlog`    | Work to be done                                           | Planner creates or reworks it |
+| `active`     | Worker is executing                                       | Worker claims it              |
+| `review`     | Worker finished, claim needs verification                 | Worker submits it             |
+| `accepted`   | Planner verified the claim; durable project understanding | Planner accepts it            |
+| `blocked`    | Concrete external blocker confirmed by planner            | Planner sets it               |
+| `superseded` | Replaced by better understanding                          | Planner replaces it           |
+| `decomposed` | Not a leaf; children represent the work                   | Planner decomposes it         |
 
 ### Derived predicates (computed by tools, never persisted)
 
-| Predicate | Meaning |
-|-----------|---------|
-| `ready` / `runnable` | Backlog leaf + all depends_on accepted + no conflict overlap |
-| `dependency-blocked` | Backlog but depends_on not yet accepted |
-| `conflict-blocked` | Backlog but conflict_scope overlaps with active task |
-| `stale` | Untouched beyond staleness threshold |
-| `needs-decomposition` | Backlog leaf that is too large for a single worker session |
-| `rollup-hint` | All children accepted — planner should review for parent accept |
-| `blocked-hint` | A child is blocked — planner should review parent state |
-| `frontier` | Next actionable work |
-| `kanban-lane` | Which Kanban column this node belongs to |
+| Predicate             | Meaning                                                         |
+| --------------------- | --------------------------------------------------------------- |
+| `ready` / `runnable`  | Backlog leaf + all depends_on accepted + no conflict overlap    |
+| `dependency-blocked`  | Backlog but depends_on not yet accepted                         |
+| `conflict-blocked`    | Backlog but conflict_scope overlaps with active task            |
+| `stale`               | Untouched beyond staleness threshold                            |
+| `needs-decomposition` | Backlog leaf that is too large for a single worker session      |
+| `rollup-hint`         | All children accepted — planner should review for parent accept |
+| `blocked-hint`        | A child is blocked — planner should review parent state         |
+| `frontier`            | Next actionable work                                            |
+| `kanban-lane`         | Which Kanban column this node belongs to                        |
 
 ## Roles
 
 ### Worker
+
 - Asks for one runnable backlog leaf via `tree.next()`
 - Claims it (`backlog → active`)
 - Executes the task
@@ -79,6 +80,7 @@ backlog → active → review → accepted
 - Does NOT set blocked directly, replan, decompose, or create siblings
 
 ### Planner
+
 - Reviews `review` tasks and decides: accept, rework (back to backlog),
   block (confirm external), supersede, or decompose further
 - Creates new `backlog` tasks
@@ -87,8 +89,72 @@ backlog → active → review → accepted
 - Records accepted knowledge summaries and evidence
 - Triggers archive of low-value detail while preserving useful milestones
 - Owns all tree shape mutations
+- Creates or links visible problem-solving tasks when failures/blockers appear,
+  and reconciles `project.problem.resolved` / `project.problem.escalated` events
+  back into affected task branches
+
+Planner wakeups should start with a deterministic quick-refill pass: assign
+already-ready, clear, dependency-satisfied, non-conflicting leaves up to worker
+capacity and dispatch `project.task.assigned` immediately. This does not make
+new project judgments; it only executes work the planner already marked ready.
+If quick refill fills capacity and there is no pending review or high-priority
+human steering, the wake may finish without an owner-agent planning session.
+If human steering, review work, or unclear tree state exists, the owner-agent
+planning session still runs after quick refill.
+
+### Problem Solver
+
+The problem solver is a focused worker for blockers and failures. It is woken by
+`project.problem.requested`, investigates one stable `problemKey`, and emits
+`project.problem.resolved` or `project.problem.escalated`.
+
+It can:
+
+- inspect affected tasks, run artifacts, domain files, and runtime/session
+  evidence
+- fix local runner, replay, test, or app defects
+- verify that the fix removes the blocker, or prove that the blocker is external
+- produce exact resume conditions and affected-task recommendations
+
+It cannot:
+
+- accept tasks or roll up parents
+- reshape task branches
+- assign/retry task leaves directly
+- mark the project complete
+
+The planner owns the durable tree decision after the solver reports back.
+
+Problem-solving tasks are normal visible tree nodes, usually under the affected
+lane or a small problem-solving branch. Use one shared node for one shared root
+cause:
+
+```json
+{
+  "id": "staging-arm-auth-unavailable-20260612",
+  "kind": "problem_solver",
+  "status": "active",
+  "context": {
+    "problemKey": "aks-rp-e2e:staging-arm-auth-unavailable",
+    "affectedTasks": [
+      "ms-create-time-staging-execute-20260612",
+      "wi-upgrade-survival-staging-execute-20260612"
+    ]
+  },
+  "goal": "Diagnose why staging replay workers cannot acquire ARM credentials, fix local runner environment when possible, or escalate with exact resume conditions.",
+  "outputs": [".state/problem-runs.jsonl", "tasks/tree.json"],
+  "acceptance": [
+    "Root cause classified",
+    "Affected tasks have a retry, supersede, or escalation path"
+  ]
+}
+```
+
+This keeps problem resolution large and loud without introducing another
+planner.
 
 ### Tool
+
 - Enforces structural invariants on every mutation
 - Computes derived predicates (readiness, rollup hints, Kanban, staleness)
 - Projections are read-only — the tool does not mutate parent status
@@ -120,11 +186,11 @@ The tool enforces on every mutation:
 Parent status is NOT automatically mutated by the tool. The tool computes
 rollup hints; the planner decides:
 
-| Hint | Tool computes | Planner decides |
-|------|---------------|-----------------|
-| All children `accepted` | `rollup-hint: all-accepted` | Accept parent, or keep decomposed if more work needed |
-| Any child `blocked` | `blocked-hint: child-blocked` | Block parent, rework the child, or supersede |
-| Mix of statuses | No hint | Keep decomposed |
+| Hint                    | Tool computes                 | Planner decides                                       |
+| ----------------------- | ----------------------------- | ----------------------------------------------------- |
+| All children `accepted` | `rollup-hint: all-accepted`   | Accept parent, or keep decomposed if more work needed |
+| Any child `blocked`     | `blocked-hint: child-blocked` | Block parent, rework the child, or supersede          |
+| Mix of statuses         | No hint                       | Keep decomposed                                       |
 
 This keeps the planner as the brain. The tool never makes project judgments.
 
@@ -178,33 +244,30 @@ with better understanding, but should not silently rewrite the original claim.
 
 ```typescript
 // Planner mutations
-tree.create(parentId, task)                    // add backlog leaf
-tree.decompose(nodeId, children)               // split leaf into children
-tree.accept(nodeId, reason, knowledge)         // verify and accept claim
-tree.rework(nodeId, reason)                    // review → back to backlog
-tree.supersede(nodeId, reason, replacementIds) // replace with better work
-tree.block(nodeId, blocker)                    // confirm external blocker
-tree.unblock(nodeId, reason)                   // clear blocker
+tree.create(parentId, task); // add backlog leaf
+tree.decompose(nodeId, children); // split leaf into children
+tree.accept(nodeId, reason, knowledge); // verify and accept claim
+tree.rework(nodeId, reason); // review → back to backlog
+tree.supersede(nodeId, reason, replacementIds); // replace with better work
+tree.block(nodeId, blocker); // confirm external blocker
+tree.unblock(nodeId, reason); // clear blocker
 
 // Worker mutations
-tree.claim(nodeId)                             // backlog → active
-tree.submit(nodeId, result, evidence)          // active → review
+tree.claim(nodeId); // backlog → active
+tree.submit(nodeId, result, evidence); // active → review
 
 // Cleanup (planner-triggered)
-tree.archive(nodeId, summary)                  // collapse low-value accepted detail
-tree.prune(nodeId, reason)                     // remove irrelevant subtree
-
-// Human steering
-tree.attachFeedback(nodeId, feedbackRef)       // link human/agent feedback event
+tree.archive(nodeId, summary); // collapse low-value accepted detail
+tree.prune(nodeId, reason); // remove irrelevant subtree
 
 // Derived queries (tool-owned projections)
-tree.status()                  // compact summary
-tree.next()                    // runnable backlog leaves
-tree.readiness(nodeId)         // why this task is or isn't ready
-tree.kanban()                  // Kanban projection with readiness badges
-tree.rollup(nodeId)            // parent rollup hints
-tree.stale(olderThan)          // untouched nodes
-tree.check()                   // integrity validation
+tree.status(); // compact summary
+tree.next(); // runnable backlog leaves
+tree.readiness(nodeId); // why this task is or isn't ready
+tree.kanban(); // Kanban projection with readiness badges
+tree.rollup(nodeId); // parent rollup hints
+tree.stale(olderThan); // untouched nodes
+tree.check(); // integrity validation
 ```
 
 ## Tree UI and Kanban Projection
@@ -221,32 +284,92 @@ The tree view is the primary human/agent reasoning surface. It should show:
 Task IDs, leases, conflict scopes, and scheduler details are secondary
 metadata. They should not dominate the tree view.
 
+Human feedback from the tree UI should wake the planner directly. Over
+`/api/events`, keep the durable project event payload under `data`:
+
+```json
+{
+  "type": "project.planning.requested",
+  "source": "web-ui",
+  "owner": "agent:aks-explorer",
+  "urgency": "high",
+  "data": {
+    "project": "aks-rp-e2e",
+    "reason": "human-steering",
+    "params": {
+      "task_id": "project",
+      "action": "reflect_and_add_missing_work",
+      "comment": "Review this branch and add missing Go-test discovery work.",
+      "context": {
+        "ui": "kanban"
+      }
+    }
+  }
+}
+```
+
+Do not route explicit task-tree steering through a generic comment transport.
+Discussion streams may keep an audit copy, but the planner wakeup event is the
+control path. Human steering should use high urgency; routine watchdog/refill
+wakes can stay normal urgency.
+
+The planner must treat recent high-priority human steering as pending planner
+input, not only as the current trigger event. A watchdog/refill wake may be the
+event that starts the planner, but the planner prompt should still surface
+pending high-priority human steering before routine refill work. If the user
+points out a missing root task or lane, the planner must either create the task
+under the requested parent or record an explicit refusal/blocker in the tree.
+
 Kanban is a workflow projection, not the source of truth.
 
-`tree.kanban()` computes lanes and readiness badges. The UI renders without
-recomputing.
+`tree.kanban()` computes lanes and readiness badges. The UI should prefer the
+tool-owned projection. If the persisted projection is stale relative to the
+current tree, the UI must show a stale-projection warning before using a
+tree-derived display fallback. The fallback is a display repair, not a new
+source of truth; the task-tree tool still owns the canonical projection.
 
-| Lane | Source |
-|------|--------|
-| Backlog | `backlog` nodes |
-| In Progress | `active` nodes |
-| Review | `review` nodes |
-| Blocked | `blocked` nodes |
-| Done | `accepted` nodes (recent, not yet archived) |
-| Archive | `superseded` + archived accepted |
+| Lane        | Source                                      |
+| ----------- | ------------------------------------------- |
+| Backlog     | `backlog` nodes                             |
+| In Progress | `active` nodes                              |
+| Review      | `review` nodes                              |
+| Blocked     | `blocked` nodes                             |
+| Done        | `accepted` nodes                            |
+
+Superseded nodes and archived accepted detail are tree history, not workflow
+state. They belong in the tree view for understanding how thinking evolved,
+not in the Kanban board which shows current actionable work.
 
 Only leaf nodes appear as cards. `decomposed` parents are structural — they
 appear in the tree view, not the Kanban.
 
+The project Kanban page should present three surfaces together:
+
+- Project health metrics: flow, knowledge coverage, live execution, and
+  hygiene signals from the registered metric system.
+- Current workflow projection: leaf task cards by lane, with compact readiness
+  and blocker context.
+- Task tree context: the planner's reasoning tree, accepted knowledge, evidence,
+  child status summaries, and task-local feedback.
+
+Human interaction should be close to context. The page should provide:
+
+- project-level steering near metrics for refill, execution review, alert
+  triage, and next-move feedback
+- task-level steering on the selected tree node for split, audit, challenge,
+  unblock, escalation, or rework
+- direct `project.planning.requested` events for explicit human steering, with
+  selected task id, UI source, and free-form comment in `data.params`
+
 Backlog cards include readiness badges:
 
-| Badge | Meaning |
-|-------|---------|
-| `runnable` | Ready to dispatch |
-| `dependency-blocked` | Waiting on another task |
-| `conflict-blocked` | Conflict scope overlap with active task |
-| `stale` | Untouched beyond threshold |
-| `needs-decomposition` | Too large for single worker session |
+| Badge                 | Meaning                                 |
+| --------------------- | --------------------------------------- |
+| `runnable`            | Ready to dispatch                       |
+| `dependency-blocked`  | Waiting on another task                 |
+| `conflict-blocked`    | Conflict scope overlap with active task |
+| `stale`               | Untouched beyond threshold              |
+| `needs-decomposition` | Too large for single worker session     |
 
 ## Readiness Computation
 
@@ -285,6 +408,7 @@ No persisted ready state. No stale readiness.
 `tree.check()` validates the full tree:
 
 ### Structural checks
+
 - Every reference (children, depends_on, supersededBy) points to existing node.
 - No circular dependencies or parent-child cycles.
 - No orphan nodes.
@@ -292,6 +416,7 @@ No persisted ready state. No stale readiness.
 - Root exists and is reachable.
 
 ### State checks
+
 - `review` nodes have `result` and `evidence`.
 - `accepted` nodes have `summary` and evidence references, unless the accepted
   node is a pure rollup with `archive_summary`.
@@ -301,10 +426,12 @@ No persisted ready state. No stale readiness.
 - Leaves have no children.
 
 ### Rollup hints
+
 - Parent with all children `accepted`: emit `rollup-hint` for planner.
 - Parent with any child `blocked`: emit `blocked-hint` for planner.
 
 ### Design compliance checks
+
 - No undefined or ambiguous statuses.
 - No `no_work`, `waiting`, `unknown`, `maybe-later`, `ready`, or empty status.
 - No superseded chain longer than 3 (tool auto-collapses).
@@ -313,6 +440,7 @@ No persisted ready state. No stale readiness.
 - Total visible (non-archived) nodes should not exceed 50 (warn).
 
 ### Staleness checks
+
 - `backlog` nodes older than 7 days.
 - `active` nodes older than 24 hours.
 - `blocked` nodes older than 14 days.
@@ -335,6 +463,7 @@ already decided to supersede the parent.
 ### Stale by time
 
 `tree.stale(olderThan)` returns untouched nodes. The planner reviews each:
+
 - Still relevant → touch
 - Irrelevant → prune
 - Blocked → add concrete blocker
@@ -343,6 +472,7 @@ already decided to supersede the parent.
 
 The tool rejects ambiguous states. If work cannot proceed, the planner must
 express why:
+
 - Concrete blocker → `tree.block(nodeId, { condition, category })`
 - Wrong approach → `tree.supersede(nodeId, reason, replacements)`
 - Needs rework → `tree.rework(nodeId, reason)` (back to backlog)
@@ -359,7 +489,8 @@ is no longer useful as live project understanding:
 
 ```typescript
 tree.archive("managedsystem-pool", {
-  summary: "ManagedSystem pool REST lifecycle knowledge accepted; 9/9 paths pass, 8 evidence refs",
+  summary:
+    "ManagedSystem pool REST lifecycle knowledge accepted; 9/9 paths pass, 8 evidence refs",
 });
 ```
 
@@ -387,12 +518,12 @@ The live tree should always be readable by a human in under a minute.
 
 ### Limits
 
-| Limit | Value | Enforcement |
-|-------|-------|-------------|
-| Max visible nodes | 50 | Checker warns |
-| Max children per parent | 15 | Checker warns, planner groups |
-| Max depth | 5 | Checker warns, planner flattens |
-| Max superseded chain | 3 | Tool auto-collapses |
+| Limit                   | Value | Enforcement                     |
+| ----------------------- | ----- | ------------------------------- |
+| Max visible nodes       | 50    | Checker warns                   |
+| Max children per parent | 15    | Checker warns, planner groups   |
+| Max depth               | 5     | Checker warns, planner flattens |
+| Max superseded chain    | 3     | Tool auto-collapses             |
 
 ## Data Structure
 
@@ -458,29 +589,29 @@ The live tree should always be readable by a human in under a minute.
 
 ## Node Fields
 
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | yes | Unique node identifier |
-| `goal` | yes | What this task accomplishes |
-| `status` | yes | backlog, active, review, accepted, blocked, superseded, decomposed |
-| `parent_id` | yes (except root) | Parent node ID |
-| `children` | yes | Child node IDs (empty for leaves) |
-| `created_at` | yes | ISO timestamp |
-| `updated_at` | yes | ISO timestamp |
-| `depends_on` | no | Node IDs that must be accepted first |
-| `result` | no | Worker result (required at review) |
-| `evidence` | no | Evidence refs (required at review) |
-| `summary` | no | Accepted knowledge summary or review result summary |
-| `reusable_for` | no | Future tasks/branches that can reuse this knowledge |
-| `accepted_at` | no | ISO timestamp when planner accepted the claim |
-| `accepted_by` | no | Planner/owner that accepted the claim |
-| `supersededBy` | no | Replacement node IDs (required when superseded) |
-| `reason` | no | Why superseded/blocked/reworked |
-| `blocker` | no | `{ condition, category }` (required when blocked) |
-| `conflict_scope` | no | Mutex group for parallel dispatch |
-| `archived` | no | True when subtree is collapsed |
-| `archive_summary` | no | Human-readable summary of archived subtree |
-| `priority` | no | Dispatch priority within backlog |
+| Field             | Required          | Description                                                        |
+| ----------------- | ----------------- | ------------------------------------------------------------------ |
+| `id`              | yes               | Unique node identifier                                             |
+| `goal`            | yes               | What this task accomplishes                                        |
+| `status`          | yes               | backlog, active, review, accepted, blocked, superseded, decomposed |
+| `parent_id`       | yes (except root) | Parent node ID                                                     |
+| `children`        | yes               | Child node IDs (empty for leaves)                                  |
+| `created_at`      | yes               | ISO timestamp                                                      |
+| `updated_at`      | yes               | ISO timestamp                                                      |
+| `depends_on`      | no                | Node IDs that must be accepted first                               |
+| `result`          | no                | Worker result (required at review)                                 |
+| `evidence`        | no                | Evidence refs (required at review)                                 |
+| `summary`         | no                | Accepted knowledge summary or review result summary                |
+| `reusable_for`    | no                | Future tasks/branches that can reuse this knowledge                |
+| `accepted_at`     | no                | ISO timestamp when planner accepted the claim                      |
+| `accepted_by`     | no                | Planner/owner that accepted the claim                              |
+| `supersededBy`    | no                | Replacement node IDs (required when superseded)                    |
+| `reason`          | no                | Why superseded/blocked/reworked                                    |
+| `blocker`         | no                | `{ condition, category }` (required when blocked)                  |
+| `conflict_scope`  | no                | Mutex group for parallel dispatch                                  |
+| `archived`        | no                | True when subtree is collapsed                                     |
+| `archive_summary` | no                | Human-readable summary of archived subtree                         |
+| `priority`        | no                | Dispatch priority within backlog                                   |
 
 ## Integration
 

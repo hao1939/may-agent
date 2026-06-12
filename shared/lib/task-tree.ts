@@ -79,7 +79,7 @@ export interface ReadinessResult {
 export interface KanbanCard {
   nodeId: string;
   goal: string;
-  lane: "backlog" | "in-progress" | "review" | "blocked" | "done" | "archive";
+  lane: "backlog" | "in-progress" | "review" | "blocked" | "done";
   badges: string[];
 }
 
@@ -479,11 +479,10 @@ export function kanban(tree: TaskTree): KanbanCard[] {
         lane = "blocked";
         break;
       case "accepted":
-        lane = node.archived ? "archive" : "done";
+        lane = "done";
         break;
       case "superseded":
-        lane = "archive";
-        break;
+        continue; // not shown in Kanban — archive is tree history, not workflow
       default:
         continue;
     }

@@ -60,7 +60,7 @@ if (command === "check") {
     if (!lanes[card.lane]) lanes[card.lane] = [];
     lanes[card.lane].push(card);
   }
-  const order = ["backlog", "in-progress", "review", "blocked", "done", "archive"];
+  const order = ["backlog", "in-progress", "review", "blocked", "done"];
   for (const lane of order) {
     const items = lanes[lane] || [];
     if (!items.length) continue;
