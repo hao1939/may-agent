@@ -172,37 +172,32 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-13 ~13:30Z** (24h window, ~3,300 total):
+**Latest snapshot 2026-06-16 ~14:00Z** (24h window, ~3,260 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-ambient (uncommitted files) | 1,014 | 30.7% |
-| commit-finish (finish() uncommitted) | 826 | 25.0% |
-| READ_DEDUP | 596 | 18.1% |
-| SESSION_BASH_CAT | 395 | 12.0% |
-| SESSION_READ | 289 | 8.8% |
-| PATH_HALLUCINATION | 43 | 1.3% |
-| SESSION_BASH_GREP | 40 | 1.2% |
-| Edit-Without-Read (C1.1) | 21 | 0.6% |
-| read-before-edit (workflow) | 92 | 2.8% |
-| hallucinated-path (workflow) | 6 | 0.2% |
+| commit-ambient (uncommitted files) | 997 | 30.6% |
+| commit-finish (finish() uncommitted) | 827 | 25.4% |
+| READ_DEDUP | 579 | 17.8% |
+| SESSION_BASH_CAT | 382 | 11.7% |
+| SESSION_READ | 292 | 9.0% |
+| Edit-Without-Read (C1.1 + workflow) | 94 | 2.9% |
+| PATH_HALLUCINATION | 46 | 1.4% |
+| SESSION_BASH_GREP | 38 | 1.2% |
 
-Total: ~3,300/day (threshold breach continues, **structural floor > threshold**).
+Total: ~3,260/day (threshold breach continues, **structural floor > threshold**).
 
-Notable changes vs 2026-06-13 ~08:30Z snapshot:
-- **Guard count grew ~7.5%** (3,070 → 3,300). Structural breach
-  persists across six consecutive snapshots.
-- **Commit-guard split visible**: ambient warnings (30.7%) and
-  finish-time warnings (25.0%) are now tracked separately. Combined
-  commit-guard is ~55.7%, consistent with prior snapshots.
-- **READ_DEDUP grew** (16.4% → 18.1%), primarily aks-explorer
-  re-reading replay files and model.json.
-- **Monoculture regime absent** — guard composition remains diverse,
-  no single signal >31%.
-- The breach remains structural. Recommendation unchanged: either raise
-  threshold to ~3,500 or calibrate session-read/READ_DEDUP guards
-  for high-volume legitimate patterns (evaluator session inspection,
-  aks-explorer replay re-reads).
+Stable vs prior snapshot (2026-06-13 ~13:30Z):
+- **Guard count flat** (~3,300 → ~3,260, within noise). Structural
+  breach persists across seven+ consecutive snapshots.
+- **Composition stable**: commit-guard combined ~56%, READ_DEDUP ~18%,
+  session-read-guard combined ~22%. No monoculture regime.
+- **Per-agent**: aks-explorer 45%, evaluator 43%, arc 6%, scout 3%,
+  may 2%, dev 2%. READ_DEDUP is 64% aks-explorer, 25% arc, 10% evaluator.
+- The breach remains structural — ~56% is ambient commit-guard noise from
+  shared-worktree concurrency and cannot decrease without guard or threshold
+  calibration. Recommendation: raise threshold to ~3,500 or suppress
+  commit-guard ambient warnings for shared-worktree agents.
 
 ### Known issue: guard name conflation
 
