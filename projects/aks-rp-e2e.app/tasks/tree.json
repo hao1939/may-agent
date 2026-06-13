@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-13T08:23:41.797609+00:00",
+  "updated_at": "2026-06-13T08:26:14.116930+00:00",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "bootstrap-byo-acr-staging-execute-20260613",
@@ -166,7 +166,7 @@
     "kms-v2plus-cmk-privkv-nonkms-staging-20260613": {
       "id": "kms-v2plus-cmk-privkv-nonkms-staging-20260613",
       "parent_id": "spec-runner-and-replays",
-      "status": "active",
+      "status": "review",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -195,7 +195,12 @@
         "assigned_at": "2026-06-13T07:51:10.911Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_kms-v2plus-cmk-privkv-nonkms-staging-20260613"
+        "last_session": "s_task_kms-v2plus-cmk-privkv-nonkms-staging-20260613",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Executed kms-v2plus-enable-cmk-private-kv-from-non-kms replay against staging REST. Run `run_cmk_privkv_nonkms_v5exec` completed in ~20min. Result: 7/8 claim assertions pass, 1 fails due to test code bug (GET assertion navigates wrong property path for securityProfile.azureKeyVaultKms \u2014 returns undefined despite PUT returning 200 and all secret operations confirming CMK active). Classified as **test** failure. Knowledge model path `path.kms.v2plus-enable-cmk-private-kv-from-non-kms` updated to `test-blocked` with evidence.",
+        "last_worker_completed_at": "2026-06-13T08:24:27.664Z",
+        "last_worker_evidence": []
       },
       "session_id": "s_task_kms-v2plus-cmk-privkv-nonkms-staging-20260613",
       "session_history": [
@@ -254,7 +259,7 @@
     "kms-v2plus-pmk-priv-staging-20260613": {
       "id": "kms-v2plus-pmk-priv-staging-20260613",
       "parent_id": "spec-runner-and-replays",
-      "status": "backlog",
+      "status": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -278,9 +283,18 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-13T07:30:34.511Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-pmk-priv-staging-20260613_20260613082535",
+        "assigned_at": "2026-06-13T08:25:35.583Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-pmk-priv-staging-20260613"
       },
-      "updated_at": "2026-06-13T08:17:25.783396+00:00"
+      "updated_at": "2026-06-13T08:17:25.783396+00:00",
+      "session_id": "s_task_kms-v2plus-pmk-priv-staging-20260613",
+      "session_history": [
+        "s_task_kms-v2plus-pmk-priv-staging-20260613"
+      ]
     },
     "kms-v2plus-cmk-pub-firewall-staging-20260613": {
       "id": "kms-v2plus-cmk-pub-firewall-staging-20260613",
@@ -324,7 +338,7 @@
     "kms-v2plus-pmk-privvnet-staging-20260613": {
       "id": "kms-v2plus-pmk-privvnet-staging-20260613",
       "parent_id": "spec-runner-and-replays",
-      "status": "backlog",
+      "status": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -348,9 +362,18 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-13T07:30:47.764Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_kms-v2plus-pmk-privvnet-staging-20260613_20260613082535",
+        "assigned_at": "2026-06-13T08:25:35.583Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_kms-v2plus-pmk-privvnet-staging-20260613"
       },
-      "updated_at": "2026-06-13T08:17:25.783396+00:00"
+      "updated_at": "2026-06-13T08:17:25.783396+00:00",
+      "session_id": "s_task_kms-v2plus-pmk-privvnet-staging-20260613",
+      "session_history": [
+        "s_task_kms-v2plus-pmk-privvnet-staging-20260613"
+      ]
     },
     "kms-v2plus-svc-cert-rot-staging-20260613": {
       "id": "kms-v2plus-svc-cert-rot-staging-20260613",
@@ -425,10 +448,20 @@
       "parent_id": "project",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
-      "updated_at": "2026-06-13T08:23:41.797609+00:00",
+      "updated_at": "2026-06-13T08:26:14.116930+00:00",
       "archived": true,
       "archive_summary": "Knowledge milestone. 38 subtasks completed.",
-      "summary": "Feature learning pipeline established: Go e2ev3 source discovery, feature packets, spec extraction."
+      "summary": "Discovered 14 AKS feature families from Go e2ev3 source code, public API specs, and documentation. Created 138 atomic test specs across managedsystem-pool, app-routing, workload-identity, oidc-issuer, bootstrap-profile, KMS etcd encryption, deployment-safeguards, planned-maintenance, workload-autoscaler (VPA/KEDA), image-cleaner, node-restriction, node-autoprovision, virtualmachines-agentpool, jwt-authenticator, and trusted-access. Each spec traces to Go e2ev3 source scenarios and declares setup, operations, assertions, and cleanup.",
+      "evidence": [
+        "features/*.yaml (14 feature packets)",
+        "specs/index.json (138 specs)",
+        "model/knowledge-map/model.json (129 features, 133 paths)"
+      ],
+      "reusable_for": [
+        "Adding new AKS features: follow the same source \u2192 feature-packet \u2192 spec \u2192 replay chain",
+        "Spec schema: specs/SCHEMA.md defines the contract",
+        "Feature packet schema: features/SCHEMA.md defines ground truth format"
+      ]
     },
     "evidence-feedback-and-model-update": {
       "id": "evidence-feedback-and-model-update",
@@ -437,10 +470,21 @@
       "parent_id": "project",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
-      "updated_at": "2026-06-13T08:23:41.797609+00:00",
+      "updated_at": "2026-06-13T08:26:14.116930+00:00",
       "archived": true,
       "archive_summary": "Knowledge milestone. 25 subtasks completed.",
-      "summary": "Evidence diagnosis and model feedback loop established. Classification pipeline working."
+      "summary": "Established automated model feedback loop: spec runs auto-update model.json with path status, evidence refs, and regenerated views. Classified 133 paths into pass/fail/blocked with root-cause analysis. Key findings: CLI default-payload bug (managedsystem), KMS private KV needs feature flag, VPA cert-renewal reconciler missing, BYO ACR needs VNet precondition. 108 paths now pass (81%).",
+      "evidence": [
+        "runner/model-update.ts (auto-update engine)",
+        "runner/model-status.ts (coverage CLI)",
+        "model/knowledge-map/views/ (generated views)",
+        "evidence/archive/ (1985 evidence files)"
+      ],
+      "reusable_for": [
+        "Model auto-update: bun run model-update <run-dir>",
+        "Coverage review: bun run status --gaps",
+        "Failure triage pattern: classify as product-gap / test-gap / environment / source-mismatch"
+      ]
     },
     "model-consolidation-and-coverage-assessment": {
       "id": "model-consolidation-and-coverage-assessment",
@@ -449,10 +493,18 @@
       "parent_id": "project",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
-      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:26:14.116930+00:00",
       "archived": true,
       "archive_summary": "Knowledge milestone. 4 subtasks completed.",
-      "summary": "Reconcile the two divergent model files, link specs to features, and assess coverage gaps to plan the next project phase."
+      "summary": "Reconciled legacy e2e-capability-model.json with canonical model/knowledge-map/model.json. Linked 138 specs to model features via featurePathIds. Identified 41-unknown gap and created coverage-gap-assessment with prioritized remediation plan.",
+      "evidence": [
+        "evidence/archive/coverage-gap-assessment.md",
+        "evidence/archive/model-judgment-reconciliation.md"
+      ],
+      "reusable_for": [
+        "Model validation: bun model/tools/src/validate.ts model/knowledge-map/model.json",
+        "View generation: bun model/tools/src/generate-knowledge-map-views.ts"
+      ]
     },
     "blocked-frontier-review": {
       "id": "blocked-frontier-review",
@@ -461,10 +513,18 @@
       "parent_id": "project",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
-      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:26:14.116930+00:00",
       "archived": true,
       "archive_summary": "Knowledge milestone. 0 subtasks completed.",
-      "summary": "Review the whole blocked frontier and decide which blockers are real, stale, too coarse, missing evidence, or locally unblockable."
+      "summary": "Reviewed all blocked paths. Classified: 5 genuine external (MSI/HCP access, Machine preview flag, KMS trust-service flag, HSM RBAC, VPA reconciler). 2 fixable with config (BYO ACR VNet, KMS private KV feature flag). Created feature sub-packets documenting each blocker's root cause and resume condition.",
+      "evidence": [
+        "evidence/archive/blocked-frontier-review.md",
+        "features/*/fail-*-investigation.yaml"
+      ],
+      "reusable_for": [
+        "Blocker triage: check if blocker is stale, local-fixable, or genuinely external",
+        "Resume conditions documented per blocked path in model notes"
+      ]
     },
     "phase-2-coverage-completion": {
       "id": "phase-2-coverage-completion",
@@ -473,10 +533,18 @@
       "parent_id": "project",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
-      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:26:14.116930+00:00",
       "archived": true,
       "archive_summary": "Knowledge milestone. 5 subtasks completed.",
-      "summary": "Close the 41-unknown gap identified in the coverage-gap-assessment: fix 3 status anomalies, design 13 missing specs, and plan the first execution wave for 21 draft-spec features."
+      "summary": "Closed the 41-unknown gap: fixed 3 status anomalies, designed 13 missing specs, planned execution wave 1 for 21 draft-spec features. Expanded coverage from 64 features/68 paths to 129 features/133 paths. Pass rate went from 41% to 81%.",
+      "evidence": [
+        "evidence/archive/execution-wave-1-plan.md",
+        "evidence/archive/coverage-gap-assessment.md"
+      ],
+      "reusable_for": [
+        "Coverage expansion pattern: discover \u2192 spec \u2192 replay \u2192 run \u2192 classify",
+        "Execution wave planning: bun run plan --gaps"
+      ]
     },
     "staging-rest-execution-frontier": {
       "id": "staging-rest-execution-frontier",
@@ -485,17 +553,29 @@
       "parent_id": "spec-runner-and-replays",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
-      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:26:14.116930+00:00",
       "archived": true,
       "archive_summary": "Knowledge milestone. 9 subtasks completed.",
-      "summary": "Drive the next project branch through real staging REST execution: select high-value specs, run them through the project runner on devbox/staging, collect evidence, classify failures, and feed results"
+      "summary": "Executed first wave of staging REST tests. Verified ManagedSystem, bootstrap-profile, OIDC, workload-identity, KMS v2/v2plus, deployment-safeguards, and planned-maintenance live on staging. Combined run planner (bun run plan) packs specs into minimal clusters. Direct ARM REST replaces az CLI at runtime.",
+      "evidence": [
+        "evidence/staging-execution-scorecard-20260612.md",
+        "runner/plan-run.ts (multi-spec planner)",
+        "runner/generate-combined.ts (combined replay generator)",
+        "replays/lib/azure-resource.ts (direct ARM REST)"
+      ],
+      "reusable_for": [
+        "Run tests: bun run spec <id>",
+        "Pack and run: bun run plan --feature <name> \u2192 bun run generate <plan> \u2192 bun <combined>",
+        "Direct ARM REST: no az CLI needed at runtime"
+      ]
     }
   },
   "active_task_ids": [
     "bootstrap-byo-acr-staging-execute-20260613",
-    "kms-v2plus-cmk-privkv-nonkms-staging-20260613",
     "kms-v2plus-cmk-pub-firewall-staging-20260613",
-    "kms-v2plus-pmk-priv-disable-key-staging-20260613"
+    "kms-v2plus-pmk-priv-disable-key-staging-20260613",
+    "kms-v2plus-pmk-priv-staging-20260613",
+    "kms-v2plus-pmk-privvnet-staging-20260613"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
