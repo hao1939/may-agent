@@ -438,6 +438,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       return;
     }
 
+    ctx.sdk.metrics.defineMany(METRICS);
+
     const projects = scanAllProjects({ projectsRoot });
     if (projects.length === 0) {
       ctx.sdk.emit("handler.skipped", {
@@ -446,10 +448,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         projectsRoot,
         eventType: event?.type ?? "timer.tick",
       });
+      // Still record zero-value metrics so they don't go stale and cause
+      // status-reality-mismatch alerts in metrics-snapshot.
+      const note = JSON.stringify({ trigger: event?.type ?? "timer.tick", projects: 0, findings: [] });
+      for (const metric of METRICS) {
+        recordMetric(ctx, metric.id, 0, now, note, 0);
+      }
+      for (const metric of METRICS) ctx.sdk.metrics.evaluate(metric.id);
+      ctx.sdk.log("info", `[project-steward] no projects found, recorded zero-value metrics`);
       return;
     }
-
-    ctx.sdk.metrics.defineMany(METRICS);
 
     const reports = projects.map(analyzeProject);
     for (let i = 0; i < projects.length; i++) {
