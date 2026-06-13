@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "may-agent",
-  "updated_at": "2026-06-13T17:35:00Z",
+  "updated_at": "2026-06-13T21:05:00Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
@@ -682,11 +682,11 @@
       "id": "deploy-committed-platform-changes",
       "parent_id": "platform-build-test-release-hygiene",
       "children": [],
-      "status": "ready",
+      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
-      "goal": "Rebuild and deploy the may-agent binary so committed platform changes (V3 loader, cron project-scope filter, SDK improvements) take effect in the running daemon.",
+      "goal": "Deploy the may-agent binary with commit 88871bc3 (V3 loader + cron project-scope filter) to ALL environments.",
       "inputs": [
         "projects/may-agent/src/app/cron.ts",
         "projects/may-agent/src/app/loader/project-app-loader.ts",
@@ -707,10 +707,20 @@
       "conflict_scope": [
         "platform-build-test"
       ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T21:05:00Z",
+        "reason": "Binary at /usr/local/bin/may-agent rebuilt at 21:01 UTC with eventProjectId (2 grep matches). Daemon restarted at 21:03 UTC. Zero may-agent-project-planner misfires since restart despite ongoing aks-rp-e2e planning events. All handlers loading correctly. All 3 environments now deployed: devbox (18:08 UTC), aks-rp-e2e container (18:24 UTC), codespace (21:01 UTC)."
+      },
       "context": {
-        "root_cause": "Code for cron project-scope filter was in the working tree but uncommitted when the binary was built at 16:15 UTC. The binary was serving old code. This session committed the changes (88871bc3) and confirmed tests pass but cannot replace the root-owned binary.",
-        "observed_at": "2026-06-13T17:30:00Z",
-        "evidence": "handler.started for may-agent-project-planner at 1781371469731 triggered by aks-rp-e2e event at 1781371469728. git diff showed uncommitted changes in cron.ts including the eventProjectId helper."
+        "root_cause": "Codespace container binary was built at 16:15 UTC before the cron project-scope filter was committed.",
+        "observed_at": "2026-06-13T18:12:00Z",
+        "resolved_at": "2026-06-13T21:01:00Z",
+        "deploy_status": {
+          "devbox_host": "DEPLOYED — binary eventProjectId present, timestamp 18:08 UTC",
+          "aks_rp_e2e_container": "DEPLOYED — binary 100423808 bytes, timestamp 18:24 UTC",
+          "codespace_container": "DEPLOYED — binary rebuilt at 21:01 UTC, eventProjectId present (2 matches), daemon restarted 21:03 UTC"
+        }
       }
     },
     "platform-project-app-v3-loader": {
