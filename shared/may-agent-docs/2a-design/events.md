@@ -822,6 +822,23 @@ enforces these windows:
 
 After deletions exceed 1,000 rows, a `VACUUM` reclaims disk space.
 
+**Tables with no retention policy (gap — 2026-06-15):**
+
+| Table | Rows | Oldest data | Growth rate | Timestamp column |
+|---|---|---|---|---|
+| `session_digests` | ~51k | ~30 days | ~1,700/day | `created_at` |
+| `workflow_runs` | ~48k | ~37 days | ~1,300/day | `startedAt` |
+| `evaluations` | ~19k | ~51 days | ~380/day | `createdAt` |
+| `file_reads` | ~6k | — | — | — |
+| `notification_messages` | ~3k | — | — | — |
+| `metric_alerts` | ~2k | — | — | — |
+
+These tables accumulate unboundedly. With the DB at 1.2GB (57% of the 2GB
+`infra.persist.db-size-mb` threshold), adding retention for `session_digests`
+(14d, matching sessions), `workflow_runs` (14d), and `evaluations` (30d) to
+`db-retention.ts` would cap growth. Requires a `src/`-adjacent change
+(`agents/may/handlers/db-retention.ts`) — proposal needed.
+
 **Implication for agents:** Any query window exceeding the retention limit returns
 incomplete data. `COUNT(*)` over `events` reflects only the surviving window, not
 lifetime totals. Session-based analytics should stay within 14 days.
