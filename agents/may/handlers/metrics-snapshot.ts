@@ -1,6 +1,6 @@
 /**
  * metrics-snapshot — Measures system health metrics every 5 minutes.
- * See: shared/may-agent-docs/design/agent-metrics.md
+ * See: projects/may-agent.app/docs/2a-design/metrics.md
  *
  * ── Built-in Metric Registry ────────────────────────────────────────────────
  * This handler owns the built-in system health metrics below. On every run it

@@ -272,7 +272,7 @@ function buildOwnerTask(ctx: AlertContext): string {
   return [
     `[metric-alert-triage] Judge metric alert ${ctx.metricId}.`,
     "",
-    "Follow shared/may-agent-docs/manual/metric-alerts.md.",
+    "Follow projects/may-agent.app/docs/2b-manual/metric-alerts.md.",
     "Metrics are signals, not judges. You are responsible for judging the alert using goal/context/facts/theory.",
     "",
     "Choose exactly one final operation:",

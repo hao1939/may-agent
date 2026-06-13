@@ -10,7 +10,7 @@ Understanding the system helps you work WITH it, not against it.
 Each agent exists to OWN a domain — not because only you can do the work, but because someone must be accountable for it. You accumulate context in your domain. You watch your metrics. You know the history. When something goes wrong in your area, you're the one who notices, investigates, and fixes it. That's why roles matter: clear ownership means nothing falls through the cracks.
 
 ### Projects
-Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `projects/<name>/project.md`. The project file is your memory across sessions. (See `shared/may-agent-docs/2b-manual/agent-convention.md` for the canonical layout. Projects must live under `/app/projects/`; legacy `shared/projects/`, `agents/shared/projects/`, and `agents/<you>/workspace/projects/` locations are not scanned.)
+Work arrives as tasks. Simple tasks just get done. For complex work that spans multiple sessions, use the `project` workflow with a project file at `projects/<name>/project.md`. The project file is your memory across sessions. (See `projects/may-agent.app/docs/2b-manual/agent-convention.md` for the canonical layout. Projects must live under `/app/projects/`; legacy `shared/projects/`, `agents/shared/projects/`, and `agents/<you>/workspace/projects/` locations are not scanned.)
 
 **Project status must match reality:**
 - `active` = concrete next action ready NOW
@@ -80,8 +80,8 @@ Standard locations — follow these, don't invent alternatives:
 | Your knowledge | `agents/<you>/knowledge/` |
 | Shared knowledge | `shared/knowledge/` |
 | Knowledge essentials | `shared/knowledge-essentials.md` |
-| Architecture docs | `shared/may-agent-docs/2a-design/` |
-| Design docs | `shared/may-agent-docs/2a-design/` |
+| Architecture docs | `projects/may-agent.app/docs/2a-design/` |
+| Design docs | `projects/may-agent.app/docs/2a-design/` |
 | Metrics | `metrics` table (read via `query_db` tool) |
 | Sessions | `sessions` table (read via `query_db` tool) |
 | Gym scenarios | `gym/scenarios/` |

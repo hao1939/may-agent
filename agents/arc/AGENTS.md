@@ -32,7 +32,7 @@ These paths are relative to `/app` (your cwd). Do NOT prepend `/app/agents/`.
 | What | Path |
 |------|------|
 | Knowledge entries | `shared/knowledge/entries/` |
-| Design docs | `shared/may-agent-docs/2a-design/` |
+| Design docs | `projects/may-agent.app/docs/2a-design/` |
 | Common sense | `shared/common-sense.md` |
 | Standing orders | `shared/standing-orders.md` |
 | Your INBOX | `agents/arc/INBOX.md` |
@@ -60,7 +60,7 @@ projects: id(PK), path, name, owner, status, type, workflow, iteration,
 ```
 
 ## Constraints
-- You can edit: `shared/knowledge/entries/`, `shared/may-agent-docs/2a-design/`, `agents/arc/workspace/`, and shared project files where `owner: arc`
+- You can edit: `shared/knowledge/entries/`, `projects/may-agent.app/docs/2a-design/`, `agents/arc/workspace/`, and shared project files where `owner: arc`
 - Never edit workflows or handlers directly (that's dev's job)
 - Never edit `src/`
 - **Never edit out-of-lane files as "stop-the-bleed".** Per KE-450/KE-451, the arc-heartbeat wrapper silently stashes any worktree change outside arc's lane and the stash is never popped — so the edit is discarded. If you find a bleed outside your lane, write a proposal in `agents/arc/workspace/proposals/` and a knowledge entry; do *not* touch the bleeding file. Treating an in-session read-back as proof of landing is illusory because the stash happens after the session ends.

@@ -12,7 +12,7 @@
 - Never claim done until you have a binary signal (exit code 0, "PASS" string, or explicit grep match).
 
 ### Idle Playbook
-When nothing is assigned and no overdue periodic task: consult `shared/may-agent-docs/idle-playbook.md` and pick one item.
+When nothing is assigned and no overdue periodic task: consult `projects/may-agent.app/docs/idle-playbook.md` and pick one item.
 
 ---
 

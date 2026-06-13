@@ -29,7 +29,7 @@
 
 ## When Doing Research (activation: designing experiments, writing KEs)
 
-- Design docs: `shared/may-agent-docs/2a-design/`
+- Design docs: `projects/may-agent.app/docs/2a-design/`
 - Scaffold scripts: `agents/bob/workspace/scripts/new-hypothesis.sh`, `new-ke.sh`, `new-experiment.sh`
 - Briefs to tech-lead: use `workflow reviewed-delivery`
 - **Pre-Work Discovery Check**: `grep -i "<keyword>" /app/projects/cross-agent-collaboration/outputs/shared-output-manifest.md`

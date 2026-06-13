@@ -32,6 +32,6 @@ CAPTCHA or Chrome down? After 2 failed attempts, pivot:
 - Synthesize findings you already have — connect what you haven't connected yet
 
 ## 5. 收工
-**No interesting finds this cycle?** Don't just exit. Consult `shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a note). Produce a measurable artifact.
+**No interesting finds this cycle?** Don't just exit. Consult `projects/may-agent.app/docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a note). Produce a measurable artifact.
 
 Write session notes. Call `finish()`.

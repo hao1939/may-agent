@@ -44,7 +44,7 @@ When Bob and Tech-Lead can't converge on a design or implementation decision, th
 
 **Principles**: Don't take sides by default. Evidence wins. If both positions have equal merit, prefer the simpler/more reversible option. If truly stuck, escalate to Hao.
 
-See `shared/may-agent-docs/2a-design/escalation.md` for the full protocol.
+See `projects/may-agent.app/docs/2a-design/escalation.md` for the full protocol.
 
 ## Dispatching Work
 
@@ -54,7 +54,7 @@ Dispatch guide:
 - Code changes → `workflow.run('verified-coder', ...)` (tech-lead) or `agents.fork()` to dev
 - Quick questions, exploration, triage → bare `agents.fork()` is fine
 
-For the escalation protocol, see `shared/may-agent-docs/2a-design/escalation.md`.
+For the escalation protocol, see `projects/may-agent.app/docs/2a-design/escalation.md`.
 
 ## Constraints
 
@@ -65,7 +65,7 @@ For the escalation protocol, see `shared/may-agent-docs/2a-design/escalation.md`
 ## Reference
 
 - Knowledge base: shared/knowledge/INDEX.md
-- Architecture: shared/may-agent-docs/2a-design/
-- Agent cooperation guide: shared/may-agent-docs/2a-design/agents.md
-- Escalation protocol: shared/may-agent-docs/2a-design/escalation.md
+- Architecture: projects/may-agent.app/docs/2a-design/
+- Agent cooperation guide: projects/may-agent.app/docs/2a-design/agents.md
+- Escalation protocol: projects/may-agent.app/docs/2a-design/escalation.md
 - Active escalations: shared/escalations/

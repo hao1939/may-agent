@@ -906,7 +906,7 @@ describe("evaluator aftermath transcript checks", () => {
         role: "user",
         content: [
           "You are **may** waking up for your heartbeat.",
-          "follow agents/shared/may-agent-docs/manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.",
+          "follow projects/may-agent.app/docs/2b-manual/metric-alerts.md and state the chosen operation plus evidence in your final summary.",
           "Do NOT take destructive actions against the live system without explicit human approval.",
         ].join("\n"),
       }),
@@ -917,7 +917,7 @@ describe("evaluator aftermath transcript checks", () => {
             type: "toolCall",
             id: "r1",
             name: "read",
-            arguments: { path: "agents/shared/may-agent-docs/manual/metric-alerts.md" },
+            arguments: { path: "projects/may-agent.app/docs/2b-manual/metric-alerts.md" },
           },
         ],
       }),
@@ -937,11 +937,11 @@ describe("evaluator aftermath transcript checks", () => {
     const transcript = [
       JSON.stringify({
         role: "user",
-        content: "Do not edit agents/shared/may-agent-docs/manual/metric-alerts.md.",
+        content: "Do not edit projects/may-agent.app/docs/2b-manual/metric-alerts.md.",
       }),
       JSON.stringify({
         role: "assistant",
-        content: "I read and Audited agents/shared/may-agent-docs/manual/metric-alerts.md for correctness. All looks good.",
+        content: "I read and Audited projects/may-agent.app/docs/2b-manual/metric-alerts.md for correctness. All looks good.",
       }),
     ].join("\n");
 

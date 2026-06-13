@@ -1,7 +1,7 @@
 /**
  * Task Tree Engine — pure-function library for project task trees.
  *
- * Design: shared/may-agent-docs/2a-design/task-tree-engine.md
+ * Design: projects/may-agent.app/docs/2a-design/task-tree-engine.md
  *
  * All mutations are pure: tree in → new tree out. Callers own I/O.
  * The tool enforces structure. The planner makes judgments.

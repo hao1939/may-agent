@@ -28,7 +28,7 @@ Every heartbeat:
 ## Metrics Philosophy
 - Every investigation should ask: "why didn't we catch this earlier?"
 - If the answer is "no metric covered it" → add one
-- Metrics doc: `shared/may-agent-docs/2a-design/metrics.md`
+- Metrics doc: `projects/may-agent.app/docs/2a-design/metrics.md`
 - Register metrics via: `INSERT INTO metrics (id, name, owner, source_query, target, threshold, alert_op, ...)`
 - The metrics-snapshot handler auto-measures anything with `source_query` or `source_command`
 

@@ -1,0 +1,588 @@
+{
+  "version": 1,
+  "project": "may-agent",
+  "updated_at": "2026-06-13T15:45:00Z",
+  "project_lifecycle": "active",
+  "root_task_id": "project",
+  "active_task_id": null,
+  "active_task_ids": [],
+  "max_concurrent": 2,
+  "tasks": {
+    "project": {
+      "id": "project",
+      "parent_id": null,
+      "children": [
+        "platform-runtime-contracts",
+        "platform-event-session-task-execution",
+        "platform-persistence-read-models",
+        "platform-web-ui-observability",
+        "platform-project-app-v2-adoption",
+        "platform-build-test-release-hygiene",
+        "platform-signal-intake-loop"
+      ],
+      "status": "decomposed",
+      "kind": "project",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Provide a stable, flexible infrastructure substrate for the May agent system.",
+      "inputs": [
+        "projects/may-agent.app/project.json",
+        "projects/may-agent.app/archive/platform-root-project.md",
+        "projects/may-agent/"
+      ],
+      "outputs": [
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent.app/project.json"
+      ],
+      "acceptance": [
+        "Platform infrastructure changes are driven by concrete signals.",
+        "Shared project execution surfaces are reusable by multiple projects.",
+        "The project state is understandable from the task tree and runtime frame."
+      ],
+      "forbidden": [
+        "Do not encode domain-project strategy inside generic platform handlers.",
+        "Do not let a worker decide project completion."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-root"
+      ]
+    },
+    "platform-runtime-contracts": {
+      "id": "platform-runtime-contracts",
+      "parent_id": "project",
+      "children": [
+        "project-app-v2-runtime-contract-audit"
+      ],
+      "status": "decomposed",
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Keep runtime contracts explicit, typed, and reusable across project apps.",
+      "inputs": [
+        "projects/may-agent.app/docs/2a-design/project-app-v2.md",
+        "projects/may-agent.app/docs/2a-design/project-execution-engine.md"
+      ],
+      "outputs": [
+        "projects/may-agent.app/docs/2a-design/"
+      ],
+      "acceptance": [
+        "Runtime boundaries distinguish platform mechanisms from project-owned behavior."
+      ],
+      "forbidden": [
+        "Do not add a global project brain that owns domain strategy."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "docs/project-app-v2"
+      ]
+    },
+    "project-app-v2-runtime-contract-audit": {
+      "id": "project-app-v2-runtime-contract-audit",
+      "parent_id": "platform-runtime-contracts",
+      "children": [],
+      "status": "proposed",
+      "kind": "review",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Audit the v2 project app contract after platform adoption and identify remaining runtime gaps.",
+      "inputs": [
+        "projects/may-agent.app/app.ts",
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent.app/docs/2a-design/project-app-v2.md"
+      ],
+      "outputs": [
+        "outputs/platform-v2-runtime-contract-audit.md"
+      ],
+      "acceptance": [
+        "Lists contract gaps found while adopting platform.",
+        "Separates immediate fixes from future runtime work."
+      ],
+      "forbidden": [
+        "Do not change runtime behavior without a concrete failing contract."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-v2-contract-audit"
+      ]
+    },
+    "platform-event-session-task-execution": {
+      "id": "platform-event-session-task-execution",
+      "parent_id": "project",
+      "children": [
+        "event-native-project-task-loops-review"
+      ],
+      "status": "decomposed",
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Keep project planning, worker pickup, completion, and rollup event-native and observable.",
+      "inputs": [
+        "projects/may-agent/src/",
+        "projects/may-agent.app/docs/2a-design/events.md"
+      ],
+      "outputs": [
+        "outputs/event-native-project-task-loops-review.md"
+      ],
+      "acceptance": [
+        "Task loops can be explained as event edges rather than hidden global control flow."
+      ],
+      "forbidden": [
+        "Do not make workers own global project planning."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-event-task-execution"
+      ]
+    },
+    "event-native-project-task-loops-review": {
+      "id": "event-native-project-task-loops-review",
+      "parent_id": "platform-event-session-task-execution",
+      "children": [],
+      "status": "ready",
+      "kind": "review",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Review the event-native planner and worker loop contract against the current implementation.",
+      "inputs": [
+        "projects/may-agent.app/docs/2a-design/project-execution-engine.md",
+        "projects/may-agent/src/"
+      ],
+      "outputs": [
+        "outputs/event-native-project-task-loops-review.md"
+      ],
+      "acceptance": [
+        "Explains which event edges are implemented, stubbed, or still manual.",
+        "Identifies the smallest next implementation task if the contract is incomplete."
+      ],
+      "forbidden": [
+        "Do not conflate task execution with project planning."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-event-task-execution"
+      ]
+    },
+    "platform-persistence-read-models": {
+      "id": "platform-persistence-read-models",
+      "parent_id": "project",
+      "children": [
+        "generic-project-task-read-model-hardening"
+      ],
+      "status": "decomposed",
+      "kind": "workstream",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Provide stable read models for projects, sessions, metrics, learning, and task state.",
+      "inputs": [
+        "projects/may-agent/src/app/http/server.ts",
+        "projects/may-agent/src/"
+      ],
+      "outputs": [
+        "outputs/generic-project-task-read-model-hardening.md"
+      ],
+      "acceptance": [
+        "Shared UI can read project task state without project-specific file parsing."
+      ],
+      "forbidden": [
+        "Do not require the HTTP layer to understand domain-specific task meaning."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-read-models"
+      ]
+    },
+    "generic-project-task-read-model-hardening": {
+      "id": "generic-project-task-read-model-hardening",
+      "parent_id": "platform-persistence-read-models",
+      "children": [],
+      "status": "proposed",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "tech-lead",
+      "goal": "Harden the generic /api/projects/tasks read model with schema validation and clearer error states.",
+      "inputs": [
+        "projects/may-agent/src/app/http/server.ts"
+      ],
+      "outputs": [
+        "outputs/generic-project-task-read-model-hardening.md"
+      ],
+      "acceptance": [
+        "Malformed task trees report actionable errors.",
+        "Missing task trees remain a graceful empty state."
+      ],
+      "forbidden": [
+        "Do not reject older projects merely because they have not adopted v2."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-read-models"
+      ]
+    },
+    "platform-web-ui-observability": {
+      "id": "platform-web-ui-observability",
+      "parent_id": "project",
+      "children": [
+        "project-kanban-api-read-model",
+        "shared-project-kanban-platform-ui",
+        "shared-kanban-steering-actions-design"
+      ],
+      "status": "decomposed",
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Make shared platform UI expose project execution state while leaving project-local UI domain-specific.",
+      "inputs": [
+        "projects/may-agent/packages/webui/static/",
+        "projects/may-agent/src/app/http/server.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent/packages/webui/static/styles.css"
+      ],
+      "acceptance": [
+        "Any project with tasks/tree.json can show shared Kanban and task tree.",
+        "Project-local /ui can focus on domain features."
+      ],
+      "forbidden": [
+        "Do not bake aks-rp-e2e feature assumptions into the shared platform UI."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-webui-projects"
+      ]
+    },
+    "project-kanban-api-read-model": {
+      "id": "project-kanban-api-read-model",
+      "parent_id": "platform-web-ui-observability",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Expose a generic project task-tree API for shared Kanban.",
+      "inputs": [
+        "projects/may-agent/src/app/http/server.ts",
+        "projects/may-agent.app/tasks/tree.json"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/http/server.ts"
+      ],
+      "acceptance": [
+        "/api/projects/tasks reads tasks/tree.json for any allowed project path.",
+        "Missing task trees return an available=false response instead of a hard UI failure."
+      ],
+      "forbidden": [
+        "Do not parse project-specific domain artifacts in the generic task API."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-project-task-api"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-03T00:00:00Z",
+        "reason": "Implemented generic task-tree read endpoint."
+      }
+    },
+    "shared-project-kanban-platform-ui": {
+      "id": "shared-project-kanban-platform-ui",
+      "parent_id": "platform-web-ui-observability",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Move generic project Kanban and task-tree projection into the shared platform web UI.",
+      "inputs": [
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent/packages/webui/static/pages/projects.js",
+        "projects/may-agent/packages/webui/static/styles.css"
+      ],
+      "outputs": [
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent/packages/webui/static/pages/projects.js",
+        "projects/may-agent/packages/webui/static/styles.css",
+        "ui/pages/project-kanban.js"
+      ],
+      "acceptance": [
+        "Project detail has a Kanban tab.",
+        "Kanban loads through /api/projects/tasks.",
+        "The board shows lanes, current state, task cards, collapsible tree, and task details.",
+        "The UI handles projects without tasks/tree.json gracefully."
+      ],
+      "forbidden": [
+        "Do not make this page AKS-specific.",
+        "Do not mutate task state from the first shared projection."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-webui-projects"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-03T10:14:45Z",
+        "reason": "Kanban tab wired into project detail, static UI synced, TypeScript check passed, focused HTTP tests passed, and changed browser scripts parse."
+      }
+    },
+    "shared-kanban-steering-actions-design": {
+      "id": "shared-kanban-steering-actions-design",
+      "parent_id": "platform-web-ui-observability",
+      "children": [],
+      "status": "proposed",
+      "kind": "design",
+      "priority": "P2",
+      "owner": "tech-lead",
+      "goal": "Design shared steering actions for task comments, manual advance, and task review from the Kanban surface.",
+      "inputs": [
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent.app/docs/2a-design/project-execution-engine.md"
+      ],
+      "outputs": [
+        "outputs/shared-kanban-steering-actions-design.md"
+      ],
+      "acceptance": [
+        "Defines which actions are generic platform actions and which remain project-local.",
+        "Keeps mutation event-native through project actions/events."
+      ],
+      "forbidden": [
+        "Do not let the UI directly rewrite tasks/tree.json."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-webui-projects"
+      ]
+    },
+    "platform-project-app-v2-adoption": {
+      "id": "platform-project-app-v2-adoption",
+      "parent_id": "project",
+      "children": [
+        "platform-v2-layout-migration",
+        "platform-v2-second-adopter-rollup",
+        "project-app-v2-adoption-playbook"
+      ],
+      "status": "decomposed",
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Adopt Project App V2 in the platform project and turn the adoption into a reusable migration pattern.",
+      "inputs": [
+        "projects/may-agent.app/archive/platform-root-project.md",
+        "projects/may-agent.app/",
+        "projects/may-agent.app/tasks/tree.json"
+      ],
+      "outputs": [
+        "projects/may-agent.app/",
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent.app/docs/2a-design/project-app-v2.md"
+      ],
+      "acceptance": [
+        "Platform has an additive .app runtime control plane.",
+        "Platform has a canonical v2 task tree.",
+        "Design docs explain platform as the second adopter."
+      ],
+      "forbidden": [
+        "Do not delete legacy files until review converges."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-v2-adoption"
+      ]
+    },
+    "platform-v2-layout-migration": {
+      "id": "platform-v2-layout-migration",
+      "parent_id": "platform-project-app-v2-adoption",
+      "children": [],
+      "status": "accepted",
+      "kind": "migration",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Create the platform .app runtime control plane and canonical tasks/tree.json additively.",
+      "inputs": [
+        "projects/may-agent.app/archive/platform-root-project.md",
+        "projects/may-agent.app/archive/platform-root-discussion.md",
+        "projects/may-agent.app/archive/platform-root-journal.md",
+        "projects/may-agent.app/archive/platform-tasks.md",
+        "projects/may-agent.app/archive/platform-legacy-workflows/platform-iteration.ts"
+      ],
+      "outputs": [
+        "projects/may-agent.app/app.ts",
+        "projects/may-agent.app/project.json",
+        "projects/may-agent.app/.state/discussion.jsonl",
+        "projects/may-agent.app/.state/journal.jsonl",
+        "projects/may-agent.app/tasks/tree.json"
+      ],
+      "acceptance": [
+        "projects/may-agent.app/ exists and describes runtime state.",
+        "Legacy root files are preserved for audit.",
+        "tasks/tree.json is valid JSON and uses stable loop tasks instead of per-run root clutter."
+      ],
+      "forbidden": [
+        "Do not move or delete legacy files during additive adoption."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-v2-adoption"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-03T10:14:45Z",
+        "reason": "Platform .app runtime frame, JSONL streams, workflow/archive notes, and canonical tasks/tree.json were added additively; legacy files were preserved."
+      }
+    },
+    "platform-v2-second-adopter-rollup": {
+      "id": "platform-v2-second-adopter-rollup",
+      "parent_id": "platform-project-app-v2-adoption",
+      "children": [],
+      "status": "accepted",
+      "kind": "parent_review",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Review platform's v2 adoption result and capture what should change before a third project adopts the pattern.",
+      "inputs": [
+        "projects/may-agent.app/",
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js"
+      ],
+      "outputs": [
+        "outputs/platform-v2-second-adopter-rollup.md"
+      ],
+      "acceptance": [
+        "States what worked, what was weak, and what to change before wider adoption.",
+        "Identifies any design/doc follow-up tasks."
+      ],
+      "forbidden": [
+        "Do not claim the pattern is reusable without testing the shared Kanban on at least platform and aks-rp-e2e task trees."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-v2-adoption"
+      ]
+    },
+    "project-app-v2-adoption-playbook": {
+      "id": "project-app-v2-adoption-playbook",
+      "parent_id": "platform-project-app-v2-adoption",
+      "children": [],
+      "status": "proposed",
+      "kind": "documentation",
+      "priority": "P2",
+      "owner": "tech-lead",
+      "goal": "Write a concise adoption playbook for moving another project to Project App V2.",
+      "inputs": [
+        "projects/may-agent.app/docs/2a-design/project-app-v2.md",
+        "projects/aks-rp-e2e.app/",
+        "projects/may-agent.app/"
+      ],
+      "outputs": [
+        "projects/may-agent.app/docs/2a-design/project-app-v2-adoption-playbook.md"
+      ],
+      "acceptance": [
+        "Explains additive migration steps.",
+        "Separates runtime control-plane files from domain workspace decisions."
+      ],
+      "forbidden": [
+        "Do not prescribe one domain folder layout for every project."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-v2-docs"
+      ]
+    },
+    "platform-build-test-release-hygiene": {
+      "id": "platform-build-test-release-hygiene",
+      "parent_id": "project",
+      "children": [
+        "platform-v2-webui-build-and-check"
+      ],
+      "status": "decomposed",
+      "kind": "workstream",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Keep platform changes buildable, testable, and releasable without calendar-driven cleanup.",
+      "inputs": [
+        "projects/may-agent/package.json",
+        "projects/may-agent/scripts/build-webui.ts"
+      ],
+      "outputs": [
+        "outputs/platform-v2-webui-build-and-check.md"
+      ],
+      "acceptance": [
+        "Relevant checks are run for platform changes.",
+        "Generated UI copies are synchronized from source."
+      ],
+      "forbidden": [
+        "Do not perform unrelated cleanup without a triggering migration or failing check."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-03T10:14:45Z",
+        "reason": "Ran bun scripts/build-webui.ts, bun run check, bun test src/app/http/http-project-sections.test.ts, and node --check on changed browser scripts."
+      }
+    },
+    "platform-v2-webui-build-and-check": {
+      "id": "platform-v2-webui-build-and-check",
+      "parent_id": "platform-build-test-release-hygiene",
+      "children": [],
+      "status": "ready",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Build/sync the web UI and run focused platform checks for the shared Kanban and task API change.",
+      "inputs": [
+        "projects/may-agent/package.json",
+        "projects/may-agent/packages/webui/static/",
+        "projects/may-agent/src/app/http/server.ts"
+      ],
+      "outputs": [
+        "outputs/platform-v2-webui-build-and-check.md"
+      ],
+      "acceptance": [
+        "UI source is copied to generated and served UI directories.",
+        "TypeScript check or focused tests run, or failures are recorded exactly."
+      ],
+      "forbidden": [
+        "Do not hide check failures by marking the migration complete."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ]
+    },
+    "platform-signal-intake-loop": {
+      "id": "platform-signal-intake-loop",
+      "parent_id": "project",
+      "children": [],
+      "status": "ready",
+      "kind": "loop_task",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "workflow": "signal-intake",
+      "goal": "Repeatedly intake platform signals and convert real platform work into concrete tasks.",
+      "inputs": [
+        "projects/may-agent.app/discussion.jsonl",
+        "projects/may-agent.app/archive/platform-root-discussion.md",
+        "projects/may-agent/package.json",
+        "projects/may-agent.app/docs/2a-design/"
+      ],
+      "outputs": [
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent.app/journal.jsonl"
+      ],
+      "acceptance": [
+        "Unread comments, failing platform metrics, and owner directives become concrete tasks.",
+        "No-signal states are recorded as loop runs, not as new root tasks."
+      ],
+      "forbidden": [
+        "Do not create duplicate root replan tasks for each signal-intake run."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-signal-intake"
+      ]
+    }
+  }
+}

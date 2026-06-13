@@ -29,7 +29,7 @@ file. There is no mandatory write/edit count or tool-call quota.
 - Direct commits to main **BLOCKED**. Branch: `git checkout -b review/<session-id>`
 - Emergency bypass: `REVIEW_GATE_BYPASS=1 git commit`
 - After code edits: `tsc --noEmit` + test. Do not finish() until exit code 0.
-- Before proposing guards: read design docs in `shared/may-agent-docs/2a-design/`
+- Before proposing guards: read design docs in `projects/may-agent.app/docs/2a-design/`
 
 ## 🤝 [WHEN DELEGATING TO CODER]
 

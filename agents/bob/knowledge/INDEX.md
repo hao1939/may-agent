@@ -45,7 +45,7 @@ Read `agents/shared/philosophy.md` for the full 50+ principles.
 - `src/app/` — application (may.ts, agent-loader.ts, cron.ts, chat-session.ts)
 - `agents/` — agent configs, knowledge, handlers, workspace
 - `test/` — test files
-- `docs/` → symlink to `agents/shared/may-agent-docs/`
+- `docs/` → symlink to `projects/may-agent.app/docs/`
 
 ## Intervention Design Gate (KE-056)
 Before proposing ANY behavioral intervention, check the constraint hierarchy:

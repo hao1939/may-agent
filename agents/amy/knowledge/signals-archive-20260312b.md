@@ -1,7 +1,7 @@
 
 ## Insights Review Cross-Reference — 2026-07-15
 
-**Source:** Pre-Check Anti-Pattern Case Study (`agents/shared/may-agent-docs/case-study-precheck-antipattern.md`)
+**Source:** Pre-Check Anti-Pattern Case Study (`projects/may-agent.app/docs/case-study-precheck-antipattern.md`)
 
 - **#9 Pseudo-Safety Trap**: +1 internal source. JS pre-check = textbook pseudo-safety — visible savings masked invisible capability loss. Now 13 sources.
 - **#8 Placement Enforcement Law**: +1 internal source. "Agents decide whether to work. The harness decides when to wake them." — correction placed at right architectural level. Now 15 sources.

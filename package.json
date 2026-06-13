@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@may-agent/sdk": "file:projects/platform/repos/may-agent/packages/sdk",
+    "@may-agent/sdk": "file:projects/may-agent/packages/sdk",
     "azure-cli": "^0.10.20",
     "puppeteer-core": "^24.42.0"
   },

@@ -6,7 +6,7 @@ The canonical convention docs are maintained under the current app layout:
 
 ### Directory Layout And System Prompt Assembly
 
-→ `shared/may-agent-docs/manual/agent-convention.md`
+→ `projects/may-agent.app/docs/2b-manual/agent-convention.md`
 
 ### Agent Operating Skills
 
@@ -16,13 +16,13 @@ The canonical convention docs are maintained under the current app layout:
 
 ### Design Philosophy And Work Model
 
-→ `shared/may-agent-docs/core-principles.md`
-→ `shared/may-agent-docs/work-model.md`
-→ `shared/may-agent-docs/design/project-focused-architecture.md`
+→ `projects/may-agent.app/docs/1-principles/core-principles.md`
+→ `projects/may-agent.app/docs/1-principles/work-model.md`
+→ `projects/may-agent.app/docs/2a-design/projects.md`
 
 ### Team And Agent Docs
 
-→ `shared/may-agent-docs/agents.md`
+→ `projects/may-agent.app/docs/2a-design/agents.md`
 → `agents/<agent>/AGENTS.md`
 
 ---

@@ -7,7 +7,7 @@
     "baseUrl": ".",
     "paths": {
       "@may-agent/sdk": [
-        "../platform/repos/may-agent/packages/sdk/src/index.ts"
+        "../may-agent/packages/sdk/src/index.ts"
       ]
     },
     "skipLibCheck": true,

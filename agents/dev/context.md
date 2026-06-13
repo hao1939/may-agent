@@ -7,11 +7,11 @@
 - Handlers: `agents/may/handlers/`
 - Skills: `shared/skills/`
 - Guards: `shared/guards/`
-- Design docs: `shared/may-agent-docs/2a-design/`
+- Design docs: `projects/may-agent.app/docs/2a-design/`
 - Common sense: `shared/common-sense.md`
 - Knowledge base: `shared/knowledge/entries/`
 
-- Metrics design: `shared/may-agent-docs/2a-design/metrics.md`
+- Metrics design: `projects/may-agent.app/docs/2a-design/metrics.md`
 - Metrics snapshot handler: `agents/may/handlers/metrics-snapshot.ts`
 - Metrics table schema: id, name, owner, source_query, source_command, target, threshold, alert_op, current, type, status, speed, unit
 

@@ -27,7 +27,6 @@ The top level is intentionally small:
 
 - active project apps
 - domain workspaces required by those apps
-- the platform workspace
 - `_archive/`
 
 Legacy `project.md` workspaces should live under `_archive/` unless explicitly
@@ -36,6 +35,8 @@ restored for migration or review.
 ## Current Active Project Apps
 
 - `aks-rp-e2e.app/` - May-agent app that drives the AKS RP E2E domain project.
+- `may-agent.app/` - May-agent app that drives the May-agent platform/runtime
+  domain project and owns May-agent design/principle docs.
 - `scout-knowledge-lib.app/` - May-agent app that drives Scout's knowledge
   library project.
 
@@ -44,39 +45,17 @@ restored for migration or review.
 - `aks-rp-e2e/` - portable AKS RP feature knowledge, specs, replays, runner,
   evidence, model, suites, and reports. This is a separate git repo and should
   run without May-agent.
+- `may-agent/` - May-agent platform/runtime code workspace. This is a separate
+  git repo and should remain usable without the project app.
 - `scout-knowledge-lib/` - portable Scout knowledge library workspace with
   knowledge notes, reports, and design material.
 
-## Platform Workspace
+## Compatibility Wrapper
 
-- `platform/` - shared May-agent platform workspace. It is still on the legacy
-  project layout with a partial `.app/` control plane and the real May-agent
-  repo at `platform/repos/may-agent/`. Treat it as the platform owner lane until
-  it is fully migrated to the v3 app layout.
-
-### Platform V3 Migration Plan
-
-Migrate `platform/` after the project app convention is stable enough to avoid
-churn in the shared runtime project itself.
-
-Target shape:
-
-```text
-platform/      # platform domain workspace: docs, proposals, tasks, repo host
-platform.app/  # May-agent control plane: app.ts, project.json, workflows, UI
-```
-
-Migration order:
-
-1. Create `platform.app/` beside `platform/` with `app.ts`, `project.json`,
-   `tasks/`, `workflows/`, `.state/`, and any platform-specific project UI.
-2. Move runtime-control files from `platform/.app/` into `platform.app/`.
-3. Keep `platform/repos/may-agent/` inside the domain workspace unless the repo
-   itself is later promoted to a separate top-level domain workspace.
-4. Leave root `platform/project.md` as domain history until the platform app has
-   a stable `project.json` and task tree.
-5. Update loaders and docs to discover `platform.app/`, then retire
-   `platform/.app/`.
+`platform/` may exist locally as an ignored compatibility wrapper containing a
+symlink from `platform/repos/may-agent` to `../may-agent`. Do not treat it as an
+active project. New project work belongs in `may-agent.app/` and
+`may-agent/`.
 
 ## Legacy Project Workspaces
 
@@ -143,16 +122,11 @@ Done or closed milestone/archive folders archived in this batch:
 - `_archive/top-level-cleanup-2026-06-13/` - legacy project workspaces moved
   out of the top-level project list during the app/domain cleanup.
 
-## Ambiguous Or Stale
-
-- `may-agent/` - resolved. This top-level folder only contained local Claude
-  settings and was moved to `_archive/may-agent-local-settings/`. The actual
-  May-agent repo is `platform/repos/may-agent/`.
-
 ## Suggested Cleanup Path
 
 1. Keep active v3 apps and domain workspaces at top level.
-2. Finish migrating `platform/` to the v3 app/domain split using the plan above.
+2. Keep `may-agent.app/` as the platform project app and `may-agent/` as the
+   platform/runtime domain workspace.
 3. Keep legacy folders in `_archive/` unless intentionally restoring one for
    migration or review.
 4. Keep ambiguous local scratch out of the top-level project list.

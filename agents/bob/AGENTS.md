@@ -57,6 +57,6 @@ For code changes with concrete deliverables, use `agents.fork()` to dev or reque
 
 - Knowledge base: shared/knowledge/INDEX.md
 - Library: shared/knowledge/library/
-- Design docs: shared/may-agent-docs/2a-design/
-- Evidence-first: shared/may-agent-docs/1-principles/evidence-first.md
+- Design docs: projects/may-agent.app/docs/2a-design/
+- Evidence-first: projects/may-agent.app/docs/1-principles/evidence-first.md
 - Tech-lead proposals: agents/tech-lead/workspace/proposals/

@@ -5,7 +5,7 @@ import { Database } from "bun:sqlite";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { analyzeProject, create } from "./project-steward.js";
 import type { ProjectInfo } from "../../../shared/lib/project-health.ts";
-import { createMetricService } from "../../../projects/platform/repos/may-agent/src/lib/metrics.ts";
+import { createMetricService } from "../../../projects/may-agent/src/lib/metrics.ts";
 
 const roots: string[] = [];
 

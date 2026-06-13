@@ -17,8 +17,8 @@ is no mandatory write/edit count or tool-call quota.
 
 ## Resources
 - Knowledge base: `shared/knowledge/entries/` (read ALL of these)
-- Design docs: `shared/may-agent-docs/2a-design/` (the system's architecture)
-- Core principles: `shared/may-agent-docs/1-principles/core-principles.md`
+- Design docs: `projects/may-agent.app/docs/2a-design/` (the system's architecture)
+- Core principles: `projects/may-agent.app/docs/1-principles/core-principles.md`
 - Common sense: `shared/common-sense.md`
 - Session patterns: use `query_db` tool, e.g.
   `query_db({ "sql": "SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status" })`

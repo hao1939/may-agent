@@ -45,7 +45,7 @@ Exit rule: if you acted on a red metric (dispatched a coverage fix or edited cri
 ## 2. Pending Tasks
 Check the "Injected: pending tasks" section above. Process pending items first.
 
-**No pending items AND nothing below is actionable?** Do not exit. Consult `shared/may-agent-docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a KE). Produce a measurable artifact this cycle.
+**No pending items AND nothing below is actionable?** Do not exit. Consult `projects/may-agent.app/docs/idle-playbook.md` and pick one item (probe a metric, nudge a stale thread, draft a KE). Produce a measurable artifact this cycle.
 
 ## 2b. Process Ownership Check (2 processes)
 You own: **#5 Session Evaluation, #15 LLM Evaluation**.

@@ -28,7 +28,7 @@ bash -c 'grep -i "$(basename $(cat .state/current-project 2>/dev/null || echo un
 
 This finds prior work related to your current project. Read any matches before starting.
 
-- Design docs: `shared/may-agent-docs/2a-design/`
+- Design docs: `projects/may-agent.app/docs/2a-design/`
 - System metrics: use `query_db` tool to query metrics table
 - Common sense: `shared/common-sense.md`
 

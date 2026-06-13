@@ -20,7 +20,7 @@
     "task-tree": "bun run ./scripts/task-tree.ts"
   },
   "dependencies": {
-    "@may-agent/sdk": "file:../platform/repos/may-agent/packages/sdk"
+    "@may-agent/sdk": "file:../may-agent/packages/sdk"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",

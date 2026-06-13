@@ -42,8 +42,8 @@ No workflow needed for: auditing, reading code, planning, reviewing, updating do
 ## Reference
 
 - Knowledge base: shared/knowledge/INDEX.md
-- Architecture: shared/may-agent-docs/2a-design/architecture.md
-- Agent cooperation: shared/may-agent-docs/2a-design/agents.md
-- Escalation: shared/may-agent-docs/2a-design/escalation.md
+- Architecture: projects/may-agent.app/docs/2a-design/architecture.md
+- Agent cooperation: projects/may-agent.app/docs/2a-design/agents.md
+- Escalation: projects/may-agent.app/docs/2a-design/escalation.md
 - Bob's output: agents/bob/workspace/
 - Your proposals: agents/tech-lead/workspace/proposals/

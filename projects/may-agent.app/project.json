@@ -1,0 +1,21 @@
+{
+  "id": "may-agent.app",
+  "owner": "may",
+  "status": "active",
+  "type": "project-app",
+  "priority": "P0",
+  "domainProject": {
+    "id": "may-agent",
+    "path": "../may-agent"
+  },
+  "goal": "Drive the May-agent platform as a v3 project app: keep runtime contracts, event/session/task execution, persistence, SDK, shared UI, and project-app conventions coherent, tested, and reusable.",
+  "strategy": [
+    "Keep platform design and principles in this app's docs/ tree.",
+    "Use tasks/tree.json as the durable expression of project thinking, priorities, and accepted understanding.",
+    "Use ../may-agent as the portable domain/runtime code workspace.",
+    "Route human steering, metric signals, and scheduled review into event-based planning.",
+    "Keep runtime scratch in .state/ and fold durable decisions back into docs, tasks, or code."
+  ],
+  "taskIndex": ["tasks/tree.json"],
+  "updatedAt": "2026-06-13T15:40:00.000Z"
+}

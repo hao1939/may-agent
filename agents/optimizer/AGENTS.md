@@ -45,4 +45,4 @@ Pattern: edit() → read() → continue.
 - Knowledge: shared/knowledge/INDEX.md
 - Workflows: shared/workflows/
 - Tools: src/lib/tools/
-- Design docs: shared/may-agent-docs/2a-design/
+- Design docs: projects/may-agent.app/docs/2a-design/

@@ -1951,7 +1951,7 @@ Current status: ${path.status}${specInfo}${evidenceInfo}
         const ev = evidenceById[id];
         if (!ev) return `<code style="font-size:10px">${esc(id)}</code>`;
         if (ev.kind === "session" && ev.sessionId) {
-          return `<a href="/projects/platform/ui/#/sessions/${encodeURIComponent(ev.sessionId)}" style="font-size:10px" title="${attrEsc(ev.summary || "")}">session ${esc(ev.sessionId)}</a>`;
+          return `<a href="/projects/may-agent.app/ui/#/sessions/${encodeURIComponent(ev.sessionId)}" style="font-size:10px" title="${attrEsc(ev.summary || "")}">session ${esc(ev.sessionId)}</a>`;
         }
         if (ev.path) {
           const canonicalPath = ev.path.replace(
