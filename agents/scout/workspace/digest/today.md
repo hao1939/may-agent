@@ -1417,3 +1417,327 @@ When combined with KE-1897 (Sisyphus work) and KE-1864 (meta-work), the three wa
 Change `timeoutMs: 300_000` to `timeoutMs: 600_000` in `runOwnerStep()`. Predicted: ~60% of current interrupts would complete, saving ~2,100 ops/day. No infrastructure changes required.
 
 See: `shared/knowledge/entries/KE-1899-the-timeout-restart-stutter-how-a-5-minute-wall-clock-creates-a-paired-session-artifact.md`
+
+---
+
+## Creative Synthesis: The Failure Conservation Law (KE-1900)
+
+**Key discovery**: The system's error rate dropped 12× (10.09% → 0.85%) across the architectural transition at hour 494791. But total non-success rate (errors + interrupts) was **conserved** at ~10% (10.09% → 9.70%). Errors did not disappear — they reclassified to "interrupted." The system's primary reliability metric is Goodhart'd.
+
+### The conservation table
+
+| Era | Errors | Interrupts | Error % | **Total Non-Success %** |
+|-----|--------|-----------|---------|------------------------|
+| Before (N=763) | 77 | 0 | 10.09% | **10.09%** |
+| After (N=1,412) | 12 | 125 | 0.85% | **9.70%** |
+
+Conservation exact to 0.4 percentage points. Per-session waste ops: 2.72 → 2.85 (unchanged).
+
+### What this unifies
+
+This is the fourth conservation law identified in the system, alongside KE-1692 (overhead ratio ≈ 97:3), KE-1738 (total meta-work ≈ 75-80%), and KE-1877 (failure budget ≈ 2,000 ops/day). Together they describe a system at equilibrium where pressure redistributes quantities rather than reducing them.
+
+### The phase story reveals the real improvement — and its loss
+
+| Phase | Non-Success % | Op Efficiency % |
+|-------|---------------|-----------------|
+| W1: Pre-crisis | 5.7% | 94.1% |
+| W2: Crisis | 13.2% | 89.4% |
+| W3: **Immune response (fallback)** | **1.9%** | **98.5%** |
+| W4: Stabilization | 11.2% | 88.1% |
+| W5: Steady state | **12.9%** | **85.6%** |
+
+W3 (the 4.5-hour fallback era) achieved genuine improvement via architectural simplification. The current steady state (W5) is *worse* than pre-crisis — 12.9% vs 5.7% non-success, 85.6% vs 94.1% efficiency — while reporting a 12× better error rate.
+
+### The hidden cost
+
+Secondary overhead increased across the transition: guard events +36%/hr, handler.skipped +54%/hr, session.resume_failed **+143%/hr**. The system traded visible errors for invisible coordination noise.
+
+### The metric fix
+
+Replace `session-error-rate-7d` with `session-non-success-rate-7d = (errors + interrupts) / total`. This metric cannot be Goodhart'd by status reclassification.
+
+### The deep insight
+
+The system's ~10% failure rate is not set by any individual component. It is a systemic equilibrium. The only intervention that broke below it was the fallback pipeline's architectural simplification (1.9% non-success). Every other intervention — timeout caps, pipeline additions, prompt engineering — merely redistributed failures across labels.
+
+See: `shared/knowledge/entries/KE-1900-the-failure-conservation-law-how-a-12x-error-drop-hides-zero-reliability-gain.md`
+
+---
+
+## Creative Synthesis: The Dead Fix (KE-1901)
+
+**Key discovery**: The project-planner timeout was already increased from `300_000` to `600_000` in the source file (`project-planner.ts` line 324). But the deployed runtime bundle (`.state/bundle/workflows/project-planner.js` line 1113) still contains `300000`. The fix exists in source but was never deployed.
+
+### Why this matters: the system's single largest waste source is already "fixed"
+
+In the last 24 hours:
+- **127 planner sessions** were interrupted (83% of all system non-success)
+- **3,778 ops** were wasted on interrupted planning_update sessions (8.6% of all system ops)
+- **123 of 127** interrupts clustered at ~307 seconds — the 300-second timeout wall
+- The planner spends **49.4% of its total ops** on sessions it discards
+
+This waste persists despite the source-level fix because the bundle was never rebuilt.
+
+### The two-phase planner pattern
+
+The planner now runs two sequential sub-sessions per wake:
+
+| Sub-session | Completion rate (last 6h) | Avg ops | Avg duration |
+|-------------|--------------------------|---------|-------------|
+| event_review | **100%** (20/20 done) | 6.8 | 73s |
+| planning_update | **5%** (1/20 done) | 30.3 | 322s |
+
+The event_review step always completes quickly. The planning_update step almost always hits the 300s wall. This creates the KE-1899 clockwork artifact — every planner wake produces one useful session and one discarded session.
+
+### The new failure class: source-runtime divergence
+
+Prior KEs identified waste from wrong timeouts, wrong routing, wrong evaluation. This KE identifies a new category: **the fix exists but isn't deployed.** The source is correct. Tests import from source and would pass. Code review would approve. Knowledge analysis would note the fix. But the runtime runs stale code.
+
+This is structurally invisible to every feedback loop — evaluator, knowledge system, planner, dev all inspect source or outcomes, never the gap between them.
+
+### Connection to KE-1900 conservation
+
+KE-1900's ~10% non-success conservation holds partly because fixes don't actually deploy. If this dead fix were activated, predicted non-success drop: ~10% → ~6–7% — the first genuine break below the conservation threshold since the W3 fallback era.
+
+### The meta-insight
+
+The system has accumulated 76+ KEs analyzing planner waste, orchestration overhead, and failure conservation. Every one analyzed the symptom correctly. None checked whether the fix was deployed. A single `diff source.ts bundle.js` would have caught this instantly. **The cheapest insight isn't the deepest analysis — sometimes it's comparing what was written to what actually runs.**
+
+See: `shared/knowledge/entries/KE-1901-the-dead-fix-when-source-changes-dont-reach-the-runtime.md`
+
+---
+
+## Creative Synthesis: The Compliance Trap (KE-1902)
+
+**Key discovery**: The dev agent's 0% heartbeat error rate isn't a sign of reliability — it's a sign of behavioral collapse. Dev runs 47 heartbeats/day at 7.4 ops average, producing identical "system healthy" output every time. Scout runs the same 47 heartbeats/day at 65.6 ops average, producing knowledge entries and synthesis. The difference isn't capability — when dev receives direct fork tasks, it averages 22 ops and produces real code changes. The difference is **prompt architecture**.
+
+### Goal-oriented vs. constraint-oriented prompts
+
+Dev's 12K-char heartbeat prompt contains 6 accumulated "discipline" sections — each added to prevent a specific past failure. Together they create a **behavioral attractor** at minimum-viable-compliance: the smallest action set that satisfies all constraints simultaneously.
+
+Scout's 4K-char heartbeat prompt says: "synthesize, connect, discover, produce." No anti-pattern lists. No closeout checklists. Goals, not prohibitions.
+
+| Agent | Prompt style | Avg ops | Error rate | Output |
+|-------|-------------|---------|-----------|--------|
+| Dev (heartbeat) | Constraint-oriented (12K) | **7.4** | **0%** | "System healthy" x47 |
+| Scout (heartbeat) | Goal-oriented (4K) | **65.6** | **6.4%** | KE entries, synthesis |
+| Dev (fork task) | Direct task (no constraints) | **22.3** | **0%** | Code changes |
+
+### The constraint ratchet
+
+Each constraint was added through a one-way ratchet:
+1. Agent makes error → evaluator flags → discipline section added → error stops
+2. No mechanism to remove constraints once the underlying issue is fixed
+3. After N cycles, prompt contains N constraints that collapse behavior to minimum
+
+This is the prompt-level manifestation of KE-1842's threshold ratchet: constraints only tighten, never loosen.
+
+### Connection to EvolveR (ICML'26)
+
+EvolveR found self-distilled principles outperform teacher-generated constraints. Our system demonstrates this in production: externally-imposed constraint sections produce compliance without competence. The agent satisfies every constraint by doing as little as possible.
+
+### The uncomfortable truth
+
+**You cannot have zero errors and genuine exploration in the same prompt.** Exploration means trying things that might not work. The constraint lattice eliminates exactly those behaviors. The system's best-performing agent on error metrics is its least productive agent per heartbeat.
+
+### Proposed experiment
+
+Replace dev heartbeat's 6 constraint sections (~5K chars) with a single goal-oriented paragraph (~800 chars). Predicted: ops rise from ~7 to ~15-25, error rate rises from 0% to 2-5%, genuine investigations appear in 10-20% of heartbeats.
+
+### The general principle
+
+Constraints are subtractive; goals are additive. Each constraint removes a behavior. Each goal adds a target. A system with enough constraints has no behavior left.
+
+See: `shared/knowledge/entries/KE-1902-the-compliance-trap-how-constraint-accumulation-produces-minimum-viable-agents.md`
+
+---
+
+## Creative Synthesis: Three Impossibility Walls (KE-1903)
+
+**Key discovery**: The system's ~10.8% non-success rate (7,239 sessions, 7 days) is not a tuning problem — three fresh arXiv papers independently **prove** it reflects structural impossibilities in the feedback mechanism itself.
+
+### The three walls
+
+1. **Self-Correction Illusion** (arXiv:2606.05976): LLMs resist correcting errors presented in their own role label by 23–93 percentage points. Our evaluator feedback arrives as self-context (the resistant role). Even if perfectly delivered, agents would systematically ignore it.
+
+2. **ANCHOR Supervision Curve** (arXiv:2606.06114): In self-evolving systems, supervision frequency yields diminishing returns. Only output verification gates improve outcomes. Our system maximizes frequency (30.6% of compute on post-hoc evaluation) with zero output verification gates — the exact inversion of what works.
+
+3. **Trivium's Outcome Regret Floor** (arXiv:2606.04421): Outcome-only learning cannot break past a regret floor without causal probing. Formally proven: temporal miscalibration grows linearly even after outcome regret reaches zero. Our system measures outcomes without modeling causes and re-executes 43% of known-fail tasks (KE-1897) without varying anything.
+
+### Why this unifies five prior KEs
+
+| Prior KE | Symptom | Root impossibility |
+|----------|---------|-------------------|
+| KE-1883 | Evaluations don't reach agents | Wall 1: Even delivered, ignored (role label) |
+| KE-1900 | ~10% non-success conserved | Wall 3: Outcome-only floor (proven) |
+| KE-1902 | Constraints collapse behavior | Wall 2: Wrong-phase supervision |
+
+### The key numbers
+
+- 9 targeted experiments (causal probes) would produce O(log E) regret
+- 7,200 repeated observations produce O(E) regret — linearly growing
+- **Nine experiments > seven thousand observations** (Trivium's theorem)
+
+### The system doesn't need more eyes. It needs hands.
+
+The natural response to every stall — add more evaluation, more KEs, more metrics — is provably insufficient. Three structural changes are needed: causal tagging of failure causes (~20 lines), output verification gates (~30 lines), and feedback role relabeling (~10 lines). Total: ~60 lines of code to break a wall that 20,866 wasted ops and 3,517 evaluator sessions could not dent.
+
+See: `shared/knowledge/entries/KE-1903-three-impossibility-walls-why-more-feedback-cannot-break-the-10-percent-floor.md`
+
+---
+
+## Creative Synthesis: The Stale Fix Majority (KE-1904)
+
+**Key discovery**: The system's formal improvement pipeline (scout → arc → work queue → approval → dev) has a ~30-day latency. Of 54 completed work queue items, **23 (43%) were already resolved before dev attempted them** — marked "Already implemented," "stale-fixed," or "stale-superseded" by the implementing agent itself. Only 25/54 (46%) required dev to write new code.
+
+### Why this matters
+
+This explains why the 10% failure floor persists (KE-1900) despite active improvement work: the formal pipeline's fixes are *temporally decoupled* from the problems they address. Problems mutate in real-time; fixes arrive in 30-day batches. By arrival time, the original failure mode has migrated (KE-1877) or self-resolved.
+
+### The two pipelines
+
+The system actually runs **two** improvement mechanisms — the designed formal one (slow, batch, 43% stale) and an emergent informal one (real-time, self-correcting, effective):
+
+| Dimension | Formal | Informal |
+|-----------|--------|----------|
+| Latency | ~30 days | Minutes |
+| Stale rate | 43% | ~0% |
+| Examples | Work queue items | May handler self-correction, arc doc fixes, crisis immune response |
+| Impact | Zero detectable change in failure rate | KE-1892's genuine 1.9% non-success |
+
+### The convergence with external research
+
+- **ANCHOR**: Work queue operates at the planning phase (lowest ANCHOR return); informal pipeline operates at execution phase (highest return)
+- **EvolveR**: Self-distilled improvements (informal) outperform teacher-generated constraints (formal)
+- **Trivium**: Work queue is outcome-only learning with no "verify problem still exists" step — provably floor-limited
+
+### The uncomfortable implication
+
+Dev's primary output in recent sessions is *documenting that problems are already fixed*, not fixing them. The formal pipeline has drifted from improvement mechanism to documentation mechanism. The informal pipeline — crash, adapt, stabilize — is the system's actual learning loop.
+
+### Key number
+
+Problems mutate at speed X (real-time). Fixes arrive at speed Y (~30 days). When X >> Y, the fix inventory addresses past problems. **The system's improvement velocity is bottlenecked not by fix quality but by fix timeliness.**
+
+See: `shared/knowledge/entries/KE-1904-the-stale-fix-majority-why-43-percent-of-queued-improvements-arrive-after-the-problem-is-gone.md`
+
+---
+
+## Creative Synthesis: The Conservation Breaker (KE-1906)
+
+**Key discovery**: KE-1900's "Failure Conservation Law" — arguably the strongest finding in the recent burst — has a boundary condition. A second transition at h494811 (planner timeout deployed from 300s→600s) broke conservation: system-wide failure dropped from 10.6% to 2.9%, with failures neither relabeling nor migrating but **vanishing**. This falsifies conservation as a universal law and reframes it as a diagnostic.
+
+### The two transitions side by side
+
+| Transition | Hour | What changed | Failure rate | Conservation? |
+|-----------|------|-------------|-------------|---------------|
+| First (KE-1900) | h494791 | Label: error→interrupted | 10.1% → 9.7% | **YES** (Δ0.4pp) |
+| Second (this KE) | h494811 | Resource: timeout 300s→600s | 10.6% → 2.9% | **NO** (Δ7.7pp) |
+
+### Why it matters
+
+KE-1900 was treated as law. KE-1903 built on it to argue the 10% floor is structurally unbreakable. KE-1904 used it to dismiss the formal fix pipeline. All were partially right — for **surface-level** fixes. But when the system's first genuine root-cause fix deployed, conservation collapsed.
+
+The 122 planning_update sessions that hit the 300s wall every hour now complete in 310-600s. Only 5 hit the new 600s wall. This isn't relabeling — it's elimination.
+
+### The diagnostic principle
+
+**Failure conservation as root-cause detector:**
+- Fix conserves failures → you changed the surface, not the cause
+- Fix breaks conservation → you found and removed the root cause
+- Immune responses (like fallback) dramatically outperform the component they route around → the component has a resource constraint, not a capability deficit
+
+### Cross-KE reframe
+
+- **KE-1900**: Not wrong, but has a boundary condition. Conservation is a property of surface fixes, not a law of nature.
+- **KE-1903**: Three impossibility walls still apply to the residual ~3%. They overstated the case for the ~7pp that was a resource constraint.
+- **KE-1892**: Fallback's 100% success was a clue — when immune responses vastly outperform the failing component, the component needs resources, not feedback.
+- **KE-1904**: Some "stale fixes" may have been dead fixes (KE-1901) deployed late, not problems that resolved themselves.
+
+### The meta-insight
+
+The system produced 48 KEs in 72 hours, mostly arguing that improvements can't work. During those same 72 hours, a single timeout change achieved what no KE predicted: breaking the 10% floor. **Analysis explaining why change is impossible consumed more compute than the change itself.**
+
+See: `shared/knowledge/entries/KE-1906-the-conservation-breaker-when-root-cause-fixes-defeat-failure-conservation.md`
+
+---
+
+## Creative Synthesis: The Zombie Theorem Problem (KE-1907)
+
+**Key discovery**: 35% of citation edges in the recent KE graph (KE-1856..1906) point to premises that were later corrected or reframed, but **zero corrections propagated to downstream entries**. 14 of 66 recent KEs (21%) are "zombie-affected" — their conclusions rest on undermined premises that nobody updated.
+
+### The graph analysis
+
+| Metric | Value |
+|--------|-------|
+| KEs analyzed | 66 (range 1856–1906) |
+| Citation edges (Connects/Extends/Unifies) | 72 |
+| Direct corrections (Corrects/Reframes) | 11 |
+| **Zombie edges** (citations to corrected premises) | **25 (35%)** |
+| **Zombie-affected KEs** | **14 (21%)** |
+| Downstream updates following any correction | **0** |
+
+### The KE-1903 critical case
+
+KE-1903 ("Three Impossibility Walls") claims to prove the 10% failure floor cannot be broken. It unifies five premises — but 2 of those 5 (KE-1883, KE-1900) were subsequently corrected. KE-1906 then showed the floor *was* broken (10.6% → 2.9%). Yet KE-1903 persists unchanged, still claiming impossibility.
+
+This is not an edge case. It's the most-cited recent entry (used as a premise by KE-1906 itself) and its impossibility claim is directly falsified by observed data.
+
+### Why prior KEs missed this
+
+- KE-1882 diagnosed *temporal* decay (half-life of claims). This is *structural* non-propagation.
+- KE-1893 diagnosed correction *direction* (coarse → fine). This is correction *incompleteness*.
+- KE-1895 diagnosed *error rate* (19% of entries wrong). This is *dependency contamination* — wrong entries making other entries wrong.
+
+The blind spot is identical to software's "diamond dependency problem": you can fix a library without recompiling programs that depend on it.
+
+### The software engineering parallel
+
+The knowledge system has dependency declarations (Connects, Extends) but no rebuild mechanism. Software solved this decades ago with lock files and CI. The minimum fix: when writing "Corrects: KE-XXXX", grep for downstream citations and add a one-line premise note. ~5 minutes per correction.
+
+See: `shared/knowledge/entries/KE-1907-the-zombie-theorem-problem-how-corrected-premises-persist-in-downstream-conclusions.md`
+
+---
+
+## Creative Synthesis: The Echo Tax (KE-1908)
+
+**Key discovery**: The evaluator-aftermath workflow embeds the **full original task string** into every evaluation prompt. This single structural echo accounts for **49.3% of all prompt characters** (62.3M of 126.4M chars/day) processed by the entire system. No prior KE measured the textual dimension — all efficiency analyses used opCount.
+
+### The numbers that change the picture
+
+KE-1864 found evaluation is 30.6% of system compute by ops. By prompt characters:
+- Evaluator is **57.6%** of system text ingestion (72.9M of 126.4M chars)
+- Aftermath echo alone is **49.3%** (62.3M chars — nearly half the system's total)
+
+### The dev case: 3,297 chars per operation
+
+Dev runs 673 heartbeats/day × 11,888 chars each = 8.0M chars. Each heartbeat generates a 15,513-char evaluation prompt. Total footprint: 16.0M chars for 4,851 ops = **3,297 chars per productive op** — 12× scout's 277 chars/op.
+
+Why? Dev's prompt contains 6 discipline sections (~7K of static instructions identical every heartbeat). The evaluator re-ingests these 673 times/day to evaluate 7 ops per session. The evaluator reads more text about dev's instructions than dev spends following them.
+
+### The amplification pattern
+
+For every non-evaluator agent, the system generates **more evaluation text about the agent than the agent's own prompts consume**:
+
+| Agent | Own prompt chars | Eval echo chars | Echo > own? |
+|-------|-----------------|-----------------|-------------|
+| arc | 9.7M | 11.1M | **Yes (1.14×)** |
+| dev | 7.9M | 8.0M | **Yes (1.01×)** |
+| may | 8.1M | 10.8M | **Yes (1.33×)** |
+| scout | 3.0M | 6.0M | **Yes (2.0×)** |
+| aks-explorer | 23.6M | 25.9M | **Yes (1.10×)** |
+
+The system generates more text *discussing* each agent's work than the agent spends *doing* the work.
+
+### Connection to KE-1902 (Compliance Trap)
+
+Every discipline section added to dev's prompt to prevent a past failure has a hidden double cost: it's echoed through evaluation. A 500-char "don't do X" rule costs 336K chars/day in dev prompts + 257K chars/day in evaluation echo = **593K chars/day**. The compliance trap has a textual twin.
+
+### The minimum fix
+
+Replace the embedded full `session.task` in aftermath with: session metadata + a truncated/summarized task. For heartbeats (identical prompts), use a reference: `"[heartbeat prompt, {N} chars — see template]"` + unique parts (metrics, inbox). Estimated savings: **~59M chars/day** (47% reduction in system prompt volume).
+
+The evaluator needs to know *what the agent was asked to do*, not *what the agent's git discipline instructions say*. A 500-char task summary serves evaluation. The remaining 10K+ chars of echoed standing instructions are noise.
+
+See: `shared/knowledge/entries/KE-1908-the-echo-tax-how-evaluator-aftermath-re-ingests-the-entire-system-prompt-corpus.md`
