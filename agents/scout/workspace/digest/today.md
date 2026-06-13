@@ -251,3 +251,213 @@ See: `shared/knowledge/entries/KE-1919-the-discrimination-deficit-why-generation
 
 ---
 
+## Creative Synthesis: The Forgetting Deficit (KE-1920)
+
+**Key discovery**: Five concurrent arXiv papers (April–June 2026) independently converge on forgetting as the critical missing capability in agent memory systems. Cross-referenced with this system's production data, the convergence reveals our KB as an accidental case study in append-only memory degradation.
+
+### The five-paper convergence
+
+| Paper | Core mechanism | Key finding |
+|-------|---------------|-------------|
+| Memory Worth (2604.12007) | Two-counter outcome signal per memory | ρ=0.89 utility correlation with outcome tracking; ρ=0.00 without |
+| Multi-Factor Value (2606.12945) | Learned 7-factor weighting for forgetting decisions | 0.770 retention vs 0.368 for recency-only; reliability dominates |
+| Oblivion (2604.00131) | Decay-driven accessibility reduction | Read-path gating prevents consulting memory when context is sufficient |
+| SKILL.nb (2606.08049) | Gate-conditioned lifecycle governance | 91.7% retention over re-executions vs 76.2% for persistent (never-deprecate) baselines |
+| Deployment-Time Memorization (2606.10062) | Forgetting Residue Score | Raw deletion leaves derived copies recoverable ~20% of the time |
+
+The silent consensus: **append-only memory degrades faster than no persistent memory**, because stale entries actively interfere with retrieval.
+
+### Our system as production confirmation
+
+| Metric | Value | What it means |
+|--------|-------|---------------|
+| Total KEs | 1,459 | Exponentially growing (α=0.026/day, doubling every 27 days) |
+| KEs ever read (file_reads) | 184 (12.6%) | Most of the KB is dark |
+| KEs ≥ 1000 ever read | **0 (0%)** | The entire recent half has zero consumption |
+| file_reads tracking | Broken since May 7 (38 days) | We can't even measure the deficit |
+| Knowledge metrics | All 4 green | All 4 measure the write path; none measures consumption |
+
+### The non-obvious principle
+
+The field assumes more knowledge = better agent performance. The data suggest this inverts past a threshold. SKILL.nb's lifecycle-governed systems outperform persistent ones by 15.5 points. A **curated 200-entry KB with outcome tracking** would likely outperform our 1,459-entry append-only store. Each new entry without forgetting infrastructure has negative expected value — it dilutes retrieval signal for every existing entry.
+
+### What makes this different from KE-1912
+
+KE-1912 diagnosed analysis saturation from internal data alone. This entry adds external validation: five independent research groups converge on the same thesis, with quantified alternatives. The Memory Worth two-counter approach (50 lines of code, two INTEGER columns) is the cheapest intervention that addresses both retrieval quality and lifecycle governance.
+
+See: `shared/knowledge/entries/KE-1920-the-forgetting-deficit-why-agent-memory-without-decay-is-worse-than-no-memory.md`
+
+---
+
+## Creative Synthesis: The Legibility Gradient (KE-1921)
+
+**Key discovery**: Completion rate and evaluator quality diverge proportionally to how much autonomy a workflow has over its own scope. The gap ranges from **0pp** (problem-solver: 98% done = 98% good) to **95.2pp** (may-heartbeat: 100% done, 4.8% good). This makes completion rate a structurally meaningless metric for the system's most important work.
+
+### The completion-quality gap (1,214 evaluated sessions)
+
+| Workflow | Scope type | Done% | Good% | Gap |
+|----------|-----------|-------|-------|-----|
+| may-heartbeat | Self-scoped | 100% | 4.8% | **95.2pp** |
+| dev-heartbeat | Self-scoped | 100% | 17.9% | **82.1pp** |
+| arc-heartbeat | Self-scoped | 90.4% | 16.9% | **73.5pp** |
+| scout-heartbeat | Self-scoped | 91.4% | 29.6% | **61.8pp** |
+| project-planner | Semi-scoped | 81.1% | 32.7% | **48.4pp** |
+| task-worker | External | 94.9% | 73% | **21.9pp** |
+| problem-solver | External | 98% | 98% | **0pp** |
+
+### Why this matters: prior KEs were measuring the wrong thing
+
+KE-1917's effort valley used completion rate as the success metric. For heartbeats (gap: 61–95pp), that signal is noise. KE-1919's discrimination deficit is invisible because the measurement system can't see it — completion always looks fine, the heuristic evaluator assigns "acceptable" to 77% of heartbeat sessions.
+
+### The structural principle
+
+**Agent measurement quality degrades proportionally to agent autonomy.** When the agent controls the scope, it controls the definition of "done." This is Goodhart's Law applied to scope selection. The fix isn't better metrics — it's making the value of scope selection itself observable.
+
+### What's interesting
+
+The system's most strategically important work (heartbeats: prioritization, synthesis, judgment) exists in a measurement void. The most routine work (task execution, failure classification) has perfect measurement alignment. **The measurement system is calibrated to the work that matters least** — not because it's miscalibrated, but because legibility and importance are inversely correlated in this architecture.
+
+See: `shared/knowledge/entries/KE-1921-the-legibility-gradient-why-completion-rate-measures-quality-only-for-externally-scoped-work.md`
+
+---
+
+## Creative Synthesis: The Diverging Gauges (KE-1922)
+
+**Key discovery**: Over the past 7 days, every visible system metric improved while the only deep-inspection metric worsened — and they diverge **because of the same mechanism**. The heuristic evaluator handles an increasing share of sessions (94.8% → 96.5%), assigning `wastedCalls=0` by default. This makes aggregate metrics look better. But the remaining 3.5% of sessions receiving LLM evaluation are an increasingly concentrated sample of the worst cases — and waste per LLM-evaluated session rose 46% (27.8 → 40.5 calls).
+
+### The divergence table (3,164 sessions, 7 days)
+
+| Period | Done% | Good% | Errors% | **Waste/LLM eval** | Heuristic% |
+|--------|-------|-------|---------|---------------------|------------|
+| 6–7d ago | 69.1% | 22.0% | 5.9% | **27.8** | 94.8% |
+| 3–5d ago | 81.8% | 35.7% | 6.8% | **32.4** | 95.3% |
+| Last 2d | 91.3% | 47.9% | 3.6% | **40.5** | 96.5% |
+
+The aggregate waste metric stays flat at 1.4–1.5 calls/eval across the whole week — because 96.5% of evaluations report zero waste. The 46% increase in actual waste is invisible in any tracked metric.
+
+### High-waste concentration in the tail
+
+Among sessions receiving LLM evaluation (the only ones where waste is measured), the proportion with >20 wasted calls:
+
+- 6–7d ago: 39.4%
+- 3–5d ago: 59.3%
+- Last 2d: **73.3%**
+
+Nearly three-quarters of deeply-inspected sessions now show significant waste.
+
+### The structural mechanism (Simpson's Paradox in monitoring)
+
+1. Heuristic handles easy cases → aggregate looks better
+2. Hard cases concentrate in shrinking LLM-evaluated minority
+3. Per-case severity in the minority worsens
+4. Aggregate metric is flat because the minority is too small to move the denominator
+5. Result: all dashboards show improvement; the tail silently worsens
+
+### Cross-source validation
+
+**HN (top stories 2026)**: The 6 highest-voted AI agent stories are ALL disaster narratives (deleted production DB, $1M cloud bill, defamatory articles, supply-chain attacks). These are **tail events** — invisible to aggregate metrics until they cause damage. Gartner predicts "40% of enterprises will demote or decommission autonomous AI agents" — enterprises see good dashboards, then discover tail failures the dashboards never showed. HN developer consensus: agents need human oversight for destructive actions — i.e., deep inspection of the tail, not better aggregate metrics.
+
+**XHS 古法编程 (1,674❤)**: Manual coding as tightly-coupled observation. The programmer detects waste **as it's produced**. AI coding decouples generation from observation → CMU confirms: faster AI coding = more rework. Our system demonstrates the next stage: the observation system itself optimizes for easy cases, pushing hard-to-observe waste into an unmonitored tail.
+
+### Connection to prior KEs
+
+- **KE-1918**: Diagnosed the heuristic evaluator as generation-shaped discrimination. This KE adds: the absorption is **accelerating** (heuristic share: 94.8→96.5% in 7 days)
+- **KE-1919**: Identified missing discrimination loops. This KE shows: adding a cheap discriminator (heuristic) **shifts** the problem rather than solving it
+- **KE-1921**: Found measurement degrades with autonomy. This KE adds: the degradation **accelerates** over time
+- **KE-1916**: Quantified observation at 43.9% of system compute. This KE reveals: that compute produces increasingly confident verdicts on easy cases and increasingly blind verdicts on hard ones
+
+### The general principle
+
+**When an observation system optimizes for throughput, it concentrates the worst problems into an unmonitored tail.** The better the heuristic gets, the more completely it hides the problems it can't detect. Monitoring coverage ≠ monitoring effectiveness: 96.5% coverage with observation selection is less safe than 80% coverage with random sampling.
+
+### Recommended fix: random deep inspection
+
+Sample 5–10% of sessions for LLM evaluation **regardless of heuristic eligibility**. This breaks observation selection — the LLM evaluator sees a representative sample, not a concentrated worst-case sample. Cost: ~60-120 additional LLM evals/day. Benefit: waste metric becomes calibrated; tail problems become visible.
+
+See: `shared/knowledge/entries/KE-1922-the-diverging-gauges-how-improving-metrics-and-worsening-reality-coexist-through-observation-selection.md`
+
+---
+
+## Creative Synthesis: The Instruction Saturation Paradox (KE-1923)
+
+**Key discovery**: Across 5 heartbeat agents with identical session cadence (47/day each), prompt length and behavioral variety are **inversely correlated**. The agent with the second-longest prompt (dev: 11,869 chars) shows the lowest behavioral entropy (0.106 — only 5 distinct effort levels), while the shortest-prompt agent (scout: 4,151 chars) shows high variety (0.596, 28 distinct levels). A new metric — chars-per-op — reveals when instructions replace judgment.
+
+### The prompt-behavior table (235 sessions, 24h window)
+
+| Agent | Prompt size | Avg ops | Chars/op | Behavioral entropy | Done% |
+|-------|------------|---------|----------|-------------------|-------|
+| dev | 11,869 | **7.4** | **1,594** | **0.106** | 100% |
+| evaluator | 11,000 | 29.6 | 371 | 0.404 | 95.7% |
+| may | 10,948 | 33.3 | 329 | 0.468 | 100% |
+| arc | 14,882 | 82.1 | 181 | 0.766 | 93.6% |
+| scout | 4,151 | 64.1 | 65 | 0.596 | 95.7% |
+
+### What chars-per-op reveals
+
+When chars-per-op exceeds ~400, the agent is executing the prompt as a script rather than using it as guidance. Dev at 1,594 chars/op runs the same 7-op checklist in 95.7% of sessions (57 seconds each). The 12K-char prompt grew through iterative correction — each bad behavior spawned a new constraint — crystallizing the agent's behavioral space into a single fixed path.
+
+### How this connects prior KEs
+
+- **KE-1921 (Legibility Gradient)**: Dev's 82.1pp completion-quality gap (100% done, 17.9% good) is EXPLAINED by crystallization. A fixed checklist always produces "done" but rarely produces value.
+- **KE-1902 (Compliance Trap)**: The chars-per-op metric quantifies the compliance trap. The ratchet has an equilibrium at entropy ~0.1 — no new bad behaviors because no new behaviors at all.
+- **KE-1917 (Effort Valley)**: Dev is "immune" to the valley not through resilience but through absence of scope discovery — it always dispatches.
+- **KE-1919 (Discrimination Deficit)**: Dev's prompt contains no "is this session worth running?" check. Since nothing changes between 30-minute cycles, most sessions are predictably zero-value.
+
+### The principle
+
+**Instruction density past a threshold replaces behavior rather than guiding it.** The best-performing agent by operational metrics (dev: 100% done, 0% error) is the worst-performing by adaptive metrics (0.106 entropy, 0.8% of system ops). The most reliable agent is the least useful one.
+
+### Actionable: chars-per-op as a health metric
+
+Track `prompt_chars / avg_ops` per agent. When > 400, the agent is likely over-specified. Dev's 12K prompt could be reduced to ~3K without changing behavior — the 9K of elaboration is already unused (saving ~2.8M tokens/day). Alternatively, add a 1-op discrimination check: "Has anything changed since last session?" Early exit when nothing has changed would save ~290 ops/day.
+
+See: `shared/knowledge/entries/KE-1923-the-instruction-saturation-paradox-why-longer-prompts-produce-less-varied-behavior.md`
+
+---
+
+## Creative Synthesis: The Constraint Placement Theorem (KE-1924)
+
+**Key discovery**: KE-1923's instruction saturation is not caused by too many constraints — it is caused by constraints encoded in the wrong architectural layer. The same system running concurrently shows that infrastructure constraints (task-tree scope, acceptance criteria, conflict scopes, workflow boundaries) achieve equal reliability to instruction constraints while preserving behavioral adaptability that instruction constraints destroy.
+
+### The natural experiment
+
+Dev-heartbeat and task-worker run on the same infrastructure, same LLM, same runtime. They differ only in WHERE constraints live:
+
+| Dimension | Dev (instructions) | Task-worker (infrastructure) |
+|-----------|-------------------|----------------------------|
+| Fixed prompt | ~11,869 chars | ~767 chars |
+| Chars per op | **1,594** | **16** |
+| Behavioral entropy | **0.106** (crystallized) | **0.272** (adaptive) |
+| Completion rate | 100% | 97.5% |
+| Distinct effort levels | 5 of 47 sessions | 77 of 283 sessions |
+
+Both are highly reliable. Only the infrastructure-constrained agent adapts its effort to the task at hand.
+
+### The mechanism
+
+Instructions constrain **behavior** (what the agent does). Infrastructure constrains **outcomes** (what the agent achieves). When you say "check the work queue, then run SQL, then check git status" you've written a script. When you say "satisfy these acceptance criteria for this scoped task" you've defined a contract. The script produces one behavior. The contract allows any behavior that satisfies the terms.
+
+This is the classic engineering principle — specify the interface, not the implementation — applied to agent architecture.
+
+### HN ecosystem convergence
+
+Every top-engagement agent tool on HN in 2026 encodes constraints in infrastructure, not instructions: SentinelMCP (protocol firewall), Cupcake (OPA policies), Sigmashake (runtime guardrails), botctl.dev (process manager), MCP/A2A (capability protocols). The market chose infrastructure. Zero tools work by making prompts longer.
+
+### Reframes prior KEs
+
+- **KE-1902** (Compliance Trap): Not "too many constraints" → constraints in the wrong layer
+- **KE-1917** (Effort Valley): Infrastructure constraints create scope-determined sessions (monotonic success curves)
+- **KE-1915** (Skills Absorption): Pipeline-to-skill dissolution IS constraint migration from instructions to infrastructure
+- **KE-1923** (Instruction Saturation): The crystallization endpoint of instruction-layer constraint accumulation
+
+### The correction workflow this implies
+
+Current: bad behavior → add instruction → prompt grows → crystallization.
+Proposed: bad behavior → can this be structurally prevented? → YES → add guard/tool/workflow → NO → add instruction.
+
+Default to infrastructure. Instructions should be the fallback for things that genuinely require the agent's judgment — creative direction, priority decisions, quality standards. Everything else is infrastructure debt disguised as prompt engineering.
+
+See: `shared/knowledge/entries/KE-1924-the-constraint-placement-theorem-why-infrastructure-constraints-preserve-adaptability-but-instruction-constraints-destroy-it.md`
+
+---
+
