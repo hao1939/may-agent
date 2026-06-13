@@ -271,10 +271,11 @@ projects, remains a global May/platform handler.
 
 ## Project-as-App
 
-Status: historical design context. For new implementation work, use
-`project-app-v2.md`: `.app/app.ts` owns project behavior, activation happens
-through canonical events, and there is no generic `/api/projects/action`
-endpoint. The `app.yaml` design below is not the current target.
+Status: historical design context. For current implementation work, use
+`project-app-v3.md`: sibling `*.app/` directories with `project.json` and
+`app.ts` own project behavior, activation happens through canonical events,
+and there is no generic `/api/projects/action` endpoint. The `app.yaml` design
+below and V2 embedded `.app/` are not the current target.
 
 A project is both a **context container** (goal, scope, knowledge, state) and a
 **capability surface** (functions it exposes, events it consumes and produces,
@@ -470,34 +471,42 @@ not hidden HTTP function calls in the runtime adapter.
 
 ### Existing Exemplar
 
-`projects/aks-rp-e2e/` is the canonical project-as-app. It has migrated to the
-V2 layout (`project-app-v2.md`), with runtime files under `.app/`:
+`aks-rp-e2e` is the canonical project-as-app. It uses the V3 layout
+(`project-app-v3.md`): a sibling `*.app/` directory alongside the domain
+project, with `project.json` (not `project.md`) as the app manifest:
 
 ```text
-projects/aks-rp-e2e/
-  project.md                              # context: goal, scope, plan
-  .app/
-    agents/aks-explorer/
-      agent.json                          # agent identity
-      AGENTS.md                           # agent role description
-      cron.json                           # scheduled capabilities
-      heartbeat.md                        # heartbeat guidance
-      workspace/                          # agent workspace
-  model/                                  # domain knowledge
-  scenarios/                              # test scenarios
-  sources/                                # input sources
+projects/aks-rp-e2e/                      # domain project (portable, no May-agent deps)
+  features/                               # domain knowledge
+  specs/                                  # test specs
+  replays/                                # replay scripts
+  runner/                                 # domain runner
+  model/                                  # knowledge model
+projects/aks-rp-e2e.app/                  # May-agent control plane (sibling)
+  project.json                            # app manifest (id, owner, status, policy, strategy)
+  app.ts                                  # event handler / app definition
+  agents/aks-explorer/                    # project-local agent
+    agent.json
+    AGENTS.md
+    heartbeat.md
+    workspace/
+  workflows/                              # project-planner, task-worker, etc.
+  tasks/tree.json                         # task tree (ready/active/done leaves)
+  scripts/                                # utility scripts (metrics, integrity checks)
+  ui/                                     # project-specific UI components
 ```
 
-Its cron entries demonstrate the pattern: scheduled exploration, periodic
-review, and event-triggered verification — all gated by `enabled: true/false`
-and event triggers, with the reconciler managing the project's overall
-lifecycle.
+The app drives the domain project through events: `project.planning.requested`
+wakes the planner workflow, which updates the task tree and dispatches ready
+leaves as worker sessions. The domain project remains portable and runnable
+without May-agent.
 
-> **Note:** The V1 path `projects/<name>/agents/<agent>/` described earlier in
-> this document is the original design. `aks-rp-e2e` has migrated to
-> `projects/<name>/.app/agents/<agent>/` per `project-app-v2.md`. Both paths
-> are discoverable by the runtime, but new projects should prefer the `.app/`
-> layout.
+> **Note:** The V1 path `projects/<name>/agents/<agent>/` and V2 embedded
+> `projects/<name>/.app/` layouts are historical. `aks-rp-e2e` migrated to
+> V3 (`projects/<name>.app/`) in the May 2026 timeframe. V3 project-apps
+> use `project.json` and are driven by their own `app.ts` event handler,
+> not by the project-health scanner (which only discovers `project.md` files).
+> See `project-app-v3.md` for the full design.
 
 ## Project Handler
 
