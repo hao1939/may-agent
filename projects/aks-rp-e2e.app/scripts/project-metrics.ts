@@ -165,10 +165,19 @@ function modelStatus(): ModelStatus {
 }
 
 function pathGapCount(): number {
-  const byStatus = modelStatus().paths?.byStatus ?? {};
-  return Object.entries(byStatus)
-    .filter(([status]) => !["pass", "staging-pass"].includes(status))
-    .reduce((sum, [, count]) => sum + count, 0);
+  // Read model directly to check both status and terminal flag per path.
+  // Terminal paths (externally blocked, product-gap, etc.) are not actionable
+  // gaps — they should not trigger capacity/starvation alerts.
+  const modelPath = join(projectDir, "model", "knowledge-map", "model.json");
+  const model = readJson<{
+    featurePaths?: Array<{ status?: string; terminal?: boolean }>;
+  }>(modelPath, {});
+  const paths = model.featurePaths ?? [];
+  return paths.filter(
+    (p) =>
+      !["pass", "staging-pass"].includes(p.status ?? "unknown") &&
+      p.terminal !== true,
+  ).length;
 }
 
 function countSpecs(): number {
