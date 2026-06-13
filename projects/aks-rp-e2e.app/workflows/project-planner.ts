@@ -321,7 +321,7 @@ async function runOwnerStep(input: {
   const sessionCtx = input.ctx as SessionWorkflowContext;
   return sessionCtx.runAgentSession
     ? sessionCtx.runAgentSession(input.agent, input.prompt, input.sessionId, {
-        timeoutMs: 300_000,
+        timeoutMs: 600_000,
       })
     : input.ctx.runAgent(input.agent, input.prompt);
 }
