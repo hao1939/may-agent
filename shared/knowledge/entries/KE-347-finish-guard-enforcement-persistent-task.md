@@ -23,9 +23,11 @@ The finish-guard pattern represents the strongest form of Channel 2 enforcement 
 
 ## Deployment Status
 
-✅ DEPLOYED as `agents/shared/guards/finish-guard.ts` with 41 passing tests. PROMOTE recommendation issued.
+✅ DEPLOYED as `shared/guards/finish-guard.ts` with 41 passing tests. PROMOTE recommendation issued.
 
-⚠️ **BLOCKED**: Guards are dead code — no runtime loads them. Tech-lead P0 sent 2026-04-22. The guard exists but has zero production effect until workflow engine wiring is implemented.
+✅ **LIVE IN PRODUCTION** as of 2026-06-13 16:27 UTC. 29 `finish-guard` blocks observed in 24h window (all on may sessions, all resolved to `done`). See KE-1939 for full falsification evidence.
+
+~~⚠️ **BLOCKED**: Guards are dead code — no runtime loads them.~~ ← **Falsified by KE-1939** (2026-06-15). The `loadGuards()` function in `workflow-tool.ts:731` loads guards from `sharedGuardsDir`, and the finish-guard is active.
 
 ## Connections
 
