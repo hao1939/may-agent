@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import type { SubagentManager } from "../../lib/index.js";
@@ -29,6 +30,10 @@ type ProjectAppContext = {
 type ProjectApp = {
   id?: string;
   version?: number;
+  owner?: string;
+  workspace?: {
+    localPath?: string;
+  };
   schedules?: Array<{
     id: string;
     enabled?: boolean;
@@ -71,6 +76,11 @@ export interface ProjectAppLoaderOptions {
   manager: SubagentManager;
   bus: EventBus;
   agentCrons: Map<string, Cron>;
+}
+
+export interface ProjectAppWatcher {
+  close(): void;
+  scanNow(): Promise<boolean>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -138,6 +148,12 @@ function appIdFromDir(appDir: string): string {
   return name.endsWith(".app") ? name.slice(0, -".app".length) : name;
 }
 
+function configuredProjectAppOwner(app: ProjectApp, appDir: string): string {
+  const owner = typeof app.owner === "string" ? app.owner.trim() : "";
+  if (owner) return owner.replace(/^agent:/, "");
+  return inferProjectAppOwner(appDir);
+}
+
 async function loadProjectApp(appDir: string): Promise<ProjectApp> {
   const tsPath = join(appDir, "app.ts");
   const jsPath = join(appDir, "app.js");
@@ -146,7 +162,9 @@ async function loadProjectApp(appDir: string): Promise<ProjectApp> {
   return mod.default ?? mod;
 }
 
-function domainProjectDir(projectsRoot: string, appDir: string, appId: string): string {
+function domainProjectDir(projectsRoot: string, appDir: string, appId: string, app: ProjectApp): string {
+  const localPath = typeof app.workspace?.localPath === "string" ? app.workspace.localPath.trim() : "";
+  if (localPath) return resolve(appDir, localPath);
   const sibling = resolve(projectsRoot, appId);
   return existsSync(sibling) ? sibling : appDir;
 }
@@ -156,9 +174,13 @@ function normalizeEvent(event: Record<string, unknown>, defaults: { source: stri
   const source = typeof event.source === "string" ? event.source : defaults.source;
   const owner = typeof event.owner === "string" ? event.owner : defaults.owner;
   const timestamp = typeof event.timestamp === "number" ? event.timestamp : Date.now();
-  const data = isRecord(event.data) ? event.data : Object.fromEntries(
-    Object.entries(event).filter(([key]) => !["type", "source", "owner", "timestamp", "urgency", "ttl_ms"].includes(key)),
-  );
+  const data = isRecord(event.data)
+    ? event.data
+    : Object.fromEntries(
+        Object.entries(event).filter(
+          ([key]) => !["type", "source", "owner", "timestamp", "urgency", "ttl_ms"].includes(key),
+        ),
+      );
   return { type, source, owner, timestamp, data };
 }
 
@@ -206,8 +228,10 @@ function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId
 }
 
 function hasExplicitWorkflowHandler(app: ProjectApp, eventType: unknown): boolean {
-  return typeof eventType === "string"
-    && (app.workflowHandlers ?? []).some((handler) => handler.enabled !== false && (handler.on ?? []).includes(eventType));
+  return (
+    typeof eventType === "string" &&
+    (app.workflowHandlers ?? []).some((handler) => handler.enabled !== false && (handler.on ?? []).includes(eventType))
+  );
 }
 
 function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescriptor): ProjectAppContext {
@@ -219,14 +243,18 @@ function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescri
       return JSON.parse(readFileSync(absolute, "utf-8")) as T;
     },
     importModule: async <T = Record<string, unknown>>(path: string) => importRuntimeModule<T>(resolve(path)),
-    startSession: (input) => opts.manager.run(input.agent, input.task, {
-      source: "project-app",
-      kind: "job",
-      projectId: descriptor.id,
-      ...(input.timeoutMs ? { timeoutMs: input.timeoutMs } : {}),
-    }),
+    startSession: (input) =>
+      opts.manager.run(input.agent, input.task, {
+        source: "project-app",
+        kind: "job",
+        projectId: descriptor.id,
+        ...(input.timeoutMs ? { timeoutMs: input.timeoutMs } : {}),
+      }),
     emit: (event) => {
-      const envelope = normalizeEvent(event, { source: `project-app:${descriptor.id}`, owner: `agent:${descriptor.owner}` });
+      const envelope = normalizeEvent(event, {
+        source: `project-app:${descriptor.id}`,
+        owner: `agent:${descriptor.owner}`,
+      });
       opts.bus.emit(envelope as unknown as AgentEvent);
       return envelope;
     },
@@ -271,9 +299,53 @@ function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDe
   return cron;
 }
 
+const projectAppWorkflowSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
+const projectAppScheduleSyntheticNamesByCron = new WeakMap<Cron, Map<string, Set<string>>>();
+
+function rememberProjectAppNames(
+  tracker: WeakMap<Cron, Map<string, Set<string>>>,
+  cron: Cron,
+  appId: string,
+  currentNames: Set<string>,
+): void {
+  let byApp = tracker.get(cron);
+  if (!byApp) {
+    byApp = new Map();
+    tracker.set(cron, byApp);
+  }
+  const previousNames = byApp.get(appId) ?? new Set<string>();
+  for (const previousName of previousNames) {
+    if (!currentNames.has(previousName)) {
+      cron.removeSyntheticEntry(previousName);
+    }
+  }
+  byApp.set(appId, currentNames);
+}
+
+function pruneProjectAppNames(
+  tracker: WeakMap<Cron, Map<string, Set<string>>>,
+  agentCrons: Map<string, Cron>,
+  activeCronAppIds: Map<Cron, Set<string>>,
+): void {
+  for (const cron of agentCrons.values()) {
+    const byApp = tracker.get(cron);
+    if (!byApp) continue;
+    const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
+    for (const [appId, names] of byApp) {
+      if (activeAppIds.has(appId)) continue;
+      for (const name of names) {
+        cron.removeSyntheticEntry(name);
+      }
+      byApp.delete(appId);
+    }
+  }
+}
+
 function installWorkflowHandlers(cron: Cron, descriptor: ProjectAppDescriptor): number {
   let count = 0;
+  const currentNames = new Set<string>();
   for (const handler of descriptor.app.workflowHandlers ?? []) {
+    currentNames.add(handler.name);
     const workflow = handler.handler;
     const entry: CronEntry = {
       name: handler.name,
@@ -297,13 +369,17 @@ function installWorkflowHandlers(cron: Cron, descriptor: ProjectAppDescriptor): 
     cron.addSyntheticEntry(entry);
     count++;
   }
+
+  rememberProjectAppNames(projectAppWorkflowSyntheticNamesByCron, cron, descriptor.id, currentNames);
   return count;
 }
 
 function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor: ProjectAppDescriptor): number {
   let count = 0;
+  const currentNames = new Set<string>();
   for (const schedule of descriptor.app.schedules ?? []) {
     const entryName = `${descriptor.id}-${schedule.id}`;
+    currentNames.add(entryName);
     const entry: CronEntry = {
       name: entryName,
       enabled: schedule.enabled !== false,
@@ -322,13 +398,23 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
     cron.addSyntheticEntry(entry);
     count++;
   }
+  rememberProjectAppNames(projectAppScheduleSyntheticNamesByCron, cron, descriptor.id, currentNames);
   return count;
 }
 
+const appRouterDescriptorsByBus = new WeakMap<EventBus, ProjectAppDescriptor[]>();
+
 function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: ProjectAppDescriptor[]): void {
+  const existing = appRouterDescriptorsByBus.get(opts.bus);
+  if (existing) {
+    existing.splice(0, existing.length, ...descriptors);
+    return;
+  }
+
+  appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent) => {
     const event = flattenEvent(rawEvent);
-    for (const descriptor of descriptors) {
+    for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (!shouldOfferToApp(descriptor.app, event, descriptor.id)) continue;
       void Promise.resolve()
         .then(async () => {
@@ -374,9 +460,12 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
   });
 }
 
-export async function installProjectApps(opts: ProjectAppLoaderOptions): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
+export async function installProjectApps(
+  opts: ProjectAppLoaderOptions,
+): Promise<{ installed: ProjectAppDescriptor[]; entries: number }> {
   const installed: ProjectAppDescriptor[] = [];
   let entries = 0;
+  const activeCronAppIds = new Map<Cron, Set<string>>();
 
   for (const appDir of listProjectAppDirs(opts.projectsRoot)) {
     const app = await loadProjectApp(appDir);
@@ -384,22 +473,94 @@ export async function installProjectApps(opts: ProjectAppLoaderOptions): Promise
     const descriptor: ProjectAppDescriptor = {
       id,
       appDir,
-      projectDir: domainProjectDir(opts.projectsRoot, appDir, id),
-      owner: inferProjectAppOwner(appDir),
+      projectDir: domainProjectDir(opts.projectsRoot, appDir, id, app),
+      owner: configuredProjectAppOwner(app, appDir),
       app,
     };
     if (!opts.manager.hasAgent(descriptor.owner)) {
       throw new Error(`Project app ${id} inferred owner ${descriptor.owner}, but that agent is not registered`);
     }
     const cron = ensureOwnerCron(opts, descriptor);
+    const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();
+    activeAppIds.add(descriptor.id);
+    activeCronAppIds.set(cron, activeAppIds);
     entries += installWorkflowHandlers(cron, descriptor);
     entries += installSchedules(opts, cron, descriptor);
     installed.push(descriptor);
   }
 
-  if (installed.length > 0) {
+  pruneProjectAppNames(projectAppWorkflowSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
+  pruneProjectAppNames(projectAppScheduleSyntheticNamesByCron, opts.agentCrons, activeCronAppIds);
+
+  if (installed.length > 0 || appRouterDescriptorsByBus.has(opts.bus)) {
     attachAppEventRouter(opts, installed);
   }
 
   return { installed, entries };
+}
+
+function hashFile(path: string): string {
+  try {
+    return createHash("sha256").update(readFileSync(path)).digest("hex");
+  } catch {
+    return "";
+  }
+}
+
+function projectAppManifestFingerprint(projectsRoot: string): string {
+  const parts: string[] = [];
+  for (const appDir of listProjectAppDirs(projectsRoot)) {
+    const tsPath = join(appDir, "app.ts");
+    const jsPath = join(appDir, "app.js");
+    const manifestPath = existsSync(tsPath) ? tsPath : jsPath;
+    parts.push(`${appDir}\t${manifestPath}\t${hashFile(manifestPath)}`);
+  }
+  return createHash("sha256").update(parts.join("\n")).digest("hex");
+}
+
+export function startProjectAppWatcher(
+  opts: ProjectAppLoaderOptions,
+  watcherOpts: { intervalMs?: number } = {},
+): ProjectAppWatcher {
+  const intervalMs = Math.max(1_000, watcherOpts.intervalMs ?? 5_000);
+  let closed = false;
+  let inFlight = false;
+  let lastFingerprint = projectAppManifestFingerprint(opts.projectsRoot);
+
+  const scanNow = async (): Promise<boolean> => {
+    if (closed || inFlight) return false;
+    const nextFingerprint = projectAppManifestFingerprint(opts.projectsRoot);
+    if (nextFingerprint === lastFingerprint) return false;
+    inFlight = true;
+    try {
+      const result = await installProjectApps(opts);
+      lastFingerprint = nextFingerprint;
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app] Auto-reloaded ${result.installed.length} app(s), ${result.entries} trigger(s)`,
+      });
+      return true;
+    } catch (err) {
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app] Auto-reload failed: ${err instanceof Error ? err.message : String(err)}`,
+      });
+      return false;
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  const timer = setInterval(() => {
+    void scanNow();
+  }, intervalMs);
+  timer.unref();
+
+  return {
+    close: () => {
+      closed = true;
+      clearInterval(timer);
+    },
+    scanNow,
+  };
 }

@@ -323,6 +323,7 @@ export class SubagentManager {
       injectUserMessage?: string;
       unarchive?: boolean;
       resetDbRow?: boolean;
+      timeoutMs?: number;
     },
   ): void {
     if (opts.unarchive) {
@@ -390,6 +391,7 @@ export class SubagentManager {
         orderId: meta.orderId,
         startedAt: meta.startedAt,
         projectId: meta.projectId,
+        timeoutMs: opts.timeoutMs,
         resumeMessages,
       });
     } catch (err) {
@@ -874,7 +876,7 @@ export class SubagentManager {
    * should check `_sessions.has(sessionId)` first and use steer/input for
    * live sessions.
    */
-  resumeSession(sessionId: string, message: string, opts?: { source?: string }): string {
+  resumeSession(sessionId: string, message: string, opts?: { source?: string; timeoutMs?: number }): string {
     if (this._sessions.has(sessionId)) {
       const reason = `Session "${sessionId}" is already active — use steer/input instead`;
       this.emitSessionResumeFailed(sessionId, this._registry.getSession(sessionId), reason, "already_active", true);
@@ -897,6 +899,7 @@ export class SubagentManager {
       injectUserMessage: message,
       unarchive: true,
       resetDbRow: true,
+      timeoutMs: opts?.timeoutMs,
     });
     return sessionId;
   }

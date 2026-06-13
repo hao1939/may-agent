@@ -13,14 +13,49 @@ export type WorkflowEvent =
   | { type: "workflow.step_completed"; step: string; sessionId?: string; result: TaskResult }
   | { type: "workflow.completed"; summary: string }
   | { type: "workflow.escalated"; reason: string }
-  | { type: "workflow.resume_failed"; source: string; owner: string; timestamp: number; data: { workflowRunId?: string; workflow?: string; reason: string; category: string; recoverable: boolean; nextAction?: string; projectId?: string } }
-  | { type: "workflow.resume_skipped"; source: string; owner: string; timestamp: number; data: { workflowRunId: string; workflow: string; status: string; reason: string; nextAction?: string; projectId?: string } };
+  | {
+      type: "workflow.resume_failed";
+      source: string;
+      owner: string;
+      timestamp: number;
+      data: {
+        workflowRunId?: string;
+        workflow?: string;
+        reason: string;
+        category: string;
+        recoverable: boolean;
+        nextAction?: string;
+        projectId?: string;
+      };
+    }
+  | {
+      type: "workflow.resume_skipped";
+      source: string;
+      owner: string;
+      timestamp: number;
+      data: {
+        workflowRunId: string;
+        workflow: string;
+        status: string;
+        reason: string;
+        nextAction?: string;
+        projectId?: string;
+      };
+    };
 
 // ── Guard Events (workflow-level) ──────────────────────────────────────
 
 /** Events the workflow runtime emits. Guards subscribe to these. */
 export type WorkflowGuardEvent =
-  | { type: "step_done"; source: "agent" | "function"; step: string; sessionId?: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
+  | {
+      type: "step_done";
+      source: "agent" | "function";
+      step: string;
+      sessionId?: string;
+      result: TaskResult;
+      completedSteps: CompletedStep[];
+      task: string;
+    }
   | { type: "step_start"; source: "agent" | "function"; step: string; task: string; completedSteps: CompletedStep[] }
   | { type: "workflow_start"; workflow: string; task: string }
   | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
@@ -121,7 +156,7 @@ export interface WorkflowContext {
    *  is pending, throws WorkflowInterrupted.
    *  @throws {WorkflowInterrupted} If a steering signal is received while the agent is running.
    */
-  runAgent(name: string, task: string): Promise<TaskResult>;
+  runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
 
   /** Run work in a durable agent session.
    *  If sessionId is provided, resume that exact session and append the new
@@ -129,7 +164,7 @@ export interface WorkflowContext {
    *  the active run instead of enqueueing duplicate work. If sessionId is
    *  omitted or cannot be resumed, create a fresh session like runAgent().
    */
-  runAgentSession(name: string, task: string, sessionId?: string): Promise<TaskResult>;
+  runAgentSession(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
 
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;

@@ -38,6 +38,20 @@ describe("projectWorkflowDirFor", () => {
     }
   });
 
+  it("prefers Project App V3 sibling app workflows when present", () => {
+    const root = tempRoot();
+    try {
+      const expected = join(root, "aks-rp-e2e.app", "workflows");
+      const legacy = join(root, "aks-rp-e2e", "workflows");
+      mkdirSync(expected, { recursive: true });
+      mkdirSync(legacy, { recursive: true });
+
+      expect(projectWorkflowDirFor(root, "aks-rp-e2e")).toBe(expected);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("prefers exact nested project ids when that workflow directory exists", () => {
     const root = tempRoot();
     try {

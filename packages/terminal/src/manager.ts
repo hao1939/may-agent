@@ -62,6 +62,7 @@ function mayConsoleCandidates(projectRoot: string): string[] {
     process.env.MAY_CONSOLE_BIN || "",
     resolve(process.cwd(), "packages", "terminal", "bin", "may-console.cjs"),
     resolve(projectRoot, "packages", "terminal", "bin", "may-console.cjs"),
+    resolve(projectRoot, "projects", "may-agent", "packages", "terminal", "bin", "may-console.cjs"),
     resolve(projectRoot, "projects", "platform", "repos", "may-agent", "packages", "terminal", "bin", "may-console.cjs"),
     "/usr/local/bin/may-console",
   ].filter(Boolean);
@@ -121,6 +122,7 @@ function terminalBridgeCandidates(projectRoot: string): string[] {
     process.env.MAY_TERMINAL_BRIDGE || "",
     resolve(process.cwd(), "packages", "terminal", "bin", "terminal-bridge.cjs"),
     resolve(projectRoot, "packages", "terminal", "bin", "terminal-bridge.cjs"),
+    resolve(projectRoot, "projects", "may-agent", "packages", "terminal", "bin", "terminal-bridge.cjs"),
     resolve(projectRoot, "projects", "platform", "repos", "may-agent", "packages", "terminal", "bin", "terminal-bridge.cjs"),
   ].filter(Boolean);
 }

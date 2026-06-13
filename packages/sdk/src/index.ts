@@ -454,7 +454,9 @@ export interface HandlerModule {
 }
 
 type MaybePromise<T> = T | Promise<T>;
-type ValueResolver<T> = T | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
+type ValueResolver<T> =
+  | T
+  | ((ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>);
 
 export interface WorkflowHandlerOptions {
   workflow: ValueResolver<string>;
@@ -472,7 +474,11 @@ async function resolveValue<T>(
   entry: CronEntry,
 ): Promise<T> {
   if (typeof value === "function") {
-    return (value as (ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>)(ctx, event, entry);
+    return (value as (ctx: HandlerContext, event: EventEnvelope | undefined, entry: CronEntry) => MaybePromise<T>)(
+      ctx,
+      event,
+      entry,
+    );
   }
   return value;
 }
@@ -495,7 +501,10 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerM
     }
 
     if (options.includeEvent && !event) {
-      ctx.sdk.log("warn", `[workflow-handler:${entry.name}] skipped includeEvent dispatch because no event payload was received`);
+      ctx.sdk.log(
+        "warn",
+        `[workflow-handler:${entry.name}] skipped includeEvent dispatch because no event payload was received`,
+      );
       ctx.sdk.emit("handler.skipped", {
         handler: entry.name,
         reason: "includeEvent requested but no event payload received",
@@ -513,9 +522,15 @@ export function createWorkflowHandler(options: WorkflowHandlerOptions): HandlerM
     if (source) runOpts.source = source;
     if (projectId) runOpts.projectId = projectId;
 
-    ctx.sdk.log("info", `[workflow-handler:${entry.name}] Dispatching workflow "${workflow}" for ${source ?? ctx.agentName}`);
+    ctx.sdk.log(
+      "info",
+      `[workflow-handler:${entry.name}] Dispatching workflow "${workflow}" for ${source ?? ctx.agentName}`,
+    );
     const result = await ctx.sdk.runWorkflow(workflow, task, runOpts);
-    ctx.sdk.log("info", `[workflow-handler:${entry.name}] Workflow "${workflow}" -> ${result.status}${result.runId ? ` (${result.runId})` : ""}`);
+    ctx.sdk.log(
+      "info",
+      `[workflow-handler:${entry.name}] Workflow "${workflow}" -> ${result.status}${result.runId ? ` (${result.runId})` : ""}`,
+    );
     ctx.sdk.emit("handler.workflow_dispatched", {
       handler: entry.name,
       workflow,
@@ -730,7 +745,10 @@ export function workflowRowToExecutionResult(row: WorkflowExecutionRow): Executi
     id: row.runId,
     kind: "workflow",
     status,
-    summary: compactExecutionText(row.result_summary ?? row.result_reason, row.workflow + " " + status + ": " + row.task),
+    summary: compactExecutionText(
+      row.result_summary ?? row.result_reason,
+      row.workflow + " " + status + ": " + row.task,
+    ),
     traceId: row.runId,
     parentId: optionalExecutionString(row.parentWorkflowRunId ?? row.parentSessionId),
     projectId: optionalExecutionString(row.projectId),
@@ -783,7 +801,8 @@ export interface WorkflowContext {
   agentsRoot: string;
   sharedRoot: string;
   projectsRoot: string;
-  runAgent(name: string, task: string): Promise<TaskResult>;
+  runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
+  runAgentSession?(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
   runFunction(label: string, fn: () => Promise<string>): Promise<TaskResult>;
   summarize(result: TaskResult, opts?: Record<string, unknown>): string;
@@ -799,11 +818,7 @@ export interface WorkflowModule {
 }
 
 // ── Resilience primitives ──────────────────────────────────────
-export {
-  checkCircuitBreaker,
-  recordOutcome as recordCircuitOutcome,
-  resetCircuitBreaker,
-} from "./circuit-breaker.js";
+export { checkCircuitBreaker, recordOutcome as recordCircuitOutcome, resetCircuitBreaker } from "./circuit-breaker.js";
 
 export {
   DEFAULT_RUNNING_LEASE_MS,
@@ -818,12 +833,7 @@ export {
 export type { DispatchRecord } from "./dispatch-dedup-guard.js";
 
 // ── Workflow file cache ───────────────────────────────────
-export {
-  WorkflowFileCache,
-  parseSections,
-  extractSectionContent,
-  countPattern,
-} from "./workflow-file-cache.js";
+export { WorkflowFileCache, parseSections, extractSectionContent, countPattern } from "./workflow-file-cache.js";
 export type { CacheEntry, CacheStats } from "./workflow-file-cache.js";
 
 // ── Project file schema (project.md / discussion.md) ────────────
@@ -856,11 +866,7 @@ export type {
 } from "./project-tasks.js";
 
 // ── Metric ownership (which agents exist; who owns which metric) ────────────
-export {
-  listConfiguredAgents,
-  listAutonomousAgents,
-  resolveMetricOwner,
-} from "./metric-ownership.js";
+export { listConfiguredAgents, listAutonomousAgents, resolveMetricOwner } from "./metric-ownership.js";
 
 // ── Heartbeat data loaders (used by per-agent heartbeat workflows) ────────
 export {
