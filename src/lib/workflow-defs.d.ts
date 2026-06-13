@@ -128,10 +128,10 @@ interface WorkflowContext {
   // ── Workflow-specific ──────────────────────────────────────────────
 
   /** Run a sub-agent, wait for it to finish, return result. */
-  runAgent(name: string, task: string): Promise<TaskResult>;
+  runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
 
   /** Run work in a durable agent session. */
-  runAgentSession(name: string, task: string, sessionId?: string): Promise<TaskResult>;
+  runAgentSession(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
 
   /** Run a sub-workflow by name. Enables workflow composition. */
   runWorkflow(name: string, task: string): Promise<WorkflowResult>;
@@ -215,7 +215,15 @@ interface Demand {
 /** Events that guards can subscribe to. */
 type WorkflowGuardEvent =
   | { type: "workflow_start"; workflow: string; task: string }
-  | { type: "step_done"; source: "agent" | "function"; step: string; sessionId?: string; result: TaskResult; completedSteps: CompletedStep[]; task: string }
+  | {
+      type: "step_done";
+      source: "agent" | "function";
+      step: string;
+      sessionId?: string;
+      result: TaskResult;
+      completedSteps: CompletedStep[];
+      task: string;
+    }
   | { type: "workflow_done"; workflow: string; summary: string; completedSteps: CompletedStep[] };
 
 /** A guard module that inspects workflow events and returns demands. */

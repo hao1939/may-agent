@@ -5,6 +5,7 @@ import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentCrons, reloadAgents } from "./agent-loader.js";
+import { installProjectApps } from "./loader/project-app-loader.js";
 
 export interface InstanceIdentity {
   pid: number;
@@ -97,11 +98,28 @@ export function createDaemonLifecycle(opts: {
   };
 
   const gracefulRestart = () => {
-    exec("supervisorctl restart may-agent", { timeout: 10000 });
+    exec(
+      "nohup sh -c 'sleep 0.2; supervisorctl restart may-agent may-agent-web; supervisorctl start may-agent may-agent-web' >/tmp/may-agent-supervisor-restart.log 2>&1 &",
+      { timeout: 10000 },
+    );
   };
 
   const handleReload = async (): Promise<void> => {
     const result = await reloadAgents(opts.loaderOpts);
+    let appResult: Awaited<ReturnType<typeof installProjectApps>> | undefined;
+    try {
+      appResult = await installProjectApps({
+        projectsRoot: opts.loaderOpts.projectsRoot,
+        projectRoot: opts.loaderOpts.projectRoot,
+        manager: opts.loaderOpts.manager,
+        bus: opts.loaderOpts.bus,
+        agentCrons: getAgentCrons(),
+      });
+    } catch (err) {
+      result.errors.push(
+        `[project-app] ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
     let summary: string;
     if (result.errors.length > 0) {
       summary = `[reload] Validation errors:\n${result.errors.join("\n")}`;
@@ -109,9 +127,14 @@ export function createDaemonLifecycle(opts: {
       const parts: string[] = [];
       if (result.added.length > 0) parts.push(`${result.added.length} new (${result.added.join(", ")})`);
       if (result.updated.length > 0) parts.push(`${result.updated.length} updated (${result.updated.join(", ")})`);
+      if (appResult && appResult.installed.length > 0) {
+        parts.push(`${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`);
+      }
       summary = `[reload] ${parts.join(", ")}`;
     } else {
-      summary = "[reload] No changes";
+      summary = appResult && appResult.installed.length > 0
+        ? `[reload] ${appResult.installed.length} project app(s), ${appResult.entries} trigger(s)`
+        : "[reload] No changes";
     }
     // info events are forwarded to stdout by attachConsoleUI (chat/console
     // mode) or attachDaemonInfoLog (default daemon mode). See
