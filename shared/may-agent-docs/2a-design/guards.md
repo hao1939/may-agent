@@ -172,7 +172,7 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-16 ~14:00Z** (24h window, ~3,260 total):
+**Latest snapshot 2026-06-13 ~14:30Z** (24h window, ~3,260 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
