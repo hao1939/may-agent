@@ -172,34 +172,36 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-14 ~22:30Z** (24h window, ~2,733 total):
+**Latest snapshot 2026-06-15 ~01:30Z** (24h window, ~2,870 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,556 | 56.9% |
-| READ_DEDUP | 437 | 16.0% |
-| SESSION_BASH_CAT | 349 | 12.8% |
-| SESSION_READ | 212 | 7.8% |
-| PATH_HALLUCINATION | 75 | 2.7% |
-| read-before-edit | 52 | 1.9% |
-| SESSION_BASH_GREP | 43 | 1.6% |
+| commit-guard (combined) | 1,648 | 57.4% |
+| READ_DEDUP | 441 | 15.4% |
+| SESSION_BASH_CAT | 366 | 12.8% |
+| SESSION_READ | 220 | 7.7% |
+| PATH_HALLUCINATION | 78 | 2.7% |
+| read-before-edit | 67 | 2.3% |
+| SESSION_BASH_GREP | 41 | 1.4% |
 | hallucinated-path (workflow) | 9 | 0.3% |
 
-Total: ~2,733/day (threshold breach continues, **structural floor > threshold**).
+Total: ~2,870/day (threshold breach continues, **structural floor > threshold**).
 
-Notable changes vs 2026-06-13 ~16:15Z snapshot:
-- **Guard count still above threshold** (2,566 → 2,733, +6.5%).
+Notable changes vs 2026-06-14 ~22:30Z snapshot:
+- **Guard count still above threshold** (2,733 → 2,870, +5.0%).
   The noise floor remains structurally above the 2,500 threshold.
-- **READ_DEDUP declined slightly** — 471 → 437 (−7.2%). Still the #2
-  signal; aks-explorer replay re-reads remain the dominant source (KE-1867).
-- commit-guard combined grew from 1,397 → 1,556 (+11.4%) — proportional
-  to higher session volume (1,534 sessions/24h).
-- **read-before-edit emerged at 52 triggers** (not separately tracked
-  in prior snapshots — previously folded into "other").
-- SESSION_BASH_CAT stable (342 → 349). SESSION_READ up (180 → 212).
-- The breach remains structural. The noise floor (~2,700/day) exceeds the
-  2,500 threshold. Recommendation unchanged: either raise threshold to
-  ~3,000 or calibrate READ_DEDUP per-file limits for replay files (KE-1867).
+  This is the third consecutive snapshot showing structural breach.
+- Composition is stable: commit-guard ~57%, READ_DEDUP ~15%,
+  SESSION_BASH_CAT ~13%. No new dominant signal.
+- **read-before-edit grew** (52 → 67, +29%) — now the 6th signal.
+- Owner breakdown: evaluator 1,320 (46%), aks-explorer 1,207 (42%),
+  arc 124, scout 85, may 73, dev 50.
+- All 2,870 SESSION_READ triggers share a single `reason` string
+  (unbounded session.jsonl grep), suggesting the guard text is static.
+- The breach remains structural. Recommendation unchanged: either raise
+  threshold to ~3,000 or calibrate session-read/READ_DEDUP guards
+  for high-volume legitimate patterns (evaluator session inspection,
+  aks-explorer replay re-reads per KE-1867).
 
 ### Known issue: guard name conflation
 
