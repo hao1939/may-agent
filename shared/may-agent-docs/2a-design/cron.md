@@ -90,11 +90,16 @@ it is scoped by the `cron.json` file it sits beside:
 | Scope | Trigger file | Named handler file | Use for |
 |-------|--------------|--------------------|---------|
 | Agent-owned | `agents/<agent>/cron.json` | `agents/<agent>/handlers/<name>.ts` | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
-| Project-owned | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Automation that only makes sense inside that project boundary |
+| Project-owned (V3) | `projects/<project>.app/agents/<agent>/cron.json` | `projects/<project>.app/agents/<agent>/handlers/<name>.ts` | Automation inside a V3 sibling-app project boundary |
+| Project-owned (V2) | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Legacy V2 embedded-app projects (backward compat) |
 
-The runtime's agent-discovery scans both `projects/<project>/agents/` and
-`projects/<project>/.app/agents/` for backward compatibility, but the `.app`
-convention is canonical for Project App V2 projects (e.g. `aks-rp-e2e`).
+The runtime's agent-discovery scans three project-agent locations:
+1. **V3 sibling app:** `projects/<project>.app/agents/` (preferred — e.g. `aks-rp-e2e.app/agents/aks-explorer/`)
+2. **V2 embedded app:** `projects/<project>/.app/agents/`
+3. **Flat:** `projects/<project>/agents/`
+
+V3 is canonical for new and migrated projects. V2 paths remain for backward
+compatibility but should not be used in new projects (see `project-app-v3.md`).
 
 Project-wide platform behavior, such as reconciling all projects or routing
 canonical escalation events, remains owned by a global agent such as May. A
