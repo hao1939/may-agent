@@ -10,6 +10,20 @@ import { checkCircuitBreaker, recordCircuitOutcome, shouldDispatch, recordDispat
 export const name = "scout-explore";
 export const description = "Routine discovery — fetch and process a specific source.";
 
+export function buildExploreTask(task: string): string {
+  return `${task}
+
+Output contract:
+- Durable Scout notes and findings belong under \`projects/scout-knowledge-lib/knowledge/\`.
+- Source-level findings belong under \`projects/scout-knowledge-lib/knowledge/findings/\`.
+- Run-level drafts may go under \`agents/scout/workspace/findings/\`.
+- Append short user-facing highlights to \`agents/scout/workspace/digest/today.md\` when useful.
+- Search existing Scout knowledge files first and update an existing topical file when the topic already exists.
+- Never create new top-level folders under \`projects/\`. In particular, do not write paths like \`projects/explore/...\`, \`projects/research/...\`, or \`projects/docs/...\`.
+- If none of the allowed output roots fit, finish with a blocker explaining the missing destination instead of inventing a folder.
+`;
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const agent = "scout";
   const agentsRoot = ctx.agentsRoot || require("path").join(process.cwd(), "agents");
@@ -28,10 +42,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   // The task comes from the workflow-backed handler config — source-specific instructions
   const task = ctx.task || "Explore sources and update shared knowledge base.";
+  const agentTask = buildExploreTask(task);
 
   let result: any;
   try {
-    result = await ctx.runAgent(agent, task);
+    result = await ctx.runAgent(agent, agentTask);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recordCircuitOutcome(agentsRoot, agent, true, `explore threw: ${message.slice(0, 200)}`);
