@@ -1,7 +1,7 @@
 # Design: Web UI
 
-**Status**: Partially shipped (2026-05-08)
-**Date**: 2026-05-06 (revised 2026-05-08)
+**Status**: Partially shipped (2026-05-08); modular route proposal added for review (2026-06-13)
+**Date**: 2026-05-06 (revised 2026-05-08, 2026-06-13)
 **Aligned with**: `../architecture.md`, `../work-model.md`, `metrics.md`, `heartbeat.md`
 
 ## What this UI is for
@@ -66,6 +66,425 @@ And two relationships that connect them:
 - **Messages** are async coordination between agents (and between humans and agents).
 
 The UI's information architecture mirrors this. Projects are the primary navigable object. Metrics belong to projects (or to the system). Heartbeats animate everything. Sessions are how iterations look from the outside; messages are how coordination looks.
+
+## Proposal: Modular Route-Based UI
+
+**Status**: Draft for review (2026-06-13)
+
+The current UI demonstrates useful runtime data, but it is still shaped like one
+large tabbed dashboard. The next design should make May-agent understandable as
+a modular product UI over one simple system model:
+
+```text
+event -> handler -> session/workflow -> emitted event -> project/task/state
+```
+
+The UI should not put every concept on one page. The front page should answer
+"is the system alive?" and route the human to the right module. Each deeper page
+should own one object and one investigation shape.
+
+### Source of Truth
+
+The runnable May-agent UI belongs to the May-agent domain workspace:
+
+```text
+projects/may-agent/packages/webui/static/
+```
+
+`projects/may-agent.app/` owns project-app design, tasks, and May-agent project
+operation. It should not become the source of the platform UI implementation.
+If copied static UI exists under an app folder, treat it as generated or legacy
+serving material, not the design source.
+
+### Routes
+
+Use real browser paths with `history.pushState`, not hash routes. The HTTP
+server should serve `index.html` for non-API routes and keep `/api/*`,
+`/ws`, static assets, and project static routes explicit.
+
+```text
+/
+/events
+/events/:eventId
+/projects
+/projects/:projectId
+/projects/:projectId/tasks
+/projects/:projectId/functions
+/agents
+/agents/:agentName
+/sessions/:sessionId
+/metrics
+/knowledge/*
+/terminal
+```
+
+Hash routes are not the right long-term boundary. They hide the route from
+server logs, make links less canonical, put too much state in client boot logic,
+and make it harder to audit which page a human used to inspect a specific
+event, task, or session.
+
+### Pages
+
+| Route | Purpose |
+|---|---|
+| `/` | Live overview. Show liveness, heartbeat/activity timeline, core vitals, recent decisions, open alerts, recent messages, and active projects. |
+| `/events` | Event stream. Show filters, event type/owner distribution, recent events, and trace entry points. |
+| `/events/:eventId` | Event trace. Show the concrete chain from input event to handler, session/workflow, emitted events, and resulting state. |
+| `/projects` | Project list. Show durable work contexts and their status. |
+| `/projects/:projectId` | Project overview. Show goal, current state, owner, latest discussion, metrics, sessions, and key links. |
+| `/projects/:projectId/tasks` | Project task tree/Kanban. Show how agents currently understand and plan the project, with human feedback close to the relevant task. |
+| `/projects/:projectId/functions` | Project-app functions. Show registered actions, domain UI links, and action history when the project is backed by an app. |
+| `/agents` | Agent list. Show ownership, liveness, metrics, and chat entry points. |
+| `/agents/:agentName` | Agent overview. Show identity, prompt/context files, owned projects, owned metrics, recent sessions, and default conversation. |
+| `/sessions/:sessionId` | Session trace. Show trigger, context read, decisions, tool/work actions, outputs, emitted events, and transcript. |
+| `/metrics` | Metrics and alerts. Show health signals and ownership. |
+| `/knowledge/*` | Knowledge browser. Show durable knowledge, design docs, proposals, and references. |
+| `/terminal` | Terminal surface for daemon/client operation, not the primary demo path. |
+
+### Module Layout
+
+Keep the UI simple and modular before introducing a framework:
+
+```text
+packages/webui/static/
+  index.html
+  app.js
+  router.js
+  api.js
+  components/
+    badges.js
+    cards.js
+    timeline.js
+    trace-viewer.js
+    task-tree.js
+  pages/
+    live.js
+    events.js
+    event-detail.js
+    projects.js
+    project-detail.js
+    project-tasks.js
+    project-functions.js
+    agents.js
+    agent-detail.js
+    sessions.js
+    metrics.js
+    knowledge.js
+    terminal.js
+  styles/
+    base.css
+    layout.css
+    components.css
+    pages.css
+```
+
+`app.js` should be the shell/bootstrap only. Each page module owns its route
+params, data loading, rendering, and page-local interactions. Shared rendering
+belongs in small component helpers, not in one large global script.
+
+### Framework Decision
+
+Do not introduce a large UI framework yet.
+
+The hard part of this UI is runtime-model clarity, not complex component state.
+Most current behavior is fetch JSON, render cards/tables/timelines, navigate,
+and submit small steering actions. A framework would add build and runtime
+complexity before the product shape is stable.
+
+Use modular vanilla JavaScript first. Reconsider a small framework only after
+the modular version hits concrete pain such as:
+
+- complex nested local state across pages
+- drag/drop task tree editing
+- optimistic updates
+- large reusable interactive components
+- extensive form validation
+- multiple independent live subscriptions per page
+- component-state testing that becomes painful without a framework
+
+If that point arrives, prefer Svelte or Preact over React for this UI because
+the daemon should still serve a small static frontend.
+
+### Demo Experience
+
+The UI should demonstrate May-agent by letting a reviewer follow one loop:
+
+1. Open `/` and see whether the system is alive.
+2. Click an event, alert, project, agent, or session.
+3. Land on the object-specific page, not a generic dashboard section.
+4. Follow the trace: event -> handler -> session/workflow -> emitted event -> state.
+5. Add human feedback close to the context being reviewed.
+6. See the follow-up event and state change later through the same UI.
+
+This keeps the system transparent without turning the first screen into a
+control room containing every object at once.
+
+### Task Tree Surface
+
+The task tree is a first-class project surface:
+
+```text
+/projects/:projectId/tasks
+```
+
+This page is the primary way a human reviews and steers a project-app's current
+understanding. It should not be hidden behind a generic project discussion tab.
+
+It has two views:
+
+- **Thinking view**: the task tree as project understanding. Show top-level
+  intent, decomposition, accepted facts, blocked reasoning, parent/child
+  rollups, and current focus.
+- **Workflow view**: Kanban lanes derived from the same task tree. This is a
+  scheduling/progress projection, not a separate source of truth.
+
+Human feedback should attach directly to task nodes. The UI can expose this as
+`tree.attachFeedback()` at the product level: the user comments on a concrete
+task, and the planner receives feedback with task id, parent chain, current
+status, and surrounding context. Project-wide discussion remains useful, but it
+is not the primary steering mechanism once a task tree exists.
+
+Deep links should support:
+
+```text
+/projects/:projectId/tasks?task=:taskId
+```
+
+The target task should be expanded, selected, and scrolled into view.
+
+### Project-App Functions
+
+Project-app actions need a visible home:
+
+```text
+/projects/:projectId/functions
+```
+
+This surface appears when a project has registered app actions, app-provided UI,
+or domain-specific operation links. It should show:
+
+- registered actions from the project app declaration
+- a link to domain UI when the project provides one
+- action purpose, expected effect, and async latency expectation
+- latest request/action history where available
+- links back to related tasks, sessions, and events
+
+Examples:
+
+- `aks-rp-e2e.app` can expose actions such as request focus plan, review focus
+  progress, trigger/review domain test flows, or ask the owner to replan.
+- A project with a domain UI can link to `/projects/:projectId/ui/` or its
+  app-declared equivalent without making that UI part of the global shell.
+
+The product rule is: project-specific capabilities are visible, but they remain
+owned by the project app. The global Web UI provides the frame and consistent
+history/trace links.
+
+### Project Surfaces and Domain UI
+
+Some projects have their own domain UI. For example, `aks-rp-e2e` needs a
+feature/test-spec/evidence explorer that is meaningful to AKS work, not to
+May-agent infrastructure. That UI should remain project-owned and decoupled from
+the global May-agent UI.
+
+The May-agent UI should provide one discoverable place to find those surfaces,
+but it should not import domain UI components or depend on domain UI internals.
+
+Project apps may declare surfaces:
+
+```ts
+surfaces: [
+  {
+    id: "feature-explorer",
+    kind: "domain-ui",
+    title: "AKS Feature Explorer",
+    route: "/projects/aks-rp-e2e/ui/",
+    description: "Review AKS features, specs, replay runs, and evidence.",
+    owner: "aks-explorer",
+  },
+]
+```
+
+The global UI renders declared surfaces as cards or links from:
+
+```text
+/projects/:projectId
+/projects/:projectId/functions
+```
+
+Conventional domain UI entrypoint:
+
+```text
+/projects/:projectId/ui/
+```
+
+Supported integration modes:
+
+- **Link out**: default. The global UI links to the project-owned domain UI.
+- **Embed**: optional later. The global UI may iframe a domain UI only when the
+  boundary is explicit and sandboxed.
+- **Action bridge**: domain UI may call project-app actions through stable
+  May-agent APIs, but it must not reach into May-agent runtime internals.
+
+The action bridge is the important boundary. Domain UI can invoke durable,
+registered project actions by emitting canonical events through the stable
+event ingress:
+
+```text
+POST /api/events
+```
+
+with `type: "project.action.invoked"` or another project-owned event, plus the
+action id and payload under `data`. The project app owns the action contract,
+validation, resulting events, and any domain-specific side effects. The domain
+UI does not write May-agent runtime tables directly, call handler internals,
+mutate task files directly, or assume workflow implementation details.
+
+Action results should be traceable through normal May-agent mechanisms:
+
+- action request event
+- handler/workflow/session execution
+- emitted events
+- task/project/evidence state changes
+- event trace links
+
+This lets a domain UI feel native to its project while preserving the global
+system rule: everything important still flows through events, handlers, actions,
+and traceable state transitions.
+
+### Event Trace
+
+The event trace is the most important debugging surface. It should be specified
+as a product/API contract, not just a button on an event table.
+
+Route:
+
+```text
+/events/:eventId
+```
+
+API:
+
+```text
+GET /api/events/:eventId/trace
+```
+
+The response should describe a chain:
+
+```text
+input event
+  -> matched app route or handler
+  -> workflow run and/or session spawned
+  -> tool calls / session progress / workflow steps
+  -> events emitted
+  -> state changed
+  -> follow-up handlers
+```
+
+The page should render the chain as linked steps:
+
+```text
+project.task.completed
+  matched aks-rp-e2e.app:onEvent
+  emitted project.planning.requested
+  handled by aks-rp-e2e-project-planner
+  session s_...
+  updated tasks/tree.json
+  emitted project.task.assigned
+```
+
+Every step should link to the strongest available object:
+
+- event id -> `/events/:eventId`
+- workflow run -> workflow trace if available
+- session id -> `/sessions/:sessionId`
+- project id -> `/projects/:projectId`
+- task id -> `/projects/:projectId/tasks?task=:taskId`
+- metric id -> `/metrics?metric=:metricId`
+
+If a chain is incomplete, the UI should say where evidence stops. A trace that
+shows "event persisted but no handler matched" is valuable: it exposes an
+orphan event. A trace that shows "handler matched but no follow-up event" is
+also valuable: it exposes a dead end.
+
+### Knowledge Search
+
+`/knowledge` should be search-first. The primary human question is:
+
+```text
+what do we know about X?
+```
+
+The file tree is secondary navigation.
+
+Search should span durable knowledge and project understanding:
+
+- knowledge entries
+- design docs and proposals
+- project summaries
+- task tree accepted facts and completed task summaries
+- session summaries
+- feature/model packets where a project provides them
+
+Results should show source type, owning project or agent, freshness, and why the
+result matched. When a result comes from a task tree, link to the task node.
+When it comes from a session, link to the session. When it comes from a design
+doc, link to the document path.
+
+### Project-App Health on Live
+
+The `/` live page should show project-app health, not just last-touched pulse.
+For project-apps, the project strip should prefer task/app health:
+
+```text
+aks-rp-e2e.app
+2 active · 3 review · 0 blocked · 83% model coverage
+```
+
+Fallback for ordinary projects:
+
+```text
+owner · status · last update · metric summary
+```
+
+The front page should answer whether important project apps are advancing. A
+recent timestamp is not enough if the task tree is empty, all leaves are
+blocked, or the domain model is not improving.
+
+### Session Task Context
+
+`/sessions/:sessionId` should show task context when a session was spawned for a
+project task.
+
+If the session source, event payload, workflow run, or task body includes a task
+id, the session page should show:
+
+- project id
+- task id
+- task goal
+- task status at session start and latest known status
+- parent chain
+- current output/evidence targets
+- link to `/projects/:projectId/tasks?task=:taskId`
+
+This prevents sessions from becoming isolated transcripts. The human should be
+able to see where the session fits in the project tree before reading tool
+calls.
+
+### Responsive Baseline
+
+The Web UI remains desktop-first. Telegram is still the mobile-first channel.
+But the browser UI should support narrow laptop windows with basic responsive
+rules:
+
+- stack multi-column panels vertically on narrow screens
+- convert dense tables to card lists where practical
+- keep task tree and Kanban horizontally scrollable when needed
+- keep action buttons and feedback boxes reachable without overlapping content
+- preserve route deep links and selected object state across resize
+
+This is not a full mobile product. It is basic layout resilience for the same
+desktop tool.
 
 ## The five surfaces
 
