@@ -56,29 +56,46 @@
     ]
   },
   "currentState": {
-    "summary": "The project is active with 4 in-progress leaves (2 evidence-classification, 1 PM-autoupgrade execution, 1 KMS cert-rot fix-rerun) and 1 blocked (HSM RBAC). Prior vnet-integration batches and CMK-fw classification are accepted/superseded."
+    "summary": "Project at natural plateau: 111/133 paths pass (83.5%), 102/129 features pass. 33 tasks completed today (most productive day). 3 active tasks in-flight (cmk-privvnet re-execution, model finalization, PM security-patch execution). 22 non-pass paths all have root-cause classifications. 5 features need status promotion to match their path verdicts."
   },
   "currentFocus": {
-    "summary": "Four active domain leaves: remaining-fail-classify and remaining-nonpass-classify (evidence lane), PM autoupgrade scheduling execution, and KMS v2+ svc cert rotation fix-rerun (spec-runner lane). 1 blocked (HSM RBAC).",
-    "nextAction": "Await worker sessions for 4 active leaves. remaining-nonpass-classify-batch-20260612b just assigned to aks-explorer.",
+    "summary": "Model reconciliation and terminal classification. Complete 3 in-flight active tasks, promote 5 features with all-pass paths, normalize 2 feature statuses. No new execution wave — project is at coverage plateau where remaining gaps are external/product-gated.",
+    "nextAction": "Complete 3 active tasks (cmk-privvnet-reexecute, model-finalize, pm-security-patch). Then reconcile 5 promotable features and 2 status normalizations. After reconciliation, assess whether to expand to new feature families or write terminal coverage report.",
     "activeTaskIds": [
-      "remaining-fail-classify-batch-20260612",
-      "remaining-nonpass-classify-batch-20260612b",
-      "pm-autoupgrade-sched-staging-20260612c",
-      "kms-v2plus-svc-cert-rot-fix-rerun-20260612"
+      "cmk-privvnet-reexecute-staging-20260613",
+      "model-finalize-staging-pass-20260613",
+      "pm-security-patch-staging-execute-20260613"
     ],
     "activeTask": {
-      "id": "remaining-nonpass-classify-batch-20260612b",
+      "id": "model-finalize-staging-pass-20260613",
       "status": "active",
       "source": "tasks/tree.json",
       "outputs": [
         "model/knowledge-map/model.json"
       ]
+    },
+    "focusPlanId": "focus-model-reconciliation-terminal-classification-20260613"
+  },
+  "focusPlan": {
+    "cadence": {
+      "proposalIntervalHours": 24,
+      "progressReviewIntervalHours": 6
+    },
+    "approval": {
+      "channel": "escalation.created -> human:operator",
+      "purpose": "Approve direction and risk envelope, not every leaf task."
+    },
+    "durableState": [
+      "tasks/tree.json focus_plan branch",
+      "project.json currentFocus summary"
+    ],
+    "progressReview": {
+      "expectation": "Every scheduled review records whether the current focus is on_track, off_track, completed, stale, or blocked, then wakes normal planning."
     }
   },
   "taskIndex": [
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-12T09:08:30.000Z"
+  "updatedAt": "2026-06-13T11:15:00.000Z"
 }

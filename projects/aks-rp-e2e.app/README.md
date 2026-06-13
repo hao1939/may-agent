@@ -70,6 +70,11 @@ The active execution model is deliberately small:
 - `project-planner` handles `project.planning.requested`.
   It sends the owner a compact planning packet, runs event review, then runs
   the task-tree update/assignment step.
+- `focus-plan` handles `project.focus.plan.requested` and
+  `project.focus.review.requested`.
+  It runs the slower mid-term planning cadence: propose or refresh the current
+  focus branch, review progress every six hours, and emit a human escalation
+  when direction/risk needs approval or the focus is off track.
 - `task-worker` handles `project.task.assigned`.
 - `project-execution-watchdog` observes task/session liveness and wakes
   planning when the planner should review.
@@ -103,6 +108,28 @@ Useful commands:
 - `bun run test` - run stable workflow and replanning tests.
 - `bun run test:ui` - run state-sensitive UI e2e tests.
 - `bun run tasks:summary` - print task-tree counts and roots.
+
+## Focus Plan Cadence
+
+The normal planner/worker loop keeps concrete leaves moving. The focus-plan
+cadence keeps the project pointed at a reviewable mid-term direction so the
+human owner does not need to poll status and steer repeatedly.
+
+- Daily `project.focus.plan.requested` proposes or refreshes the next 12-24h
+  focus.
+- Six-hour `project.focus.review.requested` reviews whether the current focus
+  is on track, off track, completed, stale, or blocked.
+- The durable focus state belongs in `tasks/tree.json` as a visible
+  `focus_plan` branch and in `project.json` as a compact `currentFocus`
+  summary.
+- If approval or steering is needed, the workflow emits `escalation.created`
+  for `human:operator`; the normal planner then folds the reply into the task
+  tree and continues assigning work.
+
+Manual actions exposed by `app.ts`:
+
+- `request-focus-plan` - ask for a new or refreshed focus proposal.
+- `review-focus-progress` - ask for an immediate progress review.
 
 ## Runtime Reload
 

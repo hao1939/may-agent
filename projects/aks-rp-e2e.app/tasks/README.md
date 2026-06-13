@@ -92,6 +92,16 @@ folder does not keep a parallel task event log.
 - The active root lanes are durable responsibilities:
   `feature-knowledge-and-specs`, `spec-runner-and-replays`,
   `evidence-feedback-and-model-update`, and `user-review-workspace`.
+- A mid-term focus plan is a visible strategy branch, not a workflow-control
+  branch. Use `kind: "focus_plan"` to show the current 12-24h direction, its
+  success criteria, approval state, and latest progress review. The focus
+  should point to concrete work under durable value-loop lanes; it should not
+  replace those lanes or create ceremonial tasks such as "plan the plan".
+- Focus progress reviews should update task context with one clear state:
+  `on_track`, `off_track`, `completed`, `stale`, or `blocked`. If the focus
+  needs a material direction/risk change, link the human escalation on the
+  focus branch and wait for the planner to fold the decision back into the
+  tree.
 - Learning is not terminal by itself. A feature is useful only when source
   knowledge, spec shape, replay execution, evidence diagnosis, and model
   feedback close the loop or expose an exact external blocker.

@@ -155,6 +155,8 @@ type KnowledgeFeaturePath = {
   id?: string;
   featureId?: string;
   status?: string;
+  rootCauseClass?: string;
+  remediationStatus?: string;
 };
 
 export function taskTreeConfig(input: TaskTreeToolConfig): ToolConfig {
@@ -1072,6 +1074,23 @@ export function seedModelGapBacklog(
       const stem = findArtifactStem(path, specs, replays);
       if (path.status === "blocked" || path.status === "blocked-infra") {
         skipped.push({ pathId, reason: "blocked-status" });
+        continue;
+      }
+      // Skip terminal-fail paths with a known product/CLI bug awaiting external fix.
+      // These should only be re-tested when the affected component version changes,
+      // not on every frontier gap-fill cycle.
+      const terminalRootCauses = ["cli-bug", "product-bug", "product-gap"];
+      const terminalRemediationPrefixes = ["awaiting-"];
+      if (
+        path.status === "fail" &&
+        path.rootCauseClass &&
+        terminalRootCauses.includes(path.rootCauseClass) &&
+        path.remediationStatus &&
+        terminalRemediationPrefixes.some((p) =>
+          (path.remediationStatus ?? "").startsWith(p),
+        )
+      ) {
+        skipped.push({ pathId, reason: "terminal-known-product-bug" });
         continue;
       }
       if (openTaskAlreadyCoversPath(tree, path, stem)) {

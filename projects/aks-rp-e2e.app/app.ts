@@ -107,11 +107,19 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
   // planner review, not problem-solver. Workers genuinely stuck (no ARM token,
   // crash, timeout without results) should still trigger problem solving.
   if (status === "review" && result === "blocked") {
-    const summary = eventString(event, "summary").toLowerCase();
+    // Check summary at multiple nesting levels — task completion events
+    // nest summary under params.task.summary, not at the top level.
+    const directSummary = eventString(event, "summary");
+    const taskObj = (eventData(event).params as Record<string, unknown>)
+      ?.task as Record<string, unknown> | undefined;
+    const nestedSummary =
+      typeof taskObj?.summary === "string" ? taskObj.summary : "";
+    const summary = (directSummary || nestedSummary).toLowerCase();
     const completionSignals = [
       "all artifacts",
       "assertions pass",
       "already exist",
+      "all complete",
       "acceptance criteria met",
       "cleaned up",
       "model path updated",
@@ -120,23 +128,40 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
       "check passes",
       "check mode passes",
       "check exit",
-      "--check passes",
-      "--check exit",
       "execution-gated",
+      "environment-gate",
       "superseded",
       "source-spec frontier",
+      "spec/replay frontier",
       "frontier artifacts",
+      "frontier evidence",
       "verified",
-      "all .* assertions",
+      "verification",
       "claims passed",
+      "preflights pass",
       "preflight assertions",
       "claim assertions",
       "failure classified",
+      "classified as",
       "diagnosis recorded",
-      "classified as product_constraint",
-      "classified as environment",
       "model-update proposal",
       "execution record",
+      "no resources were created",
+      "producing a complete run",
+      "run result",
+      "run completed",
+      "runner artifacts",
+      "infra_block",
+      "product_constraint",
+      "product-gap",
+      "product gap",
+      "product verdict",
+      "environment_version_ceiling",
+      "staging-inconclusive",
+      "staging-verified",
+      "ready for runner",
+      "fully documented",
+      "structurally sound",
     ];
     if (completionSignals.some((s) => summary.includes(s))) {
       return false;
@@ -394,6 +419,26 @@ export default defineProjectApp({
         project: projectId,
       },
     },
+    {
+      id: "focus-plan-proposal",
+      enabled: true,
+      intervalMs: 86_400_000,
+      event: {
+        type: "project.focus.plan.requested",
+        project: projectId,
+        reason: "scheduled-mid-term-focus-plan",
+      },
+    },
+    {
+      id: "focus-progress-review",
+      enabled: true,
+      intervalMs: 21_600_000,
+      event: {
+        type: "project.focus.review.requested",
+        project: projectId,
+        reason: "scheduled-focus-progress-review",
+      },
+    },
   ],
 
   workflowHandlers: [
@@ -460,12 +505,34 @@ export default defineProjectApp({
       },
       context: taskTreeContext,
     },
+    {
+      name: "aks-rp-e2e-focus-plan",
+      type: "job",
+      enabled: true,
+      description:
+        "Mid-term focus planning and progress review. Keeps a visible focus branch current and asks for human approval when direction/risk changes.",
+      maxConcurrentTriggers: 1,
+      handler: {
+        workflow: "focus-plan",
+        includeEvent: true,
+        task: `${appTaskContext}\nagent: aks-explorer\nmaxConcurrent: 5`,
+        timeoutMs: 1_800_000,
+      },
+      on: ["project.focus.plan.requested", "project.focus.review.requested"],
+      context: [
+        ...taskTreeContext,
+        "projects/aks-rp-e2e.app/project.json",
+        "projects/aks-rp-e2e/README.md",
+      ],
+    },
   ],
 
   events: [
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
+    { type: "project.focus.plan.requested", project: projectId },
+    { type: "project.focus.review.requested", project: projectId },
     { type: "project.task.completed", project: projectId },
     { type: "project.problem.resolved", project: projectId },
     { type: "project.problem.escalated", project: projectId },
@@ -498,6 +565,11 @@ export default defineProjectApp({
         emits: ["project.planning.requested"],
         description:
           "Watchdog observes liveness and asks the planner to reconcile stale or underfilled work.",
+      },
+      "aks-rp-e2e-focus-plan": {
+        emits: ["project.planning.requested", "escalation.created"],
+        description:
+          "Focus-plan workflow reviews mid-term progress, updates the focus branch, and asks for human approval when direction/risk changes or progress is off track.",
       },
     },
     adapters: [
@@ -575,9 +647,11 @@ export default defineProjectApp({
           "project.problem.requested",
           "project.problem.resolved",
           "project.problem.escalated",
+          "project.focus.plan.requested",
+          "project.focus.review.requested",
         ],
         reason:
-          "This is the project control loop. The planner is the state-machine boundary and must review worker/problem-solver output before assigning more work.",
+          "This is the project control loop. The planner is the state-machine boundary and must review worker/problem-solver/focus-plan output before assigning more work.",
       },
     ],
     limits: {
@@ -661,6 +735,32 @@ export default defineProjectApp({
       description: "Start or resume project planning through the task tree.",
       event(params) {
         return projectPlanningEvent("watch-request", params);
+      },
+    },
+    "request-focus-plan": {
+      type: "async",
+      description:
+        "Ask the project owner to propose or refresh the next mid-term focus plan.",
+      event(params) {
+        return {
+          type: "project.focus.plan.requested",
+          project: projectId,
+          reason: "manual-focus-plan-request",
+          params: params && typeof params === "object" ? params : {},
+        };
+      },
+    },
+    "review-focus-progress": {
+      type: "async",
+      description:
+        "Ask the project owner to review whether the current focus plan is on track.",
+      event(params) {
+        return {
+          type: "project.focus.review.requested",
+          project: projectId,
+          reason: "manual-focus-progress-review",
+          params: params && typeof params === "object" ? params : {},
+        };
       },
     },
   },
