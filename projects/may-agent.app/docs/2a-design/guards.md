@@ -168,36 +168,40 @@ Key structural observations from the full snapshot history:
   session.jsonl files. It can dominate during evaluator-heavy windows.
 - READ_DEDUP source has shifted: evaluator (re-reading periodic-tasks,
   project files) and aks-explorer (re-reading project.md) trade off.
-- PATH_HALLUCINATION is primarily aks-explorer (`/home/` paths).
+- PATH_HALLUCINATION is primarily aks-explorer (`/home/` and `/root/` paths).
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-13 ~14:30Z** (24h window, ~3,260 total):
+**Latest snapshot 2026-06-13 ~16:30Z** (24h window, ~3,200 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-ambient (uncommitted files) | 997 | 30.6% |
-| commit-finish (finish() uncommitted) | 827 | 25.4% |
-| READ_DEDUP | 579 | 17.8% |
-| SESSION_BASH_CAT | 382 | 11.7% |
-| SESSION_READ | 292 | 9.0% |
-| Edit-Without-Read (C1.1 + workflow) | 94 | 2.9% |
-| PATH_HALLUCINATION | 46 | 1.4% |
-| SESSION_BASH_GREP | 38 | 1.2% |
+| commit-ambient (uncommitted files) | 991 | 31.0% |
+| commit-finish (finish() uncommitted) | 823 | 25.7% |
+| SESSION_BASH_CAT | 383 | 12.0% |
+| SESSION_READ | 287 | 9.0% |
+| READ_DEDUP | 285 | 8.9% |
+| Edit-Without-Read (C1.1 + workflow) | 100 | 3.1% |
+| SESSION_BASH_GREP | 39 | 1.2% |
+| PATH_HALLUCINATION | 6 | 0.2% |
 
-Total: ~3,260/day (threshold breach continues, **structural floor > threshold**).
+Total: ~3,200/day (threshold breach continues, **structural floor > threshold**).
 
-Stable vs prior snapshot (2026-06-13 ~13:30Z):
-- **Guard count flat** (~3,300 → ~3,260, within noise). Structural
-  breach persists across seven+ consecutive snapshots.
-- **Composition stable**: commit-guard combined ~56%, READ_DEDUP ~18%,
-  session-read-guard combined ~22%. No monoculture regime.
+Stable vs prior snapshot (2026-06-13 ~14:30Z):
+- **Guard count flat** (~3,260 → ~3,200, within noise). Structural
+  breach persists across eight+ consecutive snapshots.
+- **Composition stable**: commit-guard combined ~57%, session-read-guard
+  combined ~22%, READ_DEDUP ~9%. No monoculture regime.
 - **Per-agent**: aks-explorer 45%, evaluator 43%, arc 6%, scout 3%,
-  may 2%, dev 2%. READ_DEDUP is 64% aks-explorer, 25% arc, 10% evaluator.
-- The breach remains structural — ~56% is ambient commit-guard noise from
+  may 2%, dev 2%. Distribution unchanged.
+- **Notable**: READ_DEDUP dropped from ~18% to ~9% since prior snapshot.
+  PATH_HALLUCINATION also dropped (46 → 6), suggesting aks-explorer's
+  `/home/` path usage may have been addressed.
+- The breach remains structural — ~57% is ambient commit-guard noise from
   shared-worktree concurrency and cannot decrease without guard or threshold
-  calibration. Recommendation: raise threshold to ~3,500 or suppress
-  commit-guard ambient warnings for shared-worktree agents.
+  calibration. **Recommendation: raise threshold to ~3,500** or suppress
+  commit-guard ambient warnings for shared-worktree agents. This
+  recommendation has persisted for 3+ days without action.
 
 ### Known issue: guard name conflation
 
