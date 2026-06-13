@@ -601,29 +601,29 @@ table.
 ### Emitter Reality
 
 Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current numbers.
-Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot as of 2026-06-11 ~14:40Z.
+Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot refreshed 2026-06-15.
 
 **Handler lifecycle**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `handler.started` | cron runner on every handler invocation | ✅ live (30.7k rows) |
-| `handler.completed` | cron runner at handler success | ✅ live (30.6k rows) |
-| `handler.failed` | cron runner at handler throw | ✅ live (220 rows); `aks-rp-e2e-task-execution-worker` accounts for 173 of 220; remaining failures spread across `scout-explore-xhs` (11), `metrics-snapshot` (5), `metric-alert-reactor` (5), `scout-explore-arxiv` (4), `feedback-echo-sync` (4), `aks-rp-e2e-project-planner` (4), and others |
-| `handler.skipped` | cron runner when handler is skipped (debounce, no-op) | ✅ live (8.3k rows) |
-| `handler.workflow_dispatched` | cron runner when handler dispatches a workflow session | ✅ live (14.9k rows) |
-| `handler.routed` | handler routing infrastructure | ✅ live (39 rows) |
+| `handler.started` | cron runner on every handler invocation | ✅ live (32.5k rows) |
+| `handler.completed` | cron runner at handler success | ✅ live (32.4k rows) |
+| `handler.failed` | cron runner at handler throw | ✅ live (236 rows); `aks-rp-e2e-task-execution-worker` accounts for 189 of 236; remaining failures spread across `scout-explore-xhs` (17), `metrics-snapshot` (5), `metric-alert-reactor` (5), `aks-rp-e2e-project-planner` (4), `aks-rp-e2e-ready-task-picker` (3), `aks-rp-e2e-project-watchdog` (3), and others |
+| `handler.skipped` | cron runner when handler is skipped (debounce, no-op) | ✅ live (9.2k rows) |
+| `handler.workflow_dispatched` | cron runner when handler dispatches a workflow session | ✅ live (15.9k rows) |
+| `handler.routed` | handler routing infrastructure | ✅ live (46 rows) |
 
 **Session lifecycle**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `session.start` | runtime session lifecycle | ✅ live (7.5k rows) |
-| `session.end` | runtime session lifecycle | ✅ live (7.4k rows) |
-| `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.7k rows) |
-| `session.receipt` | runtime on session completion receipt | ✅ live (5.9k rows) |
-| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (251 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,373 rows as of 2026-06-15, ~652/24h, ~27/hour); all `session_not_found` — 24h mix: ~57% planner, ~34% task, ~10% problem-solver; all-time mix: ~60% task, ~34% planner, ~5% problem-solver (the split flips between windows because planner sessions dominate recent hours while older data has more task sessions); rate tracks aks-explorer session volume |
+| `session.start` | runtime session lifecycle | ✅ live (8.3k rows) |
+| `session.end` | runtime session lifecycle | ✅ live (8.2k rows) |
+| `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
+| `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
+| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,458 rows as of 2026-06-15, ~701/24h, ~29/hour); all `session_not_found` — 24h mix: ~59% planner, ~41% task, ~0.4% problem-solver; rate tracks aks-explorer session volume |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -632,9 +632,9 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 |---|---|---|
 | `chat.start.requested` | canonical human-surface chat create-or-bind intent | ✅ live (14 rows) |
 | `session.steer.requested` | canonical human-surface session steering intent | ✅ live (10 rows) |
-| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (251 rows); see session lifecycle above |
+| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (248 rows); see session lifecycle above |
 | `session.cancel_all.requested` | canonical broad cancel intent | ❌ intended; 0 rows in DB |
-| `runtime.reload.requested` | canonical runtime reload intent | ✅ live (13 rows) |
+| `runtime.reload.requested` | canonical runtime reload intent | ✅ live (21 rows) |
 | `runtime.restart.requested` | canonical runtime restart intent | ✅ live (1 row) |
 | `runtime.shutdown.requested` | canonical runtime shutdown intent | ❌ intended; 0 rows in DB |
 
@@ -642,14 +642,14 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.iteration` | `agents/may/handlers/project.ts` when launching a project owner loop | ⚠️ live owner-loop signal; not the task lifecycle event (461 rows) |
-| `project.owner.dispatched` | project handler when dispatching an owner session | ✅ live (461 rows) |
-| `project.owner.finished` | project handler when owner session finishes | ✅ live (458 rows) |
+| `project.iteration` | `agents/may/handlers/project.ts` when launching a project owner loop | ⚠️ live owner-loop signal; not the task lifecycle event (301 rows) |
+| `project.owner.dispatched` | project handler when dispatching an owner session | ✅ live (301 rows) |
+| `project.owner.finished` | project handler when owner session finishes | ✅ live (298 rows) |
 | `project.owner.incomplete` | project handler when owner session finishes without completing | ✅ live (12 rows) |
-| `project.execution.requested` | project handler or explicit UI workflow wake requesting iteration/execution | ✅ live (1.3k rows) |
-| `project.nudge` | project handler nudging stale/idle projects | ✅ live (49 rows) |
-| `project.audit.suggested` | project health check suggesting an audit | ✅ live (43 rows) |
-| `project.comment.created` | project comment system | ✅ live (7 rows) |
+| `project.execution.requested` | project handler or explicit UI workflow wake requesting iteration/execution | ✅ live (1.2k rows) |
+| `project.nudge` | project handler nudging stale/idle projects | ✅ live (39 rows) |
+| `project.audit.suggested` | project health check suggesting an audit | ✅ live (37 rows) |
+| `project.comment.created` | project comment system | ✅ live (2 rows) |
 | `project.action.requested` | HTTP/UI event ingress for project UI requests that the project app should interpret | ✅ accepted |
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `project.execution.watchdog` | manual/operator recovery for stale zero-op sessions | ⚠️ rare (1 row); not wired to a handler |
@@ -658,40 +658,40 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.planning.requested` | project-app and agent sessions when requesting a planning cycle (e.g. after task completion) | ✅ live (~1.5k rows, ~756/24h as of 2026-06-13); sources: `project-app:aks-rp-e2e`, `agent:aks-explorer`, `codex-investigation` |
-| `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (~580 rows, ~276/24h, ~12/hour); single project `aks-rp-e2e`, 5-min interval cron |
-| `project.tick` | project-app scheduled tick (e.g. `lane: "learning"`, `lane: "replan-review"`); emitted by `app.ts` in `aks-rp-e2e.app` and `platform/.app` | ✅ live (4 rows); from `project-app:aks-rp-e2e:schedule:regular-learning` |
-| `project.problem.requested` | project-app problem-solver trigger when tasks fail with a common root cause | ✅ live (~81 rows, ~81/24h as of 2026-06-13); owner `agent:may` routes to problem-solver workflow |
-| `project.problem.escalated` | project-app problem-solver when a fix is found and applied | ✅ live (~69 rows, ~69/24h as of 2026-06-13) |
+| `project.planning.requested` | project-app and agent sessions when requesting a planning cycle (e.g. after task completion) | ✅ live (~2.0k rows, ~958/24h); sources: `project-app:aks-rp-e2e`, `agent:aks-explorer`, `codex-investigation` |
+| `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (~690 rows, ~276/24h, ~12/hour); single project `aks-rp-e2e`, 5-min interval cron |
+| `project.tick` | project-app scheduled tick (e.g. `lane: "learning"`, `lane: "replan-review"`); emitted by `app.ts` in `aks-rp-e2e.app` and `platform/.app` | ✅ live (19 rows); from `project-app:aks-rp-e2e:schedule:regular-learning` |
+| `project.problem.requested` | project-app problem-solver trigger when tasks fail with a common root cause | ✅ live (~195 rows); owner `agent:may` routes to problem-solver workflow |
+| `project.problem.escalated` | project-app problem-solver when a fix is found and applied | ✅ live (~170 rows) |
 
 **Project lifecycle — task-driven**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.task.dispatched` | project handler when dispatching a task item to its assignee | ✅ live (21 rows) |
-| `project.task.finished` | project handler when the task session resolves or throws | ✅ live (21 rows) |
+| `project.task.dispatched` | project handler when dispatching a task item to its assignee | ✅ live (20 rows) |
+| `project.task.finished` | project handler when the task session resolves or throws | ✅ live (20 rows) |
 | `project.task.execution.requested` | project task engine requesting task execution | ✅ live (2.5k rows) |
-| `project.tasks.ready` | project task engine when tasks become ready | ✅ live (1.5k rows) |
-| `project.task.completed` | project task engine when a task completes | ✅ live (1.9k rows) |
-| `project.task.assigned` | project-planner when assigning a task to a worker agent | ✅ live (43 rows); from `agent:aks-explorer` project-planner sessions |
+| `project.tasks.ready` | project task engine when tasks become ready | ✅ live (1.4k rows) |
+| `project.task.completed` | project task engine when a task completes | ✅ live (2.2k rows) |
+| `project.task.assigned` | project-planner when assigning a task to a worker agent | ✅ live (268 rows); from `agent:aks-explorer` project-planner sessions |
 
 **Project health**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); 27.6k rows remain in DB, aging out via 7-day retention |
-| `project.health.finding` | project health checker on detected issues | ✅ live (223 rows) |
+| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); 22.8k rows remain in DB, aging out via 7-day retention |
+| `project.health.finding` | project health checker on detected issues | ✅ live (178 rows) |
 
 **Task lifecycle (generic)**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `task.started` | task execution engine | ✅ live (3.5k rows) |
-| `task.claimed` | task execution engine when agent claims a task | ✅ live (1.4k rows) |
-| `task.verified` | task execution engine when task passes verification | ✅ live (368 rows) |
-| `task.promoted` | task execution engine when task is promoted | ✅ live (95 rows) |
-| `task.rejected` | task execution engine when task is rejected | ✅ live (1.1k rows) |
-| `task.requeued` | task execution engine when task is requeued for retry | ✅ live (389 rows) |
+| `task.started` | task execution engine | ✅ live (3.4k rows) |
+| `task.claimed` | task execution engine when agent claims a task | ✅ live (1.3k rows) |
+| `task.verified` | task execution engine when task passes verification | ✅ live (333 rows) |
+| `task.promoted` | task execution engine when task is promoted | ✅ live (82 rows) |
+| `task.rejected` | task execution engine when task is rejected | ✅ live (979 rows) |
+| `task.requeued` | task execution engine when task is requeued for retry | ✅ live (276 rows) |
 | `task.blocked` | task execution engine when task is blocked | ✅ live (16 rows) |
 | `task.deferred` | task execution engine when a task is deferred (e.g. waiting for dependency gate) | ⚠️ rare (1 row); from `agent:aks-explorer` |
 
@@ -699,30 +699,30 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `evaluation.routed` | evaluator aftermath when routing a session for review | ✅ live (3.4k rows) |
-| `evaluation.reviewed` | evaluator aftermath after reviewing a session | ✅ live (2.9k rows) |
+| `evaluation.routed` | evaluator aftermath when routing a session for review | ✅ live (3.7k rows) |
+| `evaluation.reviewed` | evaluator aftermath after reviewing a session | ✅ live (3.1k rows) |
 | `evaluation.triage_closed` | evaluator aftermath when triage is closed | ✅ live (2.1k rows) |
-| `evaluation.learning_created` | evaluator aftermath when a learning is extracted | ✅ live (1.2k rows) |
-| `evaluation.success_candidate` | evaluator aftermath marking a session as good | ✅ live (864 rows) |
-| `evaluation.deep_dispatched` | evaluator dispatching an LLM-based deep eval | ✅ live (181 rows) |
-| `evaluation.deep_recorded` | evaluator recording a deep eval result | ✅ live (196 rows) |
-| `evaluation.false_good` | evaluator overturning a previously-good session | ✅ live (100 rows) |
-| `evaluation.skipped` | evaluator skipping a session (not worth evaluating) | ✅ live (40 rows) |
+| `evaluation.learning_created` | evaluator aftermath when a learning is extracted | ✅ live (1.4k rows) |
+| `evaluation.success_candidate` | evaluator aftermath marking a session as good | ✅ live (1.1k rows) |
+| `evaluation.deep_dispatched` | evaluator dispatching an LLM-based deep eval | ✅ live (177 rows) |
+| `evaluation.deep_recorded` | evaluator recording a deep eval result | ✅ live (190 rows) |
+| `evaluation.false_good` | evaluator overturning a previously-good session | ✅ live (109 rows) |
+| `evaluation.skipped` | evaluator skipping a session (not worth evaluating) | ✅ live (41 rows) |
 
 **Metrics**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ✅ live (362 rows) |
-| `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live (362 rows) |
-| `metric.alert_judged` | metric-alert-triage workflow after agent judges an alert | ✅ live (92 rows) |
+| `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ✅ live (307 rows) |
+| `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live (308 rows) |
+| `metric.alert_judged` | metric-alert-triage workflow after agent judges an alert | ✅ live (152 rows) |
 | `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ❌ 0 rows in events table; emitter may have been removed or is dormant |
 
 **Agent communication**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `message.created` | message-bus emitter on agent-to-agent message create | ✅ live (1.4k rows) |
+| `message.created` | message-bus emitter on agent-to-agent message create | ✅ live (1.6k rows) |
 | `message.delivery_failed` | message delivery when target is unreachable | ❌ 0 rows in DB |
 | `agent.decision` | agent sessions recording decisions | ✅ live (1.4k rows) |
 | `agent.config_invalid` | config loader on agent config validation failure | ❌ 0 rows in DB |
@@ -731,8 +731,8 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `escalation.created` | `sdk.escalate`; blocked/failure session boundary promotion | ✅ live (47 rows) |
-| `escalation.routed` | escalation router emits after routing to owner | ✅ live (47 rows) |
+| `escalation.created` | `sdk.escalate`; blocked/failure session boundary promotion | ✅ live (46 rows) |
+| `escalation.routed` | escalation router emits after routing to owner | ✅ live (46 rows) |
 | `escalation.resolved` | owner sessions/handlers may emit it when they have a disposition | ❌ **no emitter exists** — 0 rows in events table; escalation lifecycle handler not implemented (KE-1242) |
 
 **Heartbeat lifecycle**
@@ -740,29 +740,29 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | Event type | Emitted by | Status |
 |---|---|---|
 | `heartbeat.step_started` | heartbeat workflow on each step | ✅ live (1.4k rows) |
-| `heartbeat.diagnostics_started` | heartbeat diagnostics phase start | ✅ live (104 rows) |
-| `heartbeat.diagnostics_completed` | heartbeat diagnostics phase end | ✅ live (104 rows) |
+| `heartbeat.diagnostics_started` | heartbeat diagnostics phase start | ✅ live (149 rows) |
+| `heartbeat.diagnostics_completed` | heartbeat diagnostics phase end | ✅ live (149 rows) |
 | `heartbeat.skipped` | heartbeat skipped (agent busy, debounce) | ✅ live (21 rows) |
 
 **Session recovery**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `session.recovery_failed` | session-recovery handler (`agent:may`) when a task's original session or task record is missing | ⚠️ rare (3 rows); distinct from `session.resume_failed` (which fires when a resume target sessionId is not found) |
+| `session.recovery_failed` | session-recovery handler (`agent:may`) when a task's original session or task record is missing | ⚠️ rare (7 rows); distinct from `session.resume_failed` (which fires when a resume target sessionId is not found) |
 
 **Learning and feedback**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings (227 rows) |
+| `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings (208 rows) |
 
 **Context and infrastructure**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `context.read` | context system when reading agent context | ✅ live (4.4k rows); ⛔ evaluator-aftermath emission removed (commit 73d989fdb, 2026-06-10) |
-| `steer` | session steering from CLI/UI | ✅ live (11 rows) |
-| `trigger.project` | manual project trigger from operator | ✅ live (6 rows) |
+| `context.read` | context system when reading agent context | ✅ live (3.6k rows); ⛔ evaluator-aftermath emission removed (commit 73d989fdb, 2026-06-10) |
+| `steer` | session steering from CLI/UI | ✅ live (4 rows) |
+| `trigger.project` | manual project trigger from operator | ✅ live (2 rows) |
 | `restart` | daemon restart signal | ✅ live (5 rows) |
 | `reload` | daemon reload signal | ✅ live (1 row) |
 | `codex.probe` | codex integration probe (external tooling handshake) | ⚠️ rare (1 row); ephemeral diagnostic |
@@ -780,7 +780,7 @@ harmful but will not match any handler's `on:` filter. Query to find them:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~1,388 rows as of 2026-06-15, ~663/24h, ~27/hour).
+when the target session cannot be found (~1,458 rows as of 2026-06-15, ~701/24h, ~29/hour).
 Split: ~57% planner sessions, ~42% task sessions, ~1% problem-solver sessions.
 
 ### Consumer Reality

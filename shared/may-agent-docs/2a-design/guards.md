@@ -172,34 +172,33 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-15 ~01:30Z** (24h window, ~2,870 total):
+**Latest snapshot 2026-06-15 ~04:00Z** (24h window, ~2,960 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,648 | 57.4% |
-| READ_DEDUP | 441 | 15.4% |
-| SESSION_BASH_CAT | 366 | 12.8% |
-| SESSION_READ | 220 | 7.7% |
-| PATH_HALLUCINATION | 78 | 2.7% |
-| read-before-edit | 67 | 2.3% |
-| SESSION_BASH_GREP | 41 | 1.4% |
-| hallucinated-path (workflow) | 9 | 0.3% |
+| commit-guard (combined) | 1,698 | 57.4% |
+| READ_DEDUP | 353 | 11.9% |
+| SESSION_BASH_CAT | 377 | 12.7% |
+| SESSION_READ | 236 | 8.0% |
+| PATH_HALLUCINATION | 84 | 2.8% |
+| read-before-edit | 48 | 1.6% |
+| SESSION_BASH_GREP | 40 | 1.4% |
+| hallucinated-path (workflow) | 8 | 0.3% |
 
-Total: ~2,870/day (threshold breach continues, **structural floor > threshold**).
+Total: ~2,960/day (threshold breach continues, **structural floor > threshold**).
 
-Notable changes vs 2026-06-14 ~22:30Z snapshot:
-- **Guard count still above threshold** (2,733 → 2,870, +5.0%).
-  The noise floor remains structurally above the 2,500 threshold.
-  This is the third consecutive snapshot showing structural breach.
-- Composition is stable: commit-guard ~57%, READ_DEDUP ~15%,
-  SESSION_BASH_CAT ~13%. No new dominant signal.
-- **read-before-edit grew** (52 → 67, +29%) — now the 6th signal.
-- Owner breakdown: evaluator 1,320 (46%), aks-explorer 1,207 (42%),
-  arc 124, scout 85, may 73, dev 50.
-- All 2,870 SESSION_READ triggers share a single `reason` string
+Notable changes vs 2026-06-15 ~01:30Z snapshot:
+- **Guard count still above threshold** (2,870 → 2,960, +3.1%).
+  This is the fourth consecutive snapshot showing structural breach.
+- Composition remains stable: commit-guard ~57%, SESSION_BASH_CAT ~13%,
+  READ_DEDUP ~12%. No new dominant signal.
+- **read-before-edit shrunk** (67 → 48, -28%).
+- Owner breakdown: evaluator 1,348 (46%), aks-explorer 1,232 (42%),
+  arc 157, scout 91, may 75, dev 52, tech-lead 5.
+- All SESSION_READ triggers share a single `reason` string
   (unbounded session.jsonl grep), suggesting the guard text is static.
 - The breach remains structural. Recommendation unchanged: either raise
-  threshold to ~3,000 or calibrate session-read/READ_DEDUP guards
+  threshold to ~3,200 or calibrate session-read/READ_DEDUP guards
   for high-volume legitimate patterns (evaluator session inspection,
   aks-explorer replay re-reads per KE-1867).
 
