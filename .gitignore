@@ -14,6 +14,12 @@ may.db
 *.db-wal
 *.db-shm
 
+# Local tool config/secrets - never track
+.agents/
+.codex/
+.copilot/
+test-results/
+
 # Build artifacts - never track
 bundle/
 coverage/
