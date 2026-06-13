@@ -2,16 +2,28 @@
 
 ## Purpose
 
-The task tree is a project's shared thinking surface: how the agent
-understands the goal, how it wants the project to be done, which claims are
-verified, which branches were replaced, and where work is blocked. It is not a
-TODO list, scheduler queue, or attempt log.
+The task tree is a project's process map: how the agent works on the goal,
+what methodology steps exist, what process knowledge was learned, and where
+active work is. It is not a TODO list, scheduler queue, or attempt log.
+
+The tree is structured by process, informed by domain, but not a domain
+tracker. Task decomposition uses domain knowledge to scope leaves correctly.
+Task acceptance produces domain knowledge that feeds into the domain model.
+The tree retains process knowledge — how we got there, what worked, what to
+reuse. The domain model retains domain knowledge — what's true about the
+subject.
+
+For example, a leaf task "Execute KMS v2plus-enable-cmk against staging"
+contains domain context (which feature, expected behavior, known blocker).
+But the tree's job is to route that work. When accepted, the domain knowledge
+(path status, evidence) goes into the domain model. The tree keeps the process
+knowledge (this execution approach worked, reuse for similar paths).
 
 The tree is also the main human steering surface. A human should be able to
 review any branch, understand why it exists, and attach feedback directly to
 that context. The planner consumes that feedback when it updates the tree.
 
-Accepted tasks are durable project knowledge. They record understanding,
+Accepted tasks are durable process knowledge. They record methodology,
 milestones, and facts the agent can reuse later; they are not merely completed
 work to hide as soon as execution finishes.
 
