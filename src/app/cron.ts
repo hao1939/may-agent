@@ -33,7 +33,7 @@ type CronHandler = (event?: EventEnvelope) => Promise<void>;
 type CronJobCallback = (entry: CronEntry) => void;
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 }
 
 function workflowHandler(handler: CronEntry["handler"]): WorkflowBackedHandler | undefined {
@@ -69,22 +69,43 @@ function entryAgent(entry: CronEntry): string | undefined {
   return undefined;
 }
 
+/** Extract the project identifier from an event envelope's data. */
+function eventProjectId(event: EventEnvelope): string {
+  const data = event.data;
+  if (!data) return "";
+  if (typeof data.project === "string") return data.project;
+  // Nested data (some events wrap payload in data.data)
+  const nested = asRecord(data.data);
+  if (nested && typeof nested.project === "string") return nested.project;
+  return "";
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function isEventEnvelope(event: unknown): event is EventEnvelope {
-  return isRecord(event)
-    && typeof event.type === "string"
-    && typeof event.source === "string"
-    && typeof event.owner === "string"
-    && isRecord(event.data);
+  return (
+    isRecord(event) &&
+    typeof event.type === "string" &&
+    typeof event.source === "string" &&
+    typeof event.owner === "string" &&
+    isRecord(event.data)
+  );
 }
 
 function eventPayloadFromFlatCommand(event: Record<string, unknown>): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(event)) {
-    if (key === "type" || key === "source" || key === "owner" || key === "timestamp" || key === "urgency" || key === "ttl_ms") continue;
+    if (
+      key === "type" ||
+      key === "source" ||
+      key === "owner" ||
+      key === "timestamp" ||
+      key === "urgency" ||
+      key === "ttl_ms"
+    )
+      continue;
     payload[key] = value;
   }
   return payload;
@@ -265,24 +286,39 @@ export class Cron {
       this.onError?.(`Failed to parse cron config: ${err}`);
     }
     const syntheticNames = new Set(this.syntheticEntries.keys());
-    this.entries = [
-      ...loaded.filter((entry) => !syntheticNames.has(entry.name)),
-      ...this.syntheticEntries.values(),
-    ];
+    this.entries = [...loaded.filter((entry) => !syntheticNames.has(entry.name)), ...this.syntheticEntries.values()];
     this.buildEventSubscriptions();
     return this.entries;
   }
 
   /** Add a synthetic (auto-generated) entry not from cron.json. Starts it if cron is running. */
   addSyntheticEntry(entry: CronEntry): void {
-    // Don't add if an entry with this name already exists in loaded config.
-    if (this.entries.some(e => e.name === entry.name)) return;
-    if (this.syntheticEntries.has(entry.name)) return;
+    // Don't override a real cron.json entry with the same name.
+    if (this.entries.some((e) => e.name === entry.name) && !this.syntheticEntries.has(entry.name)) return;
+
+    const old = this.syntheticEntries.get(entry.name);
+    if (old && JSON.stringify(old) === JSON.stringify(entry)) return;
+
     this.syntheticEntries.set(entry.name, entry);
-    this.entries.push(entry);
+    const index = this.entries.findIndex((candidate) => candidate.name === entry.name);
+    if (index >= 0) {
+      this.entries[index] = entry;
+    } else {
+      this.entries.push(entry);
+    }
     this.buildEventSubscriptions();
     if (this.started && entry.enabled !== false) {
-      // For handler-based entries not yet registered, try handlerResolver first
+      const timer = this.timers.get(entry.name);
+      if (timer) clearInterval(timer);
+      this.timers.delete(entry.name);
+      const pending = this.pendingStartTimers.get(entry.name);
+      if (pending) clearTimeout(pending);
+      this.pendingStartTimers.delete(entry.name);
+
+      // For handler-based entries not yet registered, try handlerResolver first.
+      // Synthetic project-app schedules register their in-memory handler before
+      // adding the entry, so they must start directly instead of resolving a
+      // fake handler file such as "__project_app_schedule__".
       if (entry.handler && !this.handlers.has(entry.name) && this.handlerResolver) {
         const entrySnapshot = { ...entry };
         this.handlerResolver(entry.name, entrySnapshot)
@@ -290,7 +326,9 @@ export class Cron {
             if (resolved) {
               this.startEntry(entrySnapshot);
             } else {
-              this.onError?.(`Synthetic entry "${entry.name}" handler "${handlerDisplay(entry.handler)}" could not be resolved`);
+              this.onError?.(
+                `Synthetic entry "${entry.name}" handler "${handlerDisplay(entry.handler)}" could not be resolved`,
+              );
             }
           })
           .catch(() => {
@@ -302,6 +340,22 @@ export class Cron {
     }
   }
 
+  removeSyntheticEntry(entryName: string): boolean {
+    if (!this.syntheticEntries.has(entryName)) return false;
+    this.syntheticEntries.delete(entryName);
+    this.entries = this.entries.filter((entry) => entry.name !== entryName);
+    this.handlers.delete(entryName);
+    this.queuedEventTriggers.delete(entryName);
+    const timer = this.timers.get(entryName);
+    if (timer) clearInterval(timer);
+    this.timers.delete(entryName);
+    const pending = this.pendingStartTimers.get(entryName);
+    if (pending) clearTimeout(pending);
+    this.pendingStartTimers.delete(entryName);
+    this.buildEventSubscriptions();
+    return true;
+  }
+
   /** Build event-to-handler mapping from `on` fields in cron entries. */
   private buildEventSubscriptions(): void {
     this.eventSubscriptions.clear();
@@ -309,7 +363,10 @@ export class Cron {
       if (entry.enabled === false || !entry.on?.length) continue;
       for (const eventType of entry.on) {
         let set = this.eventSubscriptions.get(eventType);
-        if (!set) { set = new Set(); this.eventSubscriptions.set(eventType, set); }
+        if (!set) {
+          set = new Set();
+          this.eventSubscriptions.set(eventType, set);
+        }
         set.add(entry.name);
       }
     }
@@ -336,9 +393,16 @@ export class Cron {
     if (!subscribers?.size) return 0;
     let triggered = 0;
     const targetHeartbeatAgent = eventType === "heartbeat.trigger" ? heartbeatTriggerAgent(event) : undefined;
+    const evtProject = eventProjectId(event);
     for (const entryName of subscribers) {
       const entry = this.entries.find((candidate) => candidate.name === entryName);
       if (targetHeartbeatAgent && entry && entryAgent(entry) !== targetHeartbeatAgent) continue;
+      // Project-scope filter: if the handler has a projectId and the event
+      // carries a different project, skip — prevents cross-project dispatch.
+      if (evtProject && entry) {
+        const wf = workflowHandler(entry.handler);
+        if (wf?.projectId && wf.projectId !== evtProject && !evtProject.startsWith(wf.projectId + ".")) continue;
+      }
       if (this.triggerNow(entryName, { force: true, triggerEvent: event })) triggered++;
     }
     return triggered;
@@ -494,7 +558,9 @@ export class Cron {
                 this.onError?.(`[handler] Late-registered handler for "${entrySnapshot.name}" on reload`);
               }
             })
-            .catch(() => { /* silent — will retry on next reload */ });
+            .catch(() => {
+              /* silent — will retry on next reload */
+            });
         }
       }
       if (changedCount === 0) {
@@ -536,13 +602,16 @@ export class Cron {
     if (!this.resolveMode(entry)) return false;
 
     // Manual/event/timer triggers all use the same handler execution path.
-    this.fireHandler(entry, opts?.triggerEvent ?? {
-      type: `trigger.${entry.name}`,
-      source: "manual",
-      owner: `agent:${entryAgent(entry) || "may"}`,
-      timestamp: Date.now(),
-      data: { entry: entry.name },
-    });
+    this.fireHandler(
+      entry,
+      opts?.triggerEvent ?? {
+        type: `trigger.${entry.name}`,
+        source: "manual",
+        owner: `agent:${entryAgent(entry) || "may"}`,
+        timestamp: Date.now(),
+        data: { entry: entry.name },
+      },
+    );
     return true;
   }
 
@@ -579,7 +648,9 @@ export class Cron {
     if (entry.handler) {
       const handler = this.handlers.get(entry.name);
       if (handler) return true;
-      this.onError?.(`Cron entry "${entry.name}" declares handler "${handlerDisplay(entry.handler)}" but it is not registered — skipping`);
+      this.onError?.(
+        `Cron entry "${entry.name}" declares handler "${handlerDisplay(entry.handler)}" but it is not registered — skipping`,
+      );
       return false;
     }
     this.onError?.(`Cron entry "${entry.name}" has no handler — skipping`);
@@ -603,9 +674,7 @@ export class Cron {
 
   private maxConcurrentTriggers(entry: CronEntry): number {
     const configured = entry.maxConcurrentTriggers;
-    return typeof configured === "number" && Number.isFinite(configured) && configured > 1
-      ? Math.floor(configured)
-      : 1;
+    return typeof configured === "number" && Number.isFinite(configured) && configured > 1 ? Math.floor(configured) : 1;
   }
 
   private hasCapacity(entry: CronEntry): boolean {
@@ -640,12 +709,12 @@ export class Cron {
     // Fall back to DB: check workflow_runs for the most recent run of this entry's workflow
     try {
       const db = getDb(this.persistDir);
-      const entry = this.entries.find(e => e.name === entryName);
+      const entry = this.entries.find((e) => e.name === entryName);
       const configuredWorkflowName = entry ? workflowHandler(entry.handler)?.workflow : undefined;
       const latestWorkflowName = configuredWorkflowName ?? entryName;
-      const row = db.prepare(
-        "SELECT startedAt FROM workflow_runs WHERE workflow = ? ORDER BY startedAt DESC LIMIT 1"
-      ).get(latestWorkflowName) as { startedAt: number } | undefined;
+      const row = db
+        .prepare("SELECT startedAt FROM workflow_runs WHERE workflow = ? ORDER BY startedAt DESC LIMIT 1")
+        .get(latestWorkflowName) as { startedAt: number } | undefined;
       if (row?.startedAt) {
         // Cache it in memory so we don't query DB again
         this.lastFireTimes.set(entryName, row.startedAt);
@@ -754,7 +823,10 @@ export class Cron {
 
     const handlerPromise = handler(triggerEvent);
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Handler "${entry.name}" timed out after ${HANDLER_TIMEOUT_MS / 1000}s`)), HANDLER_TIMEOUT_MS)
+      setTimeout(
+        () => reject(new Error(`Handler "${entry.name}" timed out after ${HANDLER_TIMEOUT_MS / 1000}s`)),
+        HANDLER_TIMEOUT_MS,
+      ),
     );
 
     Promise.race([handlerPromise, timeoutPromise])
@@ -782,5 +854,4 @@ export class Cron {
         this.drainQueuedEventTrigger(entry.name);
       });
   }
-
 }

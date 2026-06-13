@@ -33,7 +33,11 @@ export interface SDKDeps {
   /** Manager instance — for runWorkflow delegation. */
   manager?: SubagentManager;
   /** Manager's callAgent — async, blocks until agent finishes. */
-  callAgent: (agent: string, task: string, opts?: { source?: string; projectId?: string; timeout?: number }) => Promise<TaskResult>;
+  callAgent: (
+    agent: string,
+    task: string,
+    opts?: { source?: string; projectId?: string; timeout?: number },
+  ) => Promise<TaskResult>;
   /** Cron triggerNow — fire a handler on next tick. */
   triggerNow?: (handlerName: string) => boolean;
 }
@@ -50,9 +54,14 @@ export function projectWorkflowDirFor(projectsRoot: string, projectId: string | 
     .replace(/\/$/, "");
   if (!clean) return undefined;
 
-  const candidates = [join(projectsRoot, clean, ".app", "workflows"), join(projectsRoot, clean, "workflows")];
+  const candidates = [
+    join(projectsRoot, `${clean}.app`, "workflows"),
+    join(projectsRoot, clean, ".app", "workflows"),
+    join(projectsRoot, clean, "workflows"),
+  ];
   const shortName = basename(clean);
   if (shortName && shortName !== clean) {
+    candidates.push(join(projectsRoot, `${shortName}.app`, "workflows"));
     candidates.push(join(projectsRoot, shortName, ".app", "workflows"));
     candidates.push(join(projectsRoot, shortName, "workflows"));
   }
@@ -114,10 +123,18 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
         sharedGuardsDir: join(deps.sharedRoot, "guards"),
         projectId: opts?.projectId,
       });
-      return { status: result.type === "done" ? "done" : "escalated", summary: result.type === "done" ? result.summary : result.reason ?? "escalated", runId };
+      return {
+        status: result.type === "done" ? "done" : "escalated",
+        summary: result.type === "done" ? result.summary : (result.reason ?? "escalated"),
+        runId,
+      };
     },
 
-    emit(type: string, data?: Record<string, unknown>, envelope?: { owner?: string; source?: string; urgency?: string; ttl_ms?: number }): void {
+    emit(
+      type: string,
+      data?: Record<string, unknown>,
+      envelope?: { owner?: string; source?: string; urgency?: string; ttl_ms?: number },
+    ): void {
       deps.bus.emit({
         type,
         source: envelope?.source ?? `agent:${deps.agentName}`,
@@ -138,14 +155,15 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
 
     metrics: createMetricService({
       getDb: () => getDb(deps.persistDir),
-      emit: (type, data, envelope) => deps.bus.emit({
-        type,
-        source: envelope?.source ?? `agent:${deps.agentName}`,
-        owner: normalizeEventOwner(envelope?.owner, deps.agentName),
-        ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
-        ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
-        data: data ?? {},
-      } as any),
+      emit: (type, data, envelope) =>
+        deps.bus.emit({
+          type,
+          source: envelope?.source ?? `agent:${deps.agentName}`,
+          owner: normalizeEventOwner(envelope?.owner, deps.agentName),
+          ...(envelope?.urgency ? { urgency: envelope.urgency } : {}),
+          ...(typeof envelope?.ttl_ms === "number" ? { ttl_ms: envelope.ttl_ms } : {}),
+          data: data ?? {},
+        } as any),
       measuredBy: `agent:${deps.agentName}`,
       log: (msg) => globalLog("info", `[${deps.agentName}] ${msg}`),
     }),
@@ -171,7 +189,9 @@ export function buildAgentSDK(deps: SDKDeps): AgentSDK {
 
     escalate(reason: string, opts?: EscalationOptions): void {
       if (typeof (opts as unknown) === "string") {
-        throw new Error("sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts");
+        throw new Error(
+          "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
+        );
       }
       opts = opts ?? {};
       const owner = normalizeEventOwner(opts.owner);
@@ -235,7 +255,9 @@ export function buildWorkflowSDK(deps: WorkflowSDKDeps): WorkflowSDK {
 
     escalate(reason: string, opts?: EscalationOptions): void {
       if (typeof (opts as unknown) === "string") {
-        throw new Error("sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts");
+        throw new Error(
+          "sdk.escalate(reason, opts?) no longer accepts sdk.escalate(target, reason); pass { owner } in opts",
+        );
       }
       deps.finish({ status: "escalated", summary: reason });
     },

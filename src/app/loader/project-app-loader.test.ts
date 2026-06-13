@@ -5,7 +5,12 @@ import { join } from "node:path";
 
 import { Cron } from "../cron.ts";
 import { EventBus } from "../event-bus.ts";
-import { inferProjectAppOwner, installProjectApps, listProjectAppDirs } from "./project-app-loader.ts";
+import {
+  inferProjectAppOwner,
+  installProjectApps,
+  listProjectAppDirs,
+  startProjectAppWatcher,
+} from "./project-app-loader.ts";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `project-app-loader-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -16,13 +21,16 @@ function tempRoot(): string {
 function writeAgent(appDir: string, dirName: string, name = dirName): void {
   const agentDir = join(appDir, "agents", dirName);
   mkdirSync(agentDir, { recursive: true });
-  writeFileSync(join(agentDir, "agent.json"), JSON.stringify({
-    name,
-    description: `${name} agent`,
-    domain: "test",
-    model: "opus",
-    tools: [],
-  }));
+  writeFileSync(
+    join(agentDir, "agent.json"),
+    JSON.stringify({
+      name,
+      description: `${name} agent`,
+      domain: "test",
+      model: "opus",
+      tools: [],
+    }),
+  );
 }
 
 function writeApp(appDir: string, body: string): void {
@@ -92,7 +100,9 @@ describe("project app loader", () => {
       const projectsRoot = join(root, "projects");
       const appDir = join(projectsRoot, "sample.app");
       writeAgent(appDir, "owner", "sample-owner");
-      writeApp(appDir, `{
+      writeApp(
+        appDir,
+        `{
         id: "sample",
         workflowHandlers: [{
           name: "sample-worker",
@@ -100,7 +110,8 @@ describe("project app loader", () => {
           on: ["project.work"],
           handler: { workflow: "worker", task: "work" }
         }]
-      }`);
+      }`,
+      );
 
       const agentCrons = new Map<string, Cron>();
       const bus = new EventBus();
@@ -130,16 +141,58 @@ describe("project app loader", () => {
     }
   });
 
+  it("uses declared owner and workspace localPath for sibling project apps", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample-lib.app");
+      const domainDir = join(projectsRoot, "sample-lib");
+      mkdirSync(domainDir, { recursive: true });
+      writeApp(
+        appDir,
+        `{
+        id: "sample-lib",
+        owner: "scout",
+        workspace: { localPath: "../sample-lib" },
+        workflowHandlers: [{
+          name: "sample-lib-planner",
+          enabled: true,
+          on: ["project.planning.requested"],
+          handler: { workflow: "planner", task: "plan" }
+        }]
+      }`,
+      );
+
+      const bus = new EventBus();
+      const result = await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: (name: string) => name === "scout" } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      expect(result.installed.map((app) => `${app.id}:${app.owner}:${app.projectDir}`)).toEqual([
+        `sample-lib:scout:${domainDir}`,
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("routes unhandled project-scoped events to the inferred owner", async () => {
     const root = tempRoot();
     try {
       const projectsRoot = join(root, "projects");
       const appDir = join(projectsRoot, "sample.app");
       writeAgent(appDir, "owner", "sample-owner");
-      writeApp(appDir, `{
+      writeApp(
+        appDir,
+        `{
         id: "sample",
         async onEvent() { return undefined; }
-      }`);
+      }`,
+      );
 
       const calls: Array<{ agent: string; task: string; opts: Record<string, unknown> | undefined }> = [];
       const bus = new EventBus();
@@ -180,10 +233,13 @@ describe("project app loader", () => {
       const projectsRoot = join(root, "projects");
       const appDir = join(projectsRoot, "sample.app");
       writeAgent(appDir, "owner", "sample-owner");
-      writeApp(appDir, `{
+      writeApp(
+        appDir,
+        `{
         id: "sample",
         onEvent(ctx) { return ctx.noop("handled"); }
-      }`);
+      }`,
+      );
 
       const calls: string[] = [];
       const bus = new EventBus();
@@ -218,7 +274,9 @@ describe("project app loader", () => {
       const projectsRoot = join(root, "projects");
       const appDir = join(projectsRoot, "sample.app");
       writeAgent(appDir, "owner", "sample-owner");
-      writeApp(appDir, `{
+      writeApp(
+        appDir,
+        `{
         id: "sample",
         workflowHandlers: [{
           name: "sample-worker",
@@ -227,7 +285,8 @@ describe("project app loader", () => {
           handler: { workflow: "worker", task: "work" }
         }],
         onEvent() { return undefined; }
-      }`);
+      }`,
+      );
 
       const calls: string[] = [];
       const bus = new EventBus();
@@ -252,6 +311,286 @@ describe("project app loader", () => {
 
       expect(calls).toEqual([]);
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reinstalls project app handlers and router state on reload", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker-v1", task: "work v1" }
+        }],
+        onEvent() { return undefined; }
+      }`,
+      );
+
+      const calls: string[] = [];
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      const manager = {
+        hasAgent: () => true,
+        runAgent: (agent: string) => calls.push(agent),
+      } as any;
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+      expect((agentCrons.get("sample-owner")!.getEntries()[0]!.handler as any).workflow).toBe("worker-v1");
+
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker-v2", task: "work v2" }
+        }],
+        onEvent() { return undefined; }
+      }`,
+      );
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+
+      const updatedEntry = agentCrons.get("sample-owner")!.getEntries()[0]!;
+      expect((updatedEntry.handler as any).workflow).toBe("worker-v2");
+      expect((updatedEntry.handler as any).task).toBe("work v2");
+
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        onEvent() { return undefined; }
+      }`,
+      );
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+      expect(agentCrons.get("sample-owner")!.getEntries()).toHaveLength(0);
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample" },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(calls).toEqual(["sample-owner"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("removes stale project app schedules on reload", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "wake",
+          enabled: true,
+          intervalMs: 60000,
+          event: { type: "project.planning.requested", project: "sample" }
+        }]
+      }`,
+      );
+
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      const manager = { hasAgent: () => true } as any;
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+      expect(
+        agentCrons
+          .get("sample-owner")!
+          .getEntries()
+          .map((entry) => entry.name),
+      ).toEqual(["sample-wake"]);
+
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "review",
+          enabled: true,
+          intervalMs: 60000,
+          event: { type: "project.watchdog.tick", project: "sample" }
+        }]
+      }`,
+      );
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+
+      expect(
+        agentCrons
+          .get("sample-owner")!
+          .getEntries()
+          .map((entry) => entry.name),
+      ).toEqual(["sample-review"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not resolve project app schedule handlers as files after cron has started", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: []
+      }`,
+      );
+
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      const manager = { hasAgent: () => true } as any;
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+
+      const cron = agentCrons.get("sample-owner")!;
+      let resolverCalls = 0;
+      cron.setHandlerResolver(async () => {
+        resolverCalls++;
+        return false;
+      });
+      cron.start();
+
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "review",
+          enabled: true,
+          intervalMs: 60000,
+          event: { type: "project.focus.review.requested", project: "sample" }
+        }]
+      }`,
+      );
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+
+      expect(resolverCalls).toBe(0);
+      expect(cron.hasHandler("sample-review")).toBe(true);
+      expect(cron.getEntries().map((entry) => entry.name)).toEqual(["sample-review"]);
+      cron.stop();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("auto-reloads project app manifests when the watcher sees app.ts change", async () => {
+    const root = tempRoot();
+    let watcher: ReturnType<typeof startProjectAppWatcher> | undefined;
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker-v1", task: "work v1" }
+        }]
+      }`,
+      );
+
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      const manager = { hasAgent: () => true } as any;
+      const opts = {
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      };
+
+      await installProjectApps(opts);
+      watcher = startProjectAppWatcher(opts, { intervalMs: 60_000 });
+
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker-v2", task: "work v2" }
+        }]
+      }`,
+      );
+
+      expect(await watcher.scanNow()).toBe(true);
+      const updatedEntry = agentCrons.get("sample-owner")!.getEntries()[0]!;
+      expect((updatedEntry.handler as any).workflow).toBe("worker-v2");
+      expect((updatedEntry.handler as any).task).toBe("work v2");
+    } finally {
+      watcher?.close();
       rmSync(root, { recursive: true, force: true });
     }
   });

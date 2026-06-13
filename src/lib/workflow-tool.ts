@@ -118,9 +118,7 @@ const MAX_DETAILED_STEPS = 20;
 function buildStepSummaries(completedSteps: CompletedStep[]): WorkflowStepSummary[] {
   // For large step arrays, only include last MAX_DETAILED_STEPS in the returned result
   // to prevent context overflow when workflows run many iterations (e.g. persistent-task)
-  const steps = completedSteps.length > MAX_DETAILED_STEPS
-    ? completedSteps.slice(-MAX_DETAILED_STEPS)
-    : completedSteps;
+  const steps = completedSteps.length > MAX_DETAILED_STEPS ? completedSteps.slice(-MAX_DETAILED_STEPS) : completedSteps;
   return steps.map((step) => ({
     agent: step.step,
     sessionId: step.sessionId ?? "unknown",
@@ -174,7 +172,7 @@ async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
     throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
   }
   // name: use export, or derive from filename (e.g. "scout-heartbeat.ts" → "scout-heartbeat")
-  const name = typeof mod.name === "string" ? mod.name : filePath.split("/").pop()?.replace(/\.ts$/, "") ?? "unknown";
+  const name = typeof mod.name === "string" ? mod.name : (filePath.split("/").pop()?.replace(/\.ts$/, "") ?? "unknown");
   return {
     name,
     description: typeof mod.description === "string" ? mod.description : "(no description)",
@@ -182,10 +180,7 @@ async function loadWorkflow(filePath: string): Promise<WorkflowModule> {
   };
 }
 
-function listWorkflowFiles(
-  workflowDir: string,
-  projectWorkflowDir?: string,
-): string[] {
+function listWorkflowFiles(workflowDir: string, projectWorkflowDir?: string): string[] {
   const files: string[] = [];
   const seenNames = new Set<string>();
   const pushDir = (dir: string | undefined) => {
@@ -231,9 +226,10 @@ async function findWorkflow(
     }
   }
 
-  const error = loadErrors.length > 0
-    ? `Workflow "${name}" not found. Load errors:\n  ${loadErrors.join("\n  ")}`
-    : `Workflow "${name}" not found`;
+  const error =
+    loadErrors.length > 0
+      ? `Workflow "${name}" not found. Load errors:\n  ${loadErrors.join("\n  ")}`
+      : `Workflow "${name}" not found`;
   return { workflow: null, error };
 }
 
@@ -246,14 +242,20 @@ const DEFAULT_MAX_INJECTED_STEPS = 5;
 export async function loadGuards(...dirs: (string | undefined)[]): Promise<WorkflowGuard[]> {
   const guards: WorkflowGuard[] = [];
   const disabledNames = new Set(
-    (process.env.DISABLED_GUARDS ?? "").split(",").map(s => s.trim()).filter(Boolean)
+    (process.env.DISABLED_GUARDS ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
   );
   for (const dir of dirs) {
     if (!dir || !existsSync(dir)) continue;
     let files: string[];
     try {
       files = readdirSync(dir)
-        .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.startsWith("REGISTRY") && !f.endsWith(".disabled.ts"))
+        .filter(
+          (f) =>
+            f.endsWith(".ts") && !f.endsWith(".test.ts") && !f.startsWith("REGISTRY") && !f.endsWith(".disabled.ts"),
+        )
         .sort()
         .map((f) => join(dir, f));
     } catch {
@@ -271,7 +273,10 @@ export async function loadGuards(...dirs: (string | undefined)[]): Promise<Workf
           guards.push(guard as WorkflowGuard);
         }
       } catch (err) {
-        log("error", `[guards] Failed to load guard from ${filePath}: ${err instanceof Error ? err.message : String(err)}`);
+        log(
+          "error",
+          `[guards] Failed to load guard from ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
     }
   }
@@ -291,7 +296,10 @@ export function emitAndCollectDemands(guards: WorkflowGuard[], event: WorkflowGu
         demands.push(d);
       }
     } catch (err) {
-      log("error", `[guards] Guard "${guard.name}" threw on event "${event.type}": ${err instanceof Error ? err.message : String(err)}`);
+      log(
+        "error",
+        `[guards] Guard "${guard.name}" threw on event "${event.type}": ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
   return demands;
@@ -383,7 +391,10 @@ async function resolveDemands(
         }
         injectedCount.value++;
         const label = demand.step.label ?? `guard:${demand.guardName}`;
-        log("info", `[guards] Injecting step "${label}" (${injectedCount.value}/${maxInjected}) from guard "${demand.guardName}"`);
+        log(
+          "info",
+          `[guards] Injecting step "${label}" (${injectedCount.value}/${maxInjected}) from guard "${demand.guardName}"`,
+        );
         emitGuardSignal?.(demand, "injected", {
           sourceEventType: sourceEvent.type,
           step: "step" in sourceEvent ? sourceEvent.step : undefined,
@@ -419,7 +430,12 @@ async function resolveDemands(
         run.steps.push(wfStep);
         // Step data persisted via sessions table (db-writer)
 
-        onEvent?.({ type: "workflow.step_completed", step: label, sessionId: taskResult.sessionId, result: taskResult });
+        onEvent?.({
+          type: "workflow.step_completed",
+          step: label,
+          sessionId: taskResult.sessionId,
+          result: taskResult,
+        });
         break;
       }
     }
@@ -484,9 +500,10 @@ export async function runWorkflowDirect(
   });
 
   // Parse the result from the tool's text output
-  const text = typeof toolResult === "string"
-    ? toolResult
-    : (toolResult as any)?.content?.[0]?.text ?? JSON.stringify(toolResult);
+  const text =
+    typeof toolResult === "string"
+      ? toolResult
+      : ((toolResult as any)?.content?.[0]?.text ?? JSON.stringify(toolResult));
   const parsed = JSON.parse(text) as WorkflowToolResult;
 
   if (parsed.type === "done") {
@@ -502,7 +519,11 @@ export async function runWorkflowDirect(
     throw new WorkflowBlocked(parsed.reason, parsed.completedSteps ?? [], parsed.workflowRunId);
   }
   // interrupted or unknown
-  return { result: { type: "escalate", reason: `Workflow result: ${parsed.type}` }, runId: (parsed as any).workflowRunId ?? "unknown", steps: [] };
+  return {
+    result: { type: "escalate", reason: `Workflow result: ${parsed.type}` },
+    runId: (parsed as any).workflowRunId ?? "unknown",
+    steps: [],
+  };
 }
 
 // ── createWorkflowTool ─────────────────────────────────────────────────
@@ -628,16 +649,22 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     projectId?: string;
   }): AgentToolResult<string> => {
     emitWorkflowResumeFailed(data);
-    return textResult(JSON.stringify({
-      type: "error",
-      workflow: data.workflow,
-      workflowRunId: data.workflowRunId,
-      error: data.reason,
-      reason: data.reason,
-      category: data.category,
-      recoverable: data.recoverable ?? false,
-      nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
-    }, null, 2));
+    return textResult(
+      JSON.stringify(
+        {
+          type: "error",
+          workflow: data.workflow,
+          workflowRunId: data.workflowRunId,
+          error: data.reason,
+          reason: data.reason,
+          category: data.category,
+          recoverable: data.recoverable ?? false,
+          nextAction: workflowResumeNextAction(data.category, data.recoverable ?? false),
+        },
+        null,
+        2,
+      ),
+    );
   };
 
   let activeSteeringQueue: string[] | null = null;
@@ -730,7 +757,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
     };
 
     if (guards.length > 0) {
-      log("info", `[guards] Loaded ${guards.length} guard(s): ${guards.map(g => g.name).join(", ")}`);
+      log("info", `[guards] Loaded ${guards.length} guard(s): ${guards.map((g) => g.name).join(", ")}`);
       // Emit workflow_start to guards
       const startEvent: WorkflowGuardEvent = { type: "workflow_start", workflow: workflow.name, task };
       emitAndCollectDemands(guards, startEvent); // start events: collect but don't expect demands (logging only)
@@ -740,6 +767,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       agentName: string,
       agentTask: string,
       reuseSessionId?: string,
+      stepOpts?: { timeoutMs?: number },
     ): Promise<TaskResult> => {
       // Defensive guard: catch undefined/null agent names before they reach manager.callAgent()
       // where they'd produce the confusing "Agent \"undefined\" not registered" error.
@@ -747,8 +775,8 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       if (!agentName || typeof agentName !== "string" || agentName === "undefined" || agentName === "unknown") {
         throw new Error(
           `runAgent called with invalid agent name: ${JSON.stringify(agentName)}. ` +
-          `If using ctx.agent, ensure the workflow tool was created with agentName option ` +
-          `and that the binary has been restarted after deploy.`
+            `If using ctx.agent, ensure the workflow tool was created with agentName option ` +
+            `and that the binary has been restarted after deploy.`,
         );
       }
       const currentStep = stepCounter++;
@@ -776,7 +804,12 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               lastAssistantText: taskResult.lastAssistantText,
             });
 
-            onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: prevStep.sessionId, result: taskResult });
+            onEvent?.({
+              type: "workflow.step_completed",
+              step: agentName,
+              sessionId: prevStep.sessionId,
+              result: taskResult,
+            });
             return taskResult;
           } catch {
             replayExhausted = true;
@@ -791,17 +824,42 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
       let effectiveTask = agentTask;
       if (guardWarnings.length > 0) {
-        effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map(w => "- " + w).join("\n")}`;
+        effectiveTask += `\n\n## Guard Warnings\n${guardWarnings.map((w) => "- " + w).join("\n")}`;
         guardWarnings.length = 0;
       }
 
       let sid = sessionToReuse;
       let taskResult: TaskResult | undefined;
+      const waitForStep = async (sessionId: string): Promise<TaskResult> => {
+        if (!stepOpts?.timeoutMs) return manager.waitFor(sessionId);
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          return await Promise.race([
+            manager.waitFor(sessionId),
+            new Promise<never>((_, reject) => {
+              timer = setTimeout(() => {
+                try {
+                  manager.cancel(sessionId);
+                } catch {
+                  // Best-effort cancellation; the timeout still rejects.
+                }
+                reject(new Error(`Agent step "${agentName}" timed out after ${stepOpts.timeoutMs}ms`));
+              }, stepOpts.timeoutMs);
+            }),
+          ]);
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+      };
       if (sid) {
         try {
           onEvent?.({ type: "workflow.step_started", step: agentName, sessionId: sid });
-          if (!manager.hasActiveSession(sid)) manager.resumeSession(sid, effectiveTask, { source: `workflow:${workflow.name}` });
-          taskResult = await manager.waitFor(sid);
+          if (!manager.hasActiveSession(sid))
+            manager.resumeSession(sid, effectiveTask, {
+              source: `workflow:${workflow.name}`,
+              timeoutMs: stepOpts?.timeoutMs,
+            });
+          taskResult = await waitForStep(sid);
           taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
@@ -814,8 +872,9 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               stepLabel: agentName,
               source: `workflow:${workflow.name}`,
               kind: "call",
+              timeoutMs: stepOpts?.timeoutMs,
             });
-            taskResult = await manager.waitFor(sid);
+            taskResult = await waitForStep(sid);
             taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
           } else {
             sid = "";
@@ -830,6 +889,7 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           workflowRunId: runId,
           projectId: effectiveProjectId,
           stepLabel: agentName,
+          timeout: stepOpts?.timeoutMs,
         });
         sid = taskResult.sessionId;
       }
@@ -865,8 +925,23 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         };
         const demands = emitAndCollectDemands(guards, guardEvent);
         if (demands.length > 0) {
-          await resolveDemands(demands, guardEvent, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-            manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings, emitGuardSignal);
+          await resolveDemands(
+            demands,
+            guardEvent,
+            runId,
+            completedSteps,
+            steeringQueue,
+            injectedStepCount,
+            maxInjected,
+            manager,
+            parentSessionId,
+            effectiveProjectId,
+            onEvent,
+            run,
+            persistDir ?? undefined,
+            guardWarnings,
+            emitGuardSignal,
+          );
         }
       }
 
@@ -878,13 +953,17 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
 
     const ctx: WorkflowContext = {
       task,
-      agent: (opts.agentName && opts.agentName !== "undefined") ? opts.agentName : "unknown",
+      agent: opts.agentName && opts.agentName !== "undefined" ? opts.agentName : "unknown",
 
       // ── RuntimeCtx (shared infra) — spread pre-built or fallback ──
       ...(opts.runtimeCtx ?? {
-        emit: (event: { type: string; [key: string]: unknown }) => { onEvent?.(event as WorkflowEvent); },
+        emit: (event: { type: string; [key: string]: unknown }) => {
+          onEvent?.(event as WorkflowEvent);
+        },
         dispatchEvent: (_eventType: string, _data?: Record<string, unknown>) => {},
-        getDb: () => { throw new Error("No runtimeCtx — getDb unavailable"); },
+        getDb: () => {
+          throw new Error("No runtimeCtx — getDb unavailable");
+        },
         query: createUnavailableQueryService("No runtimeCtx - query unavailable"),
         log: (_msg: string) => {},
         notify: (_msg: string) => {},
@@ -904,9 +983,14 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         opts.runtimeCtx?.dispatchEvent(eventType, data);
       },
 
-      runAgent: (agentName: string, agentTask: string): Promise<TaskResult> => runAgentStep(agentName, agentTask),
-      runAgentSession: (agentName: string, agentTask: string, sessionId?: string): Promise<TaskResult> =>
-        runAgentStep(agentName, agentTask, sessionId),
+      runAgent: (agentName: string, agentTask: string, stepOpts?: { timeoutMs?: number }): Promise<TaskResult> =>
+        runAgentStep(agentName, agentTask, undefined, stepOpts),
+      runAgentSession: (
+        agentName: string,
+        agentTask: string,
+        sessionId?: string,
+        stepOpts?: { timeoutMs?: number },
+      ): Promise<TaskResult> => runAgentStep(agentName, agentTask, sessionId, stepOpts),
 
       runFunction: async (label: string, fn: () => Promise<string>): Promise<TaskResult> => {
         const start = Date.now();
@@ -949,7 +1033,12 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         completedSteps.push(step);
         pruneCompletedSteps(completedSteps);
 
-        onEvent?.({ type: "workflow.step_completed", step: `fn:${label}`, sessionId: taskResult.sessionId, result: taskResult });
+        onEvent?.({
+          type: "workflow.step_completed",
+          step: `fn:${label}`,
+          sessionId: taskResult.sessionId,
+          result: taskResult,
+        });
 
         // Guard: step_done for function steps
         if (guards.length > 0) {
@@ -964,8 +1053,23 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           };
           const demands = emitAndCollectDemands(guards, guardEvent);
           if (demands.length > 0) {
-            await resolveDemands(demands, guardEvent, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-              manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings, emitGuardSignal);
+            await resolveDemands(
+              demands,
+              guardEvent,
+              runId,
+              completedSteps,
+              steeringQueue,
+              injectedStepCount,
+              maxInjected,
+              manager,
+              parentSessionId,
+              effectiveProjectId,
+              onEvent,
+              run,
+              persistDir ?? undefined,
+              guardWarnings,
+              emitGuardSignal,
+            );
           }
         }
 
@@ -1064,7 +1168,12 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             run.steps.push(wfStep);
             // Step data persisted via sessions table (db-writer)
 
-            onEvent?.({ type: "workflow.step_completed", step: stepName, sessionId: taskResult.sessionId, result: taskResult });
+            onEvent?.({
+              type: "workflow.step_completed",
+              step: stepName,
+              sessionId: taskResult.sessionId,
+              result: taskResult,
+            });
 
             // Fire guards
             if (guards.length > 0) {
@@ -1079,13 +1188,32 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
               };
               const demands = emitAndCollectDemands(guards, guardEvent);
               if (demands.length > 0) {
-                await resolveDemands(demands, guardEvent, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-                  manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings, emitGuardSignal);
+                await resolveDemands(
+                  demands,
+                  guardEvent,
+                  runId,
+                  completedSteps,
+                  steeringQueue,
+                  injectedStepCount,
+                  maxInjected,
+                  manager,
+                  parentSessionId,
+                  effectiveProjectId,
+                  onEvent,
+                  run,
+                  persistDir ?? undefined,
+                  guardWarnings,
+                  emitGuardSignal,
+                );
               }
             }
           },
-          lastText() { return lastResponse; },
-          close() { /* no-op — each prompt() is an independent session */ },
+          lastText() {
+            return lastResponse;
+          },
+          close() {
+            /* no-op — each prompt() is an independent session */
+          },
         };
       },
     };
@@ -1102,18 +1230,36 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
           completedSteps,
         };
         const demands = emitAndCollectDemands(guards, doneEvent);
-        await resolveDemands(demands, doneEvent, runId, completedSteps, steeringQueue, injectedStepCount, maxInjected,
-          manager, parentSessionId, effectiveProjectId, onEvent, run, persistDir ?? undefined, guardWarnings, emitGuardSignal);
+        await resolveDemands(
+          demands,
+          doneEvent,
+          runId,
+          completedSteps,
+          steeringQueue,
+          injectedStepCount,
+          maxInjected,
+          manager,
+          parentSessionId,
+          effectiveProjectId,
+          onEvent,
+          run,
+          persistDir ?? undefined,
+          guardWarnings,
+          emitGuardSignal,
+        );
       }
 
       // Finalize the workflow run
       run.endedAt = Date.now();
       run.status = result.type === "done" ? "done" : "escalated";
       run.result = result.type === "done" ? { summary: result.summary } : { reason: result.reason };
-      if (persistDir) updateWorkflowRun(persistDir, runId, {
-        status: run.status, endedAt: run.endedAt,
-        result_summary: run.result.summary, result_reason: run.result.reason,
-      });
+      if (persistDir)
+        updateWorkflowRun(persistDir, runId, {
+          status: run.status,
+          endedAt: run.endedAt,
+          result_summary: run.result.summary,
+          result_reason: run.result.reason,
+        });
 
       return { result, runId, steps: localSteps };
     } catch (err) {
@@ -1127,10 +1273,12 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
         run.status = "error";
         run.result = { reason: err instanceof Error ? err.message : String(err) };
       }
-      if (persistDir) updateWorkflowRun(persistDir, runId, {
-        status: run.status, endedAt: run.endedAt,
-        result_reason: run.result?.reason,
-      });
+      if (persistDir)
+        updateWorkflowRun(persistDir, runId, {
+          status: run.status,
+          endedAt: run.endedAt,
+          result_reason: run.result?.reason,
+        });
       throw err;
     }
   }
@@ -1331,11 +1479,11 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
             endedAt: prevRunRecord.endedAt ?? undefined,
             status: prevRunRecord.status as WorkflowRun["status"],
             resumedFromRunId: prevRunRecord.resumedFromRunId ?? undefined,
-            steps: stepSessions.map(s => ({
+            steps: stepSessions.map((s) => ({
               sessionId: s.sessionId,
               agent: s.agent,
               task: s.task,
-              status: (s.status === "done" || s.status === "error" || s.status === "interrupted") ? s.status : "done",
+              status: s.status === "done" || s.status === "error" || s.status === "interrupted" ? s.status : "done",
               startedAt: s.startedAt,
               endedAt: s.endedAt ?? Date.now(),
               lastAssistantText: s.outcome ?? null,
