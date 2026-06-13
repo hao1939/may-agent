@@ -22,7 +22,7 @@ CREATE TABLE sessions (
   projectId       TEXT,
   startedAt       INTEGER NOT NULL,
   endedAt         INTEGER,
-  error           TEXT,             -- ⚠️ nearly always NULL (~99.8%) due to db-writer race (KE-1558); session-recovery handler is the exception (see Known Issues)
+  error           TEXT,             -- ⚠️ always NULL in practice due to db-writer race (KE-1558, KE-1878 exception now gone); use meta.json on disk for actual error text
   outcome         TEXT,
   opCount         INTEGER DEFAULT 0,
   stepLabel       TEXT,             -- workflow step label (in practice, always equals `agent` when non-null)
@@ -72,21 +72,23 @@ The DB is the queryable index. Disk is the source of truth for message history.
 
 ## Known Issues
 
-### `error` column is nearly always NULL (KE-1558)
+### `error` column is always NULL in practice (KE-1558)
 
-The `sessions.error` column in SQLite is NULL for the vast majority of error
-sessions (~99.8% as of 2026-06-12: 648/649 error sessions have NULL).
-A write-order race between `manager.ts` (writes errorText correctly) and
-`db-writer.ts` (overwrites with NULL via `session.end` event, which lacks the
-`error` field) causes the manager's value to be lost. `updateSessionDb()` uses
-bare `error = ?` instead of `COALESCE(?, error)`.
+The `sessions.error` column in SQLite is NULL for **all** error sessions
+(649/649 = 100% NULL as of 2026-06-13). A write-order race between
+`manager.ts` (writes errorText correctly) and `db-writer.ts` (overwrites
+with NULL via `session.end` event, which lacks the `error` field) causes
+the manager's value to be lost. `updateSessionDb()` uses bare `error = ?`
+instead of `COALESCE(?, error)`.
 
-**Exception:** The session-recovery handler (`agents/may/handlers/session-recovery.ts`)
-writes error text directly via `db.prepare().run()`, bypassing the db-writer
-race. Sessions auto-closed by this handler (e.g., "Auto-closed idle immediate
-session (no activity for >45min, likely handler timeout)") do retain their
-`error` column value because no subsequent `session.end` → `db-writer` path
-overwrites them.
+**Theoretical exception:** The session-recovery handler
+(`agents/may/handlers/session-recovery.ts`) writes error text directly via
+`db.prepare().run()`, bypassing the db-writer race. However, recovered
+sessions are often subsequently re-closed as `done` by retries, which
+overwrites the error text back to NULL. The KE-1878 exception
+(`s_task_pm-k8s-mtc-staging-retry-20260612`) is now `status=done` with
+`error=NULL`, confirming the exception path is transient, not durable.
+**In practice, treat `sessions.error` as always NULL.**
 
 **Workaround:** For sessions closed through the normal `manager.ts` path, read
 `.state/sessions/history/<id>/meta.json` on disk for the actual error text.
