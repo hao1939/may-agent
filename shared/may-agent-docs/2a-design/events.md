@@ -623,7 +623,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,474 rows as of 2026-06-13, ~709/24h, ~30/hour); all `session_not_found` — 24h mix: ~59% planner, ~41% task; rate tracks aks-explorer session volume |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,679 rows as of 2026-06-14, ~828/24h, ~34/hour); all `session_not_found` — 24h mix: ~53% planner, ~33% task, ~14% problem-solver; rate growing day-over-day (153→242→627→355 last 4 days) |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -780,8 +780,8 @@ harmful but will not match any handler's `on:` filter. Query to find them:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~1,474 rows as of 2026-06-13, ~709/24h, ~30/hour).
-Split: ~57% planner sessions, ~42% task sessions, ~1% problem-solver sessions.
+when the target session cannot be found (~1,679 rows as of 2026-06-14, ~828/24h, ~34/hour).
+Split: ~53% planner sessions, ~33% task sessions, ~14% problem-solver sessions.
 
 ### Consumer Reality
 
