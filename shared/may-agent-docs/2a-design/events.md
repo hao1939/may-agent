@@ -780,9 +780,8 @@ harmful but will not match any handler's `on:` filter. Query to find them:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (1,100 rows as of 2026-06-12 ~18:15Z, ~14/hour averaged over 7-day retention window;
-6h rate is ~35/hour — rate is increasing, driven by planner session churn).
-Split: ~55% planner sessions, ~40% task sessions, ~5% problem-solver sessions.
+when the target session cannot be found (~1,388 rows as of 2026-06-15, ~663/24h, ~27/hour).
+Split: ~57% planner sessions, ~42% task sessions, ~1% problem-solver sessions.
 
 ### Consumer Reality
 
