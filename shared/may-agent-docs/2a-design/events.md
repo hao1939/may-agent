@@ -623,7 +623,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (3.7k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (5.9k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (251 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,286 rows as of 2026-06-14, ~604/24h, ~25/hour); all `session_not_found` — ~57% planner sessions, ~34% task sessions, ~9% problem-solver sessions; rate increased from ~492/24h (Jun-13) to ~604/24h (Jun-14), tracking higher aks-explorer session volume |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,350 rows as of 2026-06-15, ~643/24h, ~27/hour); all `session_not_found` — ~57% planner sessions, ~43% task sessions, ~0.5% problem-solver sessions; rate increased from ~604/24h (Jun-14) to ~643/24h (Jun-15), tracking higher aks-explorer session volume; problem-solver share collapsed from ~9% to <1% |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
