@@ -480,6 +480,12 @@ async function loadSessionDetail(sessionId, opts = {}) {
       <dl class="meta-grid">`;
     if (s.kind) html += `<dt>Kind</dt><dd>${esc(s.kind)}</dd>`;
     if (s.source) html += `<dt>Source</dt><dd>${esc(s.source)}</dd>`;
+    if (s.projectId) {
+      const parts = String(s.projectId).split('/').filter(Boolean);
+      const routeId = parts[0] === 'shared' ? parts.join('/') : parts.length === 2 ? parts[1] : String(s.projectId);
+      const projectRoute = `/projects/${routeId.split('/').map(encodeURIComponent).join('/')}/tasks`;
+      html += `<dt>Project</dt><dd><a href="${attrEsc(projectRoute)}" style="color:var(--accent)">${esc(s.projectId)}</a></dd>`;
+    }
     if (s.model) html += `<dt>Model</dt><dd>${esc(s.model)}</dd>`;
     if (s.parentSessionId) html += `<dt>Parent</dt><dd><a href="#" style="color:var(--accent)" onclick="event.preventDefault();loadSessionDetail('${esc(s.parentSessionId)}')">${esc(s.parentSessionId)}</a></dd>`;
     if (s.workflowRunId) html += `<dt>Workflow Run</dt><dd><a href="#" style="color:var(--accent)" onclick='event.preventDefault();openLoopTrace({workflowRunId:${workflowRunIdArg}})'>${esc(s.workflowRunId)}</a></dd>`;

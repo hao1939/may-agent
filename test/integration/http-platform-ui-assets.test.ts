@@ -60,6 +60,20 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
     expect(body).toContain(`<link rel="stylesheet" href="styles.css">`);
   });
 
+  test("serves the platform index for real app routes", async () => {
+    for (const path of ["/events", "/events/123", "/agents/may", "/projects", "/projects/alpha-project.app", "/projects/alpha-project.app/tasks", "/projects/alpha-project.app/functions"]) {
+      const res = get(path);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain(`<script src="app.js"></script>`);
+    }
+  });
+
+  test("does NOT hijack project-owned domain UI routes", async () => {
+    expect(get("/projects/alpha-project.app/ui/").status).toBe(404);
+    expect(get("/projects/alpha-project.app/kanban/").status).toBe(404);
+    expect(get("/projects/alpha-project.app/ui/index.html").status).toBe(404);
+  });
+
   test("serves top-level /styles.css from platform/ui (F8)", async () => {
     const res = get("/styles.css");
     expect(res.status).toBe(200);

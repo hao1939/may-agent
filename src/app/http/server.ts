@@ -77,12 +77,28 @@ function servePlatformUiFile(path: string): Response {
   });
 }
 
+function isPlatformUiAppRoute(pathname: string): boolean {
+  if (pathname === "/" || pathname === "/index.html") return true;
+  if (/^\/(events|agents|metrics|learning|knowledge|terminal|sessions)(?:\/.*)?$/.test(pathname)) return true;
+  if (pathname === "/projects") return true;
+  if (!pathname.startsWith("/projects/")) return false;
+  const parts = pathname.split("/").filter(Boolean).slice(1);
+  const last = parts[parts.length - 1];
+  const hasSurface = last === "tasks" || last === "functions";
+  const idParts = hasSurface ? parts.slice(0, -1) : parts;
+  if (!hasSurface && idParts.length === 2) {
+    if (["ui", "kanban"].includes(idParts[1])) return false;
+    if (/\.[a-z0-9]+$/i.test(idParts[1])) return false;
+  }
+  return idParts.length === 1 || idParts.length === 2;
+}
+
 export function servePlatformUiRequest(req: Request, projectsRoot: string): Response | null {
   const url = new URL(req.url);
   if (req.method !== "GET") return null;
 
   const platformUiDir = resolve(projectsRoot, "platform", "ui");
-  if (url.pathname === "/" || url.pathname === "/index.html") {
+  if (isPlatformUiAppRoute(url.pathname)) {
     const indexPath = resolve(platformUiDir, "index.html");
     return existsSync(indexPath) && statSync(indexPath).isFile() ? servePlatformUiFile(indexPath) : null;
   }
@@ -239,6 +255,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       ? parts[1]?.replace(/\.md$/, "") ?? ""
       : parts[parts.length - 1]?.replace(/\.md$/, "") ?? "";
     let owner = parts[0] === "projects" ? "shared" : parts[1] ?? "";
+    if (content?.trim().startsWith("{")) {
+      try {
+        const parsed = JSON.parse(content) as { owner?: unknown; id?: unknown };
+        if (typeof parsed.owner === "string" && parsed.owner.trim()) owner = parsed.owner.trim();
+        const jsonName = typeof parsed.id === "string" && parsed.id.trim() ? parsed.id.trim() : name;
+        return { owner, name: jsonName, projectId: `${owner}/${jsonName}` };
+      } catch {
+        // Fall through to frontmatter/path parsing.
+      }
+    }
     const ownerMatch = content?.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
     if (ownerMatch?.[1]) owner = ownerMatch[1].trim().replace(/^["']|["']$/g, "");
     return { owner, name, projectId: `${owner}/${name}` };
@@ -283,20 +309,71 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return projectAppDirForName(projectNameFromPath(path));
   }
 
+  function extractProjectAppActions(appDir: string | null): Array<Record<string, unknown>> {
+    if (!appDir) return [];
+    const appPath = resolve(appDir, "app.ts");
+    if (!existsSync(appPath)) return [];
+    try {
+      const content = readFileSync(appPath, "utf-8");
+      const marker = content.indexOf("actions:");
+      if (marker === -1) return [];
+      const start = content.indexOf("{", marker);
+      if (start === -1) return [];
+      let depth = 0;
+      let end = -1;
+      for (let i = start; i < content.length; i++) {
+        const ch = content[i];
+        if (ch === "{") depth++;
+        if (ch === "}") {
+          depth--;
+          if (depth === 0) {
+            end = i;
+            break;
+          }
+        }
+      }
+      if (end === -1) return [];
+      const body = content.slice(start + 1, end);
+      const actions: Array<Record<string, unknown>> = [];
+      const re = /["']?([A-Za-z0-9_.-]+)["']?\s*:\s*\{([\s\S]*?)(?=\n\s*["']?[A-Za-z0-9_.-]+["']?\s*:\s*\{|$)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(body)) !== null) {
+        const id = m[1];
+        const block = m[2] || "";
+        const type = block.match(/type:\s*["']([^"']+)["']/)?.[1] ?? "async";
+        const description = block.match(/description:\s*["']([\s\S]*?)["']/)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+        actions.push({ id, type, description });
+      }
+      return actions;
+    } catch {
+      return [];
+    }
+  }
+
   function resolveProjectFile(path: string): string {
     if (path.endsWith(".md")) {
       const dir = resolveProjectDir(path.replace(/\/project\.md$/, ""));
       const projectFile = resolve(dir, "project.md");
       if (existsSync(projectFile)) return projectFile;
       const appDir = projectAppDirForPath(path);
-      if (appDir) return resolve(appDir, "project.md");
+      if (appDir) {
+        const appProjectFile = resolve(appDir, "project.md");
+        if (existsSync(appProjectFile)) return appProjectFile;
+        return resolve(appDir, "project.json");
+      }
       return projectFile;
     }
     const projectDir = resolveProjectDir(path);
     const projectFile = resolve(projectDir, "project.md");
     if (existsSync(projectFile)) return projectFile;
+    const projectJson = resolve(projectDir, "project.json");
+    if (existsSync(projectJson)) return projectJson;
     const appDir = projectAppDirForPath(path);
-    if (appDir) return resolve(appDir, "project.md");
+    if (appDir) {
+      const appProjectFile = resolve(appDir, "project.md");
+      if (existsSync(appProjectFile)) return appProjectFile;
+      return resolve(appDir, "project.json");
+    }
     return projectFile;
   }
 
@@ -1487,6 +1564,79 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
+  function handleKnowledgeSearch(url: URL): Response {
+    const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+    const limit = Math.max(1, Math.min(80, Number(url.searchParams.get("limit") || 40)));
+    if (q.length < 2) return json({ query: q, results: [] });
+
+    const roots: Array<{ label: string; dir: string }> = [];
+    const sharedKnowledge = resolve(SHARED_ROOT, "knowledge");
+    if (existsSync(sharedKnowledge)) roots.push({ label: "shared/knowledge", dir: sharedKnowledge });
+    try {
+      for (const entry of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+        const knowledgeDir = resolve(PROJECTS_ROOT, entry.name, "knowledge");
+        if (existsSync(knowledgeDir)) roots.push({ label: `projects/${entry.name}/knowledge`, dir: knowledgeDir });
+      }
+    } catch {
+      // Keep search available even if projects root is missing.
+    }
+
+    const results: Array<Record<string, unknown>> = [];
+    const visit = (root: { label: string; dir: string }, dir: string, depth: number) => {
+      if (results.length >= limit || depth > 5) return;
+      let entries: any[];
+      try {
+        entries = readdirSync(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (results.length >= limit) return;
+        if (entry.name.startsWith(".")) continue;
+        const abs = resolve(dir, entry.name);
+        const rel = relative(root.dir, abs);
+        if (rel.startsWith("..") || rel.startsWith("/")) continue;
+        if (entry.isDirectory()) {
+          visit(root, abs, depth + 1);
+          continue;
+        }
+        if (!/\.(md|json|txt)$/i.test(entry.name)) continue;
+        let stat: { size: number } | null = null;
+        try {
+          stat = statSync(abs);
+          if (stat.size > 200_000) continue;
+        } catch {
+          continue;
+        }
+        const displayPath = `${root.label}/${rel.replace(/\\/g, "/")}`;
+        let content = "";
+        try {
+          content = readFileSync(abs, "utf-8");
+        } catch {
+          continue;
+        }
+        const lowerPath = displayPath.toLowerCase();
+        const lowerContent = content.toLowerCase();
+        const pathHit = lowerPath.includes(q);
+        const contentIdx = lowerContent.indexOf(q);
+        if (!pathHit && contentIdx === -1) continue;
+        const start = contentIdx === -1 ? 0 : Math.max(0, contentIdx - 90);
+        const snippet = content.slice(start, Math.min(content.length, start + 240)).replace(/\s+/g, " ").trim();
+        results.push({
+          path: displayPath,
+          browsePath: root.label === "shared/knowledge" ? `knowledge/${rel.replace(/\\/g, "/")}` : null,
+          source: root.label,
+          size: stat.size,
+          match: pathHit ? "path" : "content",
+          snippet,
+        });
+      }
+    };
+    for (const root of roots) visit(root, root.dir, 0);
+    return json({ query: q, results });
+  }
+
   function contentTypeFor(path: string): string {
     switch (extname(path).toLowerCase()) {
       case ".html": return "text/html; charset=utf-8";
@@ -1602,6 +1752,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const processProject = (projectFile: string, relPath: string, name: string, fallbackOwner: string) => {
       try {
         const content = readFileSync(projectFile, "utf-8");
+        const jsonProject = content.trim().startsWith("{")
+          ? (() => { try { return JSON.parse(content) as Record<string, any>; } catch { return null; } })()
+          : null;
         // Parse YAML frontmatter if present (current convention).
         // Legacy per-agent projects may still use old `**Owner**: x` lines.
         const normalizedRelPath = normalizeProjectPathForCompare(relPath);
@@ -1623,6 +1776,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
           formatErrors.push("metadata duplicated as bold body field");
         }
         const field = (n: string) => {
+          if (jsonProject) {
+            const jsonValue = jsonProject[n[0].toLowerCase() + n.slice(1)] ?? jsonProject[n.toLowerCase()];
+            if (jsonValue !== undefined && jsonValue !== null) return String(jsonValue);
+          }
           // YAML frontmatter wins; fall back to bold-prefixed line only for legacy projects.
           if (frontmatter[n.toLowerCase()] !== undefined) return frontmatter[n.toLowerCase()];
           if (isSharedProject) return null;
@@ -1632,14 +1789,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         const msX = (content.match(/^- \[x\]/gim) || []).length;
         const msO = (content.match(/^- \[ \]/gm) || []).length;
         projects.push({
-          name: name.replace(/\.md$/, ""),
+          name: field("Id") || name.replace(/\.(md|json)$/, ""),
           path: relPath,
           owner: field("Owner") || fallbackOwner,
           status: field("Status") || "unknown",
           priority: field("Priority"),
           iteration: parseInt(field("Iteration") || "0", 10),
           health: field("Health"),
-          formatErrors,
+          type: field("Type") || null,
+          formatErrors: jsonProject ? [] : formatErrors,
           milestonesDone: msX,
           milestonesTotal: msX + msO,
           metrics: (() => {
@@ -1679,7 +1837,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
           if (!entry.isDirectory()) continue;
           if (seen.has(entry.name)) continue;
-          const projectFile = join(dir, entry.name, "project.md");
+          const projectMd = join(dir, entry.name, "project.md");
+          const projectJson = join(dir, entry.name, "project.json");
+          const projectFile = existsSync(projectMd) ? projectMd : existsSync(projectJson) ? projectJson : "";
           if (!existsSync(projectFile)) continue;
           const relPath = `${relPrefix}/${entry.name}`;
           seen.add(entry.name);
@@ -1874,6 +2034,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     } catch (e) {
       return json({ error: e instanceof Error ? e.message : String(e) }, 500);
     }
+    const jsonProject = content.trim().startsWith("{")
+      ? (() => { try { return JSON.parse(content) as Record<string, any>; } catch { return null; } })()
+      : null;
 
     // Parse frontmatter ("---\n...\n---").
     const frontmatter: Record<string, string> = {};
@@ -1894,8 +2057,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const projectId = `${owner}/${projectName}`;
 
     // Extract common summary sections (everything until the next "##").
-    const goal = extractMarkdownSection(body, "Goal");
-    const currentState = extractMarkdownSection(body, "Current State");
+    const goal = jsonProject && typeof jsonProject.goal === "string"
+      ? jsonProject.goal
+      : extractMarkdownSection(body, "Goal");
+    const currentState = jsonProject
+      ? typeof jsonProject.currentState === "string"
+        ? jsonProject.currentState
+        : typeof jsonProject.currentState?.summary === "string"
+        ? jsonProject.currentState.summary
+        : null
+      : extractMarkdownSection(body, "Current State");
 
     // Count milestones: lines like '- [ ] foo' / '- [x] foo' anywhere in body.
     const checkboxes = body.match(/^[\s\-*]*\[[ xX]\]/gm) || [];
@@ -1960,10 +2131,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       owner,
       projectId,
       frontmatter,
-      status: frontmatter.status || null,
-      iteration: frontmatter.iteration ? Number(frontmatter.iteration) : 0,
-      priority: frontmatter.priority || null,
-      type: frontmatter.type || null,
+      status: jsonProject?.status || frontmatter.status || null,
+      iteration: jsonProject?.iteration ? Number(jsonProject.iteration) : frontmatter.iteration ? Number(frontmatter.iteration) : 0,
+      priority: jsonProject?.priority || frontmatter.priority || null,
+      type: jsonProject?.type || frontmatter.type || null,
       workflow: frontmatter.workflow || null,
       goal,
       currentState,
@@ -1975,6 +2146,15 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       sessionCount,
       mentionCount,
       recentSessions,
+      app: (() => {
+        const appDir = projectAppDirForPath(path);
+        if (!appDir) return null;
+        return {
+          appDirName: appDir.split("/").pop(),
+          hasUi: existsSync(resolve(appDir, "ui", "index.html")),
+          actions: extractProjectAppActions(appDir),
+        };
+      })(),
       updatedAt: stat ? Math.floor(stat.mtimeMs) : null,
       createdAt: stat ? Math.floor(stat.ctimeMs) : null,
     });
@@ -3329,6 +3509,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/benchmarks/prompts") return handleBenchmarkPrompts(url);
       if (url.pathname === "/api/benchmarks/compare") return handleBenchmarkCompare(url);
       if (url.pathname === "/api/browse") return handleBrowse(url);
+      if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
@@ -3340,6 +3521,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
+      const eventTraceMatch = url.pathname.match(/^\/api\/events\/(\d+)\/trace$/);
+      if (eventTraceMatch) {
+        const traceUrl = new URL(url);
+        traceUrl.pathname = "/api/loop-trace";
+        traceUrl.search = `?eventId=${eventTraceMatch[1]}`;
+        return handleLoopTrace(traceUrl);
+      }
       if (url.pathname === "/api/events" && req.method === "POST") return handleEventIngress(req);
       if (url.pathname === "/api/events") return handleEvents(url);
       if (url.pathname === "/api/learning") return handleLearning(url);

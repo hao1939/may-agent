@@ -6,7 +6,8 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const staticRoot = join(repoRoot, "packages", "webui", "static");
 const nodeModulesRoot = join(repoRoot, "node_modules");
 const generatedUi = join(repoRoot, "ui");
-const servedUi = resolve(repoRoot, "..", "..", "ui");
+const legacyServedUi = resolve(repoRoot, "..", "..", "ui");
+const platformServedUi = resolve(repoRoot, "..", "platform", "ui");
 
 async function syncVendorAssets() {
   const vendorRoot = join(staticRoot, "vendor", "xterm");
@@ -25,7 +26,9 @@ async function copyStatic(target: string) {
 
 await syncVendorAssets();
 await copyStatic(generatedUi);
-await copyStatic(servedUi);
+await copyStatic(legacyServedUi);
+await copyStatic(platformServedUi);
 
 console.log(`generated ${generatedUi}`);
-console.log(`generated ${servedUi}`);
+console.log(`generated ${legacyServedUi}`);
+console.log(`generated ${platformServedUi}`);
