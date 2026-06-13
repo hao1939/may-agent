@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-13T08:39:40.677674+00:00",
+  "updated_at": "2026-06-13T08:47:11.767175+00:00",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "bootstrap-byo-acr-staging-execute-20260613",
@@ -14,8 +14,7 @@
         "spec-generation",
         "replay-implementation",
         "execution-and-verification",
-        "model-feedback",
-        "project-milestones"
+        "model-feedback"
       ],
       "parent_id": null,
       "status": "decomposed",
@@ -61,7 +60,7 @@
     },
     "spec-runner-and-replays": {
       "id": "spec-runner-and-replays",
-      "parent_id": "project-milestones",
+      "parent_id": "replay-implementation",
       "status": "accepted",
       "kind": "work",
       "priority": "P0",
@@ -157,7 +156,7 @@
     },
     "kms-v2plus-cmk-privkv-nonkms-staging-20260613": {
       "id": "kms-v2plus-cmk-privkv-nonkms-staging-20260613",
-      "parent_id": "project-milestones",
+      "parent_id": "execution-and-verification",
       "status": "accepted",
       "kind": "domain_leaf",
       "priority": "P2",
@@ -206,11 +205,12 @@
         "runs/executions/run_cmk_privkv_nonkms_v5exec/result.json",
         "evidence/archive/run_cmk_privkv_nonkms_v5exec-kms-v2plus-enable-cmk-private-kv-from-non-kms.json"
       ],
-      "updated_at": "2026-06-13T08:48:00Z"
+      "updated_at": "2026-06-13T08:47:11.767175+00:00",
+      "summary": "KMS v2plus CMK with private KV from non-KMS: execution completed, evidence captured for model update."
     },
     "kms-v2plus-disabled-pub-pmk-staging-20260613": {
       "id": "kms-v2plus-disabled-pub-pmk-staging-20260613",
-      "parent_id": "project-milestones",
+      "parent_id": "execution-and-verification",
       "status": "accepted",
       "kind": "domain_leaf",
       "priority": "P2",
@@ -259,7 +259,8 @@
         "runs/executions/run_20260613074852715_jg7o7o/result.json",
         "evidence/archive/run_20260613074852715_jg7o7o-kms-v2plus-enable-pmk-from-v2-disabled-public.json"
       ],
-      "updated_at": "2026-06-13T08:48:00Z"
+      "updated_at": "2026-06-13T08:47:11.767175+00:00",
+      "summary": "KMS v2plus PMK from disabled v2 public: execution completed, evidence captured for model update."
     },
     "kms-v2plus-pmk-priv-staging-20260613": {
       "id": "kms-v2plus-pmk-priv-staging-20260613",
@@ -346,7 +347,9 @@
       "session_id": "s_task_kms-v2plus-cmk-pub-firewall-staging-20260613",
       "session_history": [
         "s_task_kms-v2plus-cmk-pub-firewall-staging-20260613"
-      ]
+      ],
+      "summary": "KMS v2plus CMK from v2 public with firewall: execution completed, evidence captured for model update.",
+      "updated_at": "2026-06-13T08:47:11.767175+00:00"
     },
     "kms-v2plus-pmk-privvnet-staging-20260613": {
       "id": "kms-v2plus-pmk-privvnet-staging-20260613",
@@ -458,7 +461,7 @@
       "id": "feature-knowledge-and-specs",
       "goal": "Learn AKS feature intent and maintain source-grounded feature packets, input/expectation paths, and runnable atomic test specs.",
       "status": "accepted",
-      "parent_id": "project-milestones",
+      "parent_id": "source-discovery",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
       "updated_at": "2026-06-13T08:26:14.116930+00:00",
@@ -480,7 +483,7 @@
       "id": "evidence-feedback-and-model-update",
       "goal": "Diagnose execution evidence, classify product/test/environment/source outcomes, update the capability model, and feed the next learning/spec/runner tasks.",
       "status": "accepted",
-      "parent_id": "project-milestones",
+      "parent_id": "model-feedback",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
       "updated_at": "2026-06-13T08:26:14.116930+00:00",
@@ -503,7 +506,7 @@
       "id": "model-consolidation-and-coverage-assessment",
       "goal": "Reconcile the two divergent model files, link specs to features, and assess coverage gaps to plan the next project phase.",
       "status": "accepted",
-      "parent_id": "project-milestones",
+      "parent_id": "model-feedback",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
       "updated_at": "2026-06-13T08:26:14.116930+00:00",
@@ -523,7 +526,7 @@
       "id": "blocked-frontier-review",
       "goal": "Review the whole blocked frontier and decide which blockers are real, stale, too coarse, missing evidence, or locally unblockable.",
       "status": "accepted",
-      "parent_id": "project-milestones",
+      "parent_id": "execution-and-verification",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
       "updated_at": "2026-06-13T08:26:14.116930+00:00",
@@ -543,7 +546,7 @@
       "id": "phase-2-coverage-completion",
       "goal": "Close the 41-unknown gap identified in the coverage-gap-assessment: fix 3 status anomalies, design 13 missing specs, and plan the first execution wave for 21 draft-spec features.",
       "status": "accepted",
-      "parent_id": "project-milestones",
+      "parent_id": "execution-and-verification",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
       "updated_at": "2026-06-13T08:26:14.116930+00:00",
@@ -563,7 +566,7 @@
       "id": "staging-rest-execution-frontier",
       "goal": "Drive the next project branch through real staging REST execution: select high-value specs, run them through the project runner on devbox/staging, collect evidence, classify failures, and feed results back into the knowledge model.",
       "status": "accepted",
-      "parent_id": "project-milestones",
+      "parent_id": "execution-and-verification",
       "children": [],
       "created_at": "2026-06-13T08:22:47.103689+00:00",
       "updated_at": "2026-06-13T08:26:14.116930+00:00",
@@ -622,7 +625,9 @@
       "goal": "Explore Go e2ev3 source code to discover AKS feature intent, scenarios, and input/expectation boundaries",
       "status": "decomposed",
       "parent_id": "project",
-      "children": [],
+      "children": [
+        "feature-knowledge-and-specs"
+      ],
       "summary": "14 feature families discovered from Go e2ev3. Source inventory covers managedsystem-pool, app-routing, workload-identity, oidc-issuer, bootstrap-profile, KMS, deployment-safeguards, planned-maintenance, VPA/KEDA, image-cleaner, node-restriction, node-autoprovision, virtualmachines, jwt-authenticator, trusted-access.",
       "evidence": [
         "features/*.yaml",
@@ -676,7 +681,9 @@
       "goal": "Write executable TypeScript replays that call ARM REST, verify assertions, and write structured evidence",
       "status": "decomposed",
       "parent_id": "project",
-      "children": [],
+      "children": [
+        "spec-runner-and-replays"
+      ],
       "summary": "133 replay scripts. Each replay: preflight \u2192 setup cluster \u2192 execute operations \u2192 assert \u2192 cleanup \u2192 write evidence. Uses replays/lib/arm-rest.ts for direct ARM REST (no az CLI at runtime). Setup instructions printed when prerequisites missing.",
       "evidence": [
         "replays/*.ts",
@@ -704,7 +711,12 @@
         "kms-v2plus-pmk-privvnet-staging-20260613",
         "kms-v2plus-svc-cert-rot-staging-20260613",
         "kms-v2plus-pmk-priv-disable-key-staging-20260613",
-        "fix-cmk-privkv-nonkms-assertion-20260613"
+        "fix-cmk-privkv-nonkms-assertion-20260613",
+        "blocked-frontier-review",
+        "phase-2-coverage-completion",
+        "staging-rest-execution-frontier",
+        "kms-v2plus-cmk-privkv-nonkms-staging-20260613",
+        "kms-v2plus-disabled-pub-pmk-staging-20260613"
       ],
       "summary": "108 of 133 paths passing (81%). Single-spec: bun run spec <id>. Combined: bun run plan \u2192 bun run generate \u2192 bun <combined>. Direct ARM REST, no az CLI at runtime. Auto-cleanup verified.",
       "evidence": [
@@ -726,7 +738,10 @@
       "goal": "Update knowledge model from evidence, regenerate views, validate integrity",
       "status": "decomposed",
       "parent_id": "project",
-      "children": [],
+      "children": [
+        "evidence-feedback-and-model-update",
+        "model-consolidation-and-coverage-assessment"
+      ],
       "summary": "Auto-update pipeline: spec run \u2192 model-update.ts patches featurePath status + evidence refs \u2192 views regenerated \u2192 model validated. 129 features, 133 paths, 219 evidence entries in model.",
       "evidence": [
         "runner/model-update.ts",
@@ -737,25 +752,6 @@
         "Auto-update: bun run model-update <run-dir>",
         "Manual status: bun run status",
         "Validate: bun model/tools/src/validate.ts"
-      ],
-      "created_at": "2026-06-13T08:30:39.007694+00:00",
-      "updated_at": "2026-06-13T08:30:39.007694+00:00"
-    },
-    "project-milestones": {
-      "id": "project-milestones",
-      "goal": "Project milestones \u2014 accepted knowledge from completed work phases",
-      "status": "decomposed",
-      "parent_id": "project",
-      "children": [
-        "feature-knowledge-and-specs",
-        "evidence-feedback-and-model-update",
-        "model-consolidation-and-coverage-assessment",
-        "blocked-frontier-review",
-        "phase-2-coverage-completion",
-        "kms-v2plus-cmk-privkv-nonkms-staging-20260613",
-        "kms-v2plus-disabled-pub-pmk-staging-20260613",
-        "staging-rest-execution-frontier",
-        "spec-runner-and-replays"
       ],
       "created_at": "2026-06-13T08:30:39.007694+00:00",
       "updated_at": "2026-06-13T08:30:39.007694+00:00"
