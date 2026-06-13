@@ -69,15 +69,29 @@ function entryAgent(entry: CronEntry): string | undefined {
   return undefined;
 }
 
-/** Extract the project identifier from an event envelope's data. */
+function projectIdFromRecord(record: Record<string, unknown> | undefined): string {
+  if (!record) return "";
+  for (const key of ["project", "projectId", "project_id"]) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+/** Extract the project identifier from an event envelope or nested payload. */
 function eventProjectId(event: EventEnvelope): string {
   const data = event.data;
-  if (!data) return "";
-  if (typeof data.project === "string") return data.project;
-  // Nested data (some events wrap payload in data.data)
-  const nested = asRecord(data.data);
-  if (nested && typeof nested.project === "string") return nested.project;
-  return "";
+  return (
+    projectIdFromRecord(data) ||
+    projectIdFromRecord(asRecord(data?.data)) ||
+    projectIdFromRecord(asRecord(data?.payload)) ||
+    projectIdFromRecord(asRecord(data?.params)) ||
+    projectIdFromRecord(event as unknown as Record<string, unknown>)
+  );
+}
+
+function isProjectEvent(type: string): boolean {
+  return type === "project" || type.startsWith("project.");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -397,11 +411,14 @@ export class Cron {
     for (const entryName of subscribers) {
       const entry = this.entries.find((candidate) => candidate.name === entryName);
       if (targetHeartbeatAgent && entry && entryAgent(entry) !== targetHeartbeatAgent) continue;
-      // Project-scope filter: if the handler has a projectId and the event
-      // carries a different project, skip — prevents cross-project dispatch.
-      if (evtProject && entry) {
+      // Target-first routing: if a workflow handler declares a project target
+      // and the event names another project, this is not that handler's event.
+      if (entry) {
         const wf = workflowHandler(entry.handler);
-        if (wf?.projectId && wf.projectId !== evtProject && !evtProject.startsWith(wf.projectId + ".")) continue;
+        if (wf?.projectId && isProjectEvent(eventType)) {
+          if (!evtProject) continue;
+          if (wf.projectId !== evtProject && !evtProject.startsWith(wf.projectId + ".")) continue;
+        }
       }
       if (this.triggerNow(entryName, { force: true, triggerEvent: event })) triggered++;
     }
