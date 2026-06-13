@@ -16,38 +16,80 @@ const limit = 30;
 let _currentProjectDetail = null;
 
 // ── Router ────────────────────────────────────────────────────────────
-// Hash routes: #/ #/agents #/agents/<name> #/projects #/projects/:id
-//              #/metrics #/metrics/<id> #/learning #/terminal[/<profile>] #/sessions/:id
-//              #/knowledge #/knowledge/<sub-path> #/system
-// Legacy bare names (#dashboard, #chat, #metrics, #events) still work via aliases.
+// Real routes: / /agents /agents/<name> /projects /projects/:id
+//              /projects/:id/tasks /projects/:id/functions
+//              /metrics /metrics/<id> /learning /terminal[/<profile>] /sessions/:id
+//              /knowledge /knowledge/<sub-path> /events /events/:eventId
+// Legacy hash routes (#/... and #dashboard/#events) still work via aliases.
 const LEGACY_TAB_ALIAS = {
-  dashboard: 'live', chat: 'sessions', events: 'system',
+  dashboard: 'live', chat: 'sessions',
   // 'metrics' previously aliased to system; now metrics is its own top-level tab.
 };
 
-function parseHash() {
-  const raw = location.hash.replace(/^#\/?/, '').split('?')[0];
+function routeFromHash() {
+  if (!location.hash) return '';
+  const rawHash = location.hash.replace(/^#\/?/, '');
+  if (!rawHash) return '/';
+  return rawHash.startsWith('/') ? rawHash : '/' + rawHash;
+}
+
+function parseRouteString(route) {
+  const raw = String(route || '/').replace(/^\/?/, '').split('?')[0];
   if (!raw) return { tab: 'live', params: {} };
   const segs = raw.split('/').filter(Boolean);
   const head = segs[0];
   if (LEGACY_TAB_ALIAS[head]) return { tab: LEGACY_TAB_ALIAS[head], params: {} };
-  if (head === 'projects') return { tab: 'projects', params: { id: segs.slice(1).join('/') || null } };
-  if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] || null } };
-  if (head === 'agents') return { tab: 'agents', params: { name: segs[1] || null } };
-  if (head === 'metrics') return { tab: 'metrics', params: { id: segs.slice(1).join('/') || null } };
+  if (head === 'projects') {
+    const tail = segs.slice(1);
+    let surface = null;
+    const last = tail[tail.length - 1];
+    if (last === 'tasks' || last === 'functions') {
+      surface = last;
+      tail.pop();
+    }
+    return { tab: 'projects', params: { id: tail.map(decodeURIComponent).join('/') || null, surface } };
+  }
+  if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] ? decodeURIComponent(segs[1]) : null } };
+  if (head === 'agents') return { tab: 'agents', params: { name: segs[1] ? decodeURIComponent(segs[1]) : null } };
+  if (head === 'metrics') return { tab: 'metrics', params: { id: segs.slice(1).map(decodeURIComponent).join('/') || null } };
   if (head === 'learning') return { tab: 'learning', params: {} };
   if (head === 'terminal') return { tab: 'terminal', params: { profileId: segs[1] ? decodeURIComponent(segs[1]) : null } };
-  if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).join('/') || '' } };
-  if (head === 'system') return { tab: 'system', params: {} };
+  if (head === 'knowledge') return { tab: 'knowledge', params: { path: segs.slice(1).map(decodeURIComponent).join('/') || '' } };
+  if (head === 'system' || head === 'events') return { tab: 'system', params: { eventId: head === 'events' && segs[1] ? decodeURIComponent(segs[1]) : null } };
   if (head === 'live') return { tab: 'live', params: {} };
   return { tab: 'live', params: {} };
 }
 
+function parseRoute() {
+  const hashRoute = routeFromHash();
+  if (hashRoute) return parseRouteString(hashRoute);
+  return parseRouteString(location.pathname + location.search);
+}
+
 function routeTo(route) {
-  // Normalize: routeTo('/projects/foo') sets hash to '#/projects/foo'
   if (!route.startsWith('/')) route = '/' + route;
-  location.hash = '#' + route;
-  // hashchange handler will fire and call render()
+  if (location.pathname + location.search === route && !location.hash) {
+    render();
+    return;
+  }
+  history.pushState({}, '', route);
+  render();
+}
+
+function isPlatformClientRoute(pathname) {
+  if (pathname === '/' || pathname === '/index.html') return true;
+  if (/^\/(events|agents|metrics|learning|knowledge|terminal|sessions)(?:\/.*)?$/.test(pathname)) return true;
+  if (pathname === '/projects') return true;
+  if (!pathname.startsWith('/projects/')) return false;
+  const parts = pathname.split('/').filter(Boolean).slice(1);
+  const last = parts[parts.length - 1];
+  const hasSurface = last === 'tasks' || last === 'functions';
+  const idParts = hasSurface ? parts.slice(0, -1) : parts;
+  if (!hasSurface && idParts.length === 2) {
+    if (['ui', 'kanban'].includes(idParts[1])) return false;
+    if (/\.[a-z0-9]+$/i.test(idParts[1])) return false;
+  }
+  return idParts.length === 1 || idParts.length === 2;
 }
 
 // ── Project identity ─────────────────────────────────────────────────────
@@ -81,7 +123,7 @@ function projectPathOf(id) {
 }
 
 function render() {
-  const { tab, params } = parseHash();
+  const { tab, params } = parseRoute();
   currentTab = tab;
   currentRouteParams = params;
   // Pane visibility — design's 5 surfaces map onto existing panes:
@@ -129,14 +171,17 @@ function render() {
   if (tab === 'metrics') loadMetricsTab();
   if (tab === 'learning') loadLearning();
   if (tab === 'terminal') initTerminalPage(params.profileId || null);
-  if (tab === 'system') loadEvents();
+  if (tab === 'system') {
+    loadEvents();
+    if (params.eventId) setTimeout(() => loadLoopTrace(params.eventId), 80);
+  }
   if (tab === 'projects') {
-    // Project id deep-link: #/projects/<id>
+    // Project id deep-link: /projects/<id>
     if (params.id) {
       // params.id is the canonical id form: '<name>', '<owner>/<name>',
       // or 'shared/<name>'. Server paths are reconstructed via projectPathOf().
       _projectDetailPath = projectPathOf(params.id);
-      showProjectDetail(_projectDetailPath);
+      showProjectDetail(_projectDetailPath, params.surface || 'project');
     } else {
       _projectDetailPath = null;
       loadProjects();
@@ -144,7 +189,14 @@ function render() {
   }
 }
 
-window.addEventListener('hashchange', render);
+window.addEventListener('popstate', render);
+window.addEventListener('hashchange', () => {
+  const hashRoute = routeFromHash();
+  if (hashRoute) {
+    history.replaceState({}, '', hashRoute);
+  }
+  render();
+});
 
 // ── WebSocket pub-sub ──────────────────────────────────────────────────
 // Panels can subscribe to live events flowing through /ws.
@@ -164,6 +216,17 @@ document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     routeTo(tab.dataset.route);
   });
+});
+
+document.addEventListener('click', (event) => {
+  const anchor = event.target.closest?.('a[href]');
+  if (!anchor) return;
+  const href = anchor.getAttribute('href') || '';
+  if (!href.startsWith('/') || href.startsWith('//')) return;
+  const url = new URL(href, location.origin);
+  if (url.origin !== location.origin || !isPlatformClientRoute(url.pathname)) return;
+  event.preventDefault();
+  routeTo(url.pathname + url.search);
 });
 
 

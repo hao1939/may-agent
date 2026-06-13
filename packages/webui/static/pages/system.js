@@ -73,7 +73,7 @@ function loopTraceQuery(target) {
 }
 
 function openLoopTrace(target) {
-  routeTo('/system');
+  routeTo('/events');
   setTimeout(() => loadLoopTrace(target), 80);
 }
 
@@ -82,7 +82,8 @@ async function loadLoopTrace(target) {
   if (!el) return;
   el.innerHTML = '<div style="padding:10px;color:var(--fg2);border:1px solid var(--border);border-radius:6px">Loading loop trace…</div>';
   try {
-    const res = await fetch(`/api/loop-trace?${loopTraceQuery(target)}`);
+    const eventIdTarget = !(target && typeof target === 'object') && String(target || '').match(/^\d+$/);
+    const res = await fetch(eventIdTarget ? `/api/events/${encodeURIComponent(target)}/trace` : `/api/loop-trace?${loopTraceQuery(target)}`);
     const trace = await res.json();
     if (!res.ok) throw new Error(trace.error || 'failed');
     el.innerHTML = renderLoopTrace(trace);
@@ -125,7 +126,7 @@ function renderLoopTrace(trace) {
       html += `<div style="font-size:12px;color:var(--fg2);display:flex;gap:8px;align-items:center">`;
       let id = `<span style="color:var(--accent)">${esc(ex.id)}</span>`;
       if (ex.kind === 'session') {
-        id = `<a href="#/sessions/${esc(ex.id)}" style="color:var(--accent)">${esc(ex.id)}</a>`;
+        id = `<a href="/sessions/${esc(ex.id)}" style="color:var(--accent)">${esc(ex.id)}</a>`;
       } else if (ex.kind === 'workflow') {
         id = `<a href="#" style="color:var(--accent)" onclick='event.preventDefault();loadLoopTrace({workflowRunId:${jsStringAttr(ex.id)}})'>${esc(ex.id)}</a>`;
       }
@@ -139,7 +140,7 @@ function renderLoopTrace(trace) {
     html += `<div style="display:grid;gap:4px;margin-top:4px">`;
     for (const s of trace.sessions.slice(0, 8)) {
       html += `<div style="font-size:12px;color:var(--fg2);display:flex;gap:8px;align-items:center">`;
-      html += `<a href="#/sessions/${esc(s.sessionId)}" style="color:var(--accent)">${esc(s.sessionId)}</a>`;
+      html += `<a href="/sessions/${esc(s.sessionId)}" style="color:var(--accent)">${esc(s.sessionId)}</a>`;
       html += `<span>${esc(s.agent || '—')}</span><span>${esc(s.status || '—')}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.task || '').slice(0, 90))}</span>`;
       html += `</div>`;
     }

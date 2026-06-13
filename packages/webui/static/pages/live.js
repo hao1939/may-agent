@@ -169,7 +169,7 @@ async function loadLiveness() {
     let html = `<h2>
       <span>System liveness</span>
       <span class="subtle">${summary.heartbeatAgents4h || 0}/${summary.expectedHeartbeatAgents || summary.agentsConfigured || 0} scheduled agents heartbeated in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
-      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/system')" title="Click to open System tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
+      <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : 'healthy'}" onclick="routeTo('/events')" title="Click to open Events tab">${(summary.openAlerts || 0) > 0 ? '⚠ ' + summary.openAlerts + ' breach' + (summary.openAlerts === 1 ? '' : 'es') : '✓ healthy'}</span>
     </h2>`;
 
     if (vitals.length > 0) {
@@ -194,7 +194,7 @@ async function loadLiveness() {
     // muted but still clickable — you can wake them by sending a message.
     // Compact contact strip — the full Agents tab has the rich card grid.
     // Here we just expose names as quick chat entry points.
-    html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px;display:flex;align-items:center;gap:8px">Talk to an agent <a href="#/agents" style="color:var(--accent);text-decoration:none;font-size:10px">see all →</a></h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:4px">`;
+    html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px;display:flex;align-items:center;gap:8px">Talk to an agent <a href="/agents" style="color:var(--accent);text-decoration:none;font-size:10px">see all →</a></h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:4px">`;
     for (const agent of agents) {
       const ageMs = agent.lastHeartbeat ? (Date.now() - agent.lastHeartbeat) : null;
       const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
@@ -671,4 +671,3 @@ async function loadStats() {
     `;
   } catch(e) { console.error('Stats error:', e); }
 }
-
