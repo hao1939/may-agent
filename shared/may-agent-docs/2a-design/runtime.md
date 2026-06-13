@@ -112,7 +112,7 @@ facts, and most recent reasoning.
 | `memoryLimit` | Legacy limit for caller-managed memory injection |
 | `compaction` | Whether to enable context compaction |
 | `tools` | Which tools available (mapped to presets) |
-| `contextFiles` | Deprecated; volatile context should be session context, not system prompt |
+| `context_files` | Files resolved relative to agent dir, passed as `contextFiles` to `SubagentDefinition`; injected into fork/call task text, not the system prompt |
 
 ## Agent Discovery
 
@@ -125,16 +125,19 @@ Project-local agents are not a separate runtime mode. They are registered in the
 
 ## Implementation
 
-- **Binary entry:** `src/app/may.ts`
-- **Long-running runtime assembly:** `src/app/app-runtime.ts`
-- **Input routing:** `src/app/chat-session.ts`, `src/app/command-router.ts`
-- **Daemon modules:** `src/app/daemon.ts` re-exports lifecycle, event
+Source lives in `projects/platform/repos/may-agent/` (not bare `src/`).
+
+- **Binary entry:** `projects/platform/repos/may-agent/src/app/may.ts`
+- **Long-running runtime assembly:** `projects/platform/repos/may-agent/src/app/app-runtime.ts`
+- **Input routing:** `projects/platform/repos/may-agent/src/app/chat-session.ts`, `projects/platform/repos/may-agent/src/app/command-router.ts`
+- **Daemon modules:** `projects/platform/repos/may-agent/src/app/daemon.ts` re-exports lifecycle, event
   subscribers, agent startup, session startup, and loop modules
-- **Agent loading:** `src/app/agent-loader.ts`, `src/app/loader/*`
-- **Session management:** `src/lib/manager.ts`
-- **System prompt assembly:** `src/lib/manager.ts` → `resolveSystemPrompt()`
+- **Agent loading:** `projects/platform/repos/may-agent/src/app/agent-loader.ts`, `projects/platform/repos/may-agent/src/app/loader/*`
+- **Session management:** `projects/platform/repos/may-agent/src/lib/manager.ts`
+- **System prompt assembly:** `projects/platform/repos/may-agent/src/lib/manager.ts` → `resolveSystemPrompt()`
 - **Compaction:** pi-agent runtime `Agent` class + may-agent extensions
-- **Socket protocol/server/client:** `packages/control/src/*`
-- **Telegram adapter:** `src/app/transport/telegram.ts`,
-  `src/app/transport/telegram-client.ts`, `src/app/transport/telegram-reply-router.ts`,
-  `src/app/transport/telegram-outbound.ts`
+- **Socket protocol/server/client:** `projects/platform/repos/may-agent/packages/control/src/*`
+- **Telegram adapter:** `projects/platform/repos/may-agent/src/app/transport/telegram.ts`,
+  `projects/platform/repos/may-agent/src/app/transport/telegram-client.ts`,
+  `projects/platform/repos/may-agent/src/app/transport/telegram-reply-router.ts`,
+  `projects/platform/repos/may-agent/src/app/transport/telegram-outbound.ts`

@@ -172,28 +172,27 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-15 ~06:20Z** (24h window, ~3,058 total):
+**Latest snapshot 2026-06-13 ~08:30Z** (24h window, ~3,070 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,752 | 57.3% |
-| READ_DEDUP | 455 | 14.9% |
-| SESSION_BASH_CAT | 393 | 12.9% |
-| SESSION_READ | 256 | 8.4% |
-| read-before-edit | 65 | 2.1% |
-| PATH_HALLUCINATION | 41 | 1.3% |
-| SESSION_BASH_GREP | 40 | 1.3% |
-| hallucinated-path (workflow) | 7 | 0.2% |
+| commit-guard (combined) | 1,766 | 57.5% |
+| READ_DEDUP | 502 | 16.4% |
+| SESSION_BASH_CAT | 390 | 12.7% |
+| SESSION_READ | 254 | 8.3% |
+| read-before-edit | 70 | 2.3% |
+| PATH_HALLUCINATION | 46 | 1.5% |
+| SESSION_BASH_GREP | 36 | 1.2% |
+| hallucinated-path (workflow) | 6 | 0.2% |
 
-Total: ~3,058/day (threshold breach continues, **structural floor > threshold**).
+Total: ~3,070/day (threshold breach continues, **structural floor > threshold**).
 
 Notable changes vs prior snapshots:
-- **Guard count drifted upward** (~2,939 → ~3,058, +4%). Structural
-  breach persists across four consecutive snapshots now.
-- Composition remains stable: commit-guard ~57%, READ_DEDUP ~15%,
-  SESSION_BASH_CAT ~13%. No signal regime change.
-- Owner breakdown: evaluator 1,394 (46%), aks-explorer 1,262 (41%),
-  arc 178 (6%), scout 90 (3%), may 75 (2%), dev 51 (2%), tech-lead 5.
+- **Guard count stable** (~3,058 → ~3,070, flat). Structural
+  breach persists across five consecutive snapshots now.
+- Composition remains stable: commit-guard ~57%, READ_DEDUP ~16%,
+  SESSION_BASH_CAT ~13%. No signal regime change. READ_DEDUP
+  grew slightly (14.9% → 16.4%).
 - The breach remains structural. Recommendation unchanged: either raise
   threshold to ~3,500 or calibrate session-read/READ_DEDUP guards
   for high-volume legitimate patterns (evaluator session inspection,
