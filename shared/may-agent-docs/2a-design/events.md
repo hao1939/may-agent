@@ -87,7 +87,7 @@ CREATE TABLE events (
 
 ## Event Types
 
-This doc is the canonical event taxonomy. `src/app/event-bus.ts` should converge
+This doc is the canonical event taxonomy. `projects/platform/repos/may-agent/src/app/event-bus.ts` should converge
 on these core events, but the implementation can temporarily persist dynamic
 event names from adapters, workflows, and handlers. When the code and this doc
 differ, treat it as an implementation gap to resolve or a design issue to
@@ -574,10 +574,10 @@ path: validate at the edge, persist via the bus, and let subscribers react.
 
 ## Implementation
 
-- **Typed core events:** `src/app/event-bus.ts`
-- **Persistence:** `src/lib/db-writer.ts` subscribes to bus, writes all events
-- **Inbox query:** `src/lib/runtime-ctx.ts` -> `getInbox()`
-- **Heartbeat helper:** `packages/sdk/src/heartbeat-data.ts` -> `loadInbox()`
+- **Typed core events:** `projects/platform/repos/may-agent/src/app/event-bus.ts`
+- **Persistence:** `projects/platform/repos/may-agent/src/lib/db-writer.ts` subscribes to bus, writes all events
+- **Inbox query:** `projects/platform/repos/may-agent/src/lib/runtime-ctx.ts` -> `getInbox()`
+- **Heartbeat helper:** `projects/platform/repos/may-agent/packages/sdk/src/heartbeat-data.ts` -> `loadInbox()`
 
 ## Current Gaps To Close
 

@@ -71,7 +71,7 @@ from the consecutive count; this requires a `src/` change.
 
 ## What Gets Loaded
 
-The heartbeat workflow helper (`packages/sdk/src/heartbeat-data.ts`) loads:
+The heartbeat workflow helper (`projects/platform/repos/may-agent/packages/sdk/src/heartbeat-data.ts`) loads:
 
 1. **Metrics** — owned metrics with current values, breaches, trends
 2. **Projects** — active projects with status, milestones, last activity
@@ -140,7 +140,7 @@ Steering is *change what the agent sees when it next looks*, not "make the agent
 
 ## Implementation
 
-- **Heartbeat helper:** `@may-agent/sdk` → `genericHeartbeat()` (source: `packages/sdk/src/heartbeat-data.ts`, installed at `node_modules/@may-agent/sdk/src/heartbeat-data.ts`)
+- **Heartbeat helper:** `@may-agent/sdk` → `genericHeartbeat()` (source: `projects/platform/repos/may-agent/packages/sdk/src/heartbeat-data.ts`, installed at `node_modules/@may-agent/sdk/src/heartbeat-data.ts`)
 - **Auto-generation:** `projects/platform/repos/may-agent/src/app/loader/heartbeat-loader.ts` → `generateAutoHeartbeats()`
 - **Per-agent workflows:** `agents/<name>/workflows/<name>-heartbeat.ts`
 - **Decision event:** heartbeat workflow emits `agent.decision` partway through

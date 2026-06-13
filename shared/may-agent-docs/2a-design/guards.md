@@ -102,7 +102,7 @@ Active workflow guards (as of 2026-06-06):
 `no-secret-leak`, `rbe-primer`, `read-before-edit`, `vae-primer`.
 (`verify-after-write` is disabled.)
 
-### Tier 2: Tool-Level Guards (`src/lib/tools/*.ts`)
+### Tier 2: Tool-Level Guards (`projects/platform/repos/may-agent/src/lib/tools/*.ts`)
 
 Composed by `compose-guards.ts` and wired into the `beforeToolCall` hook
 in `manager.ts`. Fire on **every tool invocation**, not workflow

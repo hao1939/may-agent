@@ -348,6 +348,6 @@ A metric at target is a signal the bar is too low. Never coast.
 - **Source of truth**: `metrics` table in DB. This doc is design rationale.
 - **Snapshot handler:** `agents/may/handlers/metrics-snapshot.ts` — auto-registers, measures every 5min, emits `metric.breach` events when `breached && !openAlert`
 - **Alert reactor:** `agents/may/handlers/metric-alert-reactor.ts` — consumes `metric.breach` events. P0 forks the owner directly. P1+ remain visible for heartbeat/project/steward handling.
-- **DB schema:** `src/lib/db/schema.ts`
+- **DB schema:** `projects/platform/repos/may-agent/src/lib/db/schema.ts`
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others

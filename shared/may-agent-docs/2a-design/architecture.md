@@ -123,7 +123,7 @@ Design contract:
 - typed core events should converge with the event taxonomy in
   [events.md](events.md).
 
-Current implementation note: `src/app/event-bus.ts` types the most common core
+Current implementation note: `projects/platform/repos/may-agent/src/app/event-bus.ts` types the most common core
 events today, while the event table can still persist dynamic event names from
 adapters, workflows, and handlers. Treat untyped-but-documented event names as
 implementation gaps, not as permission to invent incompatible names.
@@ -339,7 +339,7 @@ The system prompt is deliberately small and stable. Metrics, projects, messages,
 and recent history are runtime/session context, not cached system prompt.
 
 This is the design shape. The current implementation is
-`src/lib/manager.ts -> resolveSystemPrompt()`.
+`projects/platform/repos/may-agent/src/lib/manager.ts -> resolveSystemPrompt()`.
 
 ```typescript
 function resolveSystemPrompt(config: AgentConfig): string {
@@ -530,7 +530,7 @@ CREATE TABLE events (...);            -- see events.md
 CREATE TABLE projects (...);          -- see projects.md
 ```
 
-Full schemas are in `src/lib/db/schema.ts`, with query helpers in `src/lib/query-service.ts`. The docs above show the effective columns agents care about.
+Full schemas are in `projects/platform/repos/may-agent/src/lib/db/schema.ts`, with query helpers in `projects/platform/repos/may-agent/src/lib/query-service.ts`. The docs above show the effective columns agents care about.
 
 ---
 
@@ -615,14 +615,14 @@ new judgment/action paths should follow the handler-to-workflow convention. See
 
 The shipped runtime mirrors that convergence:
 
-- `src/app/may.ts` is the thin binary entry: version/path setup, lightweight
+- `projects/platform/repos/may-agent/src/app/may.ts` is the thin binary entry: version/path setup, lightweight
   emit/web-only modes, model registry setup, then `runAppRuntime`.
-- `src/app/app-runtime.ts` is the long-running daemon assembly path.
-- `src/app/daemon.ts` is a stable barrel over focused daemon modules:
+- `projects/platform/repos/may-agent/src/app/app-runtime.ts` is the long-running daemon assembly path.
+- `projects/platform/repos/may-agent/src/app/daemon.ts` is a stable barrel over focused daemon modules:
   lifecycle, event subscribers, agent startup, requested session startup, and
   runtime loops.
-- `src/app/agent-loader.ts` is a compatibility surface over
-  `src/app/loader/*` modules for discovery, config validation, toolsets,
+- `projects/platform/repos/may-agent/src/app/agent-loader.ts` is a compatibility surface over
+  `projects/platform/repos/may-agent/src/app/loader/*` modules for discovery, config validation, toolsets,
   heartbeat entries, handler hot-reload, and registry orchestration.
 - Telegram remains in-process, split into transport, reply routing, outbound
   session-response policy, and the polling adapter.
