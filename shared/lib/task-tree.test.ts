@@ -248,15 +248,23 @@ describe("archive", () => {
     t = submit(t, "c1", "done", ["ev.json"]);
     t = accept(t, "c1", knowledge);
     t = accept(t, "parent", { summary: "Parent done", evidence: [] });
-    t = archive(t, "parent", "2 tasks, 1 evidence");
+    t = archive(t, "parent", "Parent branch completed: 2 tasks accepted with verified evidence from staging runs");
     expect(t.tasks["parent"].archived).toBe(true);
     expect(t.tasks["c1"]).toBeUndefined();
     expect(t.archive?.["c1"]).toBeDefined();
   });
 
+  test("rejects archiving without real summary", () => {
+    let t = create(emptyTree(), "root", { id: "task", goal: "Task" });
+    t = claim(t, "task");
+    t = submit(t, "task", "done", ["ev.json"]);
+    t = accept(t, "task", knowledge);
+    expect(() => archive(t, "task", "too short")).toThrow("too short");
+  });
+
   test("rejects archiving non-accepted", () => {
     const t = create(emptyTree(), "root", { id: "task", goal: "Task" });
-    expect(() => archive(t, "task", "summary")).toThrow("accepted");
+    expect(() => archive(t, "task", "A summary that is long enough to pass the minimum length check for archival")).toThrow("accepted");
   });
 });
 

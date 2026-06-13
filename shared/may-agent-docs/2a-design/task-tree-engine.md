@@ -492,13 +492,27 @@ express why:
 
 ### Archive accepted detail (planner-triggered)
 
+**Before archiving, the planner must roll up knowledge.** The parent node's
+`summary`, `evidence`, and `reusable_for` fields must capture what the subtree
+learned — not just "38 subtasks completed." If a human reads only the parent
+after archiving, they should understand:
+
+- What was learned or proved
+- Where the evidence is
+- What future work can reuse from this branch
+
+The tool should reject `tree.archive()` if the parent has no `summary` or if
+the summary is shorter than 50 characters (likely a placeholder).
+
 When the planner decides an accepted subtree is complete and the child detail
 is no longer useful as live project understanding:
 
 ```typescript
 tree.archive("managedsystem-pool", {
   summary:
-    "ManagedSystem pool REST lifecycle knowledge accepted; 9/9 paths pass, 8 evidence refs",
+    "ManagedSystem pool REST lifecycle verified on staging. 9/9 paths pass. " +
+    "Proven minimal add-existing payload: {properties:{mode:'ManagedSystem'}}. " +
+    "CLI has default-payload bug (known product gap).",
 });
 ```
 

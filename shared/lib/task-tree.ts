@@ -332,7 +332,11 @@ export function archive(tree: TaskTree, nodeId: string, summary: string): TaskTr
   const t = clone(tree);
   const node = getNode(t, nodeId);
   if (node.status !== "accepted") throw new Error(`Can only archive accepted nodes, got ${node.status}`);
-  if (!summary) throw new Error("Archive requires a summary");
+  if (!summary) throw new Error("Archive requires a knowledge summary");
+  if (summary.length < 50) throw new Error("Archive summary too short — must capture what was learned (min 50 chars)");
+  if (!node.summary && !node.evidence?.length) {
+    throw new Error("Cannot archive a node without summary or evidence — roll up knowledge first");
+  }
 
   if (!t.archive) t.archive = {};
 
