@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-13T08:31:39.347531+00:00",
+  "updated_at": "2026-06-13T08:39:40.677674+00:00",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "bootstrap-byo-acr-staging-execute-20260613",
@@ -46,7 +46,7 @@
         "Do not run cloud mutation unless a task has an explicit gate and that gate passes."
       ],
       "kind": "project",
-      "updated_at": "2026-06-13T08:30:39.007694+00:00",
+      "updated_at": "2026-06-13T08:39:40.677674+00:00",
       "strategy_context": "Human steering (2026-06-12): When live execution is slow/full, seed source/spec/replay backlog under go-e2ev3-source-discovery instead of waiting. Keep existing execution tasks running but do not launch more slow staging runs just to fill capacity. Near-term goal: build larger executable spec/replay frontier from source investigation, then verify selected high-value specs. Balance: live_execution=limited slow lane, source_exploration=preferred new work, model_feedback=continue after outputs land.",
       "progress": {
         "accepted": 4,
@@ -56,7 +56,8 @@
       "depends_on": [],
       "archive_summary": {
         "archivedLeaves": 5
-      }
+      },
+      "summary": "The task tree has two dimensions: (1) Process \u2014 how we work: source discovery \u2192 feature extraction \u2192 spec generation \u2192 replay implementation \u2192 execution \u2192 model feedback. Each process step carries knowledge about the methodology. (2) Domain \u2014 what we know: per-feature understanding of AKS behavior, organized by feature family. Domain knowledge currently lives in model/knowledge-map/model.json and features/*.yaml. Future: domain branches in the tree for deeper per-feature exploration. When a task is accepted, it gains knowledge. When archived, execution detail is lost but knowledge rolls up to the parent. Any branch can be reopened for deeper exploration."
     },
     "spec-runner-and-replays": {
       "id": "spec-runner-and-replays",
@@ -303,7 +304,7 @@
     "kms-v2plus-cmk-pub-firewall-staging-20260613": {
       "id": "kms-v2plus-cmk-pub-firewall-staging-20260613",
       "parent_id": "execution-and-verification",
-      "status": "active",
+      "status": "accepted",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -332,7 +333,15 @@
         "assigned_at": "2026-06-13T07:51:10.911Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_kms-v2plus-cmk-pub-firewall-staging-20260613"
+        "last_session": "s_task_kms-v2plus-cmk-pub-firewall-staging-20260613",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Executed live staging REST replay for kms-v2plus-enable-cmk-from-v2-public-firewall (run_cmk_fw_20260613g). The v2\u2192v2+ CMK migration fails at op.05 with AzureKeyVaultKmsKeyVaultConnectionForbidden \u2014 KV firewall (default-action=Deny, bypass=AzureServices) blocks the AKS RP during v2+ migration. Classified as **product** gap. All 12 setup/pre-migration phases pass; only the migration LRO fails. Run artifacts recorded under runs/executions/run_cmk_fw_20260613g/, evidence archived, and knowledge model updated (feature status: unset \u2192 product-gap, path lastRunId updated, goldenPathChain cloud-replay=true, cleanup=true).",
+        "last_worker_completed_at": "2026-06-13T08:34:48.528Z",
+        "last_worker_evidence": [],
+        "accepted_at": "2026-06-13T08:50:00.000Z",
+        "accepted_by": "planner",
+        "acceptance_notes": "Live staging run run_cmk_fw_20260613g recorded under runs/executions/. Product gap classified: AzureKeyVaultKmsKeyVaultConnectionForbidden. Model updated to product-gap. Evidence archived. All 3 acceptance criteria met."
       },
       "session_id": "s_task_kms-v2plus-cmk-pub-firewall-staging-20260613",
       "session_history": [
@@ -576,7 +585,7 @@
     "fix-cmk-privkv-nonkms-assertion-20260613": {
       "id": "fix-cmk-privkv-nonkms-assertion-20260613",
       "parent_id": "execution-and-verification",
-      "status": "backlog",
+      "status": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -596,8 +605,17 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-13T08:29:28.245Z",
-        "created_by": "task-tree-tool"
-      }
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_fix-cmk-privkv-nonkms-assertion-20260613_20260613083908",
+        "assigned_at": "2026-06-13T08:39:08.831Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_fix-cmk-privkv-nonkms-assertion-20260613"
+      },
+      "session_id": "s_task_fix-cmk-privkv-nonkms-assertion-20260613",
+      "session_history": [
+        "s_task_fix-cmk-privkv-nonkms-assertion-20260613"
+      ]
     },
     "source-discovery": {
       "id": "source-discovery",
@@ -745,7 +763,7 @@
   },
   "active_task_ids": [
     "bootstrap-byo-acr-staging-execute-20260613",
-    "kms-v2plus-cmk-pub-firewall-staging-20260613",
+    "fix-cmk-privkv-nonkms-assertion-20260613",
     "kms-v2plus-pmk-priv-disable-key-staging-20260613",
     "kms-v2plus-pmk-priv-staging-20260613",
     "kms-v2plus-pmk-privvnet-staging-20260613"
