@@ -818,26 +818,23 @@ enforces these windows:
 |---|---|---|
 | `events` | 7 days | `timestamp < now - 7d` |
 | `sessions` | 14 days | `startedAt < now - 14d` |
+| `session_digests` | 14 days | `created_at < now - 14d` |
+| `workflow_runs` | 14 days | `startedAt < now - 14d` |
 | `metric_snapshots` | 30 days | `measured_at < now - 30d` |
+| `evaluations` | 30 days | `createdAt < now - 30d` |
 
 After deletions exceed 1,000 rows, a `VACUUM` reclaims disk space.
 
-**Tables with no retention policy (gap — 2026-06-15):**
+**Tables with no retention policy (low-priority — small row counts):**
 
-| Table | Rows | Oldest data | Growth rate | Timestamp column |
-|---|---|---|---|---|
-| `session_digests` | ~51k | ~30 days | ~1,700/day | `created_at` |
-| `workflow_runs` | ~48k | ~37 days | ~1,300/day | `startedAt` |
-| `evaluations` | ~19k | ~51 days | ~380/day | `createdAt` |
-| `file_reads` | ~6k | — | — | — |
-| `notification_messages` | ~3k | — | — | — |
-| `metric_alerts` | ~2k | — | — | — |
+| Table | Rows | Notes |
+|---|---|---|
+| `file_reads` | ~6k | Low growth rate |
+| `notification_messages` | ~3k | Low growth rate |
+| `metric_alerts` | ~2k | Low growth rate |
 
-These tables accumulate unboundedly. With the DB at 1.2GB (57% of the 2GB
-`infra.persist.db-size-mb` threshold), adding retention for `session_digests`
-(14d, matching sessions), `workflow_runs` (14d), and `evaluations` (30d) to
-`db-retention.ts` would cap growth. Requires a `src/`-adjacent change
-(`agents/may/handlers/db-retention.ts`) — proposal needed.
+These tables total ~11k rows and are not high-growth. They can be addressed
+later if they become significant.
 
 **Implication for agents:** Any query window exceeding the retention limit returns
 incomplete data. `COUNT(*)` over `events` reflects only the surviving window, not

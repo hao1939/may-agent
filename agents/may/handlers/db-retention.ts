@@ -4,13 +4,18 @@
  * Retention windows:
  *   - events: 7 days
  *   - sessions: 14 days
+ *   - session_digests: 14 days (session-linked)
+ *   - workflow_runs: 14 days (session-linked)
  *   - metric_snapshots: 30 days (already handled by metrics-snapshot, but
  *     included here as a safety net)
+ *   - evaluations: 30 days (analytical value)
  *
  * Runs daily. After deletions exceed a threshold, runs VACUUM to reclaim space.
  *
  * Approved via work-queue.md (2026-06-04):
  *   agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md
+ * Extended via work-queue.md (2026-06-15):
+ *   agents/arc/workspace/proposals/2026-06-15-extend-db-retention-to-uncapped-tables.md
  */
 
 import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
@@ -18,7 +23,10 @@ import type { CronEntry } from "@may-agent/sdk";
 
 const EVENT_RETENTION_DAYS = 7;
 const SESSION_RETENTION_DAYS = 14;
+const DIGEST_RETENTION_DAYS = 14;       // session_digests: matches session retention
+const WORKFLOW_RETENTION_DAYS = 14;     // workflow_runs: matches session retention
 const SNAPSHOT_RETENTION_DAYS = 30;
+const EVALUATION_RETENTION_DAYS = 30;   // evaluations: analytical value, retain longer
 const VACUUM_THRESHOLD = 1000; // Run VACUUM if total deletions exceed this
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
@@ -70,6 +78,48 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       }
     } catch (e) {
       ctx.sdk.log("info", `[db-retention] Error deleting old snapshots: ${e}`);
+    }
+
+    // ── Tier 2: Delete old session_digests (>14 days) ────────────────────
+    const digestCutoff = now - DIGEST_RETENTION_DAYS * 86_400_000;
+    try {
+      const result = db.run(
+        "DELETE FROM session_digests WHERE created_at < ?",
+        [digestCutoff]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      totalDeleted += deleted;
+      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} session_digests older than ${DIGEST_RETENTION_DAYS}d`);
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting old session_digests: ${e}`);
+    }
+
+    // ── Tier 2: Delete old workflow_runs (>14 days) ──────────────────────
+    const workflowCutoff = now - WORKFLOW_RETENTION_DAYS * 86_400_000;
+    try {
+      const result = db.run(
+        "DELETE FROM workflow_runs WHERE startedAt < ?",
+        [workflowCutoff]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      totalDeleted += deleted;
+      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} workflow_runs older than ${WORKFLOW_RETENTION_DAYS}d`);
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting old workflow_runs: ${e}`);
+    }
+
+    // ── Tier 2: Delete old evaluations (>30 days) ────────────────────────
+    const evalCutoff = now - EVALUATION_RETENTION_DAYS * 86_400_000;
+    try {
+      const result = db.run(
+        "DELETE FROM evaluations WHERE createdAt < ?",
+        [evalCutoff]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      totalDeleted += deleted;
+      ctx.sdk.log("info", `[db-retention] Deleted ${deleted} evaluations older than ${EVALUATION_RETENTION_DAYS}d`);
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting old evaluations: ${e}`);
     }
 
     // ── VACUUM if significant deletions occurred ─────────────────────────
