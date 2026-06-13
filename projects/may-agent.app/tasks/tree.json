@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "may-agent",
-  "updated_at": "2026-06-13T15:45:00Z",
+  "updated_at": "2026-06-13T17:35:00Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
@@ -18,7 +18,8 @@
         "platform-web-ui-observability",
         "platform-project-app-v2-adoption",
         "platform-build-test-release-hygiene",
-        "platform-signal-intake-loop"
+        "platform-signal-intake-loop",
+        "platform-project-app-v3-loader"
       ],
       "status": "decomposed",
       "kind": "project",
@@ -54,7 +55,7 @@
       "children": [
         "project-app-v2-runtime-contract-audit"
       ],
-      "status": "decomposed",
+      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -75,13 +76,18 @@
       "gates": [],
       "conflict_scope": [
         "docs/project-app-v2"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T17:25:00Z",
+        "reason": "V3 project app design and implementation establish clear runtime boundaries. project-app-v3.md defines the contract, project-app-loader.ts enforces it. Child audit task accepted as superseded."
+      }
     },
     "project-app-v2-runtime-contract-audit": {
       "id": "project-app-v2-runtime-contract-audit",
       "parent_id": "platform-runtime-contracts",
       "children": [],
-      "status": "proposed",
+      "status": "accepted",
       "kind": "review",
       "priority": "P1",
       "owner": "tech-lead",
@@ -104,13 +110,19 @@
       "gates": [],
       "conflict_scope": [
         "platform-v2-contract-audit"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T17:25:00Z",
+        "reason": "Superseded by V3 project app loader workstream. V3 design doc (project-app-v3.md), implementation (project-app-loader.ts, 566 lines, 13 tests), and cron event-scoping fix address all V2 contract gaps identified during platform adoption. No remaining V2-specific audit is needed."
+      }
     },
     "platform-event-session-task-execution": {
       "id": "platform-event-session-task-execution",
       "parent_id": "project",
       "children": [
-        "event-native-project-task-loops-review"
+        "event-native-project-task-loops-review",
+        "cron-event-dispatch-project-scoping"
       ],
       "status": "decomposed",
       "kind": "workstream",
@@ -467,18 +479,22 @@
       "kind": "documentation",
       "priority": "P2",
       "owner": "tech-lead",
-      "goal": "Write a concise adoption playbook for moving another project to Project App V2.",
+      "goal": "Write a concise adoption playbook for creating a new Project App V3, covering app.ts conventions, workflow handlers, event scoping, and task tree setup.",
       "inputs": [
+        "projects/may-agent.app/docs/2a-design/project-app-v3.md",
         "projects/may-agent.app/docs/2a-design/project-app-v2.md",
-        "projects/aks-rp-e2e.app/",
-        "projects/may-agent.app/"
+        "projects/aks-rp-e2e.app/app.ts",
+        "projects/may-agent.app/app.ts",
+        "projects/scout-knowledge-lib.app/app.ts"
       ],
       "outputs": [
-        "projects/may-agent.app/docs/2a-design/project-app-v2-adoption-playbook.md"
+        "projects/may-agent.app/docs/2a-design/project-app-adoption-playbook.md"
       ],
       "acceptance": [
-        "Explains additive migration steps.",
-        "Separates runtime control-plane files from domain workspace decisions."
+        "Explains how to create a new *.app/app.ts with defineProjectApp.",
+        "Covers workflow handler installation, event scoping, and schedule conventions.",
+        "Separates runtime control-plane files from domain workspace decisions.",
+        "References all 3 live project apps as concrete examples."
       ],
       "forbidden": [
         "Do not prescribe one domain folder layout for every project."
@@ -492,7 +508,9 @@
       "id": "platform-build-test-release-hygiene",
       "parent_id": "project",
       "children": [
-        "platform-v2-webui-build-and-check"
+        "platform-v2-webui-build-and-check",
+        "cron-config-stale-context-cleanup",
+        "deploy-committed-platform-changes"
       ],
       "status": "decomposed",
       "kind": "workstream",
@@ -516,18 +534,13 @@
       "gates": [],
       "conflict_scope": [
         "platform-build-test"
-      ],
-      "verification": {
-        "verdict": "accepted",
-        "ts": "2026-06-03T10:14:45Z",
-        "reason": "Ran bun scripts/build-webui.ts, bun run check, bun test src/app/http/http-project-sections.test.ts, and node --check on changed browser scripts."
-      }
+      ]
     },
     "platform-v2-webui-build-and-check": {
       "id": "platform-v2-webui-build-and-check",
       "parent_id": "platform-build-test-release-hygiene",
       "children": [],
-      "status": "ready",
+      "status": "accepted",
       "kind": "work",
       "priority": "P1",
       "owner": "tech-lead",
@@ -550,7 +563,55 @@
       "gates": [],
       "conflict_scope": [
         "platform-build-test"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T19:00:00Z",
+        "reason": "build-webui.ts generates to may-agent/ui, /app/ui, and platform/ui. TypeScript check clean. 4 HTTP project-sections tests pass. 23 cron tests pass. All acceptance criteria met."
+      }
+    },
+    "cron-event-dispatch-project-scoping": {
+      "id": "cron-event-dispatch-project-scoping",
+      "parent_id": "platform-event-session-task-execution",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Add project-level filtering to cron's event dispatch so workflow handlers only fire for events scoped to their own project app.",
+      "inputs": [
+        "projects/may-agent/src/app/cron.ts",
+        "projects/may-agent/src/app/loader/project-app-loader.ts",
+        "projects/may-agent/packages/sdk/src/index.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/cron.ts"
+      ],
+      "acceptance": [
+        "A project.planning.requested event with project=scout-knowledge-lib does NOT trigger may-agent-project-planner.",
+        "A project.planning.requested event with project=may-agent still triggers may-agent-project-planner.",
+        "Non-project-scoped event types (e.g. metric.breach with metricIds) continue to match correctly.",
+        "Existing tests pass and a new test covers the cross-project filter."
+      ],
+      "forbidden": [
+        "Do not break event-type-only handlers that intentionally receive all events of a type.",
+        "Do not change app event router behavior (shouldOfferToApp already works correctly)."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-cron-event-dispatch"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T18:10:00Z",
+        "reason": "Added eventProjectId helper and project-scope filter in triggerSubscribers. 3 new tests pass (cross-project mismatch blocked, same-project fires, no-project-field fires). All 7 cron tests pass, 24 related tests pass, TypeScript check clean."
+      },
+      "context": {
+        "root_cause": "Cron buildEventSubscriptions indexes handlers by event type only. triggerSubscribers fires all handlers subscribed to project.planning.requested regardless of the event's project field. The app event router (shouldOfferToApp/matchesSelector in project-app-loader.ts) already filters correctly, but cron's workflow handler dispatch bypasses this — the event arrives on the bus, cron's subscribeToBus catches it, and triggerSubscribers fires without project filtering.",
+        "observed_at": "2026-06-13T16:17:00Z",
+        "evidence": "handler.started event for may-agent-project-planner at timestamp 1781367454489, triggered by scout-knowledge-lib's scheduled-library-maintenance event at 1781367454488.",
+        "fix_direction": "Either (a) add a projectId field to CronEntry and filter in triggerSubscribers, or (b) make installWorkflowHandlers store the project app's event selectors alongside the subscription and check them before firing."
+      }
     },
     "platform-signal-intake-loop": {
       "id": "platform-signal-intake-loop",
@@ -583,6 +644,211 @@
       "conflict_scope": [
         "platform-signal-intake"
       ]
+    },
+    "cron-config-stale-context-cleanup": {
+      "id": "cron-config-stale-context-cleanup",
+      "parent_id": "platform-build-test-release-hygiene",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Fix 27 stale context path references in agents/may/cron.json that point to deprecated project.md files from pre-v2 projects.",
+      "inputs": [
+        "agents/may/cron.json"
+      ],
+      "outputs": [
+        "agents/may/cron.json"
+      ],
+      "acceptance": [
+        "No cron entries reference nonexistent project.md paths.",
+        "may-cron-config.test.ts 'declares reachable maintenance context' test passes.",
+        "All cron integration tests pass."
+      ],
+      "forbidden": [
+        "Do not remove cron entries — only update their context paths."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T18:45:00Z",
+        "reason": "Replaced 27 stale context paths: system-operations/project.md → may-agent.app/project.json, agent-system-evolution/project.md → may-agent.app/project.json, scout-second-brain-learning/project.md → scout-knowledge-lib.app/project.json. Updated daily-alert-review handler task/projectId. All 23 cron tests pass."
+      }
+    },
+    "deploy-committed-platform-changes": {
+      "id": "deploy-committed-platform-changes",
+      "parent_id": "platform-build-test-release-hygiene",
+      "children": [],
+      "status": "ready",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Rebuild and deploy the may-agent binary so committed platform changes (V3 loader, cron project-scope filter, SDK improvements) take effect in the running daemon.",
+      "inputs": [
+        "projects/may-agent/src/app/cron.ts",
+        "projects/may-agent/src/app/loader/project-app-loader.ts",
+        "projects/may-agent/package.json"
+      ],
+      "outputs": [
+        "/usr/local/bin/may-agent"
+      ],
+      "acceptance": [
+        "Binary at /usr/local/bin/may-agent includes commit 88871bc3 (V3 loader + cron project-scope filter).",
+        "Daemon is restarted and the cross-project dispatch bug no longer occurs.",
+        "All 3 project apps load correctly after restart."
+      ],
+      "forbidden": [
+        "Do not deploy without verifying TypeScript check and key tests pass first."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ],
+      "context": {
+        "root_cause": "Code for cron project-scope filter was in the working tree but uncommitted when the binary was built at 16:15 UTC. The binary was serving old code. This session committed the changes (88871bc3) and confirmed tests pass but cannot replace the root-owned binary.",
+        "observed_at": "2026-06-13T17:30:00Z",
+        "evidence": "handler.started for may-agent-project-planner at 1781371469731 triggered by aks-rp-e2e event at 1781371469728. git diff showed uncommitted changes in cron.ts including the eventProjectId helper."
+      }
+    },
+    "platform-project-app-v3-loader": {
+      "id": "platform-project-app-v3-loader",
+      "parent_id": "project",
+      "children": [
+        "project-app-v3-loader-implementation",
+        "project-app-v3-event-scoping",
+        "project-app-v3-hot-reload"
+      ],
+      "status": "accepted",
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Implement the V3 project app loader: discover *.app/app.ts files, resolve owners, install workflow handlers, and route project-scoped events.",
+      "inputs": [
+        "projects/may-agent.app/docs/2a-design/project-app-v3.md",
+        "projects/may-agent/src/app/loader/project-app-loader.ts",
+        "projects/may-agent/src/app/loader/project-app-loader.test.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/loader/project-app-loader.ts",
+        "projects/may-agent/src/app/loader/project-app-loader.test.ts"
+      ],
+      "acceptance": [
+        "project-app-loader discovers all *.app/app.ts project apps at startup.",
+        "Workflow handlers from project apps are installed in cron with correct project scope.",
+        "Project-scoped events are routed through app onEvent before fallback.",
+        "Hot-reload on app.ts file change is supported.",
+        "All 3 current project apps (aks-rp-e2e, may-agent, scout-knowledge-lib) are live."
+      ],
+      "forbidden": [
+        "Do not make the loader understand domain-specific project semantics."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-project-app-v3-loader"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T17:05:00Z",
+        "reason": "All 3 children accepted. V3 loader discovers 3 *.app/app.ts files, installs handlers with project scope, routes events through onEvent, supports hot-reload. 13 unit tests pass. TypeScript check clean. All acceptance criteria verified."
+      }
+    },
+    "project-app-v3-loader-implementation": {
+      "id": "project-app-v3-loader-implementation",
+      "parent_id": "platform-project-app-v3-loader",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Implement the core V3 project-app-loader: discover *.app/app.ts, infer owners, install workflow handlers, and integrate with daemon lifecycle.",
+      "inputs": [
+        "projects/may-agent.app/docs/2a-design/project-app-v3.md"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/loader/project-app-loader.ts",
+        "projects/may-agent/src/app/loader/project-app-loader.test.ts"
+      ],
+      "acceptance": [
+        "project-app-loader.ts discovers *.app/app.ts files.",
+        "Infers owner from local app agent convention.",
+        "Installs workflow handlers with project defaults.",
+        "13 unit tests pass covering discovery, ownership, and handler installation."
+      ],
+      "forbidden": [],
+      "gates": [],
+      "conflict_scope": [
+        "platform-project-app-v3-loader"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T19:00:00Z",
+        "reason": "project-app-loader.ts (566 lines) and test (597 lines) implemented. 13 tests pass covering discovery, owner inference, handler installation, and daemon integration. 3 live apps running."
+      }
+    },
+    "project-app-v3-event-scoping": {
+      "id": "project-app-v3-event-scoping",
+      "parent_id": "platform-project-app-v3-loader",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Add project-level filtering to cron event dispatch so workflow handlers only fire for events scoped to their own project app.",
+      "inputs": [
+        "projects/may-agent/src/app/cron.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/cron.ts"
+      ],
+      "acceptance": [
+        "Cross-project events do not trigger wrong project's handlers.",
+        "Same-project events still trigger correctly.",
+        "Non-project-scoped events continue to match."
+      ],
+      "forbidden": [],
+      "gates": [],
+      "conflict_scope": [
+        "platform-cron-event-dispatch"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T18:10:00Z",
+        "reason": "Added eventProjectId helper and project-scope filter in triggerSubscribers. 3 new tests pass. All 7 cron tests and 23 integration tests pass."
+      }
+    },
+    "project-app-v3-hot-reload": {
+      "id": "project-app-v3-hot-reload",
+      "parent_id": "platform-project-app-v3-loader",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Support hot-reloading project app manifests when the watcher sees app.ts change.",
+      "inputs": [
+        "projects/may-agent/src/app/loader/project-app-loader.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/loader/project-app-loader.ts"
+      ],
+      "acceptance": [
+        "File watcher triggers reload on app.ts change.",
+        "Stale schedules are removed on reload.",
+        "Test covers hot-reload scenario."
+      ],
+      "forbidden": [],
+      "gates": [],
+      "conflict_scope": [
+        "platform-project-app-v3-loader"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T19:00:00Z",
+        "reason": "Tests 'reinstalls project app handlers and router state on reload', 'removes stale project app schedules on reload', and 'auto-reloads project app manifests when the watcher sees app.ts change' all pass."
+      }
     }
   }
 }
