@@ -172,27 +172,33 @@ Key structural observations from the full snapshot history:
 - Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
   last <16h before reverting to diverse baseline.
 
-**Latest snapshot 2026-06-13 ~08:30Z** (24h window, ~3,070 total):
+**Latest snapshot 2026-06-13 ~13:30Z** (24h window, ~3,300 total):
 
 | Signal | Count | Share |
 |--------|------:|------:|
-| commit-guard (combined) | 1,766 | 57.5% |
-| READ_DEDUP | 502 | 16.4% |
-| SESSION_BASH_CAT | 390 | 12.7% |
-| SESSION_READ | 254 | 8.3% |
-| read-before-edit | 70 | 2.3% |
-| PATH_HALLUCINATION | 46 | 1.5% |
-| SESSION_BASH_GREP | 36 | 1.2% |
+| commit-ambient (uncommitted files) | 1,014 | 30.7% |
+| commit-finish (finish() uncommitted) | 826 | 25.0% |
+| READ_DEDUP | 596 | 18.1% |
+| SESSION_BASH_CAT | 395 | 12.0% |
+| SESSION_READ | 289 | 8.8% |
+| PATH_HALLUCINATION | 43 | 1.3% |
+| SESSION_BASH_GREP | 40 | 1.2% |
+| Edit-Without-Read (C1.1) | 21 | 0.6% |
+| read-before-edit (workflow) | 92 | 2.8% |
 | hallucinated-path (workflow) | 6 | 0.2% |
 
-Total: ~3,070/day (threshold breach continues, **structural floor > threshold**).
+Total: ~3,300/day (threshold breach continues, **structural floor > threshold**).
 
-Notable changes vs prior snapshots:
-- **Guard count stable** (~3,058 → ~3,070, flat). Structural
-  breach persists across five consecutive snapshots now.
-- Composition remains stable: commit-guard ~57%, READ_DEDUP ~16%,
-  SESSION_BASH_CAT ~13%. No signal regime change. READ_DEDUP
-  grew slightly (14.9% → 16.4%).
+Notable changes vs 2026-06-13 ~08:30Z snapshot:
+- **Guard count grew ~7.5%** (3,070 → 3,300). Structural breach
+  persists across six consecutive snapshots.
+- **Commit-guard split visible**: ambient warnings (30.7%) and
+  finish-time warnings (25.0%) are now tracked separately. Combined
+  commit-guard is ~55.7%, consistent with prior snapshots.
+- **READ_DEDUP grew** (16.4% → 18.1%), primarily aks-explorer
+  re-reading replay files and model.json.
+- **Monoculture regime absent** — guard composition remains diverse,
+  no single signal >31%.
 - The breach remains structural. Recommendation unchanged: either raise
   threshold to ~3,500 or calibrate session-read/READ_DEDUP guards
   for high-volume legitimate patterns (evaluator session inspection,
