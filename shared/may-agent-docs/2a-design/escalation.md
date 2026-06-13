@@ -121,7 +121,7 @@ The owner emits `escalation.resolved` when it has a disposition.
     "summary": "The session.completed emitter now includes sessionId in event data and the subscribed handler reads it from event.data.",
     "evidence": {
       "commits": ["abc1234"],
-      "files": ["src/app/daemon-events.ts", "agents/evaluator/handlers/evaluator-aftermath.ts"],
+      "files": ["projects/platform/repos/may-agent/src/app/daemon-events.ts", "agents/evaluator/handlers/evaluator-aftermath.ts"],
       "events": ["handler.workflow_dispatched status=done"]
     },
     "resumeInstruction": "Retry the blocked aftermath review for the original session."
@@ -276,7 +276,7 @@ Metrics should measure lifecycle health, not replace judgment:
 | Session boundary promotion | 100% of real `escalation.created` events come from `runtime:session-finish` — agents use `finish({ blockers })` which promotes to escalation, not `sdk.escalate()` in-session. | In-session `sdk.escalate()` is available but unused. All 35 escalations originate from session-finish boundary code, not proactive mid-session calls. |
 | Routing handler | `agents/may/handlers/escalation.ts` subscribes to `escalation.created`, emits `escalation.routed`, and sends a message to the owner. | Implemented (Slice 2). All 35 created → all 35 routed. |
 | Resolution | **Not implemented.** No agent emits `escalation.resolved` or `escalation.dismissed`. Zero events in DB. | Slice 3 is unbuilt. Escalations are fire-and-forget: created, routed, then the lifecycle ends. No owner closes the loop. |
-| Resume lifecycle | `src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Code is wired but **never triggered** — zero `escalation.resolved` events means resume code is dead. Slice 4 infra exists but has no inputs. |
+| Resume lifecycle | `projects/platform/repos/may-agent/src/lib/escalation-lifecycle.ts` subscribes to `escalation.resolved` to drive session resume. Event types are defined in `event-bus.ts`. | Code is wired but **never triggered** — zero `escalation.resolved` events means resume code is dead. Slice 4 infra exists but has no inputs. |
 | `dedupKey` | Design doc specifies `dedupKey` for duplicate suppression. | **All 35 escalations have `dedupKey: null`.** Session-finish boundary does not populate it. Dedup metric (`escalation.noisy-dedup-count`) has no signal. |
 | Escalation metrics | Doc specifies 5 lifecycle metrics (open-count, resolve-time, resume-success, dedup-count, unowned-count). | **None exist** in the active metrics table. No escalation health observability. |
 | Workflow escalation | Workflow `ctx.escalate(reason, context)` returns an escalated workflow result and stops the synchronous workflow. | Good target shape. It should not automatically publish `escalation.created`; boundary code decides whether the local workflow escalation needs owner routing. |

@@ -664,8 +664,8 @@ CREATE TABLE projects (
   proposal comment to `discussion.md` and emits `project.nudge`; the normal
   project owner loop reviews any suggested change before applying it.
 - **Health lib:** `shared/lib/project-health.ts`
-- **DB schema:** `src/lib/db/schema.ts` (projects table)
-- **Project query/projection helpers:** `src/lib/query-service.ts` and project handler cache sync
+- **DB schema:** `projects/platform/repos/may-agent/src/lib/db/schema.ts` (projects table)
+- **Project query/projection helpers:** `projects/platform/repos/may-agent/src/lib/query-service.ts` and project handler cache sync
 
 ## Current Gaps To Close
 

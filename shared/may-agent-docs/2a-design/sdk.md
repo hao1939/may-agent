@@ -222,10 +222,10 @@ The SDK and agent tools are two sides of the same coin:
 
 ## Implementation
 
-- **Types:** `src/lib/sdk.ts`
-- **Package facade:** `packages/sdk/src/index.ts`
-- **Wrapper:** `src/lib/sdk-impl.ts` (delegates to manager, bus, DB)
-- **Wiring:** `src/app/agent-loader.ts` remains the compatibility surface over `src/app/loader/*`; handler/workflow contexts build `ctx.sdk` via `buildAgentSDK()`
+- **Types:** `projects/platform/repos/may-agent/src/lib/sdk.ts`
+- **Package facade:** `projects/platform/repos/may-agent/packages/sdk/src/index.ts`
+- **Wrapper:** `projects/platform/repos/may-agent/src/lib/sdk-impl.ts` (delegates to manager, bus, DB)
+- **Wiring:** `projects/platform/repos/may-agent/src/app/agent-loader.ts` remains the compatibility surface over `projects/platform/repos/may-agent/src/app/loader/*`; handler/workflow contexts build `ctx.sdk` via `buildAgentSDK()`
 
 ## Current Gaps To Close
 

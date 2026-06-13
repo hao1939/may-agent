@@ -20,7 +20,7 @@ Those are infra adapter responsibilities. Project UIs should remain first-class 
 
 ## Decision
 
-Move the HTTP adapter into the May Agent root application under `src/app/http`. Keep browser UI source in the private `@may-agent/webui` package, then generate/sync project-owned static `ui/` directories under `PROJECTS_ROOT`.
+Move the HTTP adapter into the May Agent root application under `projects/platform/repos/may-agent/src/app/http`. Keep browser UI source in the private `@may-agent/webui` package, then generate/sync project-owned static `ui/` directories under `PROJECTS_ROOT`.
 
 The HTTP adapter is the Web-facing control/read interface for May Agent. It should align with the infra SDK and control-plane vocabulary, with extra read-model endpoints that make the WebUI efficient and understandable.
 
@@ -32,10 +32,10 @@ Static project resources are visible under `/projects/*`, backed directly by `PR
 
 | Area | Owner | Notes |
 | --- | --- | --- |
-| HTTP route dispatch | `src/app/http` | Bun server, route table, request/response shape |
-| Static file serving | `src/app/http` | Serves files from `PROJECTS_ROOT`; `/api/*` and `/ws` stay reserved |
-| Daemon socket bridge | `src/app/http` + `packages/control` | HTTP adapter sends events through control package |
-| DB/file read models | `src/app/http/read-model` | Projections for UI and diagnostics |
+| HTTP route dispatch | `projects/platform/repos/may-agent/src/app/http` | Bun server, route table, request/response shape |
+| Static file serving | `projects/platform/repos/may-agent/src/app/http` | Serves files from `PROJECTS_ROOT`; `/api/*` and `/ws` stay reserved |
+| Daemon socket bridge | `projects/platform/repos/may-agent/src/app/http` + `projects/platform/repos/may-agent/packages/control` | HTTP adapter sends events through control package |
+| DB/file read models | `projects/platform/repos/may-agent/src/app/http/read-model` | Projections for UI and diagnostics |
 | WebUI source package | `packages/webui/static` | Source of truth for the default May Agent browser UI; no HTTP adapter code |
 | Generated project UI assets | `PROJECTS_ROOT/<project>/ui` | Static HTML/CSS/JS generated or synced from the owning project/package |
 | Agent/workflow SDK | `packages/sdk` | In-process capability surface for agents/workflows |
@@ -80,7 +80,7 @@ Read-model rule: view endpoints may read the DB and project files directly, but 
 
 ## Current API Inventory
 
-This inventory reflects the route table in `src/app/http/server.ts` as of
+This inventory reflects the route table in `projects/platform/repos/may-agent/src/app/http/server.ts` as of
 2026-06-08. It is intentionally grouped by role instead of by implementation
 order.
 
@@ -214,7 +214,7 @@ Avoid adding new route families until they answer one of two questions:
 Target layout:
 
 ```text
-src/app/http/
+projects/platform/repos/may-agent/src/app/http/
   server.ts
   static.ts
   api/
@@ -259,8 +259,8 @@ Boundary rule: browser UI source is edited in its owning package/project, then c
 
 ## Migration Plan
 
-1. Move `packages/webui/src/server.ts` to `src/app/http/server.ts`.
-2. Move DB/read-model helpers to `src/app/http/read-model`.
+1. Move `packages/webui/src/server.ts` to `projects/platform/repos/may-agent/src/app/http/server.ts`.
+2. Move DB/read-model helpers to `projects/platform/repos/may-agent/src/app/http/read-model`.
 3. Remove compatibility wrappers from `packages/webui/src`; the private WebUI package should not export the HTTP adapter.
 4. Update runtime imports, bundle scripts, and Docker build so WebUI runs through `may-agent --web` from the single compiled `may-agent` binary.
 5. Keep the default UI source in `packages/webui/static` and sync it to `projects/platform/ui` for serving.

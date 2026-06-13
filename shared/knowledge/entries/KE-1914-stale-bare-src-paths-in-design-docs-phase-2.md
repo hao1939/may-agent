@@ -11,7 +11,7 @@ Related: KE-1905, KE-1890
 # KE-1914: Stale Bare `src/` Paths in Design Docs — Phase 2
 
 **Discovered**: 2026-06-15
-**Status**: active (5 fixed, 6 remaining)
+**Status**: active (8 fixed this session + previous session, 1 remaining)
 **Confidence**: high (grep-verified against filesystem; every bare `src/` path was tested with `ls`)
 **Domain**: coherence, design-docs
 **Extends**: KE-1905 (sessions.md fix)
@@ -24,7 +24,7 @@ bare `src/` or `packages/sdk/src/` paths that don't resolve from the
 repo root. The actual location is `projects/platform/repos/may-agent/src/...`
 or `projects/platform/repos/may-agent/packages/sdk/src/...`.
 
-## Fixed This Session
+## Fixed This Session (Phase 2 — first pass)
 
 1. **heartbeat.md** — 2 bare `packages/sdk/src/heartbeat-data.ts` paths →
    full `projects/platform/repos/may-agent/packages/sdk/src/heartbeat-data.ts`
@@ -36,18 +36,19 @@ or `projects/platform/repos/may-agent/packages/sdk/src/...`.
    query-service.ts, may.ts, app-runtime.ts, daemon.ts, agent-loader.ts, loader/*)
 5. **metrics.md** — 1 bare `src/lib/db/schema.ts` → full path
 
-## Remaining (6 docs)
+## Fixed Phase 2 — second pass (current session)
 
-These docs still have bare `src/` paths. Each needs the same prefix treatment:
+6. **projects.md** — 2 bare paths fixed (`src/lib/db/schema.ts`, `src/lib/query-service.ts`)
+7. **escalation.md** — 2 bare paths fixed (`src/app/daemon-events.ts`, `src/lib/escalation-lifecycle.ts`)
+8. **sdk.md** — 4 bare paths fixed (`src/lib/sdk.ts`, `packages/sdk/src/index.ts`, `src/lib/sdk-impl.ts`, `src/app/agent-loader.ts`)
+9. **system-boundary.md** — 19 bare paths fixed (full code mapping table + loader/* reference)
+10. **http-boundary.md** — 8 bare paths fixed (ownership table, API inventory, layout, migration plan)
 
-| Doc | Bare `src/` count | Key paths |
-|-----|-------------------|-----------|
-| `cron.md` | 4 | cron.ts, handler-loader.ts, agent-loader.ts, heartbeat-loader.ts (NOTE: doc says "relative to platform repo" — may be intentional) |
-| `escalation.md` | 1 | escalation-lifecycle.ts |
-| `http-boundary.md` | 4 | src/app/http, packages/control |
-| `projects.md` | 2 | schema.ts, query-service.ts |
-| `sdk.md` | 3 | sdk.ts, sdk-impl.ts, agent-loader.ts |
-| `system-boundary.md` | 5 | event-bus.ts, metrics.ts, sdk.ts, workflow.ts |
+## Remaining (1 doc)
+
+| Doc | Bare `src/` count | Notes |
+|-----|-------------------|-------|
+| `cron.md` | 4 | Doc explicitly says "All paths below are relative to the platform repo" — intentional shorthand, skip |
 
 (`system-boundary-tracker.md` also has bare paths but in a checklist context
 where the bare form may be intentional shorthand; low priority.)

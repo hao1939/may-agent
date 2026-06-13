@@ -350,7 +350,7 @@ Target module shape:
 | `handler-loader` | attach handler resolvers and hot-reload wrapper |
 | `agent-registry-loader` | orchestrate discovery -> definition -> manager registration |
 
-Keep these as `src/app/loader/*` modules first. Create a package only if this
+Keep these as `projects/platform/repos/may-agent/src/app/loader/*` modules first. Create a package only if this
 surface becomes useful outside the daemon and has no app-specific imports.
 
 ## Public Surfaces
@@ -639,24 +639,24 @@ Existing pieces already align with this direction:
 
 | Design concept | Current code |
 |---|---|
-| Event bus | `src/app/event-bus.ts` |
-| Metrics API | `src/lib/metrics.ts` |
-| Handler SDK | `src/lib/sdk.ts`, `src/lib/sdk-impl.ts`, `src/lib/handler-context.ts` |
+| Event bus | `projects/platform/repos/may-agent/src/app/event-bus.ts` |
+| Metrics API | `projects/platform/repos/may-agent/src/lib/metrics.ts` |
+| Handler SDK | `projects/platform/repos/may-agent/src/lib/sdk.ts`, `projects/platform/repos/may-agent/src/lib/sdk-impl.ts`, `projects/platform/repos/may-agent/src/lib/handler-context.ts` |
 | Agent import boundary | `@may-agent/sdk` package |
-| Workflow context | `src/lib/workflow.ts`, `src/lib/workflow-tool.ts` |
-| Runtime context | `src/lib/runtime-ctx.ts` |
-| Socket protocol | `packages/control/src/protocol.ts` |
-| Socket server/client | `packages/control/src/server.ts`, `packages/control/src/client.ts` |
-| App entry/runtime | `src/app/may.ts`, `src/app/app-runtime.ts`, `src/app/runtime-exit-modes.ts` |
-| Daemon surface | `src/app/daemon.ts` stable barrel over daemon submodules |
-| Daemon lifecycle | `src/app/daemon-lifecycle.ts` |
-| Daemon event subscribers | `src/app/daemon-events.ts` |
-| Daemon agent startup | `src/app/daemon-agents.ts` |
-| Daemon session startup | `src/app/daemon-sessions.ts` |
-| Daemon loops | `src/app/daemon-loops.ts` |
-| Agent loading | `src/app/agent-loader.ts`, `src/app/loader/*` |
-| Telegram adapter | `src/app/transport/telegram.ts` |
-| Telegram transport/reply/outbound helpers | `src/app/transport/telegram-client.ts`, `src/app/transport/telegram-reply-router.ts`, `src/app/transport/telegram-outbound.ts` |
+| Workflow context | `projects/platform/repos/may-agent/src/lib/workflow.ts`, `projects/platform/repos/may-agent/src/lib/workflow-tool.ts` |
+| Runtime context | `projects/platform/repos/may-agent/src/lib/runtime-ctx.ts` |
+| Socket protocol | `projects/platform/repos/may-agent/packages/control/src/protocol.ts` |
+| Socket server/client | `projects/platform/repos/may-agent/packages/control/src/server.ts`, `projects/platform/repos/may-agent/packages/control/src/client.ts` |
+| App entry/runtime | `projects/platform/repos/may-agent/src/app/may.ts`, `projects/platform/repos/may-agent/src/app/app-runtime.ts`, `projects/platform/repos/may-agent/src/app/runtime-exit-modes.ts` |
+| Daemon surface | `projects/platform/repos/may-agent/src/app/daemon.ts` stable barrel over daemon submodules |
+| Daemon lifecycle | `projects/platform/repos/may-agent/src/app/daemon-lifecycle.ts` |
+| Daemon event subscribers | `projects/platform/repos/may-agent/src/app/daemon-events.ts` |
+| Daemon agent startup | `projects/platform/repos/may-agent/src/app/daemon-agents.ts` |
+| Daemon session startup | `projects/platform/repos/may-agent/src/app/daemon-sessions.ts` |
+| Daemon loops | `projects/platform/repos/may-agent/src/app/daemon-loops.ts` |
+| Agent loading | `projects/platform/repos/may-agent/src/app/agent-loader.ts`, `projects/platform/repos/may-agent/src/app/loader/*` |
+| Telegram adapter | `projects/platform/repos/may-agent/src/app/transport/telegram.ts` |
+| Telegram transport/reply/outbound helpers | `projects/platform/repos/may-agent/src/app/transport/telegram-client.ts`, `projects/platform/repos/may-agent/src/app/transport/telegram-reply-router.ts`, `projects/platform/repos/may-agent/src/app/transport/telegram-outbound.ts` |
 | HTTP/Web API adapter | `src/app/http/server.ts` |
 | WebUI source assets | `packages/webui/static/*` generated into project `ui/` directories |
 | Agent patterns | agent/project workflows, project docs, heartbeat docs |
