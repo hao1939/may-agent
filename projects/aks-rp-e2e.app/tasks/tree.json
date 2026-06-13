@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-13T08:18:18.956127+00:00",
+  "updated_at": "2026-06-13T08:23:41.797609+00:00",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "bootstrap-byo-acr-staging-execute-20260613",
@@ -9,7 +9,12 @@
     "project": {
       "id": "project",
       "children": [
-        "spec-runner-and-replays"
+        "spec-runner-and-replays",
+        "feature-knowledge-and-specs",
+        "evidence-feedback-and-model-update",
+        "model-consolidation-and-coverage-assessment",
+        "blocked-frontier-review",
+        "phase-2-coverage-completion"
       ],
       "parent_id": null,
       "status": "decomposed",
@@ -92,7 +97,8 @@
         "kms-v2plus-cmk-pub-firewall-staging-20260613",
         "kms-v2plus-pmk-privvnet-staging-20260613",
         "kms-v2plus-svc-cert-rot-staging-20260613",
-        "kms-v2plus-pmk-priv-disable-key-staging-20260613"
+        "kms-v2plus-pmk-priv-disable-key-staging-20260613",
+        "staging-rest-execution-frontier"
       ],
       "context": {
         "throughput_rule": "Keep smart execution-frontier selection active: one task chooses high-ROI existing specs/suites and creates/activates runner leaves; runner leaves execute through native spec-runner/suite machinery with precise conflict scopes.",
@@ -199,7 +205,7 @@
     "kms-v2plus-disabled-pub-pmk-staging-20260613": {
       "id": "kms-v2plus-disabled-pub-pmk-staging-20260613",
       "parent_id": "spec-runner-and-replays",
-      "status": "active",
+      "status": "review",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -228,12 +234,22 @@
         "assigned_at": "2026-06-13T07:31:57.570Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_kms-v2plus-disabled-pub-pmk-staging-20260613"
+        "last_session": "s_task_kms-v2plus-disabled-pub-pmk-staging-20260613",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Successfully executed the kms-v2plus-enable-pmk-from-v2-disabled-public replay against staging REST. The full KMS lifecycle (create v2 CMK cluster \u2192 disable v2 \u2192 migrate to v2+ PMK \u2192 validate encryption \u2192 replace secrets \u2192 cleanup) completed with all 12 assertions passing. Failure classified as product_pass. Knowledge model updated with evidence and full golden path chain.",
+        "last_worker_completed_at": "2026-06-13T08:19:13.773Z",
+        "last_worker_evidence": []
       },
       "session_id": "s_task_kms-v2plus-disabled-pub-pmk-staging-20260613",
       "session_history": [
         "s_task_kms-v2plus-disabled-pub-pmk-staging-20260613"
-      ]
+      ],
+      "result": "execution_completed",
+      "evidence": [
+        "pending-planner-review"
+      ],
+      "updated_at": "2026-06-13T08:23:51Z"
     },
     "kms-v2plus-pmk-priv-staging-20260613": {
       "id": "kms-v2plus-pmk-priv-staging-20260613",
@@ -401,13 +417,84 @@
       "session_history": [
         "s_task_kms-v2plus-pmk-priv-disable-key-staging-20260613"
       ]
+    },
+    "feature-knowledge-and-specs": {
+      "id": "feature-knowledge-and-specs",
+      "goal": "Learn AKS feature intent and maintain source-grounded feature packets, input/expectation paths, and runnable atomic test specs.",
+      "status": "accepted",
+      "parent_id": "project",
+      "children": [],
+      "created_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:23:41.797609+00:00",
+      "archived": true,
+      "archive_summary": "Knowledge milestone. 38 subtasks completed.",
+      "summary": "Feature learning pipeline established: Go e2ev3 source discovery, feature packets, spec extraction."
+    },
+    "evidence-feedback-and-model-update": {
+      "id": "evidence-feedback-and-model-update",
+      "goal": "Diagnose execution evidence, classify product/test/environment/source outcomes, update the capability model, and feed the next learning/spec/runner tasks.",
+      "status": "accepted",
+      "parent_id": "project",
+      "children": [],
+      "created_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:23:41.797609+00:00",
+      "archived": true,
+      "archive_summary": "Knowledge milestone. 25 subtasks completed.",
+      "summary": "Evidence diagnosis and model feedback loop established. Classification pipeline working."
+    },
+    "model-consolidation-and-coverage-assessment": {
+      "id": "model-consolidation-and-coverage-assessment",
+      "goal": "Reconcile the two divergent model files, link specs to features, and assess coverage gaps to plan the next project phase.",
+      "status": "accepted",
+      "parent_id": "project",
+      "children": [],
+      "created_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "archived": true,
+      "archive_summary": "Knowledge milestone. 4 subtasks completed.",
+      "summary": "Reconcile the two divergent model files, link specs to features, and assess coverage gaps to plan the next project phase."
+    },
+    "blocked-frontier-review": {
+      "id": "blocked-frontier-review",
+      "goal": "Review the whole blocked frontier and decide which blockers are real, stale, too coarse, missing evidence, or locally unblockable.",
+      "status": "accepted",
+      "parent_id": "project",
+      "children": [],
+      "created_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "archived": true,
+      "archive_summary": "Knowledge milestone. 0 subtasks completed.",
+      "summary": "Review the whole blocked frontier and decide which blockers are real, stale, too coarse, missing evidence, or locally unblockable."
+    },
+    "phase-2-coverage-completion": {
+      "id": "phase-2-coverage-completion",
+      "goal": "Close the 41-unknown gap identified in the coverage-gap-assessment: fix 3 status anomalies, design 13 missing specs, and plan the first execution wave for 21 draft-spec features.",
+      "status": "accepted",
+      "parent_id": "project",
+      "children": [],
+      "created_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "archived": true,
+      "archive_summary": "Knowledge milestone. 5 subtasks completed.",
+      "summary": "Close the 41-unknown gap identified in the coverage-gap-assessment: fix 3 status anomalies, design 13 missing specs, and plan the first execution wave for 21 draft-spec features."
+    },
+    "staging-rest-execution-frontier": {
+      "id": "staging-rest-execution-frontier",
+      "goal": "Drive the next project branch through real staging REST execution: select high-value specs, run them through the project runner on devbox/staging, collect evidence, classify failures, and feed results back into the knowledge model.",
+      "status": "accepted",
+      "parent_id": "spec-runner-and-replays",
+      "children": [],
+      "created_at": "2026-06-13T08:22:47.103689+00:00",
+      "updated_at": "2026-06-13T08:22:47.103689+00:00",
+      "archived": true,
+      "archive_summary": "Knowledge milestone. 9 subtasks completed.",
+      "summary": "Drive the next project branch through real staging REST execution: select high-value specs, run them through the project runner on devbox/staging, collect evidence, classify failures, and feed results"
     }
   },
   "active_task_ids": [
     "bootstrap-byo-acr-staging-execute-20260613",
     "kms-v2plus-cmk-privkv-nonkms-staging-20260613",
     "kms-v2plus-cmk-pub-firewall-staging-20260613",
-    "kms-v2plus-disabled-pub-pmk-staging-20260613",
     "kms-v2plus-pmk-priv-disable-key-staging-20260613"
   ],
   "archive": {
