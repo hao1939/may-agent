@@ -591,7 +591,7 @@ path: validate at the edge, persist via the bus, and let subscribers react.
 - Event payload examples should use the envelope shape above, not flattened
   domain fields.
 
-## Operational Status (appendix, refreshed 2026-06-11)
+## Operational Status (appendix, refreshed 2026-06-13)
 
 This section reflects what the runtime actually emits and consumes, so readers do
 not mistake the taxonomy above for a live wiring diagram. Keep this table in sync
@@ -601,7 +601,7 @@ table.
 ### Emitter Reality
 
 Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current numbers.
-Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot refreshed 2026-06-15.
+Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot refreshed 2026-06-13.
 
 **Handler lifecycle**
 
@@ -623,7 +623,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,458 rows as of 2026-06-15, ~701/24h, ~29/hour); all `session_not_found` — 24h mix: ~59% planner, ~41% task, ~0.4% problem-solver; rate tracks aks-explorer session volume |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,474 rows as of 2026-06-13, ~709/24h, ~30/hour); all `session_not_found` — 24h mix: ~59% planner, ~41% task; rate tracks aks-explorer session volume |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -780,7 +780,7 @@ harmful but will not match any handler's `on:` filter. Query to find them:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~1,458 rows as of 2026-06-15, ~701/24h, ~29/hour).
+when the target session cannot be found (~1,474 rows as of 2026-06-13, ~709/24h, ~30/hour).
 Split: ~57% planner sessions, ~42% task sessions, ~1% problem-solver sessions.
 
 ### Consumer Reality
