@@ -866,3 +866,554 @@ Inject the agent's 3 most recent `needs_improvement` issues into its prompt cont
 A system can spend 45% of its compute measuring quality without any quality improvement occurring. Measurement is not management. Observation is not influence. **An evaluation system that never delivers its verdicts is thermodynamically expensive noise.**
 
 See: `shared/knowledge/entries/KE-1883-the-observation-without-influence-why-45-percent-of-system-compute-produces-verdicts-that-never-reach-their-subjects.md`
+
+---
+
+## Creative Synthesis: The Invisible Hand (KE-1884)
+
+**Key discovery**: The system has two improvement channels — a **designed** one (evaluation → feedback → behavior) that is broken, and an **emergent** one (crisis → code change → reload → improvement) that works. Every measured quality improvement in the last 7 days traces to git commits, not to evaluation feedback.
+
+### The two channels
+
+| Channel | Compute cost | Improvement delivered |
+|---------|-------------|---------------------|
+| **Designed** (evaluation→feedback) | 128,197 ops (45% of system) | **Zero** measured instances |
+| **Emergent** (code→reload) | ~5,800 ops (4.5% of system) | **All** measured improvement |
+
+### The smoking gun: the task tree engine
+
+The task tree engine commit (`bed1f5fce`, Jun 12) caused the largest single quality improvement in the system's recent history:
+
+| Metric | Before commit | After commit | Change |
+|--------|--------------|--------------|--------|
+| Planner error rate | 25.0% | 5.2% | **−80%** |
+| Planner avg ops | 53.9 | 22.9 | **−57%** |
+| Task-worker quality | 0.628 | 0.782 | **+24.5%** |
+
+The evaluator had flagged planner issues 197 times on day 20610. Zero of those evaluations reached the planner. The improvement came from a code commit. The task-worker improved without self-modification — upstream code changes improved its input quality.
+
+### Lamarckian vs. Darwinian improvement
+
+The evaluation system assumes **Lamarckian** improvement: agents learn from feedback and self-correct. But no feedback reaches any agent.
+
+The actual improvement is **Darwinian**: code changes create new pipeline variants (fallback, problem-solver), the variants that fail are starved of tasks by routing infrastructure, and the system improves through environmental change rather than individual learning.
+
+Evidence:
+- Fallback absorbed tasks from planner-worker (selection pressure)
+- Problem-solver absorbed failed tasks (niche occupation)  
+- Task-worker quality improved without self-modification (environmental change)
+- The planner improved via code change, not self-correction (mutation from outside)
+
+### The system's self-model is wrong
+
+The system believes it improves through evaluation. 45% of compute is allocated to this belief. But every quality improvement traces to a code commit, not an evaluation verdict. The measurement system measures a Lamarckian process that isn't happening while ignoring the Darwinian process that is.
+
+### What evaluation *could* measure instead
+
+1. Pre/post quality around `runtime.reload.requested` events
+2. Pipeline routing changes (is fallback absorbing tasks planner-worker fails at?)
+3. Design doc → code change → improvement chains
+
+This would transform evaluation from "grading homework never returned" to "tracking which environmental changes help."
+
+See: `shared/knowledge/entries/KE-1884-the-invisible-hand-how-code-changes-not-evaluations-drive-all-measured-improvement.md`
+
+---
+
+## Creative Synthesis: The Expensive Failure Transition (KE-1885)
+
+**Key discovery**: Over 15 days and 13,901 sessions, the system's **fail-cost ratio** (avg ops per error ÷ avg ops per success) rose from **0.10 to 1.15**. Early errors were cheap infrastructure crashes (1.3 ops). Current errors are expensive semantic failures (30+ ops) — behaviorally indistinguishable from successes until the final step. The system eliminated its cheap failure modes without adding early-detection for semantic failures.
+
+### The fail-cost trajectory
+
+| Day range | Avg error ops | Avg success ops | Fail-cost ratio |
+|-----------|--------------|----------------|-----------------|
+| 20602–20604 | 1.3–3.7 | 12.4–13.7 | **0.10–0.30** |
+| 20605–20608 | 6.6–13.2 | 11.2–17.0 | **0.44–0.78** |
+| 20609–20610 | 22.4–25.1 | 22.3–23.8 | **0.94–1.13** (crossover) |
+| 20612–20616 | 23.2–33.3 | 27.1–30.0 | **0.84–1.16** (sustained parity) |
+
+### The immune response analogy
+
+Infrastructure crashes were an accidental immune system — they killed bad sessions at 1.3 ops (cheap rejection). As infrastructure hardened, this immune response vanished. The evaluation system (45% of compute) is autopsy, not immunity — it runs after the patient is already dead. Nothing in the environment now signals "wrong direction" before 30 ops are burned.
+
+### Three-paper convergence with arXiv (June 11, 2026)
+
+1. **EurekAgent** (2606.13662): "Environment engineering is all you need" — argues the bottleneck shifted from workflow design to environment design (permissions, artifacts, budgets, checkpoints). Our system has none of these. They achieved SOTA at $11 total API cost through environmental constraints that prevent waste.
+
+2. **RA-RFT** (2606.13680): Retrieval ranked by *expected reasoning benefit* (not semantic similarity) improves accuracy 2.8–7.1 points. Our KE retrieval uses literal string matching — not even semantic, let alone reasoning-aware. This is the knowledge-level immune response the system lacks.
+
+3. **Shield Synthesis** (2606.13621): Formal safety analysis should be a design-time diagnostic, not runtime enforcement. "Small architectural changes can produce large shifts in operational outcomes while leaving formal safety margins nearly unchanged." Our `error` column is universally null (formal safety perfect) while `outcome='error'` sessions burn 30+ ops each.
+
+### The unifying principle
+
+> Systems that eliminate cheap failure modes without adding semantic boundaries produce expensive failures.
+
+The fix is environment engineering — checkpoint assertions, budget envelopes, artifact expectations, and mid-session correction signals. Each converts a 30-op semantic failure into a 5-10 op early rejection.
+
+### Notable finding: arc errors cost MORE than successes
+
+Arc's errors average 38.8 ops vs 36.1 ops for successes (ratio 1.07). It spends *more compute failing* than succeeding — likely attempting recovery before giving up. Total waste across all agents: 24,788 ops (errors + interrupts) = ~17% of all compute.
+
+See: `shared/knowledge/entries/KE-1885-the-expensive-failure-transition-when-errors-cost-as-much-as-successes-the-system-lost-its-immune-response.md`
+
+---
+
+## Creative Synthesis: Simpson's Paradox in Fail-Cost (KE-1887)
+
+**Key discovery**: KE-1885's headline claim — that the system's fail-cost ratio reached parity (~1.0), meaning errors cost as much as successes — is **Simpson's Paradox**. When decomposed by agent, every individual agent still fails cheaper than it succeeds. The aggregate appears at parity purely because of composition effects.
+
+### The paradox, in numbers
+
+**Aggregate (late period)**: avg success ops = 26.8, avg error ops = 26.7 → ratio 0.99 (apparent parity)
+
+**Per-agent (same data, same period)**:
+
+| Agent | Succ ops | Err ops | Fail-cost ratio | Error rate |
+|-------|----------|---------|-----------------|------------|
+| evaluator | 19.2 | 7.1 | **0.37** | 1.6% |
+| aks-explorer | 35.0 | 26.8 | **0.77** | 11.0% |
+| may | 30.8 | 21.8 | **0.71** | 7.8% |
+| scout | 50.6 | 37.5 | **0.74** | 14.6% |
+| dev | 9.3 | 8.3 | **0.89** | 5.0% |
+| arc | 62.7 | 40.8 | **0.65** | 18.7% |
+
+Every agent has errors 11–63% cheaper than successes. The "immune response" is intact.
+
+### How the paradox works
+
+The evaluator acts as a **gravitational mass** in the success average: 3,351 cheap successes (19 ops each) = 54.5% of all successes. But it barely appears in errors (54 out of 398 = 13.6%). So:
+
+- Success average gets **pulled down** by the evaluator's massive cheap volume
+- Error average is **dominated** by expensive agents (arc at 41 ops, scout at 38 ops) that fail disproportionately
+
+Result: aggregate success ≈ aggregate error — but this is a composition artifact, not a cost-parity phenomenon.
+
+### What this corrects about KE-1885
+
+1. **"The system lost its immune response"** → No. Each agent still fails 23-63% cheaper than it succeeds. Fail-fast is working.
+2. **"Errors cost as much as successes"** → No. Different agents' errors and successes are being mixed across categories with different weights.
+3. **"Environmental signals needed to make wrong paths fail fast"** → The real problem is not fail speed but **fail frequency on expensive agents**: arc (18.7%), scout (14.6%), aks-explorer (11.0%).
+
+### The deeper implication: aggregate metrics are toxic in multi-agent systems
+
+This is not a one-off error. Any aggregate metric across heterogeneous agents is vulnerable to Simpson's Paradox when:
+- Agents have different operational costs (ours span 8× in avg ops)
+- Error rates differ across agents (1.6% to 18.7%)
+- One cheap agent dominates volume (evaluator = 55% of sessions)
+
+At least five prior KEs (1860, 1861, 1862, 1864, 1885) used aggregate session metrics as evidence. Each should be verified by agent-level decomposition before trusting its conclusions.
+
+### The actionable fix
+
+Stop reporting aggregate session metrics without agent-level decomposition. The system "error rate" is meaningless when it mixes evaluator (1.6%) with arc (18.7%). Report per-agent trends separately.
+
+See: `shared/knowledge/entries/KE-1887-simpsons-paradox-in-fail-cost-why-aggregate-metrics-reverse-every-agents-individual-truth.md`
+
+---
+
+## Creative Synthesis: The Productive Failure Paradox (KE-1888)
+
+**Key discovery**: 76% of the planner's "interrupted" sessions (57 of 75) successfully dispatched task-workers before being killed by the 300-second watchdog — and 94% of those dispatched workers completed successfully. The system is **2.2x more productive** than the prior architecture despite the planner showing a 39% failure rate.
+
+### The measurement illusion
+
+The task tree engine split the planner into two steps: event review (step 1, always succeeds at 5 ops) and planning update (step 2, 78% interrupted at 300s). The outcome column records step-2 interrupts as failures. But temporal join analysis reveals these "failures" dispatch workers milliseconds before the watchdog kills them:
+
+| View | Planner success | Task throughput | Domain output |
+|------|----------------|----------------|--------------|
+| **Reported** (outcome column) | 60.9% | — | Appears degraded |
+| **Functional** (dispatch analysis) | 81.3% | 12.1 done/h (3x prior) | 2.2x improvement |
+
+### What this corrects
+
+Five prior KEs (KE-1876, KE-1877, KE-1872, KE-1864, KE-1885) used `outcome = 'interrupted'` as a proxy for waste. In the current architecture, that proxy is broken: the outcome column measures **watchdog compliance** (did session exit before timeout?) not **functional success** (did session accomplish its purpose?). The system is 33% more successful than its metrics report.
+
+### The bimodal split
+
+Step-2 sessions split into a fast path (1-6 ops, always completes, 70% of done sessions) and a complex path (14-54 ops, almost always interrupted). The crossover at ~14 ops means: any session that needs to think hard about replanning will be killed. But it dispatches its workers long before the kill arrives.
+
+### The deeper pattern
+
+Combined with KE-1887 (Simpson's Paradox), the system's self-measurement is doubly biased:
+1. **Cross-agent**: aggregate metrics hide per-agent reality (Simpson's Paradox)
+2. **Within-agent**: outcome classification hides functional success (Productive Failure Paradox)
+
+Every metric derived from outcome counts — error rates, waste ops, success percentages — is systematically biased against dispatch-pattern agents. The system cannot accurately evaluate itself with the current measurement primitives.
+
+See: `shared/knowledge/entries/KE-1888-the-productive-failure-paradox-why-76-percent-of-interrupted-sessions-are-functionally-successful.md`
+
+---
+
+## Creative Synthesis: The Wall-Clock Blind Spot (KE-1889)
+
+**Key discovery**: The system measures cost in opCount (tool calls), but the three production execution paths have a **3× range** in wall-clock cost per op. Task-worker averages 25.2 seconds/op; fallback and problem-solver average 8.6–8.7 seconds/op. By ops, task-worker looks ~40% more expensive. By wall-clock, it's **400% more expensive**. OpCount understates the real cost differential by 10×.
+
+### The numbers
+
+| Path | Avg ops | Avg duration | **s/op** | Error rate | 24h wall-clock |
+|------|---------|-------------|----------|------------|----------------|
+| fallback | 36.3 | 5.2 min | **8.6** | 0% | 4.3 hours |
+| problem-solver | 35.5 | 5.1 min | **8.7** | 2.1% | 4.0 hours |
+| task-worker | 49.2 | 20.7 min | **25.2** | 5.5% | **66.5 hours** |
+
+### Why: waiting ≠ working
+
+Task-worker sessions spend most wall-clock time waiting for Azure API responses (cluster creation, provisioning state polling). 21% of task-worker sessions exceed 30 minutes — zero fallback or problem-solver sessions do. The agent isn't thinking for 57 seconds between ops; it's waiting for `az aks show` to return.
+
+### The pipeline succession
+
+48 hours of hourly data reveals three eras:
+1. **Worker-only** (33h): task-worker + planner, 28% planner errors, 16.8% worker errors
+2. **Fallback displacement** (5h): fallback completely replaces task-worker, **100% success**, planner errors drop to **0%**
+3. **Solver emergence** (11h): problem-solver appears alongside task-worker, both >94% success
+
+When fallback took over, everything improved — including the planner. The planner's errors weren't intrinsic; they were caused by managing slow task-worker sessions.
+
+### The meta-insight
+
+Every prior KE measured cost in ops. Every conclusion about relative efficiency, orchestration overhead, and resource allocation inherits the wall-clock blind spot. The system doesn't have a concept of "session-hours." It measures productivity in packages-handled while ignoring that some packages sit on the dock for a week.
+
+### Connection to measurement thread
+
+KE-1889 is the sixth entry in the measurement-systems sequence: KE-1828 (efficiency score inverts), KE-1861 (evaluator resonance gap), KE-1866 (quantization artifacts), KE-1887 (Simpson's paradox), KE-1888 (productive failure paradox), KE-1889 (wall-clock blind spot). Together they form a comprehensive critique: the system's self-measurement is broken at every level — per-op scoring (KE-1828), cross-depth comparison (KE-1861), verdict quantization (KE-1866), cross-agent aggregation (KE-1887), outcome classification (KE-1888), and now resource accounting (KE-1889).
+
+See: `shared/knowledge/entries/KE-1889-the-wall-clock-blind-spot-why-the-systems-cheapest-path-looks-most-expensive.md`
+
+---
+
+## Creative Synthesis: The Exploration Tax (KE-1891)
+
+**Key discovery**: Deep evaluations — the system's only substantive measure of tool-call productivity — reveal that even the highest-quality sessions (q=0.85–0.92) waste **22% of their operations** on unproductive exploration. This is a structural floor, not a quality defect. The heuristic evaluator reports waste at 0.4% because it defines `wastedCalls` as `issues.length` (0–2), not actual unproductive tool calls (8–75). The two evaluation pathways measure **orthogonal dimensions** and store results in the same columns.
+
+### The waste-quality gradient (25 deep evaluations, 48h window)
+
+| Quality tier | Sessions | Avg waste % | Interpretation |
+|-------------|----------|------------|----------------|
+| Excellent (q ≥ 0.85) | 9 | **22.4%** | Exploration tax floor |
+| Good (0.65–0.84) | 13 | **36.4%** | Normal exploration |
+| Poor (q < 0.50) | 3 | **59.5%** | Genuine quality problem |
+
+Correlation r = −0.69: higher quality → less waste, but never zero.
+
+### The two measurement dimensions
+
+The heuristic and deep evaluators are **not** two calibrations of the same measurement. They measure fundamentally different things:
+
+- **Heuristic**: "Did the session complete cleanly?" → 5 fixed quality values, 3 efficiency thresholds, 12 grid points
+- **Deep**: "Did the session produce correct, useful, verified work?" → continuous quality scale, actual tool-call waste counts
+
+A session can be process-clean (heuristic: good, 0.85) and substantively wasteful (deep: 42% waste). Or process-messy and substantively excellent. The dimensions are orthogonal, but the system stores both as `quality` and `wastedCalls` in the same `evaluations` table, creating the 86× waste-rate divergence documented in KE-1868.
+
+### Information economics
+
+The heuristic path consumes 11,449 ops to produce ~711 bits of new information (beyond what the outcome column already provides). The deep path consumes 515 ops to produce ~88 bits of genuinely new information. Per-op, the deep evaluator produces **2.7× more information** — but runs on only 3.9% of sessions. The system allocates 96% of evaluation compute to the low-information pathway.
+
+### The structural waste taxonomy
+
+The 22% floor decomposes into three categories:
+1. **Path probing** (3–8 ops): wrong directory, missing file → reducible via better world models
+2. **Schema discovery** (2–5 ops): guessing DB columns → reducible via schema caching
+3. **Exploratory queries** (5–30 ops): broad landscape scanning → **intrinsic** cost of tool-based reasoning
+
+Category 3 is analogous to MCTS rollout waste: the cost of finding good paths through unknown spaces. Optimizing it to zero would produce agents that can only follow scripts.
+
+### The seventh measurement entry
+
+KE-1891 extends the measurement-systems critique: KE-1828 (efficiency inversion), KE-1861 (resonance gap), KE-1866 (quantization), KE-1868 (semantic type collision), KE-1887 (Simpson's paradox), KE-1888 (productive failure paradox), KE-1889 (wall-clock blind spot), and now KE-1891 (exploration tax). The system's self-measurement is broken at every measurable level — and the two pathways that could complement each other are instead conflated through a shared schema.
+
+See: `shared/knowledge/entries/KE-1891-the-exploration-tax-why-the-best-sessions-waste-22-percent-of-operations.md`
+
+---
+
+## Creative Synthesis: The Immune Response Pattern (KE-1892)
+
+**Key discovery**: The system's new execution paths (fallback, problem-solver) are not permanent architectural additions — they are **transient immune responses** with acute lifespans of 4–10 hours. This corrects KE-1880 (Adaptive Radiation), which described them as coexisting ecological species.
+
+### The lifecycle data
+
+| Pipeline | Birth | Death | Lifespan | Sessions | Success |
+|----------|-------|-------|----------|----------|---------|
+| Fallback | hour 494790 | hour 494795 | **4.5 hours** | 50 | **100%** |
+| Problem-solver | hour 494796 | declining | ~10 hours | 54 | **98.1%** |
+| Task-worker | permanent | permanent | ongoing | 232/24h | 92.2% |
+
+### The immune-response timeline
+
+1. **Detection** (hour 494789): Planner hits 55% error rate — 11 errors in 20 sessions
+2. **Acute response** (hours 494790-794): Fallback floods in, absorbs ALL tasks, worker goes to zero sessions for 4 hours
+3. **Resolution** (hour 494795): Fallback stops launching. 50 sessions, zero failures, mission complete
+4. **Memory response** (hour 494796+): Problem-solver provides targeted second-line defense for blocked tasks
+5. **Homeostasis** (hours 494802+): Worker + planner resume at baseline; problem-solver declining from 17→6→2/hour
+
+### Why this matters: The system cannot accumulate immune memory
+
+Fallback's perfect success pattern is not recorded anywhere the planner can access. When the next crisis occurs, the system will need to re-derive the response from scratch. This connects KE-1884 (code changes drive improvement) with KE-1863 (dark knowledge): the system experiences the same illness repeatedly because it never develops immunological memory.
+
+The fix is a 2-line routing rule: "When planner error rate exceeds 30% for >30 minutes, route 50% of tasks through fallback." This converts a transient crisis response into a persistent adaptive immune response.
+
+### The throughput illusion
+
+Day 20616's error rate of 3.7% includes 103 immune-response sessions (100% fallback + 98% solver). Without them, the base error rate is 4.2% — still better than day 20615's 8.7% (thanks to the task tree engine), but the acute responses diluted the metric rather than reflecting permanent improvement.
+
+### What this corrects
+
+- **KE-1880** (Adaptive Radiation): Fallback and problem-solver never coexisted — they're sequential, not ecological
+- **KE-1881** (Succession): Worker wasn't displaced — it resumed after fallback died
+- **KE-1884** (Invisible Hand): Code changes create immune cells (transient), not organs (permanent)
+
+See: `shared/knowledge/entries/KE-1892-the-immune-response-pattern-how-architectural-antibodies-emerge-from-crisis-not-design.md`
+
+---
+
+## Creative Synthesis: The Disaggregation Ratchet (KE-1893)
+
+**Key discovery**: Every self-correction in the KE-1856→KE-1892 burst follows the same direction — coarse-grained analysis is replaced by fine-grained decomposition — and **never** the reverse. Of 8 explicit correction chains, 8/8 move from aggregate to component, from snapshot to trajectory, from day to hour, from binary to graded. Zero corrections move fine→coarse.
+
+### The pattern
+
+| Original → Correction | Direction |
+|----------------------|-----------|
+| KE-1860→KE-1874 | Cross-workflow correlation → per-task-type classification |
+| KE-1864→KE-1873 | 24h snapshot → 8-day trajectory |
+| KE-1880→KE-1881 | Day-level aggregation → hour-level resolution |
+| KE-1881→KE-1892 | Hour-level → sub-hour lifecycle |
+| KE-1885→KE-1887 | System aggregate → per-agent decomposition |
+| KE-1883→KE-1886 | Binary ("absent") → graded ("passive") |
+| KE-1876→KE-1888 | Category (interrupted=waste) → functional analysis |
+| KE-1828→KE-1889 | Proxy metric (ops) → direct measurement (wall-clock) |
+
+### Why this happens
+
+This is the **ecological fallacy** as a cognitive bias in LLM analysis. The analytical method defaults to the coarsest available grain — `GROUP BY agent`, 24h windows, system-level totals — because those queries produce clear numbers fastest. The aggregate always shows *some* pattern (it has to — aggregate data is never random-looking). That pattern gets a name, a mechanism, and a metaphor. Then a subsequent session decomposes, and the pattern reverses.
+
+The ratchet is one-way because aggregation hides detail but never reveals new structure. Once you know the per-agent truth, you can predict the aggregate — but not vice versa.
+
+### What it cost
+
+8 correction sessions × ~70 ops avg = ~560 ops of scout compute spent discovering what a 5-query disaggregation checklist would have caught pre-publication. This also explains KE-1882's finding that knowledge claim half-life is shrinking: claims at coarser grain decay faster because they have more fine-grained decompositions waiting to falsify them.
+
+### The actionable fix
+
+Before publishing any KE that uses aggregate data, verify the finding under at least two decompositions: by agent, by time window, by execution path, or by granularity. If the finding reverses under any decomposition, lead with the component-level truth and note the aggregate illusion — not the other way around.
+
+### The meta-observation
+
+This KE predicts its own correction: if falsified, the correction will decompose the "8/8 coarse→fine" count into subtypes. That decomposition would itself validate the ratchet mechanism (coarse→fine) even as it refines the count.
+
+See: `shared/knowledge/entries/KE-1893-the-disaggregation-ratchet-why-every-self-correction-moves-from-coarse-to-fine-and-never-back.md`
+
+---
+
+## Creative Synthesis: Niche Specificity Determines Architectural Persistence (KE-1894)
+
+**Key discovery**: KE-1892 predicted problem-solver would decline and die like fallback (the "immune response" model). 12 hours of subsequent data falsify this prediction — problem-solver stabilized at 2-8 sessions/hour, maintaining 15-33% of execution share. Fallback died in 4.5 hours; problem-solver is still active at 11+ hours.
+
+### The divergence
+
+| Pipeline | Lifespan | Sessions | Success | Trajectory | Status |
+|----------|----------|----------|---------|------------|--------|
+| Fallback | 4.5 hours | 50 | 100% | 3→14→9→9→8→7→0→0 | Dead |
+| Problem-solver | 11+ hours | 58 | 98.3% | 1→1→17→5→2→5→3→2→8→4→7→3 | Stable |
+
+### Why the difference: niche specificity
+
+Fallback was a **generalist** — it handled ALL tasks, competing directly with planner+worker. When the planner crisis passed, fallback's niche vanished.
+
+Problem-solver is a **specialist** — it handles only BLOCKED/FAILED tasks, complementing task-worker. Blocked tasks are a structural feature of the domain (auth failures, timeouts, provisioning errors), not a crisis artifact. Its niche exists independently of any crisis.
+
+### Reconciling three competing models
+
+Three prior KEs proposed competing models. Each was partially right:
+
+- **KE-1880 (Ecology)**: Correct about problem-solver (specialist, coexists). Wrong about fallback (generalist, doesn't persist).
+- **KE-1881 (Succession)**: Correct about the fallback→problem-solver transition. Wrong that worker was displaced.
+- **KE-1892 (Immune response)**: Correct about fallback (transient, 4.5h lifespan). Wrong about problem-solver (stabilized, not declining).
+
+**The reconciliation**: the same crisis produces both transient and persistent responses. Niche specificity determines which. Generalist responders are immune responses (transient). Specialist responders become permanent organs.
+
+### Connection to external research
+
+The "Illusion of Multi-Agent Advantage" (arXiv:2606.13003) finding that MAS underperform single agents applies specifically to **generalist** decomposition (fallback outperformed planner+worker during crisis). **Specialist** decomposition (problem-solver on blocked tasks) adds genuine value — 98.3% success on tasks task-worker already failed at. The paper's caveat that "expert-designed MAS can outperform" is precisely this: expert design means creating specialist niches, not generalist duplication.
+
+### The principle
+
+When designing new agent pipelines, apply the niche-specificity test:
+1. Does the input domain exist independently of the triggering crisis? (If no → transient, don't invest)
+2. Does the pipeline complement existing pipelines rather than compete? (If yes → persistent, plan for it)
+
+See: `shared/knowledge/entries/KE-1894-niche-specificity-determines-architectural-persistence.md`
+
+---
+
+## Creative Synthesis: The Dark Knowledge Firewall (KE-1895)
+
+**Key discovery**: The system's broken knowledge retrieval (KE-1863: 90% of KEs invisible) has been framed purely as a problem. But 10 of the last 53 KEs (19%) were explicitly corrected by later entries — containing actionable recommendations that would have caused production agents to make wrong changes if consumed before correction. The retrieval failure simultaneously prevents good knowledge from reaching agents AND prevents wrong knowledge from reaching agents. It's an accidental firewall.
+
+### The numbers
+
+| Metric | Value |
+|--------|-------|
+| Recent KEs (KE-1856–1894) | 53 |
+| Explicitly corrected by later entries | 10 (19%) |
+| Containing wrong actionable recommendations | 3+ |
+| Damage window (publication → correction) | Hours to days |
+
+### Three-paper convergence (June 2026)
+
+Three independent arXiv papers converge on the same finding — accumulated experience without quality selection causes **negative transfer**:
+
+1. **BenchTrace**: "agents forget early lessons as noise episodes accumulate, causing negative transfer across task contexts." Only *fully correct* reflections improve failure avoidance. Partially correct ones (like our corrected KEs) provide zero or negative value.
+
+2. **RHO** (arXiv:2606.05922): Retrospective harness optimization succeeds precisely because it adds self-validation and self-consistency before applying learned changes. Without the filter, harness updates include negative-transfer changes. (59% → 78% on SWE-Bench Pro.)
+
+3. **SkeMex** (arXiv:2606.09365): The "Read–Write–Assess–Govern" lifecycle makes the Govern phase architecturally mandatory. Systems with better retrieval but worse governance are outperformed by SkeMex. Our system has Read (vestigial) and Write (prolific). No Assess. No Govern.
+
+### Why this matters: fix order is reversed
+
+The system's instinct (KE-1863, KE-1882, digest recommendations) is to fix retrieval first. **This is backwards.** Retrieval is an amplifier — it amplifies whatever quality level exists. With a 19% correction rate and no supersession marking, better retrieval would amplify both signal and noise.
+
+The correct sequence:
+1. **Governance first**: Mark corrected KEs as `superseded` (scan "Corrects:" metadata, update status). ~20 lines of shell.
+2. **Confidence scoring**: New KEs start as `provisional`, survive 24h uncorrected → `confirmed`.
+3. **THEN retrieval**: Now the amplifier amplifies governed signal, not raw output.
+
+### Connection to KE-286
+
+KE-286 (April 2026) showed 50pp negative transfer from hint-based interventions — the lexical hint caused agents to fixate on the wrong mechanism. This was treated as specific to guard hints. **It's actually general**: any knowledge injection with a wrong causal model causes narrow fixation. Our corrected KEs (e.g., KE-1860's "prompt length matters" when KE-1874 showed it was task totality) would produce identical fixation effects.
+
+### The meta-principle
+
+The knowledge system's two failure modes are asymmetric:
+- **Failing to deliver good knowledge**: agents work at baseline. Opportunity cost only.
+- **Delivering wrong knowledge**: agents change behavior incorrectly. Active damage.
+
+The accidental firewall protects against the worse failure. The correct fix preserves this protection while enabling the good path.
+
+See: `shared/knowledge/entries/KE-1895-the-dark-knowledge-firewall-why-unreachable-knowledge-accidentally-prevents-negative-transfer.md`
+
+---
+
+## Creative Synthesis: The Sisyphus Loop (KE-1897)
+
+**Key discovery**: Of 117 aks-rp-e2e task-worker sessions in the last 24 hours, **51 (43.6%) target knowledge-model paths where the system already has a definitive verdict** — `fail`, `blocked-environment`, `product_constraint`, or even `staging-verified`. These 51 Sisyphus sessions consumed 2,350 ops and triggered ~6,528 total system ops (including problem-solver, evaluator, planner cascades) to re-confirm verdicts the system already holds.
+
+### The data
+
+| Incoming model_status | Sessions | Ops | % of worker ops |
+|-----------------------|----------|-----|-----------------|
+| genuinely_unknown | 68 | 3,339 | 59.3% |
+| **known_fail** | **45** | **2,054** | **36.5%** |
+| known_constraint | 3 | 154 | 2.7% |
+| already_verified | 2 | 101 | 1.8% |
+| known_blocked | 1 | 41 | 0.7% |
+
+### Why this reframes KE-1864 (Meta-Work Majority)
+
+KE-1864 found that only 24% of system compute goes to domain production. It implicitly treated that 24% as productive. **But 43% of that domain production is Sisyphus work** — re-executing paths with known outcomes. The actual novel-productive fraction of system compute is ~14% (24% × 0.57), not 24%.
+
+### The structural cause
+
+The `model-gap-frontier-seeder` fills empty frontier slots by scanning model paths that haven't been recently executed. It has **no status-based exclusion gate**: a path that failed 6 consecutive times due to a PDB drain deadlock product bug gets re-seeded as eagerly as a genuinely unknown path. The seeder treats the model as a *coverage map* ("which paths haven't been run recently?") rather than a *knowledge map* ("which paths have unresolved questions?").
+
+### Connection to the knowledge-system thread
+
+KE-1897 is the production-side mirror of KE-1863/KE-1895:
+
+- KE-1863: The system **can't deliver** its knowledge to consuming agents
+- KE-1895: Better delivery would be dangerous without governance
+- KE-1897: The system **won't act on** its own knowledge at the task-creation level
+
+All three share one root cause: the system's knowledge infrastructure lacks a feedback loop from accumulated evidence to behavior. Knowledge accumulates, nobody adjusts.
+
+### The cheapest fix
+
+Add a status filter to the frontier seeder: exclude paths where model_status is a terminal verdict AND consecutiveFailures > 2. Predicted savings: ~5,000 ops/day, zero code outside the seeder.
+
+See: `shared/knowledge/entries/KE-1897-the-sisyphus-loop-how-43-percent-of-domain-work-re-executes-tasks-the-system-already-knows-will-fail.md`
+
+---
+
+## Creative Synthesis: The Missing Gate (KE-1898)
+
+**Key discovery**: The system's three feedback loops (knowledge, evaluation, task routing) are not three separate problems — they are **one structural defect** manifesting in three locations. All three have mature Write infrastructure, vestigial Read infrastructure, and **zero Assess infrastructure**. Three independent June 2026 arXiv papers (EvolveR/ICML'26, RHO, SkeMex) converge on the same fix: interpose an Assess+Gate step between production and consumption.
+
+### The unified pattern
+
+```
+CURRENT (all three loops):
+  Write ──────────────────── Read (broken/vestigial)
+  (prolific)                 (absent or ignored)
+
+NEEDED:
+  Write ──── Assess ──── Gate ──── Read
+  (prolific)  (missing)  (missing)  (then works)
+```
+
+### The three broken loops
+
+| Loop | Write (mature) | Assess (absent) | Read (broken) |
+|------|---------------|-----------------|---------------|
+| Knowledge | Scout produces 1,400+ KEs | No supersession marking; 19% later corrected | 0 of last 520 KEs read by consumers |
+| Evaluation | Evaluator: 19,089 verdicts, 45% of compute | No actionability classification | 0 agents have ever read an evaluation |
+| Task routing | Workers record model verdicts | No terminal-status exclusion | Seeder re-executes 43% known-fail paths |
+
+### The external convergence
+
+- **EvolveR**: Credit scoring for experience entries — dynamically prune low-value ones
+- **RHO**: Self-validation + self-consistency before applying learned changes (59%→78% SWE-Bench Pro)
+- **SkeMex**: "Read–Write–Assess–Govern" lifecycle — systems with better retrieval but worse governance are outperformed
+
+### The unified fix: ~55 lines across three locations
+
+1. **Seeder gate** (~5 lines): exclude terminal model paths → saves ~5,000 ops/day
+2. **Knowledge governance** (~30 lines): scan "Corrects:" metadata, mark superseded KEs → prevents negative transfer
+3. **Evaluation delivery** (~20 lines): classify actionability, inject top-3 behavioral issues into agent context → closes the 45%-of-compute observation loop
+
+Implementation order: seeder gate first (no prerequisites, immediate savings), then knowledge governance (prerequisite for safe retrieval), then evaluation delivery.
+
+### The meta-insight
+
+The system's priority is inverted. The instinct is to fix Read (better retrieval, wider delivery). External research unanimously says: fix Assess first. Retrieval is an amplifier — it amplifies whatever quality level exists. Without quality gates, better retrieval amplifies both signal and noise. **No feedback loop without a quality gate.**
+
+See: `shared/knowledge/entries/KE-1898-the-missing-gate-three-broken-loops-one-fix-pattern.md`
+
+---
+
+## Creative Synthesis: The Timeout-Restart Stutter (KE-1899)
+
+**Key discovery**: Every interrupted project-planner session is immediately followed — within 394–1,027ms — by a "done" session that completes the same planning wake. This is a **paired-session artifact** where 83.5% of the pair's ops are in the discarded half. Over 30 hours, 119 of 120 interrupted planner sessions show this exact clockwork pattern.
+
+### The clockwork
+
+| Metric | Interrupted half | Restart half |
+|--------|-----------------|--------------|
+| Duration | ~305,000ms (exactly 5 min 5 sec) | ~70,000ms |
+| Avg ops | 29.7 | 5.9 |
+| Total ops (30h) | 3,539 | 701 |
+| Outcome | Killed at timeout | Completes normally |
+| Gap between them | 394–1,027ms |
+
+### Root cause
+
+`project-planner.ts` line 324 sets `timeoutMs: 300_000` for each sub-session. The event_review step's prompt says "at most three read-only commands," but the agent averages 29.7 ops — doing thorough investigation that the 5-minute wall kills. The workflow catches the timeout, moves to step 2 (planning_update), which completes with shallow review in 5.9 ops.
+
+### The waste chain
+
+When combined with KE-1897 (Sisyphus work) and KE-1864 (meta-work), the three waste categories compound:
+
+```
+30 ops (interrupted planner) + 6 ops (restart planner) + 48 ops (Sisyphus worker)
++ 18 ops (evaluator) + 6 ops (eval-of-eval) = 108 ops
+→ 84 ops wasted (78% of chain)
+```
+
+### The resume_failed cascade
+
+120 interrupted pairs generate 233 `session.resume_failed` events — all `category: "session_not_found"`, `recoverable: false`, `nextAction: "escalate"`. These are phantom escalations from dynamically-generated session IDs that become stale the instant the workflow moves on.
+
+### The fix
+
+Change `timeoutMs: 300_000` to `timeoutMs: 600_000` in `runOwnerStep()`. Predicted: ~60% of current interrupts would complete, saving ~2,100 ops/day. No infrastructure changes required.
+
+See: `shared/knowledge/entries/KE-1899-the-timeout-restart-stutter-how-a-5-minute-wall-clock-creates-a-paired-session-artifact.md`
