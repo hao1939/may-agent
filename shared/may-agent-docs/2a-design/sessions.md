@@ -57,8 +57,8 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) sessions.
-Verified 2026-06-13: 0 of 13,220 `call` sessions have a non-null
-`parentSessionId`; all 10 sessions with `parentSessionId` are `job` kind
+Verified 2026-06-13: 0 of 14,726 `call` sessions have a non-null
+`parentSessionId`; all 12 sessions with `parentSessionId` are `job` kind
 (4 earlier `job`/`chat` rows aged out via 14-day retention since the
 2026-06-12 census).
 
@@ -74,21 +74,25 @@ The DB is the queryable index. Disk is the source of truth for message history.
 
 ### `error` column is always NULL in practice (KE-1558)
 
-The `sessions.error` column in SQLite is NULL for **all** error sessions
-(649/649 = 100% NULL as of 2026-06-13). A write-order race between
+The `sessions.error` column in SQLite is NULL for **nearly all** error sessions
+(657/659 = 99.7% NULL as of 2026-06-13). A write-order race between
 `manager.ts` (writes errorText correctly) and `db-writer.ts` (overwrites
 with NULL via `session.end` event, which lacks the `error` field) causes
 the manager's value to be lost. `updateSessionDb()` uses bare `error = ?`
 instead of `COALESCE(?, error)`.
 
-**Theoretical exception:** The session-recovery handler
+**Narrow exception:** The session-recovery handler
 (`agents/may/handlers/session-recovery.ts`) writes error text directly via
-`db.prepare().run()`, bypassing the db-writer race. However, recovered
-sessions are often subsequently re-closed as `done` by retries, which
-overwrites the error text back to NULL. The KE-1878 exception
-(`s_task_pm-k8s-mtc-staging-retry-20260612`) is now `status=done` with
-`error=NULL`, confirming the exception path is transient, not durable.
-**In practice, treat `sessions.error` as always NULL.**
+`db.prepare().run()`, bypassing the db-writer race. Most recovered
+sessions are subsequently re-closed as `done` by retries, which
+overwrites the error text back to NULL — but sessions auto-closed as idle
+(no activity for >45min) retain their error text because no subsequent
+`session.end` event fires to overwrite it. As of 2026-06-13, 2 of 659
+error sessions have non-NULL `error`: both are aks-explorer sessions
+auto-closed with "Auto-closed idle immediate session (no activity for
+>45min, likely handler timeout)".
+**In practice, treat `sessions.error` as almost always NULL** — the only
+durable non-NULL errors come from the idle-session auto-close path.
 
 **Workaround:** For sessions closed through the normal `manager.ts` path, read
 `.state/sessions/history/<id>/meta.json` on disk for the actual error text.
@@ -107,7 +111,7 @@ and `updateSessionDb()` (called at session end).
 
 **Status (updated 2026-06-13):** The write path activated around
 2026-06-09 17:33Z. As of 2026-06-13, **100% coverage across all 7 active
-agents** in 6h/12h windows. 24h coverage is **99.8% (1319/1321)** —
+agents** in 6h/12h windows. 24h coverage is **99.9% (1706/1708)** —
 the 2 unpopulated rows are evaluator sessions (likely sub-second heuristic
 evals). The pre-activation transition period has fully aged out.
 
@@ -140,10 +144,10 @@ See `events.md` → "Data Retention" for the full retention table.
 
 ## Implementation
 
-- **Manager:** `src/lib/manager.ts` — spawns/manages sessions
-- **DB writes:** `src/lib/db-writer.ts` and `src/lib/db/sessions.ts`
-- **DB schema:** `src/lib/db/schema.ts`
-- **Queries:** prefer `src/lib/query-service.ts` / SDK `query` over direct SQL in agent-facing code
+- **Manager:** `projects/platform/repos/may-agent/src/lib/manager.ts` — spawns/manages sessions
+- **DB writes:** `projects/platform/repos/may-agent/src/lib/db-writer.ts` and `projects/platform/repos/may-agent/src/lib/db/sessions.ts`
+- **DB schema:** `projects/platform/repos/may-agent/src/lib/db/schema.ts`
+- **Queries:** prefer `projects/platform/repos/may-agent/src/lib/query-service.ts` / SDK `query` over direct SQL in agent-facing code
 
 ## Design Decisions
 
