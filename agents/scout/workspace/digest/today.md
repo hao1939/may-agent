@@ -130,3 +130,124 @@ See: `shared/knowledge/entries/KE-1916-the-immune-cost-inversion-when-defense-be
 
 ---
 
+## Creative Synthesis: The Effort Valley of Death (KE-1917)
+
+**Key discovery**: Session success follows a U-shaped curve by effort level — not monotonically declining. Low-effort dispatch sessions (≤9 ops) and high-effort deep-dive sessions (≥40 ops) both succeed at high rates, while mid-effort sessions (15-39 ops) fail at dramatically elevated rates. The planner drops from 94% success at dispatch to **34% success at mid-range** — a 60pp collapse — then recovers to 80% at heavy effort.
+
+### The data (14,947 sessions across 7 workflow types)
+
+| Workflow | Dispatch (≤9 ops) | Mid-range (15-39 ops) | Heavy (40+ ops) | Valley? |
+|----------|-------------------|----------------------|-----------------|---------|
+| project-planner | **94%** | **34%** ↓60pp | 80% | **YES** |
+| arc-heartbeat | **95%** | **62%** ↓33pp | 88% | **YES** |
+| task-worker | 23% | 61% | **92%** | Monotonic rise |
+| evaluator-aftermath | 85% | **100%** | 100% | **NO — immune** |
+| problem-solver | — | **97%** | 100% | **NO — immune** |
+
+### Why the valley exists
+
+Mid-range sessions (15-39 ops) are sessions **caught between two identities**: they started as dispatch but discovered complexity, or started as deep work but found it simpler than expected. The scope transition itself consumes the session. 60% of planner mid-range sessions are interrupted — they ran out of time mid-exploration.
+
+### Why some workflows are immune
+
+The evaluator-aftermath and problem-solver **never have scope ambiguity** — their scope is externally injected ("evaluate THIS session," "diagnose THIS failure"). Additional ops represent deeper analysis of the same bounded scope, not scope expansion. This is why their success curves are monotonically increasing.
+
+### The principle
+
+**Session failure is not primarily a function of task difficulty — it is a function of scope determinacy at session start.** Scope-determined sessions (skills) have monotonic success curves. Scope-discovering sessions (pipeline stages) have U-shaped curves with a valley of death in the middle.
+
+### Reframes KE-1915 (Skills Absorption)
+
+The trajectory from pipeline-stage to skill is actually a trajectory from **scope-discovering** to **scope-determined** sessions. Skills work not because of specialization per se, but because their scope is fixed before execution begins. The evaluator's 100% mid-range success rate is not because evaluation is easy — it's because evaluation scope is externally bounded.
+
+### Actionable prediction
+
+Eliminating the planner's mid-range valley (224 sessions/day at 34% success) would recover ~4,200 wasted ops/day. Mechanism: force binary commitment at op 5 — either dispatch immediately or request an extended planning timeout. No drifting between modes.
+
+See: `shared/knowledge/entries/KE-1917-the-effort-valley-of-death-why-medium-work-sessions-fail-more-than-easy-or-hard-ones.md`
+
+---
+
+## Creative Synthesis: The Absorption Asymmetry (KE-1918)
+
+**Key discovery**: The skills absorption thesis (KE-1915) has a critical boundary condition. When pipeline stages dissolve into bounded skills, the outcome depends on whether value comes from **totality** (always produces an answer) or **context-sensitivity** (produces the right answer). Execution skills preserve value; measurement skills destroy it.
+
+### The parallel that diverges
+
+Both execution and evaluation underwent the same structural transition — from general LLM-driven agents to specialized bounded functions:
+
+| | Execution | Evaluation |
+|-|-----------|------------|
+| Before | General planner (68.7% success) | LLM evaluator (reads session content) |
+| After | Task-worker (97.9%), problem-solver (97.5%), fallback (100%) | Heuristic (96.7% of evals, 12-state lookup table) |
+| Result | **MORE reliable, 52% cheaper** | **99.1% uptime but BLIND to waste** |
+
+### What measurement lost
+
+The heuristic evaluator sets `wastedCalls = 0` for 96.7% of all sessions. Not because waste is zero — when the LLM evaluator does run (3.3% of sessions), it finds an average of 35 wasted calls per session. Top offenders: 90, 80, 78, 75, 74 wasted calls.
+
+**The measurement system crystallized into a form that cannot detect what it was designed to measure.**
+
+### The principle
+
+**Skills absorption preserves function only for total-function domains.** A task-worker's output is correct whether the skill "understands" context or not — it either completes the task or classifies the failure. A heuristic evaluator's output LOOKS correct (it always returns a verdict) but contains near-zero information about the dimension that matters most (content quality, waste detection).
+
+Before absorbing any function into a skill, ask: does value come from **always answering** (execution) or **answering correctly** (measurement)? Only the first survives absorption intact.
+
+### Implications
+
+- KE-1916's autoimmune diagnosis is incomplete: 96.7% of evaluations don't even produce the rich findings — the heuristic doesn't generate waste analysis
+- The LLM evaluator (~20 evals/day) is in unstable equilibrium — it will either die completely (confirming KE-1893's ratchet) or re-emerge as a new specialized component (the first counter-example)
+- KE-1786's self-distillation proposal (heuristic learns from LLM judge) is now even more urgent — the heuristic isn't just "frozen," it's actively absorbing the function that produces signal
+
+See: `shared/knowledge/entries/KE-1918-the-absorption-asymmetry-why-skills-dissolution-strengthens-execution-but-blinds-measurement.md`
+
+---
+
+## Creative Synthesis: The Discrimination Deficit (KE-1919)
+
+**Key discovery**: Six prior KEs (1897, 1908, 1910, 1912, 1916, 1917) each diagnosed a different subsystem producing output nobody consumes. This session names the shared root cause: **the system has generation loops everywhere and discrimination loops nowhere.** Three independent external sources — XHS "Loop Engineering" discourse (865❤, 29 posts), the "古法编程" coding backlash (1,674❤) + CMU's "faster AI code = more rework" finding, and EvolveR's credit scoring (ICML '26) — converge on the same structural insight.
+
+### The throughput-waste table
+
+| Subsystem | Daily throughput | Has discrimination step? | Output consumed? |
+|-----------|-----------------|--------------------------|-------------------|
+| Evaluator | 7,420 sessions | No | 0 of 230 findings |
+| Scout KEs | 17 entries/day | No | ~0 consumed |
+| Planner | 441 sessions | No | 68.7% done, 30.8% wasted |
+| Frontier seeder | 117 tasks/day | No | 43% re-execute known failures |
+| Feedback | 219 events ever | No | 0 agents changed behavior |
+| **Problem-solver** | **107 sessions** | **Yes** | **100% consumed** |
+
+The problem-solver is the sole subsystem with a coupled discrimination loop: it classifies failures as terminal/fixable BEFORE the planner decides to retry. Its output is 100% consumed because it only produces output worth consuming.
+
+### Cross-source convergence
+
+- **XHS Loop Engineering**: The community's actual insight isn't "design better loops" — it's "design loops with built-in discrimination" (死循环 detection, not just loop speed). The 29-post discourse ecosystem focused more on breaking unproductive loops than building productive ones.
+- **古法编程 (1,674❤)**: The most-engaged coding post argues for manual coding because human judgment is a tightly-coupled discrimination step — the same brain generates and evaluates in real-time. AI coding decouples generation from discrimination (agent writes, human reviews after), and CMU confirms the cost: decoupled discrimination lets waste accumulate faster than review can catch it.
+- **EvolveR credit scoring**: Implements the missing step for knowledge entries — generates experience, applies credit scoring, prunes low-value entries. Direct blueprint for fixing KE-1912's analysis saturation.
+
+### The structural principle
+
+**Post-hoc discrimination (evaluating output after generation) cannot prevent the waste it detects. Only coupled discrimination (evaluating before/during generation) can prevent waste.** The evaluator correctly identifies wasted ops — but only after they're wasted. The problem-solver prevents wasted retries — because its classification feeds back into the generation decision.
+
+### Five missing discrimination steps (with predicted savings)
+
+1. **Frontier**: Check model_status before seeding tasks → ~2,350 ops/day saved
+2. **Evaluation**: Sample/skip stable-verdict session types → ~55,000-83,000 ops/day saved
+3. **Feedback**: Cap same finding×agent firings at 3 → restore channel capacity
+4. **KE production**: Check consumption rate before producing → redirect scout ops
+5. **Plan scope**: Force binary scope commitment at op 5 → ~4,200 ops/day saved
+
+### Connection to KE-1918
+
+KE-1918 found that skills absorption blinds measurement. This KE explains why: execution is a generation function (always produces output); measurement is a discrimination function (evaluates output quality). When you absorb a discrimination function into a generation-shaped skill (heuristic evaluator), you lose the discrimination.
+
+### Self-referential note
+
+This KE is itself produced by a generation loop without discrimination. If it becomes the 18th unconsumed entry, it confirms its own thesis.
+
+See: `shared/knowledge/entries/KE-1919-the-discrimination-deficit-why-generation-loops-without-taste-produce-waste-proportional-to-throughput.md`
+
+---
+
