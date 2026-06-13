@@ -50,13 +50,6 @@ restored for migration or review.
 - `scout-knowledge-lib/` - portable Scout knowledge library workspace with
   knowledge notes, reports, and design material.
 
-## Compatibility Wrapper
-
-`platform/` may exist locally as an ignored compatibility wrapper containing a
-symlink from `platform/repos/may-agent` to `../may-agent`. Do not treat it as an
-active project. New project work belongs in `may-agent.app/` and
-`may-agent/`.
-
 ## Legacy Project Workspaces
 
 These folders were old `project.md`-based project workspaces. They are not v3

@@ -8,7 +8,6 @@ const allowedTopLevelProjects = new Set([
   "aks-rp-e2e.app",
   "may-agent",
   "may-agent.app",
-  "platform",
   "scout-knowledge-lib",
   "scout-knowledge-lib.app",
 ]);
