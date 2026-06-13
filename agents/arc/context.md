@@ -24,7 +24,7 @@ is no mandatory write/edit count or tool-call quota.
   `query_db({ "sql": "SELECT agent, status, COUNT(*) c FROM sessions GROUP BY agent, status" })`
 - Metrics: `query_db({ "sql": "SELECT * FROM metrics WHERE status='active'" })`
 - `query_db` is the canonical read-only DB tool (KE-434). Do NOT use `bun:sqlite` or `sqlite3`.
-- Agent configs: `agents/*/SOUL.md`, `agents/*/context.md`
+- Agent configs: `agents/*/AGENTS.md`, `agents/*/context.md`
 
 ## How to Discover Work
 1. Read knowledge entries — are there patterns not yet captured?

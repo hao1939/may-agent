@@ -437,7 +437,7 @@ Chat sessions use `autoClose: "never"` and persist across restarts. Heartbeats a
 
 An agent-level convention (not infra). `shared/work-queue.md` has sections: Proposed → Approved → Done. Agents only implement Approved items.
 
-Infra observes via metrics: `work-queue.proposed-pending`, `work-queue.approved-pending`. Work queue metrics are measured from the file by source command; the file remains source of truth.
+No dedicated work-queue metrics exist currently. The file remains source of truth for the proposal pipeline; agents and humans read it directly.
 
 ---
 
