@@ -203,6 +203,31 @@ Stable vs prior snapshot (2026-06-13 ~14:30Z):
   commit-guard ambient warnings for shared-worktree agents. This
   recommendation has persisted for 3+ days without action.
 
+**Snapshot 2026-06-14 ~22:00Z** (24h window, 3,234 total):
+
+| Signal | Count | Share |
+|--------|------:|------:|
+| commit-ambient (uncommitted files) | 922 | 28.5% |
+| commit-finish (finish() uncommitted) | 942 | 29.1% |
+| SESSION_BASH_CAT | 381 | 11.8% |
+| SESSION_READ | 262 | 8.1% |
+| READ_DEDUP | 498 | 15.4% |
+| PATH_HALLUCINATION (tool-level) | 61 | 1.9% |
+| SESSION_BASH_GREP | 44 | 1.4% |
+
+Tier 1 guards: read-before-edit 82, finish-guard 30 (blocked), hallucinated-path 10.
+
+Per-agent: evaluator 1,318 (40.8%), aks-explorer 1,292 (40.0%),
+scout 231 (7.1%), may 172 (5.3%), arc 166 (5.1%), dev 45 (1.4%),
+tech-lead 6 (0.2%).
+
+vs prior: Composition shifted — commit-guard combined dropped from 57%
+to 57.6% (flat), but READ_DEDUP surged from 9% to 15.4%. PATH_HALLUCINATION
+rebounded from 6 to 61 (all aks-explorer `/home/hayua` paths), falsifying
+the "may have been addressed" note above. Finish-guard (Tier 1) grew
+from 8 to 30 — all may sessions, all resolved. Total count stable at ~3,200.
+Structural breach continues. The threshold recommendation stands.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
