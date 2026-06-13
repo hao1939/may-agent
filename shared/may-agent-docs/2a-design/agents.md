@@ -75,14 +75,19 @@ call creates children; fork creates independent sessions:
 ```typescript
 interface TaskResult {
   sessionId: string;
-  status: string;          // commonly "done", "error", or "interrupted"; not a closed enum today
-  lastAssistantText: string;
+  status: "done" | "error" | "interrupted";
+  lastAssistantText: string | null;
+  messages: AgentMessage[];
+  duration: string;
+  outputDir: string;
+  error?: string;
+  turnsUsed?: number;
 }
 ```
 
 ## Implementation
 
-- **Agent tool:** `src/lib/manager-agents-tool.ts` (LLM-facing; actions: call, fork, list, peek, cancel, context, requests)
-- **Message tool:** `src/lib/tools/message-tool.ts` (async inter-agent messaging; replaces old agents.message action)
-- **SDK:** `src/lib/sdk-impl.ts` → `runAgent()` wraps `manager.callAgent()`
-- **Manager:** `src/lib/manager.ts` — session lifecycle
+- **Agent tool:** `projects/platform/repos/may-agent/src/lib/manager-agents-tool.ts` (LLM-facing; actions: call, fork, list, peek, cancel, context, requests)
+- **Message tool:** `projects/platform/repos/may-agent/src/lib/tools/message-tool.ts` (async inter-agent messaging; replaces old agents.message action)
+- **SDK:** `projects/platform/repos/may-agent/src/lib/sdk-impl.ts` → `runAgent()` wraps `manager.callAgent()`
+- **Manager:** `projects/platform/repos/may-agent/src/lib/manager.ts` — session lifecycle
