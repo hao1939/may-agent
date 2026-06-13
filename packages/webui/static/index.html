@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/">
 <title>may-agent</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="vendor/xterm/xterm.css">
@@ -24,8 +25,8 @@
     <div class="tab" data-tab="learning" data-route="/learning">Learning</div>
     <div class="tab" data-tab="knowledge" data-route="/knowledge">Knowledge</div>
     <div class="tab" data-tab="terminal" data-route="/terminal">Terminal</div>
-    <div class="tab" data-tab="system" data-route="/system">System</div>
-    <!-- Sessions are reachable through deep-links (#/sessions/:id) and parent surfaces. -->
+    <div class="tab" data-tab="system" data-route="/events">Events</div>
+    <!-- Sessions are reachable through deep links (/sessions/:id) and parent surfaces. -->
   </div>
 </div>
 
@@ -98,10 +99,16 @@
 
   <!-- Knowledge -->
   <div id="knowledge" class="hidden">
+    <div class="knowledge-search">
+      <input id="kb-search-input" placeholder="Search knowledge..." onkeydown="if(event.key==='Enter')searchKnowledge()">
+      <button onclick="searchKnowledge()">Search</button>
+      <span id="kb-search-status"></span>
+    </div>
+    <div id="kb-search-results"></div>
     <!-- Breadcrumb -->
     <div id="kb-breadcrumb" style="margin-bottom: 12px; font-size: 13px; color: var(--fg2);"></div>
     <!-- Split: file tree left, content right -->
-    <div style="display: flex; gap: 16px; align-items: flex-start;">
+    <div class="knowledge-layout">
       <div id="kb-tree" style="min-width: 280px; max-width: 350px;"></div>
       <div id="kb-content" style="flex: 1; min-width: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; max-height: 85vh; overflow-y: auto;">
         <span style="color:var(--fg2)">Select a file to view</span>
