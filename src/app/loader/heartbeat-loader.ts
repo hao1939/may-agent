@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, basename } from "node:path";
 import type { CronEntry } from "../../lib/cron-tool.js";
 
 /**
@@ -8,8 +8,14 @@ import type { CronEntry } from "../../lib/cron-tool.js";
  *
  * Convention: agents/<name>/workflows/<name>-heartbeat.ts exists -> auto-heartbeat.
  * Opt-out: "heartbeat": false in agent.json.
+ *
+ * @param agentsRoot  The agents/ directory to scan
+ * @param projectId   Optional project-app ID. When the agentsRoot belongs to a
+ *   project-app (e.g. projects/scout-knowledge-lib.app/agents), pass the
+ *   project-app ID so the heartbeat handler includes `projectId` and the SDK's
+ *   `agentWorkflowDirForProjectApp` can locate the workflow.
  */
-export function generateAutoHeartbeats(agentsRoot: string): CronEntry[] {
+export function generateAutoHeartbeats(agentsRoot: string, projectId?: string): CronEntry[] {
   const generated: CronEntry[] = [];
   const entries = readdirSync(agentsRoot, { withFileTypes: true });
 
@@ -59,6 +65,7 @@ export function generateAutoHeartbeats(agentsRoot: string): CronEntry[] {
       handler: {
         workflow: `${agentName}-heartbeat`,
         agent: agentName,
+        ...(projectId ? { projectId } : {}),
         task: `[heartbeat] You are ${agentName}. Read agents/${agentName}/heartbeat.md and work through each section. End with a brief of what you did.`,
         timeoutMs: 1_800_000,
       },
