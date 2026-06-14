@@ -57,10 +57,8 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) sessions.
-Verified 2026-06-13: 0 of 14,726 `call` sessions have a non-null
-`parentSessionId`; all 12 sessions with `parentSessionId` are `job` kind
-(4 earlier `job`/`chat` rows aged out via 14-day retention since the
-2026-06-12 census).
+Verified 2026-06-14: 0 of 15,468 `call` sessions have a non-null
+`parentSessionId`; all 16 sessions with `parentSessionId` are `job` or `chat` kind.
 
 ## Persistence
 
@@ -74,25 +72,21 @@ The DB is the queryable index. Disk is the source of truth for message history.
 
 ### `error` column is always NULL in practice (KE-1558)
 
-The `sessions.error` column in SQLite is NULL for **nearly all** error sessions
-(657/659 = 99.7% NULL as of 2026-06-13). A write-order race between
-`manager.ts` (writes errorText correctly) and `db-writer.ts` (overwrites
-with NULL via `session.end` event, which lacks the `error` field) causes
-the manager's value to be lost. `updateSessionDb()` uses bare `error = ?`
+The `sessions.error` column in SQLite is **always NULL in practice**
+(0/638 error sessions have non-NULL `error` as of 2026-06-14; 0/15,560
+total sessions). A write-order race between `manager.ts` (writes
+errorText correctly) and `db-writer.ts` (overwrites with NULL via
+`session.end` event, which lacks the `error` field) causes the
+manager's value to be lost. `updateSessionDb()` uses bare `error = ?`
 instead of `COALESCE(?, error)`.
 
-**Narrow exception:** The session-recovery handler
-(`agents/may/handlers/session-recovery.ts`) writes error text directly via
-`db.prepare().run()`, bypassing the db-writer race. Most recovered
-sessions are subsequently re-closed as `done` by retries, which
-overwrites the error text back to NULL — but sessions auto-closed as idle
-(no activity for >45min) retain their error text because no subsequent
-`session.end` event fires to overwrite it. As of 2026-06-13, 2 of 659
-error sessions have non-NULL `error`: both are aks-explorer sessions
-auto-closed with "Auto-closed idle immediate session (no activity for
->45min, likely handler timeout)".
-**In practice, treat `sessions.error` as almost always NULL** — the only
-durable non-NULL errors come from the idle-session auto-close path.
+The previously documented "narrow exception" (session-recovery handler
+writing error text for idle-auto-closed sessions) no longer produces
+surviving non-NULL values — the 2 exceptions noted in the 2026-06-13
+census have aged out via 14-day retention, and no new ones have appeared.
+The recovery handler's writes are still overwritten by `session.end`
+events in practice.
+**Treat `sessions.error` as always NULL.** There are no durable exceptions.
 
 **Workaround:** For sessions closed through the normal `manager.ts` path, read
 `.state/sessions/history/<id>/meta.json` on disk for the actual error text.
@@ -109,11 +103,11 @@ The `lastActivityAt` column was added via migration and is written by both
 `updateSessionProgress()` (called on every `turn_start`/`tool_execution_start`/`turn_end`)
 and `updateSessionDb()` (called at session end).
 
-**Status (updated 2026-06-13):** The write path activated around
-2026-06-09 17:33Z. As of 2026-06-13, **100% coverage across all 7 active
-agents** in 6h/12h windows. 24h coverage is **99.9% (1706/1708)** —
-the 2 unpopulated rows are evaluator sessions (likely sub-second heuristic
-evals). The pre-activation transition period has fully aged out.
+**Status (updated 2026-06-14):** The write path activated around
+2026-06-09 17:33Z. As of 2026-06-14, **100% coverage across all 7 active
+agents** in 24h windows (1878/1878 sessions populated). The pre-activation
+transition period and the 2 sub-second evaluator exceptions noted in the
+2026-06-13 census have fully aged out.
 
 **The precondition for pure-SQL zombie detection is now met** for windows
 up to **24h** (≥95% coverage). The `capability.zombie-session-count`
