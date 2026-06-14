@@ -91,6 +91,7 @@ export async function prepareDaemonAgents(opts: {
       tools: await buildTools(config, {
         ...loaderOpts,
         agentsRoot: resolve(appDir, "agents"),
+        globalAgentsRoot: opts.agentsRoot,
         agentDir,
         getAgentSessionId,
         getAgentCrons: () => getAgentCrons(),
