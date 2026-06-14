@@ -39,6 +39,37 @@ domain fields such as `sessionId`, `projectId`, `metricId`, `escalationId`,
 may deliver human-owned events to May because May is the human's deputy, but the
 stored event keeps the original human owner.
 
+## Targeting And Fallback
+
+Event firing follows one rule:
+
+```text
+event target exists -> fire the target
+no target consumer  -> follow the ownership chain
+```
+
+The target is the specific thing the event is about. It can be a subscribed
+handler entry, a session id, a project id, a metric id, an escalation id, or a
+human/agent inbox target. The target lives in the canonical envelope and `data`;
+dispatch code must not invent a second event shape.
+
+Examples:
+
+- `project.task.assigned` targets the project and task in `data`; the matching
+  project workflow handler should run.
+- `project.planning.requested` targets the project in `data.project`,
+  `data.projectId`, or `data.project_id`; only handlers for that project should
+  run.
+- `session.steer.requested` targets `data.sessionId`; if that session is gone,
+  the owner handles the failed intent.
+- `metric.breach` targets `data.metricId`; the metric/project owner is the
+  accountability fallback.
+- `message.created` targets the inbox represented by `owner`.
+
+`owner` is not the first routing guess for every event. It is the backstop:
+when no targeted handler/session/project path consumes the event, the owner is
+responsible for judging, repairing, escalating, or explicitly recording a no-op.
+
 Persistent row mapping:
 
 | Event envelope field | `events` row | Notes |
@@ -623,7 +654,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~1,823 rows as of 2026-06-13, ~819/24h, ~34/hour); all `session_not_found` — 24h mix: ~51% planner, ~34% task, ~15% problem-solver; rate steady day-over-day |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,068 rows as of 2026-06-14, ~720/24h, ~30/hour); all `session_not_found` — 24h mix: ~33% task, ~26% planner_planning, ~26% planner_event, ~14% problem; grew 3.8× from Jun 9→13 (190→728/day), NOT steady (KE-1932) |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -780,8 +811,8 @@ harmful but will not match any handler's `on:` filter. Query to find them:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~1,823 rows as of 2026-06-13, ~819/24h, ~34/hour).
-Split: ~51% planner sessions, ~34% task sessions, ~15% problem-solver sessions.
+when the target session cannot be found (~2,068 rows as of 2026-06-14, ~720/24h, ~30/hour; grew 3.8× Jun 9–13, KE-1932).
+Split: ~33% task, ~26% planner_planning, ~26% planner_event, ~14% problem-solver.
 
 ### Consumer Reality
 
