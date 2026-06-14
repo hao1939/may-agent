@@ -153,13 +153,16 @@ durably correct — the system switches between regimes. Volume has
 ranged from ~1,150 to ~2,030/day across snapshots taken 2026-06-06
 through 2026-06-10.
 
-**Threshold calibration (2026-06-10):** `guard.triggered-count-24h`
-and `guard.warned-count-24h` thresholds were raised from 2,000 to
-**2,500** by may (commit 483ca44d8). Rationale: ~91% of guard triggers
-are ambient uncommitted-files warnings from shared-worktree concurrency,
-making the structural noise floor ~1,800/day; threshold 2,000 triggered
-on normal activity. The new threshold provides headroom for normal load
-variation while still catching genuine behavioral deterioration.
+**Threshold calibration history:**
+- **2026-06-10:** Raised from 2,000 to 2,500 by may (commit 483ca44d8).
+  Rationale: ~91% of guard triggers are ambient uncommitted-files warnings,
+  structural noise floor ~1,800/day.
+- **Current (verified 2026-06-14):** Thresholds are **3,500** in the live
+  metrics-snapshot.ts registry (P3 priority). The structural noise floor
+  has risen to ~3,100–3,300/day as session volume grew (~1,800 sessions/day).
+  The 95.8% noise ratio (beforeToolCall "uncommitted files" warnings) means
+  the threshold primarily tracks session volume, not behavioral deterioration.
+  Guard SNR remains inverted: ~136 real signals/day vs ~3,119 ambient noise.
 
 Key structural observations from the full snapshot history:
 - Combined commit-guard (uncommitted-files + finish()-uncommitted) is
@@ -199,9 +202,8 @@ Stable vs prior snapshot (2026-06-13 ~14:30Z):
   `/home/` path usage may have been addressed.
 - The breach remains structural — ~57% is ambient commit-guard noise from
   shared-worktree concurrency and cannot decrease without guard or threshold
-  calibration. **Recommendation: raise threshold to ~3,500** or suppress
-  commit-guard ambient warnings for shared-worktree agents. This
-  recommendation has persisted for 3+ days without action.
+  calibration. (**Resolved**: threshold raised to 3,500; see calibration
+  history above.)
 
 **Snapshot 2026-06-14 ~22:00Z** (24h window, 3,234 total):
 
@@ -226,7 +228,9 @@ to 57.6% (flat), but READ_DEDUP surged from 9% to 15.4%. PATH_HALLUCINATION
 rebounded from 6 to 61 (all aks-explorer `/home/hayua` paths), falsifying
 the "may have been addressed" note above. Finish-guard (Tier 1) grew
 from 8 to 30 — all may sessions, all resolved. Total count stable at ~3,200.
-Structural breach continues. The threshold recommendation stands.
+Structural breach continues. (**Update 2026-06-14**: Threshold was raised
+to 3,500 in metrics-snapshot.ts, resolving the breach. Current ~3,200/day
+sits comfortably below the new threshold.)
 
 ### Known issue: guard name conflation
 
