@@ -134,11 +134,15 @@ export function eventDetails(event: Record<string, unknown>): Record<string, unk
   };
 }
 
-export function projectPlanningEvent(projectId: string, reason: string, params: unknown = {}): Record<string, unknown> {
+export function projectOwnerEvent(projectId: string, reason: string, params: unknown = {}): Record<string, unknown> {
   return {
-    type: "project.planning.requested",
+    type: "project.owner.requested",
     project: projectId,
     reason,
     params: params && typeof params === "object" && !Array.isArray(params) ? params : {},
   };
+}
+
+export function projectPlanningEvent(projectId: string, reason: string, params: unknown = {}): Record<string, unknown> {
+  return projectOwnerEvent(projectId, reason, params);
 }

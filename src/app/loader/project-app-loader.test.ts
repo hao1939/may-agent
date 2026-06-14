@@ -157,7 +157,7 @@ describe("project app loader", () => {
         workflowHandlers: [{
           name: "sample-lib-planner",
           enabled: true,
-          on: ["project.planning.requested"],
+          on: ["project.owner.requested"],
           handler: { workflow: "planner", task: "plan" }
         }]
       }`,
@@ -421,7 +421,7 @@ describe("project app loader", () => {
           id: "wake",
           enabled: true,
           intervalMs: 60000,
-          event: { type: "project.planning.requested", project: "sample" }
+          event: { type: "project.owner.requested", project: "sample" }
         }]
       }`,
       );
