@@ -82,9 +82,12 @@ instead of `COALESCE(?, error)`.
 **However, as of 2026-06-14**, the race is not 100% reliable — at least one
 error session (`s_1781463007643_5`, may, 2026-06-14 18:57Z) has a surviving
 non-NULL error text ("Agent ended with an empty assistant turn") despite
-having a populated `endedAt`. Census: 1/389 error sessions in the 7d
-retention window (0.26%). This may indicate a timing change in the write
-path or a new code path that writes error after the `session.end` event.
+having a populated `endedAt`. Census (updated 2026-06-14 21:30Z): 3/668
+error sessions in the 7d retention window (0.45%), all from may with
+identical error text "Agent ended with an empty assistant turn" — all from
+`workflow:platform-owner-review` context-cascade sessions. This may indicate
+a timing change in the write path or a new code path that writes error after
+the `session.end` event.
 
 **Guidance:** Do not rely on `sessions.error` for comprehensive error analysis
 (still NULL for ~99.7% of error sessions). But do not assume it is *always*
