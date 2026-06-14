@@ -71,7 +71,7 @@ Escalation events have two layers:
     "blockedOn": "event payload is incomplete",
     "evidence": {
       "events": ["handler.workflow_dispatched status=escalated"],
-      "files": ["agents/evaluator/workflows/evaluator-aftermath.ts"],
+      "files": ["projects/evaluation.app/workflows/evaluator-aftermath.ts"],
       "sessionLines": [{"sessionId": "s_...", "line": 14}]
     },
     "resume": {
@@ -121,7 +121,7 @@ The owner emits `escalation.resolved` when it has a disposition.
     "summary": "The session.completed emitter now includes sessionId in event data and the subscribed handler reads it from event.data.",
     "evidence": {
       "commits": ["abc1234"],
-      "files": ["projects/may-agent/src/app/daemon-events.ts", "agents/evaluator/handlers/evaluator-aftermath.ts"],
+      "files": ["projects/may-agent/src/app/daemon-events.ts", "projects/evaluation.app/workflows/evaluator-aftermath.ts"],
       "events": ["handler.workflow_dispatched status=done"]
     },
     "resumeInstruction": "Retry the blocked aftermath review for the original session."
