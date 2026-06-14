@@ -133,10 +133,13 @@ function scanProjectDir(projectsDir: string, relPrefix: string, seen: Set<string
         if (!existsSync(jsonFile)) continue;
         try {
           const jsonContent = JSON.parse(readFileSync(jsonFile, "utf-8"));
-          // Synthesize project.md-compatible content from project.json
+          // Synthesize project.md-compatible content from project.json.
+          // Use projDir as the id so validateProjectFormat(content, projDir)
+          // does not report an id-mismatch for .app directories whose
+          // project.json id omits the ".app" suffix.
           const frontmatter = [
             "---",
-            `id: ${jsonContent.id || projDir}`,
+            `id: ${projDir}`,
             `owner: ${jsonContent.owner || "unknown"}`,
             `status: ${jsonContent.status || "active"}`,
             `type: ${jsonContent.type || "milestone"}`,
