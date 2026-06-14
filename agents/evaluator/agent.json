@@ -10,5 +10,7 @@
     "finish"
   ],
   "contextFiles": [],
-  "memoryLimit": 5
+  "memoryLimit": 5,
+  "disabled": true,
+  "_disabled_reason": "migrated to projects/evaluation.app \u2014 2026-06-14"
 }

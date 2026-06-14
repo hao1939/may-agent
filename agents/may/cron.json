@@ -22,7 +22,7 @@
     "handler": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
+      "task": "persistent-task: skip\n[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
@@ -105,7 +105,7 @@
     "name": "heartbeat-evaluator",
     "type": "job",
     "intervalMs": 1800000,
-    "enabled": true,
+    "enabled": false,
     "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
     "notifyBrief": true,
     "handler": {
@@ -121,7 +121,8 @@
     "context": [
       "agents/evaluator/heartbeat.md",
       "projects/may-agent.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "migrated to evaluation.app \u2014 2026-06-14"
   },
   {
     "name": "optimize",
@@ -424,7 +425,7 @@
       "includeEvent": true,
       "timeoutMs": 900000
     },
-    "enabled": true,
+    "enabled": false,
     "on": [
       "session.completed"
     ],
@@ -432,7 +433,8 @@
     "context": [
       "projects/may-agent.app/project.json",
       "agents/evaluator/heartbeat.md"
-    ]
+    ],
+    "_disabled_reason": "migrated to evaluation.app \u2014 2026-06-14"
   },
   {
     "name": "session-aftermath-scan",

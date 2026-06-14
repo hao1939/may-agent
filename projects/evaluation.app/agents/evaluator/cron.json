@@ -1,0 +1,54 @@
+[
+  {
+    "name": "evaluation-aftermath",
+    "type": "job",
+    "intervalMs": 300000,
+    "enabled": true,
+    "description": "Evaluate completed sessions — runs every 5 minutes",
+    "handler": {
+      "workflow": "evaluator-aftermath",
+      "agent": "evaluator",
+      "task": "Run session aftermath evaluation. Read criteria from projects/evaluation.app/criteria/criteria.md. Evaluate recent completed sessions that have not been evaluated yet. Write results to the evaluations DB table with criteriaVersion=v1.",
+      "timeoutMs": 600000
+    },
+    "on": ["evaluation.tick"],
+    "context": [
+      "projects/evaluation.app/criteria/criteria.md",
+      "projects/evaluation.app/criteria/scoring.md"
+    ]
+  },
+  {
+    "name": "evaluation-drift-detection",
+    "type": "job",
+    "intervalMs": 3600000,
+    "enabled": true,
+    "description": "Detect per-agent behavioral drift — runs hourly",
+    "handler": {
+      "workflow": "evaluator-heartbeat",
+      "agent": "evaluator",
+      "task": "Run drift detection. Compare recent session scores per agent against 7-day baseline. Flag agents with >10% quality drop. Write findings to projects/evaluation.app/reports/drift/.",
+      "timeoutMs": 900000
+    },
+    "on": ["evaluation.drift.tick"],
+    "context": [
+      "projects/evaluation.app/criteria/criteria.md"
+    ]
+  },
+  {
+    "name": "evaluation-integrity-patrol",
+    "type": "job",
+    "intervalMs": 21600000,
+    "enabled": true,
+    "description": "System integrity patrol — runs every 6 hours",
+    "handler": {
+      "workflow": "evaluator-heartbeat",
+      "agent": "evaluator",
+      "task": "Run integrity patrol. Check active session health, compliance snapshot, and evaluation pipeline liveness. Write findings to projects/evaluation.app/reports/patrol/.",
+      "timeoutMs": 900000
+    },
+    "on": ["evaluation.patrol.tick"],
+    "context": [
+      "projects/evaluation.app/criteria/criteria.md"
+    ]
+  }
+]
