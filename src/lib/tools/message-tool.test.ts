@@ -10,7 +10,7 @@ interface CapturedEvent {
   [key: string]: unknown;
 }
 
-function setup(overrides: Partial<{ allowedTargets: string[]; persistDir: string; triggerResult: boolean }> = {}) {
+function setup(overrides: Partial<{ allowedTargets: string[] | (() => string[]); persistDir: string; triggerResult: boolean }> = {}) {
   const events: CapturedEvent[] = [];
   const triggers: string[] = [];
   const tool = createMessageTool({
@@ -96,6 +96,23 @@ describe("message tool", () => {
 
     const allowed = await call(tool, { to: "human", content: "status" });
     expect(allowed.error).toBeUndefined();
+  });
+
+  it("supports lazy allowedTargets function that re-evaluates on each call", async () => {
+    const targets = ["dev"];
+    const { tool } = setup({ allowedTargets: () => [...targets] });
+
+    // Initially only "dev" is allowed
+    const allowed = await call(tool, { to: "dev", content: "hi" });
+    expect(allowed.error).toBeUndefined();
+
+    const denied = await call(tool, { to: "scout", content: "hi" });
+    expect(denied.error).toMatch(/Unknown message target/);
+
+    // Add "scout" dynamically — simulates agent loaded after tool creation
+    targets.push("scout");
+    const nowAllowed = await call(tool, { to: "scout", content: "hi" });
+    expect(nowAllowed.error).toBeUndefined();
   });
 
   it("uses only human as the shorthand for human:operator", async () => {

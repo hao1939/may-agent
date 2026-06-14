@@ -227,6 +227,155 @@ describe("project app loader", () => {
     }
   });
 
+  it("offers metric feedback events to the resolved owner app without explicit metric subscriptions", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        async onEvent(ctx, event) {
+          if (event.type === "metric.breach") {
+            return ctx.emit({
+              type: "project.owner.requested",
+              project: "sample",
+              reason: "metric-breach",
+              params: { metricId: event.metricId, alertId: event.alertId }
+            });
+          }
+          if (event.type === "project.owner.requested") return ctx.noop("owner wake handled");
+          return undefined;
+        }
+      }`,
+      );
+
+      const observed: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: { hasAgent: (name: string) => name === "sample-owner" } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "metric.breach",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: {
+          metricId: "sample.task.no-work",
+          project: "sample",
+          alertId: 7,
+          current: 1,
+          threshold: 0,
+          priority: "P1",
+        },
+      } as any);
+      await waitForMicrotasks();
+      await waitForMicrotasks();
+
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "metric.feedback.routed",
+          owner: "agent:sample-owner",
+          data: expect.objectContaining({
+            metricId: "sample.task.no-work",
+            alertId: 7,
+            project: "sample",
+            appId: "sample",
+            route: "owner-app",
+            eventType: "metric.breach",
+          }),
+        }),
+      );
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "project.owner.requested",
+          owner: "agent:sample-owner",
+          data: expect.objectContaining({
+            project: "sample",
+            reason: "metric-breach",
+            params: { metricId: "sample.task.no-work", alertId: 7 },
+          }),
+        }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("falls back to the owner session when metric feedback is not handled by the app", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        async onEvent() { return undefined; }
+      }`,
+      );
+
+      const calls: Array<{ agent: string; task: string; opts: Record<string, unknown> | undefined }> = [];
+      const observed: Array<Record<string, unknown>> = [];
+      const bus = new EventBus();
+      bus.subscribe((event) => observed.push(event as unknown as Record<string, unknown>), { priority: "first" });
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager: {
+          hasAgent: (name: string) => name === "sample-owner",
+          runAgent: (agent: string, task: string, opts?: Record<string, unknown>) => {
+            calls.push({ agent, task, opts });
+            return "sess_metric";
+          },
+        } as any,
+        bus,
+        agentCrons: new Map(),
+      });
+
+      bus.emit({
+        type: "metric.breach",
+        source: "test",
+        owner: "agent:sample-owner",
+        data: {
+          metricId: "sample.task.no-work",
+          alertId: 7,
+          current: 1,
+          threshold: 0,
+          priority: "P1",
+        },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0]!.agent).toBe("sample-owner");
+      expect(calls[0]!.opts?.projectId).toBe("sample");
+      expect(calls[0]!.task).toContain("metric feedback event");
+      expect(calls[0]!.task).toContain("sample.task.no-work");
+      expect(observed).toContainEqual(
+        expect.objectContaining({
+          type: "metric.feedback.routed",
+          owner: "agent:sample-owner",
+          data: expect.objectContaining({
+            metricId: "sample.task.no-work",
+            alertId: 7,
+            appId: "sample",
+          }),
+        }),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("does not fallback when app onEvent explicitly noops", async () => {
     const root = tempRoot();
     try {

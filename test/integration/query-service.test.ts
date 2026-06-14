@@ -183,6 +183,16 @@ describe("QueryService", () => {
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
       ["metric.alert_judged", "arc", "may", JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id }), now - 300],
     );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "metric.feedback.routed",
+        "project-app-loader",
+        "agent:arc",
+        JSON.stringify({ metricId: "handler.failed-count", alertId: alert.id, route: "owner-app" }),
+        now - 350,
+      ],
+    );
 
     const state = query.metricAlertReactorState({
       metricId: "handler.failed-count",
@@ -199,6 +209,7 @@ describe("QueryService", () => {
     expect(state.alert).toMatchObject({ id: alert.id, metric_id: "handler.failed-count" });
     expect(state.latestSnapshot).toMatchObject({ value: 5, sample_size: 12 });
     expect(state.latestJudgment).toMatchObject({ id: expect.any(Number) });
+    expect(state.recentFeedbackRouted).toMatchObject({ id: expect.any(Number), owner: "agent:arc" });
     expect(state.recentTriageRun).toMatchObject({ runId: "wr_triage", status: "done" });
     expect(state.recentTriageJudgment).toMatchObject({ id: expect.any(Number) });
     expect(state.recentOwnerSession).toMatchObject({ sessionId: "s_owner", status: "done" });

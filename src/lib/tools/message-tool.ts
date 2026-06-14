@@ -39,8 +39,10 @@ export interface MessageToolOptions {
   getCallerSessionId?: () => string | undefined;
   /** Optional: function to trigger a target agent's heartbeat. */
   triggerHeartbeat?: (agent: string) => boolean;
-  /** Optional: list of agents this tool is allowed to send to. */
-  allowedTargets?: string[];
+  /** Optional: list of agents this tool is allowed to send to.
+   *  Can be a static array or a lazy function (re-evaluated on each call)
+   *  so that targets discovered after tool creation are visible. */
+  allowedTargets?: string[] | (() => string[]);
 }
 
 const messageParams = Type.Object({
@@ -94,6 +96,11 @@ type MessageParams = Static<typeof messageParams> & {
 
 function textResult(text: string): AgentToolResult<undefined> {
   return { content: [{ type: "text" as const, text }], details: undefined };
+}
+
+function resolveAllowedTargets(targets?: string[] | (() => string[])): string[] | undefined {
+  if (!targets) return undefined;
+  return typeof targets === "function" ? targets() : targets;
 }
 
 function allowedTargetSet(targets?: string[]): Set<string> | null {
@@ -153,7 +160,7 @@ export function createMessageTool(opts: MessageToolOptions): AgentTool {
 
       const requestedTarget = params.to;
       params.to = normalizeTarget(params.to);
-      const allowedTargets = allowedTargetSet(opts.allowedTargets);
+      const allowedTargets = allowedTargetSet(resolveAllowedTargets(opts.allowedTargets));
       if (allowedTargets && !allowedTargets.has(params.to)) {
         const reason = `Unknown message target "${params.to}"`;
         const hint = targetHint(requestedTarget, allowedTargets);

@@ -228,8 +228,32 @@ function isProjectScopedForApp(event: Record<string, unknown>, appId: string): b
   return project === appId || project === `${appId}.app`;
 }
 
-function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string): boolean {
+function ownerAgentValue(event: Record<string, unknown>): string {
+  const owner = typeof event.owner === "string" ? event.owner.trim() : "";
+  return owner.startsWith("agent:") ? owner.slice("agent:".length) : owner;
+}
+
+function isMetricFeedbackEvent(event: Record<string, unknown>): boolean {
+  return event.type === "metric.breach" || event.type === "metric.recovered" || event.type === "metric.stalled";
+}
+
+function metricEventId(event: Record<string, unknown>): string {
+  const metricId = event.metricId ?? event.metric_id;
+  return typeof metricId === "string" ? metricId : "";
+}
+
+function metricAlertId(event: Record<string, unknown>): number | string | null {
+  const alertId = event.alertId ?? event.alert_id;
+  return typeof alertId === "number" || typeof alertId === "string" ? alertId : null;
+}
+
+function isOwnerMetricFeedbackForApp(event: Record<string, unknown>, appOwner: string): boolean {
+  return isMetricFeedbackEvent(event) && ownerAgentValue(event) === appOwner;
+}
+
+function shouldOfferToApp(app: ProjectApp, event: Record<string, unknown>, appId: string, appOwner: string): boolean {
   if ((app.events ?? []).some((selector) => matchesSelector(selector, event, appId))) return true;
+  if (isOwnerMetricFeedbackForApp(event, appOwner)) return true;
   return typeof event.type === "string" && event.type.startsWith("project.") && isProjectScopedForApp(event, appId);
 }
 
@@ -269,12 +293,15 @@ function makeContext(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDescri
 }
 
 function ownerFallbackTask(descriptor: ProjectAppDescriptor, event: Record<string, unknown>): string {
+  const metricFeedback = isMetricFeedbackEvent(event);
   return [
     `Project app: ${descriptor.id}`,
     `App path: ${descriptor.appDir}`,
     `Project path: ${descriptor.projectDir}`,
     "",
-    "A project-scoped event has no explicit app workflow handler. Review the event, decide whether the task tree, project model, or project artifacts need to change, and take the smallest useful action.",
+    metricFeedback
+      ? "A metric feedback event reached this app owner but no explicit app handler accepted it. Review the metric alert, decide whether the project/task tree, metric definition, or owner context needs to change, and take the smallest useful action."
+      : "A project-scoped event has no explicit app workflow handler. Review the event, decide whether the task tree, project model, or project artifacts need to change, and take the smallest useful action.",
     "",
     "## Event",
     "```json",
@@ -421,16 +448,33 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent) => {
-    const event = flattenEvent(rawEvent);
+  const event = flattenEvent(rawEvent);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
-      if (!shouldOfferToApp(descriptor.app, event, descriptor.id)) continue;
+      if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
+      const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
+      if (ownerMetricFeedback) {
+        opts.bus.emit({
+          type: "metric.feedback.routed",
+          source: "project-app-loader",
+          owner: `agent:${descriptor.owner}`,
+          data: {
+            metricId: metricEventId(event),
+            alertId: metricAlertId(event),
+            project: projectValue(event) || null,
+            appId: descriptor.id,
+            appPath: descriptor.appDir,
+            route: "owner-app",
+            eventType: event.type,
+          },
+        } as AgentEvent);
+      }
       void Promise.resolve()
         .then(async () => {
           const ctx = makeContext(opts, descriptor);
           const result = descriptor.app.onEvent ? await descriptor.app.onEvent(ctx, event) : undefined;
           if (result !== undefined) return;
           if (hasExplicitWorkflowHandler(descriptor.app, event.type)) return;
-          if (!isProjectScopedForApp(event, descriptor.id)) return;
+          if (!isProjectScopedForApp(event, descriptor.id) && !ownerMetricFeedback) return;
 
           const sessionId = opts.manager.runAgent(descriptor.owner, ownerFallbackTask(descriptor, event), {
             source: "project-app:fallback",
@@ -487,9 +531,7 @@ export async function installProjectApps(
     };
     if (!opts.manager.hasAgent(descriptor.owner)) {
       // App brings its own agent — try to register from local agent.json
-      const registered = opts.registerOwnerAgent
-        ? await opts.registerOwnerAgent(descriptor.owner, appDir)
-        : false;
+      const registered = opts.registerOwnerAgent ? await opts.registerOwnerAgent(descriptor.owner, appDir) : false;
       if (!registered) {
         opts.bus.emit({
           type: "info",
