@@ -322,6 +322,7 @@ describe("telegram reply e2e", () => {
     const comments: any[] = [];
     const steers: any[] = [];
     const replies: any[] = [];
+    let activeChatSessionId = "";
     bus.subscribe((event: any) => {
       if (event.type === "chat.start.requested") chatStarts.push(event);
       if (event.type === "project.comment.created") comments.push(event);
@@ -334,7 +335,7 @@ describe("telegram reply e2e", () => {
       projectRoot,
       bus,
       manager: {} as any,
-      getSessionId: () => "",
+      getSessionId: () => activeChatSessionId,
       interfaceAgent: "may",
     });
     const router = attachCommandRouter({
@@ -372,6 +373,22 @@ describe("telegram reply e2e", () => {
       expect(
         sentMessages.some(
           (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 701,
+        ),
+      ).toBe(true);
+    });
+
+    activeChatSessionId = "s_canonical_may";
+    bus.emit({
+      type: "text",
+      sessionId: activeChatSessionId,
+      agent: "may",
+      text: "I updated the scoped plan with your feedback.",
+    } as any);
+
+    await waitFor(() => {
+      expect(
+        sentMessages.some(
+          (m) => m.text.includes("updated the scoped plan") && (m.reply_parameters as any)?.message_id === 701,
         ),
       ).toBe(true);
     });

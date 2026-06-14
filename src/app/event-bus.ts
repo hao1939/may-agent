@@ -25,7 +25,7 @@ export type AgentCommand =
     }
   | { type: "input"; sessionId?: string; message: string; source?: string }
   | { type: "steer"; sessionId?: string; message: string; source?: string }
-  | { type: "chat.start.requested"; source: string; owner: string; data: { agent?: string; message: string; channel?: string; channelThreadId?: string; forceNew?: boolean; requestId?: string } }
+  | { type: "chat.start.requested"; source: string; owner: string; data: { agent?: string; message: string; channel?: string; channelThreadId?: string; channelMessageId?: number; forceNew?: boolean; requestId?: string } }
   | { type: "session.steer.requested"; source: string; owner: string; data: { sessionId: string; message: string } }
   | { type: "cancel"; sessionId: string }
   | { type: "cancel_all" }
