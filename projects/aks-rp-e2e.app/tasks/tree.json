@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-14T19:37:03.744Z",
+  "updated_at": "2026-06-14T19:46:54.252Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "extract-rp-enumerate-crossattribute",
+  "active_task_id": null,
   "tasks": {
     "project": {
       "id": "project",
@@ -20,7 +20,8 @@
         "go-e2e-source-inventory-and-feature-completion",
         "runner-step-visibility",
         "feature-spec-model-hygiene",
-        "all-spec-verification-and-evidence-closure"
+        "all-spec-verification-and-evidence-closure",
+        "owner-checkpoint-step"
       ],
       "parent_id": null,
       "priority": "P1",
@@ -209,7 +210,7 @@
         "accepted_by": "watchdog-reconcile",
         "acceptance_notes": "All 25 top-level branches accepted (353/353 tasks). 324 features, 328 paths, 301 pass (91.8%), 27 terminal-classified. Expansion batches 3-8 complete. Project wind-down reached natural completion."
       },
-      "state": "active",
+      "state": "backlog",
       "resolution": "completed"
     },
     "spec-runner-and-replays": {
@@ -3103,7 +3104,7 @@
     "combined-scenario-planning-and-execution": {
       "id": "combined-scenario-planning-and-execution",
       "parent_id": "project",
-      "state": "active",
+      "state": "done",
       "kind": "work",
       "priority": "P0",
       "owner": "aks-explorer",
@@ -3393,7 +3394,7 @@
     "combined-scenario-execution-waves-20260614": {
       "id": "combined-scenario-execution-waves-20260614",
       "parent_id": "combined-scenario-planning-and-execution",
-      "state": "active",
+      "state": "done",
       "kind": "work",
       "priority": "P0",
       "owner": "aks-explorer",
@@ -3567,7 +3568,7 @@
     "go-e2e-source-inventory-and-feature-completion": {
       "id": "go-e2e-source-inventory-and-feature-completion",
       "parent_id": "project",
-      "state": "active",
+      "state": "done",
       "kind": "work",
       "priority": "P0",
       "owner": "aks-explorer",
@@ -3720,7 +3721,7 @@
     "go-e2e-gap-extraction-batches-20260614": {
       "id": "go-e2e-gap-extraction-batches-20260614",
       "parent_id": "go-e2e-source-inventory-and-feature-completion",
-      "state": "active",
+      "state": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "aks-explorer",
@@ -4139,7 +4140,7 @@
     "wave1-oidc-enrich-compatibility": {
       "id": "wave1-oidc-enrich-compatibility",
       "parent_id": "combined-scenario-execution-waves-20260614",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -4169,12 +4170,26 @@
         "previous_attempt_id": "a_wave1-oidc-enrich-compatibility_20260614191245",
         "promoted_at": "2026-06-14T19:31:01.450Z",
         "promoted_by": "task-tree-tool",
-        "current_attempt_id": "a_wave1-oidc-enrich-compatibility_20260614193703"
+        "current_attempt_id": "a_wave1-oidc-enrich-compatibility_20260614193703",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All 3 OIDC issuer specs for combined Run 3 were enriched in the previous attempt and verified persisted in this attempt. All specs have compatibleGroupKey=oidc-issuer.lifecycle, aligned clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder matching the plan (5→10→15), populated canShareClusterWith arrays with pairwise cross-references, and compatibility blocks with diagnosticRisk. All 6 pairwise directions pass per compatibility contract §2.1. All files are valid JSON.",
+        "last_worker_completed_at": "2026-06-14T19:38:59.964Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:42:12.239Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: all 3 OIDC lifecycle specs (default-by-version, signing-key-rotation, jwks-endpoint-validation) have compatibleGroupKey=oidc-issuer.lifecycle, clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder 5/10/15, and pairwise canShareClusterWith cross-references in compatibility blocks. Domain checks pass."
       },
       "session_id": "s_task_wave1-oidc-enrich-compatibility",
       "session_history": [
         "s_task_wave1-oidc-enrich-compatibility"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:42:12.239Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: all 3 OIDC lifecycle specs (default-by-version, signing-key-rotation, jwks-endpoint-validation) have compatibleGroupKey=oidc-issuer.lifecycle, clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder 5/10/15, and pairwise canShareClusterWith cross-references in compatibility blocks. Domain checks pass."
+      }
     },
     "wave1-keda-enrich-compatibility": {
       "id": "wave1-keda-enrich-compatibility",
@@ -4393,7 +4408,7 @@
     "extract-speculor-enumerate": {
       "id": "extract-speculor-enumerate",
       "parent_id": "go-e2e-gap-extraction-batches-20260614",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -4423,17 +4438,31 @@
         "stale_active_requeued_at": "2026-06-14T19:24:54.656Z",
         "stale_active_requeue_reason": "watchdog-stale-active-review",
         "previous_attempt_id": "a_extract-speculor-enumerate_20260614192318",
-        "current_attempt_id": "a_extract-speculor-enumerate_20260614192454"
+        "current_attempt_id": "a_extract-speculor-enumerate_20260614192454",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Deliverable evidence/archive/speculor-enumeration.md produced (483 lines). 114 scenarios enumerated across 5 sub-areas (cloudprovider, privatecluster/privatelink, privatecluster/apiservervnetintegration, netintegration, storage). 27 existing specs mapped, 62 new unmapped gaps identified with ISP/ESP/ENV/EXEC variant classification.",
+        "last_worker_completed_at": "2026-06-14T19:46:22.282Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:46:48.307Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: deliverable evidence/archive/speculor-enumeration.md (483 lines), 114 scenarios across 5 sub-areas with variant classification. Worker session completed successfully."
       },
       "session_id": "s_task_extract-speculor-enumerate",
       "session_history": [
         "s_task_extract-speculor-enumerate"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:46:48.307Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: deliverable evidence/archive/speculor-enumeration.md (483 lines), 114 scenarios across 5 sub-areas with variant classification. Worker session completed successfully."
+      }
     },
     "extract-rp-enumerate-crossattribute": {
       "id": "extract-rp-enumerate-crossattribute",
       "parent_id": "go-e2e-gap-extraction-batches-20260614",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -4460,12 +4489,26 @@
         "assigned_at": "2026-06-14T19:21:30.899Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_extract-rp-enumerate-crossattribute"
+        "last_session": "s_task_extract-rp-enumerate-crossattribute",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Deliverable evidence/archive/rp-enumeration.md produced (365 lines). 89 Go scenarios enumerated: 36 mapped to existing specs, 19 cross-attributed to other SIGs (no-ops), 27 genuine gaps identified, 7 EXEC/suite-only no-ops. 2 new sub-areas (HCP, nodeless) identified for feature YAML creation.",
+        "last_worker_completed_at": "2026-06-14T19:46:27.927Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-14T19:46:54.249Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Verified: deliverable evidence/archive/rp-enumeration.md (365 lines), 89 Go scenarios with cross-attribution. 36 mapped, 19 cross-attributed no-ops, 27 genuine gaps, 2 new sub-areas. Worker session completed successfully."
       },
       "session_id": "s_task_extract-rp-enumerate-crossattribute",
       "session_history": [
         "s_task_extract-rp-enumerate-crossattribute"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-14T19:46:54.249Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Verified: deliverable evidence/archive/rp-enumeration.md (365 lines), 89 Go scenarios with cross-attribution. 36 mapped, 19 cross-attributed no-ops, 27 genuine gaps, 2 new sub-areas. Worker session completed successfully."
+      }
     },
     "runner-step-visibility": {
       "id": "runner-step-visibility",
@@ -4524,13 +4567,31 @@
         "Final summary shows pass/fail count and first failure if any",
         "At least one replay (e.g. managedsystem-rest-add-existing) demonstrates the contract"
       ]
+    },
+    "owner-checkpoint-step": {
+      "id": "owner-checkpoint-step",
+      "parent_id": "project",
+      "state": "backlog",
+      "kind": "work",
+      "priority": "P1",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Wire domain-checkpoint.ts into the project-planner workflow as a post-review step. After task-tree updates, scan dirty files, classify by task refs, commit done slices.",
+      "context": {
+        "existing_tool": "scripts/domain-checkpoint.ts already classifies dirty files into hold/candidate/needs-review. It needs a commit-execution path and integration into the owner workflow.",
+        "design": "See may-agent.app/docs/2a-design/project-app-v3.md §Owner Checkpoint Step",
+        "scope": "projects/aks-rp-e2e.app/ + domain workspace. Never git add -A.",
+        "not_auto_commit": "Owner decides which candidates to commit. Hold active/review work."
+      },
+      "acceptance": [
+        "project-planner workflow includes a checkpoint step after task-tree review",
+        "Done-task files are committed with task-referencing messages",
+        "Active/review-task files are held, not committed",
+        "No regressions — existing planner behavior unchanged"
+      ]
     }
   },
-  "active_task_ids": [
-    "extract-rp-enumerate-crossattribute",
-    "extract-speculor-enumerate",
-    "wave1-oidc-enrich-compatibility"
-  ],
+  "active_task_ids": [],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
       "goal": "Execute KMS v2 Managed HSM replay against staging.",

@@ -1,12 +1,12 @@
 {
-  "version": 1,
+  "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-14T09:30:00Z",
+  "updated_at": "2026-06-14T19:45:30.719Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
-  "active_task_ids": ["event-native-project-task-loops-review", "platform-signal-intake-loop"],
-  "max_concurrent": 2,
+  "active_task_ids": [],
+  "max_concurrent": 3,
   "tasks": {
     "project": {
       "id": "project",
@@ -18,10 +18,14 @@
         "platform-web-ui-observability",
         "platform-project-app-v2-adoption",
         "platform-build-test-release-hygiene",
+        "platform-agent-registration-hygiene",
         "platform-signal-intake-loop",
-        "platform-project-app-v3-loader"
+        "platform-project-app-v3-loader",
+        "platform-sdk-expansion",
+        "platform-project-app-workflow-resolution",
+        "platform-system-review-feedback-loop",
+        "sdk-checkpoint-helper"
       ],
-      "status": "decomposed",
       "kind": "project",
       "priority": "P0",
       "owner": "tech-lead",
@@ -47,7 +51,9 @@
       "gates": [],
       "conflict_scope": [
         "platform-root"
-      ]
+      ],
+      "state": "backlog",
+      "updated_at": "2026-06-14T19:45:30.715Z"
     },
     "platform-runtime-contracts": {
       "id": "platform-runtime-contracts",
@@ -55,7 +61,6 @@
       "children": [
         "project-app-v2-runtime-contract-audit"
       ],
-      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -81,13 +86,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T17:25:00Z",
         "reason": "V3 project app design and implementation establish clear runtime boundaries. project-app-v3.md defines the contract, project-app-loader.ts enforces it. Child audit task accepted as superseded."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "project-app-v2-runtime-contract-audit": {
       "id": "project-app-v2-runtime-contract-audit",
       "parent_id": "platform-runtime-contracts",
       "children": [],
-      "status": "accepted",
       "kind": "review",
       "priority": "P1",
       "owner": "tech-lead",
@@ -115,7 +121,9 @@
         "verdict": "accepted",
         "ts": "2026-06-13T17:25:00Z",
         "reason": "Superseded by V3 project app loader workstream. V3 design doc (project-app-v3.md), implementation (project-app-loader.ts, 566 lines, 13 tests), and cron event-scoping fix address all V2 contract gaps identified during platform adoption. No remaining V2-specific audit is needed."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "platform-event-session-task-execution": {
       "id": "platform-event-session-task-execution",
@@ -125,9 +133,8 @@
         "cron-event-dispatch-project-scoping",
         "fm34-guard-planning-session-fix"
       ],
-      "status": "decomposed",
       "kind": "workstream",
-      "priority": "P0",
+      "priority": "P1",
       "owner": "tech-lead",
       "goal": "Keep project planning, worker pickup, completion, and rollup event-native and observable.",
       "inputs": [
@@ -146,13 +153,19 @@
       "gates": [],
       "conflict_scope": [
         "platform-event-task-execution"
-      ]
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:22:00Z",
+        "reason": "All 3 children complete: cron-event-dispatch-project-scoping (project-scope filter live), fm34-guard-planning-session-fix (persistent-task opt-out live), event-native-project-task-loops-review (V3 loader validates event-native contract). Task loops are event-native and observable."
+      }
     },
     "event-native-project-task-loops-review": {
       "id": "event-native-project-task-loops-review",
       "parent_id": "platform-event-session-task-execution",
       "children": [],
-      "status": "ready",
       "kind": "review",
       "priority": "P1",
       "owner": "tech-lead",
@@ -174,7 +187,17 @@
       "gates": [],
       "conflict_scope": [
         "platform-event-task-execution"
-      ]
+      ],
+      "state": "done",
+      "context": {
+        "migrated_from_ready_state": true
+      },
+      "resolution": "superseded",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:22:00Z",
+        "reason": "Superseded by V3 loader implementation and cron project-scope filter. The event-native contract is validated by: (1) project-app-loader.ts discovers and installs handlers event-natively, (2) cron eventProjectId filter routes events to correct project handlers, (3) app.ts onEvent adapters convert domain events to owner events, (4) 14+ consecutive review cycles showing 100% correct event scoping. The contract is implemented, not stubbed."
+      }
     },
     "platform-persistence-read-models": {
       "id": "platform-persistence-read-models",
@@ -182,7 +205,6 @@
       "children": [
         "generic-project-task-read-model-hardening"
       ],
-      "status": "decomposed",
       "kind": "workstream",
       "priority": "P1",
       "owner": "tech-lead",
@@ -203,13 +225,13 @@
       "gates": [],
       "conflict_scope": [
         "platform-read-models"
-      ]
+      ],
+      "state": "backlog"
     },
     "generic-project-task-read-model-hardening": {
       "id": "generic-project-task-read-model-hardening",
       "parent_id": "platform-persistence-read-models",
       "children": [],
-      "status": "proposed",
       "kind": "work",
       "priority": "P2",
       "owner": "tech-lead",
@@ -230,7 +252,11 @@
       "gates": [],
       "conflict_scope": [
         "platform-read-models"
-      ]
+      ],
+      "state": "backlog",
+      "context": {
+        "migrated_from_proposed_state": true
+      }
     },
     "platform-web-ui-observability": {
       "id": "platform-web-ui-observability",
@@ -240,7 +266,6 @@
         "shared-project-kanban-platform-ui",
         "shared-kanban-steering-actions-design"
       ],
-      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -268,13 +293,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T21:16:00Z",
         "reason": "Generic project task API and shared Kanban board are live for all 3 project apps. WebUI build synced. Only the P2 steering actions design remains as future work."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "project-kanban-api-read-model": {
       "id": "project-kanban-api-read-model",
       "parent_id": "platform-web-ui-observability",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
@@ -301,13 +327,14 @@
         "verdict": "accepted",
         "ts": "2026-06-03T00:00:00Z",
         "reason": "Implemented generic task-tree read endpoint."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "shared-project-kanban-platform-ui": {
       "id": "shared-project-kanban-platform-ui",
       "parent_id": "platform-web-ui-observability",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
@@ -341,13 +368,14 @@
         "verdict": "accepted",
         "ts": "2026-06-03T10:14:45Z",
         "reason": "Kanban tab wired into project detail, static UI synced, TypeScript check passed, focused HTTP tests passed, and changed browser scripts parse."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "shared-kanban-steering-actions-design": {
       "id": "shared-kanban-steering-actions-design",
       "parent_id": "platform-web-ui-observability",
       "children": [],
-      "status": "proposed",
       "kind": "design",
       "priority": "P2",
       "owner": "tech-lead",
@@ -369,7 +397,11 @@
       "gates": [],
       "conflict_scope": [
         "platform-webui-projects"
-      ]
+      ],
+      "state": "backlog",
+      "context": {
+        "migrated_from_proposed_state": true
+      }
     },
     "platform-project-app-v2-adoption": {
       "id": "platform-project-app-v2-adoption",
@@ -379,7 +411,6 @@
         "platform-v2-second-adopter-rollup",
         "project-app-v2-adoption-playbook"
       ],
-      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -410,13 +441,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T21:16:00Z",
         "reason": "V2 layout migration accepted, second-adopter rollup superseded by V3 design. V3 loader, project-scope filter, and 3 live apps validate the adoption pattern. Only the P2 adoption playbook doc remains as a future documentation task."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "platform-v2-layout-migration": {
       "id": "platform-v2-layout-migration",
       "parent_id": "platform-project-app-v2-adoption",
       "children": [],
-      "status": "accepted",
       "kind": "migration",
       "priority": "P0",
       "owner": "tech-lead",
@@ -451,13 +483,14 @@
         "verdict": "accepted",
         "ts": "2026-06-03T10:14:45Z",
         "reason": "Platform .app runtime frame, JSONL streams, workflow/archive notes, and canonical tasks/tree.json were added additively; legacy files were preserved."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "platform-v2-second-adopter-rollup": {
       "id": "platform-v2-second-adopter-rollup",
       "parent_id": "platform-project-app-v2-adoption",
       "children": [],
-      "status": "accepted",
       "kind": "parent_review",
       "priority": "P1",
       "owner": "tech-lead",
@@ -485,13 +518,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T21:07:00Z",
         "reason": "Superseded by V3 design and implementation. project-app-v3.md captures what worked in V2 (event-based control plane, additive .app layout), what was weak (project scoping, handler isolation, embedded .app), and what changed (sibling .app convention, V3 loader discovery, cron project-scope filter). Shared Kanban verified on all 3 project task trees (may-agent, aks-rp-e2e, scout-knowledge-lib)."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "project-app-v2-adoption-playbook": {
       "id": "project-app-v2-adoption-playbook",
       "parent_id": "platform-project-app-v2-adoption",
       "children": [],
-      "status": "proposed",
       "kind": "documentation",
       "priority": "P2",
       "owner": "tech-lead",
@@ -518,7 +552,11 @@
       "gates": [],
       "conflict_scope": [
         "platform-v2-docs"
-      ]
+      ],
+      "state": "backlog",
+      "context": {
+        "migrated_from_proposed_state": true
+      }
     },
     "platform-build-test-release-hygiene": {
       "id": "platform-build-test-release-hygiene",
@@ -526,9 +564,9 @@
       "children": [
         "platform-v2-webui-build-and-check",
         "cron-config-stale-context-cleanup",
-        "deploy-committed-platform-changes"
+        "deploy-committed-platform-changes",
+        "disable-legacy-evaluator-aftermath-cron"
       ],
-      "status": "accepted",
       "kind": "workstream",
       "priority": "P1",
       "owner": "tech-lead",
@@ -553,15 +591,16 @@
       ],
       "verification": {
         "verdict": "accepted",
-        "ts": "2026-06-13T21:07:00Z",
-        "reason": "All 3 children accepted: WebUI build/sync verified (source and generated JS match), stale cron context paths fixed (23 cron tests pass), platform binary deployed to all 3 environments with cron project-scope filter. TypeScript check clean. Zero handler errors since deploy."
-      }
+        "ts": "2026-06-14T15:33:00Z",
+        "reason": "All 4 children accepted: WebUI build/sync verified (source and generated JS match), stale cron context paths fixed (23 cron tests pass), platform binary deployed to all environments with V3 loader + project-scope filter + agent-override logic, legacy evaluator-aftermath cron disabled. TypeScript check clean. Zero handler errors since 15:31 UTC restart."
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "platform-v2-webui-build-and-check": {
       "id": "platform-v2-webui-build-and-check",
       "parent_id": "platform-build-test-release-hygiene",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P1",
       "owner": "tech-lead",
@@ -589,13 +628,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T19:00:00Z",
         "reason": "build-webui.ts generates to may-agent/ui, /app/ui, and platform/ui. TypeScript check clean. 4 HTTP project-sections tests pass. 23 cron tests pass. All acceptance criteria met."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "cron-event-dispatch-project-scoping": {
       "id": "cron-event-dispatch-project-scoping",
       "parent_id": "platform-event-session-task-execution",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P1",
       "owner": "tech-lead",
@@ -632,13 +672,14 @@
         "observed_at": "2026-06-13T16:17:00Z",
         "evidence": "handler.started event for may-agent-project-planner at timestamp 1781367454489, triggered by scout-knowledge-lib's scheduled-library-maintenance event at 1781367454488.",
         "fix_direction": "Either (a) add a projectId field to CronEntry and filter in triggerSubscribers, or (b) make installWorkflowHandlers store the project app's event selectors alongside the subscription and check them before firing."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "fm34-guard-planning-session-fix": {
       "id": "fm34-guard-planning-session-fix",
       "parent_id": "platform-event-session-task-execution",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
@@ -667,25 +708,25 @@
       ],
       "verification": {
         "verdict": "accepted",
-        "ts": "2026-06-14T09:30:00Z",
-        "reason": "Added persistent-task opt-out regex to isPersistentTaskRequired() in finish-guard.ts. Added 'persistent-task: skip' to may-agent planner task text. 48 guard tests pass, 39 finish-guard tests pass, TypeScript check clean. The guard dynamically loads from disk so fix is immediately live."
+        "ts": "2026-06-14T11:59:00Z",
+        "reason": "Added persistent-task opt-out regex to isPersistentTaskRequired() in finish-guard.ts. Added 'persistent-task: skip' to may-agent planner task text AND may heartbeat cron handler task text. 48 guard tests pass, 39 finish-guard tests pass, TypeScript check clean. The guard dynamically loads from disk so fix is immediately live. Heartbeat cron.json fix deployed 2026-06-14T11:59Z to address residual 8% heartbeat FM-3.4 blocks caused by injected event signals containing 'project:' at line start."
       },
       "context": {
         "root_cause": "The FM-3.4 guard's heuristic 'has project: field → requires persistent-task workflow' falsely triggers for project-app planning sessions that use verify-wrap workflow. Planning sessions review/update task trees — they are one-shot reviews, not multi-iteration implementation work requiring persistent-task. The guard had no opt-out mechanism.",
         "observed_at": "2026-06-14T09:12:00Z",
         "evidence": "36 out of 42 may-agent workflow runs (85.7%) escalated with 'FM-3.4 Persistent-Task Required'. Only 1 run ever completed successfully. Other project apps (aks-rp-e2e, scout-knowledge-lib) unaffected because they use custom workflows (project-planner, knowledge-planner) rather than verify-wrap.",
         "fix_approach": "Two-part fix: (1) Add opt-out sentinel check in isPersistentTaskRequired() for 'persistent-task: skip|false|no|off|not-required' in task text. (2) Add 'persistent-task: skip' to may-agent planner task text in app.ts."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "platform-signal-intake-loop": {
       "id": "platform-signal-intake-loop",
       "parent_id": "project",
       "children": [],
-      "status": "ready",
       "kind": "loop_task",
       "priority": "P1",
       "owner": "tech-lead",
-      "workflow": "signal-intake",
       "goal": "Repeatedly intake platform signals and convert real platform work into concrete tasks.",
       "inputs": [
         "projects/may-agent.app/discussion.jsonl",
@@ -707,13 +748,22 @@
       "gates": [],
       "conflict_scope": [
         "platform-signal-intake"
-      ]
+      ],
+      "state": "done",
+      "context": {
+        "migrated_from_ready_state": true
+      },
+      "resolution": "superseded",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:22:00Z",
+        "reason": "Superseded by may-agent-project-planner workflow handler in app.ts. The planner wakes on project.tick (hourly), metric signals, comments, and task events — performing exactly the signal-intake function described by this task. No separate signal-intake workflow is needed. The referenced workflow 'signal-intake' never existed; the verify-wrap-based planner handler is the correct mechanism."
+      }
     },
     "cron-config-stale-context-cleanup": {
       "id": "cron-config-stale-context-cleanup",
       "parent_id": "platform-build-test-release-hygiene",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P1",
       "owner": "tech-lead",
@@ -740,13 +790,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T18:45:00Z",
         "reason": "Replaced 27 stale context paths: system-operations/project.md → may-agent.app/project.json, agent-system-evolution/project.md → may-agent.app/project.json, scout-second-brain-learning/project.md → scout-knowledge-lib.app/project.json. Updated daily-alert-review handler task/projectId. All 23 cron tests pass."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "deploy-committed-platform-changes": {
       "id": "deploy-committed-platform-changes",
       "parent_id": "platform-build-test-release-hygiene",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
@@ -785,7 +836,9 @@
           "aks_rp_e2e_container": "DEPLOYED — binary 100423808 bytes, timestamp 18:24 UTC",
           "codespace_container": "DEPLOYED — binary rebuilt at 21:01 UTC, eventProjectId present (2 matches), daemon restarted 21:03 UTC"
         }
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "platform-project-app-v3-loader": {
       "id": "platform-project-app-v3-loader",
@@ -795,7 +848,6 @@
         "project-app-v3-event-scoping",
         "project-app-v3-hot-reload"
       ],
-      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -814,7 +866,7 @@
         "Workflow handlers from project apps are installed in cron with correct project scope.",
         "Project-scoped events are routed through app onEvent before fallback.",
         "Hot-reload on app.ts file change is supported.",
-        "All 3 current project apps (aks-rp-e2e, may-agent, scout-knowledge-lib) are live."
+        "All 4 current project apps (aks-rp-e2e, evaluation, may-agent, scout-knowledge-lib) are live."
       ],
       "forbidden": [
         "Do not make the loader understand domain-specific project semantics."
@@ -826,14 +878,15 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-13T17:05:00Z",
-        "reason": "All 3 children accepted. V3 loader discovers 3 *.app/app.ts files, installs handlers with project scope, routes events through onEvent, supports hot-reload. 13 unit tests pass. TypeScript check clean. All acceptance criteria verified."
-      }
+        "reason": "All 3 children accepted. V3 loader discovers 4 *.app/app.ts files (evaluation.app added 2026-06-14), installs handlers with project scope, routes events through onEvent, supports hot-reload. 13 unit tests pass. TypeScript check clean. All acceptance criteria verified."
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "project-app-v3-loader-implementation": {
       "id": "project-app-v3-loader-implementation",
       "parent_id": "platform-project-app-v3-loader",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
@@ -860,13 +913,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T19:00:00Z",
         "reason": "project-app-loader.ts (566 lines) and test (597 lines) implemented. 13 tests pass covering discovery, owner inference, handler installation, and daemon integration. 3 live apps running."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "project-app-v3-event-scoping": {
       "id": "project-app-v3-event-scoping",
       "parent_id": "platform-project-app-v3-loader",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P0",
       "owner": "tech-lead",
@@ -891,13 +945,14 @@
         "verdict": "accepted",
         "ts": "2026-06-13T18:10:00Z",
         "reason": "Added eventProjectId helper and project-scope filter in triggerSubscribers. 3 new tests pass. All 7 cron tests and 23 integration tests pass."
-      }
+      },
+      "state": "done",
+      "resolution": "completed"
     },
     "project-app-v3-hot-reload": {
       "id": "project-app-v3-hot-reload",
       "parent_id": "platform-project-app-v3-loader",
       "children": [],
-      "status": "accepted",
       "kind": "work",
       "priority": "P1",
       "owner": "tech-lead",
@@ -922,7 +977,536 @@
         "verdict": "accepted",
         "ts": "2026-06-13T19:00:00Z",
         "reason": "Tests 'reinstalls project app handlers and router state on reload', 'removes stale project app schedules on reload', and 'auto-reloads project app manifests when the watcher sees app.ts change' all pass."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "platform-sdk-expansion": {
+      "id": "platform-sdk-expansion",
+      "parent_id": "project",
+      "children": [
+        "sdk-project-app-helpers",
+        "sdk-env-var-cleanup"
+      ],
+      "kind": "workstream",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Expand the shared SDK with reusable project-app helpers, event constructors, workflow input parsing, and task-tree store utilities so project apps share code instead of duplicating it.",
+      "inputs": [
+        "projects/may-agent/packages/sdk/src/"
+      ],
+      "outputs": [
+        "projects/may-agent/packages/sdk/src/"
+      ],
+      "acceptance": [
+        "Project apps can import event helpers, task tree store, and workflow input from the SDK.",
+        "SDK code uses generic naming, not project-specific env vars or constants."
+      ],
+      "forbidden": [
+        "Do not bake domain-specific project logic into the shared SDK."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-sdk"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T14:20:00Z",
+        "reason": "Both children accepted: sdk-project-app-helpers (event helpers, task-tree store, workflow-input) and sdk-env-var-cleanup (generic env var names). All project apps import from shared SDK. TypeScript clean."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "sdk-project-app-helpers": {
+      "id": "sdk-project-app-helpers",
+      "parent_id": "platform-sdk-expansion",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Add shared project-app event helpers (eventData, projectOwnerEvent, projectPlanningEvent), workflow-input parser, and project-task-tree-store to the SDK.",
+      "inputs": [
+        "projects/aks-rp-e2e.app/workflows/lib/",
+        "projects/may-agent/packages/sdk/src/"
+      ],
+      "outputs": [
+        "projects/may-agent/packages/sdk/src/project-app.ts",
+        "projects/may-agent/packages/sdk/src/project-task-tree-store.ts",
+        "projects/may-agent/packages/sdk/src/project-task-tree.ts",
+        "projects/may-agent/packages/sdk/src/workflow-input.ts",
+        "projects/may-agent/packages/sdk/src/project-app.test.ts"
+      ],
+      "acceptance": [
+        "eventData, projectOwnerEvent, projectPlanningEvent exported and tested.",
+        "withTreeLock, readTaskTree, saveTaskTree available in shared SDK.",
+        "WorkflowInput parser handles all known workflow input formats.",
+        "5 SDK tests pass."
+      ],
+      "forbidden": [
+        "Do not duplicate code that already exists in the SDK index."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-sdk"
+      ],
+      "context": {
+        "commits": [
+          "0983c0cf",
+          "e8df0a01",
+          "bc6bbe26"
+        ],
+        "observed_at": "2026-06-14T12:55:00Z"
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T14:20:00Z",
+        "reason": "All acceptance criteria verified: eventData/projectOwnerEvent/projectPlanningEvent exported from SDK index.ts (lines 888-892) and tested (5/5 pass in project-app.test.ts). withTreeLock/readTaskTree/saveTaskTree exported (lines 902-905). WorkflowInput parser (9 exported functions in workflow-input.ts) handles field extraction, trigger event parsing, and app dir resolution. TypeScript clean."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "sdk-env-var-cleanup": {
+      "id": "sdk-env-var-cleanup",
+      "parent_id": "platform-sdk-expansion",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Rename AKS-specific env var names (AKS_RP_E2E_TREE_LOCK_*) to generic names (PROJECT_TREE_LOCK_*) in the shared SDK project-task-tree-store.",
+      "inputs": [
+        "projects/may-agent/packages/sdk/src/project-task-tree-store.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/packages/sdk/src/project-task-tree-store.ts"
+      ],
+      "acceptance": [
+        "No AKS_RP_E2E references in shared SDK code.",
+        "TypeScript check clean.",
+        "All tests pass."
+      ],
+      "forbidden": [
+        "Do not change the aks-rp-e2e local copy — it keeps its project-specific names."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-sdk"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T14:15:00Z",
+        "reason": "Renamed AKS_RP_E2E_TREE_LOCK_WAIT_MS → PROJECT_TREE_LOCK_WAIT_MS and AKS_RP_E2E_TREE_LOCK_STALE_MS → PROJECT_TREE_LOCK_STALE_MS in shared SDK. TypeScript clean, 18 tests pass. Commit 4c01303a."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "platform-agent-registration-hygiene": {
+      "id": "platform-agent-registration-hygiene",
+      "parent_id": "project",
+      "children": [
+        "duplicate-agent-config-prevention",
+        "deploy-platform-binary-851e134f"
+      ],
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Ensure agent registration is clean: project-app agents load from their *.app/ directory only, global agents/ stubs don't cause duplicate-name errors, and the binary is deployed with all fixes.",
+      "inputs": [
+        "projects/may-agent/src/app/loader/agent-registry-loader.ts",
+        "projects/may-agent/src/app/loader/agent-discovery.ts",
+        "projects/may-agent/src/app/daemon-agents.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/loader/agent-registry-loader.ts",
+        "/usr/local/bin/may-agent"
+      ],
+      "acceptance": [
+        "No agent.config_invalid events after daemon restart.",
+        "Project-app agents are registered from *.app/agents/ without requiring global stubs.",
+        "Binary deployed with auto-register and disabled-config fixes."
+      ],
+      "forbidden": [
+        "Do not remove global agent dirs that still hold runtime state (last-session.md, workspace/)."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-agent-registration"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:33:00Z",
+        "reason": "Both children accepted: duplicate-agent-config-prevention (loader-side override in commit df551721, 3 tests) and deploy-platform-binary-851e134f (binary deployed 15:18 UTC, daemon restarted 15:31 UTC). Zero agent.config_invalid events post-restart. Zero message.delivery_failed events post-restart. Agent registration handles project-app overrides gracefully. Live and verified."
       }
+    },
+    "duplicate-agent-config-prevention": {
+      "id": "duplicate-agent-config-prevention",
+      "parent_id": "platform-agent-registration-hygiene",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Prevent duplicate agent.json files in agents/ from conflicting with project-local agent.json files in *.app/agents/. The loader should prefer project-app registrations or skip global stubs when a project-app provides the same agent.",
+      "inputs": [
+        "projects/may-agent/src/app/loader/agent-registry-loader.ts",
+        "projects/may-agent/src/app/loader/agent-discovery.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/app/loader/agent-registry-loader.ts"
+      ],
+      "acceptance": [
+        "Loader skips global agents/<name>/agent.json when *.app/agents/<name>/agent.json exists for the same name.",
+        "Or: loader treats duplicate names from project-app dirs as intentional overrides instead of errors.",
+        "agent.config_invalid events stop recurring for evaluator and aks-explorer.",
+        "Tests cover the duplicate-name-across-directories scenario."
+      ],
+      "forbidden": [
+        "Do not remove the duplicate detection entirely — duplicates within the same scope should still error."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-agent-registration"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:00:00Z",
+        "reason": "Implemented Option A: agent-registry-loader.ts now detects when a global agents/<name> and project-app projects/*.app/agents/<name> both provide the same agent name, and silently prefers the project-app version. Same-scope duplicates (two project-apps with same agent name) still error. 3 new tests pass. All 18 loader tests pass. TypeScript clean. Commit df551721."
+      },
+      "context": {
+        "fix_applied": "Option A (loader-side override). Commit df551721.",
+        "remaining_cleanup": "Option B (fix last-session-writer to write to registered agentDir) and Option C (skip dirs without agent.json in discovery) are nice-to-haves but no longer required since the loader handles duplicates gracefully."
+      }
+    },
+    "deploy-platform-binary-851e134f": {
+      "id": "deploy-platform-binary-851e134f",
+      "parent_id": "platform-agent-registration-hygiene",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Deploy the may-agent binary with all commits through 851e134f to eliminate agent.config_invalid events and evaluator-aftermath handler failures.",
+      "inputs": [
+        "projects/may-agent/bundle/may-agent",
+        "projects/may-agent/src/app/loader/agent-registry-loader.ts"
+      ],
+      "outputs": [
+        "/usr/local/bin/may-agent"
+      ],
+      "acceptance": [
+        "Binary at /usr/local/bin/may-agent includes commit 851e134f (or later) — verify with: grep -ao 'priorIsGlobal' /usr/local/bin/may-agent",
+        "Daemon restarted via supervisorctl and all 4 project apps load correctly.",
+        "agent.config_invalid events stop recurring after restart.",
+        "evaluator-aftermath handler.failed errors stop (workflow found via correct agent dir)."
+      ],
+      "forbidden": [
+        "Do not deploy without verifying TypeScript check and key tests pass first."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:30:00Z",
+        "reason": "Binary at /usr/local/bin/may-agent deployed at 15:18 UTC with priorIsGlobal (2 matches confirmed). Daemon restarted (pid 67, uptime verified). Zero agent.config_invalid events since restart. Zero message.delivery_failed events since restart. Handlers firing normally from cron. All 4 commits included. TypeScript check clean."
+      },
+      "context": {
+        "deployed_at": "2026-06-14T15:18:00Z",
+        "daemon_restarted_at": "2026-06-14T15:31:28Z",
+        "commits_included": [
+          "851e134f fix(message-tool): use globalAgentsRoot so project-scoped agents can message system agents",
+          "df551721 fix(loader): project-app agents silently override global stubs with same name",
+          "199af9a5 fix(web): scan project-local agents in handleAgents API",
+          "7d510da6 feat(app-loader): app brings its own agent — auto-register owner on load"
+        ],
+        "post_deploy_evidence": "Zero agent.config_invalid events since 15:31 restart. Zero handler.failed events. Zero message.delivery_failed events. priorIsGlobal verified in binary (2 matches)."
+      }
+    },
+    "disable-legacy-evaluator-aftermath-cron": {
+      "id": "disable-legacy-evaluator-aftermath-cron",
+      "parent_id": "platform-build-test-release-hygiene",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Disable the legacy evaluator-aftermath cron job in agents/may/cron.json that duplicates the evaluation.app handler and causes 25 handler.failed events per hour.",
+      "inputs": [
+        "agents/may/cron.json",
+        "projects/evaluation.app/app.ts"
+      ],
+      "outputs": [
+        "agents/may/cron.json"
+      ],
+      "acceptance": [
+        "evaluator-aftermath job has enabled: false in agents/may/cron.json.",
+        "handler.failed events for evaluator-aftermath drop to zero.",
+        "evaluation.app's evaluation-aftermath handler continues to process session.completed events."
+      ],
+      "forbidden": [
+        "Do not remove the job entry — keep it disabled with a reason for audit trail."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T15:16:00Z",
+        "reason": "Set enabled: false and added _disabled_reason in agents/may/cron.json. handler.failed count for evaluator-aftermath dropped from 25/hour to 0 in 5 minutes after cron reload. evaluation.app's evaluation-aftermath handler continues to fire correctly on session.completed events."
+      }
+    },
+    "platform-project-app-workflow-resolution": {
+      "id": "platform-project-app-workflow-resolution",
+      "parent_id": "project",
+      "children": [
+        "fix-project-app-agent-workflow-search",
+        "deploy-workflow-resolution-fix"
+      ],
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Fix workflow resolution for project-app-owned agents so scout-explore, scout-heartbeat, and scout-daily-digest handlers stop failing with 'Workflow not found'.",
+      "inputs": [
+        "projects/may-agent/src/lib/sdk-impl.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/lib/sdk-impl.ts",
+        "/usr/local/bin/may-agent"
+      ],
+      "acceptance": [
+        "scout-explore, scout-heartbeat, scout-daily-digest handlers dispatch successfully.",
+        "Zero handler.failed events for scout workflows after deployment."
+      ],
+      "forbidden": [
+        "Do not break global agent workflow resolution."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-sdk-workflow-resolution"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T19:24:00Z",
+        "reason": "Both children accepted: fix-project-app-agent-workflow-search (commit ad25fd6c, agentWorkflowDirForProjectApp fallback, 9 tests) and deploy-workflow-resolution-fix (bundle rebuilt 19:19 UTC, daemon restarted). Post-deploy evidence: scout-explore handler.completed at 19:22:39 and 19:23:05, scout-daily-digest handler.completed at 19:22:32 and 19:23:47. Zero handler.failed events since restart. All scout workflows resolve from project-app agent dirs."
+      }
+    },
+    "fix-project-app-agent-workflow-search": {
+      "id": "fix-project-app-agent-workflow-search",
+      "parent_id": "platform-project-app-workflow-resolution",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Add agentWorkflowDirForProjectApp() to SDK so workflow resolution searches *.app/agents/<agent>/workflows/ when global agents/<agent>/workflows/ doesn't exist.",
+      "inputs": [
+        "projects/may-agent/src/lib/sdk-impl.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/lib/sdk-impl.ts",
+        "projects/may-agent/src/lib/sdk-project-workflow-dir.test.ts"
+      ],
+      "acceptance": [
+        "agentWorkflowDirForProjectApp resolves project-app agent workflow dirs.",
+        "runWorkflow falls back to project-app agent dir when global dir missing.",
+        "9 tests pass covering both projectWorkflowDirFor and agentWorkflowDirForProjectApp.",
+        "TypeScript check clean."
+      ],
+      "forbidden": [],
+      "gates": [],
+      "conflict_scope": [
+        "platform-sdk-workflow-resolution"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T19:10:00Z",
+        "reason": "Commit ad25fd6c adds agentWorkflowDirForProjectApp() and uses it in runWorkflow as fallback. 9 tests pass (bun test). TypeScript clean. Confirmed fix works during brief window when bundle binary ran (scout-explore and scout-daily-digest dispatched successfully)."
+      },
+      "context": {
+        "root_cause": "SDK runWorkflow builds workflowDir as agents/<agent>/workflows/ (global). For project-app-owned agents like scout (owned by scout-knowledge-lib.app), workflows live at projects/scout-knowledge-lib.app/agents/scout/workflows/ — a path never searched. projectWorkflowDir searches projects/<id>.app/workflows/ but not the agent-specific subdir.",
+        "observed_at": "2026-06-14T17:02:00Z",
+        "evidence": "36 handler.failed events for scout-explore, scout-heartbeat, scout-daily-digest in 3h window. Error: 'Workflow scout-explore not found'.",
+        "commit": "ad25fd6c"
+      }
+    },
+    "deploy-workflow-resolution-fix": {
+      "id": "deploy-workflow-resolution-fix",
+      "parent_id": "platform-project-app-workflow-resolution",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Deploy the may-agent binary with commit ad25fd6c (workflow resolution fix) and restart the daemon.",
+      "inputs": [
+        "projects/may-agent/bundle/may-agent"
+      ],
+      "outputs": [
+        "/etc/supervisord.conf"
+      ],
+      "acceptance": [
+        "supervisord.conf points to bundle/may-agent which includes agentWorkflowDirForProjectApp.",
+        "Daemon restarted and scout workflow handlers dispatch without \"Workflow not found\" errors.",
+        "Zero handler.failed events for scout-explore after restart."
+      ],
+      "forbidden": [
+        "Do not deploy without verifying TypeScript check and tests pass first."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-build-test"
+      ],
+      "state": "done",
+      "context": {
+        "approach": "Rebuilt bundle with `bun run bundle` (includes commit ad25fd6c). supervisord.conf already points to /app/projects/may-agent/bundle/may-agent. Daemon restarted via supervisorctl.",
+        "deployed_at": "2026-06-14T19:19:06Z",
+        "daemon_restarted_at": "2026-06-14T19:19:38Z"
+      },
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T19:23:00Z",
+        "reason": "Bundle rebuilt at 19:19:06 UTC with agentWorkflowDirForProjectApp (2 matches in binary). Daemon restarted (PID 184938). Post-restart: scout-explore handler started→completed at 19:22:39-40, scout-daily-digest started→completed at 19:22:32, scout-knowledge-lib-scout-explore-github started→completed at 19:22:39. Zero handler.failed events since restart. TypeScript clean, 9 SDK workflow resolution tests pass."
+      }
+    },
+    "platform-system-review-feedback-loop": {
+      "id": "platform-system-review-feedback-loop",
+      "goal": "Make may-agent.app continuously review platform health using a compact system-review packet, turn real abnormal signals into task-tree work, and verify closure before claiming the platform is healthy.",
+      "state": "backlog",
+      "parent_id": "project",
+      "children": [
+        "platform-review-packet-contract",
+        "platform-review-packet-runtime-wiring",
+        "platform-abnormal-signal-triage",
+        "platform-metric-feedback-alignment",
+        "platform-review-loop-e2e-verification"
+      ],
+      "depends_on": [],
+      "priority": "P0",
+      "created_at": "2026-06-14T19:45:30.715Z",
+      "updated_at": "2026-06-14T19:45:30.719Z",
+      "kind": "workstream",
+      "created_from": {
+        "source": "human-steering",
+        "summary": "User asked may-agent.app to run, collect failures/issues, catch chances to fix them, and drive platform cleanup through the app task tree.",
+        "created_at": "2026-06-14T19:45:30.714Z"
+      }
+    },
+    "platform-review-packet-contract": {
+      "id": "platform-review-packet-contract",
+      "goal": "Define the minimal system-review packet May receives on project.tick, human steering, metric feedback, and abnormal runtime signals: open alerts, recent failures, recovery evidence, task-tree/project integrity, app checks, communication failures, evaluator findings, and trend anomalies.",
+      "state": "backlog",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "depends_on": [],
+      "priority": 0,
+      "created_at": "2026-06-14T19:45:30.716Z",
+      "updated_at": "2026-06-14T19:45:30.716Z",
+      "acceptance": [
+        "The finding or change is reflected in may-agent.app task tree or design docs.",
+        "Runtime evidence is cited from metrics/events/sessions or focused checks.",
+        "The owner has a clear next action: fix, task, calibrate, resolve, or escalate."
+      ],
+      "owner": "may"
+    },
+    "platform-review-packet-runtime-wiring": {
+      "id": "platform-review-packet-runtime-wiring",
+      "goal": "Wire may-agent.app owner wakes so the owner workflow receives the system-review packet before judging platform health, without adding a new process or broad event vocabulary.",
+      "state": "backlog",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "depends_on": [],
+      "priority": 0,
+      "created_at": "2026-06-14T19:45:30.717Z",
+      "updated_at": "2026-06-14T19:45:30.717Z",
+      "acceptance": [
+        "The finding or change is reflected in may-agent.app task tree or design docs.",
+        "Runtime evidence is cited from metrics/events/sessions or focused checks.",
+        "The owner has a clear next action: fix, task, calibrate, resolve, or escalate."
+      ],
+      "owner": "may"
+    },
+    "platform-abnormal-signal-triage": {
+      "id": "platform-abnormal-signal-triage",
+      "goal": "Review current live abnormal signals, especially session.resume_failed and handler.failed bursts, classify which are stale/recovering versus actionable, and create/fix the smallest platform task for each real issue.",
+      "state": "backlog",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "depends_on": [],
+      "priority": 1,
+      "created_at": "2026-06-14T19:45:30.718Z",
+      "updated_at": "2026-06-14T19:45:30.718Z",
+      "acceptance": [
+        "The finding or change is reflected in may-agent.app task tree or design docs.",
+        "Runtime evidence is cited from metrics/events/sessions or focused checks.",
+        "The owner has a clear next action: fix, task, calibrate, resolve, or escalate."
+      ],
+      "owner": "may"
+    },
+    "platform-metric-feedback-alignment": {
+      "id": "platform-metric-feedback-alignment",
+      "goal": "Align may-agent.app metric feedback handling with the owner-first metric design: metric.breach, metric.stalled, and metric.recovered should reach the owner with useful context; app-local metric id subscriptions should be only escape hatches.",
+      "state": "backlog",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "depends_on": [],
+      "priority": 1,
+      "created_at": "2026-06-14T19:45:30.718Z",
+      "updated_at": "2026-06-14T19:45:30.718Z",
+      "acceptance": [
+        "The finding or change is reflected in may-agent.app task tree or design docs.",
+        "Runtime evidence is cited from metrics/events/sessions or focused checks.",
+        "The owner has a clear next action: fix, task, calibrate, resolve, or escalate."
+      ],
+      "owner": "may"
+    },
+    "platform-review-loop-e2e-verification": {
+      "id": "platform-review-loop-e2e-verification",
+      "goal": "Trigger the may-agent.app owner loop with a real review event and verify the resulting session sees current failures, updates or confirms the task tree, and records evidence instead of making a shallow healthy claim.",
+      "state": "backlog",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "depends_on": [],
+      "priority": 0,
+      "created_at": "2026-06-14T19:45:30.719Z",
+      "updated_at": "2026-06-14T19:45:30.719Z",
+      "acceptance": [
+        "The finding or change is reflected in may-agent.app task tree or design docs.",
+        "Runtime evidence is cited from metrics/events/sessions or focused checks.",
+        "The owner has a clear next action: fix, task, calibrate, resolve, or escalate."
+      ],
+      "owner": "may"
+    },
+    "sdk-checkpoint-helper": {
+      "id": "sdk-checkpoint-helper",
+      "parent_id": "project",
+      "state": "backlog",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "may",
+      "children": [],
+      "depends_on": [
+        "owner-checkpoint-step"
+      ],
+      "goal": "Extract the owner checkpoint pattern from aks-rp-e2e.app into @may-agent/sdk as a reusable helper. Other apps (evaluation.app, scout-knowledge-lib.app, may-agent.app) adopt it.",
+      "context": {
+        "prerequisite": "aks-rp-e2e.app proves the pattern first (owner-checkpoint-step task)",
+        "design": "See docs/2a-design/project-app-v3.md §Owner Checkpoint Step",
+        "sdk_scope": "Classify dirty files by task-tree output refs, group into commit slices, commit with task-referencing messages. Domain-neutral — no AKS/evaluator/scout specifics."
+      },
+      "acceptance": [
+        "SDK exports a checkpoint helper usable by any project-app owner workflow",
+        "evaluation.app, scout-knowledge-lib.app, and may-agent.app adopt the helper",
+        "finish-blocked-uncommitted-count-24h metric trends toward zero"
+      ]
     }
   }
 }
