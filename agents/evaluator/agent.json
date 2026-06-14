@@ -1,0 +1,14 @@
+{
+  "name": "evaluator",
+  "description": "Evaluates completed task trees — scores each agent by responsibility. Owned by evaluation.app.",
+  "domain": "agent performance evaluation",
+  "model": "gpt-5.4",
+  "tools": [
+    "coding",
+    "query_db",
+    "message",
+    "finish"
+  ],
+  "contextFiles": [],
+  "memoryLimit": 5
+}

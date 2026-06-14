@@ -425,7 +425,7 @@
       "includeEvent": true,
       "timeoutMs": 900000
     },
-    "enabled": false,
+    "enabled": true,
     "on": [
       "session.completed"
     ],
@@ -433,8 +433,7 @@
     "context": [
       "projects/may-agent.app/project.json",
       "agents/evaluator/heartbeat.md"
-    ],
-    "_disabled_reason": "migrated to evaluation.app \u2014 2026-06-14"
+    ]
   },
   {
     "name": "session-aftermath-scan",
