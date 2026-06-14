@@ -857,6 +857,23 @@ enforces these windows:
 
 After deletions exceed 1,000 rows, a `VACUUM` reclaims disk space.
 
+### Size-based retention (added 2026-06-14, KE-1986)
+
+In addition to age-based retention, rows with oversized data blobs are deleted
+regardless of age:
+
+| Table | Column | Threshold | Rationale |
+|---|---|---|---|
+| `events` | `data` | > 1 MB | Normal events avg ~7 KB; 1 MB is 100x+ margin |
+| `sessions` | `task` | > 1 MB | Normal sessions avg ~42 KB |
+| `session_digests` | `task` | > 1 MB | Same threshold as sessions |
+| `workflow_runs` | `task` | > 1 MB | Same threshold as sessions |
+
+Always VACUUMs if any oversized rows are deleted (individual rows can be 200 MB+).
+Trigger: the `platform-owner-review` context cascade (KE-1986) created events with
+exponentially growing `data` blobs (up to 220 MB each), reaching 987.6 MB across
+22 events. Commit `a1ff9b269`.
+
 **Tables with no retention policy (low-priority — small row counts):**
 
 | Table | Rows | Notes |

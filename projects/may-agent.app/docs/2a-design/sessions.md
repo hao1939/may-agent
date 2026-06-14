@@ -136,9 +136,11 @@ GROUP BY agent;
 
 The `db-retention` handler (`agents/may/handlers/db-retention.ts`, daily cron)
 deletes sessions where `startedAt < now - 14 days`. This means SQL queries
-against `sessions` older than 14 days return empty results. For longer-term
-session analysis, use disk artifacts (`.state/sessions/history/<id>/meta.json`)
-if they have not been cleaned separately.
+against `sessions` older than 14 days return empty results. Additionally,
+sessions with `task` column > 1 MB are deleted regardless of age (size-based
+retention, KE-1986, commit `a1ff9b269`). For longer-term session analysis,
+use disk artifacts (`.state/sessions/history/<id>/meta.json`) if they have
+not been cleaned separately.
 
 See `events.md` → "Data Retention" for the full retention table.
 
