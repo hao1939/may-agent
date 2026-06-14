@@ -1,5 +1,7 @@
 {
   "name": "evaluator",
+  "disabled": true,
+  "_disabled_reason": "Global agents/evaluator/ restored for binary compat (dfc2d5bc7); this project-local copy is the duplicate — 2026-06-14",
   "description": "Evaluates completed task trees \u2014 scores each agent by responsibility",
   "domain": "agent performance evaluation",
   "model": "gpt-5.4",
