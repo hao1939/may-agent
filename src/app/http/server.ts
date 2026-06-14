@@ -3103,22 +3103,42 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const fourHourAgo = Date.now() - 4 * 60 * 60 * 1000;
       const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
 
-      // 1. Discover agents from agents/ filesystem (source of truth: agent.json).
+      // 1. Discover agents from agents/ filesystem AND project-local agents (source of truth: agent.json).
       const agents: Array<Record<string, unknown>> = [];
-      for (const dir of readdirSync(AGENTS_ROOT, { withFileTypes: true })) {
-        if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
-        const agentJsonPath = join(AGENTS_ROOT, dir.name, "agent.json");
-        if (!existsSync(agentJsonPath)) continue;
-        let cfg: Record<string, any> = {};
-        try { cfg = JSON.parse(readFileSync(agentJsonPath, "utf-8")); } catch { /* skip */ }
-        const name = cfg.name || dir.name;
-        agents.push({
-          name,
-          description: cfg.description || "",
-          domain: cfg.domain || "",
-          model: cfg.model || "",
-          toolCount: Array.isArray(cfg.tools) ? cfg.tools.length : 0,
-        });
+      const seenAgentNames = new Set<string>();
+
+      const scanAgentsDir = (root: string) => {
+        if (!existsSync(root)) return;
+        for (const dir of readdirSync(root, { withFileTypes: true })) {
+          if (!dir.isDirectory() || dir.name.startsWith(".") || dir.name === "shared") continue;
+          const agentJsonPath = join(root, dir.name, "agent.json");
+          if (!existsSync(agentJsonPath)) continue;
+          let cfg: Record<string, any> = {};
+          try { cfg = JSON.parse(readFileSync(agentJsonPath, "utf-8")); } catch { /* skip */ }
+          if (cfg.disabled) continue;
+          const name = cfg.name || dir.name;
+          if (seenAgentNames.has(name)) continue;
+          seenAgentNames.add(name);
+          agents.push({
+            name,
+            description: cfg.description || "",
+            domain: cfg.domain || "",
+            model: cfg.model || "",
+            toolCount: Array.isArray(cfg.tools) ? cfg.tools.length : 0,
+          });
+        }
+      };
+
+      // Scan global agents/
+      scanAgentsDir(AGENTS_ROOT);
+
+      // Scan project-local agents from projects/*.app/agents/
+      if (existsSync(PROJECTS_ROOT)) {
+        for (const entry of readdirSync(PROJECTS_ROOT, { withFileTypes: true })) {
+          if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
+          const appAgentsDir = join(PROJECTS_ROOT, entry.name, "agents");
+          scanAgentsDir(appAgentsDir);
+        }
       }
 
       // 2. Per-agent session/metric rollups (single query each, indexed on agent).
