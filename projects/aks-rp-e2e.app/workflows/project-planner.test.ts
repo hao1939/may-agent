@@ -102,7 +102,7 @@ function config(appDir: string, projectDir: string) {
   });
 }
 
-describe("project planner", () => {
+describe("project owner workflow", () => {
   test("passes task-tree context and domain commands to the owner session", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const prompts: string[] = [];
@@ -468,7 +468,7 @@ describe("project planner", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-open-work-reconcile",
@@ -568,7 +568,7 @@ describe("project planner", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           data: {
             project: "aks-rp-e2e",
             reason: "watchdog-stale-active-review",
@@ -621,7 +621,7 @@ describe("project planner", () => {
     expect(plannerRuns).toContain('"requeued_stale_task_ids":["stale-task"]');
   });
 
-  test("seeds executable model-gap backlog when owner planning times out under capacity", async () => {
+  test("seeds executable model-gap backlog when owner review times out under capacity", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       join(projectDir, "specs", "feature-a-create.json"),
@@ -871,7 +871,7 @@ describe("project planner", () => {
         "## Trigger Event",
         "```json",
         JSON.stringify({
-          type: "project.planning.requested",
+          type: "project.owner.requested",
           source: "agent:aks-explorer",
           owner: "agent:aks-explorer",
           data: {
@@ -891,7 +891,7 @@ describe("project planner", () => {
           rows: [
             {
               id: 42,
-              event_type: "project.planning.requested",
+              event_type: "project.owner.requested",
               source: "codex",
               owner: "agent:aks-explorer",
               urgency: "high",

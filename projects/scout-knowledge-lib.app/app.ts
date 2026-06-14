@@ -1,7 +1,7 @@
 import {
   defineProjectApp,
   eventDetails,
-  projectPlanningEvent as sdkProjectPlanningEvent,
+  projectOwnerEvent as sdkProjectOwnerEvent,
   type ProjectAppContext,
 } from "@may-agent/sdk";
 
@@ -17,11 +17,11 @@ const taskTreeContext = [
   "projects/scout-knowledge-lib/knowledge/INDEX.md",
 ];
 
-function projectPlanningEvent(
+function projectOwnerEvent(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return sdkProjectPlanningEvent(projectId, reason, params);
+  return sdkProjectOwnerEvent(projectId, reason, params);
 }
 
 async function routeScoutKnowledgeEvent(
@@ -29,32 +29,28 @@ async function routeScoutKnowledgeEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "project.comment.created") {
-    return ctx.emit(
-      projectPlanningEvent("project-comment", eventDetails(event)),
-    );
+    return ctx.emit(projectOwnerEvent("project-comment", eventDetails(event)));
   }
 
   if (event.type === "project.tick") {
     return ctx.emit(
-      projectPlanningEvent(
-        "scheduled-library-maintenance",
-        eventDetails(event),
-      ),
+      projectOwnerEvent("scheduled-library-maintenance", eventDetails(event)),
     );
   }
 
   if (event.type === "project.action.invoked") {
-    return ctx.emit(
-      projectPlanningEvent("project-action", eventDetails(event)),
-    );
+    return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
   }
 
   if (event.type === "metric.breach") {
-    return ctx.emit(projectPlanningEvent("metric-breach", eventDetails(event)));
+    return ctx.emit(projectOwnerEvent("metric-breach", eventDetails(event)));
   }
 
-  if (event.type === "project.planning.requested") {
-    return ctx.noop("handled by scout-knowledge-lib-planner workflow handler");
+  if (
+    event.type === "project.owner.requested" ||
+    event.type === "project.planning.requested"
+  ) {
+    return ctx.noop("handled by scout-knowledge-lib owner workflow handler");
   }
 
   if (event.type === "project.knowledge.maintained") {
@@ -100,8 +96,8 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Wakes Scout to review the knowledge-library task tree and perform the smallest useful maintenance step.",
-      on: ["project.planning.requested"],
+        "Wakes Scout as project owner to review the knowledge-library task tree and perform the smallest useful maintenance step.",
+      on: ["project.owner.requested", "project.planning.requested"],
       handler: {
         workflow: "knowledge-planner",
         includeEvent: true,
@@ -116,6 +112,8 @@ export default defineProjectApp({
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
+    { type: "project.owner.requested", project: projectId },
+    { type: "project.planning.requested", project: projectId },
     { type: "metric.breach", metricIds: ["scout.knowledge-preamble-coverage"] },
   ],
 
@@ -130,22 +128,22 @@ export default defineProjectApp({
     adapters: [
       {
         event: "project.comment.created",
-        emits: ["project.planning.requested"],
-        description: "Human steering wakes Scout knowledge-library planning.",
+        emits: ["project.owner.requested"],
+        description: "Human steering wakes the Scout knowledge-library owner.",
       },
       {
         event: "project.tick",
-        emits: ["project.planning.requested"],
-        description: "Scheduled library maintenance wakes planning.",
+        emits: ["project.owner.requested"],
+        description: "Scheduled library maintenance wakes the owner.",
       },
       {
         event: "project.action.invoked",
-        emits: ["project.planning.requested"],
-        description: "UI/API action wakes planning.",
+        emits: ["project.owner.requested"],
+        description: "UI/API action wakes the owner.",
       },
       {
         event: "metric.breach",
-        emits: ["project.planning.requested"],
+        emits: ["project.owner.requested"],
         description:
           "Knowledge-library metric breach wakes Scout to inspect and repair.",
       },
@@ -154,7 +152,7 @@ export default defineProjectApp({
     intentionalCycles: [
       {
         id: "human-or-timer-to-library-maintenance",
-        events: ["project.tick", "project.planning.requested"],
+        events: ["project.tick", "project.owner.requested"],
         reason:
           "Timer and human events periodically wake Scout to maintain the library.",
       },
@@ -167,7 +165,7 @@ export default defineProjectApp({
       description:
         "Ask Scout to review the knowledge library and update it if useful.",
       event(params) {
-        return projectPlanningEvent("manual-library-review", params);
+        return projectOwnerEvent("manual-library-review", params);
       },
     },
     "repair-index": {
@@ -175,7 +173,7 @@ export default defineProjectApp({
       description:
         "Ask Scout to repair knowledge/INDEX.md and related navigation.",
       event(params) {
-        return projectPlanningEvent("repair-index", params);
+        return projectOwnerEvent("repair-index", params);
       },
     },
   },

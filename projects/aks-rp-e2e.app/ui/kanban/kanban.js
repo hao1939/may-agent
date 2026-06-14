@@ -43,7 +43,7 @@ function taskColor(status) {
 const METRIC_GROUPS = [
   {
     title: "Flow",
-    description: "Is the planner keeping executable work moving?",
+    description: "Is the project owner keeping executable work moving?",
     metrics: [
       ["aks-rp-e2e.task.active-count", "Active"],
       ["aks-rp-e2e.task.ready-count", "Backlog"],
@@ -754,7 +754,7 @@ function renderProjectMetrics(tree) {
       <div>
         <div class="kicker">Project Metrics</div>
         <div class="title">Health And Progress</div>
-        <div class="muted">Registered project metrics plus task-tree fallback counts. These are the signals the planner and humans use to decide whether to refill, repair, verify, or escalate.</div>
+        <div class="muted">Registered project metrics plus task-tree fallback counts. These are the signals the owner and humans use to decide whether to refill, repair, verify, or escalate.</div>
       </div>
       <span class="pill">${state.metrics.length ? `${state.metrics.length} metrics` : "metrics offline"}</span>
     </div>
@@ -846,7 +846,7 @@ function renderSummary(tree) {
       </div>
       ${activeWorkHtml}
       ${state.kanbanWarning ? `<div class="notice" data-testid="kanban-projection-warning">${esc(state.kanbanWarning)}</div>` : ""}
-      ${planningNeedsBatch ? `<div class="notice" data-testid="planning-empty-backlog-warning">Planning is active but Backlog is empty. The planner should create a batch of executable project work before execution can parallelize.</div>` : ""}
+      ${planningNeedsBatch ? `<div class="notice" data-testid="planning-empty-backlog-warning">Owner review is active but Backlog is empty. The owner should create a batch of executable project work before execution can parallelize.</div>` : ""}
       <div class="progress" title="${stats.accepted} accepted, ${stats.blocked} blocked, ${stats.active} active, ${stats.total} total">
         <span class="progress-accepted" style="width:${progressAccepted}%"></span>
         <span class="progress-active" style="width:${progressActive}%"></span>
@@ -869,7 +869,7 @@ function renderSummary(tree) {
         <div class="title">Send Project Feedback</div>
         <div class="muted">Use this for project-level direction. Select a task below when the feedback should attach to a specific node.</div>
       </div>
-      <textarea id="global-steer-text" data-testid="global-steer-textarea" placeholder="Tell the planner what to review, refill, split, verify, or prioritize next."></textarea>
+      <textarea id="global-steer-text" data-testid="global-steer-textarea" placeholder="Tell the project owner what to review, refill, split, verify, or prioritize next."></textarea>
       <div class="actions">
         <button class="btn btn-primary" onclick="sendSteering('global-steer-text', 'global-send-status')" data-testid="send-global-steering">Send To Planner</button>
         <button class="btn" onclick="prefillAdvance()">Advance</button>
@@ -1090,7 +1090,7 @@ function renderDetail() {
         ? `<div class="detail-section knowledge-panel">
       <div class="kicker">Accepted Knowledge</div>
       <div class="detail-list">
-        <div>${esc(acceptedKnowledge || "Accepted by planner as verified project understanding.")}</div>
+        <div>${esc(acceptedKnowledge || "Accepted by the project owner as verified project understanding.")}</div>
         <div>Evidence: ${evidenceLinks(task)}</div>
         ${
           reusableFor.length
@@ -1152,7 +1152,7 @@ function renderDetail() {
     <div class="detail-section steer-box">
       <div>
         <div class="kicker">Task Feedback</div>
-        <div class="muted">Attach feedback to this node so the planner can update the project tree with the local context in mind.</div>
+        <div class="muted">Attach feedback to this node so the project owner can update the project tree with the local context in mind.</div>
       </div>
       <textarea id="steer-text" data-testid="steer-textarea" placeholder="Ask the agent to review, split, unblock, rerun, or challenge this task."></textarea>
       <div class="actions">
@@ -1317,7 +1317,7 @@ async function sendSteering(
       },
     };
     const body = {
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       source: "web-ui",
       owner: "agent:aks-explorer",
       urgency: "high",

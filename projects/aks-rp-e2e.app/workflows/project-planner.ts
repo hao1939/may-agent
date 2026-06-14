@@ -113,20 +113,23 @@ function recentHumanSteering(ctx: WorkflowContext): Record<string, unknown>[] {
     const query = ctx.query;
     if (!query?.events) return [];
     const since = Date.now() - 2 * 60 * 60_000;
-    const rows = (
-      query.events({
-        type: "project.planning.requested",
-        since,
-        limit: 50,
-      }).rows as RuntimeEventRow[]
-    ).filter((row) => {
-      const data = parseEventData(row.data);
-      return (
-        data.project === "aks-rp-e2e" &&
-        data.reason === "human-steering" &&
-        (row.urgency === "high" || row.urgency === "immediate")
-      );
-    });
+    const rows = ["project.owner.requested", "project.planning.requested"]
+      .flatMap(
+        (type) =>
+          query.events({
+            type,
+            since,
+            limit: 50,
+          }).rows as RuntimeEventRow[],
+      )
+      .filter((row) => {
+        const data = parseEventData(row.data);
+        return (
+          data.project === "aks-rp-e2e" &&
+          data.reason === "human-steering" &&
+          (row.urgency === "high" || row.urgency === "immediate")
+        );
+      });
     return rows.slice(0, 5).map(compactHumanSteering);
   } catch {
     return [];
@@ -520,6 +523,26 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           .join(", ")}.`,
       );
     }
+
+    // Deterministic refill found no model gaps — all work is done.
+    // Short-circuit instead of falling through to an expensive agent session.
+    appendPlannerRun(appDir, {
+      kind: "planner_wake",
+      status: "idle",
+      ran_agent: false,
+      steps: ["deterministic-refill-exhausted"],
+      assigned_task_ids: [],
+      requeued_stale_task_ids: requeuedStaleTaskIds,
+      seeded_task_ids: [],
+      seed_reason: seedReason,
+      seed_skipped: seedResult.skipped.slice(0, 12),
+      active_task_ids: packet.active_task_ids,
+      result:
+        "Routine watchdog refill found no model gaps and no open frontier. Skipping agent session.",
+    });
+    return ctx.done(
+      "Planner deterministic-refill exhausted: no model gaps remain and no open frontier work. Skipping agent session.",
+    );
   }
 
   let eventReviewResult: unknown;

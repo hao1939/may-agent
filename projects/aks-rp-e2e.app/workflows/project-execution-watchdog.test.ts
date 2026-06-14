@@ -131,7 +131,7 @@ describe("project execution watchdog", () => {
     });
   });
 
-  test("wakes planner when backlog leaves exist", async () => {
+  test("wakes owner when backlog leaves exist", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "backlog-task": task("backlog-task", "backlog"),
@@ -145,11 +145,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-ready-work.",
+      "Watchdog emitted project.owner.requested: watchdog-ready-work.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           reason: "watchdog-ready-work",
@@ -166,7 +166,7 @@ describe("project execution watchdog", () => {
     expect(updated.tasks["backlog-task"].status).toBe("backlog");
   });
 
-  test("wakes planner for an active leaf whose runtime session is no longer running", async () => {
+  test("wakes owner for an active leaf whose runtime session is no longer running", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
     writeSession(stateDbPath, "s_done", "done");
@@ -193,11 +193,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           reason: "watchdog-stale-active-review",
@@ -252,11 +252,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-stale-active-review.",
+      "Watchdog emitted project.owner.requested: watchdog-stale-active-review.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           reason: "watchdog-stale-active-review",
@@ -279,7 +279,7 @@ describe("project execution watchdog", () => {
     expect(updated.tasks["active-task"].blocker).toBeUndefined();
   });
 
-  test("wakes planner when open work has no ready assignable leaves", async () => {
+  test("wakes owner when open work has no ready assignable leaves", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "blocked-task": task("blocked-task", "blocked", {
@@ -295,11 +295,11 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.planning.requested: watchdog-open-work-reconcile.",
+      "Watchdog emitted project.owner.requested: watchdog-open-work-reconcile.",
     );
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           reason: "watchdog-open-work-reconcile",
@@ -343,7 +343,7 @@ describe("project execution watchdog", () => {
     expect(dispatched).toHaveLength(0);
   });
 
-  test("wakes planner when active work underfills capacity", async () => {
+  test("wakes owner when active work underfills capacity", async () => {
     const projectDir = await makeProject();
     const stateDbPath = join(projectDir, "may.db");
     writeSession(stateDbPath, "s_running", "running");
@@ -371,11 +371,11 @@ describe("project execution watchdog", () => {
     expect(result).toEqual({
       status: "done",
       message:
-        "Watchdog emitted project.planning.requested: watchdog-capacity-underfilled.",
+        "Watchdog emitted project.owner.requested: watchdog-capacity-underfilled.",
     });
     expect(dispatched).toEqual([
       {
-        type: "project.planning.requested",
+        type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
           reason: "watchdog-capacity-underfilled",

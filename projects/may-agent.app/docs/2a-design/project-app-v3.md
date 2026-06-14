@@ -2,11 +2,12 @@
 
 ## Status
 
-Proposal. This does not replace `project-app-v2.md` yet.
+Accepted. This is the canonical project-app design.
 
-V2 proved the control-plane split by putting May-agent runtime files under an
-embedded `.app/` folder. V3 strengthens that split by moving the app out of the
-domain project entirely.
+Earlier project-app designs are retired. The embedded-app iteration proved the
+control-plane split by putting May-agent runtime files under an embedded
+`.app/` folder. V3 keeps the split but moves the app out of the domain project
+entirely and uses owner-first language.
 
 ## Thesis
 
@@ -28,6 +29,25 @@ project directory. The simplest discovery rule is:
 
 The app then declares the domain workspace it drives.
 
+## Mental Model
+
+```text
+Event   = delivery envelope
+Target  = which project/session/human should receive it
+Context = what the owner needs to understand the request/result
+Owner   = brain that judges, plans, accepts, rejects, assigns, or escalates
+Result  = event/state update that closes the loop
+```
+
+Infra serves this loop. It delivers events, resolves owners, starts sessions,
+tracks workflow/event traces, reminds on missing closure, and surfaces
+unhandled/stale work. Infra must not decide project strategy, task-tree shape,
+retry policy, acceptance, or domain truth. Those are owner decisions.
+
+Use a small event vocabulary. Prefer context-rich `project.owner.requested`
+events over many narrow event names. The event type routes to the owner; the
+event data explains intent, subject, evidence, and expected closure.
+
 ## Goals
 
 - Keep domain projects clean, cloneable, and runnable without May-agent.
@@ -42,7 +62,7 @@ The app then declares the domain workspace it drives.
 
 ## Non-Goals
 
-- Removing support for V2 embedded `projects/<name>/.app/`.
+- Designing new behavior around legacy embedded `projects/<name>/.app/`.
 - Making domain projects depend on May-agent packages.
 - Making the runtime understand AKS, evaluator, platform, or other domain
   semantics.
@@ -72,9 +92,9 @@ specs, and execute specs without May-agent.
 The app may clone, mount, inspect, test, edit, and commit the domain project,
 but those behaviors are May-agent behaviors.
 
-Domain commits are planner checkpoints. They do not need a dedicated event when
-the planner already owns review, rollup, and project-state decisions. The
-worker produces files and evidence, then emits completion; the planner verifies
+Domain commits are owner checkpoints. They do not need a dedicated event when
+the project owner already owns review, rollup, and project-state decisions. The
+worker produces files and evidence, then emits completion; the owner verifies
 the task, runs project checks, commits a coherent accepted slice when safe, and
 records the commit hash in the task tree or project state. Do not let workers
 commit directly, and do not commit active/review work just because files are
@@ -165,7 +185,7 @@ Move reusable mechanics into `@may-agent/sdk` when they are domain-neutral:
 - project-app manifest types and `defineProjectApp`
 - event normalization helpers such as `eventData`, `eventString`, and
   `eventDetails`
-- canonical app event constructors such as `projectPlanningEvent`
+- canonical app event constructors such as `projectOwnerEvent`
 - JSON task-tree read/write, summaries, kanban projection, assignment, and
   completion helpers
 - workflow trigger-input parsing helpers
@@ -199,9 +219,9 @@ Recommended scripts:
   and UI file as part of introducing `package.json`; baseline that separately.
 - `tasks:summary` or equivalent tools - read-only app inspection helpers.
 - Project-specific read-only checkpoint helpers may exist when they support
-  planner judgment. For example, `domain:checkpoint` can inspect dirty domain
+  owner judgment. For example, `domain:checkpoint` can inspect dirty domain
   files, relate them to accepted/review/active task branches, and tell the
-  planner which slices are candidates for a domain commit. It should not commit
+  owner which slices are candidates for a domain commit. It should not commit
   by itself.
 
 `package.json` is not a replacement for `app.ts`. `app.ts` is the runtime
@@ -234,7 +254,7 @@ export default defineProjectApp({
     {
       name: "aks-rp-e2e-project-planner",
       enabled: true,
-      on: ["project.planning.requested"],
+      on: ["project.owner.requested"],
       handler: {
         workflow: "project-planner",
         includeEvent: true,
@@ -287,7 +307,7 @@ The normal case is declarative routing:
 workflowHandlers: [
   {
     name: "aks-rp-e2e-project-planner",
-    on: ["project.planning.requested"],
+    on: ["project.owner.requested"],
     handler: { workflow: "project-planner", ... },
   },
   {
@@ -336,7 +356,7 @@ eventGraph: {
   handlers: {
     "aks-rp-e2e-project-planner": {
       emits: ["project.task.assigned"],
-      description: "Planner assigns executable leaves.",
+      description: "Project owner assigns executable leaves.",
     },
     "aks-rp-e2e-task-execution-worker": {
       emits: ["project.task.completed"],
@@ -346,20 +366,20 @@ eventGraph: {
   adapters: [
     {
       event: "project.task.completed",
-      emits: ["project.problem.requested", "project.planning.requested"],
-      description: "Blocked/failed completions wake problem solving; all completions wake planning.",
+      emits: ["project.problem.requested", "project.owner.requested"],
+      description: "Blocked/failed completions wake problem solving; all completions wake the owner.",
     },
   ],
   externalEvents: ["escalation.created"],
   intentionalCycles: [
     {
-      id: "planner-worker-review-loop",
+      id: "owner-worker-review-loop",
       events: [
-        "project.planning.requested",
+        "project.owner.requested",
         "project.task.assigned",
         "project.task.completed",
       ],
-      reason: "The planner is the review boundary before assigning more work.",
+      reason: "The owner is the review boundary before assigning more work.",
     },
   ],
 }
@@ -401,8 +421,10 @@ Integrity checks should fail on:
 
 This is how we keep the event-native design simple: events are the state-machine
 edges, handlers are the state-machine actors, and `app.ts` is the readable map.
-The planner may still be the project brain, but the app manifest must make the
-event loop visible enough for humans, LLMs, and tooling to audit.
+The project owner is the brain, whether the app calls the implementation
+workflow `project-planner`, `owner-review`, or something domain-specific. The
+app manifest must make the event loop visible enough for humans, LLMs, and
+tooling to audit.
 
 ## Convention Defaults
 
@@ -430,7 +452,7 @@ Owner-based defaults:
 - A project-scoped event that has no matching workflow handler and is not
   intentionally suppressed by `app.onEvent` is dispatched to the project owner.
 
-Dedicated handlers are still useful for deterministic paths such as planner
+Dedicated handlers are still useful for deterministic paths such as owner
 wakes, assigned-task execution, native spec execution, watchdog observation,
 and synchronous read-only UI actions. Unknown project events should not disappear:
 they either match a handler, are intentionally ignored with a reason, or reach
@@ -469,11 +491,11 @@ V3 discovery:
 7. Register app event handlers, workflow handlers, and schedules.
 8. Serve app UI and shared project task views.
 
-Discovery should support V2 during migration:
+Discovery should support legacy embedded apps during migration:
 
 ```text
 V3: agents-repo/projects/aks-rp-e2e.app/app.ts
-V2: projects/aks-rp-e2e/.app/app.ts
+legacy: projects/aks-rp-e2e/.app/app.ts
 ```
 
 If both exist for the same app id, V3 wins unless the runtime is configured to
@@ -521,8 +543,8 @@ The naming should make the boundary obvious:
 
 ## Event Flow
 
-The event shape stays similar to V2. The important differences are path
-ownership and the execution responsibility split.
+The event shape stays similar to the embedded-app iteration. The important
+differences are path ownership and the execution responsibility split.
 
 ```text
 human / timer / metric / UI action
@@ -539,7 +561,7 @@ human / timer / metric / UI action
 
 Long-running project apps should not rely on humans repeatedly opening the
 Kanban board to discover whether the project is still pointed in the right
-direction. Keep the fast planner/worker loop for task execution, and add a
+direction. Keep the fast owner/worker loop for task execution, and add a
 slower focus-plan cadence for mid-term direction.
 
 ```text
@@ -548,14 +570,14 @@ regular focus-plan proposal
   -> focus-plan workflow
   -> task tree focus branch + project.json currentFocus update
   -> escalation.created when approval is needed
-  -> project.planning.requested
+  -> project.owner.requested
 
 regular progress review
   -> project.focus.review.requested
   -> focus-plan workflow
   -> on-track/off-track/completed/stale judgment
   -> escalation.created when the plan needs approval or human steering
-  -> project.planning.requested
+  -> project.owner.requested
 ```
 
 The focus-plan workflow is not the project brain and does not execute domain
@@ -575,7 +597,7 @@ The focus plan should be visible as a normal task-tree branch, usually
 - latest progress review: on track, off track, completed, stale, or blocked
 
 Approval is for direction and risk, not every leaf task. Once a focus plan is
-approved, the normal planner should keep creating and assigning concrete work
+approved, the normal owner loop should keep creating and assigning concrete work
 inside that focus until the plan completes, goes stale, blocks externally, or a
 later progress review proposes a material change.
 
@@ -591,8 +613,8 @@ For human notification, prefer the platform escalation channel:
     "requestedAction": "Reply approve, adjust, or hold.",
     "dedupKey": "aks-rp-e2e:focus-plan:needs_approval",
     "resume": {
-      "kind": "project-planning",
-      "instruction": "Fold the human decision into tasks/tree.json and continue planning."
+      "kind": "project-owner",
+      "instruction": "Fold the human decision into tasks/tree.json and continue owner review."
     }
   }
 }
@@ -604,7 +626,7 @@ Progress review should run more often than proposal. A typical cadence is:
 - review: every 6 hours, or when progress metrics breach
 
 The exact cadence is app-specific. The invariant is that each focus review
-records whether the project is on track and wakes normal planning with that
+records whether the project is on track and wakes normal owner review with that
 judgment.
 
 Example:
@@ -625,20 +647,20 @@ not replace it.
 For long-running project work, the app should use two simple event loops:
 
 ```text
-project.planning.requested
-  -> thin planner workflow
+project.owner.requested
+  -> thin owner workflow
   -> deterministic quick refill assigns clear ready leaves up to capacity
   -> project-owner event-review step with compact planning packet
   -> project-owner task-tree update step with event-review output
   -> task-tree tools / direct reviewed tree edits / explicit assignment
-  -> planner workflow emits project.task.assigned for explicit assignments
+  -> owner workflow emits project.task.assigned for explicit assignments
 
 project.task.assigned
   -> thin worker workflow verifies assignment attempt
   -> task-owned agent session
   -> domain work
   -> worker workflow emits project.task.completed
-  -> app event layer emits project.planning.requested
+  -> app event layer emits project.owner.requested
 ```
 
 Failure/blocking uses the same event shape, but makes the problem large and
@@ -651,40 +673,42 @@ project.task.completed with blocked/failed/error claim
   -> solver fixes/verifies local runner or replay defects, or escalates with
      exact external resume conditions
   -> solver emits project.problem.resolved or project.problem.escalated
-  -> app event layer emits project.planning.requested
-  -> planner reconciles affected task branches in tasks/tree.json
+  -> app event layer emits project.owner.requested
+  -> owner reconciles affected task branches in tasks/tree.json
 ```
 
-The problem solver is not a second planner. It may diagnose and fix local
+The problem solver is not a second owner. It may diagnose and fix local
 problems, but it does not accept tasks, roll up parents, reshape branches, or
-assign work. The planner creates or links the visible problem-solving task in
+assign work. The owner creates or links the visible problem-solving task in
 the tree, merges duplicate blockers by stable `problemKey`, and decides whether
 affected work should retry, be superseded, remain blocked, or escalate to a
 human/external owner.
 
 Solver result events are evidence, not policy. If a solver emits an escalation
 event but the summary clearly says a local cause was fixed and verified, the
-planner should treat that as a misclassified resolved problem, record that fact
-on the affected branch, and create retry work. If the summary says external
-input is still required, the planner records the exact resume condition and
-moves to unrelated available work.
+owner should treat that as a misclassified resolved problem, record that fact on
+the affected branch, and create retry work. If the summary says external input
+is still required, the owner records the exact resume condition and moves to
+unrelated available work.
 
 Shared root causes should share one problem key. For example, several staging
 replays blocked by missing ARM credentials should route to one problem such as
 `aks-rp-e2e:staging-arm-auth-unavailable`, not one isolated blocker for each
 feature. This keeps failure handling visible without flooding the tree.
 
-`project.execution.requested` is legacy terminology. `project.planning.requested`
-is the durable coordinator event.
+`project.execution.requested` and `project.planning.requested` are legacy
+terminology. `project.owner.requested` is the durable owner wake event. The
+runtime may keep accepting `project.planning.requested` as a compatibility
+alias, but new app code should emit `project.owner.requested`.
 
-Human task-tree steering should use `project.planning.requested` directly. If
-the user gives explicit planner context from a project UI, the UI posts the
+Human task-tree steering should use `project.owner.requested` directly. If
+the user gives explicit owner context from a project UI, the UI posts the
 typed event through `/api/events`. The HTTP envelope carries `type`, `source`,
 and `owner`; the event payload that handlers consume lives under `data`:
 
 ```json
 {
-  "type": "project.planning.requested",
+  "type": "project.owner.requested",
   "source": "web-ui",
   "owner": "agent:aks-explorer",
   "urgency": "high",
@@ -706,68 +730,67 @@ alone; the runtime stores and dispatches the durable payload from `data`.
 Explicit human steering should use `urgency: "high"` so it is not buried behind
 routine watchdog/refill wakes.
 
-Planner workflows should also query/surface recent high-priority human steering
+Owner workflows should also query/surface recent high-priority human steering
 when building the planning packet. The current trigger may be a watchdog or
-completion event, but pending human steering is still planner input and should
+completion event, but pending human steering is still owner input and should
 be reviewed before routine refill decisions.
 
-Planner workflows may use a deterministic quick-refill fast path before the
-owner-agent planning session. Quick refill only claims ready leaves that are
+Owner workflows may use a deterministic quick-refill fast path before the
+owner-agent judgment session. Quick refill only claims ready leaves that are
 clear, dependency-satisfied, and non-conflicting. It is a scheduling primitive,
-not a planning decision. This keeps workers busy while preserving the planner as
-the owner of task-tree shape and project judgment.
+not an owner decision. This keeps workers busy while preserving the owner as the
+brain for task-tree shape and project judgment.
 
 `project.comment.created` is for general discussion. `project.task.steer` is at
-most a compatibility alias. Neither should be required before waking the
-planner.
+most a compatibility alias. Neither should be required before waking the owner.
 
 The canonical task event contract is intentionally small:
 
-- `project.planning.requested` is handled by the planner workflow. It reviews,
+- `project.owner.requested` is handled by the project owner workflow. It reviews,
   repairs, refills, promotes, and explicitly assigns ready leaves.
 - `project.task.assigned` is handled by the worker workflow. It carries the
-  planner-selected task id, attempt id, session id, and worker. The worker
+  owner-selected task id, attempt id, session id, and worker. The worker
   does not pick from the tree.
-- `project.task.completed` is handled by the app event layer and wakes planning.
+- `project.task.completed` is handled by the app event layer and wakes the owner.
   It should carry the final task snapshot, worker result, summary, evidence, and
-  blocker/verification fields. The planner reads the completion event and
+  blocker/verification fields. The owner reads the completion event and
   decides how to update the tree.
 - `project.problem.requested` is handled by a focused problem-solver workflow.
   It carries a stable `problemKey`, affected task ids, source task/event, summary,
   and evidence. It exists to investigate/fix blockers loudly, not to mutate the
   tree.
 - `project.problem.resolved` and `project.problem.escalated` are handled by the
-  app event layer and wake planning. The planner reconciles the solver result
+  app event layer and wake the owner. The owner reconciles the solver result
   into the task tree and affected task branches.
 - Legacy `project.task.execution.requested` events should be translated to
-  planning, not routed directly to a worker, because assignment is a planner
+  owner review, not routed directly to a worker, because assignment is an owner
   decision.
 
 Every subscribed event should have one clear outcome: a workflow trigger, an
 explicit app no-op with a reason, a follow-up event, or the convention-inferred
 project-owner fallback. Silent subscribed events are a bug.
 
-The planner agent is the brain. The task tree is the planner's workspace and
-context container; it serves the planner, it is not the controller. Workflow
+The project owner agent is the brain. The task tree is the owner's workspace and
+context container; it serves the owner, it is not the controller. Workflow
 code must not contain project strategy, domain judgment, replan policy, or
 branch-repair decision trees. Workflow code only wakes the right session,
-passes compact event context, and emits events that the planner explicitly
+passes compact event context, and emits events that the owner explicitly
 requested. Task-tree processing code should be tools for the LLM, not workflow
 policy.
 
-The planner workflow is sequential and serialized. It wakes the project-owner
-agent in two steps during the same planner wake:
+The owner workflow is sequential and serialized. It wakes the project-owner
+agent in two steps during the same owner wake:
 
 1. Event review: react to the trigger, inspect related task/context when
    needed, and produce a short current-state interpretation. This step should
    not edit the task tree or assign work. It should be bounded and prefer the
    compact packet over rediscovery.
-2. Planning update: use the event review plus the latest compact task-tree
+2. Owner update: use the event review plus the latest compact task-tree
    packet to review completed task results, repair or supersede bad branches,
    roll up parents, create concrete next leaves, promote clear work to ready,
    explicitly assign ready leaves, and classify exact blockers.
 
-A planning pass should be bounded by capacity and clarity, not by one edit.
+A project-owner pass should be bounded by capacity and clarity, not by one edit.
 When domain gaps remain and `ready + active` is below the app parallelism target,
 the project-owner agent should keep rolling up completed results, creating or
 promoting concrete leaves, and assigning ready leaves until available capacity
@@ -776,10 +799,10 @@ cannot be filled. Creating one leaf is not enough if the project is still
 underfilled.
 
 The app may provide a bounded frontier-seeding tool for liveness. This is not a
-second planner: it may only translate explicit, already-modeled project gaps
+second owner: it may only translate explicit, already-modeled project gaps
 into a small number of concrete backlog leaves under existing durable lanes,
-avoid duplicate open work, and record the seed reason in the planner journal.
-Normal planner judgment runs first. The fallback is used when the planner wake
+avoid duplicate open work, and record the seed reason in the owner journal.
+Normal owner judgment runs first. The fallback is used when the owner wake
 times out or leaves capacity underfilled with no assignable backlog while domain
 gaps remain.
 
@@ -791,37 +814,37 @@ source exploration, feature packets, spec authoring, replay generation, and
 model-gap preparation; they are assigned only when capacity opens.
 
 When `ready + active` is zero and `review`, `blocked`, or `proposed` work
-exists, the wake is a reconciliation incident. Planning should make durable
+exists, the wake is a reconciliation incident. Owner review should make durable
 tree decisions first: accept verified reviews, create retry/follow-up leaves for
 resolved blockers, link unresolved blockers to one visible problem task, and
 assign clear leaves. Broad rediscovery belongs in follow-up tasks, not in the
 same planning update before the tree has a next action.
 
-The planner wake should include a compact planning packet, not only raw ids.
+The owner wake should include a compact planning packet, not only raw ids.
 The packet should include status counts, frontier ids, and compact details for
 ready, active, review, blocked, and proposed leaves: goal, outputs,
 acceptance, conflict scope, dependencies, blocker, session id, and relevant
-trace fields. The packet is the starting point; the planner may dive deeper
+trace fields. The packet is the starting point; the owner may dive deeper
 with task-tree/domain commands when deciding. Domain status commands and metric
-context may be listed as tools or event context, but the planner agent decides
+context may be listed as tools or event context, but the owner agent decides
 whether they matter and how they map to work.
 
-Planner health is not binary. `ready=0, active=0, gaps>0` is a zero-work
+Owner-loop health is not binary. `ready=0, active=0, gaps>0` is a zero-work
 condition and may need human escalation. `ready=0, active>0, gaps>0` is still
 underfilled capacity when the app has a higher parallelism target; it should
 wake the project owner to refill concrete leaves, not wait for the single
 active task to finish.
 
 The worker workflow is parallel and narrow. It receives exactly one
-planner-created assignment, verifies the attempt id against the current task,
+owner-created assignment, verifies the attempt id against the current task,
 wakes that task's primary session, and emits `project.task.completed`. Workers
 must not reshape sibling branches, roll up parents, create planning/control
 nodes, or mutate task-tree completion state. The app event layer maps
-`project.task.completed` to the next `project.planning.requested` wake.
+`project.task.completed` to the next `project.owner.requested` wake.
 
 Repeated stale active attempts are not progress. A watchdog should observe
-missing or dead runtime attempts and wake planning with stale-attempt evidence.
-The planner decides whether to retry, repair, replace, split, or block the
+missing or dead runtime attempts and wake the owner with stale-attempt evidence.
+The owner decides whether to retry, repair, replace, split, or block the
 task; the watchdog does not mutate the task tree or dispatch workers.
 
 ## Project Metrics
@@ -846,7 +869,7 @@ Metric breach handling stays event-based:
 metrics-snapshot
   -> metric.breach
   -> project app onEvent
-  -> project.planning.requested with metric context
+  -> project.owner.requested with metric context
   -> project-owner agent reads task tree + metric context
   -> task tree repair, concrete work, or escalation
 ```
@@ -858,7 +881,7 @@ execute. That breach creates a human-owned escalation with the metric snapshot,
 Kanban link, task tree path, and domain status command so the operator can reply
 from mobile and unblock or steer the project. In contrast,
 `ready-starvation-with-gaps` and `capacity-underfilled-with-gaps` should usually
-wake planning only; they mean the project owner should refill the task tree, not
+wake the owner only; they mean the project owner should refill the task tree, not
 that a human must intervene immediately.
 
 Routine progress metrics should be visible on dashboards and in owner context
@@ -876,7 +899,7 @@ aks-rp-e2e.app/tasks/tree.json
 Rationale:
 
 - It is May-agent's current decomposition of how to drive the project.
-- It includes review state, blocked review, planner lanes, assignments, and
+- It includes review state, blocked review, owner lanes, assignments, and
   current project thinking.
 - It should not be required for a human to run the domain project.
 
@@ -884,13 +907,13 @@ The task tree still represents project understanding, not workflow attempt
 history. Bad or stale branches should be superseded. Runtime attempts stay in
 infra history.
 
-Project-specific planning intent should usually be modeled as tasks, not as
+Project-specific owner-review intent should usually be modeled as tasks, not as
 workflow prompt rules. If a project has a measurable progress signal or a
 recurring judgment loop, create a visible standing task under the relevant
 durable lane. For example, `aks-rp-e2e.app` uses a standing
 `knowledge-model-gap-reconciliation` task to convert non-passing knowledge model
 paths into concrete execution, diagnosis, unblock, or spec-refinement leaves.
-The planner prompt should only tell the project owner agent to read and act on
+The owner prompt should only tell the project owner agent to read and act on
 the task tree; the project-specific status-to-work mapping belongs in that
 standing task's context and acceptance criteria.
 
@@ -1002,9 +1025,9 @@ The app must not hide mutation behind discussion entries or implicit retries.
 Human/UI requests become explicit events, and the app records the request,
 decision, command, result, and follow-up.
 
-## Migration From V2
+## Migration From Embedded Apps
 
-Current V2:
+Current embedded layout:
 
 ```text
 aks-rp-e2e/
@@ -1015,7 +1038,7 @@ aks-rp-e2e/
   runner/
 ```
 
-Target V3:
+Target V3 layout:
 
 ```text
 aks-rp-e2e/
@@ -1034,7 +1057,7 @@ agents-repo/projects/aks-rp-e2e.app/
 
 Migration steps:
 
-1. Add V3 runtime discovery for `*.app/app.ts` while keeping V2 discovery.
+1. Add V3 runtime discovery for `*.app/app.ts` while keeping legacy embedded discovery.
 2. Create `aks-rp-e2e.app/` in the agents/platform repo.
 3. Move `.app/app.ts`, `.app/project.json`, `.app/tasks/`, `.app/workflows/`,
    `.app/agents/`, `.app/ui/`, and app JSONL streams into `aks-rp-e2e.app/`.
@@ -1050,8 +1073,8 @@ Migration steps:
 
 ## Compatibility Rules
 
-- V2 embedded apps remain valid for projects that want app and domain changes
-  committed together.
+- Legacy embedded apps remain runtime-compatible only. Do not use them for new
+  or migrated project-app work.
 - V3 sibling apps are preferred for portable domain projects and reusable
   May-agent operation.
 - A simple project without app behavior can remain a plain project folder.
@@ -1080,7 +1103,7 @@ It owns:
 
 - project task tree;
 - feature-learning loop workflow;
-- planning/review/blocker workflows;
+- owner-review/worker/blocker workflows;
 - app-local agents;
 - May-agent UI integration;
 - trigger-test event handling;

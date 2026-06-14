@@ -1,4 +1,4 @@
-// Shared project Kanban projection for Project App V2 task trees.
+// Shared project Kanban projection for Project App V3 task trees.
 
 const TASK_LANES = [
   { id: "planning", label: "Planning" },
@@ -156,7 +156,7 @@ async function renderProjectKanban(el) {
     return;
   }
   if (!data.available) {
-    el.innerHTML = `<div class="empty-state">This project has no <code>tasks/tree.json</code> yet. V2 projects expose a task tree for shared Kanban and task audit.</div>`;
+    el.innerHTML = `<div class="empty-state">This project has no <code>tasks/tree.json</code> yet. Project apps expose a task tree for shared Kanban and task audit.</div>`;
     return;
   }
 

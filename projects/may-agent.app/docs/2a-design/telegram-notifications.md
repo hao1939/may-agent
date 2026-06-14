@@ -194,7 +194,7 @@ interface TelegramConversationContext {
     sessionId?: string;
   };
 
-  expectedClosure?: string[]; // e.g. ["escalation.resolved", "project.planning.requested"]
+  expectedClosure?: string[]; // e.g. ["escalation.resolved", "project.owner.requested"]
   staleAfterMs?: number;
 }
 ```
@@ -238,7 +238,7 @@ Message sent while May brokers a project escalation:
     "agent": "may",
     "sessionId": "s_may_broker_456"
   },
-  "expectedClosure": ["escalation.resolved", "project.planning.requested"]
+  "expectedClosure": ["escalation.resolved", "project.owner.requested"]
 }
 ```
 

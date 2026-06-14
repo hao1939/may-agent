@@ -33,7 +33,11 @@ Docs follow a hierarchy of truth. Higher tiers govern lower tiers — conflicts 
 1. [principles/work-model.md](1-principles/work-model.md) — projects, heartbeats, metrics, and triggers
 2. [manual/workflow-authoring.md](2b-manual/workflow-authoring.md) — write workflow-backed behavior
 3. [manual/handler-authoring.md](2b-manual/handler-authoring.md) — bridge events to workflows
-4. [design/sdk.md](2a-design/sdk.md) — the stable TypeScript surface
+4. [design/project-app-v3.md](2a-design/project-app-v3.md) — project apps, owner events, and domain/app boundaries
+5. [design/sdk.md](2a-design/sdk.md) — the stable TypeScript surface
+
+Project App V3 is the only current project-app design. Earlier V2 project-app
+notes live under `archive/v2/` for history only.
 
 ### I want to change infra
 

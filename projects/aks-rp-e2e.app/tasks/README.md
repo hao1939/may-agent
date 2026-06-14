@@ -73,12 +73,12 @@ folder does not keep a parallel task event log.
   breach should feed back into the task tree. Metric breaches wake the project
   owner; only confirmed human/ownership blockers become escalations.
 - A single active task is not enough to call the project healthy while model
-  gaps remain. The planner should keep a small ready backlog up to the app's
+  gaps remain. The owner should keep a small ready backlog up to the app's
   parallelism target, unless the task tree visibly records why capacity cannot
   be filled. `ready-starvation-with-gaps` and
-  `capacity-underfilled-with-gaps` are planner refill signals; only
+  `capacity-underfilled-with-gaps` are owner refill signals; only
   `no-work-with-gaps` is the high-urgency human unblock signal.
-- If a planner wake times out or leaves no assignable backlog while worker
+- If an owner wake times out or leaves no assignable backlog while worker
   capacity is underfilled and model gaps remain, the app may seed a bounded
   number of concrete backlog leaves from the knowledge model plus existing
   `specs/` and `replays/`. This is a liveness fallback, not domain judgment:
@@ -100,14 +100,14 @@ folder does not keep a parallel task event log.
 - Focus progress reviews should update task context with one clear state:
   `on_track`, `off_track`, `completed`, `stale`, or `blocked`. If the focus
   needs a material direction/risk change, send a human approval message and
-  wait for the planner to fold the direct approval event back into the tree.
+  wait for the owner to fold the direct approval event back into the tree.
 - Focus-plan approval messages must be self-contained. The human-visible
   message needs the decision question, recommended options, compact status
-  context, evidence links, and the planner's intended next step. It must also
+  context, evidence links, and the owner's intended next step. It must also
   include `projectPath: "projects/aks-rp-e2e.app"` and a direct-event contract:
   a Telegram reply or UI action must emit `project.focus.approval.submitted`
   with the approval decision and human message. The app route then emits
-  `project.planning.requested`.
+  `project.owner.requested`.
 - Learning is not terminal by itself. A feature is useful only when source
   knowledge, spec shape, replay execution, evidence diagnosis, and model
   feedback close the loop or expose an exact external blocker.
@@ -179,9 +179,9 @@ folder does not keep a parallel task event log.
   tree, but do not auto-review them as ordinary stale blockers.
 - Worker progress is not completion or final blockage. Worker `done`,
   `partial`, and `blocked` results arrive as `project.task.completed` events.
-  The planner then updates the task tree and decides whether the task becomes
+  The owner then updates the task tree and decides whether the task becomes
   accepted, review, repaired, replaced, retried, split, or truly blocked.
-  `blocked` means "the worker believes it found a blocker"; the planner must
+  `blocked` means "the worker believes it found a blocker"; the owner must
   verify the evidence and concrete resume condition before leaving a task
   blocked.
 - The task is the context container. Store compact working context on the task
@@ -200,28 +200,28 @@ folder does not keep a parallel task event log.
   work may continue in the parent session; parallel child work should fork a
   new session seeded from the parent and write a completion packet back to the
   parent.
-- The planner agent is the brain. Workflows wake agent sessions and expose safe
-  task-tree primitives; workflows do not encode project strategy, branch repair
-  policy, or domain judgment.
-- The task tree is the planner's workspace and context container. It serves the
-  planner; it is not the controller. Task-tree processing code should be tools
+- The project owner agent is the brain. Workflows wake agent sessions and
+  expose safe task-tree primitives; workflows do not encode project strategy,
+  branch repair policy, or domain judgment.
+- The task tree is the owner's workspace and context container. It serves the
+  owner; it is not the controller. Task-tree processing code should be tools
   for the LLM. Use app-local commands such as `bun run task-tree summary`,
   `bun run task-tree frontier`, `bun run task-tree promote-clear`,
   `bun run task-tree add`, `bun run task-tree assign`, and
   `bun run task-tree complete` for reviewed task-tree operations.
-- Planner work runs through the project owner. Each wake has two owner steps:
+- Owner work runs through the project owner. Each wake has two owner steps:
   event review first, then task-tree update. The event-review step receives a
   compact planning packet and should classify what changed without editing
   `tree.json`; it should stay bounded and prefer the packet over rediscovery.
   The update step uses that review and the latest packet to repair
   decomposition, review worker progress, create new leaves, assign ready
   leaves, and unblock the project.
-- Planner session memory is non-authoritative. Each planner wake should reason
+- Owner session memory is non-authoritative. Each owner wake should reason
   from the latest compact planning packet, `tasks/tree.json`, trigger context,
   and domain workspace commands. The packet includes frontier task details so
   the owner can start from current state, then dive deeper with `task-tree show`
   or domain commands when needed. Reusing stale planner conclusions is a bug;
-  if the tree says review work or domain gaps remain, the planner must judge
+  if the tree says review work or domain gaps remain, the owner must judge
   that current state and move it forward.
 - If `ready + active` is empty while review, blocked, or proposed work exists,
   treat the wake as a reconciliation incident. Make a durable tree decision
@@ -229,7 +229,7 @@ folder does not keep a parallel task event log.
   leaves for resolved blockers, link unresolved blockers to one visible problem
   task, and assign clear leaves. Do not spend the whole planning wake
   rediscovering context without recording the next action.
-- Problem-solver output is evidence for the planner. If the event type says
+- Problem-solver output is evidence for the owner. If the event type says
   escalated but the summary clearly says a local runner/replay issue was fixed
   and verified, record it as a misclassified resolved problem and create retry
   work. If external input is still required, record the exact resume condition
@@ -240,8 +240,8 @@ folder does not keep a parallel task event log.
   branches, roll up parents, create planner/control nodes, or mutate completion
   state in the task tree.
 - Repeated stale active attempts are not progress. The watchdog observes
-  missing/dead runtime attempts and wakes planning with stale-attempt evidence.
-  The planner should create a concrete runner/session/replay diagnosis,
+  missing/dead runtime attempts and wakes the owner with stale-attempt evidence.
+  The owner should create a concrete runner/session/replay diagnosis,
   replacement leaf, retry assignment, or exact blocker before the task moves.
 - Parent tasks roll up from verified child state, then get a parent-review leaf
   when the parent needs audit or replanning before acceptance/blocking.
@@ -250,7 +250,7 @@ folder does not keep a parallel task event log.
   `context.live_run_policy: "repeatable-approved"` plus a task-specific
   `context.mutation_allow` value so the project can rerun them without repeated
   human approval. If a spec-runner task has a replay input such as
-  `replays/<name>.ts` but is missing this context, the planner/engine should
+  `replays/<name>.ts` but is missing this context, the owner should
   repair the task metadata and keep it assignable. The runner must still set
   the exact `AKS_RP_E2E_ALLOW_CLOUD_MUTATION=<context.mutation_allow>` value,
   run in the current credentialed execution context, serialize the relevant
@@ -267,32 +267,32 @@ folder does not keep a parallel task event log.
   counters show whether work is moving, impact counters show whether model/spec
   coverage is improving, and health counters wake owner/human unblock paths
   when reality contradicts the task tree.
-- Planning is control-loop behavior, not worker task work. The
-  `project-planner` workflow may run one bounded planner wake with event-review
+- Owner review is control-loop behavior, not worker task work. The
+  `project-planner` workflow may run one bounded owner wake with event-review
   and update steps, record the attempt in `.state/planner-runs.jsonl`, and let
   the project-owner agent update `tree.json` with concrete domain leaves and
   explicit assignments.
   Bounded does not mean one edit: when model gaps remain and active work is
-  below the app parallelism target, the planner should review worker progress
+  below the app parallelism target, the owner should review worker progress
   and keep creating/promoting/assigning concrete leaves until capacity is filled
-  or exact blockers are recorded. Do not represent each planner wake, retry, or
+  or exact blockers are recorded. Do not represent each owner wake, retry, or
   recovery as a normal leaf task.
 - Legacy planning/control nodes such as `project-control`,
   `project-planning-loop*`, and `project-frontier-replan-*` are history only.
   They must not be assigned as worker tasks, must not consume active capacity,
   and should be superseded when they appear in the executable frontier.
-- The robust execution loop is: event or timer wakes the planner; the planner
+- The robust execution loop is: event or timer wakes the owner; the owner
   reviews progress, repairs, rolls up, refills the task tree, and explicitly
   assigns ready leaves with `task-tree assign`; the workflow emits
   `project.task.assigned`; each worker executes exactly one assigned task and
-  emits `project.task.completed`; completion wakes the planner again. The timer
+  emits `project.task.completed`; completion wakes the owner again. The timer
   is only a safety net for missed events or stale sessions.
-- Task lifecycle events have explicit ownership. `project.planning.requested`
-  is handled by the planner workflow. `project.task.assigned` is handled by the
+- Task lifecycle events have explicit ownership. `project.owner.requested`
+  is handled by the owner workflow. `project.task.assigned` is handled by the
   worker workflow. `project.task.completed` is handled by the app event layer
-  and wakes planning with the latest task snapshot, result, summary, evidence,
+  and wakes the owner with the latest task snapshot, result, summary, evidence,
   blocker, verification, attempt id, and session context. Legacy
-  `project.task.execution.requested` events wake planning instead of bypassing
+  `project.task.execution.requested` events wake the owner instead of bypassing
   assignment.
 - A task event should carry enough compact context for the next handler and UI
   to understand what changed without blindly rediscovering the task: task id,
@@ -300,20 +300,20 @@ folder does not keep a parallel task event log.
   acceptance, conflict scope, compact `context`, blocker, verification, and
   worker evidence fields when available. The task tree remains the mutation
   source of truth; event payloads are the handoff packet.
-- Planner and worker are intentionally decoupled. The planner is sequential and
-  owns task-tree meaning: decomposition, repair, verification, parent rollup,
+- Owner and worker are intentionally decoupled. The owner workflow is sequential
+  and owns task-tree meaning: decomposition, repair, verification, parent rollup,
   ready promotion, and assignment. Workers may run in parallel, but each worker
   owns only one assigned task execution and emits `project.task.completed`;
-  workers must not create tree branches, roll up parents, or emit planner wake
+  workers must not create tree branches, roll up parents, or emit owner wake
   events directly.
-- Domain repo commits are planner-owned checkpoints. A worker may modify
-  `../aks-rp-e2e`, but it must not commit. After the planner accepts worker
+- Domain repo commits are owner-owned checkpoints. A worker may modify
+  `../aks-rp-e2e`, but it must not commit. After the owner accepts worker
   output, it may checkpoint a coherent accepted slice in the domain repo when no
   active/review task still owns the same files, `bun run check` passes, and the
-  commit message references the accepted task ids. The planner should use
+  commit message references the accepted task ids. The owner should use
   `bun run domain:checkpoint` from the app directory to inspect dirty files and
   hold mixed or still-reviewable work. No separate commit event is needed; a
-  commit is one planner action during normal review/rollup.
+  commit is one owner action during normal review/rollup.
 - Do not create top-level `project-control`, `execution-engine-audit`, or
   `project-frontier-replan-*` branches. Keep planner/engine history in runtime
   traces or archive material, and put current work under the feature/spec,

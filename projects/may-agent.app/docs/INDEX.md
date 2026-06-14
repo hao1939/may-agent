@@ -43,6 +43,8 @@ System architecture and subsystem designs.
 | [heartbeat.md](2a-design/heartbeat.md) | Heartbeat: per-agent workflows, data loaders, auto-generation |
 | [agents.md](2a-design/agents.md) | Agent cooperation: call/message, session tree, context |
 | [projects.md](2a-design/projects.md) | Project system: format, lifecycle, handler, shared location |
+| [project-app-v3.md](2a-design/project-app-v3.md) | Final project-app model: sibling `*.app`, owner-first events, app/runtime/domain boundary |
+| [task-tree-engine.md](2a-design/task-tree-engine.md) | Task tree data/tool model: owner review, worker completion, Kanban projection, human steering |
 
 ### Design Decisions
 
@@ -77,11 +79,11 @@ Proposals under consideration and historical docs preserved for context.
 | Doc | Status | What |
 |-----|--------|------|
 | [stigmergic-coordination.md](3-proposals/stigmergic-coordination.md) | Draft | Formalize stigmergic coordination as a first-class pattern |
-| [v2-spec.md](3-proposals/v2-spec.md) | Historical | v2 conformance spec |
-| [v2-migration-plan.md](3-proposals/v2-migration-plan.md) | Historical | Original v2 migration plan |
-| [v2-implementation-notes.md](3-proposals/v2-implementation-notes.md) | Historical | What shipped in v0.2 migration |
-| [v2-review-2026-05-06.md](3-proposals/v2-review-2026-05-06.md) | Historical | v2 review checkpoint |
 | [retired-design-alternatives.md](3-proposals/retired-design-alternatives.md) | Thoughts / alternatives | Useful ideas preserved from deleted legacy design archive |
+
+Old V2 project-app proposals were moved to [`archive/v2/`](archive/v2/). They
+are historical only; [project-app-v3.md](2a-design/project-app-v3.md) is the
+single current project-app design.
 
 ---
 

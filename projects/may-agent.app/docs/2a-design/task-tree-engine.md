@@ -21,7 +21,7 @@ knowledge (this execution approach worked, reuse for similar paths).
 
 The tree is also the main human steering surface. A human should be able to
 review any branch, understand why it exists, and attach feedback directly to
-that context. The planner consumes that feedback when it updates the tree.
+that context. The project owner consumes that feedback when it updates the tree.
 
 Accepted tasks are durable process knowledge. They record methodology,
 milestones, and facts the agent can reuse later; they are not merely completed
@@ -31,37 +31,34 @@ The tree is managed exclusively by tools. No direct JSON editing.
 
 ## Core Design Principle
 
-> The tool enforces structure and computes projections. The planner makes
+> The tool enforces structure and computes projections. The project owner makes
 > project judgments. The worker only claims executable leaves and submits
 > evidence.
 
 ## Node Lifecycle
 
-> **Cross-reference**: `project-execution-engine.md` defines a different status
-> vocabulary (`proposed`, `ready`, `claimed_done`, `rejected`) for the same task
-> tree. This doc (task-tree-engine) is the **tool spec** — what the tree library
-> enforces. The execution-engine doc is the **workflow spec** — what planners
-> and workers follow. Mapping: `backlog` here = `proposed`/`ready` there;
-> `review` here = `claimed_done` there. See KE-1858 for the full comparison.
+> **Cross-reference**: `project-app-v3.md` defines the owner/workflow event
+> contract around this tree. This document is the tool/data spec: what the tree
+> library enforces and what the UI projects.
 
 ```
 backlog → active → review → accepted
-                          → backlog      (planner reworks)
-                          → blocked      (planner confirms external blocker)
-                          → superseded   (planner replaces with better work)
+                          → backlog      (owner reworks)
+                          → blocked      (owner confirms external blocker)
+                          → superseded   (owner replaces with better work)
 ```
 
 ### Persisted statuses
 
 | Status       | Meaning                                                   | Who sets it                   |
 | ------------ | --------------------------------------------------------- | ----------------------------- |
-| `backlog`    | Work to be done                                           | Planner creates or reworks it |
+| `backlog`    | Work to be done                                           | Owner creates or reworks it   |
 | `active`     | Worker is executing                                       | Worker claims it              |
 | `review`     | Worker finished, claim needs verification                 | Worker submits it             |
-| `accepted`   | Planner verified the claim; durable project understanding | Planner accepts it            |
-| `blocked`    | Concrete external blocker confirmed by planner            | Planner sets it               |
-| `superseded` | Replaced by better understanding                          | Planner replaces it           |
-| `decomposed` | Not a leaf; children represent the work                   | Planner decomposes it         |
+| `accepted`   | Owner verified the claim; durable project understanding   | Owner accepts it              |
+| `blocked`    | Concrete external blocker confirmed by owner              | Owner sets it                 |
+| `superseded` | Replaced by better understanding                          | Owner replaces it             |
+| `decomposed` | Not a leaf; children represent the work                   | Owner decomposes it           |
 
 ### Derived predicates (computed by tools, never persisted)
 
@@ -72,8 +69,8 @@ backlog → active → review → accepted
 | `conflict-blocked`    | Backlog but conflict_scope overlaps with active task            |
 | `stale`               | Untouched beyond staleness threshold                            |
 | `needs-decomposition` | Backlog leaf that is too large for a single worker session      |
-| `rollup-hint`         | All children accepted — planner should review for parent accept |
-| `blocked-hint`        | A child is blocked — planner should review parent state         |
+| `rollup-hint`         | All children accepted — owner should review for parent accept |
+| `blocked-hint`        | A child is blocked — owner should review parent state         |
 | `frontier`            | Next actionable work                                            |
 | `kanban-lane`         | Which Kanban column this node belongs to                        |
 
@@ -86,12 +83,12 @@ backlog → active → review → accepted
 - Executes the task
 - Submits to `review` with result + evidence
 - If the worker encounters an obstacle, it submits `review` with
-  `result: "blocked_claim"` and evidence of the blocker. The planner
+  `result: "blocked_claim"` and evidence of the blocker. The owner
   decides whether it is a real external blocked, local rework,
   superseded, or accepted partial progress.
 - Does NOT set blocked directly, replan, decompose, or create siblings
 
-### Planner
+### Project Owner
 
 - Reviews `review` tasks and decides: accept, rework (back to backlog),
   block (confirm external), supersede, or decompose further
@@ -105,14 +102,14 @@ backlog → active → review → accepted
   and reconciles `project.problem.resolved` / `project.problem.escalated` events
   back into affected task branches
 
-Planner wakeups should start with a deterministic quick-refill pass: assign
+Owner wakeups may start with a deterministic quick-refill pass: assign
 already-ready, clear, dependency-satisfied, non-conflicting leaves up to worker
 capacity and dispatch `project.task.assigned` immediately. This does not make
-new project judgments; it only executes work the planner already marked ready.
+new project judgments; it only executes work the owner already marked ready.
 If quick refill fills capacity and there is no pending review or high-priority
-human steering, the wake may finish without an owner-agent planning session.
+human steering, the wake may finish without an owner-agent judgment session.
 If human steering, review work, or unclear tree state exists, the owner-agent
-planning session still runs after quick refill.
+judgment session still runs after quick refill.
 
 ### Problem Solver
 
@@ -135,7 +132,7 @@ It cannot:
 - assign/retry task leaves directly
 - mark the project complete
 
-The planner owns the durable tree decision after the solver reports back.
+The project owner owns the durable tree decision after the solver reports back.
 
 Problem-solving tasks are normal visible tree nodes, usually under the affected
 lane or a small problem-solving branch. Use one shared node for one shared root
@@ -162,18 +159,17 @@ cause:
 }
 ```
 
-This keeps problem resolution large and loud without introducing another
-planner.
+This keeps problem resolution large and loud without introducing another owner.
 
 ### Tool
 
 - Enforces structural invariants on every mutation
 - Computes derived predicates (readiness, rollup hints, Kanban, staleness)
 - Projections are read-only — the tool does not mutate parent status
-  based on child state. It computes rollup hints; the planner applies
+  based on child state. It computes rollup hints; the owner applies
   parent transitions.
 - Auto-collapses superseded chains (structural cleanup, not judgment)
-- Archives accepted detail only when the planner asks for compaction with an
+- Archives accepted detail only when the owner asks for compaction with an
   explicit knowledge summary
 
 ## Structural Invariants
@@ -184,7 +180,7 @@ The tool enforces on every mutation:
 2. Node IDs are unique.
 3. `active` must have been `backlog` with computed readiness satisfied.
 4. `review` must have `result` and `evidence` fields.
-5. `accepted` can only transition from `review` (planner verified).
+5. `accepted` can only transition from `review` (owner verified).
 6. `superseded` must have `supersededBy` and `reason`.
 7. `blocked` must have `blocker` with `condition` and `category`.
 8. `decomposed` nodes have children; leaf nodes do not.
@@ -196,27 +192,26 @@ The tool enforces on every mutation:
 ## Rollup and Parent Status
 
 Parent status is NOT automatically mutated by the tool. The tool computes
-rollup hints; the planner decides:
+rollup hints; the owner decides:
 
-| Hint                    | Tool computes                 | Planner decides                                       |
+| Hint                    | Tool computes                 | Owner decides                                         |
 | ----------------------- | ----------------------------- | ----------------------------------------------------- |
 | All children `accepted` | `rollup-hint: all-accepted`   | Accept parent, or keep decomposed if more work needed |
 | Any child `blocked`     | `blocked-hint: child-blocked` | Block parent, rework the child, or supersede          |
 | Mix of statuses         | No hint                       | Keep decomposed                                       |
 
-This keeps the planner as the brain. The tool never makes project judgments.
+This keeps the owner as the brain. The tool never makes project judgments.
 
 A project may expose a narrow candidate-generation tool for liveness, such as
 "seed backlog from known model gaps." Such a tool is still a task-tree tool: it
 creates only reviewable backlog nodes from explicit project data, avoids
 duplicate open work, writes audit context, and never accepts, blocks, or
-supersedes work. The planner or planner workflow may use it as a fallback when
-the frontier is empty or underfilled, but later review remains a planner
-decision.
+supersedes work. The owner workflow may use it as a fallback when the frontier
+is empty or underfilled, but later review remains an owner decision.
 
 ## Accepted Knowledge
 
-An `accepted` node means the planner verified the worker claim and turned it
+An `accepted` node means the owner verified the worker claim and turned it
 into project knowledge. Accepted nodes should answer:
 
 - What did we learn or prove?
@@ -250,7 +245,7 @@ Accepted knowledge fields:
     "managedsystem immutability checks"
   ],
   "accepted_at": "2026-06-12T...",
-  "accepted_by": "planner"
+  "accepted_by": "owner"
 }
 ```
 
@@ -276,7 +271,7 @@ tree.unblock(nodeId, reason); // clear blocker
 tree.claim(nodeId); // backlog → active
 tree.submit(nodeId, result, evidence); // active → review
 
-// Cleanup (planner-triggered)
+// Cleanup (owner-triggered)
 tree.archive(nodeId, summary); // collapse low-value accepted detail
 tree.prune(nodeId, reason); // remove irrelevant subtree
 
@@ -304,12 +299,12 @@ The tree view is the primary human/agent reasoning surface. It should show:
 Task IDs, leases, conflict scopes, and scheduler details are secondary
 metadata. They should not dominate the tree view.
 
-Human feedback from the tree UI should wake the planner directly. Over
+Human feedback from the tree UI should wake the project owner directly. Over
 `/api/events`, keep the durable project event payload under `data`:
 
 ```json
 {
-  "type": "project.planning.requested",
+  "type": "project.owner.requested",
   "source": "web-ui",
   "owner": "agent:aks-explorer",
   "urgency": "high",
@@ -329,15 +324,15 @@ Human feedback from the tree UI should wake the planner directly. Over
 ```
 
 Do not route explicit task-tree steering through a generic comment transport.
-Discussion streams may keep an audit copy, but the planner wakeup event is the
+Discussion streams may keep an audit copy, but the owner wakeup event is the
 control path. Human steering should use high urgency; routine watchdog/refill
 wakes can stay normal urgency.
 
-The planner must treat recent high-priority human steering as pending planner
-input, not only as the current trigger event. A watchdog/refill wake may be the
-event that starts the planner, but the planner prompt should still surface
-pending high-priority human steering before routine refill work. If the user
-points out a missing root task or lane, the planner must either create the task
+The owner must treat recent high-priority human steering as pending owner input,
+not only as the current trigger event. A watchdog/refill wake may be the event
+that starts owner review, but the owner prompt should still surface pending
+high-priority human steering before routine refill work. If the user points out
+a missing root task or lane, the owner must either create the task
 under the requested parent or record an explicit refusal/blocker in the tree.
 
 Kanban is a workflow projection, not the source of truth.
@@ -369,7 +364,7 @@ The project Kanban page should present three surfaces together:
   hygiene signals from the registered metric system.
 - Current workflow projection: leaf task cards by lane, with compact readiness
   and blocker context.
-- Task tree context: the planner's reasoning tree, accepted knowledge, evidence,
+- Task tree context: the owner's reasoning tree, accepted knowledge, evidence,
   child status summaries, and task-local feedback.
 
 Human interaction should be close to context. The page should provide:
@@ -378,13 +373,13 @@ Human interaction should be close to context. The page should provide:
   triage, and next-move feedback
 - task-level steering on the selected tree node for split, audit, challenge,
   unblock, escalation, or rework
-- direct `project.planning.requested` events for explicit human steering, with
+- direct `project.owner.requested` events for explicit human steering, with
   selected task id, UI source, and free-form comment in `data.params`
 
 ## Focus Plan Branches
 
 The task tree can also hold the project's current mid-term plan. This is useful
-for long-running projects where the fast planner/worker loop keeps work moving
+for long-running projects where the fast owner/worker loop keeps work moving
 but humans still need to know whether the project is moving in the right
 direction.
 
@@ -418,7 +413,7 @@ A focus plan is a normal tree branch, not a second project system:
 
 The focus branch should answer three human questions quickly:
 
-- What is the project trying to accomplish in the next planning horizon?
+- What is the project trying to accomplish in the next focus horizon?
 - How will we know the focus is succeeding?
 - Is the focus currently on track, off track, completed, blocked, or awaiting
   approval?
@@ -434,8 +429,8 @@ Status guidance:
 | Focus state            | Meaning                                                                 |
 | ---------------------- | ----------------------------------------------------------------------- |
 | `proposed` / `backlog` | Direction is drafted but not approved or not yet active.                |
-| `active`               | Approved focus is currently driving planner/worker choices.             |
-| `review`               | Focus reached its horizon or success criteria and needs planner rollup. |
+| `active`               | Approved focus is currently driving owner/worker choices.               |
+| `review`               | Focus reached its horizon or success criteria and needs owner rollup.   |
 | `blocked`              | Focus cannot proceed without a concrete external input or decision.     |
 | `accepted`             | Focus completed and produced reusable project understanding.            |
 | `superseded`           | A later focus replaced this one with a recorded reason.                 |
@@ -446,7 +441,7 @@ workflow should update `context.progress_review` with a compact judgment:
 - `on_track` — keep assigning work inside this focus
 - `off_track` — notify human or pivot after approval
 - `completed` — roll up accepted knowledge and propose next focus
-- `stale` — no material progress; planner must repair or replace the focus
+- `stale` — no material progress; owner must repair or replace the focus
 - `blocked` — exact blocker and resume condition are known
 
 Human approval should be linked on the focus branch through an escalation id or
@@ -519,16 +514,16 @@ No persisted ready state. No stale readiness.
 
 ### Rollup hints
 
-- Parent with all children `accepted`: emit `rollup-hint` for planner.
-- Parent with any child `blocked`: emit `blocked-hint` for planner.
+- Parent with all children `accepted`: emit `rollup-hint` for owner review.
+- Parent with any child `blocked`: emit `blocked-hint` for owner review.
 
 ### Design compliance checks
 
 - No undefined or ambiguous statuses.
 - No `no_work`, `waiting`, `unknown`, `maybe-later`, `ready`, or empty status.
 - No superseded chain longer than 3 (tool auto-collapses).
-- No parent with more than 15 children (warn, planner should group).
-- No depth greater than 5 (warn, planner should flatten).
+- No parent with more than 15 children (warn, owner should group).
+- No depth greater than 5 (warn, owner should flatten).
 - Total visible (non-archived) nodes should not exceed 50 (warn).
 
 ### Staleness checks
@@ -549,12 +544,12 @@ tree.supersede("test-ms-via-cli", {
 ```
 
 Cascades: non-terminal children become `superseded` with reason
-`parent-superseded`. This is structural cleanup, not judgment — the planner
+`parent-superseded`. This is structural cleanup, not judgment — the owner
 already decided to supersede the parent.
 
 ### Stale by time
 
-`tree.stale(olderThan)` returns untouched nodes. The planner reviews each:
+`tree.stale(olderThan)` returns untouched nodes. The owner reviews each:
 
 - Still relevant → touch
 - Irrelevant → prune
@@ -562,7 +557,7 @@ already decided to supersede the parent.
 
 ### No fake terminal states
 
-The tool rejects ambiguous states. If work cannot proceed, the planner must
+The tool rejects ambiguous states. If work cannot proceed, the owner must
 express why:
 
 - Concrete blocker → `tree.block(nodeId, { condition, category })`
@@ -574,9 +569,9 @@ express why:
 
 ## Compaction
 
-### Archive accepted detail (planner-triggered)
+### Archive accepted detail (owner-triggered)
 
-**Before archiving, the planner must roll up knowledge.** The parent node's
+**Before archiving, the owner must roll up knowledge.** The parent node's
 `summary`, `evidence`, and `reusable_for` fields must capture what the subtree
 learned — not just "38 subtasks completed." If a human reads only the parent
 after archiving, they should understand:
@@ -588,7 +583,7 @@ after archiving, they should understand:
 The tool should reject `tree.archive()` if the parent has no `summary` or if
 the summary is shorter than 50 characters (likely a placeholder).
 
-When the planner decides an accepted subtree is complete and the child detail
+When the owner decides an accepted subtree is complete and the child detail
 is no longer useful as live project understanding:
 
 ```typescript
@@ -627,8 +622,8 @@ The live tree should always be readable by a human in under a minute.
 | Limit                   | Value | Enforcement                     |
 | ----------------------- | ----- | ------------------------------- |
 | Max visible nodes       | 50    | Checker warns                   |
-| Max children per parent | 15    | Checker warns, planner groups   |
-| Max depth               | 5     | Checker warns, planner flattens |
+| Max children per parent | 15    | Checker warns, owner groups     |
+| Max depth               | 5     | Checker warns, owner flattens   |
 | Max superseded chain    | 3     | Tool auto-collapses             |
 
 ## Data Structure
@@ -709,7 +704,7 @@ The live tree should always be readable by a human in under a minute.
 | `evidence`        | no                | Evidence refs (required at review)                                 |
 | `summary`         | no                | Accepted knowledge summary or review result summary                |
 | `reusable_for`    | no                | Future tasks/branches that can reuse this knowledge                |
-| `accepted_at`     | no                | ISO timestamp when planner accepted the claim                      |
+| `accepted_at`     | no                | ISO timestamp when owner accepted the claim                        |
 | `accepted_by`     | no                | Planner/owner that accepted the claim                              |
 | `supersededBy`    | no                | Replacement node IDs (required when superseded)                    |
 | `reason`          | no                | Why superseded/blocked/reworked                                    |
@@ -728,4 +723,4 @@ format → whitespace → compile → wiring → schema → tree → typecheck
 ```
 
 Fails on structural violations. Warns on staleness and limit thresholds.
-Emits rollup hints for planner attention.
+Emits rollup hints for owner attention.

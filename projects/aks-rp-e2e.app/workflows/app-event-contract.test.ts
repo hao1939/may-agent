@@ -28,7 +28,7 @@ function testContext() {
 }
 
 describe("app event contract", () => {
-  test("task.requeued wakes planning with task context", async () => {
+  test("task.requeued wakes owner review with task context", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -43,7 +43,7 @@ describe("app event contract", () => {
     });
 
     expect(emitted).toHaveLength(1);
-    expect(emitted[0].type).toBe("project.planning.requested");
+    expect(emitted[0].type).toBe("project.owner.requested");
     expect(emitted[0].reason).toBe("task-requeued");
     expect(emitted[0].params).toMatchObject({
       task: {
@@ -57,7 +57,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("project.task.completed wakes planning with completion snapshot", async () => {
+  test("project.task.completed wakes owner review with completion snapshot", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -75,7 +75,7 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       reason: "task-completed",
       params: {
         completedTaskId: "feature-a-replay",
@@ -91,7 +91,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("blocked task completion requests visible problem solving and wakes planning", async () => {
+  test("blocked task completion requests visible problem solving and wakes owner review", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -125,7 +125,7 @@ describe("app event contract", () => {
       },
     });
     expect(emitted[1]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       reason: "task-completed",
       params: {
         completedTaskId: "wi-upgrade-survival-staging-execute-20260612",
@@ -133,7 +133,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("rejected review completions request problem solving and wake planning", async () => {
+  test("rejected review completions request problem solving and wake owner review", async () => {
     const { ctx, emitted, noops } = testContext();
 
     await app.onEvent(ctx, {
@@ -156,7 +156,7 @@ describe("app event contract", () => {
       affectedTasks: ["feature-a-rework-review"],
     });
     expect(emitted[1]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       reason: "task-completed",
       params: {
         completedTaskId: "feature-a-rework-review",
@@ -171,7 +171,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("problem solver results wake planner for tree reconciliation", async () => {
+  test("problem solver results wake the owner for tree reconciliation", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -184,7 +184,7 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       reason: "problem-resolved",
       params: {
         problemKey: "aks-rp-e2e:staging-arm-auth-unavailable",
@@ -196,7 +196,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("focus approval submission wakes planner with decision context", async () => {
+  test("focus approval submission wakes owner with decision context", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -211,7 +211,7 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       project: "aks-rp-e2e",
       reason: "focus-approval-submitted",
       params: {
@@ -224,7 +224,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("focus escalation resolution with project app path wakes planner", async () => {
+  test("focus escalation resolution with project app path wakes owner", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -241,7 +241,7 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       project: "aks-rp-e2e",
       reason: "escalation-resolved",
       params: {
@@ -251,7 +251,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("project metric breach wakes planning with metric context", async () => {
+  test("project metric breach wakes owner review with metric context", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -267,7 +267,7 @@ describe("app event contract", () => {
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       reason: "metric-breach",
       params: {
         metricId: "aks-rp-e2e.run.live-idle-with-runnable-work",
@@ -281,7 +281,7 @@ describe("app event contract", () => {
     });
   });
 
-  test("no-work metric breach creates human unblock escalation and wakes planning", async () => {
+  test("no-work metric breach creates human unblock escalation and wakes owner review", async () => {
     const { ctx, emitted } = testContext();
 
     await app.onEvent(ctx, {
@@ -307,7 +307,7 @@ describe("app event contract", () => {
       },
     });
     expect(emitted[1]).toMatchObject({
-      type: "project.planning.requested",
+      type: "project.owner.requested",
       reason: "metric-breach",
       params: {
         metricId: "aks-rp-e2e.task.no-work-with-gaps",

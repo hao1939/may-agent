@@ -145,7 +145,7 @@ describe("task worker", () => {
     });
   });
 
-  test("keeps blocked worker results reviewable for the planner", async () => {
+  test("keeps blocked worker results reviewable for the owner", async () => {
     const projectDir = await makeProject();
     await writeFile(
       join(projectDir, "tasks", "tree.json"),

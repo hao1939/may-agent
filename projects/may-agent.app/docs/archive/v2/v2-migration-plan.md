@@ -2,8 +2,8 @@
 
 **Status**: Historical. The implemented state is captured in
 `v2-implementation-notes.md`; the active architecture reference is
-`../architecture.md`. Current infra-surface work supersedes this plan's older
-direct-session and persistence wording; use `../2a-design/system-boundary.md` for
+`../../2a-design/architecture.md`. Current infra-surface work supersedes this plan's older
+direct-session and persistence wording; use `../../2a-design/system-boundary.md` for
 new implementation decisions.
 
 ## Reality check: what already exists

@@ -66,7 +66,7 @@ function triggerEvent(event: Record<string, unknown>): string {
 }
 
 describe("focus-plan workflow", () => {
-  test("asks for human approval and still wakes planning for a proposed focus", async () => {
+  test("asks for human approval and still wakes owner review for a proposed focus", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const prompts: string[] = [];
     const dispatched: Array<{
@@ -98,7 +98,7 @@ describe("focus-plan workflow", () => {
         return {
           status: "success",
           message:
-            "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nPLANNER_NEXT: wait for approval, then assign replay leaves",
+            "FOCUS_PLAN_RESULT: needs_approval\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Propose 24h focus on REST replay execution and model feedback.\nOWNER_NEXT: wait for approval, then assign replay leaves",
         };
       },
       summarize: () => "",
@@ -111,7 +111,7 @@ describe("focus-plan workflow", () => {
     expect(prompts[0]).toContain("run-rest-spec-batch");
     expect(dispatched.map((event) => event.type)).toEqual([
       "message.created",
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       from: "aks-explorer",
@@ -158,7 +158,7 @@ describe("focus-plan workflow", () => {
     expect(focusRuns).toContain('"result":"needs_approval"');
   });
 
-  test("progress review on track wakes planning without human escalation", async () => {
+  test("progress review on track wakes owner review without human escalation", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     const dispatched: Array<{
       type: string;
@@ -187,14 +187,14 @@ describe("focus-plan workflow", () => {
       runAgentSession: async () => ({
         status: "success",
         message:
-          "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nPLANNER_NEXT: keep assigning backlog leaves",
+          "FOCUS_PLAN_RESULT: on_track\nFOCUS_PLAN_TITLE: REST replay focus\nFOCUS_PLAN_SUMMARY: Active focus still has runnable leaves.\nOWNER_NEXT: keep assigning backlog leaves",
       }),
       summarize: () => "",
     } as any);
 
     expect(result.status).toBe("done");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "project.planning.requested",
+      "project.owner.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
       project: "aks-rp-e2e",

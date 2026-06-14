@@ -2,14 +2,14 @@
 
 **Status**: Historical — v2 conformance framing. Do not use this document as
 the current execution model. For current infra direction, see
-[system-boundary.md](../2a-design/system-boundary.md), [architecture.md](../2a-design/architecture.md),
-and [system-boundary-tracker.md](../2a-design/system-boundary-tracker.md).
+[system-boundary.md](../../2a-design/system-boundary.md), [architecture.md](../../2a-design/architecture.md),
+and [system-boundary-tracker.md](../../2a-design/system-boundary-tracker.md).
 **Date**: 2026-05-06 (revised 2026-05-08)
-**Companion to**: `../architecture.md` (intent), `v2-implementation-notes.md` (history)
+**Companion to**: `../../2a-design/architecture.md` (intent), `v2-implementation-notes.md` (history)
 
 ## What this document is
 
-`../architecture.md` describes **what v2 should be**. This document describes **how we know v2 is there**, as enumerable, measurable claims.
+`../../2a-design/architecture.md` describes **what v2 should be**. This document describes **how we know v2 is there**, as enumerable, measurable claims.
 
 The doc has three layers, top-down:
 

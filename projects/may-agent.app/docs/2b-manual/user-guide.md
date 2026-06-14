@@ -187,7 +187,7 @@ indexes are read on demand.
 
 See [Agent Convention](agent-convention.md) for full directory layout.
 
-## Agent Cooperation (V2)
+## Agent Cooperation
 
 Agents cooperate through 7 actions on the `agents` tool:
 

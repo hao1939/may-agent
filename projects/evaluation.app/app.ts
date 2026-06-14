@@ -47,6 +47,17 @@ async function routeEvaluationEvent(
     return ctx.noop(`${event.type} is handled by workflowHandlers`);
   }
 
+  if (
+    event.type === "project.owner.requested" ||
+    event.type === "project.planning.requested"
+  ) {
+    return ctx.emit(
+      evaluationReviewRequested("owner-review", {
+        ownerRequest: eventDetails(event),
+      }),
+    );
+  }
+
   if (event.type === "metric.breach") {
     return ctx.emit(
       evaluationReviewRequested("metric-breach", {
@@ -121,6 +132,7 @@ export default defineProjectApp({
       name: "evaluation-aftermath",
       type: "job",
       enabled: true,
+      maxConcurrentTriggers: 5,
       description:
         "Evaluates one completed session. It must be triggered with a sessionId.",
       on: ["session.completed", "evaluation.session.requested"],
@@ -173,6 +185,8 @@ export default defineProjectApp({
     "evaluation.deep.requested",
     "evaluation.tick",
     "metric.breach",
+    { type: "project.owner.requested", project: projectId },
+    { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
   ],
 
@@ -199,6 +213,16 @@ export default defineProjectApp({
       },
     },
     adapters: [
+      {
+        event: "project.owner.requested",
+        emits: ["evaluation.tick"],
+        description: "Generic owner review wakes evaluation heartbeat.",
+      },
+      {
+        event: "project.planning.requested",
+        emits: ["evaluation.tick"],
+        description: "Legacy planning alias wakes evaluation heartbeat.",
+      },
       {
         event: "metric.breach",
         emits: ["evaluation.tick"],

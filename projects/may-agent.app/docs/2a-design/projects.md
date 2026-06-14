@@ -275,7 +275,7 @@ Status: historical design context. For current implementation work, use
 `project-app-v3.md`: sibling `*.app/` directories with `project.json` and
 `app.ts` own project behavior, activation happens through canonical events,
 and there is no generic `/api/projects/action` endpoint. The `app.yaml` design
-below and V2 embedded `.app/` are not the current target.
+below and legacy embedded `.app/` are not the current target.
 
 A project is both a **context container** (goal, scope, knowledge, state) and a
 **capability surface** (functions it exposes, events it consumes and produces,
@@ -496,12 +496,13 @@ projects/aks-rp-e2e.app/                  # May-agent control plane (sibling)
   ui/                                     # project-specific UI components
 ```
 
-The app drives the domain project through events: `project.planning.requested`
-wakes the planner workflow, which updates the task tree and dispatches ready
-leaves as worker sessions. The domain project remains portable and runnable
-without May-agent.
+The app drives the domain project through events: `project.owner.requested`
+wakes the project owner workflow, which updates the task tree and dispatches
+ready leaves as worker sessions. `project.planning.requested` is accepted only
+as a legacy compatibility alias. The domain project remains portable and
+runnable without May-agent.
 
-> **Note:** The V1 path `projects/<name>/agents/<agent>/` and V2 embedded
+> **Note:** The legacy paths `projects/<name>/agents/<agent>/` and embedded
 > `projects/<name>/.app/` layouts are historical. `aks-rp-e2e` migrated to
 > V3 (`projects/<name>.app/`) in the May 2026 timeframe. V3 project-apps
 > use `project.json` and are driven by their own `app.ts` event handler,

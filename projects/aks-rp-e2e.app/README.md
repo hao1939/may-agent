@@ -67,7 +67,7 @@ default owner/agent.
 
 The active execution model is deliberately small:
 
-- `project-planner` handles `project.planning.requested`.
+- The project owner workflow handles `project.owner.requested`.
   It sends the owner a compact planning packet, runs event review, then runs
   the task-tree update/assignment step.
 - `focus-plan` handles `project.focus.plan.requested` and
@@ -76,8 +76,8 @@ The active execution model is deliberately small:
   focus branch, review progress every six hours, and emit a human escalation
   when direction/risk needs approval or the focus is off track.
 - `task-worker` handles `project.task.assigned`.
-- `project-execution-watchdog` observes task/session liveness and wakes
-  planning when the planner should review.
+- `project-execution-watchdog` observes task/session liveness and wakes the
+  project owner when review is needed.
 - App-level `onEvent` handles audit/wake events such as `task.started`,
   legacy task execution requests, and `project.task.completed`.
 

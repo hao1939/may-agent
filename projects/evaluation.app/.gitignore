@@ -1,3 +1,6 @@
 *.jsonl
 /.state/
 node_modules/
+/discussion.md
+/journal.md
+/project.md

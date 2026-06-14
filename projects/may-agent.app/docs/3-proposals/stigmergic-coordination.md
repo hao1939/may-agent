@@ -18,7 +18,7 @@ Measured on 2026-05-08:
 | Project journal entries / file edits across agents | hundreds | Stigmergic — agents read each other's project journals at heartbeat |
 | `metric.breach` / `metric.recovered` events | 11k+ / 31k+ | Metrics as a shared environment agents monitor |
 
-The explicit-message channel is barely used. Coordination clearly happens — it just flows through the file system and metrics, not through the message tool. This matches v2-spec.md C4's finding: the message-conversation-close-rate metric measures a channel agents don't take.
+The explicit-message channel is barely used. Coordination clearly happens — it just flows through the file system and metrics, not through the message tool. This matches the archived V2 spec C4 finding: the message-conversation-close-rate metric measures a channel agents don't take.
 
 ## Pattern
 
@@ -53,7 +53,7 @@ That's the whole change. Two paragraphs in architecture.md, and this proposal mo
 
 - It does not deprecate the `message` tool. Direct messages remain valid.
 - It does not invent a new mechanism. Stigmergic coordination already works because the file system, metrics table, and project journals already exist and agents already read them at heartbeat.
-- It does not add a new metric. v2-spec.md C4 already proposes `capability.cross-agent-file-reference-rate` to measure the stigmergic channel; this proposal is a documentation change, not an instrumentation one.
+- It does not add a new metric. The archived V2 spec C4 already proposes `capability.cross-agent-file-reference-rate` to measure the stigmergic channel; this proposal is a documentation change, not an instrumentation one.
 
 ## Out of scope
 

@@ -1,8 +1,8 @@
 /**
  * project-execution-watchdog — liveness observer for aks-rp-e2e.
  *
- * The planner owns tasks/tree.json. This workflow only observes runtime
- * sessions and wakes planning when the planner should review.
+ * The project owner owns tasks/tree.json. This workflow only observes runtime
+ * sessions and wakes the owner when review is needed.
  */
 
 import { existsSync } from "node:fs";
@@ -18,7 +18,7 @@ import { field, readJson, resolveAppDir } from "./lib/workflow-input.ts";
 
 export const name = "project-execution-watchdog";
 export const description =
-  "Observe aks-rp-e2e task/session liveness and wake planning when review is needed.";
+  "Observe aks-rp-e2e task/session liveness and wake the project owner when review is needed.";
 
 type WatchdogConfig = {
   appDir: string;
@@ -103,7 +103,8 @@ function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
 
 function hasOpenWork(tree: TaskTree): boolean {
   return Object.values(tree.tasks).some(
-    (task) => !["accepted", "superseded"].includes(task.status),
+    (task) =>
+      !["accepted", "superseded", "decomposed"].includes(task.status),
   );
 }
 
@@ -155,14 +156,14 @@ function staleActiveTasks(
   return stale.sort((a, b) => a.taskId.localeCompare(b.taskId));
 }
 
-function emitPlanningRequested(
+function emitOwnerRequested(
   ctx: WorkflowContext,
   config: WatchdogConfig,
   reason: string,
   details: Record<string, unknown> = {},
 ): void {
   try {
-    ctx.dispatchEvent("project.planning.requested", {
+    ctx.dispatchEvent("project.owner.requested", {
       project: "aks-rp-e2e",
       reason,
       maxConcurrent: config.maxConcurrent,
@@ -205,24 +206,24 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
 
   if (recovery.staleActiveTasks.length > 0) {
     const reason = "watchdog-stale-active-review";
-    emitPlanningRequested(ctx, config, reason, {
+    emitOwnerRequested(ctx, config, reason, {
       staleActiveTasks: recovery.staleActiveTasks,
     });
-    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+    return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }
 
   if (recovery.readyTaskIds.length > 0) {
     const reason = "watchdog-ready-work";
-    emitPlanningRequested(ctx, config, reason, {
+    emitOwnerRequested(ctx, config, reason, {
       readyTaskIds: recovery.readyTaskIds,
     });
-    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+    return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }
 
   if (recovery.activeCount > 0 && recovery.activeCount < config.maxConcurrent) {
     const reason = "watchdog-capacity-underfilled";
-    emitPlanningRequested(ctx, config, reason);
-    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+    emitOwnerRequested(ctx, config, reason);
+    return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }
 
   if (recovery.activeCount > 0) {
@@ -235,8 +236,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     const reason = recovery.needsRefill
       ? "watchdog-settled-active-project-refill"
       : "watchdog-open-work-reconcile";
-    emitPlanningRequested(ctx, config, reason);
-    return ctx.done(`Watchdog emitted project.planning.requested: ${reason}.`);
+    emitOwnerRequested(ctx, config, reason);
+    return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }
 
   return ctx.done(

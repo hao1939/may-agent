@@ -3,7 +3,7 @@ import {
   eventData,
   eventDetails,
   eventString,
-  projectPlanningEvent as sdkProjectPlanningEvent,
+  projectOwnerEvent as sdkProjectOwnerEvent,
   type ProjectAppContext,
 } from "@may-agent/sdk";
 
@@ -39,11 +39,11 @@ const projectMetricIds = [
   "aks-rp-e2e.artifact.duplicate-group-count",
 ];
 
-function projectPlanningEvent(
+function projectOwnerEvent(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return sdkProjectPlanningEvent(projectId, reason, {
+  return sdkProjectOwnerEvent(projectId, reason, {
     maxConcurrent: 5,
     ...(params && typeof params === "object" && !Array.isArray(params)
       ? (params as Record<string, unknown>)
@@ -72,7 +72,7 @@ function isProblemClaim(event: Record<string, unknown>): boolean {
   // summary indicates completed deliverables vs genuine inability to proceed.
   // Workers that completed all deliverables but report blocked due to external
   // gates (TLS provisioning, API version, patch availability) should go to
-  // planner review, not problem-solver. Workers genuinely stuck (no ARM token,
+  // owner review, not problem-solver. Workers genuinely stuck (no ARM token,
   // crash, timeout without results) should still trigger problem solving.
   if (status === "review" && result === "blocked") {
     // Check summary at multiple nesting levels — task completion events
@@ -209,9 +209,9 @@ function humanUnblockEscalation(
         kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
       },
       resume: {
-        kind: "project-planning",
+        kind: "project-owner",
         instruction:
-          "Fold the human reply into the task tree, then emit project.planning.requested.",
+          "Fold the human reply into the task tree, then wake the project owner.",
       },
       dedupKey: "aks-rp-e2e:metric:no-work-with-gaps",
     },
@@ -223,29 +223,25 @@ async function routeAksRpE2eEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "project.comment.created") {
-    return ctx.emit(
-      projectPlanningEvent("project-comment", eventDetails(event)),
-    );
+    return ctx.emit(projectOwnerEvent("project-comment", eventDetails(event)));
   }
 
   if (event.type === "project.tick" && event.lane === "learning") {
     return ctx.emit(
-      projectPlanningEvent("regular-learning-tick", eventData(event)),
+      projectOwnerEvent("regular-learning-tick", eventData(event)),
     );
   }
 
   if (event.type === "project.action.invoked") {
-    return ctx.emit(
-      projectPlanningEvent("project-action", eventDetails(event)),
-    );
+    return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
   }
 
   if (event.type === "project.focus.approval.submitted") {
     return ctx.emit(
-      projectPlanningEvent("focus-approval-submitted", {
+      projectOwnerEvent("focus-approval-submitted", {
         approval: eventDetails(event),
         instruction:
-          "Fold the human focus-plan approval/adjustment/hold decision into the current focus branch, then continue the planner/worker loop.",
+          "Fold the human focus-plan approval/adjustment/hold decision into the current focus branch, then continue the owner/worker loop.",
       }),
     );
   }
@@ -261,7 +257,7 @@ async function routeAksRpE2eEvent(
       ctx.emit(projectProblemEvent(event, taskId));
     }
     return ctx.emit(
-      projectPlanningEvent("task-completed", {
+      projectOwnerEvent("task-completed", {
         completedTaskId: taskId,
         status,
         verificationVerdict,
@@ -277,7 +273,7 @@ async function routeAksRpE2eEvent(
     const problemKey =
       eventString(event, "problemKey") || eventString(event, "problem_key");
     return ctx.emit(
-      projectPlanningEvent(
+      projectOwnerEvent(
         event.type === "project.problem.resolved"
           ? "problem-resolved"
           : "problem-escalated",
@@ -293,7 +289,7 @@ async function routeAksRpE2eEvent(
     const taskId =
       eventString(event, "taskId") || eventString(event, "task_id");
     return ctx.emit(
-      projectPlanningEvent("task-requeued", {
+      projectOwnerEvent("task-requeued", {
         task: {
           taskId,
           ...eventDetails(event),
@@ -324,7 +320,7 @@ async function routeAksRpE2eEvent(
       );
     }
     return ctx.emit(
-      projectPlanningEvent(
+      projectOwnerEvent(
         event.type === "escalation.resolved"
           ? "escalation-resolved"
           : "escalation-dismissed",
@@ -339,7 +335,7 @@ async function routeAksRpE2eEvent(
       ctx.emit(humanUnblockEscalation(event));
     }
     return ctx.emit(
-      projectPlanningEvent("metric-breach", {
+      projectOwnerEvent("metric-breach", {
         metricId: id,
         metric: eventDetails(event),
       }),
@@ -348,7 +344,7 @@ async function routeAksRpE2eEvent(
 
   if (event.type === "metric.recovered" && isAksProjectMetric(event)) {
     return ctx.emit(
-      projectPlanningEvent("metric-recovered", {
+      projectOwnerEvent("metric-recovered", {
         metricId: metricId(event),
         metric: eventDetails(event),
       }),
@@ -357,7 +353,7 @@ async function routeAksRpE2eEvent(
 
   if (event.type === "coverage.gap.detected") {
     return ctx.emit(
-      projectPlanningEvent("coverage-gap-detected", eventDetails(event)),
+      projectOwnerEvent("coverage-gap-detected", eventDetails(event)),
     );
   }
 
@@ -368,7 +364,7 @@ export default defineProjectApp({
   id: projectId,
   version: 1,
   description:
-    "AKS RP e2e input/expectation knowledge-map, probe, evidence, and replanning app.",
+    "AKS RP e2e input/expectation knowledge-map, probe, evidence, and owner-review app.",
   workspace: {
     kind: "git",
     repo: "git@github.com:hao1939/aks-rp-e2e.git",
@@ -430,14 +426,14 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Planner loop. Wakes the project owner, which updates tasks/tree.json and explicitly assigns worker tasks.",
+        "Owner loop. Wakes the project owner, which updates tasks/tree.json and explicitly assigns worker tasks.",
       handler: {
         workflow: "project-planner",
         includeEvent: true,
         task: `${appTaskContext}\nmaxConcurrent: 5`,
         timeoutMs: 3_600_000,
       },
-      on: ["project.planning.requested"],
+      on: ["project.owner.requested", "project.planning.requested"],
       context: taskTreeContext,
     },
     {
@@ -445,7 +441,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Worker execution. Executes one task assigned by the planner and emits task completion.",
+        "Worker execution. Executes one task assigned by the project owner and emits task completion.",
       maxConcurrentTriggers: 5,
       handler: {
         workflow: "task-worker",
@@ -461,7 +457,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Focused problem resolver. Investigates blocked/failed work, fixes local causes when possible, and emits problem resolved/escalated for planner reconciliation.",
+        "Focused problem resolver. Investigates blocked/failed work, fixes local causes when possible, and emits problem resolved/escalated for owner reconciliation.",
       maxConcurrentTriggers: 2,
       handler: {
         workflow: "problem-solver",
@@ -479,7 +475,7 @@ export default defineProjectApp({
       intervalMs: 300_000,
       offsetMs: 120_000,
       description:
-        "Five-minute liveness guard. Observes task/session state and wakes planning when the planner should review.",
+        "Five-minute liveness guard. Observes task/session state and wakes the owner when review is needed.",
       on: ["project.watchdog.tick"],
       handler: {
         workflow: "project-execution-watchdog",
@@ -493,7 +489,7 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Mid-term focus planning and progress review. Keeps a visible focus branch current and asks for human approval when direction/risk changes.",
+        "Mid-term focus review and progress review. Keeps a visible focus branch current and asks for human approval when direction/risk changes.",
       maxConcurrentTriggers: 1,
       handler: {
         workflow: "focus-plan",
@@ -514,6 +510,8 @@ export default defineProjectApp({
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
+    { type: "project.owner.requested", project: projectId },
+    { type: "project.planning.requested", project: projectId },
     { type: "project.focus.plan.requested", project: projectId },
     { type: "project.focus.review.requested", project: projectId },
     { type: "project.focus.approval.submitted", project: projectId },
@@ -543,15 +541,15 @@ export default defineProjectApp({
       "aks-rp-e2e-problem-solver": {
         emits: ["project.problem.resolved", "project.problem.escalated"],
         description:
-          "Problem solver diagnoses blocked/failed work and reports the result to planning.",
+          "Problem solver diagnoses blocked/failed work and reports the result to the owner.",
       },
       "aks-rp-e2e-project-watchdog": {
-        emits: ["project.planning.requested"],
+        emits: ["project.owner.requested"],
         description:
-          "Watchdog observes liveness and asks the planner to reconcile stale or underfilled work.",
+          "Watchdog observes liveness and asks the owner to reconcile stale or underfilled work.",
       },
       "aks-rp-e2e-focus-plan": {
-        emits: ["project.planning.requested", "message.created"],
+        emits: ["project.owner.requested", "message.created"],
         description:
           "Focus-plan workflow reviews mid-term progress, updates the focus branch, and asks for human approval when direction/risk changes or progress is off track.",
       },
@@ -559,79 +557,80 @@ export default defineProjectApp({
     adapters: [
       {
         event: "project.comment.created",
-        emits: ["project.planning.requested"],
-        description: "Human steering wakes planning with the comment context.",
+        emits: ["project.owner.requested"],
+        description:
+          "Human steering wakes the project owner with the comment context.",
       },
       {
         event: "project.tick",
-        emits: ["project.planning.requested"],
-        description: "Regular learning tick wakes planning.",
+        emits: ["project.owner.requested"],
+        description: "Regular learning tick wakes the project owner.",
       },
       {
         event: "project.action.invoked",
-        emits: ["project.planning.requested"],
-        description: "UI or API project action becomes planner context.",
+        emits: ["project.owner.requested"],
+        description: "UI or API project action becomes owner context.",
       },
       {
         event: "project.focus.approval.submitted",
-        emits: ["project.planning.requested"],
+        emits: ["project.owner.requested"],
         description:
-          "A direct focus-plan approval/adjust/hold decision wakes planning with the decision context.",
+          "A direct focus-plan approval/adjust/hold decision wakes the owner with the decision context.",
       },
       {
         event: "project.task.completed",
-        emits: ["project.problem.requested", "project.planning.requested"],
+        emits: ["project.problem.requested", "project.owner.requested"],
         description:
-          "Worker completion wakes planning; blocked/failed claims also wake the problem solver.",
+          "Worker completion wakes the owner; blocked/failed claims also wake the problem solver.",
       },
       {
         event: "project.problem.resolved",
-        emits: ["project.planning.requested"],
-        description: "Resolved problem returns to planner reconciliation.",
+        emits: ["project.owner.requested"],
+        description: "Resolved problem returns to owner reconciliation.",
       },
       {
         event: "project.problem.escalated",
-        emits: ["project.planning.requested"],
-        description: "Escalated problem returns to planner reconciliation.",
+        emits: ["project.owner.requested"],
+        description: "Escalated problem returns to owner reconciliation.",
       },
       {
         event: "task.requeued",
-        emits: ["project.planning.requested"],
-        description: "Runtime requeue returns the task to planner review.",
+        emits: ["project.owner.requested"],
+        description: "Runtime requeue returns the task to owner review.",
       },
       {
         event: "escalation.resolved",
-        emits: ["project.planning.requested"],
-        description: "Human unblock result wakes planning.",
+        emits: ["project.owner.requested"],
+        description: "Human unblock result wakes the owner.",
       },
       {
         event: "escalation.dismissed",
-        emits: ["project.planning.requested"],
-        description: "Human dismissal wakes planning for cleanup.",
+        emits: ["project.owner.requested"],
+        description: "Human dismissal wakes the owner for cleanup.",
       },
       {
         event: "metric.breach",
-        emits: ["escalation.created", "project.planning.requested"],
+        emits: ["escalation.created", "project.owner.requested"],
         description:
-          "Project metric breach wakes planning; no-work-with-gaps also notifies a human.",
+          "Project metric breach wakes the owner; no-work-with-gaps also notifies a human.",
       },
       {
         event: "metric.recovered",
-        emits: ["project.planning.requested"],
-        description: "Metric recovery wakes planning to close stale concern.",
+        emits: ["project.owner.requested"],
+        description: "Metric recovery wakes the owner to close stale concern.",
       },
       {
         event: "coverage.gap.detected",
-        emits: ["project.planning.requested"],
-        description: "Coverage gaps become planner context.",
+        emits: ["project.owner.requested"],
+        description: "Coverage gaps become owner context.",
       },
     ],
     externalEvents: ["message.created", "escalation.created"],
     intentionalCycles: [
       {
-        id: "planner-worker-review-loop",
+        id: "owner-worker-review-loop",
         events: [
-          "project.planning.requested",
+          "project.owner.requested",
           "project.task.assigned",
           "project.task.completed",
           "project.problem.requested",
@@ -641,7 +640,7 @@ export default defineProjectApp({
           "project.focus.review.requested",
         ],
         reason:
-          "This is the project control loop. The planner is the state-machine boundary and must review worker/problem-solver/focus-plan output before assigning more work.",
+          "This is the project control loop. The owner is the state-machine boundary and must review worker/problem-solver/focus-plan output before assigning more work.",
       },
     ],
     limits: {
@@ -706,7 +705,7 @@ export default defineProjectApp({
       type: "async",
       description: "Request live execution for selected replanned paths.",
       event(params) {
-        return projectPlanningEvent("execute-run-action", {
+        return projectOwnerEvent("execute-run-action", {
           action: "execute-run",
           params,
         });
@@ -717,14 +716,14 @@ export default defineProjectApp({
       description:
         "Advance the project task tree until genuinely blocked, complete, or interrupted by an infra guard.",
       event(params) {
-        return projectPlanningEvent("manual-action", params);
+        return projectOwnerEvent("manual-action", params);
       },
     },
     watch: {
       type: "async",
-      description: "Start or resume project planning through the task tree.",
+      description: "Start or resume owner review through the task tree.",
       event(params) {
-        return projectPlanningEvent("watch-request", params);
+        return projectOwnerEvent("watch-request", params);
       },
     },
     "request-focus-plan": {

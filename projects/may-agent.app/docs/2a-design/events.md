@@ -57,9 +57,9 @@ Examples:
 
 - `project.task.assigned` targets the project and task in `data`; the matching
   project workflow handler should run.
-- `project.planning.requested` targets the project in `data.project`,
+- `project.owner.requested` targets the project in `data.project`,
   `data.projectId`, or `data.project_id`; only handlers for that project should
-  run.
+  run. `project.planning.requested` is the legacy compatibility alias.
 - `session.steer.requested` targets `data.sessionId`; if that session is gone,
   the owner handles the failed intent.
 - `metric.breach` targets `data.metricId`; the metric/project owner is the
@@ -685,11 +685,12 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `project.status_changed` | no emitter exists | ❌ aspirational |
 | `project.execution.watchdog` | manual/operator recovery for stale zero-op sessions | ⚠️ rare (1 row); not wired to a handler |
 
-**Project lifecycle — planning & watchdog**
+**Project lifecycle — owner & watchdog**
 
 | Event type | Emitted by | Status |
 |---|---|---|
-| `project.planning.requested` | project-app and agent sessions when requesting a planning cycle (e.g. after task completion) | ✅ live (~2.0k rows, ~958/24h); sources: `project-app:aks-rp-e2e`, `agent:aks-explorer`, `codex-investigation` |
+| `project.owner.requested` | project-apps and agent sessions when requesting owner review (e.g. after task completion, human steering, metric signal) | ✅ canonical V3 event |
+| `project.planning.requested` | legacy compatibility alias for owner review | ⚠️ legacy; accepted during migration |
 | `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (~690 rows, ~276/24h, ~12/hour); single project `aks-rp-e2e`, 5-min interval cron |
 | `project.tick` | project-app scheduled tick (e.g. `lane: "learning"`, `lane: "replan-review"`); emitted by `app.ts` in project apps such as `aks-rp-e2e.app` and `may-agent.app` | ✅ live (19 rows); from `project-app:aks-rp-e2e:schedule:regular-learning` |
 | `project.problem.requested` | project-app problem-solver trigger when tasks fail with a common root cause | ✅ live (~195 rows); owner `agent:may` routes to problem-solver workflow |

@@ -3,7 +3,7 @@
  *
  * Handles project.problem.requested by waking a focused solver session. The
  * solver investigates and may fix local runner/app/domain defects, but the
- * planner remains the only owner of task-tree reconciliation.
+ * project owner remains responsible for task-tree reconciliation.
  */
 
 import { join } from "node:path";
@@ -73,14 +73,14 @@ failure/blocking process large, visible, and resolved quickly.
 
 Boundaries:
 - Do not reshape tasks/tree.json, accept tasks, roll up parents, or assign work.
-  The planner owns all task-tree decisions.
+  The project owner owns all task-tree decisions.
 - You may inspect task context, run diagnostics, and fix local app/domain runner
   or replay code when the problem is caused by our tools or environment setup.
 - If the problem needs external input, credentials, quota, policy, product
   rollout, or human decision, do not cycle. Produce a concrete escalation with
   exact evidence and resume conditions.
 - If you fix something, verify the fix as far as possible and state the exact
-  retry event or task the planner should use.
+  retry event or task the owner should use.
 
 Finish with one explicit line:
 

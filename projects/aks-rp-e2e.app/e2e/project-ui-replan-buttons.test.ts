@@ -361,7 +361,7 @@ describe("project UI replanning buttons e2e", () => {
               ? (body.data as Record<string, unknown>)
               : {};
           if (
-            body.type === "project.planning.requested" &&
+            body.type === "project.owner.requested" &&
             bodyData.reason === "human-steering"
           ) {
             comments.push(body as PostedComment);
@@ -708,7 +708,7 @@ describe("project UI replanning buttons e2e", () => {
         () => comments.length === before + 1,
         "kanban steering comment was not posted",
       );
-      expect(comments.at(-1)?.type).toBe("project.planning.requested");
+      expect(comments.at(-1)?.type).toBe("project.owner.requested");
       expect(comments.at(-1)?.urgency).toBe("high");
       expect(comments.at(-1)?.data?.project).toBe("aks-rp-e2e");
       expect(comments.at(-1)?.data?.reason).toBe("human-steering");
@@ -1444,7 +1444,7 @@ describe("project UI replanning buttons e2e", () => {
           };
         };
       };
-      expect(requestBody.type).toBe("project.planning.requested");
+      expect(requestBody.type).toBe("project.owner.requested");
       expect(requestBody.data?.project).toBe("aks-rp-e2e");
       expect(requestBody.data?.projectPath).toBe("projects/aks-rp-e2e");
       expect(requestBody.data?.reason).toBe("feature-test.requested");

@@ -2,7 +2,8 @@
  * task-worker — workflow adapter for aks-rp-e2e task execution.
  *
  * Handles project.task.assigned by waking the assigned task session. The
- * planner owns the task tree; this workflow executes and reports completion.
+ * project owner owns the task tree; this workflow executes and reports
+ * completion.
  */
 
 import { join } from "node:path";
@@ -71,7 +72,7 @@ function buildWorkerPrompt(input: {
 }): string {
   return `Task Worker Mode
 
-You are executing exactly one aks-rp-e2e task assigned by the project planner.
+You are executing exactly one aks-rp-e2e task assigned by the project owner.
 Do not reshape the tree, create sibling branches, roll up parents, or run
 planner work from this session.
 
@@ -83,7 +84,7 @@ one explicit line:
 
 Use RESULT: blocked only for a real blocker with a concrete resume condition.
 If the work is too large or wrongly decomposed, record a blocked summary that
-explains the exact decomposition problem. The planner reviews the latest task
+explains the exact decomposition problem. The project owner reviews the latest task
 state after worker progress and decides whether to accept, retry, repair,
 replace, split, or keep the task blocked.
 

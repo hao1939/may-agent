@@ -386,8 +386,8 @@ The page should render the chain as linked steps:
 ```text
 project.task.completed
   matched aks-rp-e2e.app:onEvent
-  emitted project.planning.requested
-  handled by aks-rp-e2e-project-planner
+  emitted project.owner.requested
+  handled by aks-rp-e2e project owner workflow
   session s_...
   updated tasks/tree.json
   emitted project.task.assigned
@@ -866,7 +866,7 @@ The current `web.ts` is mostly v2-shaped on the back end. The front-end is the r
    - ✅ **All five front-page design panels render**: heartbeat timeline (already), recent decisions / outcomes (already), open alerts (already), recent messages (already), and projects-by-activity (new in `0db40723`).
    - ⏳ The pixel-perfect 40%-viewport heartbeat timeline + ASCII-mock layout from screen-1 is not the literal CSS used; the panels render the same data in a similar three-section grid. If a future operator finds the layout proportionally wrong, that's pure CSS work — the data wiring is done.
 5. ⏳ **Default-session resolution rule documented but not yet implemented.** `#chat` (now `/sessions`) already resolves to a session-with-input surface using whichever session is selected; the rule "most-recent open non-heartbeat/worker session per agent" needs to be encoded in `initChat()`. Today's behavior: shows whatever session was last clicked.
-6. 🟡 **Optional refinements** — `agent.decision` is now firing in production (28 lifetime, all in last 24h — see v2-spec.md S7). The dashboard renders heartbeat session task/outcome summaries today; switching to `agent.decision` as the primary source can happen once emission coverage is consistently high. KE/H/EXP cross-links shipped (`linkifyRefs()` in `renderAssistantMsg` and `renderFileContent`).
+6. 🟡 **Optional refinements** — `agent.decision` is now firing in production (28 lifetime, all in last 24h — see the archived V2 spec S7). The dashboard renders heartbeat session task/outcome summaries today; switching to `agent.decision` as the primary source can happen once emission coverage is consistently high. KE/H/EXP cross-links shipped (`linkifyRefs()` in `renderAssistantMsg` and `renderFileContent`).
 
 What remains for a fully spec-aligned UI:
 

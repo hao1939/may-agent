@@ -3,7 +3,7 @@ import {
   defineProjectApp,
   eventDetails,
   eventString,
-  projectPlanningEvent as sdkProjectPlanningEvent,
+  projectOwnerEvent as sdkProjectOwnerEvent,
   type ProjectAppContext,
 } from "@may-agent/sdk";
 
@@ -20,11 +20,11 @@ const taskTreeContext = [
   "projects/may-agent/README.md",
 ];
 
-function projectPlanningEvent(
+function projectOwnerEvent(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return sdkProjectPlanningEvent(projectId, reason, params);
+  return sdkProjectOwnerEvent(projectId, reason, params);
 }
 
 function appendDiscussionRecord(
@@ -63,27 +63,28 @@ async function routeMayAgentEvent(
 ): Promise<unknown> {
   if (event.type === "project.comment.created") {
     const commentId = appendDiscussionRecord(ctx, event);
-    return ctx.emit(projectPlanningEvent("project-comment", { commentId }));
+    return ctx.emit(projectOwnerEvent("project-comment", { commentId }));
   }
 
   if (event.type === "project.tick") {
     return ctx.emit(
-      projectPlanningEvent("scheduled-project-review", eventDetails(event)),
+      projectOwnerEvent("scheduled-project-review", eventDetails(event)),
     );
   }
 
   if (event.type === "project.action.invoked") {
-    return ctx.emit(
-      projectPlanningEvent("project-action", eventDetails(event)),
-    );
+    return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
   }
 
   if (event.type === "metric.alerted" || event.type === "metric.breach") {
-    return ctx.emit(projectPlanningEvent("metric-signal", eventDetails(event)));
+    return ctx.emit(projectOwnerEvent("metric-signal", eventDetails(event)));
   }
 
-  if (event.type === "project.planning.requested") {
-    return ctx.noop("handled by may-agent-project-planner workflow handler");
+  if (
+    event.type === "project.owner.requested" ||
+    event.type === "project.planning.requested"
+  ) {
+    return ctx.noop("handled by may-agent owner workflow handler");
   }
 
   return undefined;
@@ -125,8 +126,8 @@ export default defineProjectApp({
       type: "job",
       enabled: true,
       description:
-        "Wakes May to review the May-agent task tree, platform signals, and project-app design work.",
-      on: ["project.planning.requested"],
+        "Wakes May as project owner to review the task tree, platform signals, and project-app design work.",
+      on: ["project.owner.requested", "project.planning.requested"],
       handler: {
         workflow: "verify-wrap",
         includeEvent: true,
@@ -147,6 +148,7 @@ export default defineProjectApp({
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
+    { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     {
       type: "metric.alerted",
@@ -177,27 +179,27 @@ export default defineProjectApp({
     adapters: [
       {
         event: "project.comment.created",
-        emits: ["project.planning.requested"],
-        description: "Human steering wakes May-agent project planning.",
+        emits: ["project.owner.requested"],
+        description: "Human steering wakes the May-agent project owner.",
       },
       {
         event: "project.tick",
-        emits: ["project.planning.requested"],
-        description: "Scheduled platform review wakes planning.",
+        emits: ["project.owner.requested"],
+        description: "Scheduled platform review wakes the owner.",
       },
       {
         event: "project.action.invoked",
-        emits: ["project.planning.requested"],
-        description: "UI/API action wakes planning.",
+        emits: ["project.owner.requested"],
+        description: "UI/API action wakes the owner.",
       },
       {
         event: "metric.alerted",
-        emits: ["project.planning.requested"],
+        emits: ["project.owner.requested"],
         description: "Platform metric alert wakes May to inspect and react.",
       },
       {
         event: "metric.breach",
-        emits: ["project.planning.requested"],
+        emits: ["project.owner.requested"],
         description: "Platform metric breach wakes May to inspect and react.",
       },
     ],
@@ -205,7 +207,7 @@ export default defineProjectApp({
     intentionalCycles: [
       {
         id: "human-or-timer-to-platform-review",
-        events: ["project.tick", "project.planning.requested"],
+        events: ["project.tick", "project.owner.requested"],
         reason:
           "Timer and human events periodically wake May to maintain the May-agent platform project.",
       },
@@ -218,7 +220,7 @@ export default defineProjectApp({
       description:
         "Ask May to review and advance the May-agent platform project.",
       event(params) {
-        return projectPlanningEvent("manual-advance", params);
+        return projectOwnerEvent("manual-advance", params);
       },
     },
   },

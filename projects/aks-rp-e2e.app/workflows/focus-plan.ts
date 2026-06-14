@@ -1,7 +1,7 @@
 /**
  * focus-plan — slower strategy cadence for aks-rp-e2e.
  *
- * The normal planner/worker loop keeps tasks moving. This workflow periodically
+ * The normal owner/worker loop keeps tasks moving. This workflow periodically
  * asks the project owner to review the bigger picture, maintain one current
  * focus branch in the task tree, and request human approval when the focus
  * materially changes or drifts off track.
@@ -107,7 +107,7 @@ function approvalText(input: {
   const question = approvalQuestion(input);
   const summary = truncate(input.summary, 1700);
   const plannerNext = input.plannerNext
-    ? `\n\nPlanner next:\n${truncate(input.plannerNext, 500)}`
+    ? `\n\nOwner next:\n${truncate(input.plannerNext, 500)}`
     : "";
   return [
     input.result === "off_track"
@@ -117,15 +117,15 @@ function approvalText(input: {
     `Decision: ${question}`,
     "",
     "Options:",
-    "- approve: accept the proposed direction/risk envelope and let the planner continue.",
-    "- adjust <your changes>: accept the idea with changes; planner must update the focus branch first.",
-    "- hold: do not start the proposed direction; planner should keep only safe bookkeeping work.",
+    "- approve: accept the proposed direction/risk envelope and let the owner continue.",
+    "- adjust <your changes>: accept the idea with changes; owner must update the focus branch first.",
+    "- hold: do not start the proposed direction; owner should keep only safe bookkeeping work.",
     "",
     "Context:",
     summary,
     plannerNext,
     "",
-    "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to the aks-rp-e2e project planner.",
+    "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to the aks-rp-e2e project owner.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -151,7 +151,7 @@ ${cadence}
 Purpose:
 - Reduce the need for the human owner to repeatedly inspect status and steer.
 - Maintain one visible mid-term focus branch in tasks/tree.json.
-- Keep normal planner/worker execution inside the approved focus when useful.
+- Keep normal owner/worker execution inside the approved focus when useful.
 - Review progress regularly so we know whether the project is on track.
 
 Boundaries:
@@ -165,7 +165,7 @@ Boundaries:
   moving. If it is stale, completed, off track, or materially changing, make
   that obvious in the task tree and request approval.
 - Approval is for direction/risk, not for every leaf task. Once approved, the
-  normal planner should keep assigning concrete work until done, stale, or
+  normal owner loop should keep assigning concrete work until done, stale, or
   blocked.
 
 Expected durable shape:
@@ -206,7 +206,7 @@ Finish with these exact markers:
 FOCUS_PLAN_RESULT: on_track | updated | needs_approval | off_track | completed | blocked
 FOCUS_PLAN_TITLE: <short title>
 FOCUS_PLAN_SUMMARY: <human-readable summary suitable for Telegram>
-PLANNER_NEXT: <what the normal planner should do next>
+OWNER_NEXT: <what the normal owner loop should do next>
 
 Use FOCUS_PLAN_RESULT: needs_approval when you propose a new or materially
 changed 12-24h direction/risk envelope. Use off_track when the approved focus is
@@ -238,7 +238,7 @@ async function runFocusAgent(input: {
     : input.ctx.runAgent(input.agent, input.prompt);
 }
 
-function dispatchPlanningRequested(
+function dispatchOwnerRequested(
   ctx: WorkflowContext,
   input: {
     result: FocusResult;
@@ -247,7 +247,7 @@ function dispatchPlanningRequested(
   },
 ): void {
   try {
-    ctx.dispatchEvent("project.planning.requested", {
+    ctx.dispatchEvent("project.owner.requested", {
       project: "aks-rp-e2e",
       reason: `focus-plan-${input.kind}`,
       focusResult: input.result,
@@ -275,7 +275,9 @@ function dispatchHumanApproval(
 ): void {
   if (input.result !== "needs_approval" && input.result !== "off_track") return;
 
-  const plannerNext = extractMarker(input.summary, "PLANNER_NEXT");
+  const plannerNext =
+    extractMarker(input.summary, "OWNER_NEXT") ||
+    extractMarker(input.summary, "PLANNER_NEXT");
   const title =
     input.title ||
     (input.result === "off_track"
@@ -295,19 +297,19 @@ function dispatchHumanApproval(
         id: "approve",
         label: "Approve",
         effect:
-          "Planner marks the focus direction approved and assigns work inside it.",
+          "Owner marks the focus direction approved and assigns work inside it.",
       },
       {
         id: "adjust",
         label: "Adjust",
         effect:
-          "Planner updates the focus branch according to the reply before assigning work.",
+          "Owner updates the focus branch according to the reply before assigning work.",
       },
       {
         id: "hold",
         label: "Hold",
         effect:
-          "Planner does not start the proposed direction and only keeps safe bookkeeping work.",
+          "Owner does not start the proposed direction and only keeps safe bookkeeping work.",
       },
     ],
     directEvent: {
@@ -336,6 +338,7 @@ function dispatchHumanApproval(
       focusResult: input.result,
       focusKind: input.kind,
       summary: truncate(input.summary, 3000),
+      ownerNext: truncate(plannerNext, 1000),
       plannerNext: truncate(plannerNext, 1000),
       evidence: {
         focusPlanId: planId,
@@ -399,7 +402,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const result = focusResult(summary);
   const title = extractMarker(summary, "FOCUS_PLAN_TITLE");
   dispatchHumanApproval(ctx, { result, kind, title, summary });
-  dispatchPlanningRequested(ctx, { result, kind, summary });
+  dispatchOwnerRequested(ctx, { result, kind, summary });
   appendFocusRun(appDir, {
     kind,
     trigger_type: triggerType ?? "manual",
