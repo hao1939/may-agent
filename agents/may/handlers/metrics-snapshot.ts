@@ -290,14 +290,24 @@ function fileContainsAny(path: string, patterns: RegExp[]): boolean {
 }
 
 function scoutKnowledgePracticeLoaded(root: string): boolean {
-  return fileContains(join(root, "agents", "scout", "AGENTS.md"), [
-    /search .*existing|existing .*update|update .*existing/i,
-    /<ai_context>/i,
-  ]);
+  // Scout agent migrated to projects/scout-knowledge-lib.app/agents/scout/ (ea04018c3)
+  // Check both new and legacy paths for resilience
+  const paths = [
+    join(root, "projects", "scout-knowledge-lib.app", "agents", "scout", "AGENTS.md"),
+    join(root, "agents", "scout", "AGENTS.md"),
+  ];
+  return paths.some((p) =>
+    fileContains(p, [
+      /search .*existing|existing .*update|update .*existing/i,
+      /<ai_context>/i,
+    ]),
+  );
 }
 
 function scoutKnowledgePreambleCoverage(root: string): { value: number; sampleSize: number } {
   const files = [
+    // Scout knowledge migrated to projects/scout-knowledge-lib/ (ea04018c3)
+    ...walkMarkdownFiles(join(root, "projects", "scout-knowledge-lib", "knowledge")),
     ...walkMarkdownFiles(join(root, "agents", "scout", "knowledge")),
     ...walkMarkdownFiles(join(root, "shared", "knowledge", "entries")),
   ];
@@ -309,6 +319,9 @@ function scoutKnowledgePreambleCoverage(root: string): { value: number; sampleSi
 function scoutSourcedArtifacts24h(root: string, now: number): number {
   const cutoff = now - 24 * 60 * 60 * 1000;
   const roots = [
+    // Scout agent/knowledge migrated to project paths (ea04018c3)
+    join(root, "projects", "scout-knowledge-lib", "knowledge"),
+    join(root, "projects", "scout-knowledge-lib.app", "agents", "scout", "workspace"),
     join(root, "agents", "scout", "knowledge"),
     join(root, "agents", "scout", "workspace"),
     join(root, "shared", "knowledge", "entries"),
@@ -332,7 +345,9 @@ function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
     ...walkMarkdownFiles(join(root, "projects")),
     ...walkMarkdownFiles(join(root, "shared", "may-agent-docs")),
   ].filter((file) => {
+    // Exclude scout's own files (both legacy and new paths)
     if (file.includes("/agents/scout/")) return false;
+    if (file.includes("/scout-knowledge-lib")) return false;
     try {
       if (statSync(file).mtimeMs < cutoff) return false;
       return fileContainsAny(file, [/agents\/scout\/knowledge/i, /scout-second-brain-learning/i, /\bScout\b/]);
