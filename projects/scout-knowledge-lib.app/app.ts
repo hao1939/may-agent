@@ -7,7 +7,7 @@ import {
 
 const projectId = "scout-knowledge-lib";
 const appTaskContext =
-  "app: /app/projects/scout-knowledge-lib.app\nproject: /app/projects/scout-knowledge-lib";
+  "app: /app/projects/scout-knowledge-lib.app\nproject: /app/projects/scout-knowledge-lib\npersistent-task: skip";
 
 const taskTreeContext = [
   "projects/scout-knowledge-lib.app/project.json",
