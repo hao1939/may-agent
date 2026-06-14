@@ -56,11 +56,22 @@ export async function loadAgents(
     const errors = validateAgentConfig(config, models, agentsRoot);
     const priorDir = seen.get(config.name);
     if (priorDir) {
-      errors.push({
-        agent: config.name,
-        field: "name",
-        message: `Duplicate agent name. Already loaded from ${priorDir}; duplicate at ${agentRelativeDir(agentSource)}`,
-      });
+      // Project-app agents override global stubs: if the prior registration came
+      // from agents/<name> and this one comes from projects/*.app/agents/<name>,
+      // treat it as a silent override rather than an error.
+      const priorIsGlobal = priorDir.startsWith("agents/");
+      const currentIsProjectApp = !!agentSource.projectId;
+      if (priorIsGlobal && currentIsProjectApp) {
+        // Override: let the project-app agent win. Remove the old seen entry
+        // so registration proceeds below.
+        seen.delete(config.name);
+      } else {
+        errors.push({
+          agent: config.name,
+          field: "name",
+          message: `Duplicate agent name. Already loaded from ${priorDir}; duplicate at ${agentRelativeDir(agentSource)}`,
+        });
+      }
     }
     if (errors.length > 0) {
       allErrors.push(...errors);
@@ -94,6 +105,7 @@ export async function loadAgents(
         ...opts,
         projectRoot: effectiveProjectRoot,
         agentsRoot: agentsRootForAgentDir(agentSource),
+        globalAgentsRoot: agentsRoot,
         agentDir,
         getAgentSessionId: runtime.getAgentSessionId,
         getAgentCrons: runtime.getAgentCrons,
