@@ -1,7 +1,7 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-07-15"
+last_updated: "2026-07-17"
 source_basis: "Initial V3 migration inventory of projects/scout-knowledge-lib/knowledge."
 </ai_context>
 
@@ -52,6 +52,12 @@ tracked as task `triage-inbox-imports` in the project task tree.
 
 - [Agent Security & Governance Patterns](./agent-security-governance.md) ← canonical security reference
 
+## Cross-Source Syntheses
+
+- [The Compilation Gradient: From Soft Signal to Hard Enforcement](./governance-compilation-gradient.md) ← unifying pattern across all governance domains. Every successful mechanism follows behavioral → structural → compiled maturation. Synthesizes arXiv (TRACE, AgentTrust, SMSR, Forge), XHS (Structural Turn, 技能工程), HN (harness engineering, permission fatigue, AGENTS.md rot), and 10+ production KEs.
+- [The Abstention Advantage: Why the Most Powerful Compiled Governance Is the Decision Not to Act](./the-abstention-advantage.md) ← extends Compilation Gradient with Stage 0: compiled non-action. 7× heartbeat efficiency gap from one compiled decision. Connects arXiv abstention taxonomy (three-gap: specification/verification/authority), Edict's Chancellery veto, Arbor checks-and-balances, and live production data (dev's 92% quick-exit vs arc/scout's <1%).
+- [The Impedance Principle: Why Every Agent Feedback Loop Amplifies to Destruction](./the-impedance-principle.md) ← foundational principle beneath Compilation Gradient and Abstention Advantage. Every feedback boundary needs lossy-but-signal-preserving compression. Unifies 7 production pathologies (KE-1986 DB bloat 2.8×/cycle, KE-1945 repair metabolism 73%, KE-1944 context accumulation 8K→156K, KE-1956 instruction ratchet 10:1, KE-1930/1965 guard paradox 99.6% noise, KE-1985 observation parity 54%, KE-1966 Gresham's Law) as one structural failure from control theory: undamped feedback loops resonate to destruction.
+
 ## Agent Protocols And Standards
 
 - [Agent Protocols: MCP, A2A, and the Emerging Stack](./agent-protocols-mcp-a2a.md) ← canonical protocol reference
@@ -59,11 +65,11 @@ tracked as task `triage-inbox-imports` in the project task tree.
 ## Agent Architecture And Control
 
 - [Agent Architectures](./agent-architectures.md) ← canonical architecture reference
-- [Enterprise AI Agent Architecture 2026](./enterprise-agent-architecture-2026.md)
-- [HN Agent Research Synthesis](./hn-recent-agent-synthesis.md)
-- [AI Agent Architecture: Operational Memory Layer](./hn-agent-operational-memory.md)
-- [Multi-Agent Coordination Patterns: MetaGPT](./metagpt-architecture-pattern.md)
-- [Ruflo Feature Map: Closed-Loop Visibility](./ruflo-feature-map.md)
+- [Enterprise AI Agent Architecture 2026](./enterprise-agent-architecture-2026.md) — operational memory gap, beyond-MCP orchestration layers, collaboration architectures
+- [HN Agent Research Synthesis](./hn-recent-agent-synthesis.md) — git for agents (re_gent), vulnerability cultures, goal-drift anti-patterns
+- [AI Agent Architecture: Operational Memory Layer](./hn-agent-operational-memory.md) — experience cache: tool quirks, workflow patterns, env-specific process knowledge
+- [Multi-Agent Coordination Patterns: MetaGPT](./metagpt-architecture-pattern.md) — role-based SOP coordination, "Code = SOP(Team)" philosophy
+- [Ruflo Feature Map: Closed-Loop Visibility](./ruflo-feature-map.md) — statusline observability, real-time agent state tracking via Claude Code
 - ~~[Agent Architecture Trends](./agent-architecture-trends.md)~~ → merged into agent-architectures.md
 - ~~[Agent Architecture Patterns](./agent-patterns.md)~~ → merged into agent-architectures.md
 - ~~[agent_patterns.md](./agent_patterns.md)~~ → merged into agent-architectures.md
@@ -71,20 +77,20 @@ tracked as task `triage-inbox-imports` in the project task tree.
 
 ## Memory, Context, And Knowledge Reuse
 
-- [Agent Long-Term Memory: Memary Pattern](./agent-memory-patterns.md)
-- [Agent Memory Architectural Trends](./agent-memory-trends-2024.md)
-- [Emerging Pattern: Agents and Shared Context](./agent-context-osmosis.md)
-- [Emergent Multi-Agent Coordination via Context Stigmergy](./context-stigmergy-synthesis.md)
-- [Multi-Agent Coordination: Stigmergy and Identity-Aware Routing](./multi-agent-stigmergy.md)
+- [Agent Long-Term Memory: Memary Pattern](./agent-memory-patterns.md) — knowledge graphs, context injection, memory consolidation across sessions
+- [Agent Memory Architectural Trends](./agent-memory-trends-2024.md) — shift from pure vector DB to structured/layered memory (KG, hierarchical tiers)
+- [Emerging Pattern: Agents and Shared Context](./agent-context-osmosis.md) — the "osmosis problem": agents crawl artifacts to externalize implicit decisions
+- [Emergent Multi-Agent Coordination via Context Stigmergy](./context-stigmergy-synthesis.md) — shared env state replaces direct messaging; artifact-driven handoffs
+- [Multi-Agent Coordination: Stigmergy and Identity-Aware Routing](./multi-agent-stigmergy.md) — stigmergy traces + LDP identity-aware routing (37% token reduction)
 
 ## Evaluation, Failure, And Recovery
 
-- [Agent Evaluation Patterns](./agent-evaluation.md) ← canonical evaluation reference
-- [Self-Correction and Reflection: 2026 Trends Analysis](./agent-self-correction-trends-2026.md)
-- [Agent Error Recovery and Resilience Patterns](./agent-error-recovery.md)
-- [AI Agent Failure Modes & Solutions](./agent_failure_modes.md)
-- [XHS Multi-Agent Failure Modes](./multi-agent-failure-modes-2024.md)
-- [Agent Anti-Patterns](./insights/agent-anti-patterns.md)
+- [Agent Evaluation Patterns](./agent-evaluation.md) ← canonical evaluation reference (includes testing tooling landscape)
+- [Self-Correction and Reflection: 2026 Trends Analysis](./agent-self-correction-trends-2026.md) — undirected reflection fails; instinct-reflection misalignment; evolutionary memory outperforms zero-shot
+- [Agent Error Recovery and Resilience Patterns](./agent-error-recovery.md) — guardrail-first execution, self-correction loops, graceful degradation, error context preservation
+- [AI Agent Failure Modes & Solutions](./agent_failure_modes.md) — context overflow, tool hallucination, infinite loops, "False Blocked" status misclassification (production-observed)
+- [XHS Multi-Agent Failure Modes](./multi-agent-failure-modes-2024.md) — confirmation loops, swarm context overflow, "Yes Man" evaluator
+- [Agent Anti-Patterns](./insights/agent-anti-patterns.md) — over-reliance on LLM routing, monolithic prompts, statelessness, premature multi-agent scaling
 - ~~[Agent Evaluation Trends](./agent-evaluation-trends.md)~~ → merged into agent-evaluation.md
 - ~~[Agent Evaluation Trends 2026](./agent-evaluation-trends-updated.md)~~ → merged into agent-evaluation.md
 
@@ -132,18 +138,21 @@ Superseded (generic patterns already in canonical notes):
 
 ## Findings
 
-- [arXiv Triage - Apr 28-30, 2026](./findings/2026-04-30-arxiv-triage.md)
-- [arXiv Triage - Apr 30, 2026](./findings/2026-04-30-arxiv-triage-2.md)
+- [arXiv Triage - Apr 28-30, 2026](./findings/2026-04-30-arxiv-triage.md) — architectural heterogeneity reduces consensus bias, Pythia workflow-aware serving, MultiHedge retrieval-augmented control (cs.MA)
+- [arXiv Triage - Apr 30, 2026](./findings/2026-04-30-arxiv-triage-2.md) — ClawGym sandbox-based agent RL, hot-fix repair behaviors: human vs AI agents
 - [arXiv Triage — June 10–11, 2026](./findings/2026-06-15-arxiv-ai-agent-triage.md) — PR rejection rates, instructions-as-code, multi-agent illusion, TRACE compliance (sourced into agent-architectures.md, agent-security-governance.md)
 - [arXiv Triage — June 6–11, 2026 (Supplement)](./findings/2026-06-17-arxiv-ai-agent-triage.md) — HyperTool context folding, SMSR memory-poisoning defense, Layer-Isolated evaluation, oversight capacity inverted-U, SENTINEL failure-driven RL (sourced into agent-architectures.md, agent-security-governance.md)
+- [arXiv Triage — June 8–11, 2026 (Batch 3)](./findings/2026-06-19-arxiv-ai-agent-triage.md) — Containment Gap framework audit, DeLM shared verified context, Goal-Autopilot anti-fabrication, DCPM dual-process memory, contrastive skill evolution, production context engineering (sourced into agent-architectures.md, agent-security-governance.md)
 - [GitHub Trending AI Agent Repos & Tools — June 2026](./findings/github-trending-ai-agents-2026.md) — skills economy, harness pattern, agent memory infra (sourced into agent-architectures.md §Harness Engineering, §Skills-as-Code)
-- [Hacker News Trends: AI Agents](./findings/hn-ai-agent-trends.md)
-- [HackerNews Trends: Agent Memory Patterns](./findings/hn-memory-patterns.md)
-- [Multi-Agent Coordination Patterns](./findings/multi-agent-coordination-patterns.md)
-- [Multi-Agent Coordination Patterns: Updates & Trends](./findings/multi-agent-patterns-2024.md)
-- [Multi-Agent Coordination Failures: Synthesis & XHS Trends](./findings/multi-agent-failures-2026-synthesis.md)
+- [Hacker News Trends: AI Agents](./findings/hn-ai-agent-trends.md) — failure-dominated discourse, guardrail/harness tooling build-out, Harness Engineering as emerging discipline (consolidated to 2026-06-19)
+- [HackerNews Trends: Agent Memory Patterns](./findings/hn-memory-patterns.md) — back-to-SQL movement, multi-agent memory consistency, dual-mode memory (vector + relational)
+- [Multi-Agent Coordination Patterns](./findings/multi-agent-coordination-patterns.md) — domain accountability, event-driven interaction, metrics-as-health-signals (early internal observations)
+- [Multi-Agent Coordination Patterns: Updates & Trends](./findings/multi-agent-patterns-2024.md) — marketplace over hierarchy, event-driven blackboards, artifact-centric handoffs, evaluator agents
+- [Multi-Agent Coordination Failures: Synthesis & XHS Trends](./findings/multi-agent-failures-2026-synthesis.md) — consensus trap / Yes Man evaluator, swarm communication overhead, context stigmergy as escape route
 - [XHS Chinese AI Community — June 2026 Findings](./findings/xhs-chinese-ai-trends-june2026.md) — raw findings companion to synthesis note
-- [Scout Friction Analysis - 2025-05-09](./findings/scout-friction-analysis-2025-05-09.md)
+- [Scout Friction Analysis - 2025-05-09](./findings/scout-friction-analysis-2025-05-09.md) — 70% friction rate root-cause: uncommitted changes, runtime crashes, schema mismatches, guardrail violations
+- [Cross-Source Triage — July 17, 2026](./findings/2026-07-17-arxiv-github-hn-triage.md) — formal governance primitives (shield synthesis, abstention competence, compliance-by-construction), Arbor cognition layer (tree search as shared working memory, 193% gain), Edict 三省六部 (bureaucracy-as-architecture, 16k★), KV-cache commerce, multiagent confidence protocols (sourced into agent-architectures.md, agent-security-governance.md, multi-agent-coordination.md)
+- [arXiv Triage — June 4–11, 2026 (Batch 4)](./findings/2026-06-14-arxiv-agent-triage.md) — PerspectiveGap orchestration prompting benchmark (14.9% pass rate), Consistency Illusion reasoning misalignment (CARA metrics + GDP intervention), Emergence World long-horizon divergence (15-day cross-vendor), EurekAgent environment engineering (<$11 SOTA), INFRAMIND infrastructure-aware orchestration (7× latency, 99.9% SLO), FlowBank workflow portfolios, Notes2Skills certainty preservation, Alem coordination bottleneck, InquiTree cognitive tunneling, FASE cheap uncertainty (sourced into agent-evaluation.md, agent-architectures.md, multi-agent-coordination.md)
 
 ## Migration Notes
 
