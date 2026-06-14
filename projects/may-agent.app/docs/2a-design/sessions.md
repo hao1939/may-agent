@@ -71,24 +71,25 @@ The DB is the queryable index. Disk is the source of truth for message history.
 
 ## Known Issues
 
-### `error` column is always NULL in practice (KE-1558)
+### `error` column is almost always NULL in practice (KE-1558, updated KE-1985)
 
-The `sessions.error` column in SQLite is **always NULL in practice**
-— no error session has ever had non-NULL `error` in the retention window.
-(Last census: 0/659 error sessions, 0/16,059 total. The race condition is
-structural, not transient.) A write-order race between `manager.ts` (writes
-errorText correctly) and `db-writer.ts` (overwrites with NULL via
-`session.end` event, which lacks the `error` field) causes the
-manager's value to be lost. `updateSessionDb()` uses bare `error = ?`
+The `sessions.error` column in SQLite is **almost always NULL in practice**
+due to a write-order race between `manager.ts` (writes errorText correctly)
+and `db-writer.ts` (overwrites with NULL via `session.end` event, which
+lacks the `error` field). `updateSessionDb()` uses bare `error = ?`
 instead of `COALESCE(?, error)`.
 
-The previously documented "narrow exception" (session-recovery handler
-writing error text for idle-auto-closed sessions) no longer produces
-surviving non-NULL values — the 2 exceptions noted in the 2026-06-13
-census have aged out via 14-day retention, and no new ones have appeared.
-The recovery handler's writes are still overwritten by `session.end`
-events in practice.
-**Treat `sessions.error` as always NULL.** There are no durable exceptions.
+**However, as of 2026-06-14**, the race is not 100% reliable — at least one
+error session (`s_1781463007643_5`, may, 2026-06-14 18:57Z) has a surviving
+non-NULL error text ("Agent ended with an empty assistant turn") despite
+having a populated `endedAt`. Census: 1/389 error sessions in the 7d
+retention window (0.26%). This may indicate a timing change in the write
+path or a new code path that writes error after the `session.end` event.
+
+**Guidance:** Do not rely on `sessions.error` for comprehensive error analysis
+(still NULL for ~99.7% of error sessions). But do not assume it is *always*
+NULL — check it as a bonus signal. For reliable error text, read
+`.state/sessions/history/<id>/meta.json` on disk.
 
 **Workaround:** For sessions closed through the normal `manager.ts` path, read
 `.state/sessions/history/<id>/meta.json` on disk for the actual error text.
