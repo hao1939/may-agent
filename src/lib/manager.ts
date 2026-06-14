@@ -884,6 +884,21 @@ export class SubagentManager {
     }
     const meta = this._registry.getSession(sessionId);
     if (!meta) {
+      // Check DB before emitting noise: if the session already completed
+      // (done/error/interrupted), this is a benign race between cleanup and
+      // auto-resume — don't emit a session.resume_failed event.
+      try {
+        const db = getDb(this._persistDir);
+        const row = db.prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId) as { status: string } | null;
+        if (row && (row.status === "done" || row.status === "error" || row.status === "interrupted")) {
+          log("debug", `[resume] Skipping resume for ${sessionId}: session already ${row.status} in DB (registry cleaned)`);
+          throw new Error(`Session "${sessionId}" already ${row.status}`);
+        }
+      } catch (e) {
+        // If it's our own "already done" error, re-throw without emitting
+        if (e instanceof Error && e.message.startsWith(`Session "${sessionId}" already `)) throw e;
+        // DB lookup failed — fall through to the original behavior
+      }
       const reason = `Session "${sessionId}" not found`;
       this.emitSessionResumeFailed(sessionId, null, reason, "session_not_found", false);
       throw new Error(reason);
