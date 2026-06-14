@@ -13,7 +13,11 @@ signals only.
 Metrics do not directly drive work. The unified work model is:
 
 - A metric breaches → the breach is recorded as state and emitted as an event.
-- The owning agent sees the signal in a work context: explicit project, implicit heartbeat project, steward audit, or P0 alert task.
+- Every breach resolves to one owner. Project-scoped metrics default that owner
+  to the project owner and carry project context; apps do not need to subscribe
+  to every project metric for the common feedback path.
+- Non-project breaches are routed to the metric owner, heartbeat context, or
+  generic alert reactor.
 - The agent **judges** what the signal means using goal, facts, history, and a causal theory, then acts, records evidence, or escalates.
 - Only **P0 (urgent) metrics fork the agent directly**, bypassing the heartbeat. Everything else waits for the agent to look.
 
@@ -217,8 +221,11 @@ metrics-snapshot handler
   -> records values to metrics + metric_snapshots
   -> custom metric section runs source_query/source_command metrics
   -> alerts are represented in metric_alerts
-  -> metric.breach wakes the metric owner path
-  -> owner auto-handlers handle known metric patterns
+  -> metric.breach routes to the resolved metric owner
+     -> project metric with no explicit owner: infer owner from project.owner
+     -> project owner: project.owner.requested with metric context
+     -> non-project owner: owner heartbeat/alert path
+  -> owner auto-handlers handle known metric patterns or project feedback
   -> metric-alert-reactor is the generic fallback for unhandled alerts
 ```
 
@@ -232,13 +239,13 @@ project metrics such as
 judgment findings, not missing workflow findings. The steward does not mutate
 project files.
 
-Project-health metric alerts follow the owner auto-handler convention. The
-metrics are owned by `may`; May's project handler is the typed auto-handler for
-known project metrics (`project.health.finding-count`,
-`project.owner-judgment-needed-count`, and `project.owner-incomplete-count`).
-Those metric events wake project reconciliation with the original metric
-context. Generic metric-alert triage is the fallback for unhandled or unknown
-metrics, not the first consumer for known project reconciliation signals.
+Project-health metric alerts follow the default project feedback convention when
+they are tied to a project. The metric breach wakes the project owner with the
+original metric context; the owner reviews task-tree state, project facts, and
+recent events before deciding whether to repair the plan, create work, calibrate
+the metric, record an exception, or escalate. Generic metric-alert triage is the
+fallback for unhandled or unknown metrics, not the first consumer for known
+project reconciliation signals.
 
 Waiting projects may depend on project-scoped watch metrics. Metrics named in
 the project's wait/watch contract (`resume_condition`, `wait_reason`, or
@@ -272,12 +279,31 @@ Owner convention:
 4. `may` by default.
 
 System-wide `project.*` metrics with no `metrics.project` stay owned by `may`.
-Project-scoped metrics route to the project owner only when they do not declare
-their own `metrics.owner`.
+Project-scoped metrics should usually leave `metrics.owner` empty or set it to
+the project owner, so the resolver targets `projects.owner`. If a project metric
+declares another owner, that owner wins and is responsible for preserving the
+project context or handing the issue back to the project owner when needed.
 
 Ownership routing is runtime behavior, not an agent triage operation. Agents
 should not manually reroute alerts by editing `metrics.owner`; if routing is
 wrong, fix `metrics.project`, the project row's `owner`, or the resolver code.
+
+Default project feedback:
+
+- `metric.breach` with `data.project` or a metric row `project` field resolves
+  to the metric owner. If no explicit metric owner is set, the owner is inferred
+  from the project row.
+- When the resolved owner is the project owner, the default wake event is
+  `project.owner.requested`.
+- The event carries `metricId`, current value, threshold, priority, direction,
+  snapshot time, alert id, and any recent trend points available.
+- The project owner decides what the signal means. The runtime does not create
+  task-tree branches, mark tasks blocked, or page a human except for P0.
+- `metric.recovered` follows the same project owner path so stale alert context
+  can be closed or annotated instead of silently disappearing.
+- App-local `metricIds` subscriptions are optional escape hatches for metrics
+  that need deterministic custom handling. They are not required for ordinary
+  project feedback.
 
 Some built-ins also define handler-local alert config in
 `metrics-snapshot.ts` for rate, sustained, or stall semantics.
@@ -351,3 +377,122 @@ A metric at target is a signal the bar is too low. Never coast.
 - **DB schema:** `projects/may-agent/src/lib/db/schema.ts`
 - **Retention**: snapshots kept 30 days, pruned after each measurement run
 - **Error isolation**: each metric measured independently — one failure doesn't block others
+
+## Proposal: Default Metric Feedback Routing (2026-06-14)
+
+### Problem
+
+`metric.breach` is useful because it says "something changed enough to deserve
+judgment." The failure mode is losing that context:
+
+1. Bare `"metric.breach"` app subscriptions can catch unrelated metrics.
+2. Converting the breach into a generic heartbeat loses metric id, current
+   value, threshold, trend, alert id, and project context.
+3. Creating synthetic alert tasks by default adds process noise. The real owner
+   usually needs to review the task tree and decide whether the right response
+   is a task change, a metric calibration, a domain fix, or an escalation.
+
+### Design: Built-In Feedback First
+
+Metric breach routing should work without app-specific configuration.
+
+```text
+metrics-snapshot
+  -> metric.breach { metricId, project?, owner?, current, threshold, priority, trend }
+  -> default metric feedback router
+     -> resolve owner from metric.owner, project.owner, metric prefix, or may
+     -> resolved project owner: project.owner.requested with metric context
+     -> resolved non-project owner: owner heartbeat/alert context
+     -> no owner: may generic alert reactor
+  -> owner judges the signal and closes the loop
+```
+
+The metric owner is the event target. For project metrics, the default owner
+should be the project owner because the task tree is the durable project
+thinking surface. A breached metric should feed that thinking; it should not
+require a new metric-specific workflow or task lane before the project can
+react.
+
+The owner receives a compact packet:
+
+- metric id, name, owner, project, priority, direction, current value, target,
+  threshold, alert operation, alert id, snapshot time, and recent trend.
+- related project link, task tree summary, and dashboard link when available.
+- original event id so the event trace can explain how the owner was woken.
+
+### Runtime Routing Contract
+
+`metrics-snapshot` does not choose an app handler directly. It records metric
+state through the metric service. The metric service resolves the metric owner,
+creates or closes the `metric_alerts` row, and emits an owner-targeted event:
+
+```json
+{
+  "type": "metric.breach",
+  "owner": "agent:<resolved-owner>",
+  "data": {
+    "metricId": "...",
+    "project": "...",
+    "alertId": 123,
+    "current": 0,
+    "threshold": 1,
+    "target": 3,
+    "priority": "P1"
+  }
+}
+```
+
+The project-app loader then offers metric events to an app when the event owner
+matches the app owner. Project context remains in the payload, but it is not a
+second routing authority. If the owner app turns the signal into
+`project.owner.requested`, that wake uses the original metric packet as context.
+
+This means `aks-rp-e2e.app` and `evaluation.app` do not need explicit
+`metricIds` subscriptions for ordinary feedback. Their owner receives the event
+because the metric owner resolves to `aks-explorer` or `evaluator`.
+
+### Owner Behavior
+
+The owner handles the breach as part of normal project judgment:
+
+- If the metric reveals missing work, add or repair meaningful tasks.
+- If the metric reveals broken execution, create a diagnosis/fix task near the
+  relevant branch.
+- If the metric is stale, noisy, or miscalibrated, fix the metric definition or
+  record an accepted exception.
+- If the breach is an ownership-boundary blocker or P0, escalate to the human
+  with the context needed to act.
+- When `metric.recovered` arrives, annotate or close the relevant context.
+
+The runtime must not decide the project response. It only records the signal,
+wakes the right owner, and preserves enough context for the owner to decide.
+
+### Optional Specialization
+
+Apps may still register explicit metric handlers when they add real value:
+
+- deterministic remediation for a known infrastructure metric.
+- expensive analysis that should run only for a small metric set.
+- app-local metrics that are not project-scoped and cannot be inferred.
+
+In those cases, `metricIds` filtering is an escape hatch, not the common path.
+Bare catch-all `metric.breach` subscriptions should be avoided unless the
+handler is the platform default router or generic fallback.
+
+### Task Tree
+
+Do not require every app to add a `metric-alerts` lane. The default path is:
+metric breach -> owner review -> owner updates the existing project/task tree.
+
+A project may create a standing task such as `project-health-feedback` when it
+helps the owner keep recurring metric work visible. That task should represent
+real project thinking and repeated review, not one child per alert by default.
+
+### What This Prevents
+
+- Metrics from one domain waking the wrong app.
+- Loss of metric context through generic tick conversion.
+- Duplicate standalone investigations for the same breach.
+- Alert-task clutter that hides the actual project plan.
+- Human notifications that do not include enough context to approve, reject, or
+  steer the work.

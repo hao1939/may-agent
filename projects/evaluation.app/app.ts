@@ -74,6 +74,14 @@ async function routeEvaluationEvent(
     );
   }
 
+  if (event.type === "project.tasks.ready") {
+    return ctx.emit(
+      evaluationReviewRequested("task-ready", {
+        taskReady: eventDetails(event),
+      }),
+    );
+  }
+
   return undefined;
 }
 
@@ -184,10 +192,10 @@ export default defineProjectApp({
     "evaluation.session.requested",
     "evaluation.deep.requested",
     "evaluation.tick",
-    "metric.breach",
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
+    { type: "project.tasks.ready", project: `${projectId}.app` },
   ],
 
   eventGraph: {
@@ -232,6 +240,12 @@ export default defineProjectApp({
         event: "project.action.invoked",
         emits: ["evaluation.tick"],
         description: "Project actions become evaluation health-review ticks.",
+      },
+      {
+        event: "project.tasks.ready",
+        emits: ["evaluation.tick"],
+        description:
+          "Ready task-tree leaves wake the evaluation owner through the existing heartbeat lane.",
       },
     ],
     externalEvents: [
