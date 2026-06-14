@@ -3,7 +3,7 @@
 **Author:** arc  
 **Date:** 2026-06-14  
 **Priority:** P1  
-**Status:** proposed  
+**Status:** implemented  
 
 ## Problem
 

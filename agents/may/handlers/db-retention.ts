@@ -10,12 +10,22 @@
  *     included here as a safety net)
  *   - evaluations: 30 days (analytical value)
  *
+ * Size-based retention (KE-1986):
+ *   - events.data > 1MB: deleted regardless of age
+ *   - sessions.task > 1MB: deleted regardless of age
+ *   - session_digests.task > 1MB: deleted regardless of age
+ *   - workflow_runs.task > 1MB: deleted regardless of age
+ *
  * Runs daily. After deletions exceed a threshold, runs VACUUM to reclaim space.
+ * Always VACUUMs if any oversized rows are deleted (they can be 200MB+ each).
  *
  * Approved via work-queue.md (2026-06-04):
  *   agents/arc/workspace/proposals/2026-05-27-db-retention-policy.md
  * Extended via work-queue.md (2026-06-15):
  *   agents/arc/workspace/proposals/2026-06-15-extend-db-retention-to-uncapped-tables.md
+ * Size-based retention added (2026-06-14):
+ *   agents/arc/workspace/proposals/2026-06-14-size-based-event-retention.md
+ *   shared/knowledge/entries/KE-1986-platform-owner-review-context-cascade-db-bloat.md
  */
 
 import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
@@ -28,6 +38,7 @@ const WORKFLOW_RETENTION_DAYS = 14;     // workflow_runs: matches session retent
 const SNAPSHOT_RETENTION_DAYS = 14;
 const EVALUATION_RETENTION_DAYS = 30;   // evaluations: analytical value, retain longer
 const VACUUM_THRESHOLD = 1000; // Run VACUUM if total deletions exceed this
+const OVERSIZED_ROW_BYTES = 1_048_576;  // 1 MB — KE-1986: platform-owner-review context cascade
 
 export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
   return async (_event?: EventEnvelope) => {
@@ -122,8 +133,77 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       ctx.sdk.log("info", `[db-retention] Error deleting old evaluations: ${e}`);
     }
 
+    // ── Size-based retention (KE-1986): delete oversized rows ────────────
+    // The platform-owner-review workflow creates exponential context cascade
+    // in event/session data blobs (1.6MB→220MB per event). Normal events avg
+    // ~7KB; normal sessions avg ~42KB. 1MB threshold provides 100x+ margin.
+    let oversizedDeleted = 0;
+
+    // Oversized events.data
+    try {
+      const result = db.run(
+        "DELETE FROM events WHERE LENGTH(data) > ?",
+        [OVERSIZED_ROW_BYTES]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      oversizedDeleted += deleted;
+      if (deleted > 0) {
+        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized events (data > 1MB)`);
+      }
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting oversized events: ${e}`);
+    }
+
+    // Oversized sessions.task
+    try {
+      const result = db.run(
+        "DELETE FROM sessions WHERE LENGTH(task) > ?",
+        [OVERSIZED_ROW_BYTES]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      oversizedDeleted += deleted;
+      if (deleted > 0) {
+        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized sessions (task > 1MB)`);
+      }
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting oversized sessions: ${e}`);
+    }
+
+    // Oversized session_digests.task
+    try {
+      const result = db.run(
+        "DELETE FROM session_digests WHERE LENGTH(task) > ?",
+        [OVERSIZED_ROW_BYTES]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      oversizedDeleted += deleted;
+      if (deleted > 0) {
+        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized session_digests (task > 1MB)`);
+      }
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting oversized session_digests: ${e}`);
+    }
+
+    // Oversized workflow_runs.task
+    try {
+      const result = db.run(
+        "DELETE FROM workflow_runs WHERE LENGTH(task) > ?",
+        [OVERSIZED_ROW_BYTES]
+      );
+      const deleted = (result as any)?.changes ?? 0;
+      oversizedDeleted += deleted;
+      if (deleted > 0) {
+        ctx.sdk.log("info", `[db-retention] Deleted ${deleted} oversized workflow_runs (task > 1MB)`);
+      }
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] Error deleting oversized workflow_runs: ${e}`);
+    }
+
+    totalDeleted += oversizedDeleted;
+
     // ── VACUUM if significant deletions occurred ─────────────────────────
-    if (totalDeleted >= VACUUM_THRESHOLD) {
+    // Always VACUUM if oversized rows were deleted — they can be 200MB+ each
+    if (totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0) {
       try {
         ctx.sdk.log("info", `[db-retention] Running VACUUM (${totalDeleted} rows deleted)...`);
         db.run("VACUUM");
@@ -137,7 +217,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     ctx.sdk.emit("handler.completed", {
       handler: "db-retention",
       deletedEvents: totalDeleted,
-      vacuumed: totalDeleted >= VACUUM_THRESHOLD,
+      oversizedDeleted,
+      vacuumed: totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0,
     });
 
     ctx.sdk.log("info", `[db-retention] Complete. Total deleted: ${totalDeleted}`);
