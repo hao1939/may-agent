@@ -76,6 +76,12 @@ export interface ProjectAppLoaderOptions {
   manager: SubagentManager;
   bus: EventBus;
   agentCrons: Map<string, Cron>;
+  /**
+   * Called when an app's owner agent is not yet registered.
+   * The app brings its own agent — this callback registers it from the
+   * project-local agent.json. Returns true if registration succeeded.
+   */
+  registerOwnerAgent?: (ownerName: string, appDir: string) => Promise<boolean>;
 }
 
 export interface ProjectAppWatcher {
@@ -480,7 +486,17 @@ export async function installProjectApps(
       app,
     };
     if (!opts.manager.hasAgent(descriptor.owner)) {
-      throw new Error(`Project app ${id} inferred owner ${descriptor.owner}, but that agent is not registered`);
+      // App brings its own agent — try to register from local agent.json
+      const registered = opts.registerOwnerAgent
+        ? await opts.registerOwnerAgent(descriptor.owner, appDir)
+        : false;
+      if (!registered) {
+        opts.bus.emit({
+          type: "info",
+          message: `[project-app] Skipping ${id}: owner agent "${descriptor.owner}" not registered and local registration failed`,
+        });
+        continue;
+      }
     }
     const cron = ensureOwnerCron(opts, descriptor);
     const activeAppIds = activeCronAppIds.get(cron) ?? new Set<string>();

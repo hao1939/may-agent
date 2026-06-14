@@ -1,12 +1,14 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { importRuntimeModule } from "../lib/runtime-import.js";
 import { listRuntimeAgentDirectories } from "./loader/agent-discovery.js";
+import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
+import { buildTools } from "./loader/toolset-loader.js";
 import type { EventBus } from "./event-bus.js";
 import type { SubagentManager } from "../lib/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
-import { generateAutoHeartbeats, getAgentCrons, loadAgents } from "./agent-loader.js";
+import { generateAutoHeartbeats, getAgentCrons, loadAgents, getAgentSessionId } from "./agent-loader.js";
 import { installProjectApps, startProjectAppWatcher } from "./loader/project-app-loader.js";
 
 export async function prepareDaemonAgents(opts: {
@@ -56,26 +58,78 @@ export async function prepareDaemonAgents(opts: {
     }
   }
 
-  const appResult = await installProjectApps({
+  // App brings its own agent — register from local agent.json when not already loaded
+  const registerOwnerAgent = async (ownerName: string, appDir: string): Promise<boolean> => {
+    const agentDir = resolve(appDir, "agents", ownerName);
+    const config = loadAgentConfig(agentDir, opts.bus);
+    if (!config) {
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app] No valid agent.json at ${agentDir} for owner "${ownerName}"`,
+      });
+      return false;
+    }
+
+    const errors = validateAgentConfig(config, opts.models, opts.agentsRoot);
+    if (errors.length > 0) {
+      opts.bus.emit({
+        type: "info",
+        message: `[project-app] Agent config errors for ${ownerName}: ${errors.map((e) => e.message).join(", ")}`,
+      });
+      return false;
+    }
+
+    const model = opts.models[config.model];
+    const knowledgeDir = resolve(agentDir, "knowledge");
+    const workspace = resolve(agentDir, "workspace");
+
+    opts.manager.register({
+      name: config.name,
+      description: config.description,
+      domain: config.domain,
+      model,
+      tools: await buildTools(config, {
+        ...loaderOpts,
+        agentsRoot: resolve(appDir, "agents"),
+        agentDir,
+        getAgentSessionId,
+        getAgentCrons: () => getAgentCrons(),
+        setAgentCron: (name, cron) => getAgentCrons().set(name, cron),
+        addCleanup: () => {},
+      }),
+      agentDir,
+      knowledgeDir: existsSync(knowledgeDir) ? knowledgeDir : undefined,
+      workspace: existsSync(workspace) ? workspace : undefined,
+      projectRoot: opts.projectRoot,
+      apiKey: model.apiKey,
+      memoryLimit: config.memoryLimit,
+      contextFiles: config.context_files?.map((f) => resolve(agentDir, f)),
+    });
+
+    opts.bus.emit({
+      type: "info",
+      message: `[project-app] Auto-registered owner agent "${ownerName}" from ${agentDir}`,
+    });
+    return true;
+  };
+
+  const projectAppOpts = {
     projectsRoot: opts.projectsRoot,
     projectRoot: opts.projectRoot,
     manager: opts.manager,
     bus: opts.bus,
     agentCrons: getAgentCrons(),
-  });
+    registerOwnerAgent,
+  };
+
+  const appResult = await installProjectApps(projectAppOpts);
   if (appResult.installed.length > 0) {
     opts.bus.emit({
       type: "info",
       message: `[project-app] Installed ${appResult.installed.length} app(s), ${appResult.entries} trigger(s): ${appResult.installed.map((app) => `${app.id}->${app.owner}`).join(", ")}`,
     });
   }
-  startProjectAppWatcher({
-    projectsRoot: opts.projectsRoot,
-    projectRoot: opts.projectRoot,
-    manager: opts.manager,
-    bus: opts.bus,
-    agentCrons: getAgentCrons(),
-  });
+  startProjectAppWatcher(projectAppOpts);
 
   for (const cron of getAgentCrons().values()) {
     cron.subscribeToBus(opts.bus);
