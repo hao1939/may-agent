@@ -25,14 +25,15 @@ const sampleCommand = (id: string) =>
 const metrics: MetricDef[] = [
   {
     id: "aks-rp-e2e.task.ready-count",
-    name: "AKS RP E2E ready task count",
+    name: "AKS RP E2E runnable backlog count",
     type: "gauge",
     target: 5,
     threshold: -1,
     unit: "count",
     alertOp: "<",
     priority: "P3",
-    description: "Dashboard counter for planner-assignable task-tree leaves.",
+    description:
+      "Compatibility metric id. Counts planner-assignable backlog leaves; ready is not a persisted task state.",
   },
   {
     id: "aks-rp-e2e.task.active-count",
@@ -59,7 +60,7 @@ const metrics: MetricDef[] = [
   },
   {
     id: "aks-rp-e2e.task.completed-24h",
-    name: "AKS RP E2E accepted tasks in 24h",
+    name: "AKS RP E2E done tasks in 24h",
     type: "gauge",
     target: 8,
     threshold: 1,
@@ -67,11 +68,11 @@ const metrics: MetricDef[] = [
     alertOp: "<",
     priority: "P2",
     description:
-      "Activity signal: the task tree should accept material work daily while active.",
+      "Activity signal: the task tree should complete material work daily while active.",
   },
   {
     id: "aks-rp-e2e.task.no-work-with-gaps",
-    name: "AKS RP E2E no work while model gaps remain",
+    name: "AKS RP E2E no work while verification gaps remain",
     type: "health",
     target: 0,
     threshold: 0,
@@ -79,12 +80,12 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 unblock signal: no ready/active/review work while non-passing knowledge-model paths remain. Calibrated 2026-06-14: review tasks count as pipeline activity — workers completed, planner accepting. Only true starvation (no ready, active, or review tasks) fires this alert.",
+      "P0 unblock signal: no runnable backlog, active, or review work while model path gaps or unverified specs remain. Review tasks count as pipeline activity; only true starvation fires this alert.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
     id: "aks-rp-e2e.task.ready-starvation-with-gaps",
-    name: "AKS RP E2E ready starvation while gaps remain",
+    name: "AKS RP E2E runnable backlog starvation while verification gaps remain",
     type: "health",
     target: 0,
     threshold: 0,
@@ -92,12 +93,12 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P3",
     description:
-      "Planner refill signal: no ready leaves exist while knowledge-model path gaps remain, even if one long task is active. Priority P1→P2→P3 because: (1) P0 no-work-with-gaps already covers true starvation (zero ready AND active), (2) 16 alerts over two days all auto-resolve when planner refills, proving this is normal pipeline oscillation not real starvation, (3) count=12 (~1h) calibration insufficient — workers consume tasks faster than planner cycles produce them, so ready=0 is the natural steady state, (4) P2 was still triggering triage sessions despite description saying it should not. P3 makes this dashboard-only. Review: promote back to P2 if ready=0 persists >4h with active=0.",
+      "Compatibility metric id. Planner refill signal: no runnable backlog leaves exist while model path gaps or unverified specs remain, even if one long task is active. P3 keeps this dashboard-only unless it persists with no active/review work.",
     config: { alert: { mode: "consecutive_failures", count: 12 } },
   },
   {
     id: "aks-rp-e2e.task.capacity-underfilled-with-gaps",
-    name: "AKS RP E2E worker capacity underfilled while gaps remain",
+    name: "AKS RP E2E worker capacity underfilled while verification gaps remain",
     type: "health",
     target: 0,
     threshold: 0,
@@ -105,7 +106,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P2",
     description:
-      "Planner refill signal: ready plus active leaves are below desired parallelism while knowledge-model path gaps remain. Count raised 3→12→24 (~2h) because the planner/worker pipeline naturally drains below parallelism target between 5-10min planner cycles; 1h threshold still produced false positives when planner sessions are interrupted or cycling. Only sustained inability to refill for 2h is a real signal. Calibrated 2026-06-12.",
+      "Planner refill signal: runnable backlog plus active leaves are below desired parallelism while model path gaps or unverified specs remain. Only sustained inability to refill for 2h is a real signal.",
     config: { alert: { mode: "consecutive_failures", count: 24 } },
   },
   {
@@ -157,14 +158,112 @@ const metrics: MetricDef[] = [
   },
   {
     id: "aks-rp-e2e.spec.total-count",
-    name: "AKS RP E2E test spec count",
+    name: "AKS RP E2E indexed test spec count",
     type: "gauge",
-    target: 125,
+    target: 335,
     threshold: -1,
     unit: "count",
     alertOp: "<",
     priority: "P3",
-    description: "Dashboard counter for reviewable runnable test specs.",
+    description:
+      "Dashboard counter for specs/index.json entries, the canonical verification catalog.",
+  },
+  {
+    id: "aks-rp-e2e.spec.verified-count",
+    name: "AKS RP E2E verified passing specs",
+    type: "gauge",
+    target: 335,
+    threshold: -1,
+    unit: "count",
+    alertOp: "<",
+    priority: "P3",
+    description:
+      "Specs with status=pass and specState in verified/validated/resolved/pass. Legacy pass without explicit specState is not counted as verified.",
+  },
+  {
+    id: "aks-rp-e2e.spec.reviewed-exception-count",
+    name: "AKS RP E2E reviewed spec exceptions",
+    type: "gauge",
+    target: 0,
+    threshold: 999999,
+    unit: "count",
+    alertOp: ">",
+    priority: "P3",
+    description:
+      "Specs with durable non-pass exception status such as product-gap, product-constraint, environment-blocked, blocked-infra, superseded, or out-of-scope.",
+  },
+  {
+    id: "aks-rp-e2e.spec.unverified-count",
+    name: "AKS RP E2E unverified specs",
+    type: "gauge",
+    target: 0,
+    threshold: 999999,
+    unit: "count",
+    alertOp: ">",
+    priority: "P3",
+    description:
+      "Dashboard burn-down counter: indexed specs not live-verified passing and not a reviewed durable exception. Not an interrupting alert — the real health signals are spec.unverified-without-work (P0, fires when no verification work is planned) and task.no-work-with-gaps (P0, fires when no work at all while gaps remain). Calibrated threshold 0→999999 and priority P1→P3 on 2026-06-14: threshold=0 on a 335-spec burn-down creates a permanent P1 alert that interrupts without adding value.",
+  },
+  {
+    id: "aks-rp-e2e.spec.failed-count",
+    name: "AKS RP E2E failed specs",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alertOp: ">",
+    priority: "P1",
+    description:
+      "Specs with fail/failing status. Each should have diagnosis, fix/retry, or reviewed exception follow-up.",
+  },
+  {
+    id: "aks-rp-e2e.spec.blocked-count",
+    name: "AKS RP E2E blocked specs",
+    type: "gauge",
+    target: 0,
+    threshold: 10,
+    unit: "count",
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Specs with blocked status. High count means unblock, prerequisite, or exception review work is needed.",
+  },
+  {
+    id: "aks-rp-e2e.spec.ready-count",
+    name: "AKS RP E2E ready specs",
+    type: "gauge",
+    target: 0,
+    threshold: 20,
+    unit: "count",
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Specs marked ready but not verified. These should be grouped into execution waves or run individually.",
+  },
+  {
+    id: "aks-rp-e2e.spec.draft-count",
+    name: "AKS RP E2E draft specs",
+    type: "gauge",
+    target: 0,
+    threshold: 200,
+    unit: "count",
+    alertOp: ">",
+    priority: "P2",
+    description:
+      "Specs that still need replay/readiness work before live verification.",
+  },
+  {
+    id: "aks-rp-e2e.spec.unverified-without-work",
+    name: "AKS RP E2E unverified specs without verification work",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "boolean",
+    alertOp: ">",
+    priority: "P0",
+    description:
+      "P0 planning signal: unverified specs exist but no verification branch/task work is open in the task tree.",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
     id: "aks-rp-e2e.replay.script-count",
