@@ -57,8 +57,9 @@ Root (May heartbeat)
 **Linking note:** Despite the diagram, `call` sessions (via `ctx.runAgent()` inside
 workflows) do NOT populate `parentSessionId` — they share a `workflowRunId` instead.
 `parentSessionId` is only populated by `agents.fork()` (kind=`job`) sessions.
-Verified 2026-06-14: 0 of 15,468 `call` sessions have a non-null
-`parentSessionId`; all 16 sessions with `parentSessionId` are `job` or `chat` kind.
+Verified structurally: no `call` session has ever had a non-null
+`parentSessionId`; all sessions with `parentSessionId` are `job` or `chat` kind.
+(Last census: 0/15,952 call sessions, 18 total with parentSessionId — 10 job, 8 chat.)
 
 ## Persistence
 
@@ -73,8 +74,9 @@ The DB is the queryable index. Disk is the source of truth for message history.
 ### `error` column is always NULL in practice (KE-1558)
 
 The `sessions.error` column in SQLite is **always NULL in practice**
-(0/638 error sessions have non-NULL `error` as of 2026-06-14; 0/15,560
-total sessions). A write-order race between `manager.ts` (writes
+— no error session has ever had non-NULL `error` in the retention window.
+(Last census: 0/659 error sessions, 0/16,059 total. The race condition is
+structural, not transient.) A write-order race between `manager.ts` (writes
 errorText correctly) and `db-writer.ts` (overwrites with NULL via
 `session.end` event, which lacks the `error` field) causes the
 manager's value to be lost. `updateSessionDb()` uses bare `error = ?`
