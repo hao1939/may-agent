@@ -654,7 +654,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800+ rows as of 2026-06-15, ~740/24h, ~30/hour); all `session_not_found` — 24h mix: ~50% task, ~41% planner, ~8% problem (composition shifted from planner-dominated to task-dominated since KE-1932); grew 3.8× Jun 9→13 (190→728/day), KE-1951 falsified stabilization hypothesis — growth is structural, proportional to session volume (~38% of session starts). Fix: dedup_key (KE-1837, ORDER-010 src/ change required) |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~3,500+ rows as of 2026-06-14, ~660/24h, ~28/hour); all `session_not_found` — 24h mix: ~68% planner, ~32% task, ~1% problem (composition re-shifted back to planner-dominated; ~25% of session starts, down from ~38%). Fix: dedup_key (KE-1837, ORDER-010 src/ change required) |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
