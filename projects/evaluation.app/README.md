@@ -28,10 +28,22 @@ Five lanes:
 - `criteria/calibration/` — human-vs-machine agreement data
 - `reports/` — durable summaries (calibration, drift, patrol)
 
+## Layout
+
+- `app.ts` declares schedules, event routes, actions, and app-owned adapter
+  behavior.
+- `workflows/` contains the app workflow entrypoints.
+- `agents/evaluator/` contains the evaluator worker identity and guidance.
+- `criteria/` contains scoring criteria and versioned methodology.
+
 ## Commands
 
 ```sh
-bun scripts/evaluation-status.ts    # pipeline health
-bun scripts/compare-shadow.ts       # shadow vs production comparison
-bun scripts/check-integrity.ts      # app integrity validation
+bun run check       # syntax, typecheck, and formatting
+bun run bundle      # build the app manifest and local workflows
 ```
+
+The v3 app manifest in `app.ts` owns schedules and event-to-handler routing.
+Session aftermath runs only for `session.completed` or explicit
+`evaluation.session.requested` events that carry a concrete `sessionId`;
+regular ticks review pipeline health instead of blindly running aftermath.

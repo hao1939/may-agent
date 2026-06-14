@@ -3,10 +3,14 @@ import { dirname, join, relative } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
 export const name = "evaluator-aftermath";
-export const description = "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
+export const description =
+  "Evaluate session aftermath, cancel stale running sessions, and drive repair/learning.";
 export const HEURISTIC_VERSION = 11;
 
-export type EvaluationLane = "needs_triage" | "success_candidate" | "routine_ok";
+export type EvaluationLane =
+  | "needs_triage"
+  | "success_candidate"
+  | "routine_ok";
 
 type TranscriptView = {
   text: string;
@@ -66,9 +70,12 @@ export function extractTrigger(task: string): any {
   // starts on its own line preceded by an actual newline character.
   const headerPattern = "## Trigger Event";
   const lineAnchoredIdx = task.lastIndexOf("\n" + headerPattern);
-  const lastHeaderIdx = lineAnchoredIdx !== -1
-    ? lineAnchoredIdx + 1  // skip the \n prefix to point at "##"
-    : (task.startsWith(headerPattern) ? 0 : -1);
+  const lastHeaderIdx =
+    lineAnchoredIdx !== -1
+      ? lineAnchoredIdx + 1 // skip the \n prefix to point at "##"
+      : task.startsWith(headerPattern)
+        ? 0
+        : -1;
   if (lastHeaderIdx === -1) return null;
 
   const afterHeader = task.slice(lastHeaderIdx + headerPattern.length);
@@ -98,8 +105,14 @@ export function transcriptIssues(transcript: string): string[] {
   const ownText = view.text;
   const liveText = view.liveEvidenceText;
   const taskText = view.userText;
-  const hasLiveRuntimeSignals = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: available/.test(liveText);
-  const liveRuntimeSignalsUnavailable = /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: unavailable/.test(liveText);
+  const hasLiveRuntimeSignals =
+    /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: available/.test(
+      liveText,
+    );
+  const liveRuntimeSignalsUnavailable =
+    /## Live Runtime Signals \(workflow-collected\)[\s\S]{0,800}?Status: unavailable/.test(
+      liveText,
+    );
 
   if (ownText.includes("finish() blocked [uncommitted changes]")) {
     issues.push("finish blocked by uncommitted changes");
@@ -110,13 +123,24 @@ export function transcriptIssues(transcript: string): string[] {
   if (/git\s+add\s+may\/\s+shared\/\s+&&\s+git\s+commit/.test(ownText)) {
     issues.push("broad may/shared commit during session");
   }
-  if (/last-session\.md/.test(ownText) && /git\s+add[^;\n]*(last-session\.md|may\/)[\s\S]{0,240}git\s+commit/.test(ownText)) {
+  if (
+    /last-session\.md/.test(ownText) &&
+    /git\s+add[^;\n]*(last-session\.md|may\/)[\s\S]{0,240}git\s+commit/.test(
+      ownText,
+    )
+  ) {
     issues.push("committed runtime handoff files");
   }
   if (liveRuntimeSignalsUnavailable) {
     issues.push("workflow live signal injection unavailable");
   }
-  if (/\ball P[01] metrics (?:are )?(?:in range|healthy|green|at target)\b/i.test(ownText) && !/"name":"query_db"/.test(ownText) && !hasLiveRuntimeSignals) {
+  if (
+    /\ball P[01] metrics (?:are )?(?:in range|healthy|green|at target)\b/i.test(
+      ownText,
+    ) &&
+    !/"name":"query_db"/.test(ownText) &&
+    !hasLiveRuntimeSignals
+  ) {
     issues.push("metric health claim without live evidence");
   }
 
@@ -124,13 +148,21 @@ export function transcriptIssues(transcript: string): string[] {
   if (forbiddenPaths.length > 0) {
     const editedForbidden = editedForbiddenPaths(ownText, forbiddenPaths);
     if (editedForbidden.length > 0) {
-      issues.push(`constraint violation: edited forbidden path(s): ${editedForbidden.join(", ")}`);
+      issues.push(
+        `constraint violation: edited forbidden path(s): ${editedForbidden.join(", ")}`,
+      );
     }
   }
 
-  const shellWrittenToolPaths = shellWrittenPaths(transcript).filter(isAgentToolPath);
-  if (shellWrittenToolPaths.length > 0 && /creative heartbeat mode/i.test(taskText)) {
-    issues.push(`unexpected shell write to agent tool path(s): ${shellWrittenToolPaths.join(", ")}`);
+  const shellWrittenToolPaths =
+    shellWrittenPaths(transcript).filter(isAgentToolPath);
+  if (
+    shellWrittenToolPaths.length > 0 &&
+    /creative heartbeat mode/i.test(taskText)
+  ) {
+    issues.push(
+      `unexpected shell write to agent tool path(s): ${shellWrittenToolPaths.join(", ")}`,
+    );
   }
 
   return issues;
@@ -144,7 +176,8 @@ function shellWrittenPaths(transcript: string): string[] {
   for (const record of records) {
     if (record?.role !== "assistant") continue;
     for (const call of toolCalls(record.content)) {
-      if (call?.name !== "bash" || typeof call?.arguments?.command !== "string") continue;
+      if (call?.name !== "bash" || typeof call?.arguments?.command !== "string")
+        continue;
       for (const path of extractBashWritePaths(call.arguments.command)) {
         paths.add(path);
       }
@@ -164,7 +197,8 @@ function extractBashWritePaths(command: string): string[] {
   const redirectPattern = /(?:^|[\s;&|])(?:\d?>|>>)\s*(['"]?)([^'"\s;&|]+)\1/g;
   for (const match of command.matchAll(redirectPattern)) add(match[2]);
 
-  const teePattern = /(?:^|[\s;&|])tee(?:\s+-a)?(?:\s+--)?\s+(['"]?)([^'"\s;&|]+)\1/g;
+  const teePattern =
+    /(?:^|[\s;&|])tee(?:\s+-a)?(?:\s+--)?\s+(['"]?)([^'"\s;&|]+)\1/g;
   for (const match of command.matchAll(teePattern)) add(match[2]);
 
   return [...new Set(paths)];
@@ -177,7 +211,8 @@ function normalizeAgentPath(path: string): string | null {
     .replace(/^\/app\//, "")
     .replace(/^\.\//, "")
     .replace(/\/+/g, "/");
-  if (normalized.startsWith("agents/")) return normalized.slice("agents/".length);
+  if (normalized.startsWith("agents/"))
+    return normalized.slice("agents/".length);
   if (/^[^/]+\//.test(normalized)) return normalized;
   return null;
 }
@@ -193,7 +228,9 @@ function forbiddenEditPathsFromTask(text: string): string[] {
     const constraintText = forbiddenConstraintText(lines[i] ?? "");
     if (!constraintText) continue;
 
-    for (const match of constraintText.matchAll(/(?:\/app\/|\.state\/|src\/|agents\/)?[\w.-]+(?:\/[\w.-]+)+/g)) {
+    for (const match of constraintText.matchAll(
+      /(?:\/app\/|\.state\/|src\/|agents\/)?[\w.-]+(?:\/[\w.-]+)+/g,
+    )) {
       const raw = match[0].replace(/[).,;:'\"]+$/, "");
       if (looksLikeConcreteForbiddenPath(raw)) paths.add(raw);
     }
@@ -205,7 +242,11 @@ function forbiddenEditPathsFromTask(text: string): string[] {
 }
 
 function forbiddenConstraintText(line: string): string | null {
-  const normalized = line.trim().replace(/^[-*•>\s]+/, "").replace(/^\d+[.)]\s+/, "").replace(/\*\*/g, "");
+  const normalized = line
+    .trim()
+    .replace(/^[-*•>\s]+/, "")
+    .replace(/^\d+[.)]\s+/, "")
+    .replace(/\*\*/g, "");
 
   const forbidden = normalized.match(/\bforbidden\s*:\s*(.+)$/i);
   if (forbidden) return forbidden[1] ?? "";
@@ -222,7 +263,9 @@ function forbiddenConstraintText(line: string): string | null {
   );
   if (youEditProhibition) return youEditProhibition[1] ?? "";
 
-  const noEdits = normalized.match(/\bno\s+edits?\s+(?:to|under|in)\b\s*:?[\s—–-]*(.+)$/i);
+  const noEdits = normalized.match(
+    /\bno\s+edits?\s+(?:to|under|in)\b\s*:?[\s—–-]*(.+)$/i,
+  );
   if (noEdits) return noEdits[1] ?? "";
 
   return null;
@@ -230,16 +273,25 @@ function forbiddenConstraintText(line: string): string | null {
 
 function looksLikeConcreteForbiddenPath(candidate: string): boolean {
   if (!candidate.includes("/")) return false;
-  if (candidate.startsWith("/app/") || candidate.startsWith("agents/") || candidate.startsWith("src/") || candidate.startsWith(".state/")) {
+  if (
+    candidate.startsWith("/app/") ||
+    candidate.startsWith("agents/") ||
+    candidate.startsWith("src/") ||
+    candidate.startsWith(".state/")
+  ) {
     return true;
   }
   return /\/[^/\s]+\.[A-Za-z0-9._-]+$/.test(candidate);
 }
 
-function editedForbiddenPaths(ownText: string, forbiddenPaths: string[]): string[] {
+function editedForbiddenPaths(
+  ownText: string,
+  forbiddenPaths: string[],
+): string[] {
   const edited = new Set<string>();
   const canonicalForbiddenPaths = canonicalizeForbiddenPaths(forbiddenPaths);
-  const editJsonPattern = /\{"name":"(?:write|edit|apply_patch)","arguments":\{[^\n]*?"(?:path|filePath)":"([^"]+)"/g;
+  const editJsonPattern =
+    /\{"name":"(?:write|edit|apply_patch)","arguments":\{[^\n]*?"(?:path|filePath)":"([^"]+)"/g;
   for (const match of ownText.matchAll(editJsonPattern)) {
     const editedPath = match[1] ?? "";
     for (const forbidden of canonicalForbiddenPaths) {
@@ -251,7 +303,12 @@ function editedForbiddenPaths(ownText: string, forbiddenPaths: string[]): string
     const escaped = escapeRegExp(forbidden);
     // Anchored to start-of-line in multiline mode: two-column git status code + space + path.
     // Prevents prose like "Audited metric-alerts.md" from matching.
-    if (new RegExp(`^[ MADRCU?!]{1,2}\\s+(?:\\S+/)*${escaped}(?:\\s|$)`, "m").test(ownText)) {
+    if (
+      new RegExp(
+        `^[ MADRCU?!]{1,2}\\s+(?:\\S+/)*${escaped}(?:\\s|$)`,
+        "m",
+      ).test(ownText)
+    ) {
       edited.add(forbidden);
     }
   }
@@ -263,24 +320,41 @@ function canonicalizeForbiddenPaths(forbiddenPaths: string[]): string[] {
   return forbiddenPaths.filter((candidate) => {
     if (isRuntimeLastSessionPath(candidate)) return false;
     if (candidate.includes("/")) return true;
-    return !forbiddenPaths.some((other) => other !== candidate && !isRuntimeLastSessionPath(other) && pathMatchesForbidden(other, candidate));
+    return !forbiddenPaths.some(
+      (other) =>
+        other !== candidate &&
+        !isRuntimeLastSessionPath(other) &&
+        pathMatchesForbidden(other, candidate),
+    );
   });
 }
 
 function isRuntimeLastSessionPath(candidate: string): boolean {
-  return candidate === "last-session.md" || candidate.endsWith("/last-session.md");
+  return (
+    candidate === "last-session.md" || candidate.endsWith("/last-session.md")
+  );
 }
 
-function pathMatchesForbidden(editedPath: string, forbiddenPath: string): boolean {
+function pathMatchesForbidden(
+  editedPath: string,
+  forbiddenPath: string,
+): boolean {
   if (!editedPath || !forbiddenPath) return false;
-  return editedPath === forbiddenPath || editedPath.endsWith(`/${forbiddenPath}`) || editedPath.endsWith(forbiddenPath);
+  return (
+    editedPath === forbiddenPath ||
+    editedPath.endsWith(`/${forbiddenPath}`) ||
+    editedPath.endsWith(forbiddenPath)
+  );
 }
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function hasUnresolvedSchemaQueryIssue(transcript: string, ownText: string): boolean {
+function hasUnresolvedSchemaQueryIssue(
+  transcript: string,
+  ownText: string,
+): boolean {
   const records = parseJsonlTranscript(transcript);
   if (records) {
     let lastSchemaErrorIdx = -1;
@@ -292,7 +366,8 @@ function hasUnresolvedSchemaQueryIssue(transcript: string, ownText: string): boo
       if (record?.role === "toolResult" && record?.toolName === "query_db") {
         const text = contentText(record.content);
         const isSchemaError =
-          record?.isError === true || /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text);
+          record?.isError === true ||
+          /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text);
 
         if (isSchemaError) lastSchemaErrorIdx = recordIdx;
         else lastRecoveryIdx = recordIdx;
@@ -319,51 +394,88 @@ function hasUnresolvedSchemaQueryIssue(transcript: string, ownText: string): boo
     return false;
   }
 
-  const lastSchemaError = Math.max(ownText.lastIndexOf("no such column:"), ownText.lastIndexOf("no such table:"));
+  const lastSchemaError = Math.max(
+    ownText.lastIndexOf("no such column:"),
+    ownText.lastIndexOf("no such table:"),
+  );
   if (lastSchemaError === -1) return false;
 
   const afterLastSchemaError = ownText.slice(lastSchemaError);
-  return !/\{"name":"(?:query_db|finish)","arguments":\{/.test(afterLastSchemaError);
+  return !/\{"name":"(?:query_db|finish)","arguments":\{/.test(
+    afterLastSchemaError,
+  );
 }
 
 function hasUnresolvedFinishBlockedIssue(ownText: string): boolean {
-  const lastFinishBlocked = ownText.lastIndexOf("finish() blocked [uncommitted changes]");
+  const lastFinishBlocked = ownText.lastIndexOf(
+    "finish() blocked [uncommitted changes]",
+  );
   if (lastFinishBlocked === -1) return false;
 
-  const afterLastFinishBlocked = ownText.slice(lastFinishBlocked + "finish() blocked [uncommitted changes]".length);
+  const afterLastFinishBlocked = ownText.slice(
+    lastFinishBlocked + "finish() blocked [uncommitted changes]".length,
+  );
   return !/\{"name":"finish","arguments":\{/.test(afterLastFinishBlocked);
 }
 
 function finishBlockedByUncommittedChanges(transcript: string): boolean {
-  return sessionOwnedTranscriptView(transcript).text.includes("finish() blocked [uncommitted changes]");
+  return sessionOwnedTranscriptView(transcript).text.includes(
+    "finish() blocked [uncommitted changes]",
+  );
 }
 
-function sessionSelfRepairedOrCleanlyExited(session: any, transcript: string): boolean {
+function sessionSelfRepairedOrCleanlyExited(
+  session: any,
+  transcript: string,
+): boolean {
   const status = String(session?.status ?? "unknown");
-  if (status === "error" || status === "interrupted" || session?.error) return false;
+  if (status === "error" || status === "interrupted" || session?.error)
+    return false;
 
   const view = sessionOwnedTranscriptView(transcript);
   const ownText = view.text;
   if (!ownText.includes("finish() blocked [uncommitted changes]")) return false;
 
-  const postBlockedText = ownText.slice(ownText.lastIndexOf("finish() blocked [uncommitted changes]"));
-  if (/"name":"finish","arguments":\{[^\n]*"status":"(?:success|partial|blocked|failure)"/.test(postBlockedText)) return true;
+  const postBlockedText = ownText.slice(
+    ownText.lastIndexOf("finish() blocked [uncommitted changes]"),
+  );
+  if (
+    /"name":"finish","arguments":\{[^\n]*"status":"(?:success|partial|blocked|failure)"/.test(
+      postBlockedText,
+    )
+  )
+    return true;
 
-  return /\bgit\s+commit\b/.test(postBlockedText) && /(?:\bgit\s+status\s+--short\b|\bgit\s+status\b)/.test(postBlockedText);
+  return (
+    /\bgit\s+commit\b/.test(postBlockedText) &&
+    /(?:\bgit\s+status\s+--short\b|\bgit\s+status\b)/.test(postBlockedText)
+  );
 }
 
 function contentText(content: any): string {
-  if (Array.isArray(content)) return content.map((part) => String(part?.text ?? "")).filter(Boolean).join("\n");
+  if (Array.isArray(content))
+    return content
+      .map((part) => String(part?.text ?? ""))
+      .filter(Boolean)
+      .join("\n");
   return typeof content === "string" ? content : "";
 }
 
 function toolCalls(content: any): any[] {
-  return Array.isArray(content) ? content.filter((part) => part?.type === "toolCall" && typeof part?.name === "string") : [];
+  return Array.isArray(content)
+    ? content.filter(
+        (part) => part?.type === "toolCall" && typeof part?.name === "string",
+      )
+    : [];
 }
 
 function normalizedToolPath(rawPath: unknown): string | null {
   if (typeof rawPath !== "string") return null;
-  const normalized = rawPath.trim().replace(/^\/app\//, "").replace(/^\.\//, "").replace(/\/+/g, "/");
+  const normalized = rawPath
+    .trim()
+    .replace(/^\/app\//, "")
+    .replace(/^\.\//, "")
+    .replace(/\/+/g, "/");
   return normalized || null;
 }
 
@@ -371,19 +483,30 @@ function toolCallPaths(call: any): string[] {
   const argumentsObject = call?.arguments ?? {};
   const directPaths = [argumentsObject?.path, argumentsObject?.filePath]
     .map(normalizedToolPath)
-    .filter((value): value is string => typeof value === "string" && value.length > 0);
+    .filter(
+      (value): value is string => typeof value === "string" && value.length > 0,
+    );
 
-  if (String(call?.name ?? "") !== "apply_patch") return [...new Set(directPaths)];
+  if (String(call?.name ?? "") !== "apply_patch")
+    return [...new Set(directPaths)];
 
-  const patchText = typeof argumentsObject?.patch === "string" ? argumentsObject.patch : "";
-  const patchPaths = [...patchText.matchAll(/^(?:\+\+\+|---)\s+(?:b\/|a\/)?([^\n\t]+)$/gm)]
+  const patchText =
+    typeof argumentsObject?.patch === "string" ? argumentsObject.patch : "";
+  const patchPaths = [
+    ...patchText.matchAll(/^(?:\+\+\+|---)\s+(?:b\/|a\/)?([^\n\t]+)$/gm),
+  ]
     .map((match) => normalizedToolPath(match[1]))
-    .filter((value): value is string => typeof value === "string" && value.length > 0 && value !== "/dev/null");
+    .filter(
+      (value): value is string =>
+        typeof value === "string" && value.length > 0 && value !== "/dev/null",
+    );
 
   return [...new Set([...directPaths, ...patchPaths])];
 }
 
-function assistantToolCallRecords(transcript: string): Array<{ name: string; paths: string[]; command: string }> {
+function assistantToolCallRecords(
+  transcript: string,
+): Array<{ name: string; paths: string[]; command: string }> {
   const records = parseJsonlTranscript(transcript);
   if (!records) return [];
 
@@ -402,7 +525,9 @@ function assistantToolCallRecords(transcript: string): Array<{ name: string; pat
 }
 
 function parseJsonlTranscript(transcript: string): any[] | null {
-  const lines = transcript.split(/\n/).filter((line) => line.trim().startsWith("{"));
+  const lines = transcript
+    .split(/\n/)
+    .filter((line) => line.trim().startsWith("{"));
   if (lines.length === 0) return null;
   const parsed: any[] = [];
   for (const line of lines) {
@@ -417,7 +542,12 @@ function parseJsonlTranscript(transcript: string): any[] | null {
 
 function sessionOwnedTranscriptView(transcript: string): TranscriptView {
   const records = parseJsonlTranscript(transcript);
-  if (!records) return { text: transcript, liveEvidenceText: transcript, userText: transcript };
+  if (!records)
+    return {
+      text: transcript,
+      liveEvidenceText: transcript,
+      userText: transcript,
+    };
 
   const own: string[] = [];
   const liveEvidence: string[] = [];
@@ -439,7 +569,9 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
       for (const call of toolCalls(record.content)) {
         toolCallCount += 1;
         callsById.set(String(call.id), call);
-        own.push(JSON.stringify({ name: call.name, arguments: call.arguments ?? {} }));
+        own.push(
+          JSON.stringify({ name: call.name, arguments: call.arguments ?? {} }),
+        );
       }
     }
 
@@ -450,16 +582,31 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
       const command = String(call?.arguments?.command ?? "");
 
       if (toolName === "query_db") {
-        if (record?.isError === true || /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text)) {
+        if (
+          record?.isError === true ||
+          /"error"\s*:\s*"(?:[^"]*no such (?:column|table)[^"]*)"/i.test(text)
+        ) {
           own.push(text);
         }
       } else if (toolName === "finish") {
         own.push(text);
       } else if (toolName === "bash") {
         own.push(command);
-        const inspectsSessionTranscript = /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(command);
-        if (!inspectsSessionTranscript && /\bgit\s+(?:status|add|commit|diff|show)\b/.test(command)) own.push(text);
-      } else if (toolName === "read" && /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(String(call?.arguments?.path ?? ""))) {
+        const inspectsSessionTranscript =
+          /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(
+            command,
+          );
+        if (
+          !inspectsSessionTranscript &&
+          /\bgit\s+(?:status|add|commit|diff|show)\b/.test(command)
+        )
+          own.push(text);
+      } else if (
+        toolName === "read" &&
+        /\.state\/sessions\/(?:history\/)?[^/\s]+\/session\.jsonl/.test(
+          String(call?.arguments?.path ?? ""),
+        )
+      ) {
         own.push("SESSION_READ_BLOCKED_OR_ATTEMPTED");
       }
     }
@@ -473,7 +620,11 @@ function sessionOwnedTranscriptView(transcript: string): TranscriptView {
   };
 }
 
-function formatWorkflowCollectedFacts(session: any, transcript: string, heuristic: { verdict: string; issues: string[] }): string {
+function formatWorkflowCollectedFacts(
+  session: any,
+  transcript: string,
+  heuristic: { verdict: string; issues: string[] },
+): string {
   const view = sessionOwnedTranscriptView(transcript);
   const lines = [
     `Status: ${String(session?.status ?? "unknown")}`,
@@ -484,20 +635,30 @@ function formatWorkflowCollectedFacts(session: any, transcript: string, heuristi
     `Heuristic issues: ${heuristic.issues.length ? heuristic.issues.join("; ") : "none"}`,
   ];
 
-  return ["## Workflow-Collected Session Facts", ...lines.map((line) => `- ${line}`)].join("\n");
+  return [
+    "## Workflow-Collected Session Facts",
+    ...lines.map((line) => `- ${line}`),
+  ].join("\n");
 }
 
-export function classifyVerdict(session: any, transcript = ""): { quality: number; efficiency: number; verdict: string; issues: string[] } {
+export function classifyVerdict(
+  session: any,
+  transcript = "",
+): { quality: number; efficiency: number; verdict: string; issues: string[] } {
   const issues: string[] = [];
   const status = String(session?.status ?? "unknown");
   const opCount = Number(session?.opCount ?? 0);
 
-  if (status === "error" || status === "interrupted") issues.push(`terminal status: ${status}`);
-  if (session?.error) issues.push(`error: ${String(session.error).slice(0, 240)}`);
-  if (opCount > 0 && opCount < 3 && status === "done") issues.push(`shallow session: ${opCount} ops`);
+  if (status === "error" || status === "interrupted")
+    issues.push(`terminal status: ${status}`);
+  if (session?.error)
+    issues.push(`error: ${String(session.error).slice(0, 240)}`);
+  if (opCount > 0 && opCount < 3 && status === "done")
+    issues.push(`shallow session: ${opCount} ops`);
   issues.push(...transcriptIssues(transcript));
 
-  const failed = status === "error" || status === "interrupted" || !!session?.error;
+  const failed =
+    status === "error" || status === "interrupted" || !!session?.error;
   const finishOnlySelfRepaired =
     !failed &&
     issues.length === 1 &&
@@ -505,30 +666,56 @@ export function classifyVerdict(session: any, transcript = ""): { quality: numbe
     sessionSelfRepairedOrCleanlyExited(session, transcript);
 
   return {
-    quality: failed ? 0.2 : finishOnlySelfRepaired ? 0.85 : issues.length ? 0.55 : 0.85,
+    quality: failed
+      ? 0.2
+      : finishOnlySelfRepaired
+        ? 0.85
+        : issues.length
+          ? 0.55
+          : 0.85,
     efficiency: opCount > 60 ? 0.35 : opCount > 30 ? 0.55 : 0.8,
-    verdict: failed || (issues.length && !finishOnlySelfRepaired) ? "needs_improvement" : "good",
+    verdict:
+      failed || (issues.length && !finishOnlySelfRepaired)
+        ? "needs_improvement"
+        : "good",
     issues,
   };
 }
 
-export function transcriptOutputSignals(session: any, transcript: string): string[] {
+export function transcriptOutputSignals(
+  session: any,
+  transcript: string,
+): string[] {
   const signals = new Set<string>();
   const view = sessionOwnedTranscriptView(transcript);
   const ownText = view.text;
   const assistantCalls = assistantToolCallRecords(transcript);
-  const materialWriteCalls = assistantCalls.filter((call) => ["write", "edit", "apply_patch"].includes(call.name));
+  const materialWriteCalls = assistantCalls.filter((call) =>
+    ["write", "edit", "apply_patch"].includes(call.name),
+  );
   const materialPaths = materialWriteCalls.flatMap((call) => call.paths);
 
   if (materialWriteCalls.length > 0) signals.add("file write/edit");
   if (/\bgit\s+commit\b/.test(ownText)) signals.add("git commit");
-  if (materialPaths.some((path) => /^(?:projects\/[^/]+\/(?:outputs\/|project\.md|journal\.md))/.test(path))) {
+  if (
+    materialPaths.some((path) =>
+      /^(?:projects\/[^/]+\/(?:outputs\/|project\.md|journal\.md))/.test(path),
+    )
+  ) {
     signals.add("project artifact");
   }
   if (materialPaths.some((path) => /^agents\/[^/]+\/knowledge\//.test(path))) {
     signals.add("knowledge update");
   }
-  if (assistantCalls.some((call) => isVerificationToolCall({ name: call.name, arguments: { command: call.command } })) || /\bPASS\b/i.test(ownText)) {
+  if (
+    assistantCalls.some((call) =>
+      isVerificationToolCall({
+        name: call.name,
+        arguments: { command: call.command },
+      }),
+    ) ||
+    /\bPASS\b/i.test(ownText)
+  ) {
     signals.add("verification command");
   }
   if (session?.projectId) signals.add("project-linked session");
@@ -537,24 +724,36 @@ export function transcriptOutputSignals(session: any, transcript: string): strin
   return [...signals];
 }
 
-export function classifyEvaluationLane(session: any, transcript: string, heuristic: HeuristicVerdict = classifyVerdict(session, transcript)): EvaluationRoute {
+export function classifyEvaluationLane(
+  session: any,
+  transcript: string,
+  heuristic: HeuristicVerdict = classifyVerdict(session, transcript),
+): EvaluationRoute {
   if (heuristic.verdict !== "good") {
     return {
       lane: "needs_triage",
-      reason: heuristic.issues.length ? heuristic.issues.join("; ") : `verdict=${heuristic.verdict}`,
+      reason: heuristic.issues.length
+        ? heuristic.issues.join("; ")
+        : `verdict=${heuristic.verdict}`,
       signals: heuristic.issues,
     };
   }
 
   const signals = transcriptOutputSignals(session, transcript);
   const materialSignals = signals.filter((signal) =>
-    ["file write/edit", "git commit", "project artifact", "knowledge update"].includes(signal),
+    [
+      "file write/edit",
+      "git commit",
+      "project artifact",
+      "knowledge update",
+    ].includes(signal),
   );
 
   if (finishBlockedByUncommittedChanges(transcript)) {
     return {
       lane: "success_candidate",
-      reason: "finish/uncommitted friction self-repaired or cleanly exited; review output quality separately from hygiene friction",
+      reason:
+        "finish/uncommitted friction self-repaired or cleanly exited; review output quality separately from hygiene friction",
       signals: [...heuristic.issues, ...signals],
     };
   }
@@ -569,7 +768,9 @@ export function classifyEvaluationLane(session: any, transcript: string, heurist
 
   return {
     lane: "routine_ok",
-    reason: signals.length ? `good session; no material output signal (${signals.join(", ")})` : "good session; no material output signal",
+    reason: signals.length
+      ? `good session; no material output signal (${signals.join(", ")})`
+      : "good session; no material output signal",
     signals,
   };
 }
@@ -577,7 +778,10 @@ export function classifyEvaluationLane(session: any, transcript: string, heurist
 export function evaluationHeuristicVersion(evaluation: any): number {
   if (!evaluation?.overall) return 0;
   try {
-    const parsed = typeof evaluation.overall === "string" ? JSON.parse(evaluation.overall) : evaluation.overall;
+    const parsed =
+      typeof evaluation.overall === "string"
+        ? JSON.parse(evaluation.overall)
+        : evaluation.overall;
     const version = Number(parsed?.heuristicVersion ?? 0);
     return Number.isFinite(version) ? version : 0;
   } catch {
@@ -592,10 +796,17 @@ function isTerminalFailureSession(session: any): boolean {
 
 function isProviderAuthFailureText(text: string): boolean {
   if (!text) return false;
-  if (/litellm\.AuthenticationError|Github_copilotException|IDE token expired|unauthorized:\s*token expired/i.test(text)) {
+  if (
+    /litellm\.AuthenticationError|Github_copilotException|IDE token expired|unauthorized:\s*token expired/i.test(
+      text,
+    )
+  ) {
     return true;
   }
-  return /Error code:\s*499/i.test(text) && /Github_copilotException|github[-_ ]?copilot|litellm/i.test(text);
+  return (
+    /Error code:\s*499/i.test(text) &&
+    /Github_copilotException|github[-_ ]?copilot|litellm/i.test(text)
+  );
 }
 
 function isProviderAuthFailureTranscript(transcript: string): boolean {
@@ -615,7 +826,10 @@ function isProviderAuthFailureTranscript(transcript: string): boolean {
   return false;
 }
 
-export function shouldSkipAftermathAmplification(session: any, transcript: string): { skip: boolean; reason: string } {
+export function shouldSkipAftermathAmplification(
+  session: any,
+  transcript: string,
+): { skip: boolean; reason: string } {
   if (!isTerminalFailureSession(session)) return { skip: false, reason: "" };
 
   const opCount = Number(session?.opCount ?? 0);
@@ -635,7 +849,10 @@ export function shouldSkipAftermathAmplification(session: any, transcript: strin
   return { skip: false, reason: "" };
 }
 
-export function shouldRefreshEvaluation(evaluation: any, heuristic: { verdict: string; issues: string[] }): boolean {
+export function shouldRefreshEvaluation(
+  evaluation: any,
+  heuristic: { verdict: string; issues: string[] },
+): boolean {
   if (!evaluation) return true;
   return evaluationHeuristicVersion(evaluation) < HEURISTIC_VERSION;
 }
@@ -644,7 +861,11 @@ function getSessionIdFromTrigger(trigger: any): string | undefined {
   const data = trigger?.data ?? trigger ?? {};
   const direct = data.sessionId;
   const nested = data.session?.sessionId;
-  return typeof direct === "string" ? direct : typeof nested === "string" ? nested : undefined;
+  return typeof direct === "string"
+    ? direct
+    : typeof nested === "string"
+      ? nested
+      : undefined;
 }
 
 function getModeFromTrigger(trigger: any): string {
@@ -693,7 +914,11 @@ function compactEvalText(value: unknown, max = 260): string {
 }
 
 function lineContentText(content: any): string {
-  if (Array.isArray(content)) return content.map((part) => String(part?.text ?? "")).filter(Boolean).join("\n");
+  if (Array.isArray(content))
+    return content
+      .map((part) => String(part?.text ?? ""))
+      .filter(Boolean)
+      .join("\n");
   return typeof content === "string" ? content : "";
 }
 
@@ -703,7 +928,11 @@ type EvalCheck = {
   note: string;
 };
 
-function makeCheck(name: string, rating: EvalCheck["rating"], note: string): EvalCheck {
+function makeCheck(
+  name: string,
+  rating: EvalCheck["rating"],
+  note: string,
+): EvalCheck {
   return { name, rating, note };
 }
 
@@ -713,11 +942,20 @@ function hasAny(text: string, patterns: RegExp[]): boolean {
 
 function looksTruncated(text: string): boolean {
   const trimmed = text.trim();
-  return /\btruncated\b|\[\.\.\.\]|<\.\.\.>|…/i.test(text) || /^\.\.\./.test(trimmed) || /\.\.\.$/.test(trimmed);
+  return (
+    /\btruncated\b|\[\.\.\.\]|<\.\.\.>|…/i.test(text) ||
+    /^\.\.\./.test(trimmed) ||
+    /\.\.\.$/.test(trimmed)
+  );
 }
 
-function evalScoreFromChecks(checks: EvalCheck[]): "ok" | "check" | "issue" | "context" {
-  if (checks.some((check) => check.rating === "weak" || check.rating === "risk")) return "issue";
+function evalScoreFromChecks(
+  checks: EvalCheck[],
+): "ok" | "check" | "issue" | "context" {
+  if (
+    checks.some((check) => check.rating === "weak" || check.rating === "risk")
+  )
+    return "issue";
   if (checks.some((check) => check.rating === "mixed")) return "check";
   return "ok";
 }
@@ -725,13 +963,36 @@ function evalScoreFromChecks(checks: EvalCheck[]): "ok" | "check" | "issue" | "c
 function evalIssuesFromChecks(checks: EvalCheck[]): string[] {
   return checks
     .filter((check) => check.rating === "weak" || check.rating === "risk")
-    .map((check) => check.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""));
+    .map((check) =>
+      check.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_|_$/g, ""),
+    );
 }
 
-type EvalTarget = "request" | "execution" | "result" | "verification" | "evolution" | "session";
+type EvalTarget =
+  | "request"
+  | "execution"
+  | "result"
+  | "verification"
+  | "evolution"
+  | "session";
 type TargetQuality = "ok" | "check" | "issue" | "unknown";
-type RepairAction = "none" | "clarify_request" | "ask_human_or_owner" | "repair_execution" | "repair_verification" | "extract_evolution_candidate";
-type FindingScope = "request_quality" | "agent_behavior" | "project_context" | "workflow" | "tooling" | "verification";
+type RepairAction =
+  | "none"
+  | "clarify_request"
+  | "ask_human_or_owner"
+  | "repair_execution"
+  | "repair_verification"
+  | "extract_evolution_candidate";
+type FindingScope =
+  | "request_quality"
+  | "agent_behavior"
+  | "project_context"
+  | "workflow"
+  | "tooling"
+  | "verification";
 type FindingSeverity = "low" | "medium" | "high";
 
 type OwnerFinding = {
@@ -748,11 +1009,18 @@ type OwnerFinding = {
 
 function isVerificationToolCall(call: any): boolean {
   const name = String(call?.name ?? "");
-  const command = String(call?.arguments?.command ?? call?.input?.command ?? "");
+  const command = String(
+    call?.arguments?.command ?? call?.input?.command ?? "",
+  );
   if (name === "finish") return true;
-  if (name === "workflow") return /verify|check|test|review/i.test(String(call?.arguments?.name ?? call?.arguments?.task ?? ""));
+  if (name === "workflow")
+    return /verify|check|test|review/i.test(
+      String(call?.arguments?.name ?? call?.arguments?.task ?? ""),
+    );
   if (name !== "bash") return false;
-  return /\b(bun\s+(test|run\s+(check|test|build|typecheck|lint|verify))|npm\s+(test|run\s+(check|test|build|typecheck|lint|verify))|pnpm\s+(test|run\s+(check|test|build|typecheck|lint|verify))|yarn\s+(test|run\s+(check|test|build|typecheck|lint|verify))|tsc\b|vitest\b|jest\b|pytest\b|cargo\s+test\b|go\s+test\b|playwright\b|curl\b|docker\b)/i.test(command);
+  return /\b(bun\s+(test|run\s+(check|test|build|typecheck|lint|verify))|npm\s+(test|run\s+(check|test|build|typecheck|lint|verify))|pnpm\s+(test|run\s+(check|test|build|typecheck|lint|verify))|yarn\s+(test|run\s+(check|test|build|typecheck|lint|verify))|tsc\b|vitest\b|jest\b|pytest\b|cargo\s+test\b|go\s+test\b|playwright\b|curl\b|docker\b)/i.test(
+    command,
+  );
 }
 
 function classifyToolCallTarget(call: any): EvalTarget {
@@ -767,31 +1035,59 @@ function scoreQuality(score: unknown): TargetQuality {
 }
 
 function worseQuality(a: TargetQuality, b: TargetQuality): TargetQuality {
-  const rank: Record<TargetQuality, number> = { unknown: 0, ok: 1, check: 2, issue: 3 };
+  const rank: Record<TargetQuality, number> = {
+    unknown: 0,
+    ok: 1,
+    check: 2,
+    issue: 3,
+  };
   return rank[b] > rank[a] ? b : a;
 }
 
-function summarizeTargetQuality(rows: Record<string, unknown>[], target: EvalTarget): TargetQuality {
+function summarizeTargetQuality(
+  rows: Record<string, unknown>[],
+  target: EvalTarget,
+): TargetQuality {
   const targetRows = rows.filter((row) => row.target === target);
   if (targetRows.length === 0) return "unknown";
-  return targetRows.reduce<TargetQuality>((quality, row) => worseQuality(quality, scoreQuality(row.score)), "ok");
+  return targetRows.reduce<TargetQuality>(
+    (quality, row) => worseQuality(quality, scoreQuality(row.score)),
+    "ok",
+  );
 }
 
 function rowIssues(row: Record<string, unknown>): string[] {
   return Array.isArray(row.issues) ? row.issues.map(String) : [];
 }
 
-function hasIssue(rows: Record<string, unknown>[], target: EvalTarget, issue: string): boolean {
-  return rows.some((row) => row.target === target && rowIssues(row).includes(issue));
+function hasIssue(
+  rows: Record<string, unknown>[],
+  target: EvalTarget,
+  issue: string,
+): boolean {
+  return rows.some(
+    (row) => row.target === target && rowIssues(row).includes(issue),
+  );
 }
 
 function hasMaterialOutputSignal(signals: string[]): boolean {
-  return signals.some((signal) => /file write\/edit|git commit|project artifact|knowledge update/i.test(signal));
+  return signals.some((signal) =>
+    /file write\/edit|git commit|project artifact|knowledge update/i.test(
+      signal,
+    ),
+  );
 }
 
-function issueEvidence(lineRows: Record<string, unknown>[], target?: EvalTarget): Array<Record<string, unknown>> {
+function issueEvidence(
+  lineRows: Record<string, unknown>[],
+  target?: EvalTarget,
+): Array<Record<string, unknown>> {
   return lineRows
-    .filter((row) => ["issue", "check"].includes(String(row.score ?? "")) && (!target || row.target === target))
+    .filter(
+      (row) =>
+        ["issue", "check"].includes(String(row.score ?? "")) &&
+        (!target || row.target === target),
+    )
     .slice(0, 6)
     .map((row) => ({
       source: row.rawSource,
@@ -821,8 +1117,12 @@ function hasBlockedLoopSignal(text: string): boolean {
     /\b(?:\d+\s+)?consecutive checks?\b/i.test(text) ||
     /\bblocked for \d+\b/i.test(text) ||
     /\bNo e2e tests can run until\b/i.test(text) ||
-    /\bstandalone RP\b[\s\S]{0,180}\b(?:dead|down|unavailable|not reachable)\b/i.test(text) ||
-    /\b(?:retry|recheck|check)\b[\s\S]{0,120}\b(?:same|known|stale)\s+blocker\b/i.test(text)
+    /\bstandalone RP\b[\s\S]{0,180}\b(?:dead|down|unavailable|not reachable)\b/i.test(
+      text,
+    ) ||
+    /\b(?:retry|recheck|check)\b[\s\S]{0,120}\b(?:same|known|stale)\s+blocker\b/i.test(
+      text,
+    )
   );
 }
 
@@ -837,9 +1137,21 @@ function buildOwnerFindings(
 ): OwnerFinding[] {
   const findings: OwnerFinding[] = [];
   const materialOutput = hasMaterialOutputSignal(params.route.signals);
-  const requestHasStaleRisk = hasIssue(lineRows, "request", "misleading_or_stale_risk");
-  const requestHasIntegrityRisk = hasIssue(lineRows, "request", "information_integrity");
-  const requestHasPurposeIssue = hasIssue(lineRows, "request", "purpose_clarity");
+  const requestHasStaleRisk = hasIssue(
+    lineRows,
+    "request",
+    "misleading_or_stale_risk",
+  );
+  const requestHasIntegrityRisk = hasIssue(
+    lineRows,
+    "request",
+    "information_integrity",
+  );
+  const requestHasPurposeIssue = hasIssue(
+    lineRows,
+    "request",
+    "purpose_clarity",
+  );
   const blockedOrWaiting = isBlockedOrWaitingStatus(params.session?.status);
   const joinedEvidence = `${params.transcript}\n${params.heuristic.issues.join("\n")}\n${params.route.reason}`;
 
@@ -848,11 +1160,24 @@ function buildOwnerFindings(
       id: "stale-blocker-loop",
       scope: "project_context",
       owner: agentOwner(params),
-      ownerReason: "The project owner agent is the concrete actor that can update project context, add a resume condition, or ask the human for a decision.",
+      ownerReason:
+        "The project owner agent is the concrete actor that can update project context, add a resume condition, or ask the human for a decision.",
       severity: "high",
-      finding: "The session appears to be in a stale blocker loop rather than moving the project toward an unblock decision.",
-      impact: "Repeated full sessions can spend turns rechecking a known dead condition without changing project state, owner decision, or monitoring strategy.",
-      evidence: issueEvidence(lineRows).length ? issueEvidence(lineRows) : [{ source: params.transcriptSource, line: null, target: "session", comment: "Blocked-loop signal found in transcript or heuristic evidence." }],
+      finding:
+        "The session appears to be in a stale blocker loop rather than moving the project toward an unblock decision.",
+      impact:
+        "Repeated full sessions can spend turns rechecking a known dead condition without changing project state, owner decision, or monitoring strategy.",
+      evidence: issueEvidence(lineRows).length
+        ? issueEvidence(lineRows)
+        : [
+            {
+              source: params.transcriptSource,
+              line: null,
+              target: "session",
+              comment:
+                "Blocked-loop signal found in transcript or heuristic evidence.",
+            },
+          ],
       suggestedActions: [
         "Update project context with the latest blocker evidence and a concrete resume condition.",
         "Ask the human/owner to choose redeploy, wait, re-scope, or close if that decision is required.",
@@ -866,7 +1191,13 @@ function buildOwnerFindings(
     params.heuristic.verdict !== "good" ||
     blockedOrWaiting;
 
-  if (requestFindingIsActionable && (requestHasIntegrityRisk || requestHasPurposeIssue || requestHasStaleRisk || targetBreakdown.request === "issue")) {
+  if (
+    requestFindingIsActionable &&
+    (requestHasIntegrityRisk ||
+      requestHasPurposeIssue ||
+      requestHasStaleRisk ||
+      targetBreakdown.request === "issue")
+  ) {
     findings.push({
       id: "request-quality",
       scope: "request_quality",
@@ -875,8 +1206,10 @@ function buildOwnerFindings(
         ? "The requester or human owner must clarify missing/corrupted intent before agents can safely continue."
         : "The owner agent can rewrite stale or overloaded project instructions into a cleaner next WorkRequest.",
       severity: requestHasIntegrityRisk || blockedOrWaiting ? "high" : "medium",
-      finding: "The work request may be unclear, stale, overloaded, or missing critical information.",
-      impact: "Bad input can make a reasonable agent repeat the wrong action or optimize for stale context.",
+      finding:
+        "The work request may be unclear, stale, overloaded, or missing critical information.",
+      impact:
+        "Bad input can make a reasonable agent repeat the wrong action or optimize for stale context.",
       evidence: issueEvidence(lineRows, "request"),
       suggestedActions: [
         "Rewrite the next request with purpose, current evidence, expected output, constraints, and verification.",
@@ -886,15 +1219,21 @@ function buildOwnerFindings(
     });
   }
 
-  if (materialOutput && ["unknown", "check", "issue"].includes(String(targetBreakdown.verification))) {
+  if (
+    materialOutput &&
+    ["unknown", "check", "issue"].includes(String(targetBreakdown.verification))
+  ) {
     findings.push({
       id: "weak-verification",
       scope: "verification",
       owner: agentOwner(params),
-      ownerReason: "The session agent is responsible for proving its claimed output before handoff.",
+      ownerReason:
+        "The session agent is responsible for proving its claimed output before handoff.",
       severity: blockedOrWaiting ? "high" : "medium",
-      finding: "The session appears to produce material output without strong verification evidence.",
-      impact: "The project may accept a change or conclusion before the changed artifact, served behavior, or test result was actually proven.",
+      finding:
+        "The session appears to produce material output without strong verification evidence.",
+      impact:
+        "The project may accept a change or conclusion before the changed artifact, served behavior, or test result was actually proven.",
       evidence: issueEvidence(lineRows, "verification"),
       suggestedActions: [
         "Run the relevant build/test/API/browser check and attach the evidence.",
@@ -904,16 +1243,32 @@ function buildOwnerFindings(
     });
   }
 
-  if (params.heuristic.verdict !== "good" || targetBreakdown.execution === "issue" || targetBreakdown.result === "issue") {
+  if (
+    params.heuristic.verdict !== "good" ||
+    targetBreakdown.execution === "issue" ||
+    targetBreakdown.result === "issue"
+  ) {
     findings.push({
       id: "execution-quality",
       scope: "agent_behavior",
       owner: agentOwner(params),
-      ownerReason: "The acting agent can repair its approach, ask for help, or capture a learning item for its own workflow.",
+      ownerReason:
+        "The acting agent can repair its approach, ask for help, or capture a learning item for its own workflow.",
       severity: blockedOrWaiting ? "high" : "medium",
-      finding: "Execution/result quality needs owner review; the session did not clearly turn the request into useful progress.",
-      impact: "Without owner review, the same agent may repeat weak tool choices, shallow recovery, or unsupported conclusions.",
-      evidence: issueEvidence(lineRows).length ? issueEvidence(lineRows) : [{ source: params.transcriptSource, line: null, target: "session", issues: params.heuristic.issues }],
+      finding:
+        "Execution/result quality needs owner review; the session did not clearly turn the request into useful progress.",
+      impact:
+        "Without owner review, the same agent may repeat weak tool choices, shallow recovery, or unsupported conclusions.",
+      evidence: issueEvidence(lineRows).length
+        ? issueEvidence(lineRows)
+        : [
+            {
+              source: params.transcriptSource,
+              line: null,
+              target: "session",
+              issues: params.heuristic.issues,
+            },
+          ],
       suggestedActions: [
         "Decide whether to rerun a narrow repair session, update agent guidance, or ask a human for missing context.",
         "If the issue repeats across sessions, fork or update the owning agent workflow with evidence.",
@@ -922,20 +1277,31 @@ function buildOwnerFindings(
     });
   }
 
-  return findings.filter((finding, index, all) => index === all.findIndex((other) => other.id === finding.id));
+  return findings.filter(
+    (finding, index, all) =>
+      index === all.findIndex((other) => other.id === finding.id),
+  );
 }
 
-function buildNotificationDecision(params: SessionEvalTrailParams, findings: OwnerFinding[]): Record<string, unknown> {
+function buildNotificationDecision(
+  params: SessionEvalTrailParams,
+  findings: OwnerFinding[],
+): Record<string, unknown> {
   const blockedOrWaiting = isBlockedOrWaitingStatus(params.session?.status);
-  const immediate = findings.filter((finding) => finding.severity === "high" || blockedOrWaiting);
+  const immediate = findings.filter(
+    (finding) => finding.severity === "high" || blockedOrWaiting,
+  );
   return {
     policy: "persist_all_notify_actionable",
     notifyNow: immediate.length > 0,
-    reason: immediate.length > 0
-      ? "High-severity or blocked/waiting finding should be sent to the concrete owner now."
-      : "No immediate owner notification; keep findings in the eval trail for digest/review.",
+    reason:
+      immediate.length > 0
+        ? "High-severity or blocked/waiting finding should be sent to the concrete owner now."
+        : "No immediate owner notification; keep findings in the eval trail for digest/review.",
     immediateFindingIds: immediate.map((finding) => finding.id),
-    batchedFindingIds: findings.filter((finding) => !immediate.includes(finding)).map((finding) => finding.id),
+    batchedFindingIds: findings
+      .filter((finding) => !immediate.includes(finding))
+      .map((finding) => finding.id),
   };
 }
 
@@ -954,10 +1320,13 @@ function learningFeedbackSummary(finding: OwnerFinding): string {
   const severity = String(finding.severity || "medium");
   const scope = String(finding.scope || "unknown");
   const id = String(finding.id || "finding");
-  const text = String(finding.finding || "").replace(/\s+/g, " ").trim();
-  const action = Array.isArray(finding.suggestedActions) && finding.suggestedActions.length
-    ? ` -> ${String(finding.suggestedActions[0]).replace(/\s+/g, " ").trim()}`
-    : "";
+  const text = String(finding.finding || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const action =
+    Array.isArray(finding.suggestedActions) && finding.suggestedActions.length
+      ? ` -> ${String(finding.suggestedActions[0]).replace(/\s+/g, " ").trim()}`
+      : "";
   return `[${severity}] ${scope}/${id}: ${text}${action}`.slice(0, 500);
 }
 
@@ -985,7 +1354,10 @@ export function learningFeedbackEventPayload(params: {
   };
 }
 
-function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<string, unknown>[]): Record<string, unknown> {
+function buildRepairDecision(
+  params: SessionEvalTrailParams,
+  lineRows: Record<string, unknown>[],
+): Record<string, unknown> {
   const targetBreakdown = {
     request: summarizeTargetQuality(lineRows, "request"),
     execution: summarizeTargetQuality(lineRows, "execution"),
@@ -993,9 +1365,21 @@ function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<st
     verification: summarizeTargetQuality(lineRows, "verification"),
   };
   const materialOutput = hasMaterialOutputSignal(params.route.signals);
-  const requestHasStaleRisk = hasIssue(lineRows, "request", "misleading_or_stale_risk");
-  const requestHasIntegrityRisk = hasIssue(lineRows, "request", "information_integrity");
-  const requestHasPurposeIssue = hasIssue(lineRows, "request", "purpose_clarity");
+  const requestHasStaleRisk = hasIssue(
+    lineRows,
+    "request",
+    "misleading_or_stale_risk",
+  );
+  const requestHasIntegrityRisk = hasIssue(
+    lineRows,
+    "request",
+    "information_integrity",
+  );
+  const requestHasPurposeIssue = hasIssue(
+    lineRows,
+    "request",
+    "purpose_clarity",
+  );
   const ownerFindings = buildOwnerFindings(params, lineRows, targetBreakdown);
   const notificationDecision = buildNotificationDecision(params, ownerFindings);
   let action: RepairAction = "none";
@@ -1003,19 +1387,35 @@ function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<st
 
   if (targetBreakdown.request === "issue" && requestHasIntegrityRisk) {
     action = "ask_human_or_owner";
-    reason = "The work request appears incomplete or corrupted; route the finding to the requester/human owner before continuing.";
-  } else if (requestHasPurposeIssue || requestHasStaleRisk || (targetBreakdown.request === "issue" && params.heuristic.verdict !== "good")) {
+    reason =
+      "The work request appears incomplete or corrupted; route the finding to the requester/human owner before continuing.";
+  } else if (
+    requestHasPurposeIssue ||
+    requestHasStaleRisk ||
+    (targetBreakdown.request === "issue" && params.heuristic.verdict !== "good")
+  ) {
     action = "clarify_request";
-    reason = "The work request is a likely root cause or contributor; route it to the owner for clarification or rewrite.";
-  } else if (materialOutput && ["unknown", "check", "issue"].includes(targetBreakdown.verification)) {
+    reason =
+      "The work request is a likely root cause or contributor; route it to the owner for clarification or rewrite.";
+  } else if (
+    materialOutput &&
+    ["unknown", "check", "issue"].includes(targetBreakdown.verification)
+  ) {
     action = "repair_verification";
-    reason = "The session appears to produce material output but lacks strong verification evidence; route verification critique to the owner.";
-  } else if (params.heuristic.verdict !== "good" || targetBreakdown.execution === "issue" || targetBreakdown.result === "issue") {
+    reason =
+      "The session appears to produce material output but lacks strong verification evidence; route verification critique to the owner.";
+  } else if (
+    params.heuristic.verdict !== "good" ||
+    targetBreakdown.execution === "issue" ||
+    targetBreakdown.result === "issue"
+  ) {
     action = "repair_execution";
-    reason = "The request is usable, but execution or result evidence needs owner review.";
+    reason =
+      "The request is usable, but execution or result evidence needs owner review.";
   } else if (params.route.lane === "success_candidate") {
     action = "extract_evolution_candidate";
-    reason = "The session looks useful enough to mine for reusable learning after review.";
+    reason =
+      "The session looks useful enough to mine for reusable learning after review.";
   }
 
   return {
@@ -1025,7 +1425,9 @@ function buildRepairDecision(params: SessionEvalTrailParams, lineRows: Record<st
     ownerChoosesAction: true,
     ownerFindings,
     notificationDecision,
-    suggestedActions: uniqueStrings(ownerFindings.flatMap((finding) => finding.suggestedActions)),
+    suggestedActions: uniqueStrings(
+      ownerFindings.flatMap((finding) => finding.suggestedActions),
+    ),
   };
 }
 
@@ -1052,7 +1454,10 @@ export function normalizeEvaluationState(params: {
       route: {
         lane: "needs_triage",
         reason: `downgraded unresolved repair_execution from good: ${route.reason}`,
-        signals: uniqueStrings([...route.signals, "repair_execution unresolved"]),
+        signals: uniqueStrings([
+          ...route.signals,
+          "repair_execution unresolved",
+        ]),
       },
       downgradedFromRepairExecution: true,
     };
@@ -1065,74 +1470,252 @@ export function normalizeEvaluationState(params: {
   };
 }
 
-function buildUserTurnEvaluation(text: string): { score: "ok" | "check" | "issue" | "context"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
+function buildUserTurnEvaluation(text: string): {
+  score: "ok" | "check" | "issue" | "context";
+  issues: string[];
+  checks: EvalCheck[];
+  comment: string;
+  improvement: string;
+} {
   const normalized = text.replace(/\s+/g, " ").trim();
   const length = normalized.length;
-  const hasPurpose = hasAny(normalized, [/\bgoal\b/i, /\btask\b/i, /\brequest\b/i, /\bimplement\b/i, /\bfix\b/i, /\bbuild\b/i, /\breview\b/i, /\bmaintain\b/i, /\bupdate\b/i, /\bimprove\b/i, /\bchange\b/i]);
-  const hasContext = hasAny(normalized, [/\bcontext\b/i, /\bproject\b/i, /\biteration\b/i, /\bcurrent state\b/i, /\bconstraint/i, /\bgoal\b/i]);
-  const hasAction = hasAny(normalized, [/\bdo\b/i, /\bmake\b/i, /\bimplement\b/i, /\bfix\b/i, /\breview\b/i, /\bupdate\b/i, /\bverify\b/i, /\bcontinue\b/i]);
-  const staleRisk = hasAny(normalized, [/\b(current|latest|today|yesterday|now)\b/i, /comments\.md/i, /shared\/projects/i]);
-  const noisy = length > 1200 || /\bstanding platform project\b/i.test(normalized);
+  const hasPurpose = hasAny(normalized, [
+    /\bgoal\b/i,
+    /\btask\b/i,
+    /\brequest\b/i,
+    /\bimplement\b/i,
+    /\bfix\b/i,
+    /\bbuild\b/i,
+    /\breview\b/i,
+    /\bmaintain\b/i,
+    /\bupdate\b/i,
+    /\bimprove\b/i,
+    /\bchange\b/i,
+  ]);
+  const hasContext = hasAny(normalized, [
+    /\bcontext\b/i,
+    /\bproject\b/i,
+    /\biteration\b/i,
+    /\bcurrent state\b/i,
+    /\bconstraint/i,
+    /\bgoal\b/i,
+  ]);
+  const hasAction = hasAny(normalized, [
+    /\bdo\b/i,
+    /\bmake\b/i,
+    /\bimplement\b/i,
+    /\bfix\b/i,
+    /\breview\b/i,
+    /\bupdate\b/i,
+    /\bverify\b/i,
+    /\bcontinue\b/i,
+  ]);
+  const staleRisk = hasAny(normalized, [
+    /\b(current|latest|today|yesterday|now)\b/i,
+    /comments\.md/i,
+    /shared\/projects/i,
+  ]);
+  const noisy =
+    length > 1200 || /\bstanding platform project\b/i.test(normalized);
 
   const checks: EvalCheck[] = [
-    makeCheck("purpose_clarity", hasPurpose && hasAction ? "good" : hasPurpose ? "mixed" : "weak", hasPurpose && hasAction ? "The request exposes a purpose and an expected action." : "The immediate action is not explicit enough."),
-    makeCheck("necessary_context", hasContext ? "good" : "mixed", hasContext ? "The message carries relevant project/task context." : "The message has limited context, so the agent may need to infer intent."),
-    makeCheck("information_integrity", looksTruncated(normalized) ? "risk" : "good", looksTruncated(normalized) ? "The message appears truncated or abbreviated." : "No obvious truncation marker is present."),
-    makeCheck("simplicity", length > 1800 ? "weak" : length > 700 ? "mixed" : "good", length > 1800 ? "The request is overloaded and hard to scan." : length > 700 ? "The request is understandable but mixes durable context with the immediate ask." : "The request is compact enough for the agent to act on."),
-    makeCheck("misleading_or_stale_risk", staleRisk ? "mixed" : "good", staleRisk ? "The message contains relative/current or legacy-looking references that should be verified against files/state." : "No obvious stale-reference risk is visible from the text alone."),
+    makeCheck(
+      "purpose_clarity",
+      hasPurpose && hasAction ? "good" : hasPurpose ? "mixed" : "weak",
+      hasPurpose && hasAction
+        ? "The request exposes a purpose and an expected action."
+        : "The immediate action is not explicit enough.",
+    ),
+    makeCheck(
+      "necessary_context",
+      hasContext ? "good" : "mixed",
+      hasContext
+        ? "The message carries relevant project/task context."
+        : "The message has limited context, so the agent may need to infer intent.",
+    ),
+    makeCheck(
+      "information_integrity",
+      looksTruncated(normalized) ? "risk" : "good",
+      looksTruncated(normalized)
+        ? "The message appears truncated or abbreviated."
+        : "No obvious truncation marker is present.",
+    ),
+    makeCheck(
+      "simplicity",
+      length > 1800 ? "weak" : length > 700 ? "mixed" : "good",
+      length > 1800
+        ? "The request is overloaded and hard to scan."
+        : length > 700
+          ? "The request is understandable but mixes durable context with the immediate ask."
+          : "The request is compact enough for the agent to act on.",
+    ),
+    makeCheck(
+      "misleading_or_stale_risk",
+      staleRisk ? "mixed" : "good",
+      staleRisk
+        ? "The message contains relative/current or legacy-looking references that should be verified against files/state."
+        : "No obvious stale-reference risk is visible from the text alone.",
+    ),
   ];
 
   const score = evalScoreFromChecks(checks);
   const issues = evalIssuesFromChecks(checks);
-  const improvement = noisy || length > 700
-    ? "Separate stable project context from the immediate request; keep the turn to the concrete ask, acceptance criteria, and changed constraints."
-    : "Keep the request as a short ask plus only the context required for the next action.";
-  const comment = score === "ok"
-    ? "User request is clear, sufficiently contextual, and concise enough to guide the next agent turn."
-    : score === "check"
-      ? "User request is actionable but could be cleaner; it mixes useful context with extra or potentially stale detail."
-      : "User request needs cleanup before it is a strong work instruction; clarify the immediate ask and remove misleading or overloaded context.";
+  const improvement =
+    noisy || length > 700
+      ? "Separate stable project context from the immediate request; keep the turn to the concrete ask, acceptance criteria, and changed constraints."
+      : "Keep the request as a short ask plus only the context required for the next action.";
+  const comment =
+    score === "ok"
+      ? "User request is clear, sufficiently contextual, and concise enough to guide the next agent turn."
+      : score === "check"
+        ? "User request is actionable but could be cleaner; it mixes useful context with extra or potentially stale detail."
+        : "User request needs cleanup before it is a strong work instruction; clarify the immediate ask and remove misleading or overloaded context.";
 
-  return { score: score === "ok" ? "context" : score, issues, checks, comment, improvement };
+  return {
+    score: score === "ok" ? "context" : score,
+    issues,
+    checks,
+    comment,
+    improvement,
+  };
 }
 
-function buildAssistantTurnEvaluation(text: string, calls: any[]): { score: "ok" | "check" | "issue"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
-  const toolNames = calls.map((call) => String(call?.name ?? "")).filter(Boolean);
+function buildAssistantTurnEvaluation(
+  text: string,
+  calls: any[],
+): {
+  score: "ok" | "check" | "issue";
+  issues: string[];
+  checks: EvalCheck[];
+  comment: string;
+  improvement: string;
+} {
+  const toolNames = calls
+    .map((call) => String(call?.name ?? ""))
+    .filter(Boolean);
   const callCount = calls.length;
   const hasText = text.trim().length > 0;
   const hasConcreteTools = toolNames.length === callCount;
-  const broadShell = calls.some((call) => String(call?.name ?? "") === "bash" && /\b(find|grep|rg)\b[\s\S]{0,80}\b\/app\b/.test(String(call?.arguments?.command ?? call?.input?.command ?? "")));
+  const broadShell = calls.some(
+    (call) =>
+      String(call?.name ?? "") === "bash" &&
+      /\b(find|grep|rg)\b[\s\S]{0,80}\b\/app\b/.test(
+        String(call?.arguments?.command ?? call?.input?.command ?? ""),
+      ),
+  );
 
   const checks: EvalCheck[] = [
-    makeCheck("purpose_clarity", callCount > 0 || hasText ? "good" : "weak", callCount > 0 ? "The assistant chose concrete actions for the turn." : hasText ? "The assistant responded in text without tool work." : "No visible response or action is present."),
-    makeCheck("tool_necessity", callCount === 0 ? "not_applicable" : callCount <= 3 ? "good" : callCount <= 6 ? "mixed" : "weak", callCount === 0 ? "No tool calls to judge." : callCount <= 3 ? "Tool call count is modest for one turn." : "Tool call count is high; inspect whether the calls should have been split or narrowed."),
-    makeCheck("grounding", hasConcreteTools ? "good" : callCount ? "mixed" : "not_applicable", hasConcreteTools ? "Tool requests name concrete tools and arguments." : callCount ? "Some tool request metadata is incomplete." : "No tool grounding needed for this turn."),
-    makeCheck("simplicity", broadShell ? "mixed" : "good", broadShell ? "The command looks broad; a narrower repository/file target would be cleaner if known." : "The turn is not obviously over-broad from the request alone."),
-    makeCheck("misleading_or_stale_risk", "good", "No misleading claim is visible in the assistant request itself; verify against tool output."),
+    makeCheck(
+      "purpose_clarity",
+      callCount > 0 || hasText ? "good" : "weak",
+      callCount > 0
+        ? "The assistant chose concrete actions for the turn."
+        : hasText
+          ? "The assistant responded in text without tool work."
+          : "No visible response or action is present.",
+    ),
+    makeCheck(
+      "tool_necessity",
+      callCount === 0
+        ? "not_applicable"
+        : callCount <= 3
+          ? "good"
+          : callCount <= 6
+            ? "mixed"
+            : "weak",
+      callCount === 0
+        ? "No tool calls to judge."
+        : callCount <= 3
+          ? "Tool call count is modest for one turn."
+          : "Tool call count is high; inspect whether the calls should have been split or narrowed.",
+    ),
+    makeCheck(
+      "grounding",
+      hasConcreteTools ? "good" : callCount ? "mixed" : "not_applicable",
+      hasConcreteTools
+        ? "Tool requests name concrete tools and arguments."
+        : callCount
+          ? "Some tool request metadata is incomplete."
+          : "No tool grounding needed for this turn.",
+    ),
+    makeCheck(
+      "simplicity",
+      broadShell ? "mixed" : "good",
+      broadShell
+        ? "The command looks broad; a narrower repository/file target would be cleaner if known."
+        : "The turn is not obviously over-broad from the request alone.",
+    ),
+    makeCheck(
+      "misleading_or_stale_risk",
+      "good",
+      "No misleading claim is visible in the assistant request itself; verify against tool output.",
+    ),
   ];
-  const score = evalScoreFromChecks(checks) === "context" ? "check" : evalScoreFromChecks(checks) as "ok" | "check" | "issue";
+  const score =
+    evalScoreFromChecks(checks) === "context"
+      ? "check"
+      : (evalScoreFromChecks(checks) as "ok" | "check" | "issue");
   const issues = evalIssuesFromChecks(checks);
-  const improvement = callCount > 3
-    ? "Batch only tightly related tool calls and explain the purpose if the next step is not obvious from the call."
-    : "Keep each tool request tied to the next needed evidence or change.";
-  const comment = score === "ok"
-    ? "Assistant turn is purposeful and reasonably scoped; judge final value against the following tool output."
-    : score === "check"
-      ? "Assistant turn is plausible but should be checked for scope and necessity against the surrounding context."
-      : "Assistant turn is weakly formed or over-broad; it needs clearer purpose and tighter evidence gathering.";
+  const improvement =
+    callCount > 3
+      ? "Batch only tightly related tool calls and explain the purpose if the next step is not obvious from the call."
+      : "Keep each tool request tied to the next needed evidence or change.";
+  const comment =
+    score === "ok"
+      ? "Assistant turn is purposeful and reasonably scoped; judge final value against the following tool output."
+      : score === "check"
+        ? "Assistant turn is plausible but should be checked for scope and necessity against the surrounding context."
+        : "Assistant turn is weakly formed or over-broad; it needs clearer purpose and tighter evidence gathering.";
   return { score, issues, checks, comment, improvement };
 }
 
-function buildToolOutputEvaluation(output: string, isError: boolean): { score: "ok" | "check" | "issue"; issues: string[]; checks: EvalCheck[]; comment: string; improvement: string } {
+function buildToolOutputEvaluation(
+  output: string,
+  isError: boolean,
+): {
+  score: "ok" | "check" | "issue";
+  issues: string[];
+  checks: EvalCheck[];
+  comment: string;
+  improvement: string;
+} {
   const empty = output.trim().length === 0;
-  const failureText = isError || /\b(?:error|failed|not found|no such file|permission denied)\b/i.test(output);
+  const failureText =
+    isError ||
+    /\b(?:error|failed|not found|no such file|permission denied)\b/i.test(
+      output,
+    );
   const checks: EvalCheck[] = [
-    makeCheck("evidence_value", empty ? "weak" : failureText ? "mixed" : "good", empty ? "The tool returned no usable evidence." : failureText ? "The output is useful mainly as failure evidence." : "The output provides usable evidence for the next step."),
-    makeCheck("integrity", /\.\.\.|truncated/i.test(output) ? "mixed" : "good", /\.\.\.|truncated/i.test(output) ? "Output may be truncated; inspect raw line if exact content matters." : "No obvious truncation marker is visible."),
-    makeCheck("actionability", failureText ? "mixed" : "good", failureText ? "The next turn should recover from or explain this failure." : "The next turn can use this output directly."),
+    makeCheck(
+      "evidence_value",
+      empty ? "weak" : failureText ? "mixed" : "good",
+      empty
+        ? "The tool returned no usable evidence."
+        : failureText
+          ? "The output is useful mainly as failure evidence."
+          : "The output provides usable evidence for the next step.",
+    ),
+    makeCheck(
+      "integrity",
+      /\.\.\.|truncated/i.test(output) ? "mixed" : "good",
+      /\.\.\.|truncated/i.test(output)
+        ? "Output may be truncated; inspect raw line if exact content matters."
+        : "No obvious truncation marker is visible.",
+    ),
+    makeCheck(
+      "actionability",
+      failureText ? "mixed" : "good",
+      failureText
+        ? "The next turn should recover from or explain this failure."
+        : "The next turn can use this output directly.",
+    ),
   ];
   const score = failureText || empty ? (empty ? "issue" : "check") : "ok";
-  const issues = failureText ? ["tool_output_failure_or_mismatch"] : empty ? ["empty_tool_output"] : [];
+  const issues = failureText
+    ? ["tool_output_failure_or_mismatch"]
+    : empty
+      ? ["empty_tool_output"]
+      : [];
   const improvement = failureText
     ? "Use the failure as evidence, adjust the path/query/assumption, and avoid claiming success from this output alone."
     : "Cite the relevant part of the output in the next judgment or action.";
@@ -1144,7 +1727,9 @@ function buildToolOutputEvaluation(output: string, isError: boolean): { score: "
   return { score, issues, checks, comment, improvement };
 }
 
-export function buildSessionEvalTrailRows(params: SessionEvalTrailParams): Record<string, unknown>[] {
+export function buildSessionEvalTrailRows(
+  params: SessionEvalTrailParams,
+): Record<string, unknown>[] {
   const createdAt = params.createdAt ?? Date.now();
   const source = params.source ?? "evaluator-heuristic";
   const opCount = Number(params.session?.opCount ?? 0);
@@ -1246,20 +1831,33 @@ export function buildSessionEvalTrailRows(params: SessionEvalTrailParams): Recor
 
     if (role === "assistant") {
       const blocks = Array.isArray(parsed.content) ? parsed.content : [];
-      const textBlocks = blocks.filter((block: any) => block?.type === "text").map((block: any) => block.text || "").join(" ");
-      const calls = blocks.filter((block: any) => block?.type === "tool_use" || block?.type === "toolCall");
+      const textBlocks = blocks
+        .filter((block: any) => block?.type === "text")
+        .map((block: any) => block.text || "")
+        .join(" ");
+      const calls = blocks.filter(
+        (block: any) =>
+          block?.type === "tool_use" || block?.type === "toolCall",
+      );
       const toolTargets = calls.map(classifyToolCallTarget);
       calls.forEach((call: any, idx: number) => {
-        if (call?.id) toolCallTargets.set(String(call.id), toolTargets[idx] ?? "execution");
+        if (call?.id)
+          toolCallTargets.set(String(call.id), toolTargets[idx] ?? "execution");
       });
-      const rowTarget: EvalTarget = calls.length > 0 && toolTargets.every((target) => target === "verification") ? "verification" : "execution";
+      const rowTarget: EvalTarget =
+        calls.length > 0 &&
+        toolTargets.every((target) => target === "verification")
+          ? "verification"
+          : "execution";
       const evaluation = buildAssistantTurnEvaluation(textBlocks, calls);
       rows.push({
         ...base,
         target: rowTarget,
         score: evaluation.score,
         issues: evaluation.issues,
-        purpose: calls.length ? "assistant_tool_planning" : "assistant_response",
+        purpose: calls.length
+          ? "assistant_tool_planning"
+          : "assistant_response",
         actor: "assistant",
         toolCallIds: calls.map((call: any) => call.id).filter(Boolean),
         tools: calls.map((call: any) => call.name).filter(Boolean),
@@ -1278,16 +1876,24 @@ export function buildSessionEvalTrailRows(params: SessionEvalTrailParams): Recor
 
     if (role === "toolresult" || role === "tool_result") {
       const output = lineContentText(parsed.content);
-      const isError = Boolean(parsed.isError) || /\b(?:error|failed|not found|no such file|permission denied)\b/i.test(output);
+      const isError =
+        Boolean(parsed.isError) ||
+        /\b(?:error|failed|not found|no such file|permission denied)\b/i.test(
+          output,
+        );
       const evaluation = buildToolOutputEvaluation(output, isError);
       const callTarget = toolCallTargets.get(String(parsed.toolCallId ?? ""));
-      const target: EvalTarget = callTarget === "verification" || parsed.toolName === "finish" ? "verification" : "result";
+      const target: EvalTarget =
+        callTarget === "verification" || parsed.toolName === "finish"
+          ? "verification"
+          : "result";
       rows.push({
         ...base,
         target,
         score: evaluation.score,
         issues: evaluation.issues,
-        purpose: target === "verification" ? "verification_output" : "tool_output",
+        purpose:
+          target === "verification" ? "verification_output" : "tool_output",
         actor: "tool",
         toolCallId: parsed.toolCallId ?? null,
         toolName: parsed.toolName ?? null,
@@ -1341,36 +1947,50 @@ export function buildSessionEvalTrailRows(params: SessionEvalTrailParams): Recor
   return rows;
 }
 
-export function appendSessionEvalTrail(evalPath: string, rows: Record<string, unknown>[]): void {
+export function appendSessionEvalTrail(
+  evalPath: string,
+  rows: Record<string, unknown>[],
+): void {
   if (rows.length === 0) return;
   mkdirSync(dirname(evalPath), { recursive: true });
-  appendFileSync(evalPath, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
+  appendFileSync(
+    evalPath,
+    rows.map((row) => JSON.stringify(row)).join("\n") + "\n",
+  );
 }
 
-function writeSessionEvalTrail(transcriptPath: string, params: SessionEvalTrailParams): { evalPath: string; rows: Record<string, unknown>[] } {
+function writeSessionEvalTrail(
+  transcriptPath: string,
+  params: SessionEvalTrailParams,
+): { evalPath: string; rows: Record<string, unknown>[] } {
   const evalPath = sessionEvalTrailPath(transcriptPath);
   const rows = buildSessionEvalTrailRows(params);
   appendSessionEvalTrail(evalPath, rows);
   return { evalPath, rows };
 }
 
-function summaryRow(rows: Record<string, unknown>[]): Record<string, unknown> | undefined {
+function summaryRow(
+  rows: Record<string, unknown>[],
+): Record<string, unknown> | undefined {
   return rows.find((row) => row.type === "summary");
 }
 
 function summaryOwnerFindings(rows: Record<string, unknown>[]): OwnerFinding[] {
   const summary = summaryRow(rows) as any;
   const findings = summary?.repairDecision?.ownerFindings;
-  return Array.isArray(findings) ? findings as OwnerFinding[] : [];
+  return Array.isArray(findings) ? (findings as OwnerFinding[]) : [];
 }
 
 function summaryImmediateFindingIds(rows: Record<string, unknown>[]): string[] {
   const summary = summaryRow(rows) as any;
-  const ids = summary?.repairDecision?.notificationDecision?.immediateFindingIds;
+  const ids =
+    summary?.repairDecision?.notificationDecision?.immediateFindingIds;
   return Array.isArray(ids) ? ids.map(String) : [];
 }
 
-function normalizedSummaryState(rows: Record<string, unknown>[]): NormalizedEvaluationState | null {
+function normalizedSummaryState(
+  rows: Record<string, unknown>[],
+): NormalizedEvaluationState | null {
   const summary = summaryRow(rows) as any;
   if (!summary) return null;
   return {
@@ -1383,15 +2003,24 @@ function normalizedSummaryState(rows: Record<string, unknown>[]): NormalizedEval
     route: {
       lane: (summary.lane ?? "needs_triage") as EvaluationLane,
       reason: String(summary.routeReason ?? ""),
-      signals: Array.isArray(summary.signals) ? summary.signals.map(String) : [],
+      signals: Array.isArray(summary.signals)
+        ? summary.signals.map(String)
+        : [],
     },
-    downgradedFromRepairExecution: Boolean(summary.downgradedFromRepairExecution),
+    downgradedFromRepairExecution: Boolean(
+      summary.downgradedFromRepairExecution,
+    ),
   };
 }
 
 export function artifactVerdict(artifactText: string): string | null {
-  const match = artifactText.match(/^\s*#{1,3}\s*Verdict\s*\n+\s*([a-z_ -]+)/im);
-  const raw = match?.[1]?.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const match = artifactText.match(
+    /^\s*#{1,3}\s*Verdict\s*\n+\s*([a-z_ -]+)/im,
+  );
+  const raw = match?.[1]
+    ?.trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
   if (!raw) return null;
   if (raw.startsWith("needs_triage")) return "needs_improvement";
   if (raw.startsWith("needs_improvement")) return "needs_improvement";
@@ -1401,10 +2030,15 @@ export function artifactVerdict(artifactText: string): string | null {
   return raw;
 }
 
-function shouldOverrideWithReview(storedVerdict: string, reviewedVerdict: string | null): boolean {
+function shouldOverrideWithReview(
+  storedVerdict: string,
+  reviewedVerdict: string | null,
+): boolean {
   if (!reviewedVerdict) return false;
-  if (storedVerdict === "good") return ["needs_improvement", "acceptable"].includes(reviewedVerdict);
-  if (storedVerdict === "acceptable") return reviewedVerdict === "needs_improvement";
+  if (storedVerdict === "good")
+    return ["needs_improvement", "acceptable"].includes(reviewedVerdict);
+  if (storedVerdict === "acceptable")
+    return reviewedVerdict === "needs_improvement";
   return false;
 }
 
@@ -1444,10 +2078,19 @@ export function buildReviewTask(params: {
   route: EvaluationRoute;
   evalTrailPath?: string;
 }): string {
-  const { sessionId, session, transcriptPath, artifactPath, workflowCollectedFacts, route, evalTrailPath } = params;
-  const lanePurpose = route.lane === "needs_triage"
-    ? "Find the root cause, classify scope, assign a concrete agent/human owner, and route evidence-backed findings."
-    : "Judge why this good session produced real value, inspect the actual output, and extract reusable learning if present.";
+  const {
+    sessionId,
+    session,
+    transcriptPath,
+    artifactPath,
+    workflowCollectedFacts,
+    route,
+    evalTrailPath,
+  } = params;
+  const lanePurpose =
+    route.lane === "needs_triage"
+      ? "Find the root cause, classify scope, assign a concrete agent/human owner, and route evidence-backed findings."
+      : "Judge why this good session produced real value, inspect the actual output, and extract reusable learning if present.";
 
   return [
     `Review session aftermath for ${sessionId}.`,
@@ -1466,11 +2109,13 @@ export function buildReviewTask(params: {
     ``,
     `Lane purpose: ${lanePurpose}`,
     `Write your concise review to: ${artifactPath}`,
-    ...(evalTrailPath ? [
-      `Also append JSONL evidence rows to ${evalTrailPath} when your review finds session-level or line-level judgments beyond the heuristic seed.`,
-      `Think hard and write actual critique, not transcript captions: judge user request quality, assistant decisions, tool-call necessity, evidence quality, recovery, verification, finish honesty, and what should be done better.`,
-      `Use free-form JSON fields when useful. Keep only minimal mapping fields stable: type, sessionId, source, author, createdAt, and line/rawSource/rawRole for line-level rows. Do not rewrite existing rows.`,
-    ] : []),
+    ...(evalTrailPath
+      ? [
+          `Also append JSONL evidence rows to ${evalTrailPath} when your review finds session-level or line-level judgments beyond the heuristic seed.`,
+          `Think hard and write actual critique, not transcript captions: judge user request quality, assistant decisions, tool-call necessity, evidence quality, recovery, verification, finish honesty, and what should be done better.`,
+          `Use free-form JSON fields when useful. Keep only minimal mapping fields stable: type, sessionId, source, author, createdAt, and line/rawSource/rawRole for line-level rows. Do not rewrite existing rows.`,
+        ]
+      : []),
     ``,
     `Do exactly this loop:`,
     `1. Evaluate outcome quality: did this session produce real value for its task/project goal?`,
@@ -1492,7 +2137,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const mode = getModeFromTrigger(trigger);
 
   if (!sessionId) {
-    return ctx.escalate("evaluator-aftermath requires a sessionId", { trigger });
+    return ctx.escalate("evaluator-aftermath requires a sessionId", {
+      trigger,
+    });
   }
 
   const loadedData = ctx.query.evaluatorAftermathContext({ sessionId }) as any;
@@ -1505,7 +2152,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   }
 
   const ageMs = Date.now() - Number(session.startedAt ?? Date.now());
-  if (mode === "stale-running" || ["running", "idle"].includes(String(session.status))) {
+  if (
+    mode === "stale-running" ||
+    ["running", "idle"].includes(String(session.status))
+  ) {
     ctx.emit({
       type: "cancel",
       sessionId,
@@ -1518,18 +2168,27 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ageMs,
       owner: "evaluator",
     } as any);
-    return ctx.done(`Cancelled stale ${session.status} session ${sessionId} (${session.agent}), age ${Math.round(ageMs / 60000)}m.`);
+    return ctx.done(
+      `Cancelled stale ${session.status} session ${sessionId} (${session.agent}), age ${Math.round(ageMs / 60000)}m.`,
+    );
   }
 
   const projectRoot = String(ctx.projectRoot ?? "/app");
-  const persistDir = String((ctx as any).persistDir ?? join(projectRoot, ".state"));
+  const persistDir = String(
+    (ctx as any).persistDir ?? join(projectRoot, ".state"),
+  );
   const transcriptPath = sessionTranscriptPath(persistDir, sessionId);
   const transcript = readSessionTranscript(transcriptPath);
   const transcriptSource = displayPath(projectRoot, transcriptPath);
   const skipAftermath = shouldSkipAftermathAmplification(session, transcript);
   if (skipAftermath.skip) {
-    if (String(evaluation?.verdict ?? "") === "skipped" && evaluationHeuristicVersion(evaluation) >= HEURISTIC_VERSION) {
-      return ctx.done(`Session ${sessionId} already skipped (${skipAftermath.reason}).`);
+    if (
+      String(evaluation?.verdict ?? "") === "skipped" &&
+      evaluationHeuristicVersion(evaluation) >= HEURISTIC_VERSION
+    ) {
+      return ctx.done(
+        `Session ${sessionId} already skipped (${skipAftermath.reason}).`,
+      );
     }
 
     const skippedHeuristic: HeuristicVerdict = {
@@ -1538,7 +2197,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       verdict: "skipped",
       issues: [skipAftermath.reason],
     };
-    const skippedRoute: EvaluationRoute = { lane: "routine_ok", reason: skipAftermath.reason, signals: [] };
+    const skippedRoute: EvaluationRoute = {
+      lane: "routine_ok",
+      reason: skipAftermath.reason,
+      signals: [],
+    };
     const skippedTrail = writeSessionEvalTrail(transcriptPath, {
       sessionId,
       session,
@@ -1548,7 +2211,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       route: skippedRoute,
       source: "evaluator-skipped",
     });
-    const evalTrailDisplayPath = displayPath(projectRoot, skippedTrail.evalPath);
+    const evalTrailDisplayPath = displayPath(
+      projectRoot,
+      skippedTrail.evalPath,
+    );
     await (ctx as any).runFunction("record-skipped-evaluation", async () => {
       const db = ctx.getDb() as any;
       db.run(
@@ -1596,17 +2262,25 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       heuristicVersion: HEURISTIC_VERSION,
     } as any);
 
-    return ctx.done(`Skipped aftermath for ${sessionId}: ${skipAftermath.reason}.`);
+    return ctx.done(
+      `Skipped aftermath for ${sessionId}: ${skipAftermath.reason}.`,
+    );
   }
 
   const heuristic = classifyVerdict(session, transcript);
   const route = classifyEvaluationLane(session, transcript, heuristic);
-  const workflowCollectedFacts = formatWorkflowCollectedFacts(session, transcript, heuristic);
+  const workflowCollectedFacts = formatWorkflowCollectedFacts(
+    session,
+    transcript,
+    heuristic,
+  );
   const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
   const artifactAbsPath = join(projectRoot, artifactPath);
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
-    return ctx.done(`Session ${sessionId} already evaluated (${evaluation.verdict}).`);
+    return ctx.done(
+      `Session ${sessionId} already evaluated (${evaluation.verdict}).`,
+    );
   }
 
   const evalTrail = writeSessionEvalTrail(transcriptPath, {
@@ -1637,7 +2311,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         session.agent,
         normalized.heuristic.quality,
         normalized.heuristic.efficiency,
-        Math.max(0, Number(session.opCount ?? 0) - normalized.heuristic.issues.length),
+        Math.max(
+          0,
+          Number(session.opCount ?? 0) - normalized.heuristic.issues.length,
+        ),
         normalized.heuristic.issues.length,
         normalized.heuristic.verdict,
         JSON.stringify(normalized.heuristic.issues),
@@ -1649,7 +2326,8 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           lane: normalized.route.lane,
           routeReason: normalized.route.reason,
           outputSignals: normalized.route.signals,
-          downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
+          downgradedFromRepairExecution:
+            normalized.downgradedFromRepairExecution,
           evalTrailPath: evalTrailDisplayPath,
           ...(evaluation ? { refreshedFrom: evaluation.verdict } : {}),
           ...(normalized.route.lane === "routine_ok" ? {} : { artifactPath }),
@@ -1680,24 +2358,32 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
   } as any);
 
-  const immediateFindingIds = new Set(summaryImmediateFindingIds(evalTrail.rows));
+  const immediateFindingIds = new Set(
+    summaryImmediateFindingIds(evalTrail.rows),
+  );
   for (const finding of summaryOwnerFindings(evalTrail.rows)) {
     if (!immediateFindingIds.has(finding.id)) continue;
-    ctx.emit(learningFeedbackEventPayload({
-      sessionId,
-      agent: session.agent,
-      projectId: session.projectId ?? null,
-      workflowRunId: session.workflowRunId ?? null,
-      evalTrailPath: evalTrailDisplayPath,
-      finding,
-    }) as any);
+    ctx.emit(
+      learningFeedbackEventPayload({
+        sessionId,
+        agent: session.agent,
+        projectId: session.projectId ?? null,
+        workflowRunId: session.workflowRunId ?? null,
+        evalTrailPath: evalTrailDisplayPath,
+        finding,
+      }) as any,
+    );
   }
 
   if (normalized.route.lane === "routine_ok") {
-    return ctx.done(`Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). No review needed.`);
+    return ctx.done(
+      `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). No review needed.`,
+    );
   }
 
-  mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), { recursive: true });
+  mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), {
+    recursive: true,
+  });
 
   const reviewTask = buildReviewTask({
     sessionId,
@@ -1712,7 +2398,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const review = await ctx.runAgent("evaluator", reviewTask);
 
   if ((review as any).status === "error") {
-    return ctx.escalate(`Evaluator review failed for ${sessionId}`, { reviewSessionId: (review as any).sessionId });
+    return ctx.escalate(`Evaluator review failed for ${sessionId}`, {
+      reviewSessionId: (review as any).sessionId,
+    });
   }
 
   const artifactText = readArtifact(artifactAbsPath);
@@ -1720,7 +2408,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   if (shouldOverrideWithReview(normalized.heuristic.verdict, reviewedVerdict)) {
     await (ctx as any).runFunction("record-review-override", async () => {
       const db = ctx.getDb() as any;
-      const prior = db.prepare("SELECT overall FROM evaluations WHERE sessionId = ?").get(sessionId) as any;
+      const prior = db
+        .prepare("SELECT overall FROM evaluations WHERE sessionId = ?")
+        .get(sessionId) as any;
       let overall: Record<string, unknown> = {};
       try {
         overall = prior?.overall ? JSON.parse(prior.overall) : {};
@@ -1741,7 +2431,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         [
           reviewedVerdict,
           reviewOverrideQuality(reviewedVerdict),
-          JSON.stringify([...(normalized.heuristic.issues ?? []), `review override: ${reviewedVerdict}`]),
+          JSON.stringify([
+            ...(normalized.heuristic.issues ?? []),
+            `review override: ${reviewedVerdict}`,
+          ]),
           JSON.stringify(overall),
           sessionId,
         ],
@@ -1817,5 +2510,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     } as any);
   }
 
-  return ctx.done(`Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`);
+  return ctx.done(
+    `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`,
+  );
 }

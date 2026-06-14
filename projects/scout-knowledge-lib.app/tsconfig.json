@@ -6,9 +6,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@may-agent/sdk": [
-        "../may-agent/packages/sdk/src/index.ts"
-      ]
+      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"]
     },
     "skipLibCheck": true,
     "noEmit": true

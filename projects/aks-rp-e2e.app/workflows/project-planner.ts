@@ -51,6 +51,11 @@ type RuntimeEventRow = {
   timestamp?: unknown;
 };
 
+function timeoutFromEnv(name: string, fallbackMs: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallbackMs;
+}
+
 function plannerSessionId(step: "event_review" | "planning_update"): string {
   const stamp = new Date().toISOString().replace(/\D/g, "").slice(0, 14);
   const suffix = Math.random().toString(36).slice(2, 8);
@@ -317,11 +322,14 @@ async function runOwnerStep(input: {
   agent: string;
   prompt: string;
   sessionId: string;
+  timeoutMs?: number;
 }): Promise<unknown> {
   const sessionCtx = input.ctx as SessionWorkflowContext;
   return sessionCtx.runAgentSession
     ? sessionCtx.runAgentSession(input.agent, input.prompt, input.sessionId, {
-        timeoutMs: 600_000,
+        timeoutMs:
+          input.timeoutMs ??
+          timeoutFromEnv("AKS_RP_E2E_PLANNER_STEP_TIMEOUT_MS", 240_000),
       })
     : input.ctx.runAgent(input.agent, input.prompt);
 }
@@ -355,6 +363,33 @@ function frontierUnderfilled(
 
 function frontierNeedsBacklogDepth(packet: TaskPlanningPacket): boolean {
   return packet.frontier.ready.length === 0;
+}
+
+function routineRefillReason(rawTask: string): string | null {
+  const reason = triggerValue(parseTriggerEvent(rawTask), "reason");
+  if (typeof reason !== "string") return null;
+  return [
+    "watchdog-open-work-reconcile",
+    "watchdog-capacity-underfilled",
+    "watchdog-ready-work",
+    "watchdog-settled-active-project-refill",
+  ].includes(reason)
+    ? reason
+    : null;
+}
+
+function canUseDeterministicRefill(input: {
+  rawTask: string;
+  packet: TaskPlanningPacket;
+  humanSteering: Record<string, unknown>[];
+  maxConcurrentTasks: number;
+}): boolean {
+  if (!routineRefillReason(input.rawTask)) return false;
+  if (input.humanSteering.length > 0) return false;
+  if (input.packet.frontier.review.length > 0) return false;
+  if (input.packet.frontier.blocked.length > 0) return false;
+  if (input.packet.frontier.proposed.length > 0) return false;
+  return frontierUnderfilled(input.packet, input.maxConcurrentTasks);
 }
 
 function resultLooksInterrupted(result: unknown): boolean {
@@ -438,6 +473,55 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
+  if (
+    canUseDeterministicRefill({
+      rawTask: ctx.task,
+      packet,
+      humanSteering,
+      maxConcurrentTasks: config.maxConcurrent,
+    })
+  ) {
+    const reason = routineRefillReason(ctx.task);
+    const openSlots = Math.max(
+      0,
+      config.maxConcurrent -
+        packet.active_task_ids.length -
+        packet.frontier.ready.length,
+    );
+    const seedReason = `routine-refill:${reason}`;
+    const seedResult = seedModelGapBacklog(config, {
+      limit: Math.min(2, openSlots),
+      reason: seedReason,
+    });
+    if (seedResult.created.length > 0) {
+      assignReadyTasks(config, { worker });
+      const seededAssignments = drainTaskAssignments(config);
+      dispatchAssignedTasks(ctx, seededAssignments);
+      packet = planningPacket(config);
+      appendPlannerRun(appDir, {
+        kind: "planner_wake",
+        status: seededAssignments.length ? "assigned" : "seeded",
+        ran_agent: false,
+        steps: ["deterministic-refill"],
+        assigned_task_ids: seededAssignments.map(
+          (assignment) => assignment.taskId,
+        ),
+        requeued_stale_task_ids: requeuedStaleTaskIds,
+        seeded_task_ids: seedResult.created,
+        seed_reason: seedReason,
+        seed_skipped: seedResult.skipped.slice(0, 12),
+        active_task_ids: packet.active_task_ids,
+        result:
+          "Routine watchdog refill seeded model-gap work without owner-agent planning.",
+      });
+      return ctx.done(
+        `Planner deterministic-refill seeded ${seedResult.created.length} task(s) and assigned ${seededAssignments.length}: ${seedResult.created
+          .slice(0, 8)
+          .join(", ")}.`,
+      );
+    }
+  }
+
   let eventReviewResult: unknown;
   let plannerResult: unknown;
   const eventReviewSessionId = plannerSessionId("event_review");
@@ -447,6 +531,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx,
       agent,
       sessionId: eventReviewSessionId,
+      timeoutMs: timeoutFromEnv(
+        "AKS_RP_E2E_PLANNER_EVENT_REVIEW_TIMEOUT_MS",
+        180_000,
+      ),
       prompt: buildEventReviewPrompt({
         appDir,
         projectDir,
@@ -462,6 +550,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ctx,
       agent,
       sessionId: planningUpdateSessionId,
+      timeoutMs: timeoutFromEnv(
+        "AKS_RP_E2E_PLANNER_UPDATE_TIMEOUT_MS",
+        240_000,
+      ),
       prompt: buildPlannerPrompt({
         appDir,
         projectDir,

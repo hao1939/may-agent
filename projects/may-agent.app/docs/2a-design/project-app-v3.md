@@ -154,6 +154,27 @@ workspace. May-agent infrastructure owns durable event, session, workflow, and
 intent history. The app may keep compact JSONL traces in `.state/` only when
 they help the app reason during local operation.
 
+## Shared SDK Boundary
+
+Keep workflow entrypoints local to the app. A workflow is where the app's
+project-specific judgment, prompts, domain commands, and side effects live, so
+it should be reviewed with the app that owns it.
+
+Move reusable mechanics into `@may-agent/sdk` when they are domain-neutral:
+
+- project-app manifest types and `defineProjectApp`
+- event normalization helpers such as `eventData`, `eventString`, and
+  `eventDetails`
+- canonical app event constructors such as `projectPlanningEvent`
+- JSON task-tree read/write, summaries, kanban projection, assignment, and
+  completion helpers
+- workflow trigger-input parsing helpers
+
+Do not move domain policy into the SDK. AKS model-gap seeding, evaluator
+criteria, Scout knowledge-library rules, platform repair policy, and app
+prompts stay local. The SDK should make those workflows easier to write and
+check; it should not decide what the project should do.
+
 ## App Package
 
 Each project app should have a `package.json`. Treat it like the app's command
@@ -465,8 +486,6 @@ Project app runtime reload has three main surfaces:
 - Workflow files in `workflows/*.ts` are resolved and imported when a
   workflow-backed handler dispatches a workflow run. Editing workflow code is
   picked up by the next dispatch.
-- `cron.json` files are watched by the trigger runtime and reloaded when their
-  content hash changes.
 - Project app manifests (`projects/*.app/app.ts`) declare workflow handlers,
   schedules, event selectors, actions, and app-level `onEvent` behavior. They
   are re-installed by explicit runtime reload and by the project-app manifest

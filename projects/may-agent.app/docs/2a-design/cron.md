@@ -71,12 +71,22 @@ Workflow-backed handler:
 
 ```typescript
 // agents/may/handlers/metric-alert-router.ts
-import type { CronEntry, EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  CronEntry,
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  entry: CronEntry,
+) => {
   return async (event?: EventEnvelope) => {
     const sdk = ctx.sdk;
-    await sdk.runWorkflow("some-workflow", "task/context from event", { source: entry.name });
+    await sdk.runWorkflow("some-workflow", "task/context from event", {
+      source: entry.name,
+    });
     sdk.log("info", "done");
   };
 };
@@ -87,16 +97,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 A handler belongs to the trigger entry that registers it. In practice, that means
 it is scoped by the `cron.json` file it sits beside:
 
-| Scope | Trigger file | Named handler file | Use for |
-|-------|--------------|--------------------|---------|
-| Agent-owned | `agents/<agent>/cron.json` | `agents/<agent>/handlers/<name>.ts` | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
-| Project-owned (V3) | `projects/<project>.app/agents/<agent>/cron.json` | `projects/<project>.app/agents/<agent>/handlers/<name>.ts` | Automation inside a V3 sibling-app project boundary |
-| Project-owned (V2) | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Legacy V2 embedded-app projects (backward compat) |
+| Scope              | Trigger file                                       | Named handler file                                          | Use for                                                                                  |
+| ------------------ | -------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Agent-owned        | `agents/<agent>/cron.json`                         | `agents/<agent>/handlers/<name>.ts`                         | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
+| Project-owned (V2) | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Legacy V2 embedded-app projects (backward compat)                                        |
 
-The runtime's agent-discovery scans three project-agent locations:
-1. **V3 sibling app:** `projects/<project>.app/agents/` (preferred — e.g. `aks-rp-e2e.app/agents/aks-explorer/`)
-2. **V2 embedded app:** `projects/<project>/.app/agents/`
-3. **Flat:** `projects/<project>/agents/`
+V3 sibling apps do not use project-local `cron.json`. They declare schedules,
+workflow handlers, actions, and event adapter behavior in
+`projects/<project>.app/app.ts`. Their `agents/` folders are worker identities
+and owner-inference inputs, not trigger-definition roots.
+
+The runtime's legacy project-agent discovery still scans two project-agent
+locations for backward compatibility:
+
+1. **V2 embedded app:** `projects/<project>/.app/agents/`
+2. **Flat:** `projects/<project>/agents/`
 
 V3 is canonical for new and migrated projects. V2 paths remain for backward
 compatibility but should not be used in new projects (see `project-app-v3.md`).
@@ -165,8 +180,13 @@ facade lands:
 // agents/may/handlers/metrics-snapshot.ts
 export const create: HandlerModule["create"] = (ctx, entry) => {
   return async () => {
-    const count = ctx.sdk.query.sessions({ status: "error", windowMs: 3600000 }).length;
-    ctx.sdk.metrics.record("session.error-count", count, { measuredBy: entry.name });
+    const count = ctx.sdk.query.sessions({
+      status: "error",
+      windowMs: 3600000,
+    }).length;
+    ctx.sdk.metrics.record("session.error-count", count, {
+      measuredBy: entry.name,
+    });
   };
 };
 ```
@@ -195,14 +215,14 @@ handler.skipped              (handler declined to run — dedup, no-op, classifi
 handler.routed               (rare — handler forwarded to another handler)
 ```
 
-| Event | Typical 24h volume | Purpose |
-|-------|-------------------|---------|
-| `handler.started` | ~5000 | Handler fire began |
-| `handler.completed` | ~5000 | Handler fire finished successfully |
-| `handler.skipped` | ~1400 | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
-| `handler.workflow_dispatched` | ~2600 | Workflow-backed handler dispatched an agent session |
-| `handler.failed` | ~40 | Handler fire threw an error (dominated by task-execution-worker timeouts) |
-| `handler.routed` | ~2 | Handler forwarded work to another handler |
+| Event                         | Typical 24h volume | Purpose                                                                                                                                                           |
+| ----------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handler.started`             | ~5000              | Handler fire began                                                                                                                                                |
+| `handler.completed`           | ~5000              | Handler fire finished successfully                                                                                                                                |
+| `handler.skipped`             | ~1400              | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
+| `handler.workflow_dispatched` | ~2600              | Workflow-backed handler dispatched an agent session                                                                                                               |
+| `handler.failed`              | ~40                | Handler fire threw an error (dominated by task-execution-worker timeouts)                                                                                         |
+| `handler.routed`              | ~2                 | Handler forwarded work to another handler                                                                                                                         |
 
 The `handler.skipped` events are significant — roughly 28% of handler starts
 result in a skip. This is healthy behavior (handlers checking preconditions and
@@ -217,6 +237,7 @@ These events drive the `handler.success-rate`, `handler.fires-per-hour`, and
 ## Auto-Heartbeat
 
 Agents with heartbeat workflows get auto-generated trigger entries:
+
 - Hash-based offset (spreads heartbeats evenly)
 - 30-minute default interval
 - Opt-out: `"heartbeat": false` in agent.json

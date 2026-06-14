@@ -2,9 +2,13 @@
   "id": "scout-knowledge-lib",
   "owner": "scout",
   "status": "active",
+  "type": "project-app",
+  "priority": "P2",
   "domainProject": {
+    "id": "scout-knowledge-lib",
     "path": "../scout-knowledge-lib"
   },
   "goal": "Maintain Scout's source-grounded knowledge library as a project workspace: reduce duplicate notes, keep the index useful, improve reusable synthesis, and make library maintenance explicit outside Scout heartbeat.",
+  "taskIndex": ["tasks/tree.json"],
   "createdAt": "2026-06-12T16:00:00.000Z"
 }

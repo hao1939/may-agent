@@ -1,8 +1,9 @@
-import type { ProjectApp, ProjectAppContext } from "./types/project-app.ts";
-
-function defineProjectApp(app: ProjectApp): ProjectApp {
-  return app;
-}
+import {
+  defineProjectApp,
+  eventDetails,
+  projectPlanningEvent as sdkProjectPlanningEvent,
+  type ProjectAppContext,
+} from "@may-agent/sdk";
 
 const projectId = "scout-knowledge-lib";
 const appTaskContext =
@@ -20,37 +21,7 @@ function projectPlanningEvent(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return {
-    type: "project.planning.requested",
-    project: projectId,
-    reason,
-    params: params && typeof params === "object" ? params : {},
-  };
-}
-
-function eventData(event: Record<string, unknown>): Record<string, unknown> {
-  const merged: Record<string, unknown> = {};
-  for (const key of ["data", "payload", "params"]) {
-    const value = event[key];
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      Object.assign(merged, value);
-    }
-  }
-  return merged;
-}
-
-function eventDetails(event: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...eventData(event),
-    ...Object.fromEntries(
-      Object.entries(event).filter(
-        ([key, value]) =>
-          !["data", "payload", "params"].includes(key) &&
-          value !== undefined &&
-          typeof value !== "function",
-      ),
-    ),
-  };
+  return sdkProjectPlanningEvent(projectId, reason, params);
 }
 
 async function routeScoutKnowledgeEvent(
@@ -83,9 +54,7 @@ async function routeScoutKnowledgeEvent(
   }
 
   if (event.type === "project.planning.requested") {
-    return ctx.noop(
-      "handled by scout-knowledge-lib-planner workflow handler",
-    );
+    return ctx.noop("handled by scout-knowledge-lib-planner workflow handler");
   }
 
   if (event.type === "project.knowledge.maintained") {

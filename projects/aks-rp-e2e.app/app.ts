@@ -1,8 +1,11 @@
-import type { ProjectApp, ProjectAppContext } from "./types/project-app.ts";
-
-function defineProjectApp(app: ProjectApp): ProjectApp {
-  return app;
-}
+import {
+  defineProjectApp,
+  eventData,
+  eventDetails,
+  eventString,
+  projectPlanningEvent as sdkProjectPlanningEvent,
+  type ProjectAppContext,
+} from "@may-agent/sdk";
 
 const projectId = "aks-rp-e2e";
 const projectAppPath = "projects/aks-rp-e2e.app";
@@ -40,48 +43,12 @@ function projectPlanningEvent(
   reason: string,
   params: unknown = {},
 ): Record<string, unknown> {
-  return {
-    type: "project.planning.requested",
-    project: projectId,
-    reason,
-    params: {
-      maxConcurrent: 5,
-      ...(params && typeof params === "object" && !Array.isArray(params)
-        ? (params as Record<string, unknown>)
-        : {}),
-    },
-  };
-}
-
-function eventData(event: Record<string, unknown>): Record<string, unknown> {
-  const merged: Record<string, unknown> = {};
-  for (const key of ["data", "payload", "params"]) {
-    const value = event[key];
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      Object.assign(merged, value);
-    }
-  }
-  return merged;
-}
-
-function eventString(event: Record<string, unknown>, key: string): string {
-  const data = eventData(event);
-  const value = data[key] ?? event[key];
-  return typeof value === "string" ? value : "";
-}
-
-function eventDetails(event: Record<string, unknown>): Record<string, unknown> {
-  return {
-    ...eventData(event),
-    ...Object.fromEntries(
-      Object.entries(event).filter(
-        ([key, value]) =>
-          !["data", "payload", "params"].includes(key) &&
-          value !== undefined &&
-          typeof value !== "function",
-      ),
-    ),
-  };
+  return sdkProjectPlanningEvent(projectId, reason, {
+    maxConcurrent: 5,
+    ...(params && typeof params === "object" && !Array.isArray(params)
+      ? (params as Record<string, unknown>)
+      : {}),
+  });
 }
 
 function problemKeyForTask(taskId: string): string {

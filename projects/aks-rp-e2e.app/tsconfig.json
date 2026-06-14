@@ -1,7 +1,12 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
+    }
   },
   "include": [
     "app.ts",

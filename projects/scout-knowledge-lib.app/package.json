@@ -8,8 +8,8 @@
     "check": "bun run syntax && bun run typecheck && bun run format:check",
     "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/knowledge-planner.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "format": "bun x prettier --write .",
-    "format:check": "bun x prettier --check ."
+    "format": "bun x prettier --write app.ts types/**/*.ts package.json project.json tsconfig.json workflows/**/*.ts",
+    "format:check": "bun x prettier --check app.ts types/**/*.ts package.json project.json tsconfig.json workflows/**/*.ts"
   },
   "dependencies": {
     "@may-agent/sdk": "file:../may-agent/packages/sdk"

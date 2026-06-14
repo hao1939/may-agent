@@ -29,6 +29,19 @@ type WatchdogConfig = {
   maxConcurrent: number;
 };
 
+type ActiveTaskSnapshot = {
+  taskId: string;
+  sessionId?: string;
+};
+
+type WatchdogTreeSnapshot = {
+  readyTaskIds: string[];
+  activeTasks: ActiveTaskSnapshot[];
+  activeCount: number;
+  hasOpenWork: boolean;
+  needsRefill: boolean;
+};
+
 function parseInput(raw: string, defaultAgent: string): WatchdogConfig {
   const projectDir = field(raw, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(raw, "app"));
@@ -76,6 +89,18 @@ function activeLeaves(tree: TaskTree): Array<TaskTree["tasks"][string]> {
   );
 }
 
+function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
+  return activeLeaves(tree)
+    .map((task) => ({
+      taskId: task.id,
+      sessionId:
+        typeof task.session_id === "string" && task.session_id.trim()
+          ? task.session_id.trim()
+          : undefined,
+    }))
+    .sort((a, b) => a.taskId.localeCompare(b.taskId));
+}
+
 function hasOpenWork(tree: TaskTree): boolean {
   return Object.values(tree.tasks).some(
     (task) => !["accepted", "superseded"].includes(task.status),
@@ -110,22 +135,22 @@ function sessionIsRunning(dbPath: string, sessionId: string): boolean {
 
 function activeTaskRestartReason(
   config: WatchdogConfig,
-  task: TaskTree["tasks"][string],
+  task: ActiveTaskSnapshot,
 ): string | null {
-  if (!task.session_id) return "missing-session";
-  if (!sessionIsRunning(config.stateDbPath, task.session_id))
+  if (!task.sessionId) return "missing-session";
+  if (!sessionIsRunning(config.stateDbPath, task.sessionId))
     return "session-not-running";
   return null;
 }
 
 function staleActiveTasks(
   config: WatchdogConfig,
-  tree: TaskTree,
+  tasks: ActiveTaskSnapshot[],
 ): Array<{ taskId: string; reason: string }> {
   const stale: Array<{ taskId: string; reason: string }> = [];
-  for (const task of activeLeaves(tree)) {
+  for (const task of tasks) {
     const reason = activeTaskRestartReason(config, task);
-    if (reason) stale.push({ taskId: task.id, reason });
+    if (reason) stale.push({ taskId: task.taskId, reason });
   }
   return stale.sort((a, b) => a.taskId.localeCompare(b.taskId));
 }
@@ -152,22 +177,31 @@ function emitPlanningRequested(
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const config = parseInput(ctx.task, ctx.agent);
   const sharedConfig = buildTaskTreeConfig(config);
-  const recovery = withTreeLock(sharedConfig, () => {
-    const tree = readTree(config.treePath);
-    if (!tree) return null;
+  const snapshot: WatchdogTreeSnapshot | null = withTreeLock(
+    sharedConfig,
+    () => {
+      const tree = readTree(config.treePath);
+      if (!tree) return null;
+      const activeTasks = activeTaskSnapshots(tree);
 
-    return {
-      readyTaskIds: readyLeaves(tree)
-        .map((task) => task.id)
-        .sort(),
-      staleActiveTasks: staleActiveTasks(config, tree),
-      activeCount: activeLeaves(tree).length,
-      hasOpenWork: hasOpenWork(tree),
-      needsRefill: activeProjectNeedsRefill(tree),
-    };
-  });
-  if (!recovery)
+      return {
+        readyTaskIds: readyLeaves(tree)
+          .map((task) => task.id)
+          .sort(),
+        activeTasks,
+        activeCount: activeTasks.length,
+        hasOpenWork: hasOpenWork(tree),
+        needsRefill: activeProjectNeedsRefill(tree),
+      };
+    },
+  );
+  if (!snapshot)
     return ctx.done("Watchdog skipped: task tree does not exist yet.");
+
+  const recovery = {
+    ...snapshot,
+    staleActiveTasks: staleActiveTasks(config, snapshot.activeTasks),
+  };
 
   if (recovery.staleActiveTasks.length > 0) {
     const reason = "watchdog-stale-active-review";

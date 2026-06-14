@@ -441,6 +441,76 @@ describe("project planner", () => {
     expect(plannerRuns).toContain('"ran_agent":false');
   });
 
+  test("deterministically refills routine watchdog gaps without owner session", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(projectDir, "specs", "feature-a-create.json"),
+      "{}\n",
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "replays", "feature-a-create.ts"),
+      "export {};\n",
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 2",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.planning.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-open-work-reconcile",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("deterministic-refill seeded 1 task");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(1);
+    expect(dispatched[0].type).toBe("project.task.assigned");
+    expect(String(dispatched[0].payload.taskId)).toContain(
+      "feature-a-staging-frontier",
+    );
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["deterministic-refill"]');
+    expect(plannerRuns).toContain('"ran_agent":false');
+    expect(plannerRuns).toContain(
+      '"routine-refill:watchdog-open-work-reconcile"',
+    );
+  });
+
   test("requeues watchdog-stale active work before quick refill", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(

@@ -1,0 +1,13 @@
+{
+  "id": "evaluation",
+  "type": "project-app",
+  "owner": "evaluator",
+  "status": "active",
+  "priority": "P0",
+  "domainProject": {
+    "id": "evaluation",
+    "path": "."
+  },
+  "goal": "Evaluate May-agent session quality, calibrate criteria, detect drift, patrol integrity, and extract reusable strategies.",
+  "taskIndex": ["tasks/tree.json"]
+}

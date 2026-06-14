@@ -51,6 +51,11 @@ export type TaskTreeConfig = {
   maxConcurrent: number;
 };
 
+function timeoutFromEnv(name: string, fallbackMs: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallbackMs;
+}
+
 export function taskEventSnapshot(task: TaskNode): Record<string, unknown> {
   const trace =
     task.trace && typeof task.trace === "object" && !Array.isArray(task.trace)
@@ -99,14 +104,16 @@ function ensureDir(path: string): void {
 
 export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
   const lockPath = `${config.treePath}.lock`;
-  const deadline = Date.now() + 5_000;
+  const waitMs = timeoutFromEnv("AKS_RP_E2E_TREE_LOCK_WAIT_MS", 30_000);
+  const staleMs = timeoutFromEnv("AKS_RP_E2E_TREE_LOCK_STALE_MS", 2 * 60_000);
+  const deadline = Date.now() + waitMs;
   while (true) {
     try {
       mkdirSync(lockPath);
       break;
     } catch {
       try {
-        if (Date.now() - statSync(lockPath).mtimeMs > 10 * 60_000) {
+        if (Date.now() - statSync(lockPath).mtimeMs > staleMs) {
           rmSync(lockPath, { recursive: true, force: true });
           continue;
         }

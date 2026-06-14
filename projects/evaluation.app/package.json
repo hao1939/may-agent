@@ -1,0 +1,23 @@
+{
+  "name": "@may-agent/evaluation-app",
+  "private": true,
+  "type": "module",
+  "description": "May-agent project app for session evaluation, criteria calibration, drift detection, and strategy learning.",
+  "scripts": {
+    "bundle": "rm -rf .state/bundle && bun build ./app.ts ./workflows/evaluator-aftermath.ts ./workflows/evaluator-heartbeat.ts ./workflows/evaluator-deep-eval.ts --target=bun --format=esm --outdir .state/bundle --external @may-agent/sdk",
+    "check": "bun run syntax && bun run typecheck && bun run format:check",
+    "syntax": "rm -rf .state/syntax-check && bun build ./app.ts ./workflows/evaluator-aftermath.ts ./workflows/evaluator-heartbeat.ts ./workflows/evaluator-deep-eval.ts --target=bun --format=esm --outdir .state/syntax-check --external @may-agent/sdk && rm -rf .state/syntax-check",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "bun x prettier --write app.ts package.json project.json tsconfig.json workflows/**/*.ts",
+    "format:check": "bun x prettier --check app.ts package.json project.json tsconfig.json workflows/**/*.ts"
+  },
+  "dependencies": {
+    "@may-agent/sdk": "file:../may-agent/packages/sdk"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "bun-types": "^1.3.14",
+    "prettier": "^3.8.4",
+    "typescript": "^5.7.3"
+  }
+}
