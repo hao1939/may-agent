@@ -123,10 +123,30 @@ function scanProjectDir(projectsDir: string, relPrefix: string, seen: Set<string
     );
     for (const projDir of projectDirs) {
       if (seen.has(projDir)) continue;
-      const projectFile = join(projectsDir, projDir, "project.md");
-      if (!existsSync(projectFile)) continue;
+      // Accept both project.md (legacy) and project.json (v3 apps)
+      let projectFile = join(projectsDir, projDir, "project.md");
       let content: string;
-      try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
+      if (existsSync(projectFile)) {
+        try { content = readFileSync(projectFile, "utf-8"); } catch { continue; }
+      } else {
+        const jsonFile = join(projectsDir, projDir, "project.json");
+        if (!existsSync(jsonFile)) continue;
+        try {
+          const jsonContent = JSON.parse(readFileSync(jsonFile, "utf-8"));
+          // Synthesize project.md-compatible content from project.json
+          const frontmatter = [
+            "---",
+            `id: ${jsonContent.id || projDir}`,
+            `owner: ${jsonContent.owner || "unknown"}`,
+            `status: ${jsonContent.status || "active"}`,
+            `type: ${jsonContent.type || "milestone"}`,
+            `priority: ${jsonContent.priority || "P2"}`,
+            "---",
+          ].join("\n");
+          content = `${frontmatter}\n\n# ${jsonContent.goal || projDir}\n\n## Goal\n${jsonContent.goal || ""}\n`;
+          projectFile = jsonFile;
+        } catch { continue; }
+      }
       const meta = parseProjectMeta(content);
       const formatErrors = validateProjectFormat(content, projDir);
       const status = meta.status?.toLowerCase() || "active";
@@ -401,7 +421,7 @@ export function pruneMissingProjectCache(db: any, root: string, projects: Projec
     ).all() as Array<{ id: string; path: string }>;
     for (const row of rows) {
       if (livePaths.has(row.path)) continue;
-      if (existsSync(join(root, row.path, "project.md"))) continue;
+      if (existsSync(join(root, row.path, "project.md")) || existsSync(join(root, row.path, "project.json"))) continue;
       db.run("DELETE FROM projects WHERE id = ?", [row.id]);
       deleted += 1;
     }
