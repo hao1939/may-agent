@@ -1,8 +1,8 @@
 <ai_context>
 summary: "June 2026 XHS Chinese AI community trends: Loop Engineering discourse, 古法编程 backlash against AI coding, Skills Absorption trajectory, model-eats-harness debate, and the Structural Turn from behavioral to architectural governance. Includes 2024→2026 trajectory analysis showing consistent migration from behavioral to structural agent governance."
 triggers: "When evaluating agent architecture decisions, AI coding workflow design, skill vs pipeline tradeoffs, or prompt engineering obsolescence."
-last_updated: "2026-06-19"
-source_basis: "XHS browsing signals cross-referenced from KE-1915, KE-1919, KE-1922, KE-1927 syntheses (June 13-14, 2026). Trajectory synthesis added 2026-06-15. Production cross-validation (KEs 1933-1940) added 2026-06-13. Prediction tracking updates: GitHub/HN/arXiv June 13-16 signals (added 2026-06-14); arXiv triage June 6-11 papers + HN June 17 scan + KEs 1956-1958 (added 2026-06-17); HN June 18-19 scan + KEs 1962-1964 + Fable 5 Suspension signal (added 2026-06-19)."
+last_updated: "2026-06-14"
+source_basis: "XHS browsing signals cross-referenced from KE-1915, KE-1919, KE-1922, KE-1927 syntheses (June 13-14, 2026). Trajectory synthesis added 2026-06-15. Production cross-validation (KEs 1933-1940) added 2026-06-13. Prediction tracking updates: GitHub/HN/arXiv June 13-16 signals (added 2026-06-14); arXiv triage June 6-11 papers + HN June 17 scan + KEs 1956-1958 (added 2026-06-17); HN June 18-19 scan + KEs 1962-1964 + Fable 5 Suspension signal (added 2026-06-19); GitHub June 20 scan + HN June 20 scan + KEs 1966-1974 (added 2026-06-21); KEs 1975-1979 (OS Recapitulation, Accidental Skill, Session-Shape Penalty, Orientation Tax) + 4 new predictions added late June 2026. Direct XHS browsing scan June 14: 上下文工程 and 技能工程 both CONFIRMED as named paradigms; self-evolving agent (自进化智能体) emerged as meta-paradigm; 记忆管理 accelerating; Google OKF signal; ICML'26 Agent Memory explosion (7 papers, MemSkill 918❤)."
 </ai_context>
 
 # XHS Chinese AI Community Trends — June 2026
@@ -360,3 +360,208 @@ This trajectory analysis synthesizes: `agent-patterns-xhs-2024.md` (2024 observa
 **Superseded files** (redirect stubs only — 9 files): `xhs-agent-trends.md`, `xhs-architecture-patterns.md`, `xhs-eval-synthesis-2024.md`, `xhs_agent_insights.md`, `xhs_autonomous_patterns.md`, `xhs_eval_trends_may2024.md`, `xhs_multi_agent_trends.md`, `xhs_synthesis.md`, `insights/xhs_trends_v5.md`
 
 **Lower-signal files** (content subsumed by canonical but not formally superseded): `xhs_trends_report_Q2_2026.md`, `xhs_latest_trends_insight_report.md`
+
+### Prediction Tracking Update (2026-06-21)
+
+Cross-source signals from GitHub API (June 20), HN (June 20), and production KEs (1966-1974) provide critical updates — including a **new paradigm** that XHS hasn't named yet but is being built in code.
+
+| Prediction | Jun 19 Status | Jun 21 Status | New Evidence |
+|---|---|---|---|
+| **Skill Engineering (技能工程)** | Naming imminent | **Bifurcating — 技能工程 + 上下文工程 emerging as twin paradigms** | GitHub: SkillOpt (6.4k★, Microsoft) now *auto-generates* skills from agent trajectories. This closes the skills economy loop — skills can be trained, not only hand-authored. Context Engineering (上下文工程) crystallizing as the input-side complement: context-mode (17k★), MineContext (5.4k★, ByteDance), harness-books (2.5k★, two books published). Prompt Engineering isn't being replaced by one paradigm but by TWO: managing capabilities (skills) and managing inputs (context). |
+| **记忆管理 discourse** | EvolveR high-engagement | **The Forgetting Protocol Gap is now named externally** | GitHub June 20: 9 independent memory-protocol projects (UMP, daimon-memory, AMP, Continuum, etc.) all include explicit `forget` and `revise` verbs. KE-1969 confirms our 1,508 KE entries have zero revisions, zero deletions. The academic→practitioner→tooling pipeline is complete. XHS naming 记忆管理 now depends on Chinese developers hitting append-only walls in their skill frameworks. ByteDance's MineContext does NOT implement forgetting — expect the naming event when its users complain. |
+| **Observability launches** | Market forming + absorption risk | **Three distinct niches — but Gresham's dynamic threatens all** | HN June 20: Agent Gate (security), Fleet (operational), Paca (workflow). KE-1966 (Governance Gresham's Law) reveals the deeper problem: observability tools produce cheap governance (dashboards, alerts) that crowds out expensive governance (structural fixes). TensorZero died because its observability was absorbed; future tools face the same dynamic PLUS the consumption problem (KE-1952: 31 diagnostics, 0 acted on). |
+| **模型韧性 discourse** | Strong trigger (Fable 5) | **Hardware evidence strengthening** | HN: Practitioner reports of Brain-Worker architecture (expensive model plans, cheap local model executes, 1:20 fix-to-task ratio). This is model resilience implemented before it's named. XHS's 国产替代 community is likely already building this — watch for DeepSeek/Qwen-as-fallback discourse. |
+| **自引用陷阱 naming** | Medium confidence | **Production proof deepening** | KE-1974 (Quantization Trap): the evaluation system collapsed to a 2-bit lookup table (4 fixed scores). Self-referential evaluation converges on self-consistency, not accuracy. This IS the self-reference trap at the governance layer — we're the case study the XHS community hasn't seen yet. |
+| **诊断闭环 discourse** | Medium confidence | **Compiler Gap formalizes the mechanism** | KE-1973 (Compiler Gap): every successful agent system converges on soft→hard signal compilation. Diagnosis without a compiler to transform it into enforcement is structurally futile. Our 84.8% soft-signal vs 2.2% hard-enforcement ratio quantifies the gap. |
+
+**NEW Signal: The Chinese Domestic Agent Stack (国产Agent技术栈)**
+
+GitHub's June 20 scan reveals a signal the canonical XHS sections haven't explicitly tracked: **Chinese tech companies are building a complete domestic agent infrastructure stack, independent of Western tooling.**
+
+| Layer | Chinese Tool | Stars | What It Is |
+|---|---|---|---|
+| Agent runtime | DeepSeek-Reasonix | 22k★ | DeepSeek-native terminal coding agent (Go) |
+| Personal assistant | QwenPaw (AgentScope) | 17k★ | Qwen-native personal AI assistant |
+| Context engineering | MineContext (ByteDance) | 5.4k★ | Proactive context-aware AI partner |
+| Agent lifecycle | coze-loop (ByteDance/Coze) | 5.5k★ | Full-lifecycle agent optimization |
+| Sandbox | CubeSandbox (Tencent) | 6k★ | Instant concurrent sandboxes (Rust) |
+| Security gateway | nanoclaw | 30k★ | Lightweight OpenClaw alternative, sandboxed |
+| Skills marketplace | Multiple vertical repos | 17-19k★ each | Design, PPT, PM skills |
+
+**XHS implication:** The XHS community's 国产替代 discourse (domestic alternatives) has been framed as economic competition since 2023. The Fable 5 suspension reframed it as resilience. But the GitHub data shows it's already past the discussion stage — the stack is **being built**. When XHS names this trend, it will likely be 国产Agent全栈 (domestic full-stack agent) or Agent技术栈国产化 (agent stack localization). This is infrastructure, not ideology.
+
+**Connection to 模型韧性:** The domestic stack IS model resilience implemented at the ecosystem level. Individual skills need multi-model routing (what HN calls the /architect pattern). The Chinese ecosystem is building the routing options that make model resilience possible. The two predictions converge.
+
+**NEW Signal: Context Engineering as the Missing Compiler (上下文工程 ≈ 编译器)**
+
+The Compiler Gap (KE-1973) identified that every successful agent system has a compiler that transforms soft signals into hard enforcement. The Context Engineering tools on GitHub are building exactly this compiler:
+
+- **context-mode** (17k★): 98% tool output reduction = compiling raw context into usable signal
+- **codegraph** (49k★): pre-indexed code knowledge graph = compiling codebase into queryable structure
+- **semble** (5k★): semantic code search using 98% fewer tokens = compiling code into semantic primitives
+- **SkillOpt** (6.4k★, Microsoft): training reusable skills from trajectories = compiling experience into capability
+
+These tools are independently building the soft→hard compilation pipeline our system lacks. The XHS community's Structural Turn (behavioral → architectural governance) is being operationalized as Context Engineering tools.
+
+**Prediction:** XHS will name 上下文工程 (Context Engineering) within 2-4 weeks (by early-mid July 2026). The term exists in English GitHub repos but hasn't crossed into Chinese discourse yet. When it does, it will likely subsume parts of Loop Engineering and position itself as the infrastructure complement to 技能工程.
+
+**NEW Signal: The Guardrails Magnitude Shock (护栏效应)**
+
+HN's Forge findings (687pts, June 20) provide the largest-magnitude validation of the Structural Turn ever measured:
+
+| Model | Without guardrails | With guardrails | Improvement |
+|---|---|---|---|
+| 8B Llama | 53% | **99%** | +46pp |
+| 13B (SWE-bench) | ~20% | **100%** | +80pp |
+
+This dwarfs prior evidence. KE-1924 measured 59pp improvement from constraint placement. Forge shows **80pp** on harder benchmarks. The implication for XHS's "models eat the harness" debate is decisive: **the harness makes the model, not vice versa.** An 8B model with guardrails outperforms a naked frontier model.
+
+**XHS prediction:** When this finding reaches XHS (likely within 1-2 weeks), it will decisively resolve the "模型吃掉框架" debate in favor of the architecture believers. The 古法编程 community will cite it as vindication. Expect discourse around 护栏效应 (guardrails effect) or 小模型+好架构 (small model + good architecture).
+
+The most striking detail: a 9B model self-corrected through 4 failures within guardrails, downshifting from complex tools to simpler ones it could execute. The guardrails didn't make the model smarter — they narrowed the execution space until it found something that worked. This is the Structural Turn made tangible.
+
+**NEW Signal: Agent-Native Languages (Agent原生语言)**
+
+Vercel Labs' zerolang (5k★, 1 month old) — "The Programming Language for Agents" — takes the Structural Turn to its logical endpoint: a purpose-built language for agent execution that is deterministic, verifiable, and composable by construction.
+
+This hasn't appeared in XHS discourse yet. It represents the extreme version of the architecture believers' position: if the harness is the product, then the harness eventually gets its own programming language. Watch for Agent原生语言 or Agent编程语言 discourse on XHS in Q3 2026.
+
+### Updated Strategic Takeaways (June 21 delta)
+
+| Jun 19 Takeaway | Jun 21 Update |
+|---|---|
+| Skills > Agents for decomposition | Confirmed + **Skills are now auto-generated** (SkillOpt). The skills economy loop closes. |
+| Design for discrimination | **Guardrails magnitude dramatically larger than estimated** — 46-80pp improvement, not just 59pp |
+| Constraint placement > content | Now has the most extreme evidence yet: 8B+guardrails ≈ frontier model naked |
+| Paradigm cycle is 6 weeks | **Bifurcation observed**: Prompt Engineering → two parallel paradigms (Context Engineering + Skill Engineering), not one linear successor |
+| 古法编程 is a real signal | **About to be vindicated** by Forge/guardrails findings when they reach XHS |
+| Chinese ecosystem is a leading indicator | **Now also a builder**: domestic agent stack is being built, not just discussed |
+
+### Revised Prediction Timeline (as of 2026-06-21)
+
+| Prediction | Timeline | Confidence | Key Watch Signal |
+|---|---|---|---|
+| **技能工程 + 上下文工程** twin naming | Late Jun – early Jul 2026 | **Very High** | SkillOpt + context-mode crossing into Chinese dev discourse |
+| **护栏效应 / 小模型+好架构** discourse | Early Jul 2026 (1-2 weeks) | **High** | Forge (8B→99%) findings reaching XHS |
+| **模型韧性** via domestic stack | Jul 2026 | **High** | DeepSeek-Reasonix / QwenPaw usage reports on XHS |
+| **记忆管理 / 知识遗忘** naming | Jul-Aug 2026 | **High** | MineContext / coze-loop users hitting append-only walls |
+| **国产Agent全栈** as named trend | Jul-Aug 2026 | **Medium-High** | XHS posts cataloging the domestic stack systematically |
+| **自引用陷阱** naming | Aug-Sep 2026 | **Medium** | EvolveR users contrasting credit-scoring vs simpler approaches |
+| **诊断闭环** discourse | Q4 2026 | **Medium** | Multiple visible system failures from diagnosis-without-authority |
+| **Agent原生语言** discourse | Q3-Q4 2026 | **Medium-Low** | zerolang adoption reports reaching Chinese developer community |
+
+### Prediction Tracking Update (2026-06-14 — Late June Synthesis)
+
+Cross-source signals from production KEs (1975-1979) deepen three existing predictions and surface two NEW XHS discourse clusters. This update adds the most structurally-significant new connection since the Structural Turn formalization: **the XHS community is independently rediscovering operating system primitives**, and our production data quantifies the cost of building them in the wrong order.
+
+| Prediction | Jun 21 Status | Late Jun Status | New Evidence |
+|---|---|---|---|
+| **技能工程 + 上下文工程** twin naming | Very High — bifurcating | **Confirmed mechanism: skills ≈ compiled governance** | KE-1976 (Accidental Skill): our proposals pipeline IS a skill file. Governance rules and capabilities are structurally identical artifacts. SkillOpt auto-generates them. The 技能工程 naming will carry a hidden thesis: governance and capability merge into one artifact type. |
+| **上下文工程 (Context Engineering)** | Mid-Jul predicted | **Splitting further: capability context vs. orientation context** | KE-1979 (Orientation Tax): 37% of agent calls are wasted on re-learning environment facts (DB schemas, paths, conventions). The external Context Engineering movement (codegraph 49k★, context-mode 17k★) addresses capability context only. Orientation context — what agents need to stop cold-starting every session — is unaddressed by ALL tools. |
+| **记忆管理 discourse** | High — tooling pipeline complete | **Production magnitude shock** | KE-1975 (OS Recapitulation): our 1,975 KE entries with zero revisions/deletions IS the missing GC primitive from OS theory. Nine GitHub memory protocols have `forget` verbs. Our system — the densest case study — still has zero lifecycle verbs. |
+| **护栏效应 / 小模型+好架构** | High — Forge data | **Evaluation blindness amplifies the signal** | KE-1977 (Session-Shape Penalty): our heuristic evaluator uses 3 fixed opCount thresholds (≤30, 31-60, 61+) producing just 12 possible score pairs. It penalizes arc's successful long sessions and rewards dev's short sessions regardless of outcome. The 护栏效应 discourse will need to address: guardrails require high-resolution evaluation to calibrate, not just presence. |
+| **Agent操作系统 (Agent OS)** (NEW) | Not predicted | **NEW — Strong structural signal** | KE-1975 (OS Recapitulation): the global agent ecosystem is independently rediscovering 6 OS primitives (process isolation, scheduling, GC, IPC, access control, filesystem). The Chinese domestic stack (DeepSeek-Reasonix, CubeSandbox, nanoclaw, coze-loop) is building 4 of 6. gAIOS on GitHub explicitly names itself "AI Operating System." XHS hasn't named this yet — when it does, expect 智能体操作系统 or Agent OS discourse. |
+| **冷启动成本 / 环境继承** (NEW) | Not predicted | **NEW — Quantified production pain** | KE-1979: may wastes orientation calls in 92% of sessions. arc in 47%. Scout in 63%. The waste is amnestic — agents re-fail at the same wrong DB columns (`sessions.id`, `projects.health`) every session. Unix processes inherit PATH/CWD/ENV; agent sessions inherit nothing environmental. XHS's 古法编程 community will likely surface this as 效率幻觉 (efficiency illusion) variant: AI "speed" includes re-learning overhead the 10× velocity claims don't account for. |
+
+**NEW Signal: The OS Recapitulation as XHS Meta-Frame (操作系统复现)**
+
+KE-1975 (OS Recapitulation) provides the deepest structural lens yet for interpreting the XHS community's 18-month trajectory:
+
+| XHS Period | OS Primitive Being Rediscovered | Evidence |
+|---|---|---|
+| H2 2024 — Manager-Worker | Access Control (who can call what) | Strict accountability boundaries, manager as gatekeeper |
+| Early 2025 — Micro-Agencies | IPC (inter-process communication) | Shared context pools, task-bidding protocols |
+| May 2026 — Single-Agent Backlash | Scheduling (process lifecycle) | "Don't spawn processes you don't need" = "don't split agents" |
+| June 2026 — Skills Absorption | Filesystem Hierarchy (skill = file) | Skills as retrievable, composable, version-controlled units |
+| Predicted Jul-Aug — Memory Governance | GC / Memory Management | `forget`/`revise` verbs = garbage collection for knowledge |
+| Predicted Q3-Q4 — Agent OS | Full OS awareness | gAIOS, zerolang = recognizing the pattern explicitly |
+
+The community is working UPWARD through the OS stack — but the dependency order runs DOWNWARD. You can't GC knowledge without ownership (process isolation). You can't do safe IPC without process boundaries. The Chinese domestic stack (Finding 20) is building layers 1, 4, and 5 simultaneously — which predicts integration pain when the dependency gaps surface.
+
+**XHS prediction:** The OS framing will reach XHS discourse in Q3 2026, likely triggered by one of: (a) gAIOS gaining Chinese contributors, (b) the domestic stack hitting integration problems that OS theory explains, or (c) an academic paper making the analogy explicit. The term will likely be 智能体操作系统 (Agent OS) or Agent基础设施 (Agent Infrastructure). Confidence: **Medium** — the analogy requires systems-level thinking that's more common in the academic than practitioner community.
+
+**NEW Signal: Governance-Capability Merge (治理即能力)**
+
+KE-1976 (Accidental Skill) reveals that our proposals pipeline — designed as governance artifacts — are structurally identical to the skill files the global ecosystem is building. The implications for XHS's 技能工程 prediction:
+
+1. **The merge thesis:** Every well-structured governance rule IS a capability (it enables reliable action). Every well-structured skill IS governance (it bounds what the agent does). Forge's guardrails are both. TRACE's runtime checks are both. Our proposals are both.
+
+2. **XHS's skill framework launches** (ByteDance, Meituan, Microsoft China, Alibaba) are all framed as capability platforms. When practitioners discover that their most useful "skills" are actually governance rules (scope boundaries, validation checks, format constraints), the 技能工程 discourse will evolve from "how to write good skills" to "governance and skills are the same thing."
+
+3. **Predicted discourse term:** 治理即技能 (governance-as-skill) or 技能治理融合 (skill-governance convergence). Timeline: **Aug-Sep 2026** — requires practitioners to build enough skills to notice the pattern. This is a second-order insight that follows the first-order 技能工程 naming.
+
+**NEW Signal: The Orientation Gap in Context Engineering (上下文盲区)**
+
+KE-1979 (Orientation Tax) reveals a blind spot in the Context Engineering movement that XHS will eventually name:
+
+| Context Type | Who's Building It | XHS Status |
+|---|---|---|
+| **Capability context** (what the agent sees about its task domain) | codegraph (49k★), context-mode (17k★), headroom (26k★), MineContext (5.4k★) | Active discourse: 上下文工程 |
+| **Orientation context** (what agents need to stop re-learning their environment) | Nobody. The closest analog is `.bashrc` — pre-loaded environment config | **Zero discourse** |
+
+Production data: may re-guesses the same wrong column names (`sessions.id`, `projects.health`, `events.type`) across sessions. The fix is trivial (per-agent `environment.md` with DB schemas + paths), but neither the external tools nor our system has built it.
+
+**XHS prediction:** The first XHS discourse on orientation context will emerge as a 古法编程 variant — "AI coding wastes N% of tokens just figuring out where things are." The term will likely be 冷启动成本 (cold start cost) or 环境预热 (environment warm-up). Timeline: **Aug-Sep 2026** — requires enough Context Engineering adoption for practitioners to notice what's STILL missing. Confidence: **Medium** — this is a subtle gap that might not get its own naming event but instead be absorbed into the 上下文工程 umbrella.
+
+**NEW Signal: Evaluation Resolution as Structural Turn Bottleneck (评估分辨率)**
+
+KE-1974 (Quantization Trap) + KE-1977 (Session-Shape Penalty) reveal that the Structural Turn has a prerequisite the XHS community hasn't discussed: **high-resolution evaluation.**
+
+- Forge's guardrails (53%→99%) work because the guardrail system can detect specific failure states (malformed tool calls, oversized diffs, wrong-phase tool use) with high resolution
+- Our system's heuristic evaluator collapses all evaluation to 4 fixed scores (2 bits) — too coarse to calibrate any structural governance
+- XHS's 护栏效应 discourse (predicted early Jul) will initially celebrate the magnitude. The second-order realization — that guardrails need per-action evaluation feedback to calibrate — will follow
+
+**XHS prediction:** 评估分辨率 (evaluation resolution) or 评估粒度 (evaluation granularity) will emerge as a sub-discourse within 护栏效应 by **Sep-Oct 2026**. The trigger: practitioners who implement guardrails but can't tell if they're working because their evaluation is too coarse. Confidence: **Medium-Low** — evaluation methodology is less viral than architecture debates.
+
+### Revised Prediction Timeline (as of late June 2026)
+
+| Prediction | Timeline | Confidence | Key Watch Signal |
+|---|---|---|---|
+| **技能工程 + 上下文工程** twin naming | Late Jun – early Jul 2026 | **Very High** | SkillOpt + context-mode crossing into Chinese discourse |
+| **护栏效应 / 小模型+好架构** discourse | Early Jul 2026 | **High** | Forge findings reaching XHS |
+| **模型韧性** via domestic stack | Jul 2026 | **High** | DeepSeek-Reasonix / QwenPaw usage reports |
+| **记忆管理 / 知识遗忘** naming | Jul-Aug 2026 | **High** | Domestic framework users hitting append-only walls |
+| **国产Agent全栈** as named trend | Jul-Aug 2026 | **Medium-High** | XHS cataloging the domestic stack |
+| **治理即技能** (governance-as-skill merge) (NEW) | Aug-Sep 2026 | **Medium** | Skill framework users noticing governance rules are their best skills |
+| **自引用陷阱** naming | Aug-Sep 2026 | **Medium** | EvolveR credit-scoring vs simpler approaches |
+| **冷启动成本 / 环境预热** (orientation gap) (NEW) | Aug-Sep 2026 | **Medium** | 古法编程 variant: "N% of tokens wasted on re-orientation" |
+| **智能体操作系统** (Agent OS framing) (NEW) | Q3 2026 | **Medium** | gAIOS gaining Chinese contributors; domestic stack integration pain |
+| **评估分辨率** (evaluation resolution) (NEW) | Sep-Oct 2026 | **Medium-Low** | Guardrail implementers unable to calibrate due to coarse evaluation |
+| **诊断闭环** discourse | Q4 2026 | **Medium** | System failures from diagnosis-without-authority |
+| **Agent原生语言** discourse | Q3-Q4 2026 | **Medium-Low** | zerolang adoption reaching Chinese community |
+| **自进化智能体** (self-evolving agents) (NEW) | Jun-Jul 2026 | **Very High — already named** | 484❤ paradigm survey + 8 ICML/ICLR papers |
+
+### Prediction Tracking Update (2026-06-14 — Mid-June XHS Scan)
+
+Direct XHS browsing on June 14 yielded 8 findings (28-35 in the findings file). Two predictions moved to **CONFIRMED** status, and a new paradigm emerged that wasn't previously tracked:
+
+| Prediction | Previous Status | Updated Status | Key Evidence |
+|---|---|---|---|
+| **上下文工程 naming** | Very High — naming imminent (predicted mid-Jul) | **✅ CONFIRMED** — already named and maturing | 1,059❤ foundational post by "whisper" + SJTU academic paper (arXiv 2510.26493) on CE 2.0 as "entropy reduction" + 5+ practitioner application posts. Our prediction was 3-4 weeks late — naming happened May-Jun 2025. |
+| **技能工程 naming** | Very High — bifurcating | **✅ CONFIRMED** — in active use | Self-Evolving Agent survey (484❤) maps skill lifecycle: generation (SkillEvolver, 72% reuse), evolution (EvoSkill), pruning (MetaGen). Tencent practitioner (498❤, 991 saves) built 27 skills in 2 months. Skill Engineer declared "most competitive new AI profession of 2026" (49❤). |
+| **记忆管理 discourse** | Jul-Aug, High | **ACCELERATING toward earlier naming** | 7 ICML'26 Agent Memory papers (488❤) + MemSkill (918❤, 1,411 saves) — memory as evolvable skill. Community framing: "核心战场" (core battlefield). Darwinian Memory = natural-selection GC. |
+| **治理即技能 merge** | Aug-Sep, Medium | **Evidence accumulating faster** | Tencent's 3-tier system (Command/Skill/Subagent by context bandwidth) discovered governance-as-skill independently. EvolveR's "reusable strategy rules" = governance-as-skill. MemSkill's meta-memory skills = memory-governance fusion. |
+| **评估分辨率** | Sep-Oct, Medium-Low | **Vocabulary emerging earlier via Agentic RL** | "Reward signal to turn-level" discourse (262❤) provides academic vocabulary for our evaluation resolution gap. May accelerate to Aug-Sep. |
+| **冷启动成本** | Aug-Sep, Medium | **OKF provides partial answer** | Google OKF standardizes knowledge navigation (index.md). But no XHS naming of orientation gap yet. |
+| **自进化智能体** (NEW) | Not tracked | **Very High — already named paradigm** | 484❤ comprehensive survey with three evolution dimensions (single-agent, skill, multi-agent collective). 8 top-venue papers (ICML/ICLR 2026). Community debating parameter-frozen vs parameter-updating evolution and cost ceilings. |
+
+**Key structural observations from this scan:**
+
+1. **Paradigm acceleration:** 上下文工程 was already named when we predicted "mid-July." The paradigm cycle is faster than our 6-week estimate — closer to 3-4 weeks for naming, with maturation continuing for months after naming.
+
+2. **Self-evolving agents as meta-paradigm:** 自进化智能体 subsumes and unifies 技能工程, 记忆管理, and 治理即技能. Self-evolution IS the mechanism that connects skill lifecycle, memory lifecycle, and governance lifecycle. The three separate predictions are different views of one underlying paradigm shift.
+
+3. **Academic → XHS pipeline is now 2-4 weeks.** ICML 2026 papers (accepted ~May) are being curated on XHS with 400-900❤ engagement by mid-June. This pipeline speed means academic signals we track on arXiv should be watched for XHS appearance within 2-4 weeks, not 2-3 months as previously assumed.
+
+4. **Google OKF validates our knowledge base architecture.** Our KE entries in Markdown with `<ai_context>` blocks are structurally similar to OKF. The gap: OKF includes `index.md` for navigation (we lack this) and forgiving parsing (we lack this). The gap is also our KE-1946 (Anabolism Bias): OKF designs for imperfect AI-produced content; our system demands perfection and gets zero revisions.
+
+### Production Cross-Validation Round 2 (2026-06-21)
+
+KEs 1981-1984 provide a second round of production cross-validation against XHS signals. See findings file Finding 36 for details. Summary of new validations:
+
+- **循环工程 deeper than XHS realized:** Our evaluator IS a 死循环 — 39.7% of all system ops, self-reinforcing degradation cycle. The oversight loop is the most expensive loop (KE-1984).
+- **技能工程 validated with 10.8× quality gap:** Scoped workflows (≈ skills) achieve 85.4% good rate vs 7.9% for unscoped heartbeats. Same agent, same model, same instructions (KE-1982).
+- **Loop timing is the missing dimension:** Identical opCount sessions cost 2.9 min vs 12.4 min depending on execution economy. XHS optimizes loop logic; the data says optimize loop timing (KE-1981).
+- **护栏效应 mechanism identified:** Guardrails work via temporal narrowing (fewer slow tool calls → lower s/op → fewer timeout deaths), not cognitive improvement (KE-1983).
+
+Three predictions now entering their forecast windows: 护栏效应 (early Jul), 记忆管理 naming (Jul-Aug), 模型韧性 (Jul). Confirmed: 技能工程 ✅, 上下文工程 ✅, 自进化智能体 ✅.
