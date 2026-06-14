@@ -100,7 +100,7 @@ it is scoped by the `cron.json` file it sits beside:
 | Scope              | Trigger file                                       | Named handler file                                          | Use for                                                                                  |
 | ------------------ | -------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Agent-owned        | `agents/<agent>/cron.json`                         | `agents/<agent>/handlers/<name>.ts`                         | Agent/system duties such as May project reconciliation, evaluator scans, metric handling |
-| Project-owned (V2) | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Legacy V2 embedded-app projects (backward compat)                                        |
+| Legacy embedded app | `projects/<project>/.app/agents/<agent>/cron.json` | `projects/<project>/.app/agents/<agent>/handlers/<name>.ts` | Backward-compatible embedded project apps                                                |
 
 V3 sibling apps do not use project-local `cron.json`. They declare schedules,
 workflow handlers, actions, and event adapter behavior in
@@ -110,10 +110,10 @@ and owner-inference inputs, not trigger-definition roots.
 The runtime's legacy project-agent discovery still scans two project-agent
 locations for backward compatibility:
 
-1. **V2 embedded app:** `projects/<project>/.app/agents/`
+1. **Legacy embedded app:** `projects/<project>/.app/agents/`
 2. **Flat:** `projects/<project>/agents/`
 
-V3 is canonical for new and migrated projects. V2 paths remain for backward
+V3 is canonical for new and migrated projects. Legacy paths remain for backward
 compatibility but should not be used in new projects (see `project-app-v3.md`).
 
 Project-wide platform behavior, such as reconciling all projects or routing
@@ -205,8 +205,7 @@ manifest watcher or explicit runtime reload.
 
 ## Handler Lifecycle Events
 
-Every handler fire emits lifecycle events. The full set observed in production
-(24h sample, last updated 2026-06-13):
+Every handler fire emits lifecycle events:
 
 ```
 handler.started              → handler.completed | handler.failed
@@ -215,21 +214,24 @@ handler.skipped              (handler declined to run — dedup, no-op, classifi
 handler.routed               (rare — handler forwarded to another handler)
 ```
 
-| Event                         | Typical 24h volume | Purpose                                                                                                                                                           |
-| ----------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `handler.started`             | ~5000              | Handler fire began                                                                                                                                                |
-| `handler.completed`           | ~5000              | Handler fire finished successfully                                                                                                                                |
-| `handler.skipped`             | ~1400              | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
-| `handler.workflow_dispatched` | ~2600              | Workflow-backed handler dispatched an agent session                                                                                                               |
-| `handler.failed`              | ~40                | Handler fire threw an error (dominated by task-execution-worker timeouts)                                                                                         |
-| `handler.routed`              | ~2                 | Handler forwarded work to another handler                                                                                                                         |
+| Event                         | Purpose                                                                                                                                                           |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handler.started`             | Handler fire began                                                                                                                                                |
+| `handler.completed`           | Handler fire finished successfully                                                                                                                                |
+| `handler.skipped`             | Handler decided no action needed (e.g., session-recovery skipping non-recoverable events, classifier chose nothing, metric auto-handler already covers the alert) |
+| `handler.workflow_dispatched` | Workflow-backed handler dispatched an agent session                                                                                                               |
+| `handler.failed`              | Handler fire threw an error (dominated by task-execution-worker timeouts)                                                                                         |
+| `handler.routed`              | Handler forwarded work to another handler                                                                                                                         |
 
-The `handler.skipped` events are significant — roughly 28% of handler starts
-result in a skip. This is healthy behavior (handlers checking preconditions and
-bailing early), not waste. Top skip reasons include: session-recovery filtering
-non-recoverable events, classifiers choosing no action, and metric auto-handlers
-already covering an alert. The skip rate has increased from ~20% (2026-06-10) as
-the project execution engine's dedup and precondition checks have broadened.
+**Relative frequency (structural, not pinned to a date):** `started` ≈ `completed` ≫ `workflow_dispatched` > `skipped` ≫ `failed` ≈ `routed`. The skip rate (skipped/started) has grown with the project execution engine's dedup and precondition checks; as of mid-June 2026 it is 30–40%. This is healthy behavior (handlers checking preconditions and bailing early), not waste. For current counts, query:
+
+```sql
+SELECT event_type, COUNT(*) AS c
+FROM events
+WHERE event_type LIKE 'handler.%'
+  AND timestamp > strftime('%s','now')*1000 - 86400000
+GROUP BY event_type ORDER BY c DESC;
+```
 
 These events drive the `handler.success-rate`, `handler.fires-per-hour`, and
 `handler.p95-duration` metrics.
