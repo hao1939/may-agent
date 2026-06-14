@@ -67,18 +67,38 @@ export function buildTelegramReplyRoute(opts: {
   };
 }
 
+function readStoredConversation(data: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!data) return null;
+  const conversation = objectOrNull(data.conversation);
+  const conversationId =
+    stringOrNull(data.conversationId) ?? stringOrNull(conversation?.conversationId) ?? stringOrNull(conversation?.id);
+  if (!conversationId) return null;
+  return {
+    conversationId,
+    originalIssue: objectOrNull(conversation?.originalIssue) ?? objectOrNull(data.originalIssue) ?? undefined,
+    lastHandledBy: objectOrNull(conversation?.lastHandledBy) ?? objectOrNull(data.lastHandledBy) ?? undefined,
+  };
+}
+
+function objectOrNull(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 export function normalizeProjectPath(value: unknown, projectRoot: string): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
-  let path = value.trim()
+  let path = value
+    .trim()
     .replace(/^\/app\//, "")
     .replace(new RegExp(`^${escapeRegExp(projectRoot)}/`), "")
     .replace(/^\.?\//, "")
     .replace(/\/project\.md$/, "")
     .replace(/[),.;:]+$/, "")
     .replace(/\/$/, "");
-  path = path
-    .replace(/^agents\/shared\/projects\//, "projects/")
-    .replace(/^shared\/projects\//, "projects/");
+  path = path.replace(/^agents\/shared\/projects\//, "projects/").replace(/^shared\/projects\//, "projects/");
   if (/^projects\/[^/\s]+/.test(path)) return path;
   if (!path.startsWith("agents/")) path = `agents/${path}`;
   if (!/^agents\/[^/]+\/workspace\/projects\/[^/\s]+/.test(path)) return null;
@@ -86,7 +106,10 @@ export function normalizeProjectPath(value: unknown, projectRoot: string): strin
 }
 
 export function extractProjectPath(text: string, projectRoot: string): string | null {
-  const candidates = text.match(/(?:\/app\/)?(?:(?:agents\/)?shared\/projects\/|projects\/|(?:agents\/)?[^/\s]+\/workspace\/projects\/)[A-Za-z0-9._-]+(?:\/project\.md)?/g) ?? [];
+  const candidates =
+    text.match(
+      /(?:\/app\/)?(?:(?:agents\/)?shared\/projects\/|projects\/|(?:agents\/)?[^/\s]+\/workspace\/projects\/)[A-Za-z0-9._-]+(?:\/project\.md)?/g,
+    ) ?? [];
   for (const candidate of candidates) {
     const normalized = normalizeProjectPath(candidate, projectRoot);
     if (normalized) return normalized;
@@ -102,12 +125,18 @@ export function buildNotificationReplyText(opts: {
   const parts: string[] = [];
   const { ctx } = opts;
 
-  parts.push(`[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`);
+  parts.push(
+    `[User replying to notification${ctx.agent ? ` from ${ctx.agent}` : ""}${ctx.project_id ? ` about project "${ctx.project_id}"` : ""}]`,
+  );
   if (ctx.data) {
     try {
       const data = JSON.parse(ctx.data);
       if (data.summary) parts.push(`Context: ${data.summary}`);
       if (data.text) parts.push(`Original notification: ${data.text}`);
+      const conversation = readStoredConversation(objectOrNull(data));
+      if (conversation?.conversationId) parts.push(`Conversation: ${conversation.conversationId}`);
+      if (conversation?.originalIssue) parts.push(`Original issue: ${JSON.stringify(conversation.originalIssue)}`);
+      if (conversation?.lastHandledBy) parts.push(`Last handled by: ${JSON.stringify(conversation.lastHandledBy)}`);
     } catch {
       /* ignore malformed notification context */
     }

@@ -8,6 +8,7 @@ export interface TelegramSendContext {
   sessionId?: string;
   projectId?: string;
   data?: string;
+  replyToMessageId?: number;
 }
 
 export interface TelegramClientOptions {
@@ -19,7 +20,12 @@ export interface TelegramClientOptions {
 
 export interface TelegramClient {
   apiCall: (method: string, body?: Record<string, unknown>) => Promise<any>;
-  sendMessage: (chatId: string, text: string, parseMode?: string, context?: TelegramSendContext) => Promise<number | undefined>;
+  sendMessage: (
+    chatId: string,
+    text: string,
+    parseMode?: string,
+    context?: TelegramSendContext,
+  ) => Promise<number | undefined>;
 }
 
 export function createTelegramClient(opts: TelegramClientOptions): TelegramClient {
@@ -39,21 +45,30 @@ export function createTelegramClient(opts: TelegramClientOptions): TelegramClien
     return data.result;
   }
 
-  async function sendMessage(chatId: string, text: string, parseMode?: string, context?: TelegramSendContext): Promise<number | undefined> {
+  async function sendMessage(
+    chatId: string,
+    text: string,
+    parseMode?: string,
+    context?: TelegramSendContext,
+  ): Promise<number | undefined> {
     const chunks = splitTelegramMessage(text, TELEGRAM_MAX_LENGTH);
     let lastMsgId: number | undefined;
     for (const chunk of chunks) {
+      const replyParams = context?.replyToMessageId
+        ? { reply_parameters: { message_id: context.replyToMessageId, allow_sending_without_reply: true } }
+        : {};
       try {
         const result = await apiCall("sendMessage", {
           chat_id: chatId,
           text: chunk,
           ...(parseMode ? { parse_mode: parseMode } : {}),
+          ...replyParams,
         });
         lastMsgId = result?.message_id;
       } catch (err) {
         if (parseMode) {
           try {
-            const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk });
+            const result = await apiCall("sendMessage", { chat_id: chatId, text: chunk, ...replyParams });
             lastMsgId = result?.message_id;
           } catch (retryErr) {
             opts.emitInfo(`[telegram] Send failed: ${errorMessage(retryErr)}`);

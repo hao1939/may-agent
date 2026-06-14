@@ -17,7 +17,9 @@ describe("telegram reply router helpers", () => {
   it("normalizes shared and workspace project paths", () => {
     expect(normalizeProjectPath("/app/projects/demo/project.md", root)).toBe("projects/demo");
     expect(normalizeProjectPath("/app/agents/shared/projects/demo/project.md", root)).toBe("projects/demo");
-    expect(normalizeProjectPath(`${root}/agents/scout/workspace/projects/learn/project.md`, root)).toBe("agents/scout/workspace/projects/learn");
+    expect(normalizeProjectPath(`${root}/agents/scout/workspace/projects/learn/project.md`, root)).toBe(
+      "agents/scout/workspace/projects/learn",
+    );
     expect(normalizeProjectPath("shared/projects/demo", root)).toBe("projects/demo");
   });
 
@@ -44,20 +46,52 @@ describe("telegram reply router helpers", () => {
       sessionContext: ["\nSession context (3 messages):", "  Last action: waiting"],
     });
 
-    expect(text).toContain("[User replying to notification from may about project \"projects/demo\"]");
+    expect(text).toContain('[User replying to notification from may about project "projects/demo"]');
     expect(text).toContain("Context: Needs review");
     expect(text).toContain("Original notification: Original alert");
     expect(text).toContain("Session context (3 messages):");
     expect(text).toContain("User says: Looks good");
   });
 
+  it("adds conversation context to notification reply text", () => {
+    const text = buildNotificationReplyText({
+      ctx: {
+        event_type: "message.created",
+        agent: "may",
+        project_id: "projects/aks-rp-e2e.app",
+        data: JSON.stringify({
+          text: "AKS RP E2E needs focus-plan approval",
+          conversationId: "tg_focus_1",
+          conversation: {
+            originalIssue: {
+              eventType: "project.focus.plan.requested",
+              projectPath: "projects/aks-rp-e2e.app",
+              planId: "focus-live-staging",
+            },
+            lastHandledBy: { agent: "may", sessionId: "s_may_1" },
+          },
+        }),
+      },
+      text: "approved, keep going",
+    });
+
+    expect(text).toContain("Conversation: tg_focus_1");
+    expect(text).toContain(
+      'Original issue: {"eventType":"project.focus.plan.requested","projectPath":"projects/aks-rp-e2e.app","planId":"focus-live-staging"}',
+    );
+    expect(text).toContain('Last handled by: {"agent":"may","sessionId":"s_may_1"}');
+    expect(text).toContain("User says: approved, keep going");
+  });
+
   it("builds quote fallback reply text", () => {
-    expect(buildTelegramQuoteReplyText("continue", "Previous message")).toBe([
-      "[User replying to Telegram message]",
-      "Original Telegram message: Previous message",
-      "",
-      "User says: continue",
-    ].join("\n"));
+    expect(buildTelegramQuoteReplyText("continue", "Previous message")).toBe(
+      [
+        "[User replying to Telegram message]",
+        "Original Telegram message: Previous message",
+        "",
+        "User says: continue",
+      ].join("\n"),
+    );
   });
 
   it("reads compact session context for reply enrichment", () => {
@@ -65,10 +99,13 @@ describe("telegram reply router helpers", () => {
     try {
       const sessionDir = join(persistDir, "sessions", "s_1");
       mkdirSync(sessionDir, { recursive: true });
-      writeFileSync(join(sessionDir, "session-compact.jsonl"), [
-        JSON.stringify({ role: "system", content: [{ type: "text", text: "Compact summary of session" }] }),
-        JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Last assistant action" }] }),
-      ].join("\n"));
+      writeFileSync(
+        join(sessionDir, "session-compact.jsonl"),
+        [
+          JSON.stringify({ role: "system", content: [{ type: "text", text: "Compact summary of session" }] }),
+          JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Last assistant action" }] }),
+        ].join("\n"),
+      );
 
       expect(readSessionReplyContext(persistDir, "s_1")).toEqual([
         "\nSession context (2 messages):",
@@ -85,10 +122,13 @@ describe("telegram reply router helpers", () => {
     try {
       const sessionDir = join(persistDir, "sessions", "s_route");
       mkdirSync(sessionDir, { recursive: true });
-      writeFileSync(join(sessionDir, "session-compact.jsonl"), [
-        JSON.stringify({ role: "system", content: [{ type: "text", text: "Route summary" }] }),
-        JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Route action" }] }),
-      ].join("\n"));
+      writeFileSync(
+        join(sessionDir, "session-compact.jsonl"),
+        [
+          JSON.stringify({ role: "system", content: [{ type: "text", text: "Route summary" }] }),
+          JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Route action" }] }),
+        ].join("\n"),
+      );
 
       const route = buildTelegramReplyRoute({
         text: "please continue",
@@ -119,24 +159,28 @@ describe("telegram reply router helpers", () => {
   });
 
   it("builds quote and missing-context routes without DB context", () => {
-    expect(buildTelegramReplyRoute({
-      text: "ok",
-      replyToMsgId: 1,
-      ctx: null,
-      quotedText: "Prior message",
-      projectRoot: root,
-      persistDir: "/tmp/missing",
-      interfaceAgent: "may",
-    })).toMatchObject({ kind: "quote", enrichedText: buildTelegramQuoteReplyText("ok", "Prior message") });
+    expect(
+      buildTelegramReplyRoute({
+        text: "ok",
+        replyToMsgId: 1,
+        ctx: null,
+        quotedText: "Prior message",
+        projectRoot: root,
+        persistDir: "/tmp/missing",
+        interfaceAgent: "may",
+      }),
+    ).toMatchObject({ kind: "quote", enrichedText: buildTelegramQuoteReplyText("ok", "Prior message") });
 
-    expect(buildTelegramReplyRoute({
-      text: "ok",
-      replyToMsgId: 2,
-      ctx: null,
-      quotedText: "",
-      projectRoot: root,
-      persistDir: "/tmp/missing",
-      interfaceAgent: "may",
-    })).toMatchObject({ kind: "missing-context" });
+    expect(
+      buildTelegramReplyRoute({
+        text: "ok",
+        replyToMsgId: 2,
+        ctx: null,
+        quotedText: "",
+        projectRoot: root,
+        persistDir: "/tmp/missing",
+        interfaceAgent: "may",
+      }),
+    ).toMatchObject({ kind: "missing-context" });
   });
 });

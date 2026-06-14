@@ -7,6 +7,7 @@ export interface TelegramOutboundContext {
   sessionId?: string;
   projectId?: string;
   summary?: string;
+  data?: Record<string, unknown>;
 }
 
 export interface TelegramOutboundOptions {
@@ -52,7 +53,12 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
     }
 
-    if (event.type === "session.start" && session.parentSessionId && watchedSessions.has(String(session.parentSessionId)) && sessionId) {
+    if (
+      event.type === "session.start" &&
+      session.parentSessionId &&
+      watchedSessions.has(String(session.parentSessionId)) &&
+      sessionId
+    ) {
       watchedSessions.add(sessionId);
     }
 
@@ -74,19 +80,34 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       flushPendingText(event.sessionId);
 
       if (!hadText && event.errorCount && event.errorCount > 0) {
-        bus.emit({ type: "info", message: `[telegram] Turn error: ${event.errorCount} error(s), no text produced (session: ${event.sessionId})` });
+        bus.emit({
+          type: "info",
+          message: `[telegram] Turn error: ${event.errorCount} error(s), no text produced (session: ${event.sessionId})`,
+        });
       }
     }
 
     if (event.type === "session.end" && sessionId && sessionId !== rootSid) {
       if (pendingChatId) {
         const fp = session.finishParams as Record<string, unknown> | undefined;
-        const summary = (fp?.summary as string) ?? (typeof session.outcome === "string" ? session.outcome.slice(0, 200) : "completed");
+        const summary =
+          (fp?.summary as string) ??
+          (typeof session.outcome === "string" ? session.outcome.slice(0, 200) : "completed");
         const fpStatus = (fp?.status as string) ?? session.status;
         if (fpStatus === "failure" || fpStatus === "blocked") {
-          sendToUser(`❌ ${String(session.agent)} BLOCKED: ${summary}`, { eventType: "blocked", agent: String(session.agent), sessionId, summary });
+          sendToUser(`❌ ${String(session.agent)} BLOCKED: ${summary}`, {
+            eventType: "blocked",
+            agent: String(session.agent),
+            sessionId,
+            summary,
+          });
         } else {
-          sendToUser(`✅ ${String(session.agent)}: ${summary}`, { eventType: "session.end", agent: String(session.agent), sessionId, summary });
+          sendToUser(`✅ ${String(session.agent)}: ${summary}`, {
+            eventType: "session.end",
+            agent: String(session.agent),
+            sessionId,
+            summary,
+          });
         }
       }
     }
@@ -95,8 +116,14 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       const state = sessionState(sessionId);
       flushPendingText(sessionId);
       if (session.error) {
-        const errMsg = String(session.error).length > 200 ? String(session.error).slice(0, 200) + "…" : String(session.error);
-        sendToUser(`❌ Couldn't process your message: ${errMsg}`, { eventType: "error", agent: String(session.agent), sessionId, summary: errMsg });
+        const errMsg =
+          String(session.error).length > 200 ? String(session.error).slice(0, 200) + "…" : String(session.error);
+        sendToUser(`❌ Couldn't process your message: ${errMsg}`, {
+          eventType: "error",
+          agent: String(session.agent),
+          sessionId,
+          summary: errMsg,
+        });
       } else {
         const summary = String(session.summary ?? "").trim();
         if (summary && shouldSendSummary(sessionId, summary)) {
@@ -104,7 +131,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           state.sentAnyText = true;
           state.sentText += "\n" + summary;
         } else if (!state.sentAnyText) {
-          sendToUser("❌ Couldn't generate a response. Try again or rephrase.", { eventType: "error", agent: String(session.agent), sessionId });
+          sendToUser("❌ Couldn't generate a response. Try again or rephrase.", {
+            eventType: "error",
+            agent: String(session.agent),
+            sessionId,
+          });
         }
       }
       rootChatSessionId = null;
@@ -117,8 +148,32 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       if (message.to !== "human") return;
       if (pendingChatId) {
         const content = String(message.content ?? "").slice(0, 4000);
-        const projectId = normalizeProjectPath(message.projectPath ?? message.projectId, opts.projectRoot) ?? extractProjectPath(content, opts.projectRoot) ?? undefined;
-        sendToUser(`📋 ${content}`, { eventType: "message.created", agent: String(message.from ?? ""), sessionId: "sessionId" in message ? String(message.sessionId) : undefined, projectId, summary: content.slice(0, 200) });
+        const projectId =
+          normalizeProjectPath(message.projectPath ?? message.projectId, opts.projectRoot) ??
+          extractProjectPath(content, opts.projectRoot) ??
+          undefined;
+        const data: Record<string, unknown> = {};
+        for (const key of [
+          "approval",
+          "projectPath",
+          "projectId",
+          "conversationId",
+          "conversation",
+          "originalIssue",
+          "lastHandledBy",
+          "expectedClosure",
+          "actionHints",
+        ]) {
+          if (message[key] !== undefined) data[key] = message[key];
+        }
+        sendToUser(`📋 ${content}`, {
+          eventType: "message.created",
+          agent: String(message.from ?? ""),
+          sessionId: "sessionId" in message ? String(message.sessionId) : undefined,
+          projectId,
+          summary: content.slice(0, 200),
+          data,
+        });
       }
     }
   });
