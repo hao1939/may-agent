@@ -245,12 +245,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E draft specs",
     type: "gauge",
     target: 0,
-    threshold: 200,
+    threshold: 999999,
     unit: "count",
     alertOp: ">",
-    priority: "P2",
+    priority: "P3",
     description:
-      "Specs that still need replay/readiness work before live verification.",
+      "Dashboard burn-down counter: specs that still need replay/readiness work before live verification. Not an interrupting alert — the real health signals are spec.unverified-without-work (P0, fires when no verification work is planned) and task.no-work-with-gaps (P0, fires when no work at all while gaps remain). Calibrated threshold 200→999999 and priority P2→P3 on 2026-06-14: threshold=200 on a 335-spec burn-down creates a permanent P2 alert that interrupts without adding value; trend is positive (265→256).",
   },
   {
     id: "aks-rp-e2e.spec.unverified-without-work",
