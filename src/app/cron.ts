@@ -425,9 +425,13 @@ export class Cron {
     return triggered;
   }
 
+  private _busSubscribed = false;
+
   /** Subscribe to bus — auto-dispatch domain events (dot-separated types) to handlers.
    *  Also handles `heartbeat` events: triggers the matching heartbeat entry. */
   subscribeToBus(bus: EventBus): void {
+    if (this._busSubscribed) return;
+    this._busSubscribed = true;
     bus.subscribe((event) => {
       // Convention trigger: any entry can be manually fired by emitting
       // `trigger.<entry-name>`. This keeps operator/adapters simple and avoids
