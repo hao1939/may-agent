@@ -446,6 +446,33 @@ The project-app loader then offers metric events to an app when the event owner
 matches the app owner. Project context remains in the payload, but it is not a
 second routing authority. If the owner app turns the signal into
 `project.owner.requested`, that wake uses the original metric packet as context.
+The legacy project reconciler should not subscribe directly to `metric.breach`
+or `metric.recovered`; otherwise the same alert can produce two owner wakes.
+Project reconciliation should happen because the owner app judged the metric
+signal or because a project event was emitted.
+
+When a metric event is offered to the owner app, the loader emits a durable
+receipt:
+
+```json
+{
+  "type": "metric.feedback.routed",
+  "owner": "agent:<resolved-owner>",
+  "data": {
+    "metricId": "...",
+    "alertId": 123,
+    "project": "...",
+    "appId": "...",
+    "route": "owner-app"
+  }
+}
+```
+
+This receipt proves delivery to the owner path. It is not a judgment and does
+not resolve the alert. The generic `metric-alert-reactor` treats a recent routed
+receipt as evidence that the owner path is active and defers fallback triage
+during the grace window. If the alert remains open with no judgment or recovery
+after the grace window, the reactor may still run fallback triage.
 
 This means `aks-rp-e2e.app` and `evaluation.app` do not need explicit
 `metricIds` subscriptions for ordinary feedback. Their owner receives the event

@@ -87,7 +87,7 @@ export default defineProjectApp({
   schedules: [
     {
       id: "scout-heartbeat",
-      enabled: true,
+      enabled: false, // disabled 2026-06-14: app-driven model replaces blind heartbeat. Cross-source synthesis becomes a task, not a timer.
       intervalMs: 1_800_000, // 30min
       event: {
         type: "scout.heartbeat",

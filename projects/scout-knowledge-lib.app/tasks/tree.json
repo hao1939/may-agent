@@ -632,7 +632,8 @@
         "explore-hn",
         "explore-xhs",
         "explore-github",
-        "daily-digest"
+        "daily-digest",
+        "cross-source-synthesis"
       ],
       "kind": "work",
       "priority": "P1",
@@ -692,6 +693,19 @@
       "owner": "scout",
       "goal": "Compile daily research digest from findings and send to human via Telegram.",
       "state": "active"
+    },
+    "cross-source-synthesis": {
+      "id": "cross-source-synthesis",
+      "parent_id": "ongoing-research",
+      "children": [],
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Connect patterns across sources (arXiv + HN + XHS + GitHub). Produce cross-cutting insights, update canonical knowledge notes, and write KE entries when a non-obvious connection emerges.",
+      "state": "backlog",
+      "context": {
+        "note": "Replaces the blind 30-min heartbeat timer. The planner should assign this when fresh findings from multiple sources have accumulated and cross-source patterns are worth synthesizing. Not every explore run warrants synthesis — only when there's enough new signal across sources to connect."
+      }
     },
     "library-maintenance": {
       "id": "library-maintenance",
