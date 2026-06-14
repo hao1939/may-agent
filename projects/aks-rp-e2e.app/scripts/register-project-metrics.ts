@@ -79,7 +79,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 unblock signal: no ready/active work while non-passing knowledge-model paths remain.",
+      "P0 unblock signal: no ready/active/review work while non-passing knowledge-model paths remain. Calibrated 2026-06-14: review tasks count as pipeline activity — workers completed, planner accepting. Only true starvation (no ready, active, or review tasks) fires this alert.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {

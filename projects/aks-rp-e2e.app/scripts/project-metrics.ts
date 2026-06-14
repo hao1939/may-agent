@@ -121,6 +121,8 @@ function taskCounts() {
     total: tasks.length,
     ready: byStatus.get("ready") ?? 0,
     active: byStatus.get("active") ?? 0,
+    review: byStatus.get("review") ?? 0,
+    proposed: byStatus.get("proposed") ?? 0,
     blocked: byStatus.get("blocked") ?? 0,
     accepted: byStatus.get("accepted") ?? 0,
     completed24h,
@@ -256,7 +258,7 @@ function valueFor(metricId: string): number {
     "aks-rp-e2e.task.blocked-count": () => tasks.blocked,
     "aks-rp-e2e.task.completed-24h": () => tasks.completed24h,
     "aks-rp-e2e.task.no-work-with-gaps": () =>
-      tasks.ready === 0 && tasks.active === 0 && pathGaps > 0 ? 1 : 0,
+      tasks.ready === 0 && tasks.active === 0 && tasks.review === 0 && pathGaps > 0 ? 1 : 0,
     "aks-rp-e2e.task.ready-starvation-with-gaps": () =>
       tasks.ready === 0 && pathGaps > 0 ? 1 : 0,
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () =>
