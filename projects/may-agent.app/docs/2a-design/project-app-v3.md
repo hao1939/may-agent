@@ -95,7 +95,7 @@ but those behaviors are May-agent behaviors.
 Domain commits are owner checkpoints. They do not need a dedicated event when
 the project owner already owns review, rollup, and project-state decisions. The
 worker produces files and evidence, then emits completion; the owner verifies
-the task, runs project checks, commits a coherent accepted slice when safe, and
+the task, runs project checks, commits a coherent done slice when safe, and
 records the commit hash in the task tree or project state. Do not let workers
 commit directly, and do not commit active/review work just because files are
 dirty.
@@ -220,7 +220,7 @@ Recommended scripts:
 - `tasks:summary` or equivalent tools - read-only app inspection helpers.
 - Project-specific read-only checkpoint helpers may exist when they support
   owner judgment. For example, `domain:checkpoint` can inspect dirty domain
-  files, relate them to accepted/review/active task branches, and tell the
+  files, relate them to done/review/active task branches, and tell the
   owner which slices are candidates for a domain commit. It should not commit
   by itself.
 
@@ -649,7 +649,7 @@ For long-running project work, the app should use two simple event loops:
 ```text
 project.owner.requested
   -> thin owner workflow
-  -> deterministic quick refill assigns clear ready leaves up to capacity
+  -> deterministic quick refill assigns clear runnable backlog leaves up to capacity
   -> project-owner event-review step with compact planning packet
   -> project-owner task-tree update step with event-review output
   -> task-tree tools / direct reviewed tree edits / explicit assignment
@@ -681,8 +681,8 @@ The problem solver is not a second owner. It may diagnose and fix local
 problems, but it does not accept tasks, roll up parents, reshape branches, or
 assign work. The owner creates or links the visible problem-solving task in
 the tree, merges duplicate blockers by stable `problemKey`, and decides whether
-affected work should retry, be superseded, remain blocked, or escalate to a
-human/external owner.
+affected work should retry, be marked replaced, remain blocked, or escalate to
+a human/external owner.
 
 Solver result events are evidence, not policy. If a solver emits an escalation
 event but the summary clearly says a local cause was fixed and verified, the
@@ -736,10 +736,11 @@ completion event, but pending human steering is still owner input and should
 be reviewed before routine refill decisions.
 
 Owner workflows may use a deterministic quick-refill fast path before the
-owner-agent judgment session. Quick refill only claims ready leaves that are
-clear, dependency-satisfied, and non-conflicting. It is a scheduling primitive,
-not an owner decision. This keeps workers busy while preserving the owner as the
-brain for task-tree shape and project judgment.
+owner-agent judgment session. Quick refill only assigns backlog leaves whose
+readiness projection is runnable: dependency-satisfied, non-conflicting, and
+clear. It is a scheduling primitive, not an owner decision. This keeps workers
+busy while preserving the owner as the brain for task-tree shape and project
+judgment.
 
 `project.comment.created` is for general discussion. `project.task.steer` is at
 most a compatibility alias. Neither should be required before waking the owner.
@@ -747,7 +748,7 @@ most a compatibility alias. Neither should be required before waking the owner.
 The canonical task event contract is intentionally small:
 
 - `project.owner.requested` is handled by the project owner workflow. It reviews,
-  repairs, refills, promotes, and explicitly assigns ready leaves.
+  repairs, refills, and explicitly assigns runnable backlog leaves.
 - `project.task.assigned` is handled by the worker workflow. It carries the
   owner-selected task id, attempt id, session id, and worker. The worker
   does not pick from the tree.
@@ -786,17 +787,17 @@ agent in two steps during the same owner wake:
    not edit the task tree or assign work. It should be bounded and prefer the
    compact packet over rediscovery.
 2. Owner update: use the event review plus the latest compact task-tree
-   packet to review completed task results, repair or supersede bad branches,
-   roll up parents, create concrete next leaves, promote clear work to ready,
-   explicitly assign ready leaves, and classify exact blockers.
+   packet to review completed task results, repair or mark bad branches
+   replaced, roll up parents, create concrete next leaves, assign runnable
+   backlog leaves, and classify exact blockers.
 
 A project-owner pass should be bounded by capacity and clarity, not by one edit.
-When domain gaps remain and `ready + active` is below the app parallelism target,
-the project-owner agent should keep rolling up completed results, creating or
-promoting concrete leaves, and assigning ready leaves until available capacity
-is filled, or until the task tree records exact blockers explaining why it
-cannot be filled. Creating one leaf is not enough if the project is still
-underfilled.
+When domain gaps remain and runnable backlog plus active work is below the app
+parallelism target, the project-owner agent should keep rolling up completed
+results, creating concrete leaves, and assigning runnable backlog leaves until
+available capacity is filled, or until the task tree records exact blockers
+explaining why it cannot be filled. Creating one leaf is not enough if the
+project is still underfilled.
 
 The app may provide a bounded frontier-seeding tool for liveness. This is not a
 second owner: it may only translate explicit, already-modeled project gaps
@@ -813,27 +814,28 @@ leaves so execution latency does not stall learning. These leaves should favor
 source exploration, feature packets, spec authoring, replay generation, and
 model-gap preparation; they are assigned only when capacity opens.
 
-When `ready + active` is zero and `review`, `blocked`, or `proposed` work
-exists, the wake is a reconciliation incident. Owner review should make durable
-tree decisions first: accept verified reviews, create retry/follow-up leaves for
-resolved blockers, link unresolved blockers to one visible problem task, and
-assign clear leaves. Broad rediscovery belongs in follow-up tasks, not in the
-same planning update before the tree has a next action.
+When runnable backlog plus active work is zero and `review`, `blocked`, or
+backlog work with unresolved approval/dependency context exists, the wake is a
+reconciliation incident. Owner review should make durable tree decisions first:
+mark verified reviews done, create retry/follow-up leaves for resolved blockers,
+link unresolved blockers to one visible problem task, and assign clear leaves.
+Broad rediscovery belongs in follow-up tasks, not in the same planning update
+before the tree has a next action.
 
 The owner wake should include a compact planning packet, not only raw ids.
-The packet should include status counts, frontier ids, and compact details for
-ready, active, review, blocked, and proposed leaves: goal, outputs,
-acceptance, conflict scope, dependencies, blocker, session id, and relevant
-trace fields. The packet is the starting point; the owner may dive deeper
-with task-tree/domain commands when deciding. Domain status commands and metric
-context may be listed as tools or event context, but the owner agent decides
-whether they matter and how they map to work.
+The packet should include state counts, runnable-frontier ids, and compact
+details for backlog, active, review, blocked, and done leaves: goal, outputs,
+acceptance criteria, conflict scope, dependencies, blocker, session id,
+readiness reasons, and relevant trace fields. The packet is the starting point;
+the owner may dive deeper with task-tree/domain commands when deciding. Domain
+status commands and metric context may be listed as tools or event context, but
+the owner agent decides whether they matter and how they map to work.
 
-Owner-loop health is not binary. `ready=0, active=0, gaps>0` is a zero-work
-condition and may need human escalation. `ready=0, active>0, gaps>0` is still
-underfilled capacity when the app has a higher parallelism target; it should
-wake the project owner to refill concrete leaves, not wait for the single
-active task to finish.
+Owner-loop health is not binary. `runnable=0, active=0, gaps>0` is a zero-work
+condition and may need human escalation. `runnable=0, active>0, gaps>0` is
+still underfilled capacity when the app has a higher parallelism target; it
+should wake the project owner to refill concrete leaves, not wait for the
+single active task to finish.
 
 The worker workflow is parallel and narrow. It receives exactly one
 owner-created assignment, verifies the attempt id against the current task,
@@ -855,13 +857,14 @@ they should not replace task-tree reasoning.
 
 Use three metric classes:
 
-- Activity counters: tasks ready/active/completed, features extracted, specs
-  written, replays written, live runs started.
+- Activity counters: runnable backlog, active tasks, review tasks, done tasks,
+  features extracted, specs written, replays written, live runs started.
 - Impact counters: model paths passing/failing/unknown/blocked, live runs
-  succeeded, evidence accepted.
-- Health counters: no ready/active work while gaps remain, ready starvation
-  while gaps remain, capacity underfilled while gaps remain, stale active
-  tasks, live execution idle despite runnable work, duplicate artifact growth.
+  succeeded, evidence recorded.
+- Health counters: no runnable/active work while gaps remain, runnable backlog
+  starvation while gaps remain, capacity underfilled while gaps remain, stale
+  active tasks, live execution idle despite runnable work, duplicate artifact
+  growth.
 
 Metric breach handling stays event-based:
 
@@ -876,13 +879,16 @@ metrics-snapshot
 
 Only ownership-boundary blockers should notify a human. For example,
 `aks-rp-e2e.task.no-work-with-gaps` is P0 because the project is active, the
-knowledge model still has non-passing paths, and the task tree has no work to
-execute. That breach creates a human-owned escalation with the metric snapshot,
-Kanban link, task tree path, and domain status command so the operator can reply
-from mobile and unblock or steer the project. In contrast,
-`ready-starvation-with-gaps` and `capacity-underfilled-with-gaps` should usually
-wake the owner only; they mean the project owner should refill the task tree, not
-that a human must intervene immediately.
+knowledge model still has non-passing paths, and the task tree has no
+dependency-clear runnable leaf or active worker task. Review tasks do not
+suppress this metric: review is owner judgment work, so the breach should wake
+the project owner to accept, reject, split, or create follow-up tasks. That
+breach may also create a human-owned escalation with the metric snapshot, Kanban
+link, task tree path, and domain status command so the operator can reply from
+mobile when the owner cannot repair the branch. In contrast,
+`runnable-starvation-with-gaps` and `capacity-underfilled-with-gaps` should
+usually wake the owner only; they mean the project owner should refill the task
+tree, not that a human must intervene immediately.
 
 Routine progress metrics should be visible on dashboards and in owner context
 without creating mobile noise. A metric target breach is a signal to investigate
@@ -904,8 +910,17 @@ Rationale:
 - It should not be required for a human to run the domain project.
 
 The task tree still represents project understanding, not workflow attempt
-history. Bad or stale branches should be superseded. Runtime attempts stay in
-infra history.
+history. Bad or stale branches should be marked done with a replacement
+resolution or archived after their replacement is clear. Runtime attempts stay
+in infra history.
+
+Task state follows the canonical five-state model from
+`task-tree-engine.md`: `backlog`, `active`, `review`, `done`, and `blocked`.
+Readiness is a projection over backlog leaves; it is not a persisted state.
+Decomposition is structural through `children`; it is not a persisted state.
+Replacement is `state: "done"` with resolution/replacement metadata; it is not
+a separate lifecycle state. During migration, tools may read legacy `status`
+values, but new app writes should write `state`.
 
 Project-specific owner-review intent should usually be modeled as tasks, not as
 workflow prompt rules. If a project has a measurable progress signal or a
@@ -914,7 +929,7 @@ durable lane. For example, `aks-rp-e2e.app` uses a standing
 `knowledge-model-gap-reconciliation` task to convert non-passing knowledge model
 paths into concrete execution, diagnosis, unblock, or spec-refinement leaves.
 The owner prompt should only tell the project owner agent to read and act on
-the task tree; the project-specific status-to-work mapping belongs in that
+the task tree; the project-specific state-to-work mapping belongs in that
 standing task's context and acceptance criteria.
 
 Tasks are the context containers for project work. A task may store compact
@@ -1125,5 +1140,125 @@ aks-rp-e2e.app is how May-agent drives aks-rp-e2e.
   validated against folder names?
 - How should the runtime mount remote domain workspaces in containers?
 - What is the minimum workspace status check before an app can run mutation?
+
+## Proposal: Owner Checkpoint Step (2026-06-14)
+
+### Problem
+
+Agents write files but never commit. 69 uncommitted files accumulated across
+the agents repo in a single day:
+
+| Area | Files | Owner |
+|------|-------|-------|
+| agents/may/handlers | 9 | may (code changes to handlers, tests) |
+| aks-rp-e2e.app | 28 | aks-explorer (workflows, scripts, tree, UI) |
+| shared/lib/task-tree | 3 | may/dev (engine improvements) |
+| scout-knowledge-lib | 5+ | scout (knowledge updates) |
+| evaluation.app/tasks | 1 | evaluator (tree updates) |
+| may-agent.app | 5 | may (design docs, app config) |
+
+The design says "domain commits are owner checkpoints" (§Core Boundary) and
+the owner "commits a coherent done slice when safe." But no workflow actually
+executes this step. Workers produce files, the owner reviews and rolls up task
+state, and nobody commits. A human eventually notices and commits everything
+in bulk — losing the per-task attribution and purpose tracking.
+
+The `domain-checkpoint` script in `aks-rp-e2e.app/scripts/` already exists as
+a read-only tool that classifies dirty files into hold/candidate/needs-review.
+But it is never called automatically.
+
+### Design: Checkpoint As Owner Workflow Step
+
+The checkpoint is not a new workflow or a separate schedule. It is a step inside
+the existing owner workflow — the same pass that reviews completions, rolls up
+parents, and assigns work. After task-tree updates, the owner inspects dirty
+files and commits coherent slices.
+
+```text
+project.owner.requested
+  → owner workflow
+  → step 1: event review
+  → step 2: task-tree update (review completions, assign work)
+  → step 3: checkpoint — inspect dirty files, commit done slices
+```
+
+The checkpoint step is lightweight:
+
+1. **Scan**: `git status` in the app dir and domain workspace.
+2. **Classify**: map dirty files to task-tree nodes by outputs/inputs refs.
+   Files belonging to done tasks are commit candidates. Files belonging to
+   active/review tasks are held. Unrelated files need owner judgment.
+3. **Commit candidates**: group by task or purpose, commit with a message that
+   references the task id and goal.
+4. **Skip when nothing is ready**: if all dirty files belong to active work,
+   the checkpoint is a no-op. Don't force commits on in-progress work.
+
+### What The Owner Decides
+
+The owner is the brain. The checkpoint step gives it the data; the owner
+decides:
+
+- Which candidate slices to commit now vs hold for more work.
+- Whether an unclassified file is noise (revert), belongs to a task (commit
+  with that task), or needs a new task.
+- The commit message — should reflect the purpose, not "commit dirty files."
+- Whether to commit app changes and domain changes together or separately
+  (different repos may require separate commits).
+
+### Scope Per App
+
+Each app checkpoints its own scope:
+
+| App | Checkpoint scope |
+|-----|-----------------|
+| aks-rp-e2e.app | `projects/aks-rp-e2e.app/` + domain workspace |
+| evaluation.app | `projects/evaluation.app/` |
+| scout-knowledge-lib.app | `projects/scout-knowledge-lib.app/` + `projects/scout-knowledge-lib/` |
+| may-agent.app | `projects/may-agent.app/` + `agents/may/` + `shared/` |
+
+The agents repo is shared — multiple apps commit to it. The checkpoint must
+scope its `git add` to the app's own files, never `git add -A`.
+
+### Cadence
+
+The checkpoint fires as part of the owner wake, not on a separate schedule.
+Every owner pass that completes task reviews should end with a checkpoint
+check. If no tasks were completed and no files are dirty, the step is instant.
+
+For high-throughput apps (aks-rp-e2e does 50 sessions/hour), the checkpoint
+should batch — don't commit after every single task completion. Check every
+N owner wakes or when done-task file count exceeds a threshold.
+
+### What This Is Not
+
+- **Not auto-commit**: the owner reviews and decides. No blind `git add -A`.
+- **Not a guard**: the finish guard already blocks sessions with uncommitted
+  changes. The checkpoint prevents that guard from firing by committing
+  reviewed work proactively.
+- **Not a new workflow**: it's a step in the existing owner workflow. No new
+  schedule, no new event type.
+- **Not cross-app**: each app commits its own scope. If `shared/` is dirty,
+  the app that owns the change (usually may-agent.app) commits it.
+
+### Implementation Path
+
+1. **aks-rp-e2e.app first** — already has `domain-checkpoint.ts`. Wire it
+   into the project-planner workflow as a post-review step. Test with real
+   dirty files from aks-explorer sessions.
+2. **Extract to SDK** — once the pattern works, move the classify + commit
+   logic to `@may-agent/sdk` as a reusable checkpoint helper.
+3. **Other apps adopt** — evaluation.app, scout-knowledge-lib.app,
+   may-agent.app add the same step to their owner workflows.
+
+### Existing Infrastructure
+
+- `aks-rp-e2e.app/scripts/domain-checkpoint.ts` — classifies dirty files
+  into hold/candidate/needs-review using task-tree output refs. Read-only
+  today; needs a commit-candidate execution path.
+- `finish() blocked [uncommitted changes]` guard — already fires when agents
+  try to finish with dirty files. The checkpoint prevents this by committing
+  proactively.
+- `evaluator.finish-blocked-uncommitted-count-24h` metric — tracks how
+  often the guard fires. Should trend toward zero after checkpoint adoption.
 - Should app UI routes use the app id, the domain project id, or both when one
   domain project has multiple apps?
