@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-14T20:25:00.000Z",
+  "updated_at": "2026-06-14T20:27:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
@@ -668,7 +668,7 @@
         "reason": "Added eventProjectId helper and project-scope filter in triggerSubscribers. 3 new tests pass (cross-project mismatch blocked, same-project fires, no-project-field fires). All 7 cron tests pass, 24 related tests pass, TypeScript check clean."
       },
       "context": {
-        "root_cause": "Cron buildEventSubscriptions indexes handlers by event type only. triggerSubscribers fires all handlers subscribed to project.planning.requested regardless of the event's project field. The app event router (shouldOfferToApp/matchesSelector in project-app-loader.ts) already filters correctly, but cron's workflow handler dispatch bypasses this — the event arrives on the bus, cron's subscribeToBus catches it, and triggerSubscribers fires without project filtering.",
+        "root_cause": "Cron buildEventSubscriptions indexes handlers by event type only. triggerSubscribers fires all handlers subscribed to project.planning.requested regardless of the event's project field. The app event router (shouldOfferToApp/matchesSelector in project-app-loader.ts) already filters correctly, but cron's workflow handler dispatch bypasses this \u2014 the event arrives on the bus, cron's subscribeToBus catches it, and triggerSubscribers fires without project filtering.",
         "observed_at": "2026-06-13T16:17:00Z",
         "evidence": "handler.started event for may-agent-project-planner at timestamp 1781367454489, triggered by scout-knowledge-lib's scheduled-library-maintenance event at 1781367454488.",
         "fix_direction": "Either (a) add a projectId field to CronEntry and filter in triggerSubscribers, or (b) make installWorkflowHandlers store the project app's event selectors alongside the subscription and check them before firing."
@@ -712,7 +712,7 @@
         "reason": "Added persistent-task opt-out regex to isPersistentTaskRequired() in finish-guard.ts. Added 'persistent-task: skip' to may-agent planner task text AND may heartbeat cron handler task text. 48 guard tests pass, 39 finish-guard tests pass, TypeScript check clean. The guard dynamically loads from disk so fix is immediately live. Heartbeat cron.json fix deployed 2026-06-14T11:59Z to address residual 8% heartbeat FM-3.4 blocks caused by injected event signals containing 'project:' at line start."
       },
       "context": {
-        "root_cause": "The FM-3.4 guard's heuristic 'has project: field → requires persistent-task workflow' falsely triggers for project-app planning sessions that use verify-wrap workflow. Planning sessions review/update task trees — they are one-shot reviews, not multi-iteration implementation work requiring persistent-task. The guard had no opt-out mechanism.",
+        "root_cause": "The FM-3.4 guard's heuristic 'has project: field \u2192 requires persistent-task workflow' falsely triggers for project-app planning sessions that use verify-wrap workflow. Planning sessions review/update task trees \u2014 they are one-shot reviews, not multi-iteration implementation work requiring persistent-task. The guard had no opt-out mechanism.",
         "observed_at": "2026-06-14T09:12:00Z",
         "evidence": "36 out of 42 may-agent workflow runs (85.7%) escalated with 'FM-3.4 Persistent-Task Required'. Only 1 run ever completed successfully. Other project apps (aks-rp-e2e, scout-knowledge-lib) unaffected because they use custom workflows (project-planner, knowledge-planner) rather than verify-wrap.",
         "fix_approach": "Two-part fix: (1) Add opt-out sentinel check in isPersistentTaskRequired() for 'persistent-task: skip|false|no|off|not-required' in task text. (2) Add 'persistent-task: skip' to may-agent planner task text in app.ts."
@@ -757,7 +757,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T15:22:00Z",
-        "reason": "Superseded by may-agent-project-planner workflow handler in app.ts. The planner wakes on project.tick (hourly), metric signals, comments, and task events — performing exactly the signal-intake function described by this task. No separate signal-intake workflow is needed. The referenced workflow 'signal-intake' never existed; the verify-wrap-based planner handler is the correct mechanism."
+        "reason": "Superseded by may-agent-project-planner workflow handler in app.ts. The planner wakes on project.tick (hourly), metric signals, comments, and task events \u2014 performing exactly the signal-intake function described by this task. No separate signal-intake workflow is needed. The referenced workflow 'signal-intake' never existed; the verify-wrap-based planner handler is the correct mechanism."
       }
     },
     "cron-config-stale-context-cleanup": {
@@ -780,7 +780,7 @@
         "All cron integration tests pass."
       ],
       "forbidden": [
-        "Do not remove cron entries — only update their context paths."
+        "Do not remove cron entries \u2014 only update their context paths."
       ],
       "gates": [],
       "conflict_scope": [
@@ -789,7 +789,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-13T18:45:00Z",
-        "reason": "Replaced 27 stale context paths: system-operations/project.md → may-agent.app/project.json, agent-system-evolution/project.md → may-agent.app/project.json, scout-second-brain-learning/project.md → scout-knowledge-lib.app/project.json. Updated daily-alert-review handler task/projectId. All 23 cron tests pass."
+        "reason": "Replaced 27 stale context paths: system-operations/project.md \u2192 may-agent.app/project.json, agent-system-evolution/project.md \u2192 may-agent.app/project.json, scout-second-brain-learning/project.md \u2192 scout-knowledge-lib.app/project.json. Updated daily-alert-review handler task/projectId. All 23 cron tests pass."
       },
       "state": "done",
       "resolution": "completed"
@@ -832,9 +832,9 @@
         "observed_at": "2026-06-13T18:12:00Z",
         "resolved_at": "2026-06-13T21:01:00Z",
         "deploy_status": {
-          "devbox_host": "DEPLOYED — binary eventProjectId present, timestamp 18:08 UTC",
-          "aks_rp_e2e_container": "DEPLOYED — binary 100423808 bytes, timestamp 18:24 UTC",
-          "codespace_container": "DEPLOYED — binary rebuilt at 21:01 UTC, eventProjectId present (2 matches), daemon restarted 21:03 UTC"
+          "devbox_host": "DEPLOYED \u2014 binary eventProjectId present, timestamp 18:08 UTC",
+          "aks_rp_e2e_container": "DEPLOYED \u2014 binary 100423808 bytes, timestamp 18:24 UTC",
+          "codespace_container": "DEPLOYED \u2014 binary rebuilt at 21:01 UTC, eventProjectId present (2 matches), daemon restarted 21:03 UTC"
         }
       },
       "state": "done",
@@ -1085,7 +1085,7 @@
         "All tests pass."
       ],
       "forbidden": [
-        "Do not change the aks-rp-e2e local copy — it keeps its project-specific names."
+        "Do not change the aks-rp-e2e local copy \u2014 it keeps its project-specific names."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1094,7 +1094,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T14:15:00Z",
-        "reason": "Renamed AKS_RP_E2E_TREE_LOCK_WAIT_MS → PROJECT_TREE_LOCK_WAIT_MS and AKS_RP_E2E_TREE_LOCK_STALE_MS → PROJECT_TREE_LOCK_STALE_MS in shared SDK. TypeScript clean, 18 tests pass. Commit 4c01303a."
+        "reason": "Renamed AKS_RP_E2E_TREE_LOCK_WAIT_MS \u2192 PROJECT_TREE_LOCK_WAIT_MS and AKS_RP_E2E_TREE_LOCK_STALE_MS \u2192 PROJECT_TREE_LOCK_STALE_MS in shared SDK. TypeScript clean, 18 tests pass. Commit 4c01303a."
       },
       "state": "done",
       "resolution": "completed"
@@ -1161,7 +1161,7 @@
         "Tests cover the duplicate-name-across-directories scenario."
       ],
       "forbidden": [
-        "Do not remove the duplicate detection entirely — duplicates within the same scope should still error."
+        "Do not remove the duplicate detection entirely \u2014 duplicates within the same scope should still error."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1195,7 +1195,7 @@
         "/usr/local/bin/may-agent"
       ],
       "acceptance": [
-        "Binary at /usr/local/bin/may-agent includes commit 851e134f (or later) — verify with: grep -ao 'priorIsGlobal' /usr/local/bin/may-agent",
+        "Binary at /usr/local/bin/may-agent includes commit 851e134f (or later) \u2014 verify with: grep -ao 'priorIsGlobal' /usr/local/bin/may-agent",
         "Daemon restarted via supervisorctl and all 4 project apps load correctly.",
         "agent.config_invalid events stop recurring after restart.",
         "evaluator-aftermath handler.failed errors stop (workflow found via correct agent dir)."
@@ -1221,7 +1221,7 @@
           "851e134f fix(message-tool): use globalAgentsRoot so project-scoped agents can message system agents",
           "df551721 fix(loader): project-app agents silently override global stubs with same name",
           "199af9a5 fix(web): scan project-local agents in handleAgents API",
-          "7d510da6 feat(app-loader): app brings its own agent — auto-register owner on load"
+          "7d510da6 feat(app-loader): app brings its own agent \u2014 auto-register owner on load"
         ],
         "post_deploy_evidence": "Zero agent.config_invalid events since 15:31 restart. Zero handler.failed events. Zero message.delivery_failed events. priorIsGlobal verified in binary (2 matches)."
       }
@@ -1247,7 +1247,7 @@
         "evaluation.app's evaluation-aftermath handler continues to process session.completed events."
       ],
       "forbidden": [
-        "Do not remove the job entry — keep it disabled with a reason for audit trail."
+        "Do not remove the job entry \u2014 keep it disabled with a reason for audit trail."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1332,7 +1332,7 @@
         "reason": "Commit ad25fd6c adds agentWorkflowDirForProjectApp() and uses it in runWorkflow as fallback. 9 tests pass (bun test). TypeScript clean. Confirmed fix works during brief window when bundle binary ran (scout-explore and scout-daily-digest dispatched successfully)."
       },
       "context": {
-        "root_cause": "SDK runWorkflow builds workflowDir as agents/<agent>/workflows/ (global). For project-app-owned agents like scout (owned by scout-knowledge-lib.app), workflows live at projects/scout-knowledge-lib.app/agents/scout/workflows/ — a path never searched. projectWorkflowDir searches projects/<id>.app/workflows/ but not the agent-specific subdir.",
+        "root_cause": "SDK runWorkflow builds workflowDir as agents/<agent>/workflows/ (global). For project-app-owned agents like scout (owned by scout-knowledge-lib.app), workflows live at projects/scout-knowledge-lib.app/agents/scout/workflows/ \u2014 a path never searched. projectWorkflowDir searches projects/<id>.app/workflows/ but not the agent-specific subdir.",
         "observed_at": "2026-06-14T17:02:00Z",
         "evidence": "36 handler.failed events for scout-explore, scout-heartbeat, scout-daily-digest in 3h window. Error: 'Workflow scout-explore not found'.",
         "commit": "ad25fd6c"
@@ -1466,19 +1466,19 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T20:25:00Z",
-        "reason": "Triaged 3 signal classes: (1) handler.failed heartbeat-scout — root cause was running binary (/usr/local/bin/may-agent, 19:25) lacking commit f9cebab8 (heartbeat-loader projectId propagation); fixed by rebuilding bundle and supervisorctl restart at 20:23 UTC, heartbeat-scout now starts successfully. (2) agent.config_invalid — last event at 19:17 from pre-fix binary, zero events since 20:02 restart, metric will auto-recover as 1h window ages out. (3) session.resume_failed — 27/30 are project_planner sessions (aks-rp-e2e), 3 are task worker sessions; all category=session_not_found for ephemeral sessions that completed and were cleaned up before resume attempts; not a platform defect, normal cleanup pattern."
+        "reason": "Triaged 3 signal classes: (1) handler.failed heartbeat-scout \u2014 root cause was running binary (/usr/local/bin/may-agent, 19:25) lacking commit f9cebab8 (heartbeat-loader projectId propagation); fixed by rebuilding bundle and supervisorctl restart at 20:23 UTC, heartbeat-scout now starts successfully. (2) agent.config_invalid \u2014 last event at 19:17 from pre-fix binary, zero events since 20:02 restart, metric will auto-recover as 1h window ages out. (3) session.resume_failed \u2014 27/30 are project_planner sessions (aks-rp-e2e), 3 are task worker sessions; all category=session_not_found for ephemeral sessions that completed and were cleaned up before resume attempts; not a platform defect, normal cleanup pattern."
       }
     },
     "platform-metric-feedback-alignment": {
       "id": "platform-metric-feedback-alignment",
       "goal": "Align may-agent.app metric feedback handling with the owner-first metric design: metric.breach, metric.stalled, and metric.recovered should reach the owner with useful context; app-local metric id subscriptions should be only escape hatches.",
-      "state": "backlog",
+      "state": "active",
       "parent_id": "platform-system-review-feedback-loop",
       "children": [],
       "depends_on": [],
       "priority": 1,
       "created_at": "2026-06-14T19:45:30.718Z",
-      "updated_at": "2026-06-14T19:45:30.718Z",
+      "updated_at": "2026-06-14T20:27:00.000Z",
       "acceptance": [
         "The finding or change is reflected in may-agent.app task tree or design docs.",
         "Runtime evidence is cited from metrics/events/sessions or focused checks.",
@@ -1506,7 +1506,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T20:25:00Z",
-        "reason": "This session is the e2e verification. It was triggered by human steering, received the system-review packet from platform-owner-review.ts, identified real failures (heartbeat-scout handler.failed due to undeployed binary), fixed the root cause (rebuilt bundle + supervisorctl restart), triaged all 3 abnormal signal classes with evidence, updated the task tree with acceptance verdicts, and verified post-deploy health. Not a shallow healthy claim — each finding has DB-queried evidence."
+        "reason": "This session is the e2e verification. It was triggered by human steering, received the system-review packet from platform-owner-review.ts, identified real failures (heartbeat-scout handler.failed due to undeployed binary), fixed the root cause (rebuilt bundle + supervisorctl restart), triaged all 3 abnormal signal classes with evidence, updated the task tree with acceptance verdicts, and verified post-deploy health. Not a shallow healthy claim \u2014 each finding has DB-queried evidence."
       }
     },
     "sdk-checkpoint-helper": {
@@ -1523,8 +1523,8 @@
       "goal": "Extract the owner checkpoint pattern from aks-rp-e2e.app into @may-agent/sdk as a reusable helper. Other apps (evaluation.app, scout-knowledge-lib.app, may-agent.app) adopt it.",
       "context": {
         "prerequisite": "aks-rp-e2e.app proves the pattern first (owner-checkpoint-step task)",
-        "design": "See docs/2a-design/project-app-v3.md §Owner Checkpoint Step",
-        "sdk_scope": "Classify dirty files by task-tree output refs, group into commit slices, commit with task-referencing messages. Domain-neutral — no AKS/evaluator/scout specifics."
+        "design": "See docs/2a-design/project-app-v3.md \u00a7Owner Checkpoint Step",
+        "sdk_scope": "Classify dirty files by task-tree output refs, group into commit slices, commit with task-referencing messages. Domain-neutral \u2014 no AKS/evaluator/scout specifics."
       },
       "acceptance": [
         "SDK exports a checkpoint helper usable by any project-app owner workflow",
