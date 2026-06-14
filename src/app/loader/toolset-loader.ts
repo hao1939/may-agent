@@ -36,6 +36,14 @@ export interface ToolsetLoaderOptions {
   setAgentCron: (agentName: string, cron: Cron) => void;
   addCleanup: (agentName: string, fn: () => void) => void;
   agentDir?: string;
+  /**
+   * The top-level agents/ directory, used by the message tool to discover
+   * all system agents for allowedTargets. When a project-scoped agent is
+   * loaded, `agentsRoot` points to the project-local agents/ dir, so the
+   * message tool would only see project-local agents. This field ensures
+   * the message tool always resolves all configured agent names system-wide.
+   */
+  globalAgentsRoot?: string;
 }
 
 export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions): Promise<AgentTool[]> {
@@ -82,12 +90,15 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       }
 
       case "message": {
+        // Use globalAgentsRoot (top-level agents/) when available so
+        // project-scoped agents can message system agents like "may".
+        const messageAgentsRoot = opts.globalAgentsRoot ?? opts.agentsRoot;
         tools.push(
           createMessageTool({
             agentName: config.name,
-            agentsRoot: opts.agentsRoot,
+            agentsRoot: messageAgentsRoot,
             persistDir,
-            allowedTargets: listConfiguredAgentNames(opts.agentsRoot, opts.projectsRoot),
+            allowedTargets: listConfiguredAgentNames(messageAgentsRoot, opts.projectsRoot),
             emit: (event) => bus.emit(event as any),
             getCallerSessionId: () => opts.getAgentSessionId(config.name),
             triggerHeartbeat,
