@@ -295,6 +295,8 @@ function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDe
     (event) => opts.bus.emit(event as AgentEvent),
   );
   cron.load();
+  cron.subscribeToBus(opts.bus);
+  cron.start();
   opts.agentCrons.set(descriptor.owner, cron);
   return cron;
 }
