@@ -881,3 +881,67 @@ export {
   shouldSkipHeartbeat,
   genericHeartbeat,
 } from "./heartbeat-data.js";
+
+// ── Project-app manifest/event helpers ───────────────────────────────
+export { defineProjectApp, eventData, eventDetails, eventString, projectPlanningEvent } from "./project-app.js";
+export type { EventSelector, ProjectApp, ProjectAppAction, ProjectAppContext } from "./project-app.js";
+
+// ── JSON task-tree helpers for project apps ──────────────────────────
+export {
+  dependenciesSatisfied,
+  isClearEnough,
+  isLeaf,
+  normalizeStringArray,
+  readTaskTree,
+  saveTaskTree,
+  taskEventSnapshot,
+  withTreeLock,
+} from "./project-task-tree-store.js";
+export type { TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
+
+export {
+  appendPlannerRun,
+  appendToolJournal,
+  assignReadyTasks,
+  assignTask,
+  completeTask,
+  createTask,
+  drainTaskAssignments,
+  kanbanTaskTreeState,
+  peekTaskAssignments,
+  planningPacket,
+  promoteClearProposedLeaves,
+  readTask,
+  requeueStaleActiveTasks,
+  summarizeTaskTree,
+  taskKanbanColumn,
+  taskTreeConfig,
+  writeKanbanSnapshot,
+} from "./project-task-tree.js";
+export type {
+  CreateTaskInput,
+  ReadyAssignmentResult,
+  TaskAssignment,
+  TaskCompletionClaim,
+  TaskKanbanColumn,
+  TaskKanbanProjection,
+  TaskKanbanSnapshot,
+  TaskKanbanState,
+  TaskPlanningPacket,
+  TaskPlanningSnapshot,
+  TaskTreeSummary,
+  TaskTreeToolConfig,
+} from "./project-task-tree.js";
+
+export {
+  field,
+  maxConcurrent,
+  parseTriggerEvent,
+  readJson,
+  resolveAppDir,
+  resultText,
+  triggerBlock,
+  triggerString,
+  triggerValue,
+} from "./workflow-input.js";
+export type { TriggerEvent } from "./workflow-input.js";
