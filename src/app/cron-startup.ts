@@ -72,6 +72,12 @@ export async function startCronRuntime(options: CronRuntimeOptions): Promise<voi
   }
 
   for (const [name, cron] of getAgentCrons()) {
+    // Subscribe + start in one place for all crons (agent-level and app-level).
+    // Crons are created by toolset-loader (agent "cron" tool) and
+    // ensureOwnerCron (project-app owners). Neither subscribes or starts —
+    // that responsibility lives here so each cron activates exactly once.
+    cron.subscribeToBus(bus);
+
     cron.onFire((entry) => {
       const handler = typeof entry.handler === "string"
         ? entry.handler

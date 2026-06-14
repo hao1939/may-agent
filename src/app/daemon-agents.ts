@@ -132,9 +132,8 @@ export async function prepareDaemonAgents(opts: {
   }
   startProjectAppWatcher(projectAppOpts);
 
-  for (const cron of getAgentCrons().values()) {
-    cron.subscribeToBus(opts.bus);
-  }
+  // Cron subscribe + start is handled by cron-startup.ts in one centralized
+  // loop after all crons (agent-level and app-level) are created and loaded.
 
   let failures = 0;
   const heartbeatFiles = autoHeartbeats

@@ -328,8 +328,8 @@ function ensureOwnerCron(opts: ProjectAppLoaderOptions, descriptor: ProjectAppDe
     (event) => opts.bus.emit(event as AgentEvent),
   );
   cron.load();
-  cron.subscribeToBus(opts.bus);
-  cron.start();
+  // Do NOT subscribeToBus or start here — cron-startup.ts owns activation
+  // for all crons (agent-level and app-level) in one centralized loop.
   opts.agentCrons.set(descriptor.owner, cron);
   return cron;
 }
