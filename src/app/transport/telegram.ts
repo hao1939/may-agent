@@ -150,7 +150,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
-  function emitChatStart(message: string, source = "telegram"): void {
+  function emitChatStart(message: string, source = "telegram", channelMessageId?: number): void {
     bus.emit({
       type: "chat.start.requested",
       source,
@@ -160,6 +160,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         message,
         channel: "telegram",
         channelThreadId: pendingChatId ?? undefined,
+        channelMessageId,
       },
     } as any);
   }
@@ -314,7 +315,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
     // All input goes through the unified handler (enriched if reply)
     const finalMessage = replyToMsgId ? enrichedText : inputMessage;
-    emitChatStart(finalMessage);
+    emitChatStart(finalMessage, "telegram", msg.message_id);
   }
 
   async function handleTelegramCommand(text: string, chatIdStr: string): Promise<boolean> {
