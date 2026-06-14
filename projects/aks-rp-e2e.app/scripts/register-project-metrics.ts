@@ -72,7 +72,7 @@ const metrics: MetricDef[] = [
   },
   {
     id: "aks-rp-e2e.task.no-work-with-gaps",
-    name: "AKS RP E2E no work while verification gaps remain",
+    name: "AKS RP E2E no executable work while verification gaps remain",
     type: "health",
     target: 0,
     threshold: 0,
@@ -80,7 +80,7 @@ const metrics: MetricDef[] = [
     alertOp: ">",
     priority: "P0",
     description:
-      "P0 unblock signal: no runnable backlog, active, or review work while model path gaps or unverified specs remain. Review tasks count as pipeline activity; only true starvation fires this alert.",
+      "P0 unblock signal: no dependency-clear runnable backlog or active worker task while model path gaps or unverified specs remain. Review tasks do not suppress this alert; they are owner work, so the breach should wake the owner to accept, reject, split, or create follow-up tasks.",
     config: { alert: { mode: "consecutive_failures", count: 1 } },
   },
   {
@@ -233,12 +233,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E ready specs",
     type: "gauge",
     target: 0,
-    threshold: 20,
+    threshold: 999999,
     unit: "count",
     alertOp: ">",
-    priority: "P2",
+    priority: "P3",
     description:
-      "Specs marked ready but not verified. These should be grouped into execution waves or run individually.",
+      "Dashboard burn-down counter: specs marked ready but not yet live-verified. These should be grouped into execution waves or run individually. Not an interrupting alert — the real health signals are spec.unverified-without-work (P0, fires when no verification work is planned) and task.no-work-with-gaps (P0, fires when no work at all while gaps remain). Calibrated threshold 20→999999 and priority P2→P3 on 2026-06-14: batch draft→ready promotion (268 specs) is normal pipeline progress, not a failure; threshold=20 creates a permanent P2 alert that interrupts without adding value.",
   },
   {
     id: "aks-rp-e2e.spec.draft-count",
