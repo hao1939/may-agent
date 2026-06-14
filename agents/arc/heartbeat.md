@@ -12,7 +12,7 @@
 
 ## Key Questions to Answer
 - What makes a successful agent session? (correlate turns, tools used, outcome)
-- Are agents following the architecture? (compare SOUL.md to actual behavior)
+- Are agents following the architecture? (compare AGENTS.md to actual behavior)
 - What assumptions in design docs are no longer true?
 - What patterns keep recurring in failures that nobody has documented?
 
@@ -118,7 +118,7 @@ Every heartbeat, pick ONE of these areas and check for staleness:
 - `shared/standing-orders.md` — still accurate?
 - `projects/may-agent.app/docs/2a-design/*.md` — contradicts current behavior?
 - `shared/knowledge/entries/` — any entries no longer true?
-- Active agent SOUL.md/context.md — references outdated tools or systems?
+- Active agent AGENTS.md/context.md — references outdated tools or systems?
 
 If you find stale content:
 1. **Lane check first.** If the file is in `shared/knowledge/entries/`, `projects/may-agent.app/docs/2a-design/`, or `agents/arc/workspace/`, fix it directly. **Otherwise do not edit it** — out-of-lane edits are silently stashed by the heartbeat wrapper and discarded (KE-450, KE-451). Write a proposal in `agents/arc/workspace/proposals/` and a KE entry describing the staleness.
