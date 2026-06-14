@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../../src/app/event-bus.js";
 import { attachTelegramBot } from "../../src/app/transport/telegram.js";
-import { attachCommandRouter } from "../../src/app/command-router.js";
 import { getDb } from "../../src/lib/requests.js";
 
 function jsonResponse(result: unknown) {
@@ -123,24 +122,28 @@ describe("telegram reply e2e", () => {
     });
 
     activeSessionId = "s_test_reply";
-    bus.emit(sessionStart({
-      sessionId: activeSessionId,
-      agent: "may",
-      task: chatStarts[0],
-      trigger: "chat",
-      firedAt: Date.now(),
-      kind: "chat",
-    }) as any);
+    bus.emit(
+      sessionStart({
+        sessionId: activeSessionId,
+        agent: "may",
+        task: chatStarts[0],
+        trigger: "chat",
+        firedAt: Date.now(),
+        kind: "chat",
+      }) as any,
+    );
     activeSessionId = "";
-    bus.emit(sessionEnd({
-      sessionId: "s_test_reply",
-      agent: "may",
-      outcome: "done",
-      summary: "Actual May answer with the requested details.",
-      durationMs: 10,
-      status: "done",
-      task: chatStarts[0],
-    }) as any);
+    bus.emit(
+      sessionEnd({
+        sessionId: "s_test_reply",
+        agent: "may",
+        outcome: "done",
+        summary: "Actual May answer with the requested details.",
+        durationMs: 10,
+        status: "done",
+        task: chatStarts[0],
+      }) as any,
+    );
 
     await waitFor(() => {
       expect(sentMessages.some((m) => m.text.includes("Actual May answer"))).toBe(true);
@@ -177,14 +180,19 @@ describe("telegram reply e2e", () => {
       interfaceAgent: "may",
     });
 
-    bus.emit(sessionStart({
-      sessionId: activeSessionId,
-      agent: "may",
-      task: "live reply",
-      trigger: "chat",
-      firedAt: Date.now(),
-      kind: "chat",
-    }, "telegram") as any);
+    bus.emit(
+      sessionStart(
+        {
+          sessionId: activeSessionId,
+          agent: "may",
+          task: "live reply",
+          trigger: "chat",
+          firedAt: Date.now(),
+          kind: "chat",
+        },
+        "telegram",
+      ) as any,
+    );
     activeSessionId = "";
     bus.emit({
       type: "text",
@@ -244,23 +252,34 @@ describe("telegram reply e2e", () => {
     bot.close();
   });
 
-  it("turns a Telegram reply to a project notification into a project comment nudge", async () => {
+  it("enriches a project notification reply and sends it to May", async () => {
     const projectRoot = mkdtempSync(resolve(tmpdir(), "telegram-project-root-"));
-    const projectDir = join(projectRoot, "projects", "example-project");
-    mkdirSync(projectDir, { recursive: true });
-    writeFileSync(
-      join(projectDir, "project.md"),
-      "---\nid: example-project\nowner: scout\nstatus: pending-review\n---\n\n# Project\n",
-      "utf-8",
-    );
 
     const db = getDb(persistDir);
     db.run(
       "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [700, "message.created", "may", null, "projects/example-project", JSON.stringify({ text: "Project needs review" }), Date.now()],
+      [
+        700,
+        "message.created",
+        "may",
+        null,
+        "projects/example-project",
+        JSON.stringify({
+          text: "Project needs review",
+          conversationId: "tg_project_review_1",
+          conversation: {
+            originalIssue: {
+              eventType: "project.review.requested",
+              projectPath: "projects/example-project",
+              taskId: "review-plan",
+            },
+            lastHandledBy: { agent: "may", sessionId: "s_project_review" },
+          },
+        }),
+        Date.now(),
+      ],
     );
-
-    const sentMessages: Array<{ chat_id: string; text: string }> = [];
+    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
     let getUpdatesCount = 0;
 
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
@@ -297,13 +316,15 @@ describe("telegram reply e2e", () => {
     });
 
     const bus = new EventBus();
+    const chatStarts: any[] = [];
     const comments: any[] = [];
-    const nudges: any[] = [];
-    const inputs: any[] = [];
+    const steers: any[] = [];
+    const replies: any[] = [];
     bus.subscribe((event: any) => {
+      if (event.type === "chat.start.requested") chatStarts.push(event);
       if (event.type === "project.comment.created") comments.push(event);
-      if (event.type === "project.nudge") nudges.push(event);
-      if (event.type === "input") inputs.push(event);
+      if (event.type === "session.steer.requested") steers.push(event);
+      if (event.type === "telegram.reply") replies.push(event);
     });
 
     const bot = attachTelegramBot({
@@ -314,49 +335,59 @@ describe("telegram reply e2e", () => {
       getSessionId: () => "",
       interfaceAgent: "may",
     });
-    const router = attachCommandRouter({
-      bus,
-      manager: {
-        status: () => [],
-        cancel: () => {},
-        input: async () => ({} as any),
-        steer: () => {},
-        resumeSession: () => "",
-      } as any,
-      getChatSession: () => undefined,
-      clearCancelLatch: () => {},
-      projectRoot,
-      reload: () => {},
-      restart: () => {},
-      shutdown: () => {},
-    });
 
     await waitFor(() => {
-      expect(comments).toHaveLength(1);
-      expect(comments[0].owner).toBe("agent:scout");
-      expect(comments[0].data.projectPath).toBe("projects/example-project");
-      expect(nudges).toHaveLength(1);
-      expect(nudges[0].owner).toBe("agent:scout");
-      expect(nudges[0].data.projectPath).toBe("projects/example-project");
-      expect(nudges[0].data.comment).toBe(true);
-      expect(inputs).toHaveLength(0);
-      expect(readFileSync(join(projectDir, "discussion.md"), "utf-8")).toContain("please revise the scoped plan");
-      expect(sentMessages.some((m) => m.text.includes("Resuming the project now"))).toBe(true);
+      expect(chatStarts).toHaveLength(1);
+      expect(String(chatStarts[0].data?.message)).toContain("Project needs review");
+      expect(String(chatStarts[0].data?.message)).toContain("Conversation: tg_project_review_1");
+      expect(String(chatStarts[0].data?.message)).toContain("Original issue:");
+      expect(String(chatStarts[0].data?.message)).toContain("please revise the scoped plan");
+      expect(comments).toHaveLength(0);
+      expect(steers).toHaveLength(0);
+      expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
+      expect(
+        sentMessages.some(
+          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 701,
+        ),
+      ).toBe(true);
     });
 
     bot.close();
-    router.close();
     rmSync(projectRoot, { recursive: true, force: true });
   });
 
-  it("turns a Telegram reply with stored session context into a steer event", async () => {
+  it("enriches a Telegram reply with stored session context and sends it to May", async () => {
     const db = getDb(persistDir);
     db.run(
       "INSERT OR REPLACE INTO notification_messages (telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [900, "message.created", "may", "s_reply_target", null, JSON.stringify({ text: "Session needs input" }), Date.now()],
+      [
+        900,
+        "message.created",
+        "may",
+        "s_reply_target",
+        null,
+        JSON.stringify({
+          text: "Session needs input",
+          conversationId: "tg_session_input_1",
+          conversation: {
+            originalIssue: { eventType: "session.blocked", sourceSessionId: "s_reply_target" },
+            lastHandledBy: { agent: "may", sessionId: "s_reply_target" },
+          },
+        }),
+        Date.now(),
+      ],
+    );
+    const sessionDir = join(persistDir, "sessions", "s_reply_target");
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(
+      join(sessionDir, "session-compact.jsonl"),
+      [
+        JSON.stringify({ role: "system", content: [{ type: "text", text: "Original session summary" }] }),
+        JSON.stringify({ role: "assistant", content: [{ type: "text", text: "Waiting for human direction" }] }),
+      ].join("\n"),
     );
 
-    const sentMessages: Array<{ chat_id: string; text: string }> = [];
+    const sentMessages: Array<{ chat_id: string; text: string; reply_parameters?: Record<string, unknown> }> = [];
     let getUpdatesCount = 0;
 
     vi.spyOn(globalThis, "fetch").mockImplementation(async (url: string | URL, init?: RequestInit) => {
@@ -394,11 +425,11 @@ describe("telegram reply e2e", () => {
 
     const bus = new EventBus();
     const steers: any[] = [];
-    const inputs: any[] = [];
+    const chatStarts: any[] = [];
     const replies: any[] = [];
     bus.subscribe((event: any) => {
       if (event.type === "session.steer.requested") steers.push(event);
-      if (event.type === "input") inputs.push(event);
+      if (event.type === "chat.start.requested") chatStarts.push(event);
       if (event.type === "telegram.reply") replies.push(event);
     });
 
@@ -411,16 +442,18 @@ describe("telegram reply e2e", () => {
     });
 
     await waitFor(() => {
-      expect(steers).toHaveLength(1);
-      expect(steers[0]).toMatchObject({
-        type: "session.steer.requested",
-        source: "telegram",
-        data: { sessionId: "s_reply_target" },
-      });
-      expect(String(steers[0].data?.message)).toContain("continue with the smaller plan");
-      expect(inputs).toHaveLength(0);
+      expect(chatStarts).toHaveLength(1);
+      expect(String(chatStarts[0].data?.message)).toContain("Session needs input");
+      expect(String(chatStarts[0].data?.message)).toContain("Conversation: tg_session_input_1");
+      expect(String(chatStarts[0].data?.message)).toContain("Session context");
+      expect(String(chatStarts[0].data?.message)).toContain("continue with the smaller plan");
+      expect(steers).toHaveLength(0);
       expect(replies.some((event) => event.data?.enriched === true && event.data?.hasSessionCtx === true)).toBe(true);
-      expect(sentMessages.some((m) => m.text.includes("Reply sent to session s_reply_target"))).toBe(true);
+      expect(
+        sentMessages.some(
+          (m) => m.text.includes("May is handling it") && (m.reply_parameters as any)?.message_id === 901,
+        ),
+      ).toBe(true);
     });
 
     bot.close();
@@ -469,8 +502,19 @@ describe("telegram reply e2e", () => {
         urgency: "high",
         data: { sessionId: "s_active_telegram" },
       });
-      expect(events).toContainEqual({ type: "runtime.reload.requested", source: "telegram", owner: "agent:may", data: {} });
-      expect(events).toContainEqual({ type: "runtime.shutdown.requested", source: "telegram", owner: "agent:may", urgency: "high", data: {} });
+      expect(events).toContainEqual({
+        type: "runtime.reload.requested",
+        source: "telegram",
+        owner: "agent:may",
+        data: {},
+      });
+      expect(events).toContainEqual({
+        type: "runtime.shutdown.requested",
+        source: "telegram",
+        owner: "agent:may",
+        urgency: "high",
+        data: {},
+      });
       expect(events.some((event) => event.type === "input")).toBe(false);
     });
 

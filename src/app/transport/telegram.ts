@@ -17,15 +17,11 @@
  */
 
 import { setDefaultAutoSelectFamily } from "node:net";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve } from "node:path";
 import { type EventBus } from "../event-bus.js";
 import type { SubagentManager } from "../../lib/index.js";
 import { getNotificationMessage } from "../../lib/db/notifications.js";
-import {
-  buildTelegramReplyRoute,
-  normalizeProjectPath,
-} from "./telegram-reply-router.js";
+import { buildTelegramReplyRoute } from "./telegram-reply-router.js";
 import { createTelegramClient } from "./telegram-client.js";
 import { attachTelegramOutbound } from "./telegram-outbound.js";
 import { normalizeEventOwner } from "../../../packages/control/src/event-envelope.js";
@@ -45,17 +41,6 @@ export interface TelegramBotOptions {
   manager: SubagentManager;
   getSessionId: () => string;
   interfaceAgent: string;
-}
-
-function projectOwner(projectRoot: string, projectPath: string): string {
-  try {
-    const content = readFileSync(join(projectRoot, projectPath, "project.md"), "utf-8");
-    const match = content.match(/^---\s*\n[\s\S]*?\nowner:\s*([^\n]+)\n[\s\S]*?\n---/m);
-    if (match?.[1]) return match[1].trim().replace(/^["']|["']$/g, "");
-  } catch {
-    /* best-effort owner lookup */
-  }
-  return "may";
 }
 
 export interface TelegramBot {
@@ -103,7 +88,18 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
 
   /** Unified outbound: all messages to user go through here.
    * Always stores context for reply enrichment. */
-  function sendToUser(text: string, context?: { eventType?: string; agent?: string; sessionId?: string; projectId?: string; summary?: string }) {
+  function sendToUser(
+    text: string,
+    context?: {
+      eventType?: string;
+      agent?: string;
+      sessionId?: string;
+      projectId?: string;
+      summary?: string;
+      data?: Record<string, unknown>;
+      replyToMessageId?: number;
+    },
+  ) {
     if (!pendingChatId) return;
     if (shouldSuppressProactive(text, context)) return;
     const ctx = {
@@ -111,7 +107,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
       agent: context?.agent || opts.interfaceAgent,
       sessionId: context?.sessionId || getSessionId() || undefined,
       projectId: context?.projectId,
-      data: JSON.stringify({ text: text.slice(0, 500), summary: context?.summary }),
+      data: JSON.stringify({
+        ...(context?.data ?? {}),
+        text: text.slice(0, 500),
+        summary: context?.summary,
+      }),
+      replyToMessageId: context?.replyToMessageId,
     };
     sendMessage(pendingChatId, text, undefined, ctx).catch((err) => {
       const msg = err instanceof Error ? err.message : String(err);
@@ -149,31 +150,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     return false;
   }
 
-  async function emitProjectComment(projectPath: string, comment: string): Promise<boolean> {
-    const normalized = normalizeProjectPath(projectPath, projectRoot);
-    if (!normalized) return false;
-
-    const projectDir = join(projectRoot, normalized);
-    const projectFile = join(projectDir, "project.md");
-    if (!existsSync(projectFile)) {
-      bus.emit({ type: "info", message: `[telegram] Project reply target not found: ${normalized}` });
-      return false;
-    }
-
-    bus.emit({
-      type: "project.comment.created",
-      source: "telegram",
-      owner: normalizeEventOwner(projectOwner(projectRoot, normalized)),
-      data: {
-        projectPath: normalized,
-        comment: comment.trim(),
-        author: "hao",
-      },
-    } as any);
-    bus.emit({ type: "info", message: `[telegram] Project comment event emitted: ${normalized}` });
-    return true;
-  }
-
   function emitChatStart(message: string, source = "telegram"): void {
     bus.emit({
       type: "chat.start.requested",
@@ -185,15 +161,6 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         channel: "telegram",
         channelThreadId: pendingChatId ?? undefined,
       },
-    } as any);
-  }
-
-  function emitSessionSteer(sessionId: string, message: string, owner?: string): void {
-    bus.emit({
-      type: "session.steer.requested",
-      source: "telegram",
-      owner: normalizeEventOwner(owner ?? opts.interfaceAgent),
-      data: { sessionId, message },
     } as any);
   }
 
@@ -256,31 +223,9 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         });
 
         if (route.kind === "notification") {
-          if (route.projectPath && await emitProjectComment(route.projectPath, text)) {
-            bus.emit({
-              type: "telegram.reply",
-              source: "telegram",
-              owner: normalizeEventOwner(route.owner),
-              data: {
-                enriched: true,
-                projectPath: route.projectPath,
-                delivery: "project-comment",
-                originalMsgId: replyToMsgId,
-              },
-            } as any);
-            await sendMessage(chatIdStr, `Comment sent to ${route.projectPath}. Resuming the project now.`, undefined, {
-              eventType: "project.comment",
-              agent: route.owner || opts.interfaceAgent,
-              projectId: route.projectPath,
-              data: JSON.stringify({ replyToMsgId }),
-            });
-            return;
-          }
-
           enrichedText = route.enrichedText;
           bus.emit({ type: "info", message: route.infoMessage });
 
-          // Track reply for metric
           bus.emit({
             type: "telegram.reply",
             source: "telegram",
@@ -291,19 +236,14 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               originalMsgId: replyToMsgId,
             },
           } as any);
-          if (route.sessionId) {
-            if (await handleTelegramCommand(text, chatIdStr, route.sessionId)) {
-              return;
-            }
-            emitSessionSteer(route.sessionId, enrichedText, route.owner);
-            await sendMessage(chatIdStr, `Reply sent to session ${route.sessionId}.`, undefined, {
-              eventType: "telegram.reply",
-              agent: route.owner || opts.interfaceAgent,
-              sessionId: route.sessionId,
-              data: JSON.stringify({ replyToMsgId }),
-            });
-            return;
-          }
+
+          await sendMessage(chatIdStr, "Received. I attached your reply context and May is handling it.", undefined, {
+            eventType: "telegram.reply",
+            agent: opts.interfaceAgent,
+            projectId: route.projectPath ?? undefined,
+            data: JSON.stringify({ replyToMsgId }),
+            replyToMessageId: msg.message_id,
+          });
         } else if (route.kind === "quote") {
           enrichedText = route.enrichedText;
           bus.emit({ type: "info", message: route.infoMessage });
@@ -318,6 +258,12 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               originalMsgId: replyToMsgId,
             },
           } as any);
+          await sendMessage(chatIdStr, "Received. I attached the quoted message and May is handling it.", undefined, {
+            eventType: "telegram.reply",
+            agent: opts.interfaceAgent,
+            data: JSON.stringify({ replyToMsgId, fallback: "telegram-quote" }),
+            replyToMessageId: msg.message_id,
+          });
         } else {
           bus.emit({ type: "info", message: route.infoMessage });
           bus.emit({
@@ -330,6 +276,17 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
               originalMsgId: replyToMsgId,
             },
           } as any);
+          await sendMessage(
+            chatIdStr,
+            "Received. I could not find the original message context, so May will handle it from your reply text.",
+            undefined,
+            {
+              eventType: "telegram.reply",
+              agent: opts.interfaceAgent,
+              data: JSON.stringify({ replyToMsgId, fallback: "missing-context" }),
+              replyToMessageId: msg.message_id,
+            },
+          );
         }
       } catch {}
     }
@@ -360,7 +317,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     emitChatStart(finalMessage);
   }
 
-  async function handleTelegramCommand(text: string, chatIdStr: string, targetSessionId?: string): Promise<boolean> {
+  async function handleTelegramCommand(text: string, chatIdStr: string): Promise<boolean> {
     if (!text.startsWith("/")) return false;
 
     const [cmd = "", ...rest] = text.split(/\s+/);
@@ -388,7 +345,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
         return true;
       }
 
-      const sessionId = targetSessionId || outbound.getRootChatSessionId() || getSessionId();
+      const sessionId = outbound.getRootChatSessionId() || getSessionId();
       if (sessionId) {
         emitSessionCancel(sessionId);
       } else {
