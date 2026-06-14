@@ -48,7 +48,9 @@ describe("MetricService", () => {
       { metricId: "scout.idea-yield-24h", status: "breached" },
     ]);
 
-    const alert = db.prepare("SELECT metric_id, alert_type, resolved_at FROM metric_alerts WHERE metric_id = ?").get("scout.idea-yield-24h") as any;
+    const alert = db
+      .prepare("SELECT metric_id, alert_type, resolved_at FROM metric_alerts WHERE metric_id = ?")
+      .get("scout.idea-yield-24h") as any;
     expect(alert).toMatchObject({ metric_id: "scout.idea-yield-24h", alert_type: "threshold", resolved_at: null });
     expect(emitted[0]).toMatchObject({
       type: "metric.breach",
@@ -65,6 +67,55 @@ describe("MetricService", () => {
       type: "metric.recovered",
       data: { metricId: "scout.idea-yield-24h" },
     });
+  });
+
+  it("defaults project metric ownership to the project owner and emits routing context", () => {
+    const { db, service, emitted } = harness();
+    db.prepare("INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(
+      "sample-project",
+      "/app/projects/sample-project.app",
+      "sample-project",
+      "sample-owner",
+      "active",
+      10_000,
+    );
+
+    service.define({
+      id: "sample-project.task.no-work",
+      name: "Sample project no work",
+      type: "health",
+      project: "sample-project",
+      target: 0,
+      threshold: 0,
+      unit: "boolean",
+      alertOp: ">",
+      priority: "P1",
+    });
+
+    service.record("sample-project.task.no-work", 1, { measuredAt: 10_000 });
+    expect(service.evaluate("sample-project.task.no-work")).toMatchObject([
+      { metricId: "sample-project.task.no-work", status: "breached" },
+    ]);
+
+    expect(emitted[0]).toMatchObject({
+      type: "metric.breach",
+      envelope: { owner: "agent:sample-owner", source: "test", urgency: "high" },
+      data: {
+        metricId: "sample-project.task.no-work",
+        metricName: "Sample project no work",
+        project: "sample-project",
+        alertId: expect.any(Number),
+        alertType: "threshold",
+        current: 1,
+        threshold: 0,
+        target: 0,
+        alertOp: ">",
+        measuredAt: 10_000,
+        priority: "P1",
+      },
+    });
+    expect(emitted[0].data?.trend).toEqual([{ value: 1, measuredAt: 10_000 }]);
+    expect(emitted[0].data).not.toHaveProperty("owner");
   });
 
   it("opens health alerts only after the configured consecutive failures", () => {
@@ -98,8 +149,14 @@ describe("MetricService", () => {
       { metricId: "guard.blocked-count-15m", status: "breached" },
     ]);
 
-    const alert = db.prepare("SELECT metric_id, alert_type, resolved_at FROM metric_alerts WHERE metric_id = ?").get("guard.blocked-count-15m") as any;
-    expect(alert).toMatchObject({ metric_id: "guard.blocked-count-15m", alert_type: "consecutive_failures", resolved_at: null });
+    const alert = db
+      .prepare("SELECT metric_id, alert_type, resolved_at FROM metric_alerts WHERE metric_id = ?")
+      .get("guard.blocked-count-15m") as any;
+    expect(alert).toMatchObject({
+      metric_id: "guard.blocked-count-15m",
+      alert_type: "consecutive_failures",
+      resolved_at: null,
+    });
     expect(emitted.at(-1)).toMatchObject({
       type: "metric.breach",
       envelope: { owner: "agent:may", source: "test", urgency: "high" },

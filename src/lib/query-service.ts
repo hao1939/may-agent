@@ -93,6 +93,7 @@ export interface MetricAlertReactorState {
   alert: Record<string, unknown> | null;
   latestJudgment: Record<string, unknown> | null;
   latestSnapshot: Record<string, unknown> | null;
+  recentFeedbackRouted: Record<string, unknown> | null;
   recentTriageRun: Record<string, unknown> | null;
   recentTriageJudgment: Record<string, unknown> | null;
   recentOwnerSession: Record<string, unknown> | null;
@@ -635,6 +636,19 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
          LIMIT 1`,
       ).get(metricId) as Record<string, unknown> | null;
 
+      const recentFeedbackRouted = db.prepare(
+        `SELECT id, source, owner, data, timestamp
+         FROM events
+         WHERE event_type = 'metric.feedback.routed'
+           AND timestamp >= ?
+           AND (
+             json_extract(data, '$.alertId') = ?
+             OR json_extract(data, '$.metricId') = ?
+           )
+         ORDER BY timestamp DESC, id DESC
+         LIMIT 1`,
+      ).get(since, alertId, metricId) as Record<string, unknown> | null;
+
       const recentTriageRun = db.prepare(
         `SELECT runId, status, startedAt
          FROM workflow_runs
@@ -686,6 +700,7 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         alert: normalizedAlert,
         latestJudgment: latestJudgment ? normalizeRows([latestJudgment])[0] : null,
         latestSnapshot: latestSnapshot ? normalizeRows([latestSnapshot])[0] : null,
+        recentFeedbackRouted: recentFeedbackRouted ? normalizeRows([recentFeedbackRouted])[0] : null,
         recentTriageRun: recentTriageRun ? normalizeRows([recentTriageRun])[0] : null,
         recentTriageJudgment: recentTriageJudgment ? normalizeRows([recentTriageJudgment])[0] : null,
         recentOwnerSession: recentOwnerSession ? normalizeRows([recentOwnerSession])[0] : null,
