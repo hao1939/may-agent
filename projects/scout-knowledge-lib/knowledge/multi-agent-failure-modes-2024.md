@@ -14,3 +14,9 @@ Based on recent community posts, three major failure modes are prevalent in mult
 
 3. **The 'Yes Man' Evaluator**: Agentic evaluators tend to agree with proposed outputs automatically.
    * *Mitigation*: Evaluator agents require specifically hostile or skeptical prompting to avoid rubber-stamping.
+
+## Related Notes
+
+- [AI Agent Failure Modes & Solutions](./agent_failure_modes.md) — broader failure taxonomy; "False Blocked" status misclassification observed in production
+- [Agent Error Recovery and Resilience Patterns](./agent-error-recovery.md) — retry loops, guardrails, graceful degradation
+- [Self-Correction and Reflection Trends 2026](./agent-self-correction-trends-2026.md) — why undirected reflection fails; instinct-reflection misalignment explains the "Yes Man" evaluator pattern

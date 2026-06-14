@@ -1,3 +1,5 @@
+> **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
+
 # Metric-Driven Agent Coordination Patterns (2026)
 
 **Sources:** https://arxiv.org/abs/2401.13178, https://arxiv.org/abs/2310.03659

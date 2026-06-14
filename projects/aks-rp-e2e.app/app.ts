@@ -5,6 +5,7 @@ function defineProjectApp(app: ProjectApp): ProjectApp {
 }
 
 const projectId = "aks-rp-e2e";
+const projectAppPath = "projects/aks-rp-e2e.app";
 const appTaskContext =
   "app: /app/projects/aks-rp-e2e.app\nproject: /app/projects/aks-rp-e2e";
 
@@ -272,6 +273,16 @@ async function routeAksRpE2eEvent(
     );
   }
 
+  if (event.type === "project.focus.approval.submitted") {
+    return ctx.emit(
+      projectPlanningEvent("focus-approval-submitted", {
+        approval: eventDetails(event),
+        instruction:
+          "Fold the human focus-plan approval/adjustment/hold decision into the current focus branch, then continue the planner/worker loop.",
+      }),
+    );
+  }
+
   if (event.type === "project.task.completed") {
     const taskId =
       eventString(event, "taskId") || eventString(event, "task_id");
@@ -332,13 +343,18 @@ async function routeAksRpE2eEvent(
       eventString(event, "project") || eventString(event, "projectId");
     const escalationId =
       eventString(event, "escalationId") || eventString(event, "escalation_id");
-    if (!project && !escalationId.startsWith("esc_aks_rp_e2e_")) {
+    const projectPath =
+      eventString(event, "projectPath") || eventString(event, "project_path");
+    const isAksProject =
+      project === projectId ||
+      project === `${projectId}.app` ||
+      project === projectAppPath ||
+      projectPath === projectAppPath ||
+      escalationId.startsWith("esc_aks_rp_e2e_");
+    if (!isAksProject) {
       return ctx.noop(
         `ignored ${event.type} without aks-rp-e2e project marker`,
       );
-    }
-    if (project && project !== projectId && project !== `${projectId}.app`) {
-      return ctx.noop(`ignored ${event.type} for project ${project}`);
     }
     return ctx.emit(
       projectPlanningEvent(
@@ -533,6 +549,7 @@ export default defineProjectApp({
     { type: "project.action.invoked", project: projectId },
     { type: "project.focus.plan.requested", project: projectId },
     { type: "project.focus.review.requested", project: projectId },
+    { type: "project.focus.approval.submitted", project: projectId },
     { type: "project.task.completed", project: projectId },
     { type: "project.problem.resolved", project: projectId },
     { type: "project.problem.escalated", project: projectId },
@@ -567,7 +584,7 @@ export default defineProjectApp({
           "Watchdog observes liveness and asks the planner to reconcile stale or underfilled work.",
       },
       "aks-rp-e2e-focus-plan": {
-        emits: ["project.planning.requested", "escalation.created"],
+        emits: ["project.planning.requested", "message.created"],
         description:
           "Focus-plan workflow reviews mid-term progress, updates the focus branch, and asks for human approval when direction/risk changes or progress is off track.",
       },
@@ -587,6 +604,12 @@ export default defineProjectApp({
         event: "project.action.invoked",
         emits: ["project.planning.requested"],
         description: "UI or API project action becomes planner context.",
+      },
+      {
+        event: "project.focus.approval.submitted",
+        emits: ["project.planning.requested"],
+        description:
+          "A direct focus-plan approval/adjust/hold decision wakes planning with the decision context.",
       },
       {
         event: "project.task.completed",
@@ -636,7 +659,7 @@ export default defineProjectApp({
         description: "Coverage gaps become planner context.",
       },
     ],
-    externalEvents: ["escalation.created"],
+    externalEvents: ["message.created", "escalation.created"],
     intentionalCycles: [
       {
         id: "planner-worker-review-loop",

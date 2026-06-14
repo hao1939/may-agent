@@ -3,7 +3,11 @@ summary: "Insights on multi-agent coordination, tool failures, and scalable dive
 triggers: "coordination, tool failures, autonomous work, diversity measurement"
 last_updated: "2026-05-09"
 source_basis: "arXiv papers (OpenSearch-VL, Design Conductor 2.0, Graph-SND)"
+status: superseded
+redirect: multi-agent-coordination.md
 </ai_context>
+
+> **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
 
 # Multi-Agent Coordination Insights
 

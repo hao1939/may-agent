@@ -14,14 +14,15 @@ The EventBus is the central nervous system. Commands go in, observations come ou
 
 ## 2. Everything has an owner — owner is the backstop, not the first responder
 
-Every metric, handler, project, and event has an owner. The owner's role is **accountability**, not first-line handling. The system routes to the best-fit consumer first:
+Every metric, handler, project, and event has an owner. The owner's role is
+**accountability**, not first-line handling. Events route by target first, then
+fall back through ownership:
 
 ```
 Event fires
-  -> Best-fit handler registered?  -> handler runs
-  -> Best-fit agent assigned?      -> agent gets forked
-  -> Nobody consumed it?           -> Owner picks it up
-  -> Something went wrong?         -> Owner investigates
+  -> Targeted handler/session/project path exists? -> fire that target
+  -> Target missing or cannot consume it?          -> owner picks it up
+  -> Owner cannot resolve it?                      -> escalate up the chain
 ```
 
 Owner means: if this falls on the floor, it's your problem. Owners don't do all the work — they guarantee nothing is orphaned.
@@ -161,8 +162,8 @@ These principles aren't independent. They form a system:
 
 ```
 Something happens                           (Principle 1: event)
-  -> Best-fit consumer handles it           (Principle 2: ownership routing)
-  -> If nobody does, owner picks it up      (Principle 3: closed loop)
+  -> Targeted consumer handles it           (Principle 2: target-first routing)
+  -> If target cannot consume, owner picks it up (Principle 3: closed loop)
   -> Consumer discovers context it needs    (Principle 4: on-demand context)
   -> Acts based on evidence                 (Principle 5: evidence first)
   -> Uses structure for judgment calls      (Principle 6: structure > instructions)

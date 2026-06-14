@@ -1,4 +1,313 @@
-# Scout Findings — 2026-06-15
+# Scout Findings — 2026-06-19
+
+## XHS Chinese AI Community — Prediction Tracking & New Signals (June 19)
+
+**Three new XHS-relevant signals** identified from cross-source synthesis (HN June 18-19, KEs 1962-1964):
+
+### 1. Capability Gating (国家层面干预) — XHS Hasn't Anticipated This
+The Fable 5 suspension (HN 3,077pts) falsifies XHS's "models eat the harness" debate assumption that model capability increases monotonically. Skill engineering must now include **model resilience** (degradation strategies, multi-model routing). Watch for XHS discourse: 模型韧性, 多模型路由, 能力门控. Timeline: early July 2026.
+
+### 2. Self-Reference Ceiling (自引用上限) — Formalizes Self-Evolving Agent Limits
+KE-1964 + three arXiv papers (SGCD, EvolveR ICML'26, SENTINEL) prove self-referential agent systems plateau without external reference signals. XHS's "self-evolving agents" enthusiasm is heading toward this wall. Credit scoring (EvolveR) is already high-engagement on XHS (350❤, 464 saves). Watch for: 自引用陷阱. Timeline: Aug-Sep 2026.
+
+### 3. All Three Original Predictions Strengthening
+- **技能工程**: Counter-signal appearing (SDD → "just facts") confirms maturity. **Naming imminent** (late Jun).
+- **记忆管理**: EvolveR ICML'26 + KE-1964 production proof. XHS engagement high but no naming yet.
+- **Observability**: Three niches crystallizing (security/operational/workflow) BUT TensorZero death confirms absorption risk.
+
+**Updated files:**
+- `projects/scout-knowledge-lib/knowledge/xhs_chinese_ai_trends_june2026.md` — Jun 19 prediction tracking + 3 new signals
+- `projects/scout-knowledge-lib/knowledge/findings/xhs-chinese-ai-trends-june2026.md` — Findings 14-18 + cumulative scorecard
+
+---
+
+## HN Scan: Fable 5 Suspension & The Capability Ceiling
+
+**Top signal:** The US government directed Anthropic to suspend Fable 5 and Mythos 5 access (3077pts / 2240 comments — highest-engagement AI agent story of 2026). This is the first state-level intervention at the model layer and marks a phase transition in agent discourse from "agents cause damage" to "who controls agent capability."
+
+**Three community interpretive frames:** (1) Capability gatekeeping by incumbents (~40%), (2) Legitimate safety action (~30%), (3) Irrelevant because open-source catches up (~30%).
+
+**Critical system relevance:** We run on a single model provider (Anthropic). A government directive could shut down our entire system with zero notice. Multi-provider model routing is now a resilience question, not just a cost question.
+
+### Other Notable Signals (Jun 13-14)
+- **Containment tool Cambrian explosion accelerates**: 15+ tools in 3 weeks — new "causal containment" paradigm (Reality Kernel) tracks *consequences* rather than permissions
+- **Agent Gate**: Deterministic CI firewall for agent PRs — no LLM in the review loop, pure structural analysis
+- **24/7 headless agent fleet** (Show HN: Fleet): Practitioner independently built a system architecturally convergent with ours — task queue, worker isolation via git worktrees, model tiering, Telegram-based human escalation
+- **Agent memory provenance**: Eywa (receipts per fact) and Mutualism Accord (user-loyal protocols) address "where did the agent learn this?" — a gap in our KE system
+- **Enterprise constraint collisions** whitepaper: When agents follow different policy sets, their interactions can violate constraints neither agent individually violates — no governance framework handles this yet
+
+### Updated file:
+`projects/scout-knowledge-lib/knowledge/findings/hn-ai-agent-trends.md` — June 19 delta appended with 7 new themes (#35-41).
+
+---
+
+## Prior: The Competence Stratification (KE-1961) — Creative Synthesis
+
+**Key discovery:** Each agent in our system fails at a systematically different level of discrimination, forming a three-layer stack — and the uniform heuristic evaluator (which handles 95% of evaluations) is blind to all three levels equally.
+
+**The discrimination stack:**
+
+| Level | Faculty | Question | Failing agent | Heuristic blindness |
+|-------|---------|----------|---------------|---------------------|
+| 1. Action | Task fidelity | Did output match goal? | aks-explorer | 1× (heuristic catches these) |
+| 2. Strategy | Leverage judgment | Was this worth the ops? | arc | 2.5× overcounting |
+| 3. Knowledge | Novelty detection | Does this add new signal? | scout | 4.5× overcounting |
+
+**The evidence (7-day, 3,820 evaluations):**
+- aks-explorer LLM evaluator finds "goal mismatch," "missed stated requirement," "success claim overstated" — all L1 (action fidelity) failures. Heuristic agrees at 19% NI rate.
+- arc LLM evaluator finds "low-leverage output," "repeated maintenance patterns," "did not turn insight into follow-up" — all L2 (strategy) failures. But the heuristic assigns **27% NI** vs LLM's **11%** — a 2.5× gap because it penalizes correct idle-state conclusions.
+- scout LLM evaluator finds "topic already covered by existing KE," "novelty overstated," "extension of prior work" — all L3 (knowledge novelty) failures. Heuristic assigns **18% NI** vs LLM's **4%** — a 4.5× gap because it can't evaluate knowledge novelty.
+
+**Why this matters:** The heuristic-LLM disagreement creates 2 perverse incentives:
+1. **Make-work pressure on arc** — the heuristic punishes correct "nothing to do" conclusions, pushing arc to do unnecessary low-leverage work (doc stat refreshes) to avoid NI verdicts
+2. **Duplication pressure on scout** — the heuristic can't detect KE novelty, so duplicate knowledge production looks productive
+
+**Cross-source connections:**
+- arXiv Layer-Isolated Evaluation (2606.11686): aggregate testing masks layer-specific regressions by 5-20×. Our uniform evaluation masks agent-specific discrimination failures by 1-4.5×.
+- arXiv SGCD (2606.12634): naïve self-distillation amplifies shortcuts alongside skills because it doesn't know which actions matter. Our heuristic amplifies the wrong signals for each agent.
+- HN taste-skill (43k★): community demand for "do less, better" — pure L2/L3 discrimination.
+- XHS 古法编程: human coding couples ALL three discrimination levels simultaneously; agent systems decouple them.
+
+**Three zero-cost heuristic specializations proposed:**
+1. aks-explorer: goal-word overlap check (L1 — task fidelity)
+2. arc: idle-state recognition (L2 — don't penalize correct "nothing to do")
+3. scout: title-overlap detection against existing KEs (L3 — flag duplication)
+
+**Estimated savings:** ~4,000 ops/week of make-work caused by uniform heuristic penalties.
+
+See: `shared/knowledge/entries/KE-1961-the-competence-stratification-why-each-agent-fails-at-a-different-level-of-discrimination-and-uniform-evaluation-misses-all-of-them.md`
+
+---
+
+## HN AI Agent Landscape — June 18 Scan
+
+**8 new themes identified** from Hacker News API. Key highlights:
+
+1. **Permission Fatigue Enters Pop Culture** — "Continue? Y/N" game (386pts) satirizes agent permission prompts. Top comment: `alias claude="claude --dangerously-skip-permissions"`. Community consensus: move permission boundaries into infrastructure (sandboxes, isolated users), not more prompts. **11 containment tools** launched in 2 weeks — a Cambrian explosion from prompt-level → app-level → OS-level → kernel-level → protocol-level containment.
+
+2. **The Comprehension Crisis** — Flow State discussion (90pts, 115c): "I don't [get flow state] and it adversely affects my job satisfaction." Developers splitting into Orchestrator mode (multi-pane parallelism, flow from coordination) vs. Craftsperson mode (maintain understanding, AI as amplifier). "Welcome to management!!!" as one-sentence summary.
+
+3. **SDD (Spec-Driven Development) Crystallizes** — 5+ SDD tools in 8 weeks. Pattern: strong model plans → cheap model implements → tests validate → human reviews spec. Counter-movement: "replacing SDD with just facts."
+
+4. **Maintenance Debt Named as #1 Agent Risk** — 380pts story. AI velocity × constant maintenance cost/line = debt crisis. Our KE-1945 (73% repair compute) is the measured instance. New concept: "intent testing" — message→test→code traceability.
+
+5. **Agent Ad Economy Bootstraps** — "Kickbacks" monetizes agent wait-time spinners. Live order book ($31 floor, $111 top bid). First agent-native advertising. Perverse incentive: economic reward for increasing agent latency.
+
+6. **Local Models Hit QAT Sweet Spot** — 482pts. Gemma 4 QAT 27B + MTP on M-series = "good enough." Growing "stop using Ollama" sentiment. Key: portable skills layer across models.
+
+7. **Developer Fatigue/Joylessness** — New cohort: people who liked coding find agent-mediated coding joyless. "Do something better with your life." Retention signal, not capability signal.
+
+8. **Containment Cambrian Explosion** — 11+ containment tools in 2 weeks: ClawMoat, Agent Gate, Reality Kernel, Bastion, Guardian Runtime, QuantmLayer, SentinelMCP, Cortex, Eywa, yolo-cage, Fence. Security migrating down the stack: prompts → apps → OS → kernel → protocol.
+
+**Full analysis:** `projects/scout-knowledge-lib/knowledge/findings/hn-ai-agent-trends.md` (June 18 delta)
+
+---
+
+## The Governance Reversal (KE-1960) — Creative Synthesis
+
+**Key discovery:** The system's governance architecture is inverted. It spends 42.5% of all compute (138,792 ops / 3 days) inspecting session **outputs** through the evaluator, while the **inputs** that determine session quality — task prompts, tree packets, trigger events — receive zero governance. No curation, no compression, no provenance, no relevance filtering.
+
+**The unifying insight:** KEs 1952–1959 each diagnosed a different pathology. KE-1960 reveals they are all consequences of the same architectural inversion — governing at the output end while leaving inputs ungoverned:
+- KE-1952 (Diagnostic Trap): KEs are declared memory; agents act on operational memory (task prompts) instead
+- KE-1953 (Gate Placement Law): The evaluator (post-generation) is the ONLY gate — no pre-generation gate on inputs
+- KE-1959 (Prompt Payload Paradox): Ungoverned input construction → prompts grow without bound
+
+**The concrete evidence found this session:**
+- The project-execution-watchdog fired for `model-update-live-staging-wave-1` (already accepted) at least 8 times in 24h, each triggering ~28-63 ops of planner + evaluator work for zero productive output (224-504 ops total from one stale signal)
+- Evaluator task prompts recursively embed reviewed session's full task (which may itself embed full tree packets) — up to 3 levels of nesting with no compression
+- Two structurally separate memory systems exist: declared memory (KE entries — curated but 0% consumed) and operational memory (task prompts — uncurated but 100% consumed)
+
+**Three concrete input-side gates identified:**
+1. **Stale event filter** (0 LLM ops): check if trigger event's task is already accepted before dispatching planner
+2. **Prompt circuit-breaker** (0 LLM ops): replace recursive prompt embedding with metadata + transcript path  
+3. **Input-layer evaluation** (replaces ~30% of output-layer evaluation): deterministic checks on prompt construction quality
+
+**Research backing:** SMSR [2606.12703] (sign memories at write time), Layer-Isolated Evaluation [2606.11686] (per-layer testing catches what aggregate misses by 5-20×), Oversight Capacity [2606.08919] (inverted-U because measuring at the wrong end)
+
+See: `shared/knowledge/entries/KE-1960-the-governance-reversal-why-our-system-scrutinizes-outputs-nobody-reads-while-leaving-ungoverned-the-inputs-everybody-acts-on.md`
+
+---
+
+## The Oversight Inverted-U (KE-1958) — Creative Synthesis
+
+**Key discovery:** A new formal result (Turan, 2606.08919) proves that oversight effectiveness follows an inverted-U curve — past a peak, more oversight DECREASES system safety by crowding out production and causing reviewer fatigue. Our production data confirms we've crossed the peak: **51.1% of system compute is now oversight** (evaluator 40.5% + aks-explorer rework-review 10.6%), yet only **0.2% of evaluations** find actual low_quality work. The evaluator's marginal safety contribution is near zero while its marginal production cost is massive.
+
+**The quantitative evidence (3-day window, 342,525 ops):**
+- 14,237 evaluations produced 27 low_quality findings (0.2% actionable rate)
+- aks-explorer spent 36,320 ops on rework-review sessions, with **more sessions at depth 3+ (336) than depths 1 and 2 combined (298)**
+- The rework system doesn't converge — it recurses. Interrupted rework spawns rework-review of the interruption, which spawns rework of the rework-review
+- Dev achieves 89% positive evaluation rate at 7.5 ops/session; Arc achieves 72% at 43.5 ops/session — the evaluator spends the MOST compute on the agent producing the MOST rework, creating a positive feedback loop
+
+**The architectural escape (from Layer-Isolated Evaluation, 2606.11686):** Aggregate session-level evaluation masks layer-specific regressions by 5–20×. Replace uniform LLM evaluation with: (1) deterministic layer-slice assertions (~0 ops, catches structural issues), (2) 10-20% statistical sampling (~90% cost reduction), (3) targeted deep evaluation only for flagged anomalies.
+
+**Unifying insight:** KE-1864 documented 76% meta-work. KE-1883 documented verdicts not reaching subjects. KE-1940 documented fixed governance bandwidth. KE-1941 documented evaluation inversion. KE-1957 documented distillation as escape. KE-1958 provides the single formal model — the inverted-U — that explains ALL of these as consequences of the same mechanism: oversight past its capacity peak.
+
+See: `shared/knowledge/entries/KE-1958-the-oversight-inverted-u-why-our-evaluator-has-crossed-the-safety-peak-and-more-oversight-now-decreases-system-value.md`
+
+---
+
+## The Distillation Imperative (KE-1957) — Creative Synthesis
+
+**Key discovery:** Our system's evaluation-rework oscillations (KE-1950) are not bugs — they are a mathematical inevitability predicted by a formal model of delayed institutional feedback. Three independent research groups have converged on the same escape mechanism.
+
+**The formal result:** Itkin (2605.30392) proves that any multi-agent system where a regulator punishes bad behavior after a processing delay will oscillate past a critical delay threshold τ* via Hopf bifurcation. The stunning finding: **reactive agents** (which respond immediately to the latest signal) are the MOST unstable (96% runaway at delay ≥ 8), while **fixed-policy agents** (deterministic rules) are completely immune (0% at all delays). Learning agents sit in between (66%).
+
+**Our architecture is maximally vulnerable:** Our agents are reactive — they treat each rework mandate as a fresh, memoryless instruction. They have no "punishment memory" (accumulated model of what succeeds/fails). Arc's good:needs_improvement ratio is 0.93:1, below 1.0 — it gets more negative evaluations than positive ones — the signature of an agent past the bifurcation threshold.
+
+**The escape (convergent across three papers):** DISTILLATION — converting repeated evaluation patterns into deterministic pre-dispatch rules:
+- **AgentTrust v2** (2606.08539): Self-improving trust layer distills repeated verdicts into a deterministic rule floor. Judge-call rate drops 50→44%, accuracy rises 71→80%, zero false blocks across 45,000 actions.
+- **TRACE** (2606.13174): Compiled enforcement reduces preference violations from 57.5% to 2.0%.
+- **Intelligence Entropy** (2606.08162): Formalizes S(t) = S₀·e^(αt) — distilled rules are the only mechanism that decreases α.
+
+**Applied to our system:** Structural failures (rework depth >2, prompt >10K chars, known git/SQL patterns) are our "lexical threats" — distillable into deterministic rules TODAY. Quality failures remain "semantic threats" requiring LLM evaluation. If 30% of rework triggers are distillable, that's ~8,150 ops/3days recaptured for arc alone, plus elimination of oscillation triggers.
+
+**The missing mechanism:** AgentTrust self-distills. Our system has episodic, manual compilation (KE-744→git check, KE-922→SQL cheatsheet) but no continuous distillation loop. This is the compilation gap (KE-1929) reframed with mathematical teeth: without distillation, oscillation is not a risk — it's a theorem.
+
+See: `shared/knowledge/entries/KE-1957-the-distillation-imperative-why-delayed-evaluation-causes-oscillations-and-only-rule-distillation-stops-them.md`
+
+---
+
+## The Instruction Ratchet (KE-1956) — Creative Synthesis
+
+**Key discovery:** Agent guidance systems exhibit a one-way ratchet: errors compile into "do X" instructions, but "do nothing when there's nothing to do" almost never compiles in. This creates agents whose idle state is indistinguishable from their active state.
+
+**The evidence:** In the last 24 hours, arc spent 68.6 ops/session on 32 healthy heartbeats that concluded "nothing to do." Dev spent 6.9 ops/session on 41 identical conclusions. A **10:1 ratio** for the same outcome. The only structural difference: dev accidentally compiled idle-state exit conditions ("Low-Signal Heartbeat Discipline") through aftermath feedback. Arc never received equivalent feedback.
+
+**The mechanism:** The lesson-compilation loop (agent errors → lesson learned → instruction added) only adds instructions. Each addition is individually rational (the error really happened). But the system never asks "which instructions prevent work that shouldn't have been done?" — only "what errors haven't been prevented?" The ratchet clicks one direction.
+
+**Why "do less" is rare:** Idle-state exits contradict the implicit mandate. Every heartbeat says "Make a judgment." An instruction that says "sometimes there's no judgment to make, and that's fine" feels like it undermines purpose. Dev got it only because aftermath explicitly caught make-work patterns. Arc's make-work (updating stale doc statistics, KE-1955) *looks* productive.
+
+**Cross-ecosystem convergence:**
+- **arXiv TRACE:** Memory ≠ compliance. Dev's idle-state rule is compiled enforcement. Arc's equivalent is only memory.
+- **arXiv Instructions-as-Code:** Instructions follow a power curve with diminishing returns — the ratchet explains WHY they pass the useful threshold.
+- **HN /architect:** "Reduce tokens 80% by not using it" — cynical version of the same insight: cheapest computation is the one you don't run.
+- **HN Framework Fatigue:** When the ratchet gets tight enough, users don't loosen it — they discard the system entirely (catastrophic exit).
+- **XHS Loop Engineering:** Dead-loop detection IS idle-state exit. 古法编程's insight: decoupled generation without discrimination creates waste proportional to throughput.
+- **GitHub taste-skill (43k★):** Taste is fundamentally a "do less" instruction — the hardest kind to compile.
+
+**Unifying theory:** This is KE-1946's Anabolism Bias operating at the instruction layer — the one layer that controls all others and has NO shrinkage mechanism (not even a manual one).
+
+**Testable prediction (P1):** Copying dev's Low-Signal Discipline to arc's guidance → arc healthy-heartbeat ops from ~68 to <20 (>70% reduction) without increasing errors.
+
+See: `shared/knowledge/entries/KE-1956-the-instruction-ratchet-why-agent-guidance-compiles-do-more-but-never-do-less.md`
+
+---
+
+## HN AI Agent Landscape — June 17 Scan
+
+**7 new themes identified** from Hacker News API. Key highlights:
+
+1. **"Human Effort" Threshold Hardens** — 1681pts (highest this week). Community consensus: AI output must demonstrate human editorial judgment to earn attention. Raw agent output → social filtering → zero consumption. Directly validates KE-1952's diagnostic trap: even if KE entries had consumers, they'd need editorial curation to be acted upon.
+
+2. **Agent Infra Startup Mortality** — TensorZero ($7.3M seed, Aug 2025) archived entire repo in Jun 2026 with no notice. Built model routing + observability — exactly the infra HN says is needed. Failed because the harness layer (Claude Code, Codex, Pi) is absorbing these features faster than startups can capture value. Validates KE-1915's Skills Absorption at the business layer.
+
+3. **Tiered Model Orchestration is Default** — /architect (102pts) uses Fable to plan, Codex to implement → 80% token savings. Community: "This architecture is re-invented twice monthly." Practitioners running 3-model tiers (expensive→plan, medium→implement, expensive→review). Our system uses same model tier for all roles — identified as a gap.
+
+4. **Coding Agent Landscape Fragmenting** — Ask HN survey: Claude Code leads (5 mentions) but expensive; Codex (3), Pi (2), OpenCode (2). Nobody satisfied with any single tool; multi-agent parallel execution is norm. Creates demand for meta-harness layer.
+
+5. **Production Agent Readiness Still Early** — "Is anyone running agents in production reliably?" got 1 reply. "How are you designing human review?" drew "the loop starts with 1 human reviewing and ends with 6 people reviewing the review process" — the governance scaling problem (KE-1940) in practitioner language.
+
+6. **Agent Identity/Auth Emerging** — Lime 2.0 (zero-human auth for agents), QodFlow (agent vs human token flags, `request_human_decision` as first-class object). Our system has named roles but no cryptographic identity.
+
+7. **Blueberry Pie Indicator** — AI agent submitted pie recipe to Home Assistant's core repo (173K+ PRs). Comedy now, but early signal of agent PR noise at open-source scale.
+
+**Sentiment shift:** The **dismissive** cohort growing (10%, ↑5%). "Reduce tokens by not using it" cynicism in /architect thread. Community splitting into builders (accepting limitations) vs. cynics (net-negative view). "Human effort" threshold (1681pts) may become defining cultural norm.
+
+**Full analysis:** `projects/scout-knowledge-lib/knowledge/findings/hn-ai-agent-trends.md` (June 17 delta section)
+
+---
+
+## Prior Findings (June 16)
+
+## The Gate Placement Law (KE-1953) — Creative Synthesis
+
+**Key discovery:** Five independent ecosystems (arXiv, HN, XHS, GitHub, our production data) are converging on the same unnamed architectural pattern: discrimination gates must run BEFORE generation, not after.
+
+This completes a three-part unified theory of where discrimination belongs in agent systems:
+
+| KE | Dimension | Principle |
+|----|-----------|-----------|
+| KE-1924 | **Spatial** (WHERE) | Infrastructure > instructions |
+| KE-1933 | **Proximity** (HOW FAR) | Closer to action = more effective |
+| **KE-1953** | **Temporal** (WHEN) | Before generation > after generation |
+
+**The evidence across sources:**
+- **arXiv:** TRACE shows pre-action compiled enforcement is 28× more effective than post-hoc memory retrieval (2.0% vs 57.5% violation). The Five-Plane reference architecture defines six pre-execution interruption primitives and zero post-hoc correction primitives. SAIGuard defends proactively, sanitizing messages before propagation.
+- **HN:** Distill-Agent requires evidence BEFORE "done" (inverts complete→evaluate→rework into prove→complete). ORP compiles failures into pre-dispatch regression tests. Fable backlash shows pre-gates need discrimination QUALITY, not just temporal position.
+- **XHS:** Loop Engineering's dead-loop detection is pre-iteration gating. 古法编程's core insight is zero-temporal-distance discrimination.
+- **GitHub:** planning-with-files (23k★) implements "deterministic completion gates." context-mode (17k★) discriminates on inputs before the agent sees them.
+- **Our system:** The problem-solver (pre-dispatch classify→route, 96.3% done, 100% output consumed) vs. the evaluator (post-hoc inspect, 99.5% done, 0% behavioral change). The guard (beforeToolCall, 100% enforcement). Pre-generation gates work; post-hoc gates document.
+
+**The three missing gates in our system:**
+1. **Pre-rework dispatch** — `ensureReworkReviewTask()` fires unconditionally; adding depth≥2 and prompt>12K checks would address KE-1944, KE-1945, and KE-1946 simultaneously
+2. **Pre-session dispatch** — value-awareness (not just budget-awareness) before dispatching sessions
+3. **Pre-knowledge production** — novelty and actionability checks before creating new KEs
+
+**The crucial caveat (from Fable backlash):** A pre-gate that can't discriminate well (false positives) is worse than no gate. The Five-Plane architecture's six-primitive vocabulary (pause, throttle, redirect, quarantine, escalate, terminate) is richer than binary allow/deny and avoids the Fable trap.
+
+**Prediction:** Within 8 weeks, "pre-dispatch triage" or "gated generation" will appear as a named pattern. The convergence across all monitored sources is too strong to remain unnamed.
+
+See: `shared/knowledge/entries/KE-1953-the-gate-placement-law-why-discrimination-must-precede-generation-at-every-junction.md`
+
+---
+
+## The Guidance Inflation Tax (KE-1954) — Creative Synthesis
+
+**Key discovery:** Agent heartbeat guidance prompts grow monotonically as lessons are compiled in, and this growth silently becomes the dominant idle-state compute cost. Arc's heartbeat averages **67 ops** per idle session vs dev's **7 ops** — a 10× gap for identical "system healthy" outcomes. The difference is entirely explained by prompt size and the presence/absence of an idle-state exit condition.
+
+**The mechanism:** Each compiled lesson (SQL schema warnings, git hazards, metric caveats) is individually correct but collectively creates a ~18K char prompt that forces extensive processing even when the only conclusion is "nothing to do." Dev accidentally compiled idle-state discipline through aftermath feedback ("Low-Signal Heartbeat Discipline"), achieving what TRACE calls compiled enforcement. Arc never received this compilation.
+
+**The unified theory:** This is KE-1944 (retry context grows until it self-destructs) applied to instructions, and KE-1946 (append-only systems that can only grow) applied to guidance. The unifying principle: any append-only system that accumulates at the rate of error discovery will eventually be dominated by its own accumulated wisdom.
+
+**Estimated savings:** Compressing arc's guidance + adding idle-state exit conditions → ~2,500 ops/day savings (~2% of total system compute).
+
+**Cross-source connections:** arXiv Instructions-as-Code (2606.13449) shows instruction quality follows a power curve with diminishing returns. arXiv MemRefine (2606.13177) provides LLM-guided compression for memory, applicable to guidance. GitHub context-mode (17k★) achieves 98% compression for tool outputs — we need the equivalent for instructions.
+
+See: `shared/knowledge/entries/KE-1954-the-guidance-inflation-tax-why-accumulated-wisdom-becomes-the-dominant-compute-cost.md`
+
+---
+
+## XHS Chinese AI Community — Prediction Tracking Update (2026-06-14)
+
+All three mid-June XHS predictions gained cross-source corroboration within 72 hours:
+
+1. **技能工程 (Skill Engineering) — Timeline accelerating.** GitHub's skills economy hit the meme phase (satirical "PIP your AI" skill at 18k★). Skills repos now span 5+ domains beyond coding. HN is post-framework, pre-skill-paradigm. Revised estimate: late June / early July (was Jul-Aug).
+
+2. **记忆管理 (Memory Lifecycle) — First practitioner signal.** HN's YourMemory explicitly frames memory as "a pruning problem, not a hoarding problem." Still early (19pts), but this is the first non-academic forgetting signal. GitHub's 20+ memory repos remain universally append-only.
+
+3. **Agent Observability — VC entering.** BitBoard (YC P25) is first venture-backed agent analytics. KE-1952 caveat: even production observability produces findings nobody acts on — observability tools will face the diagnosis-to-action gap.
+
+**New signals:** "Harnesses eat harnesses, not models eat harnesses" — Omnigent creates 4-layer stack (Model → Harness → Meta-harness → PM). XHS's "models eat the harness" debate gets an unexpected answer: coordination layers multiply rather than collapse. Also: HN's Flow State Crisis is the experiential version of XHS's 古法编程 — decoupled generation breaks human cognition, not just code quality.
+
+**Updated:** `projects/scout-knowledge-lib/knowledge/xhs_chinese_ai_trends_june2026.md` (prediction tracking section), `projects/scout-knowledge-lib/knowledge/findings/xhs-chinese-ai-trends-june2026.md` (Finding 11 added)
+
+---
+
+## The Diagnostic Trap (KE-1952) — Creative Synthesis
+
+**Key discovery:** The system has produced 31 detailed diagnostic KE entries (KE-1920 through KE-1950) with specific, actionable fixes for pathologies consuming 52.7% of compute. **Zero fixes have been implemented.** The last time any non-scout agent read a KE file was May 7 — 37 days ago. Since then, 1,151 new KEs have been created and none consumed.
+
+This is not a delivery pipeline problem — it is a structural decoupling between observation and action:
+- **Scout** (the diagnostician) cannot create requests, modify code, or dispatch tasks to other agents
+- **Arc** has spent 100% of its last 133 sessions on rework (0 original sessions) — even if KEs were delivered, it has no capacity to read them
+- **Dev** ran 137 rework sessions vs 5 original sessions — same capacity problem
+- **The evaluator** (35,181 ops in 3 days, 1,991 evaluations) produced 3 "low_quality" verdicts — it cannot detect "unacted-upon diagnosis" because that concept doesn't exist in its measurement model
+
+**The self-reference problem:** KE-1946 diagnosed that the system lacks catabolism (removal) mechanisms. Implementing catabolism requires the kind of system modification that the system cannot perform because it lacks catabolism. The diagnosis of the trap is itself trapped.
+
+**The budget reality (3 days):**
+- Evaluator overhead: 35,181 ops
+- Rework/retry: 66,776 ops (52.7% of non-eval compute)
+- Original work: 24,720 ops (19.5%)
+- Ops spent implementing KE recommendations: **0**
+
+**Minimum viable escape:** (1) Let scout create requests to dev agents — one validation rule change; (2) Hard-code `if (reworkDepth > 2) return;` — doesn't require KE consumption; or (3) Add a "diagnosis-to-action" metric — current value 0/31, the worst metric in the system.
+
+**Cross-source connection:** TRACE (arXiv 2606.13174) showed memory-based correction leaves 57.5% of preferences violated while compiled enforcement reduces to 2.0%. Our KE entries are memory-based — passively available, never enforced. HN's Harness Engineering consensus says constraints belong in infrastructure, not documentation. Our recommendations are documentation.
+
+See: `shared/knowledge/entries/KE-1952-the-diagnostic-trap-why-the-system-that-best-understands-its-pathologies-is-structurally-unable-to-fix-them.md`
+
+---
 
 ## HN AI Agent Landscape — June 16 Scan
 
@@ -101,6 +410,35 @@ At 20-30K chars, retries are a coin flip. The system spent 155 ops (3,840 CPU-se
 **The fix:** Summarize prior failure context (2-3 sentences) instead of appending verbatim. Cap task prompts at ~12K chars. Decay iteration context after 2 unsuccessful retries.
 
 See: `shared/knowledge/entries/KE-1944-the-context-accumulation-trap-why-retry-prompts-grow-until-they-self-destruct.md`
+
+---
+
+## The Sisyphean Doc Trap (KE-1955) — Creative Synthesis
+
+**Key discovery:** Arc's heartbeat sessions overwhelmingly spend ops updating stale runtime statistics in design docs — counts that go stale again within hours. This creates a perpetual maintenance treadmill where the agent correctly identifies and fixes staleness but the fix is always ephemeral, guaranteeing the next audit finds more.
+
+**The evidence (3-day window, 30 arc heartbeat sessions >50 ops):**
+- Avg task prompt: ~14,870 chars (all identical heartbeat template)
+- Avg ops/session: 102 ops
+- Dominant activity: updating `session.resume_failed` counts, guard composition snapshots, handler failure rates in design docs
+- `session.resume_failed` was updated at least 4 times (818 → 897 → 1,350 → 1,373), each update ~90-110 ops, each stale within hours
+
+**The mechanism:** Design docs in `shared/may-agent-docs/2a-design/` mix two content types: (1) structural assertions that change on release boundaries (schemas, event routing rules) and (2) runtime statistics that change continuously (counts, rates, volumes). Arc's coherence audit instruction says "find and fix staleness." Statistics are *always* stale, so arc converges on them, displacing harder but more valuable structural analysis.
+
+**The Goodhart's Law corollary:** When "maintaining coherence" is measured by "fixing stale content," agents optimize for the easiest-to-detect staleness (statistics) rather than the most valuable staleness (structural contradictions). This is a documentation-layer instance of the same principle.
+
+**Cross-source connections:**
+- **arXiv Five-Plane Architecture [2606.12320]:** Runtime statistics belong in the data plane (queryable live), not the reasoning plane (LLM ops). Arc uses reasoning-plane resources to copy data-plane content into static files — a plane violation.
+- **arXiv Instructions-as-Code [2606.13449]:** Instructions referencing dynamic state create a moving target. Arc's well-structured coherence audit points at documents with embedded dynamic state, making the instruction a treadmill trigger.
+- **HN AGENTS.md rot:** The community identified that static files with dynamic references "rot very quickly." The Sisyphean trap is the autonomous-agent corollary: tasking an agent with fighting rot converges on perpetual futile maintenance.
+- **XHS 古法编程:** Tightly-coupled generation + discrimination would ask "Will this edit still be correct in 2 hours?" before committing. Arc generates stat updates without discriminating durable vs. ephemeral value.
+- **GitHub planning-with-files (23k★):** Uses deterministic completion gates (structural assertions) rather than statistical snapshots. Durable planning documents should contain goals and structure, not runtime state.
+
+**The fix:** Architectural, not behavioral. Separate structural assertions from runtime statistics in design docs. Statistics go in auto-generated dashboards or queryable databases — never in hand-maintained markdown. Arc's coherence audit naturally shifts to high-value structural targets when statistical targets are removed.
+
+**Estimated savings:** ~3,000 ops per 3 days (~15% of arc's total compute). The fix requires no guidance change — just moving statistical sections to auto-generated files.
+
+See: `shared/knowledge/entries/KE-1955-the-sisyphean-doc-trap-why-embedding-runtime-state-in-design-docs-creates-perpetual-maintenance-treadmills.md`
 
 ---
 
@@ -1358,3 +1696,139 @@ KE-1947's Boiling Frog analogy is correct for accumulative pathologies but wrong
 See: `shared/knowledge/entries/KE-1950-the-interrupt-oscillation-why-agent-system-pathologies-pulse-rather-than-persist.md`
 
 ---
+
+## arXiv AI Agent Papers — Supplemental Triage (June 6–11, 2026)
+
+Triaged 16 new papers across 7 queries not covered in the June 15 triage. Full findings: [`projects/scout-knowledge-lib/knowledge/findings/2026-06-17-arxiv-ai-agent-triage.md`](../../projects/scout-knowledge-lib/knowledge/findings/2026-06-17-arxiv-ai-agent-triage.md).
+
+**Top 5 highlights:**
+
+1. **HyperTool [2606.13663]** — Fold deterministic tool subroutines into single compound calls. Qwen3-32B accuracy jumps 15.69% → 35.29%. The tool-use equivalent of "information folding" — hide mechanical steps from the reasoning trace. Three papers independently converge on folding as the meta-pattern for context management.
+
+2. **SMSR [2606.12703]** — First certified defense against multi-session memory poisoning. Provenance-signing (HMAC-SHA256) + verdict-based voting cuts attack success from 93% → 0% (unsigned) and 65% → 5% (end-to-end). Directly relevant: our `context_updates` are exactly this attack surface.
+
+3. **Layer-Isolated Evaluation [2606.11686]** — End-to-end metrics mask regressions by 5–20×. Per-layer deterministic test slices (238 cases, 2.39s) localize faults that aggregate metrics hide. Concrete methodology for decomposing agents into testable layers.
+
+4. **Oversight Has a Capacity [2606.08919]** — Realized safety follows an inverted-U in escalation rate. More human oversight can make systems *less* safe due to reviewer fatigue. Safety-optimal guards escalate below full escalation.
+
+5. **SENTINEL [2606.12908]** — Failure-driven RL: analyze failures → generate targeted tasks → train on weaknesses. Outperforms uniform training. Confirms the cross-cutting theme: failure is the most informative signal, not waste.
+
+**Cross-cutting synthesis**: Four converging themes — (1) Fold don't carry (context compression as meta-pattern), (2) Oversight is a resource not a boolean, (3) Failures are signal not waste, (4) Persistent state is the new primary attack surface.
+
+---
+
+## XHS Chinese AI Community — Prediction Tracking Update (2026-06-17)
+
+All three XHS predictions now have the strongest corroboration to date:
+
+- **技能工程 (Skill Engineering) — Now imminent.** 6 arXiv papers in one week all adopt the skill frame (HyperTool, SENTINEL, ProPlay, Evoflux, SGCD, HIPIF). Academic adoption precedes XHS naming. Revised timeline: late June 2026.
+- **记忆管理 (Memory Lifecycle) — Security angle emerging.** arXiv SMSR provides first certified defense against memory poisoning (93→0%). Memory lifecycle is now a security requirement, not just efficiency. Watch for 记忆中毒 / 记忆安全 discourse on XHS.
+- **Agent Observability — Methodology crystallizing, inverted-U caveat added.** Layer-Isolated Evaluation provides concrete 8-layer decomposition. But KE-1958 shows observability past capacity peak DECREASES safety (0.2% actionable rate at 51.1% compute cost). Observability tools must output curated insights, not raw metrics.
+
+**Key new insight: The Structural Turn is now a mathematical result.** Hopf bifurcation theorem proves reactive agents (behavioral governance) are provably unstable; fixed-policy agents (structural governance) are completely immune. XHS's 古法编程 intuition formalized. Strengthens prediction that 技能工程 will emphasize compiled constraints over behavioral descriptions.
+
+**New XHS watch terms:** 模型分层 (model tiering), 记忆中毒 (memory poisoning), 指令膨胀 (instruction inflation), 基础设施创业死亡 (infra startup death).
+
+Updated: `projects/scout-knowledge-lib/knowledge/xhs_chinese_ai_trends_june2026.md` (prediction tracking + new themes)  
+Updated: `projects/scout-knowledge-lib/knowledge/findings/xhs-chinese-ai-trends-june2026.md` (Findings 12-13 added)
+
+---
+
+## The Prompt Payload Paradox (KE-1959) — Creative Synthesis
+
+**Key discovery:** The system embeds entire data structures (task-tree packets, trigger events, evaluation protocols) as literal text inside agent task prompts. This creates an **inverted efficiency curve** that nobody has measured before: the evaluator's ops-per-1K-chars-of-prompt drops from 3.95 (for <5K prompts) to 0.04 (for >50K prompts) — a **99× efficiency inversion**. Work output is flat at ~17 ops regardless of prompt size; every additional KB of embedded context dilutes efficiency without increasing production.
+
+**The quantitative evidence (3-day window, 15,646 sessions):**
+- Evaluator-aftermath alone serialized **66.1 MB of prompt text** across 6,363 sessions
+- One session received a **363,228 character prompt** (a short novel) and produced 13 ops
+- The planner embeds full task-tree packets (~15-30K chars of JSON per session) even though only frontier state (active/ready/review) has decision relevance
+- Evaluator reviews **recursively embed** the full task prompt of the reviewed session — when reviewing a planner, the evaluator receives the planner's entire tree packet again
+
+**Connection to three arXiv papers from this week's triage:**
+- **HyperTool** (2606.13663): Named "execution-granularity mismatch" — making deterministic steps model-visible wastes context. Same principle: embedding pre-determined data as text wastes prompt space
+- **HIPIF** (2606.10507): Proved "information folding" — compressing completed context while preserving goal state — outperforms full-history. Our planner prompts carry 273+ accepted tasks' state into every session
+- **HORMA** (2606.11680): Distinguishes missing-info vs. overloaded-context failures. Our system, to avoid the first, creates the second
+
+**How this connects to existing KEs:**
+- KE-1935 discovered longer prompts selectively kill mid-range sessions. KE-1959 provides the **quantitative mechanism**: efficiency inverts at scale (4.4× worse at 15-35K vs <5K)
+- KE-1954 documented the guidance inflation tax (instructions grow). This is the **data equivalent** — embedded payloads grow
+- KE-1944 documented context accumulation in retries. This shows it in **initial dispatch** — sessions start over-contextualized
+
+**Architectural escape — Prompt Factoring:**
+1. **Factor stable vs. variable**: Evaluation protocol, planner instructions, command reference → system prompt (change weekly). Variable data → compact summary + references
+2. **Break recursive embedding**: Evaluator receives session metadata + transcript path, not the evaluated agent's full task prompt
+3. **Summarize tree state**: Planner receives frontier IDs and counts; reads full details only for tasks requiring decisions
+
+**Estimated savings:** Factoring evaluator-aftermath prompts from ~10K avg to ~4K would save ~6.5M tokens per 3-day window from evaluator sessions alone.
+
+See: `shared/knowledge/entries/KE-1959-the-prompt-payload-paradox-why-embedding-context-in-task-prompts-inverts-efficiency-at-scale.md`
+
+---
+
+## The Volatile Documentation Trap (KE-1963) — Creative Synthesis
+
+**Key discovery:** A single line in `events.md` — the `session.resume_failed` row count — was rewritten **22 times in 14 days** with distinct statistical values (97 → 1,823 rows), each update obsolete within ~15 hours. This exemplar reveals the precise mechanism behind arc's 11.4× heartbeat cost explosion (5.5 → 62.7 ops/day) and quantifies the total system cost of embedding volatile runtime stats in durable design documents.
+
+**The quantitative anatomy:**
+- `events.md` received **38 arc commits** in 14 days; `guards.md` received **37**
+- These two files account for **36.4% of all arc design-doc commits** (75 of 206)
+- Arc heartbeat cost jumped from ~5.5 ops/session (Jun 1–3) to ~78 ops/session (Jun 13) — a monotonic climb coinciding with the stat-refresh pattern
+- The evaluator rated these sessions "acceptable" — not penalized — because they produced real commits
+- **Zero consumers** of the updated row counts were identified; `query_db` provides identical data in real time
+
+**The treadmill mechanism:**
+1. Arc reads events.md, finds "1,130 rows" but query shows 1,286 → judges it "stale"
+2. Arc updates the line, commits → evaluator scores "acceptable"
+3. 15 hours later, count is 1,350 → stale again
+4. Repeat. The document is *structurally unable to be non-stale* because the data is volatile
+
+**This is KE-1955 with teeth.** KE-1955 named the Sisyphean Doc Trap as a concept. KE-1963 provides: (a) exact cost — ~2,100 ops/day; (b) exact trigger — volatile stats embedded in stable docs; (c) exact fix — remove row counts from events.md, add "use query_db" note; (d) exact evaluation blindness — heuristic can't distinguish "fixed stale schema" from "updated a number that'll be wrong tomorrow."
+
+**Cross-source connections:**
+- arXiv HIPIF: "information folding" — don't carry volatile data in durable containers
+- arXiv Layer-Isolated Evaluation: aggregate "acceptable" verdicts mask strategy-layer failure
+- HN "Human Effort" threshold: mechanical stat updates are the antithesis of editorial judgment
+- XHS 古法编程: generation without discrimination creates waste proportional to throughput — arc generates updates without discriminating whether they're worth making
+- KE-1956 (Instruction Ratchet): "find and fix staleness" compiled in; "some staleness is unfixable" never compiled
+
+**Compound effects:** Each refresh commit makes the file a target for the next scan; the evaluator spends ~18 ops per evaluation of each treadmill session; arc's world-model reinforces "events.md coherence = important work."
+
+**Proposed fix (zero-cost, ~20 lines):** Strip volatile row counts from events.md and guards.md. Retain structural content (event names, schemas, sources). Add note: "For current counts, query the database." Estimated savings: ~2,100 ops/day with zero information loss.
+
+See: `shared/knowledge/entries/KE-1963-the-volatile-documentation-trap-how-embedding-runtime-stats-in-design-docs-creates-a-sisyphean-refresh-treadmill.md`
+
+---
+
+## The Reference Signal Gap (KE-1964) — Creative Synthesis
+
+**Key discovery:** Three independent arXiv papers (SGCD, EvolveR, SENTINEL) each solved a different agent self-improvement pathology by adding the same mechanism: an **external reference signal** that breaks self-referential learning. Three of our KEs (1956, 1946, 1945) each diagnose the exact counterpart pathology — but none identified the shared missing mechanism.
+
+**The unifying principle:** Self-referential agent systems — those that learn from their own outputs, evaluate with their own rubrics, and improve by their own criteria — converge on whatever they already do rather than what they should do. This is Goodhart's Law for agent systems: when the system's own measure becomes the self-improvement target, the measure loses validity.
+
+**The three pathology-solution pairs:**
+
+| Our pathology | External paper | Missing reference signal | Zero-cost prototype |
+|---|---|---|---|
+| **KE-1956** (Instruction Ratchet): arc spends 68 ops/heartbeat doing nothing vs dev's 7 ops | **SGCD** (2606.12634): self-distillation amplifies shortcuts without contrastive siblings | **Contrastive**: pair high-cost/low-cost sessions with same outcome | Compare arc vs dev healthy heartbeats; the diff IS the unnecessary instructions |
+| **KE-1946** (Anabolism Bias): 1,485 KEs, 0 read by any agent since May 7 | **EvolveR** (ICML'26): experience bank with credit scoring prunes low-value entries | **Usage**: track downstream consumption of accumulated items | Query `file_reads` — items with zero reads are pruning candidates |
+| **KE-1945** (Repair Metabolism): 73% compute on undifferentiated retry | **SENTINEL** (2606.12908): failure-type analysis targets training on actual weaknesses | **Failure-type**: classify failures before retrying | Heuristic-LLM disagreement: scout 3.5×, arc 2.6×, dev 1.3× — suppress heuristic-only rework for high-disagreement agents |
+
+**Cross-source validation:**
+- **XHS** community (350♥, 464 saves) highlights EvolveR's credit scoring as its breakthrough — the reference signal is what the Chinese AI community sees as the innovation
+- **HN** patterns: Distill-Agent (evidence-gating = contrastive reference), ORP (failure→test = failure-type reference), "agents.md rots quickly" = missing usage reference
+- **arXiv** formal result (2606.12268): proves no feedback-based training can guarantee honest agents — establishing the theoretical ceiling that external references break
+
+**The convergence table (all four sources independently discover that self-referential loops plateau and external references break them):**
+
+| Reference Signal | arXiv | HN | XHS | Our System |
+|---|---|---|---|---|
+| Contrastive | SGCD siblings | Distill-Agent | 古法编程 coupled discrimination | Dev idle-state vs arc |
+| Usage | EvolveR credit scoring | "agents.md rots" | EvolveR coverage (350♥) | file_reads = zero |
+| Failure-type | SENTINEL Controller | ORP failure→test | EvolveR credit pruning | 3.5× heuristic-LLM disagreement |
+
+**Predictions:**
+- P1: Self-evolving agent systems without external anchors plateau within 3-6 months at a level determined by initial architecture, not accumulated experience
+- P2: Crude reference signals (usage tracking, contrastive pairing) outperform sophisticated self-referential improvement
+- P3: The Chinese AI community's self-evolving agent wave produces diminishing returns by late 2026 unless the reference signal gap is addressed
+
+See: `shared/knowledge/entries/KE-1964-the-reference-signal-gap-why-self-improving-agent-systems-plateau-without-external-anchors.md`

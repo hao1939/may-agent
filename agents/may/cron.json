@@ -17,12 +17,12 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
+    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-05-26T00:10:30.227Z",
     "handler": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
+      "task": "[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
@@ -30,7 +30,7 @@
     ],
     "context": [
       "agents/may/heartbeat.md",
-      "projects/system-operations/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -38,7 +38,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -61,7 +61,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": {
       "workflow": "optimizer-heartbeat",
@@ -75,7 +75,7 @@
     ],
     "context": [
       "agents/optimizer/heartbeat.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -83,7 +83,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -98,7 +98,7 @@
     ],
     "context": [
       "agents/coach/heartbeat.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -106,7 +106,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "description": "Evaluator heartbeat — calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
+    "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
     "notifyBrief": true,
     "handler": {
       "workflow": "evaluator-heartbeat",
@@ -120,7 +120,7 @@
     ],
     "context": [
       "agents/evaluator/heartbeat.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -139,7 +139,7 @@
     "offsetMs": 600000,
     "context": [
       "agents/optimizer/workspace/todo.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -147,7 +147,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -184,7 +184,7 @@
     },
     "context": [
       "agents/coach/workspace/reflect-prompt.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -234,7 +234,7 @@
     "handler": {
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md.",
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md.",
       "timeoutMs": 900000
     },
     "intervalMs": 14400000,
@@ -248,7 +248,7 @@
     "offsetMs": 300000,
     "context": [
       "shared/common-sense.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -289,7 +289,7 @@
     "offsetMs": 1800000,
     "context": [
       "agents/coach/heartbeat.md",
-      "projects/agent-system-evolution/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -334,7 +334,7 @@
       "project.blocked"
     ],
     "context": [
-      "projects/system-operations/project.md",
+      "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/projects.md"
     ]
   },
@@ -357,7 +357,7 @@
       "project.health.finding"
     ],
     "context": [
-      "projects/agent-system-evolution/project.md",
+      "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/projects.md"
     ]
   },
@@ -374,7 +374,7 @@
       "metric.stalled"
     ],
     "context": [
-      "projects/system-operations/project.md",
+      "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"
     ]
   },
@@ -394,7 +394,7 @@
     },
     "offsetMs": 120000,
     "context": [
-      "projects/system-operations/project.md",
+      "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"
     ]
   },
@@ -430,7 +430,7 @@
     ],
     "description": "Run evaluator aftermath workflow when a session ends.",
     "context": [
-      "projects/agent-system-evolution/project.md",
+      "projects/may-agent.app/project.json",
       "agents/evaluator/heartbeat.md"
     ]
   },
@@ -452,7 +452,7 @@
     },
     "timeoutMs": 900000,
     "context": [
-      "projects/agent-system-evolution/project.md",
+      "projects/may-agent.app/project.json",
       "agents/evaluator/heartbeat.md"
     ]
   },
@@ -471,7 +471,7 @@
       "artifactLimit": 3
     },
     "context": [
-      "projects/agent-system-evolution/project.md",
+      "projects/may-agent.app/project.json",
       "agents/evaluator/heartbeat.md"
     ]
   },
@@ -486,7 +486,7 @@
       "escalation.created"
     ],
     "context": [
-      "projects/system-operations/project.md",
+      "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/escalation.md"
     ]
   },
@@ -499,7 +499,7 @@
     "enabled": true,
     "description": "Measure handler health metrics every 5 minutes.",
     "context": [
-      "projects/system-operations/project.md",
+      "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"
     ]
   },
@@ -513,7 +513,7 @@
     "description": "Scan recent evaluations every 6h and flag sessions needing coaching intervention. Writes recommendations to .state/coaching-queue/.",
     "offsetMs": 1200000,
     "context": [
-      "projects/agent-system-evolution/project.md",
+      "projects/may-agent.app/project.json",
       "agents/coach/heartbeat.md"
     ]
   },
@@ -552,7 +552,7 @@
     ],
     "context": [
       "agents/scout/heartbeat.md",
-      "projects/scout-second-brain-learning/project.md"
+      "projects/scout-knowledge-lib.app/project.json"
     ]
   },
   {
@@ -570,7 +570,7 @@
     "offsetMs": 0,
     "context": [
       "agents/scout/heartbeat.md",
-      "projects/scout-second-brain-learning/project.md"
+      "projects/scout-knowledge-lib.app/project.json"
     ],
     "lastModified": "2026-06-05T06:39:51.054Z"
   },
@@ -589,7 +589,7 @@
     "offsetMs": 900000,
     "context": [
       "agents/scout/heartbeat.md",
-      "projects/scout-second-brain-learning/project.md"
+      "projects/scout-knowledge-lib.app/project.json"
     ]
   },
   {
@@ -601,13 +601,13 @@
     "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore 小红书 (XHS) for Chinese AI community trends.",
+      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for Chinese AI community trends.",
       "timeoutMs": 600000
     },
     "offsetMs": 1800000,
     "context": [
       "agents/scout/heartbeat.md",
-      "projects/scout-second-brain-learning/project.md"
+      "projects/scout-knowledge-lib.app/project.json"
     ]
   },
   {
@@ -625,7 +625,7 @@
     "offsetMs": 2700000,
     "context": [
       "agents/scout/heartbeat.md",
-      "projects/scout-second-brain-learning/project.md"
+      "projects/scout-knowledge-lib.app/project.json"
     ]
   },
   {
@@ -643,7 +643,7 @@
     "offsetMs": 0,
     "context": [
       "agents/scout/heartbeat.md",
-      "projects/scout-second-brain-learning/project.md"
+      "projects/scout-knowledge-lib.app/project.json"
     ]
   },
   {
@@ -691,14 +691,13 @@
     "handler": {
       "workflow": "verify-wrap",
       "agent": "may",
-      "task": "[cron:daily-alert-review] Run the daily alert review from the system-operations lane. Query metric_alerts for the last 24h plus unresolved older alerts; correlate metric.breach, metric.recovered, metric.alert_judged, and remediation sessions; write the report at projects/system-operations/outputs/YYYY-MM-DD-alert-review.md; send a concise summary to human via Telegram; call out noisy thresholds, missing owners, unresolved validation, and recurring systemic patterns.",
-      "projectId": "system-operations",
+      "task": "[cron:daily-alert-review] Run the daily alert review. Query metric_alerts for the last 24h plus unresolved older alerts; correlate metric.breach, metric.recovered, metric.alert_judged, and remediation sessions; write the report at projects/may-agent.app/outputs/YYYY-MM-DD-alert-review.md; send a concise summary to human via Telegram; call out noisy thresholds, missing owners, unresolved validation, and recurring systemic patterns.",
+      "projectId": "may-agent",
       "timeoutMs": 900000
     },
     "description": "Daily metric alert review and report generation",
     "context": [
-      "projects/system-operations/project.md",
-      "projects/daily-alert-review/project.md"
+      "projects/may-agent.app/project.json"
     ]
   },
   {
@@ -707,7 +706,10 @@
     "handler": "feedback-echo-sync",
     "enabled": true,
     "description": "Hourly sync of evaluator feedback into agent last-eval.md files (direct handler, no LLM session)",
-    "context": ["agents/shared/feedback-echo.ts", "projects/agent-system-evolution/project.md"],
+    "context": [
+      "agents/shared/feedback-echo.ts",
+      "projects/may-agent.app/project.json"
+    ],
     "lastModified": "2026-06-05T17:09:42.095Z"
   }
 ]

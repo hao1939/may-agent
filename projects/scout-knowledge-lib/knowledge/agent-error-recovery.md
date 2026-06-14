@@ -18,3 +18,10 @@ Based on recent observations in AI agent communities (including XHS and GitHub),
 - **Enforce verification**: Mandate that agents verify their work immediately after modification, before moving on. (This is already part of the Common Sense guidelines, but should be strictly enforced via tool output parsing).
 - **Clear error messages in tools**: Ensure that bash/edit/write tools return actionable error messages (e.g., "File not found at path: X" instead of just "Error") so the LLM can correct its path.
 - **Limit retry loops**: Implement a hard cap on consecutive failures for the same tool/target to prevent agents from getting stuck in infinite loops, forcing an escalation when the cap is reached.
+
+## Related Notes
+
+- [AI Agent Failure Modes & Solutions](./agent_failure_modes.md) — comprehensive failure taxonomy including production-observed "False Blocked" pattern from aks-rp-e2e
+- [Self-Correction and Reflection Trends 2026](./agent-self-correction-trends-2026.md) — when self-correction works vs. fails; instinct-reflection misalignment
+- [XHS Multi-Agent Failure Modes](./multi-agent-failure-modes-2024.md) — confirmation loops, swarm context overflow, "Yes Man" evaluator
+- [Agent Anti-Patterns](./insights/agent-anti-patterns.md)

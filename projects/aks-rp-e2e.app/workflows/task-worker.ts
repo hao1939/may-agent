@@ -113,12 +113,31 @@ function workerResultFromSession(
   result: unknown,
   text: string,
 ): TaskCompletionClaim {
-  const status = (result as { status?: string })?.status;
+  const typed = result as {
+    status?: string;
+    finishResult?: { status?: string };
+  };
+  const status = typed?.status;
+  const finishStatus = typed?.finishResult?.status;
+
+  // 1. Explicit RESULT/CLAIM line in the assistant text (legacy protocol)
   if (/(?:RESULT|CLAIM):\s*done/i.test(text)) return "done";
   if (/(?:RESULT|CLAIM):\s*partial/i.test(text)) return "partial";
   if (/(?:RESULT|CLAIM):\s*blocked/i.test(text)) return "blocked";
+
+  // 2. Structured finish() status from the agent's explicit completion signal.
+  //    finish(success) is the agent's deliberate claim of task completion.
+  if (finishStatus === "success") return "done";
+  if (finishStatus === "partial") return "partial";
+  if (finishStatus === "blocked" || finishStatus === "failure")
+    return "blocked";
+
+  // 3. Generic session success without a structured finish or explicit RESULT
+  //    line is ambiguous — the agent ran without error but did not explicitly
+  //    claim task completion. Treat conservatively as partial.
   if (status === "success" || status === "ok" || status === "partial")
     return "partial";
+
   return "blocked";
 }
 

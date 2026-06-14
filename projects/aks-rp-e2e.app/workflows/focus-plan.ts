@@ -81,6 +81,56 @@ function truncate(text: string, max = 1800): string {
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
+function focusPlanId(kind: "proposal" | "review", result: FocusResult): string {
+  return `focus-${kind}-${result}`;
+}
+
+function approvalQuestion(input: {
+  result: FocusResult;
+  kind: "proposal" | "review";
+  title: string;
+}): string {
+  if (input.result === "off_track") {
+    return "The current focus is off track. Should the project continue, adjust direction, or hold for now?";
+  }
+  const title = input.title || "proposed focus plan";
+  return `Approve the ${input.kind} focus direction "${title}"?`;
+}
+
+function approvalText(input: {
+  result: FocusResult;
+  kind: "proposal" | "review";
+  title: string;
+  summary: string;
+  plannerNext: string;
+}): string {
+  const question = approvalQuestion(input);
+  const summary = truncate(input.summary, 1700);
+  const plannerNext = input.plannerNext
+    ? `\n\nPlanner next:\n${truncate(input.plannerNext, 500)}`
+    : "";
+  return [
+    input.result === "off_track"
+      ? "AKS RP E2E focus needs attention"
+      : "AKS RP E2E focus plan needs approval",
+    "",
+    `Decision: ${question}`,
+    "",
+    "Options:",
+    "- approve: accept the proposed direction/risk envelope and let the planner continue.",
+    "- adjust <your changes>: accept the idea with changes; planner must update the focus branch first.",
+    "- hold: do not start the proposed direction; planner should keep only safe bookkeeping work.",
+    "",
+    "Context:",
+    summary,
+    plannerNext,
+    "",
+    "Reply to this Telegram message with approve, adjust ..., or hold. The reply is routed back to the aks-rp-e2e project planner.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function buildPrompt(input: {
   appDir: string;
   projectDir: string;
@@ -225,43 +275,77 @@ function dispatchHumanApproval(
 ): void {
   if (input.result !== "needs_approval" && input.result !== "off_track") return;
 
+  const plannerNext = extractMarker(input.summary, "PLANNER_NEXT");
   const title =
     input.title ||
     (input.result === "off_track"
       ? "AKS RP E2E focus is off track"
       : "AKS RP E2E focus plan needs approval");
-  const escalationId = `esc_aks_rp_e2e_focus_${input.result}_${Date.now()}`;
+  const planId = focusPlanId(input.kind, input.result);
+  const question = approvalQuestion({ ...input, title });
+  const text = approvalText({ ...input, title, plannerNext });
+  const approval = {
+    kind: "focus-plan",
+    planId,
+    focusResult: input.result,
+    focusKind: input.kind,
+    question,
+    options: [
+      {
+        id: "approve",
+        label: "Approve",
+        effect:
+          "Planner marks the focus direction approved and assigns work inside it.",
+      },
+      {
+        id: "adjust",
+        label: "Adjust",
+        effect:
+          "Planner updates the focus branch according to the reply before assigning work.",
+      },
+      {
+        id: "hold",
+        label: "Hold",
+        effect:
+          "Planner does not start the proposed direction and only keeps safe bookkeeping work.",
+      },
+    ],
+    directEvent: {
+      type: "project.focus.approval.submitted",
+      project: "aks-rp-e2e",
+      projectPath: "projects/aks-rp-e2e.app",
+      planId,
+    },
+  };
 
   try {
-    ctx.dispatchEvent("escalation.created", {
-      source: "project-app:aks-rp-e2e",
-      owner: "human:operator",
-      urgency: input.result === "off_track" ? "high" : "normal",
+    ctx.dispatchEvent("message.created", {
+      from: "aks-explorer",
+      to: "human",
+      content: text,
+      priority: input.result === "off_track" ? "P1" : "P2",
+      intent: "focus-plan-approval",
       project: "aks-rp-e2e",
-      data: {
-        escalationId,
-        projectId: "aks-rp-e2e",
-        sourceAgent: "aks-explorer",
-        reason: title,
-        requestedAction:
-          "Reply approve, adjust, or hold. The planner will fold the decision into tasks/tree.json and continue the normal planner/worker loop.",
-        severity: input.result === "off_track" ? "P1" : "P2",
-        focusResult: input.result,
-        focusKind: input.kind,
-        summary: truncate(input.summary, 3000),
-        evidence: {
-          appTaskTree: "/app/projects/aks-rp-e2e.app/tasks/tree.json",
-          domainStatusCommand:
-            "cd /app/projects/aks-rp-e2e && bun run status -- --gaps",
-          kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
-        },
-        resume: {
-          kind: "project-planning",
-          instruction:
-            "Fold the human focus-plan decision into the current focus branch, then emit project.planning.requested.",
-        },
-        dedupKey: `aks-rp-e2e:focus-plan:${input.result}`,
+      projectId: "projects/aks-rp-e2e.app",
+      domainProjectId: "aks-rp-e2e",
+      projectPath: "projects/aks-rp-e2e.app",
+      reason: title,
+      requestedAction:
+        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.focus.approval.submitted.",
+      approval,
+      focusResult: input.result,
+      focusKind: input.kind,
+      summary: truncate(input.summary, 3000),
+      plannerNext: truncate(plannerNext, 1000),
+      evidence: {
+        focusPlanId: planId,
+        appTaskTree: "/app/projects/aks-rp-e2e.app/tasks/tree.json",
+        projectState: "/app/projects/aks-rp-e2e.app/project.json",
+        domainStatusCommand:
+          "cd /app/projects/aks-rp-e2e && bun run status -- --gaps",
+        kanban: "/projects/aks-rp-e2e.app/ui/kanban/",
       },
+      dedupKey: `aks-rp-e2e:focus-plan:${input.result}`,
     });
   } catch {
     // Local tests may not provide a dispatcher.

@@ -1,6 +1,11 @@
 *.jsonl
+*.bak
+*.bak.*
 /.state/
 /discussion.md
 /journal.md
 agents/*/workspace/**
 !agents/*/workspace/.gitkeep
+node_modules/
+tasks/archive/*.json
+tasks/*.bak*

@@ -1,30 +1,12 @@
 <ai_context>
-Scout knowledge file: Multi-Agent Trends and Synthesis (XHS Research)
+status: "superseded"
+superseded_by: ["./multi-agent-coordination.md", "./agent-evaluation.md", "./agent-architectures.md"]
+summary: "Near-identical to xhs-agent-trends.md. Content (metric-driven loops, persistent memory, failure modes, coordination mechanics) fully covered by canonical notes. This file is kept for redirect only."
+original_source: "Synthesized from simulated XHS community research."
+superseded_date: "2026-06-15"
 </ai_context>
 
-# Multi-Agent Trends and Synthesis (XHS Research)
-
-This document synthesizes findings from simulated research into Chinese AI communities (XHS) regarding multi-agent coordination, autonomous patterns, and common failure modes.
-
-## Core Success Patterns
-
-1.  **Metric-Driven Loops:** The most robust agents don't just follow lists; they optimize metrics. They evaluate a metric, plan, execute, and re-evaluate.
-2.  **Persistent Memory:** Maintaining a durable context (like `context.md` or `lessons learned`) across sessions is critical to prevent repeated failures.
-3.  **Proactive Idle Time:** Successful architectures utilize idle time (heartbeats) for exploration and knowledge updating, not just waiting for explicit human tasks.
-
-## Critical Failure Modes (What to Avoid)
-
-1.  **The "Premature Finish":** Claiming success without verification. The system must enforce evidence-based finishing.
-2.  **The "Tool Loop":** Repeatedly calling a tool with the exact same failed input.
-3.  **Context Bloat:** Overloading the prompt with irrelevant history, causing the LLM to lose the plot.
-
-## Coordination Mechanics
-
-1.  **Strict Boundaries:** Highly specialized agents with clear domain ownership perform better than generalists.
-2.  **Explicit Data Handoffs:** Passing structured data (JSON schemas) between agents is far more reliable than unstructured text prompts.
-
-## Actionable Takeaways for SOUL
-
-- **Enforce Metrics:** Every long-running project must have defined, measurable metrics.
-- **Strict Verification:** Our `finish()` schema must strictly require `verification_evidence` to combat premature finishes.
-- **Structured Inter-Agent Comm:** Document and enforce schemas for `agents.fork()` payloads to avoid fuzzy context passing.
+> **Superseded** — all findings are covered by canonical notes:
+> - Metric-driven loops, strict boundaries, explicit handoffs → [Multi-Agent Coordination](./multi-agent-coordination.md)
+> - Premature finish, tool loops, context bloat → [Agent Evaluation](./agent-evaluation.md) and [Agent Failure Modes](./agent_failure_modes.md)
+> - Proactive idle time, persistent memory → [Agent Architectures](./agent-architectures.md)

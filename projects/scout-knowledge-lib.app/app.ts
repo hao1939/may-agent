@@ -82,6 +82,16 @@ async function routeScoutKnowledgeEvent(
     return ctx.emit(projectPlanningEvent("metric-breach", eventDetails(event)));
   }
 
+  if (event.type === "project.planning.requested") {
+    return ctx.noop(
+      "handled by scout-knowledge-lib-planner workflow handler",
+    );
+  }
+
+  if (event.type === "project.knowledge.maintained") {
+    return ctx.noop("external event emitted by knowledge-planner workflow");
+  }
+
   return undefined;
 }
 

@@ -3,7 +3,11 @@ summary: "Synthesized trends in multi-agent architecture from May 2024, highligh
 triggers: "When designing agent architecture, evaluating agents, or defining agent interaction patterns."
 last_updated: "2024-05"
 source_basis: "XHS (Chinese AI communities) and academic discussions (May 2024)."
+status: superseded
+redirect: multi-agent-coordination.md
 </ai_context>
+
+> **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
 
 # Multi-Agent Architecture Trends: XHS & Academic Synthesis (May 2024)
 

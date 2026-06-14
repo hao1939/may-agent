@@ -1,11 +1,11 @@
 {
   "version": 1,
   "project": "may-agent",
-  "updated_at": "2026-06-13T21:05:00Z",
+  "updated_at": "2026-06-14T02:18:00Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
-  "active_task_ids": [],
+  "active_task_ids": ["event-native-project-task-loops-review", "platform-signal-intake-loop"],
   "max_concurrent": 2,
   "tasks": {
     "project": {
@@ -239,7 +239,7 @@
         "shared-project-kanban-platform-ui",
         "shared-kanban-steering-actions-design"
       ],
-      "status": "decomposed",
+      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -262,7 +262,12 @@
       "gates": [],
       "conflict_scope": [
         "platform-webui-projects"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T21:16:00Z",
+        "reason": "Generic project task API and shared Kanban board are live for all 3 project apps. WebUI build synced. Only the P2 steering actions design remains as future work."
+      }
     },
     "project-kanban-api-read-model": {
       "id": "project-kanban-api-read-model",
@@ -373,7 +378,7 @@
         "platform-v2-second-adopter-rollup",
         "project-app-v2-adoption-playbook"
       ],
-      "status": "decomposed",
+      "status": "accepted",
       "kind": "workstream",
       "priority": "P0",
       "owner": "tech-lead",
@@ -399,7 +404,12 @@
       "gates": [],
       "conflict_scope": [
         "platform-v2-adoption"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T21:16:00Z",
+        "reason": "V2 layout migration accepted, second-adopter rollup superseded by V3 design. V3 loader, project-scope filter, and 3 live apps validate the adoption pattern. Only the P2 adoption playbook doc remains as a future documentation task."
+      }
     },
     "platform-v2-layout-migration": {
       "id": "platform-v2-layout-migration",
@@ -469,7 +479,12 @@
       "gates": [],
       "conflict_scope": [
         "platform-v2-adoption"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T21:07:00Z",
+        "reason": "Superseded by V3 design and implementation. project-app-v3.md captures what worked in V2 (event-based control plane, additive .app layout), what was weak (project scoping, handler isolation, embedded .app), and what changed (sibling .app convention, V3 loader discovery, cron project-scope filter). Shared Kanban verified on all 3 project task trees (may-agent, aks-rp-e2e, scout-knowledge-lib)."
+      }
     },
     "project-app-v2-adoption-playbook": {
       "id": "project-app-v2-adoption-playbook",
@@ -512,7 +527,7 @@
         "cron-config-stale-context-cleanup",
         "deploy-committed-platform-changes"
       ],
-      "status": "decomposed",
+      "status": "accepted",
       "kind": "workstream",
       "priority": "P1",
       "owner": "tech-lead",
@@ -534,7 +549,12 @@
       "gates": [],
       "conflict_scope": [
         "platform-build-test"
-      ]
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-13T21:07:00Z",
+        "reason": "All 3 children accepted: WebUI build/sync verified (source and generated JS match), stale cron context paths fixed (23 cron tests pass), platform binary deployed to all 3 environments with cron project-scope filter. TypeScript check clean. Zero handler errors since deploy."
+      }
     },
     "platform-v2-webui-build-and-check": {
       "id": "platform-v2-webui-build-and-check",

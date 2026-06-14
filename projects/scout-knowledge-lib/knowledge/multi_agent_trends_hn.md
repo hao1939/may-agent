@@ -1,6 +1,10 @@
 <ai_context>
 Scout knowledge file: Multi-Agent Architecture Trends (HN Review)
+status: superseded
+redirect: multi-agent-coordination.md
 </ai_context>
+
+> **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
 
 # Multi-Agent Architecture Trends (HN Review)
 

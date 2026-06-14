@@ -26,3 +26,9 @@ The most successful systems are moving beyond isolated reflection steps toward e
 - **Implement Structured Feedback Loops**: Use explicit grading criteria and bounded retry loops (similar to the GSAR framework).
 - **Separate Verification from Generation**: Because of the instinct/reflection misalignment, the model that generates an answer is often ill-suited to judge its own correctness without external grounding.
 - **Invest in Cross-Session Memory**: Evolve rules and heuristics over time based on reflection outcomes, rather than just retrying the immediate task.
+
+## Related Notes
+
+- [AI Agent Failure Modes & Solutions](./agent_failure_modes.md) — failure taxonomy; "False Blocked" pattern links back to instinct-reflection misalignment
+- [Agent Error Recovery and Resilience Patterns](./agent-error-recovery.md) — guardrails, retry loops, graceful degradation
+- [XHS Multi-Agent Failure Modes](./multi-agent-failure-modes-2024.md) — "Yes Man" evaluator validates the instinct-reflection concern in multi-agent settings

@@ -196,6 +196,61 @@ describe("app event contract", () => {
     });
   });
 
+  test("focus approval submission wakes planner with decision context", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "project.focus.approval.submitted",
+      project: "aks-rp-e2e",
+      data: {
+        planId: "focus-proposal-needs_approval",
+        decision: "approve",
+        reply: "approve aad-rbac and ossku live staging focus",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.planning.requested",
+      project: "aks-rp-e2e",
+      reason: "focus-approval-submitted",
+      params: {
+        approval: {
+          planId: "focus-proposal-needs_approval",
+          decision: "approve",
+          reply: "approve aad-rbac and ossku live staging focus",
+        },
+      },
+    });
+  });
+
+  test("focus escalation resolution with project app path wakes planner", async () => {
+    const { ctx, emitted } = testContext();
+
+    await app.onEvent(ctx, {
+      type: "escalation.resolved",
+      source: "telegram",
+      owner: "human:operator",
+      data: {
+        escalationId: "esc_aks_rp_e2e_focus_needs_approval_1",
+        projectId: "projects/aks-rp-e2e.app",
+        outcome: "answered",
+        summary: "approve the live staging focus",
+      },
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toMatchObject({
+      type: "project.planning.requested",
+      project: "aks-rp-e2e",
+      reason: "escalation-resolved",
+      params: {
+        projectId: "projects/aks-rp-e2e.app",
+        summary: "approve the live staging focus",
+      },
+    });
+  });
+
   test("project metric breach wakes planning with metric context", async () => {
     const { ctx, emitted } = testContext();
 

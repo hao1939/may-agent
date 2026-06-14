@@ -155,6 +155,7 @@ type KnowledgeFeaturePath = {
   id?: string;
   featureId?: string;
   status?: string;
+  terminal?: boolean;
   rootCauseClass?: string;
   remediationStatus?: string;
 };
@@ -1076,10 +1077,22 @@ export function seedModelGapBacklog(
         skipped.push({ pathId, reason: "blocked-status" });
         continue;
       }
+      // Skip any path explicitly marked terminal — these have a definitive
+      // verdict (e.g. underlay-required, product constraint) and should not
+      // be re-seeded until the terminal condition changes externally.
+      if (path.terminal === true) {
+        skipped.push({ pathId, reason: "terminal-path" });
+        continue;
+      }
       // Skip terminal-fail paths with a known product/CLI bug awaiting external fix.
       // These should only be re-tested when the affected component version changes,
       // not on every frontier gap-fill cycle.
-      const terminalRootCauses = ["cli-bug", "product-bug", "product-gap"];
+      const terminalRootCauses = [
+        "cli-bug",
+        "product-bug",
+        "product-gap",
+        "product_constraint",
+      ];
       const terminalRemediationPrefixes = ["awaiting-"];
       if (
         path.status === "fail" &&

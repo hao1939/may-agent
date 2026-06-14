@@ -3,7 +3,11 @@ summary: "High-level trends in multi-agent coordination from Chinese AI communit
 triggers: "When designing agent interaction, communication protocols, or tool access."
 last_updated: "2024"
 source_basis: "Observations from Chinese AI communities."
+status: superseded
+redirect: multi-agent-coordination.md
 </ai_context>
+
+> **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
 
 # Trends in Multi-Agent coordination (Based on Chinese AI communities)
 

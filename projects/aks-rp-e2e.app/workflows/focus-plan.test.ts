@@ -110,15 +110,40 @@ describe("focus-plan workflow", () => {
     expect(prompts[0]).toContain("Current compact task-tree packet");
     expect(prompts[0]).toContain("run-rest-spec-batch");
     expect(dispatched.map((event) => event.type)).toEqual([
-      "escalation.created",
+      "message.created",
       "project.planning.requested",
     ]);
     expect(dispatched[0].payload).toMatchObject({
-      owner: "human:operator",
+      from: "aks-explorer",
+      to: "human",
+      intent: "focus-plan-approval",
       project: "aks-rp-e2e",
     });
-    expect((dispatched[0].payload.data as any).dedupKey).toBe(
+    expect((dispatched[0].payload as any).dedupKey).toBe(
       "aks-rp-e2e:focus-plan:needs_approval",
+    );
+    expect(dispatched[0].payload).toMatchObject({
+      projectId: "projects/aks-rp-e2e.app",
+      projectPath: "projects/aks-rp-e2e.app",
+      requestedAction:
+        "Reply to this notification with approve, adjust <changes>, or hold. The reply is emitted to projects/aks-rp-e2e.app as project.focus.approval.submitted.",
+      approval: {
+        kind: "focus-plan",
+        planId: "focus-proposal-needs_approval",
+        question: 'Approve the proposal focus direction "REST replay focus"?',
+        directEvent: {
+          type: "project.focus.approval.submitted",
+          project: "aks-rp-e2e",
+          projectPath: "projects/aks-rp-e2e.app",
+          planId: "focus-proposal-needs_approval",
+        },
+      },
+    });
+    expect(String((dispatched[0].payload as any).content)).toContain(
+      "Decision: Approve the proposal focus direction",
+    );
+    expect(String((dispatched[0].payload as any).content)).toContain(
+      "Reply to this Telegram message with approve",
     );
     expect(dispatched[1].payload).toMatchObject({
       project: "aks-rp-e2e",

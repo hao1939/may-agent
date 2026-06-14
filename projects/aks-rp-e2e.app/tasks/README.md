@@ -99,9 +99,15 @@ folder does not keep a parallel task event log.
   replace those lanes or create ceremonial tasks such as "plan the plan".
 - Focus progress reviews should update task context with one clear state:
   `on_track`, `off_track`, `completed`, `stale`, or `blocked`. If the focus
-  needs a material direction/risk change, link the human escalation on the
-  focus branch and wait for the planner to fold the decision back into the
-  tree.
+  needs a material direction/risk change, send a human approval message and
+  wait for the planner to fold the direct approval event back into the tree.
+- Focus-plan approval messages must be self-contained. The human-visible
+  message needs the decision question, recommended options, compact status
+  context, evidence links, and the planner's intended next step. It must also
+  include `projectPath: "projects/aks-rp-e2e.app"` and a direct-event contract:
+  a Telegram reply or UI action must emit `project.focus.approval.submitted`
+  with the approval decision and human message. The app route then emits
+  `project.planning.requested`.
 - Learning is not terminal by itself. A feature is useful only when source
   knowledge, spec shape, replay execution, evidence diagnosis, and model
   feedback close the loop or expose an exact external blocker.

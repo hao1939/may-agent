@@ -1,6 +1,10 @@
 <ai_context>
 Scout knowledge file: Recent Research on Multi-Agent Coordination
+status: superseded
+redirect: multi-agent-coordination.md
 </ai_context>
+
+> **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
 
 # Recent Research on Multi-Agent Coordination
 
