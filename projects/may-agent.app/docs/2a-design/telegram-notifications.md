@@ -1,200 +1,547 @@
-# Design: Context-Enriched Reply
+# Design: Telegram Channel
 
-**Status**: partial — envelope shipped, enrichment payload not implemented
-**Date**: 2026-04-29 (drift re-verified 2026-05-12)
+**Status**: implemented foundation, needs interaction refinement
+**Updated**: 2026-06-14
 
-## What Shipped
+## Purpose
 
-The `notification_messages` table and basic reply routing are live:
+Telegram is the mobile human-control surface for May-agent. It should feel like
+talking to the system, not operating a separate bot UI.
 
-```sql
-CREATE TABLE notification_messages (
-  telegram_msg_id  INTEGER PRIMARY KEY,
-  event_type       TEXT,
-  agent            TEXT,
-  session_id       TEXT,
-  project_id       TEXT,
-  data             TEXT,    -- JSON blob: {text} or {summary, text}
-  sent_at          INTEGER
-);
+The channel has three jobs:
+
+1. Let the human ask questions and steer active work.
+2. Notify the human only when attention is useful.
+3. Turn every human reply into one durable conversation that May can handle,
+   delegate, resume, or close.
+
+The rule is:
+
+> A Telegram reply belongs to the conversation of the message it replies to.
+> A Telegram message that is not a reply starts a new conversation.
+
+## Current Implementation
+
+The current code path is:
+
+```text
+outbound event
+  -> telegram-outbound formats message
+  -> telegram-client sends message and stores notification_messages row
+  -> human replies to that Telegram message
+  -> telegram-reply-router reconstructs context
+  -> telegram.ts acknowledges the reply and starts May with enriched context
 ```
 
-- On send: stores `telegram_msg_id → event` mapping
-- On reply: looks up `reply_to_message_id` to find the original event context
-- Reply routing works: replies reach the correct agent with the stored `data`
+What works now:
 
-### Known limitations of current state
+- Allowed-chat enforcement.
+- Long-polling inbound messages.
+- `message.created` to `human` is forwarded to Telegram.
+- Root chat responses stream back to Telegram.
+- Child-session completions are summarized.
+- Telegram message IDs are stored in `notification_messages`.
+- Replies to stored notifications are enriched with notification/session
+  context.
+- Bot acknowledgements can be sent as Telegram replies, preserving the visible
+  message chain.
 
-- `data` payload is `{text}` or `{summary, text}` only — no `subject`, `state`, `background` fields
-- `project_id` is set on ~2% of rows — project disambiguation on reply is not exercisable
-- No enrichment formatter exists — replies pass through without context prepending
-- No `telegram.reply-actionable-rate` metric is registered
+Observed weaknesses:
 
-Source: KE-576 (2026-05-03), re-verified 2026-05-12.
+- Many notifications are too noisy or repetitive, especially recurring metric
+  and handler-failure alerts.
+- Some notification rows still miss `conversationId`, so May may need to infer
+  intent from legacy notification/session context.
+- Reply context is stored as a generic JSON blob. It works, but lacks a stable
+  typed shape for subject, severity, action hints, and resolution state.
+- The bot still needs better final-result confirmations after May handles a
+  human reply.
+- Slash-command help advertises status-like flows, but `/status` currently
+  becomes a normal chat request rather than a fast read-model response.
+- Stale notifications remain actionable. A reply to an old message may wake the
+  wrong session or reopen already-resolved work.
 
----
+## Desired Interaction Model
 
-## Proposed Design (not implemented)
+Telegram messages should look like compact action cards:
 
-Everything below describes the intended enrichment system. None of this is live.
+```text
+AKS RP E2E needs approval
 
-### Problem
+Decision
+Approve live staging execution for aad-rbac and ossku-migration?
 
-When you reply to a Telegram notification, May gets raw text with no context. "focus on output not cost" — about what? which project? what was the current state? May has to guess or ask.
+Why now
+Check-mode coverage is high, but evidence quality is missing live staging.
 
-### Core Idea
+Current state
+153/173 paths pass. 20 non-passing paths remain classified.
 
-Every notification carries context. When you reply, your text is enriched with that context before reaching the agent. The agent receives a complete picture: what happened, why you were notified, and what you said about it.
+Reply
+approve
+adjust <changes>
+hold
 
-### How It Works
-
-```
-System sends notification (project/agent/metric — they decide when)
-    ↓
-Notification carries structured context
-    ↓
-You reply with natural text
-    ↓
-Bot enriches: your text + notification context
-    ↓
-Agent receives full picture, acts on it
-```
-
-### Context Structure
-
-Every outbound Telegram message would store a context blob:
-
-```typescript
-interface NotificationContext {
-  agent: string;              // "may", "scout", "dev", etc.
-  subject: string;            // human-readable: "project system-efficiency", "metric handler.p95-duration"
-  state: Record<string, unknown>;
-  background: string;
-  sentAt: number;
-}
+Open: /projects/aks-rp-e2e.app/ui/kanban/
 ```
 
-This covers ALL notifications:
-- Project waiting → `{ agent: "may", subject: "project system-efficiency", state: { status: "waiting", metrics: {...} }, background: "orchestrator needs direction" }`
-- Metric breach → `{ agent: "may", subject: "metric handler.p95-duration", state: { value: 274, threshold: 240 }, background: "breaching for 2h" }`
-- Agent finding → `{ agent: "scout", subject: "paper on agent memory architectures", state: {}, background: "found on arXiv, relevant to our context-learning project" }`
-- Agent alert → `{ agent: "may", subject: "dev stuck in retry loop", state: { sessionCount: 15, task: "Ship EXP-188" }, background: "same task retried 15x over 3 days" }`
-- Simple message → `{ agent: "scout", subject: "XHS content update", state: {}, background: "found 3 posts about multi-agent systems" }`
+The message should answer four questions without requiring a web UI:
 
-### Enrichment Format
+- What happened?
+- Why am I being notified?
+- What can I say?
+- What happens after I reply?
 
-When you reply, the bot builds an enriched message:
+After May receives the enriched reply, May or the project owner may produce a
+small typed event:
 
-```
-[User replying to notification from may about "project system-efficiency"]
-State: WAITING, metrics at target (may-session-ratio 0.12), all plan items checked
-Background: orchestrator completed 3 fixes, waiting for human direction
-
-User says: focus on output metrics not cost reduction
-```
-
-No action instructions. The agent reads the context and decides what to do.
-
-### Examples
-
-**Project notification → reply:**
-```
-Notification: 🔔 system-efficiency is WAITING. Metrics at target. Orchestrator needs direction.
-User replies: "focus on output metrics not cost reduction"
-
-Agent receives:
-  User replied to notification about project "system-efficiency" (WAITING).
-  State: metrics at target, 3 fixes implemented.
-  Background: orchestrator completed all plan items.
-  User says: focus on output metrics not cost reduction
-```
-
-**Metric alert → reply:**
-```
-Notification: 🔴 handler.p95-duration at 274s (threshold 240s) for 2h
-User replies: "increase timeout to 10min for heartbeats"
-
-Agent receives:
-  [User replying to notification from may about "metric handler.p95-duration"]
-  State: 274s, threshold 240s, breaching 2h.
-  Background: handlers run LLM sessions that take 3-5min.
-  User says: increase timeout to 10min for heartbeats
-```
-
-**Agent alert → reply:**
-```
-Notification: ⚠️ dev stuck in retry loop — "Ship EXP-188" retried 15x over 3 days
-User replies: "cancel it and move on to the next experiment"
-
-Agent receives:
-  [User replying to notification from may about "dev stuck in retry loop"]
-  State: 15 retries of same task over 3 days.
-  User says: cancel it and move on to the next experiment
-```
-
-**Unprompted message (no reply context):**
-```
-User types: "what's the status of all projects?"
-Agent receives as-is — no enrichment needed.
-```
-
-### Bot-Side Implementation
-
-1. **On send**: send clean message to user. Store mapping: `telegram_message_id → event` in `notification_messages` table.
-2. **On reply**: look up `reply_to_message_id` → get original event. From the event, reconstruct context: which agent, session, project, workflow, state at that time.
-3. **On non-reply**: pass through as regular message (no enrichment)
-
-### Context Reconstruction from Event
-
-The original event carries all metadata:
-```typescript
+```json
 {
-  type: "notification",
-  source: "agent:may",
-  owner: "human:operator",
-  data: {
-    agent: "may",
-    text: "...",
-    sessionId: "s_123",
-    // From session, derive: projectId, workflowRunId, task, parent session
+  "type": "project.focus.approval.submitted",
+  "source": "telegram",
+  "owner": "agent:aks-explorer",
+  "data": {
+    "projectPath": "projects/aks-rp-e2e.app",
+    "planId": "focus-proposal-live-staging-20260613",
+    "decision": "approve",
+    "reply": "approved",
+    "author": "hao"
   }
 }
 ```
 
-From `sessionId`, reconstruct:
-- `sessions.projectId` → which project
-- `sessions.task` → what was being worked on
-- `sessions.agent` → who was doing it
-- `sessions.workflowRunId` → which workflow run
-- Recent events for that project → current metrics, status
+The human-facing acknowledgement should describe the effect:
 
-### Session Context Enrichment
+```text
+Approved. aks-rp-e2e planner is reviewing the focus plan now.
+```
 
-When enriching a reply that has a `sessionId`, the bot also reads the session's transcript from disk and includes a summary:
+Not:
 
-1. Reply received → look up stored context → has `sessionId`
-2. Read `.state/sessions/{sessionId}/session-compact.jsonl`
-3. Extract: original task, key findings, last action before interruption
-4. Include in enriched message
+```text
+Approval sent to project event project.focus.approval.submitted.
+```
 
-**Fallback:** If session JSONL not found (cleaned up), enrichment still includes notification context. Graceful degradation.
+## Priority 1: Conversation Continuity
 
-### Validation (from earlier experiment)
+The first priority is smooth communication:
 
-Tested with claude-opus-4.6, same message with and without context enrichment:
+> The Telegram reply chain is the conversation boundary.
 
-| Reply | Without context | With context |
-|-------|----------------|--------------|
-| "focus on output not cost" | Wrong scope — applied globally to system | Correct — targets system-efficiency project specifically |
-| "cancel it and move on" | "Could you clarify what to cancel?" | "Cancelling Ship EXP-188 for dev, unblocking the task" |
+That is the rule humans expect. If the human replies to an existing bot message,
+the reply continues that conversation. If the human sends a bare message, it
+starts a new conversation.
 
-### Proposed Metric
+May owns the Telegram channel. A reply should go to May with the conversation
+context attached. May then decides how to handle it:
 
-`telegram.reply-actionable-rate` — % of replies that didn't need clarification (no follow-up within 5min). Target: 0.90, threshold: 0.70.
+- fix the issue directly,
+- delegate to another agent,
+- resume the original session,
+- emit a project or escalation event,
+- ask the human a follow-up,
+- or close the conversation with a result.
 
-### What This Design Does NOT Cover
+This keeps Telegram simple. The transport does not need to know whether a reply
+should become a project event, a session steer, an escalation resolution, or a
+new investigation. It only needs to preserve the conversation and deliver the
+packet to May.
 
-- **When to notify**: projects, metrics, agents decide this
-- **Notification format**: each notifier formats its own message
-- **Slash commands**: not needed — natural language replies with context are better
-- **Buttons/keyboards**: not needed — text replies are universal
+Transport boundary:
+
+- Store the Telegram message id and compact conversation context.
+- On reply, recover that context from `reply_to_message_id`.
+- Enrich the human text with conversation/session/notification context.
+- Acknowledge delivery in the same Telegram reply chain.
+- Do not execute project decisions, classify approvals, or repair blockers in
+  transport code. May and project agents do that work.
+
+The channel needs a conversation envelope:
+
+```ts
+interface TelegramConversationContext {
+  conversationId: string;
+
+  originalIssue?: {
+    eventType?: string;
+    eventId?: string;
+    escalationId?: string;
+    sourceAgent?: string;
+    sourceSessionId?: string;
+    projectPath?: string;
+    taskId?: string;
+    reason?: string;
+    requestedAction?: string;
+  };
+
+  lastHandledBy?: {
+    agent?: string;
+    sessionId?: string;
+  };
+
+  expectedClosure?: string[]; // e.g. ["escalation.resolved", "project.planning.requested"]
+  staleAfterMs?: number;
+}
+```
+
+Human-visible text is not routing data. Prose like `From: aks-explorer` or
+`Project: aks-rp-e2e` is useful to the human, but the router should use the
+stored `conversationId` and `originalIssue`.
+
+Recommended flow:
+
+1. Human replies to a Telegram message.
+2. Router looks up `reply_to_message_id` in `notification_messages`.
+3. If the stored notification has `conversationId`, the reply continues that
+   conversation.
+4. If it has no `conversationId`, the router creates a conversation around the
+   stored notification as legacy fallback.
+5. The reply is delivered to May as a conversation input with original issue
+   context attached.
+6. May replies to the latest Telegram message in that conversation when asking
+   follow-up questions or reporting the result.
+
+The router may still support direct typed events for legacy narrow UI-style
+actions, but that is compatibility, not the default design.
+
+This preserves natural conversation while keeping the original issue attached.
+
+### Conversation Examples
+
+Message sent while May brokers a project escalation:
+
+```json
+{
+  "conversationId": "tg_12345",
+  "originalIssue": {
+    "eventType": "escalation.created",
+    "escalationId": "esc_1",
+    "sourceAgent": "aks-explorer",
+    "sourceSessionId": "s_blocked",
+    "projectPath": "projects/aks-rp-e2e.app",
+    "reason": "No ready work while gaps remain.",
+    "requestedAction": "Ask human how to proceed."
+  },
+  "lastHandledBy": {
+    "agent": "may",
+    "sessionId": "s_may_broker_456"
+  },
+  "expectedClosure": [
+    "escalation.resolved",
+    "project.planning.requested"
+  ]
+}
+```
+
+Plain May chat response:
+
+```json
+{
+  "conversationId": "tg_67890",
+  "lastHandledBy": {
+    "agent": "may",
+    "sessionId": "s_chat_789"
+  }
+}
+```
+
+### Message Responsibility
+
+The component that sends a human-facing message should provide:
+
+- `conversationId` when continuing a conversation
+- `originalIssue` when the message is about an escalation, project, task, or
+  blocked session
+- `lastHandledBy` when May delegated or resumed work
+- `expectedClosure` when the producer knows what event should eventually close
+  the loop
+
+Telegram transport should not infer ownership from prose. It may keep best
+effort fallback for legacy messages, but new messages must carry conversation
+context.
+
+### Original Session Gone
+
+If the original or last-handling session is gone, the reply is still not lost:
+
+```text
+reply to Telegram message
+  -> read conversationId + originalIssue + lastHandledBy
+  -> deliver conversation input to May
+  -> May decides whether to resume, delegate, replan, or ask follow-up
+  -> May confirms what happened
+```
+
+The fallback prompt should be compact:
+
+```text
+Human replied in Telegram conversation tg_12345.
+
+Original issue:
+<structured issue summary>
+
+Previous handling session: s_old
+Human reply: <reply>
+
+Handle the reply. Close or update the original issue when done.
+```
+
+Do not silently drop the reply if the previous session cannot be resumed.
+
+### May As Broker For Escalations
+
+It is acceptable, and often desirable, for `escalation.created` to route to May
+first. May is the human-facing broker and can decide whether the issue needs a
+human, another agent, or an automatic repair.
+
+When May reaches out to the human, the human reply returns to the same
+conversation. May's notification must include the original escalation as
+`originalIssue`, so May can fix, delegate, resolve, or replan the real problem.
+
+Current weak pattern:
+
+```text
+escalation.created
+  -> May receives it
+  -> May sends plain message to human:
+       "[escalation] esc_1 ... Reason: ..."
+  -> human replies
+  -> reply routes to May chat with only prose context
+  -> original escalation may remain unresolved
+```
+
+Desired pattern:
+
+```text
+escalation.created
+  -> May receives it
+  -> May sends message.created to human with conversationId + originalIssue
+  -> human replies to that Telegram message
+  -> reply continues the same conversation and returns to May
+  -> May fixes/delegates/resolves/replans the original issue
+  -> May replies with the result in the same Telegram conversation
+```
+
+May should receive a packet like:
+
+```json
+{
+  "conversationId": "tg_12345",
+  "originalIssue": {
+    "eventType": "escalation.created",
+    "escalationId": "esc_1",
+    "sourceAgent": "aks-explorer",
+    "sourceSessionId": "s_blocked",
+    "projectPath": "projects/aks-rp-e2e.app",
+    "reason": "No ready work while gaps remain.",
+    "requestedAction": "Ask human how to proceed."
+  },
+  "lastHandledBy": {
+    "agent": "may",
+    "sessionId": "s_may_broker_456"
+  },
+  "humanReply": "Investigate and push the project forward"
+}
+```
+
+May does not have to emit `escalation.resolved` immediately. It may first
+investigate and fix the issue. But it must keep the original issue attached
+until it has emitted some closure/update event.
+
+## Notification Context
+
+Keep the existing `notification_messages.data` JSON blob, but standardize its
+shape. This avoids a schema migration while giving the router a reliable
+contract.
+
+```ts
+interface TelegramNotificationData {
+  text: string;
+  summary?: string;
+
+  subject?: string;        // "AKS RP E2E focus approval"
+  kind?: string;           // "approval" | "blocker" | "failure" | "digest" | "session"
+  severity?: "P0" | "P1" | "P2" | "P3";
+
+  projectPath?: string;
+  sessionId?: string;
+  taskId?: string;
+  eventId?: string;
+
+  conversationId?: string;
+  conversation?: TelegramConversationContext;
+  actionHints?: string[];  // ["approve", "adjust <changes>", "hold"]
+
+  staleAfterMs?: number;
+  dedupKey?: string;
+  supersedesKey?: string;
+}
+```
+
+New producers should prefer `conversationId` plus
+`conversation.originalIssue`. Telegram transport should not execute the domain
+decision itself.
+
+## Routing Rules
+
+Reply routing should stay deterministic:
+
+1. If the human message replies to a Telegram message with a stored
+   `conversationId`, deliver the reply to May as input for that conversation.
+2. Else if it replies to a stored notification without `conversationId`, create
+   a new conversation seeded by the stored notification and deliver it to May.
+3. Else if it replies to a Telegram quote with no DB row, create a new
+   conversation seeded by the quoted text and deliver it to May.
+4. Else if it is a bare Telegram message, create a new conversation and deliver
+   it to May.
+5. Legacy notifications without a conversation envelope should still be
+   enriched with the stored notification/session context and delivered to May.
+6. Project-specific events, escalation resolution, session resume, and task
+   steering are agent decisions after May receives the enriched context.
+
+If the notification is stale, do not silently execute it. Send a short message:
+
+```text
+That request is stale. I opened a fresh status check instead.
+```
+
+Then emit a normal chat/status request with the stale context attached.
+
+## No Silent Drops
+
+Every Telegram reply must produce a human-visible confirmation.
+
+There are two levels:
+
+1. **Delivery confirmation**: sent immediately after the router accepts the
+   reply.
+2. **Result confirmation**: sent when May finishes handling the reply or records
+   a closure/update event.
+
+Examples:
+
+```text
+Received. I attached your reply to this conversation and May is handling it.
+```
+
+```text
+Received. I found the original issue and May is checking it now.
+```
+
+```text
+Received. The previous worker session is gone, so May opened a fresh turn with
+the original issue attached.
+```
+
+```text
+Done. May classified the blocker as stale and updated the project status.
+```
+
+If routing fails, Telegram must say so:
+
+```text
+I could not resume the previous worker session. I sent the reply to May with
+the original issue attached.
+```
+
+Current implementation gap: `telegram.ts` sends delivery acknowledgements when
+it accepts a reply, but final result confirmation still depends on May sending a
+follow-up in the same conversation. The conversation design requires that
+closure to be explicit.
+
+## Noise Control
+
+Telegram should be attention-first, not event-log-first.
+
+Recommended policy:
+
+- `P0`: immediate, always send.
+- `P1`: immediate, dedupe by `dedupKey` with cooldown.
+- `P2`: batch into a digest unless it asks for human input.
+- `P3`: do not push by default; visible in web/console.
+
+Repeated notifications with the same `dedupKey` should update or collapse:
+
+```text
+AKS RP E2E still blocked
+
+Same blocker repeated 5 times in 42m.
+Latest: task not found: network-acns-cilium-network-policy...
+
+Reply: investigate / mute 2h / show details
+```
+
+Telegram supports editing messages. When practical, store the message ID and
+edit the existing notification instead of sending a new one for the same
+dedupKey. If editing is unavailable or fails, send a collapsed follow-up.
+
+## Status And Control Commands
+
+Natural language should remain primary. Slash commands are for fast mobile
+read-models and safety controls:
+
+- `/status` - compact system/project status, no LLM session required.
+- `/projects` - list project health: active, blocked, backlog, last progress.
+- `/project <id>` - focused project status and useful links.
+- `/tasks <id>` - project task summary / current active leaves.
+- `/sessions` - active sessions and what they are doing.
+- `/quiet <duration>` - mute P2/P3 notifications.
+- `/watch <project>` - raise attention level for one project.
+- `/cancel <session>` and `/cancel all` - explicit cancellation.
+- `/help` - show the above plus examples.
+
+These commands should query read models directly where possible. They should not
+spawn a general chat session unless the command asks for analysis.
+
+## Convenience Features
+
+High-value refinements:
+
+- **Reply examples**: every actionable notification includes the exact replies
+  it understands.
+- **Human acknowledgements**: confirmations describe the outcome, not internal
+  event names.
+- **Project links**: include web links for kanban, task, event trace, or feature
+  page when relevant.
+- **Digest mode**: grouped summary for repeated low-priority events.
+- **Stale reply detection**: avoid applying old approvals or steering to
+  terminal work.
+- **Context health metric**: track percentage of Telegram notifications with
+  `conversationId` and useful `originalIssue`.
+- **Reply-actionable metric**: track replies that reach May with conversation
+  context and produce a delivery/result confirmation without needing a
+  clarification turn.
+
+## Implementation Plan
+
+1. Tighten notification formatting.
+   - Add a small formatter for `message.created` to human.
+   - Preserve `subject`, `kind`, `severity`, `conversationId`,
+     `conversation.originalIssue`, and `actionHints` in
+     `notification_messages.data`.
+
+2. Improve reply acknowledgement.
+   - Confirm delivery to May immediately.
+   - Confirm final result or closure when May finishes handling the reply.
+   - Keep internal event names in logs, not the chat message.
+
+3. Add direct read-model commands.
+   - Implement `/status`, `/projects`, `/project`, `/tasks`, `/sessions`.
+   - Keep them fast and deterministic.
+
+4. Add notification lifecycle controls.
+   - Dedupe by `dedupKey`.
+   - Support quiet mode.
+   - Detect stale replies using `staleAfterMs`.
+
+5. Add metrics.
+   - `telegram.notification-context-rate`
+   - `telegram.reply-actionable-rate`
+   - `telegram.notification-dedupe-suppressed`
+
+## Non-Goals
+
+- Telegram should not become the full web UI.
+- The channel should not require buttons or custom clients to be useful.
+- The router should not hide state changes in free-form chat when a typed event
+  exists.
