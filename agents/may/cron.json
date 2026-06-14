@@ -17,12 +17,12 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": true,
-    "description": "May's heartbeat \u2014 follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
+    "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-05-26T00:10:30.227Z",
     "handler": {
       "workflow": "may-heartbeat",
       "agent": "may",
-      "task": "persistent-task: skip\n[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act \u2014 dispatch approved work, fix issues, don't wait for permission.",
+      "task": "persistent-task: skip\n[heartbeat] You are running inside the may-heartbeat workflow. Read agents/may/heartbeat.md for your agent-specific guidance. You have full authority to act — dispatch approved work, fix issues, don't wait for permission.",
       "timeoutMs": 1800000
     },
     "on": [
@@ -38,7 +38,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Bob's mission heartbeat \u2014 design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
+    "description": "Bob's mission heartbeat — design, todo drain, philosophy audit (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -61,7 +61,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Optimizer's heartbeat \u2014 find highest-impact improvement (60min). Per-agent heartbeat workflow.",
+    "description": "Optimizer's heartbeat — find highest-impact improvement (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "handler": {
       "workflow": "optimizer-heartbeat",
@@ -83,7 +83,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Coach heartbeat \u2014 triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
+    "description": "Coach heartbeat — triage, coaching, long-term mission work (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -106,7 +106,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Evaluator heartbeat \u2014 calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
+    "description": "Evaluator heartbeat — calibration, criteria evolution, signal quality, patrol (30min). Per-agent heartbeat workflow.",
     "notifyBrief": true,
     "handler": {
       "workflow": "evaluator-heartbeat",
@@ -119,10 +119,10 @@
       "heartbeat.trigger"
     ],
     "context": [
-      "agents/evaluator/heartbeat.md",
+      "projects/evaluation.app/project.json",
       "projects/may-agent.app/project.json"
     ],
-    "_disabled_reason": "migrated to evaluation.app \u2014 2026-06-14"
+    "_disabled_reason": "migrated to evaluation.app — 2026-06-14"
   },
   {
     "name": "optimize",
@@ -148,7 +148,7 @@
     "type": "job",
     "intervalMs": 1800000,
     "enabled": false,
-    "description": "Tech-lead's heartbeat \u2014 build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
+    "description": "Tech-lead's heartbeat — build pending work, intake new designs, code health (60min). Per-agent heartbeat workflow.",
     "lastModified": "2026-04-19T18:30:00.000Z",
     "notifyBrief": true,
     "handler": {
@@ -235,7 +235,7 @@
     "handler": {
       "workflow": "verify-wrap",
       "agent": "coach",
-      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts \u2014 do NOT read full session.jsonl files. Quote evidence. If NO \u2014 add to Growth Cycle queue. If YES \u2014 update workspace/common-sense-tracker.md.",
+      "task": "[cron:common-sense-verify] Pick ONE behavioral item from shared/common-sense.md that you haven't verified recently. Check workspace/common-sense-status.md for status index. Use bash with grep to search session transcripts — do NOT read full session.jsonl files. Quote evidence. If NO — add to Growth Cycle queue. If YES — update workspace/common-sense-tracker.md.",
       "timeoutMs": 900000
     },
     "intervalMs": 14400000,
@@ -425,15 +425,16 @@
       "includeEvent": true,
       "timeoutMs": 900000
     },
-    "enabled": true,
+    "enabled": false,
     "on": [
       "session.completed"
     ],
     "description": "Run evaluator aftermath workflow when a session ends.",
     "context": [
       "projects/may-agent.app/project.json",
-      "agents/evaluator/heartbeat.md"
-    ]
+      "projects/evaluation.app/project.json"
+    ],
+    "_disabled_reason": "migrated to evaluation.app/app.ts evaluation-aftermath handler — 2026-06-14"
   },
   {
     "name": "session-aftermath-scan",
@@ -454,7 +455,7 @@
     "timeoutMs": 900000,
     "context": [
       "projects/may-agent.app/project.json",
-      "agents/evaluator/heartbeat.md"
+      "projects/evaluation.app/project.json"
     ]
   },
   {
@@ -473,7 +474,7 @@
     },
     "context": [
       "projects/may-agent.app/project.json",
-      "agents/evaluator/heartbeat.md"
+      "projects/evaluation.app/project.json"
     ]
   },
   {
@@ -541,7 +542,7 @@
     "name": "heartbeat-scout",
     "type": "job",
     "intervalMs": 1800000,
-    "enabled": true,
+    "enabled": false,
     "handler": {
       "workflow": "scout-heartbeat",
       "agent": "scout",
@@ -554,13 +555,14 @@
     "context": [
       "agents/scout/heartbeat.md",
       "projects/scout-knowledge-lib.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "scout-explore-arxiv",
     "type": "job",
     "intervalMs": 14400000,
-    "enabled": true,
+    "enabled": false,
     "description": "Scout routine: explore arXiv for AI agent papers.",
     "handler": {
       "workflow": "scout-explore",
@@ -573,13 +575,14 @@
       "agents/scout/heartbeat.md",
       "projects/scout-knowledge-lib.app/project.json"
     ],
-    "lastModified": "2026-06-05T06:39:51.054Z"
+    "lastModified": "2026-06-05T06:39:51.054Z",
+    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "scout-explore-hn",
     "type": "job",
     "intervalMs": 3600000,
-    "enabled": true,
+    "enabled": false,
     "description": "Scout routine: explore Hacker News for agent discussions.",
     "handler": {
       "workflow": "scout-explore",
@@ -591,31 +594,33 @@
     "context": [
       "agents/scout/heartbeat.md",
       "projects/scout-knowledge-lib.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "scout-explore-xhs",
     "type": "job",
     "intervalMs": 3600000,
-    "enabled": true,
+    "enabled": false,
     "description": "Scout routine: explore XHS for Chinese AI community trends.",
     "handler": {
       "workflow": "scout-explore",
       "agent": "scout",
-      "task": "Explore \u5c0f\u7ea2\u4e66 (XHS) for Chinese AI community trends.",
+      "task": "Explore 小红书 (XHS) for Chinese AI community trends.",
       "timeoutMs": 600000
     },
     "offsetMs": 1800000,
     "context": [
       "agents/scout/heartbeat.md",
       "projects/scout-knowledge-lib.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "scout-explore-github",
     "type": "job",
     "intervalMs": 3600000,
-    "enabled": true,
+    "enabled": false,
     "description": "Scout routine: explore GitHub for agent frameworks and tools.",
     "handler": {
       "workflow": "scout-explore",
@@ -627,13 +632,14 @@
     "context": [
       "agents/scout/heartbeat.md",
       "projects/scout-knowledge-lib.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "scout-daily-digest",
     "type": "job",
     "intervalMs": 86400000,
-    "enabled": true,
+    "enabled": false,
     "description": "Scout daily: compile digest and send via Telegram.",
     "handler": {
       "workflow": "scout-daily-digest",
@@ -645,7 +651,8 @@
     "context": [
       "agents/scout/heartbeat.md",
       "projects/scout-knowledge-lib.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "heartbeat-dev",

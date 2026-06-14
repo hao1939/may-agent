@@ -1,11 +1,13 @@
 {
   "version": 3,
-  "updated_at": "2026-07-15T10:00:00.000Z",
+  "updated_at": "2026-06-14T19:00:00.000Z",
   "tasks": {
     "project": {
       "id": "project",
       "parent_id": null,
       "children": [
+        "ongoing-research",
+        "library-maintenance",
         "existing-knowledge-migration",
         "library-inventory-and-index",
         "dedupe-and-quality",
@@ -15,11 +17,10 @@
         "fill-gap-agent-security",
         "fill-gap-agent-testing-tooling"
       ],
-      "status": "decomposed",
       "kind": "project",
       "priority": "P1",
       "owner": "scout",
-      "goal": "Maintain Scout's knowledge library as a project workspace rather than implicit heartbeat side effects.",
+      "goal": "Discover AI trends, synthesize source-grounded knowledge, and maintain a reusable library for all agents.",
       "inputs": [
         "knowledge/",
         "knowledge/INDEX.md",
@@ -27,7 +28,11 @@
         "agents/scout/AGENTS.md",
         "agents/scout/heartbeat.md"
       ],
-      "outputs": ["knowledge/", "reports/", "tasks/tree.json"],
+      "outputs": [
+        "knowledge/",
+        "reports/",
+        "tasks/tree.json"
+      ],
       "acceptance": [
         "Scout can maintain the knowledge library through project events, not only heartbeat.",
         "The library index remains useful for agents looking for reusable knowledge.",
@@ -38,13 +43,13 @@
         "domain_workspace": "/app/projects/scout-knowledge-lib",
         "compatibility_path": "/app/agents/scout/knowledge",
         "migration_first_principle": "First preserve and index existing knowledge. Consolidation happens only after source-aware review."
-      }
+      },
+      "state": "active"
     },
     "existing-knowledge-migration": {
       "id": "existing-knowledge-migration",
       "parent_id": "project",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P0",
       "owner": "scout",
@@ -67,18 +72,21 @@
         "projects/scout-knowledge-lib/reports/migration/scout-second-brain-learning/README.md",
         "projects/scout-knowledge-lib/reports/library-inventory-2026-06-12.md"
       ],
-      "result": "Completed initial migration: 61 knowledge files preserved, 15 historical second-brain outputs copied into reports/migration, and agents/scout/knowledge now points to the project knowledge workspace."
+      "result": "Completed initial migration: 61 knowledge files preserved, 15 historical second-brain outputs copied into reports/migration, and agents/scout/knowledge now points to the project knowledge workspace.",
+      "state": "done"
     },
     "library-inventory-and-index": {
       "id": "library-inventory-and-index",
       "parent_id": "project",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
       "goal": "Review knowledge/INDEX.md and library navigation so agents can find existing notes before creating duplicates.",
-      "inputs": ["knowledge/INDEX.md", "knowledge/"],
+      "inputs": [
+        "knowledge/INDEX.md",
+        "knowledge/"
+      ],
       "outputs": [
         "knowledge/INDEX.md",
         "reports/library-inventory-2026-06-12.md"
@@ -92,7 +100,8 @@
         "projects/scout-knowledge-lib/knowledge/INDEX.md",
         "projects/scout-knowledge-lib/reports/library-inventory-2026-06-12.md"
       ],
-      "result": "Completed migration inventory and rebuilt the library index. Duplicate-looking files remain intentionally visible for source-aware consolidation."
+      "result": "Completed migration inventory and rebuilt the library index. Duplicate-looking files remain intentionally visible for source-aware consolidation.",
+      "state": "done"
     },
     "dedupe-and-quality": {
       "id": "dedupe-and-quality",
@@ -104,24 +113,28 @@
         "review-temp-notes",
         "consolidate-xhs-generic-duplicates"
       ],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
       "goal": "Find duplicate, stale, or low-context knowledge notes and consolidate them without losing source-grounded findings.",
-      "inputs": ["knowledge/"],
-      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "inputs": [
+        "knowledge/"
+      ],
+      "outputs": [
+        "knowledge/",
+        "reports/dedupe-review.md"
+      ],
       "acceptance": [
         "At least one concrete duplicate/stale cluster is improved or an exact no-op reason is recorded.",
         "No shallow bulk rewrites are made just to satisfy a metric."
       ],
-      "result": "All five child tasks completed: agent-architecture, evaluation, multi-agent, and XHS-generic clusters consolidated into canonical notes; temp notes archived. All known consolidation clusters resolved (2026-06-15)."
+      "result": "All five child tasks completed: agent-architecture, evaluation, multi-agent, and XHS-generic clusters consolidated into canonical notes; temp notes archived. All known consolidation clusters resolved (2026-06-15).",
+      "state": "done"
     },
     "consolidate-agent-architecture-cluster": {
       "id": "consolidate-agent-architecture-cluster",
       "parent_id": "dedupe-and-quality",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
@@ -133,7 +146,10 @@
         "knowledge/agent_patterns.md",
         "knowledge/agent_architectures_01.md"
       ],
-      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "outputs": [
+        "knowledge/",
+        "reports/dedupe-review.md"
+      ],
       "acceptance": [
         "Canonical architecture note is identified or created by merging source-grounded content.",
         "Superseded notes are archived, redirected, or explicitly retained with a reason.",
@@ -144,13 +160,13 @@
         "Four superseded files retain redirect headers pointing to the canonical note.",
         "knowledge/INDEX.md updated: canonical note marked, superseded notes shown with strikethrough."
       ],
-      "result": "Consolidated 5 agent-architecture files into agent-architectures.md. Superseded files kept with redirect headers. INDEX.md updated to reflect new navigation."
+      "result": "Consolidated 5 agent-architecture files into agent-architectures.md. Superseded files kept with redirect headers. INDEX.md updated to reflect new navigation.",
+      "state": "done"
     },
     "consolidate-evaluation-cluster": {
       "id": "consolidate-evaluation-cluster",
       "parent_id": "dedupe-and-quality",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
@@ -162,7 +178,10 @@
         "knowledge/xhs-eval-synthesis-2024.md",
         "knowledge/xhs_eval_trends_may2024.md"
       ],
-      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "outputs": [
+        "knowledge/",
+        "reports/dedupe-review.md"
+      ],
       "acceptance": [
         "Durable evaluation concepts and dated trend reports are easy to distinguish.",
         "Repeated claims are consolidated without losing source basis.",
@@ -173,13 +192,13 @@
         "Four superseded files retain redirect headers pointing to the canonical note.",
         "knowledge/INDEX.md updated: canonical note marked, superseded notes shown with strikethrough."
       ],
-      "result": "Consolidated 5 evaluation files into agent-evaluation.md. Durable patterns (live benchmarks, trace verification, reviewer agents, operational metrics) separated from dated XHS observations. Superseded files kept with redirect headers. INDEX.md updated."
+      "result": "Consolidated 5 evaluation files into agent-evaluation.md. Durable patterns (live benchmarks, trace verification, reviewer agents, operational metrics) separated from dated XHS observations. Superseded files kept with redirect headers. INDEX.md updated.",
+      "state": "done"
     },
     "consolidate-multi-agent-trends-cluster": {
       "id": "consolidate-multi-agent-trends-cluster",
       "parent_id": "dedupe-and-quality",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
@@ -190,7 +209,10 @@
         "knowledge/xhs_multi_agent_trends.md",
         "knowledge/findings/multi-agent-*"
       ],
-      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "outputs": [
+        "knowledge/",
+        "reports/dedupe-review.md"
+      ],
       "acceptance": [
         "Current multi-agent coordination understanding has a clear canonical entry point.",
         "Dated findings remain available as provenance when they are still useful.",
@@ -202,19 +224,25 @@
         "knowledge/INDEX.md updated: canonical note marked, superseded notes shown with strikethrough.",
         "Related but distinct notes (context-stigmergy-synthesis.md, multi-agent-stigmergy.md) retained and cross-linked."
       ],
-      "result": "Consolidated 11 multi-agent coordination files into multi-agent-coordination.md. Organized into 9 thematic sections: coordination topology, stigmergy, metric-driven coordination, structured handoffs, critic agents, pipeline structures, frameworks landscape, failure modes, and emerging research. Superseded files kept with redirect headers. INDEX.md updated."
+      "result": "Consolidated 11 multi-agent coordination files into multi-agent-coordination.md. Organized into 9 thematic sections: coordination topology, stigmergy, metric-driven coordination, structured handoffs, critic agents, pipeline structures, frameworks landscape, failure modes, and emerging research. Superseded files kept with redirect headers. INDEX.md updated.",
+      "state": "done"
     },
     "review-temp-notes": {
       "id": "review-temp-notes",
       "parent_id": "dedupe-and-quality",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
       "goal": "Decide whether temporary notes are durable knowledge, report material, or safe to archive.",
-      "inputs": ["knowledge/temp-ideas.md", "knowledge/temp.txt"],
-      "outputs": ["knowledge/", "reports/dedupe-review.md"],
+      "inputs": [
+        "knowledge/temp-ideas.md",
+        "knowledge/temp.txt"
+      ],
+      "outputs": [
+        "knowledge/",
+        "reports/dedupe-review.md"
+      ],
       "acceptance": [
         "Temporary files no longer sit ambiguously in the durable knowledge namespace.",
         "Any useful content is preserved in an appropriate note or report."
@@ -224,7 +252,8 @@
         "temp.txt archived — contained only 'Check complete.' with no durable content.",
         "INDEX.md updated to show temp-ideas.md as archived."
       ],
-      "result": "Both temp files resolved. temp-ideas.md ideas (memory compression, anti-patterns, self-healing) all covered by existing canonical notes. temp.txt was noise. Both marked archived in-place with provenance."
+      "result": "Both temp files resolved. temp-ideas.md ideas (memory compression, anti-patterns, self-healing) all covered by existing canonical notes. temp.txt was noise. Both marked archived in-place with provenance.",
+      "state": "done"
     },
     "triage-inbox-imports": {
       "id": "triage-inbox-imports",
@@ -235,7 +264,6 @@
         "triage-inbox-xhs",
         "triage-inbox-github"
       ],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
@@ -246,7 +274,11 @@
         "knowledge/inbox/app-root-cleanup-2026-06-13/",
         "knowledge/inbox/app-projects-cleanup-2026-06-13/"
       ],
-      "outputs": ["knowledge/", "knowledge/INDEX.md", "reports/inbox-triage.md"],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md",
+        "reports/inbox-triage.md"
+      ],
       "acceptance": [
         "Each inbox batch has a triage decision: merge, archive-as-provenance, or delete.",
         "Unique findings from inbox files are merged into existing canonical notes rather than creating new top-level notes.",
@@ -264,19 +296,24 @@
         "reports/inbox-triage-xhs-batch.md",
         "reports/inbox-triage-github-batch.md"
       ],
-      "result": "All 89 inbox files triaged across 4 batches (arXiv 25, HN 29, XHS 33, GitHub 2). All archived as dated provenance. Coverage analysis found existing canonical notes cover the vast majority of durable themes. Library gaps identified: agent security/governance (arXiv), government export controls (HN), agent harness pattern and MCP ecosystem (GitHub). Event-level XHS themes (Claude 5 launch, WeChat AI) noted but don't warrant canonical notes."
+      "result": "All 89 inbox files triaged across 4 batches (arXiv 25, HN 29, XHS 33, GitHub 2). All archived as dated provenance. Coverage analysis found existing canonical notes cover the vast majority of durable themes. Library gaps identified: agent security/governance (arXiv), government export controls (HN), agent harness pattern and MCP ecosystem (GitHub). Event-level XHS themes (Claude 5 launch, WeChat AI) noted but don't warrant canonical notes.",
+      "state": "done"
     },
     "triage-inbox-arxiv": {
       "id": "triage-inbox-arxiv",
       "parent_id": "triage-inbox-imports",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
       "goal": "Triage the 25 arXiv briefing files in the inbox.",
-      "inputs": ["knowledge/inbox/*arxiv*"],
-      "outputs": ["reports/inbox-triage-arxiv-batch.md", "knowledge/INDEX.md"],
+      "inputs": [
+        "knowledge/inbox/*arxiv*"
+      ],
+      "outputs": [
+        "reports/inbox-triage-arxiv-batch.md",
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "Per-file decision recorded.",
         "Net-new themes identified vs existing canonical notes.",
@@ -286,19 +323,24 @@
         "reports/inbox-triage-arxiv-batch.md — full per-file decisions and coverage analysis.",
         "INDEX.md inbox section updated to show arXiv batch as triaged."
       ],
-      "result": "All 25 arXiv files triaged as archive-as-provenance. 238 unique papers, ~70% content overlap. One library gap identified: agent security/governance has no canonical note despite being the #1 theme across papers."
+      "result": "All 25 arXiv files triaged as archive-as-provenance. 238 unique papers, ~70% content overlap. One library gap identified: agent security/governance has no canonical note despite being the #1 theme across papers.",
+      "state": "done"
     },
     "triage-inbox-hn": {
       "id": "triage-inbox-hn",
       "parent_id": "triage-inbox-imports",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
       "goal": "Triage the 29 HN exploration files in the inbox.",
-      "inputs": ["knowledge/inbox/*hn-*"],
-      "outputs": ["reports/inbox-triage-hn-batch.md", "knowledge/INDEX.md"],
+      "inputs": [
+        "knowledge/inbox/*hn-*"
+      ],
+      "outputs": [
+        "reports/inbox-triage-hn-batch.md",
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "Per-file decision recorded.",
         "Net-new findings merged into canonical notes or hn-ai-agent-trends.md.",
@@ -308,19 +350,24 @@
         "reports/inbox-triage-hn-batch.md — full per-file decisions and coverage analysis.",
         "INDEX.md inbox section updated to show HN batch as triaged."
       ],
-      "result": "All 29 HN files triaged as archive-as-provenance. ~75-80% content overlap across files (daily re-runs of same API queries). Existing findings/hn-ai-agent-trends.md covers 6 of 6 major themes. One library gap identified: government export controls / crypto wars 2.0 (Fable/Mythos suspension, 2324pts) not in consolidated note."
+      "result": "All 29 HN files triaged as archive-as-provenance. ~75-80% content overlap across files (daily re-runs of same API queries). Existing findings/hn-ai-agent-trends.md covers 6 of 6 major themes. One library gap identified: government export controls / crypto wars 2.0 (Fable/Mythos suspension, 2324pts) not in consolidated note.",
+      "state": "done"
     },
     "triage-inbox-xhs": {
       "id": "triage-inbox-xhs",
       "parent_id": "triage-inbox-imports",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
       "goal": "Triage the 33 XHS daily trend files in the inbox.",
-      "inputs": ["knowledge/inbox/*xhs-*"],
-      "outputs": ["reports/inbox-triage-xhs-batch.md", "knowledge/INDEX.md"],
+      "inputs": [
+        "knowledge/inbox/*xhs-*"
+      ],
+      "outputs": [
+        "reports/inbox-triage-xhs-batch.md",
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "Per-file decision recorded.",
         "Unique XHS observations merged into active XHS notes or canonical notes.",
@@ -330,19 +377,23 @@
         "reports/inbox-triage-xhs-batch.md — full per-file decisions and coverage analysis.",
         "INDEX.md inbox section updated to show XHS batch as triaged."
       ],
-      "result": "All 33 XHS files triaged as archive-as-provenance. Daily browsing snapshots from Jun 3-22 with high redundancy (same-date multi-revision, cross-directory duplicates). Coverage analysis confirmed existing xhs_chinese_ai_trends_june2026.md canonical note covers all durable architectural themes. 5 event-level gaps identified (Claude 5 launch, WeChat AI, etc.) but none warrant new canonical notes."
+      "result": "All 33 XHS files triaged as archive-as-provenance. Daily browsing snapshots from Jun 3-22 with high redundancy (same-date multi-revision, cross-directory duplicates). Coverage analysis confirmed existing xhs_chinese_ai_trends_june2026.md canonical note covers all durable architectural themes. 5 event-level gaps identified (Claude 5 launch, WeChat AI, etc.) but none warrant new canonical notes.",
+      "state": "done"
     },
     "triage-inbox-github": {
       "id": "triage-inbox-github",
       "parent_id": "triage-inbox-imports",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
       "goal": "Triage the 2 GitHub trending files in the inbox.",
-      "inputs": ["knowledge/inbox/*github*"],
-      "outputs": ["knowledge/INDEX.md"],
+      "inputs": [
+        "knowledge/inbox/*github*"
+      ],
+      "outputs": [
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "Decision recorded: merge, archive, or delete."
       ],
@@ -350,7 +401,8 @@
         "reports/inbox-triage-github-batch.md — per-file decisions and coverage analysis.",
         "INDEX.md inbox section updated to show GitHub batch as triaged."
       ],
-      "result": "Both GitHub trending files (2025, 2026) archived as dated provenance. Star counts and repo lists are point-in-time snapshots. Coverage analysis found most architectural patterns already in canonical notes; identified 4 library gaps: agent harness pattern, skills/plugins, MCP ecosystem, and agent testing tooling."
+      "result": "Both GitHub trending files (2025, 2026) archived as dated provenance. Star counts and repo lists are point-in-time snapshots. Coverage analysis found most architectural patterns already in canonical notes; identified 4 library gaps: agent harness pattern, skills/plugins, MCP ecosystem, and agent testing tooling.",
+      "state": "done"
     },
     "source-grounded-synthesis": {
       "id": "source-grounded-synthesis",
@@ -359,13 +411,18 @@
         "fill-gap-agent-harness-skills",
         "fill-gap-mcp-protocol"
       ],
-      "status": "done",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
       "goal": "Fill library gaps identified during inbox triage — add named patterns and protocol coverage to canonical notes where existing notes are thin or silent.",
-      "inputs": ["knowledge/", "reports/inbox-triage-*.md"],
-      "outputs": ["knowledge/", "reports/synthesis-review.md"],
+      "inputs": [
+        "knowledge/",
+        "reports/inbox-triage-*.md"
+      ],
+      "outputs": [
+        "knowledge/",
+        "reports/synthesis-review.md"
+      ],
       "acceptance": [
         "New or updated synthesis cites source context and links related notes.",
         "Existing notes are updated before creating a new one.",
@@ -373,15 +430,15 @@
       ],
       "context": {
         "gaps_from_triage": "arXiv: agent security/governance. GitHub: agent harness pattern, skills/plugins, MCP ecosystem, agent testing tooling. See reports/inbox-triage-arxiv-batch.md and reports/inbox-triage-github-batch.md.",
-        "remaining_gap": "Agent security/governance (arXiv) — identified as library gap but not yet addressed. Agent testing tooling (GitHub) — no dedicated note yet."
+        "remaining_gap": "All gaps resolved. Security/governance → fill-gap-agent-security (done 2026-07-15). Testing tooling → fill-gap-agent-testing-tooling (done 2026-07-16, section in agent-evaluation.md)."
       },
-      "result": "Both child tasks done: agent-harness-skills merged into agent-architectures.md (2026-06-15), MCP protocol note created as standalone canonical note agent-protocols-mcp-a2a.md (2026-07-14). Remaining gaps: agent security/governance, agent testing tooling — deferred to future work."
+      "result": "Both child tasks done: agent-harness-skills merged into agent-architectures.md (2026-06-15), MCP protocol note created as standalone canonical note agent-protocols-mcp-a2a.md (2026-07-14). Remaining gaps resolved in sibling tasks: agent-security-governance.md (2026-07-15), agent-evaluation.md §Agent Testing Tooling (2026-07-16).",
+      "state": "done"
     },
     "fill-gap-agent-harness-skills": {
       "id": "fill-gap-agent-harness-skills",
       "parent_id": "source-grounded-synthesis",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
@@ -392,7 +449,9 @@
         "knowledge/inbox/app-docs-cleanup-2026-06-13/docs/github-trending-ai-agents-2026.md",
         "reports/inbox-triage-github-batch.md"
       ],
-      "outputs": ["knowledge/agent-architectures.md"],
+      "outputs": [
+        "knowledge/agent-architectures.md"
+      ],
       "acceptance": [
         "agent-architectures.md names and describes the Harness pattern (thin wrapper + tool access + memory + control loop).",
         "agent-architectures.md names and describes Skills/Plugins as modular capability packages.",
@@ -403,13 +462,13 @@
         "agent-architectures.md §Skills-as-Code Pattern — describes installable markdown/config capability packages. Cites 3 repos (anthropics/skills 150k★, addyosmani/agent-skills 58k★, antigravity-awesome-skills 41k★).",
         "Both sections cross-reference KE knowledge entries."
       ],
-      "result": "Already completed as part of agent-architectures.md update (2026-06-15). Harness Engineering and Skills-as-Code both named, described, and source-cited. Task status corrected from backlog to done (2026-07-14)."
+      "result": "Already completed as part of agent-architectures.md update (2026-06-15). Harness Engineering and Skills-as-Code both named, described, and source-cited. Task status corrected from backlog to done (2026-07-14).",
+      "state": "done"
     },
     "fill-gap-mcp-protocol": {
       "id": "fill-gap-mcp-protocol",
       "parent_id": "source-grounded-synthesis",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
@@ -421,7 +480,9 @@
         "knowledge/xhs_chinese_ai_trends_june2026.md",
         "reports/inbox-triage-github-batch.md"
       ],
-      "outputs": ["knowledge/agent-protocols-mcp-a2a.md"],
+      "outputs": [
+        "knowledge/agent-protocols-mcp-a2a.md"
+      ],
       "acceptance": [
         "MCP is described as a protocol: what it standardizes, SDK landscape, community ecosystem.",
         "MCP is compared to A2A/AG-UI where relevant.",
@@ -435,28 +496,35 @@
         "Research findings: HyperTool code-block optimization, AgentBeats evaluation via protocols, communication graph metadata leakage.",
         "INDEX.md updated with new 'Agent Protocols And Standards' section."
       ],
-      "result": "Created standalone canonical note agent-protocols-mcp-a2a.md. Decision: standalone note (not a section in agent-architectures.md) because protocols span architecture, coordination, evaluation, and security — a distinct concern. All three acceptance criteria met: protocol descriptions, A2A/AG-UI comparison, and MCP陨落 Chinese perspective included."
+      "result": "Created standalone canonical note agent-protocols-mcp-a2a.md. Decision: standalone note (not a section in agent-architectures.md) because protocols span architecture, coordination, evaluation, and security — a distinct concern. All three acceptance criteria met: protocol descriptions, A2A/AG-UI comparison, and MCP陨落 Chinese perspective included.",
+      "state": "done"
     },
     "adoption-and-reuse-feedback": {
       "id": "adoption-and-reuse-feedback",
       "parent_id": "project",
       "children": [],
-      "status": "backlog",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
       "goal": "Review whether Scout and other agents are reusing the library, then feed findings into library structure and task priorities.",
-      "inputs": ["knowledge/", "reports/", "agents/scout/last-eval.md"],
-      "outputs": ["reports/reuse-feedback.md", "tasks/tree.json"],
+      "inputs": [
+        "knowledge/",
+        "reports/",
+        "agents/scout/last-eval.md"
+      ],
+      "outputs": [
+        "reports/reuse-feedback.md",
+        "tasks/tree.json"
+      ],
       "acceptance": [
         "Reuse/adoption evidence changes the next maintenance priority or records why no action is needed."
-      ]
+      ],
+      "state": "backlog"
     },
     "fill-gap-agent-security": {
       "id": "fill-gap-agent-security",
       "parent_id": "project",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P2",
       "owner": "scout",
@@ -467,7 +535,10 @@
         "knowledge/agent-architectures.md",
         "knowledge/agent-protocols-mcp-a2a.md"
       ],
-      "outputs": ["knowledge/agent-security-governance.md", "knowledge/INDEX.md"],
+      "outputs": [
+        "knowledge/agent-security-governance.md",
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "A canonical note covers agent security concerns: prompt injection, tool-use sandboxing, permission models, governance frameworks.",
         "Content is source-grounded from arXiv provenance files, not generated from thin air.",
@@ -484,13 +555,13 @@
       "result": "Canonical note agent-security-governance.md covers attack surfaces (CFD, tool-use, metadata, supply-chain), defense architectures (dual-boundary, trust layers, progressive autonomy, guardrail feedback, cooperative governance, privacy budgets, bootstrapped monitoring, multi-agent trust), structural governance turn, evaluation/adversarial testing, and open problems. Source-grounded from 11 arXiv papers, HN discourse, and XHS signals. All three acceptance criteria met.",
       "context": {
         "origin": "Identified as remaining_gap in source-grounded-synthesis task (2026-07-14). See reports/inbox-triage-arxiv-batch.md for paper-level evidence."
-      }
+      },
+      "state": "done"
     },
     "fill-gap-agent-testing-tooling": {
       "id": "fill-gap-agent-testing-tooling",
       "parent_id": "project",
       "children": [],
-      "status": "backlog",
       "kind": "work",
       "priority": "P3",
       "owner": "scout",
@@ -500,21 +571,31 @@
         "reports/inbox-triage-github-batch.md",
         "knowledge/inbox/"
       ],
-      "outputs": ["knowledge/", "knowledge/INDEX.md"],
+      "outputs": [
+        "knowledge/",
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "Decision recorded: standalone note vs section in agent-evaluation.md.",
         "If written, content cites specific tools/repos from GitHub provenance.",
         "INDEX.md updated to reflect the new coverage."
       ],
+      "evidence": [
+        "Decision: section in agent-evaluation.md (not standalone) — testing tooling implements evaluation patterns, not a distinct concern.",
+        "agent-evaluation.md §Agent Testing Tooling: 5 tools with stars from GitHub trending, Layer-Isolated methodology from arXiv [2606.11686], CI containment tools from HN.",
+        "Known gaps documented: no self-repair rate tooling, absorption risk from TensorZero failure.",
+        "INDEX.md annotation updated to show testing tooling coverage."
+      ],
+      "result": "Added §Agent Testing Tooling to agent-evaluation.md with 3 subsections: open source tools table (promptfoo, RagaAI, Giskard, langwatch, mcpmark), Layer-Isolated testing methodology (arXiv), and CI containment tools (Agent Gate, ClawMoat, Bastion, Guardian Runtime). Known gaps section covers self-repair measurement void and harness-absorption risk. All three acceptance criteria met.",
       "context": {
         "origin": "Identified as remaining_gap in source-grounded-synthesis task (2026-07-14). See reports/inbox-triage-github-batch.md."
-      }
+      },
+      "state": "done"
     },
     "consolidate-xhs-generic-duplicates": {
       "id": "consolidate-xhs-generic-duplicates",
       "parent_id": "dedupe-and-quality",
       "children": [],
-      "status": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "scout",
@@ -527,7 +608,9 @@
         "knowledge/xhs_multi_agent_trends.md",
         "knowledge/xhs_synthesis.md"
       ],
-      "outputs": ["knowledge/INDEX.md"],
+      "outputs": [
+        "knowledge/INDEX.md"
+      ],
       "acceptance": [
         "Generic XHS duplicates are marked superseded with redirect headers.",
         "Source-dated XHS notes with unique observations are retained.",
@@ -538,7 +621,90 @@
         "5 source-dated XHS notes retained as active with brief annotations in INDEX.md.",
         "INDEX.md Migration Notes updated to reflect XHS consolidation status."
       ],
-      "result": "Superseded 6 generic XHS duplicate notes. Retained 5 source-dated XHS notes (xhs_chinese_ai_trends_may2026.md, xhs_coordination_trends_may2026.md, xhs_trends_report_Q2_2026.md, insights/xhs_trends_v5.md, xhs_latest_trends_insight_report.md) plus 2 XHS eval/failure notes with distinct content."
+      "result": "Superseded 6 generic XHS duplicate notes. Retained 5 source-dated XHS notes (xhs_chinese_ai_trends_may2026.md, xhs_coordination_trends_may2026.md, xhs_trends_report_Q2_2026.md, insights/xhs_trends_v5.md, xhs_latest_trends_insight_report.md) plus 2 XHS eval/failure notes with distinct content.",
+      "state": "done"
+    },
+    "ongoing-research": {
+      "id": "ongoing-research",
+      "parent_id": "project",
+      "children": [
+        "explore-arxiv",
+        "explore-hn",
+        "explore-xhs",
+        "explore-github",
+        "daily-digest"
+      ],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Continuously discover AI trends from multiple sources and synthesize findings into the knowledge library.",
+      "state": "active",
+      "context": {
+        "note": "This is a perpetual process — there is always new knowledge to explore. Each child represents an ongoing source channel."
+      }
+    },
+    "explore-arxiv": {
+      "id": "explore-arxiv",
+      "parent_id": "ongoing-research",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Explore arXiv for recent AI agent papers every 4 hours. Write findings to knowledge/findings/.",
+      "state": "active"
+    },
+    "explore-hn": {
+      "id": "explore-hn",
+      "parent_id": "ongoing-research",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Explore Hacker News for AI agent discussions every hour. Surface community signals and tool announcements.",
+      "state": "active"
+    },
+    "explore-xhs": {
+      "id": "explore-xhs",
+      "parent_id": "ongoing-research",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Explore XHS (小红书) for Chinese AI community trends every hour. Capture perspectives not visible in English sources.",
+      "state": "active"
+    },
+    "explore-github": {
+      "id": "explore-github",
+      "parent_id": "ongoing-research",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Explore GitHub for trending AI agent repos and tools every hour. Track emerging frameworks and patterns.",
+      "state": "active"
+    },
+    "daily-digest": {
+      "id": "daily-digest",
+      "parent_id": "ongoing-research",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "scout",
+      "goal": "Compile daily research digest from findings and send to human via Telegram.",
+      "state": "active"
+    },
+    "library-maintenance": {
+      "id": "library-maintenance",
+      "parent_id": "project",
+      "children": [],
+      "kind": "work",
+      "priority": "P2",
+      "owner": "scout",
+      "goal": "Periodic library health: consolidate new duplicates, update INDEX.md, archive stale findings, improve synthesis quality.",
+      "state": "backlog",
+      "context": {
+        "note": "Triggered by knowledge-planner workflow when project.owner.requested events arrive. Not on a fixed schedule — reacts to library drift."
+      }
     }
   }
 }

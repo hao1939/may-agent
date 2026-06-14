@@ -1,14 +1,12 @@
-{
-  "id": "scout-knowledge-lib",
-  "owner": "scout",
-  "status": "active",
-  "type": "project-app",
-  "priority": "P2",
-  "domainProject": {
-    "id": "scout-knowledge-lib",
-    "path": "../scout-knowledge-lib"
-  },
-  "goal": "Maintain Scout's source-grounded knowledge library as a project workspace: reduce duplicate notes, keep the index useful, improve reusable synthesis, and make library maintenance explicit outside Scout heartbeat.",
-  "taskIndex": ["tasks/tree.json"],
-  "createdAt": "2026-06-12T16:00:00.000Z"
-}
+---
+id: scout-knowledge-lib.app
+owner: scout
+status: active
+type: project-app
+priority: P1
+---
+
+# Scout research and knowledge library — continuous AI trend discovery, source-grounded synthesis, and daily digest delivery.
+
+## Goal
+Discover AI trends from arXiv, HN, XHS, and GitHub. Synthesize findings into reusable, source-grounded knowledge notes. Deliver daily digests to the human operator. Maintain library quality through deduplication, consolidation, and index health.

@@ -12,9 +12,12 @@ const appTaskContext =
 const taskTreeContext = [
   "projects/scout-knowledge-lib.app/project.json",
   "projects/scout-knowledge-lib.app/tasks/tree.json",
-  "projects/scout-knowledge-lib.app/tasks/README.md",
-  "projects/scout-knowledge-lib/README.md",
   "projects/scout-knowledge-lib/knowledge/INDEX.md",
+];
+
+const scoutContext = [
+  "projects/scout-knowledge-lib.app/agents/scout/heartbeat.md",
+  "projects/scout-knowledge-lib.app/project.json",
 ];
 
 function projectOwnerEvent(
@@ -24,10 +27,21 @@ function projectOwnerEvent(
   return sdkProjectOwnerEvent(projectId, reason, params);
 }
 
-async function routeScoutKnowledgeEvent(
+async function routeScoutEvent(
   ctx: ProjectAppContext,
   event: Record<string, unknown>,
 ): Promise<unknown> {
+  // Workflow-handled events — noop in onEvent, cron dispatches them
+  if (
+    event.type === "scout.heartbeat" ||
+    event.type === "scout.explore" ||
+    event.type === "scout.digest" ||
+    event.type === "project.owner.requested" ||
+    event.type === "project.planning.requested"
+  ) {
+    return ctx.noop(`${event.type} is handled by workflowHandlers`);
+  }
+
   if (event.type === "project.comment.created") {
     return ctx.emit(projectOwnerEvent("project-comment", eventDetails(event)));
   }
@@ -46,13 +60,6 @@ async function routeScoutKnowledgeEvent(
     return ctx.emit(projectOwnerEvent("metric-breach", eventDetails(event)));
   }
 
-  if (
-    event.type === "project.owner.requested" ||
-    event.type === "project.planning.requested"
-  ) {
-    return ctx.noop("handled by scout-knowledge-lib owner workflow handler");
-  }
-
   if (event.type === "project.knowledge.maintained") {
     return ctx.noop("external event emitted by knowledge-planner workflow");
   }
@@ -62,35 +69,131 @@ async function routeScoutKnowledgeEvent(
 
 export default defineProjectApp({
   id: projectId,
-  version: 1,
+  version: 2,
   owner: "scout",
   description:
-    "Scout knowledge library maintenance app: index health, dedupe, synthesis quality, and source-grounded reusable notes.",
+    "Scout research and knowledge app: discovers AI trends from arXiv, HN, XHS, GitHub; synthesizes findings into a source-grounded knowledge library; delivers daily digests.",
   workspace: {
     kind: "local",
     localPath: "../scout-knowledge-lib",
   },
 
   budget: {
-    sessionsPerDay: 4,
-    tokensPerDay: 160_000,
-    maxConcurrent: 1,
+    sessionsPerDay: 50,
+    tokensPerDay: 800_000,
+    maxConcurrent: 2,
   },
 
   schedules: [
     {
-      id: "library-maintenance",
+      id: "scout-heartbeat",
       enabled: true,
-      intervalMs: 21_600_000,
+      intervalMs: 1_800_000, // 30min
       event: {
-        type: "project.tick",
+        type: "scout.heartbeat",
         project: projectId,
-        lane: "library-maintenance",
+      },
+    },
+    {
+      id: "scout-explore-arxiv",
+      enabled: true,
+      intervalMs: 14_400_000, // 4h
+      event: {
+        type: "scout.explore",
+        project: projectId,
+        source: "arxiv",
+      },
+    },
+    {
+      id: "scout-explore-hn",
+      enabled: true,
+      intervalMs: 3_600_000, // 1h
+      event: {
+        type: "scout.explore",
+        project: projectId,
+        source: "hn",
+      },
+    },
+    {
+      id: "scout-explore-xhs",
+      enabled: true,
+      intervalMs: 3_600_000, // 1h
+      event: {
+        type: "scout.explore",
+        project: projectId,
+        source: "xhs",
+      },
+    },
+    {
+      id: "scout-explore-github",
+      enabled: true,
+      intervalMs: 3_600_000, // 1h
+      event: {
+        type: "scout.explore",
+        project: projectId,
+        source: "github",
+      },
+    },
+    {
+      id: "scout-daily-digest",
+      enabled: true,
+      intervalMs: 86_400_000, // 24h
+      event: {
+        type: "scout.digest",
+        project: projectId,
       },
     },
   ],
 
   workflowHandlers: [
+    {
+      name: "scout-heartbeat",
+      type: "job",
+      enabled: true,
+      description: "Scout creative heartbeat — synthesize, connect, discover.",
+      on: ["scout.heartbeat"],
+      handler: {
+        workflow: "scout-heartbeat",
+        agent: "scout",
+        includeEvent: true,
+        task: `${appTaskContext}\n[heartbeat] You are scout. Read your heartbeat.md and do your work.`,
+        timeoutMs: 1_800_000,
+      },
+      context: scoutContext,
+    },
+    {
+      name: "scout-explore",
+      type: "job",
+      enabled: true,
+      maxConcurrentTriggers: 2,
+      description:
+        "Scout routine discovery — explore a source (arXiv, HN, XHS, GitHub) for new findings.",
+      on: ["scout.explore"],
+      handler: {
+        workflow: "scout-explore",
+        agent: "scout",
+        includeEvent: true,
+        task: appTaskContext,
+        timeoutMs: 1_200_000,
+      },
+      context: scoutContext,
+    },
+    {
+      name: "scout-daily-digest",
+      type: "job",
+      enabled: true,
+      description:
+        "Scout daily digest — compile findings and send to human via Telegram.",
+      on: ["scout.digest"],
+      handler: {
+        workflow: "scout-daily-digest",
+        agent: "scout",
+        includeEvent: true,
+        task: `${appTaskContext}\nCompile today's research digest and send to Hao.`,
+        timeoutMs: 300_000,
+      },
+      context: scoutContext,
+    },
     {
       name: "scout-knowledge-lib-planner",
       type: "job",
@@ -109,6 +212,9 @@ export default defineProjectApp({
   ],
 
   events: [
+    "scout.heartbeat",
+    "scout.explore",
+    "scout.digest",
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
     { type: "project.action.invoked", project: projectId },
@@ -119,10 +225,24 @@ export default defineProjectApp({
 
   eventGraph: {
     handlers: {
+      "scout-heartbeat": {
+        emits: ["project.knowledge.maintained"],
+        description: "Scout creative session — synthesizes across sources.",
+      },
+      "scout-explore": {
+        emits: ["project.knowledge.maintained"],
+        description:
+          "Routine discovery from arXiv, HN, XHS, or GitHub. Writes findings to knowledge/.",
+      },
+      "scout-daily-digest": {
+        emits: [],
+        description:
+          "Compiles daily digest from workspace/digest/today.md and sends to human.",
+      },
       "scout-knowledge-lib-planner": {
         emits: ["project.knowledge.maintained"],
         description:
-          "Scout reviews the library task tree and updates the knowledge workspace when useful.",
+          "Reviews library task tree and updates the knowledge workspace.",
       },
     },
     adapters: [
@@ -151,10 +271,10 @@ export default defineProjectApp({
     externalEvents: ["project.knowledge.maintained"],
     intentionalCycles: [
       {
-        id: "human-or-timer-to-library-maintenance",
-        events: ["project.tick", "project.owner.requested"],
+        id: "scout-continuous-research",
+        events: ["scout.heartbeat", "scout.explore", "scout.digest"],
         reason:
-          "Timer and human events periodically wake Scout to maintain the library.",
+          "Scout continuously explores sources and synthesizes findings. There is always new knowledge to discover.",
       },
     ],
   },
@@ -176,9 +296,25 @@ export default defineProjectApp({
         return projectOwnerEvent("repair-index", params);
       },
     },
+    "explore-now": {
+      type: "async",
+      description:
+        "Trigger a scout exploration for a specific source (arxiv, hn, xhs, github).",
+      event(params) {
+        const source =
+          params && typeof params === "object" && "source" in params
+            ? (params as Record<string, unknown>).source
+            : "arxiv";
+        return {
+          type: "scout.explore",
+          project: projectId,
+          source,
+        };
+      },
+    },
   },
 
   async onEvent(ctx, event) {
-    return routeScoutKnowledgeEvent(ctx, event);
+    return routeScoutEvent(ctx, event);
   },
 });
