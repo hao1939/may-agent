@@ -884,19 +884,34 @@ export class SubagentManager {
     }
     const meta = this._registry.getSession(sessionId);
     if (!meta) {
-      // Check DB before emitting noise: if the session already completed
-      // (done/error/interrupted), this is a benign race between cleanup and
-      // auto-resume — don't emit a session.resume_failed event.
+      // Check DB before emitting noise: if the session doesn't exist in DB,
+      // already completed, or is a stale "running" row without registry
+      // metadata, this is a benign race — don't emit session.resume_failed.
       try {
         const db = getDb(this._persistDir);
         const row = db.prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId) as { status: string } | null;
-        if (row && (row.status === "done" || row.status === "error" || row.status === "interrupted")) {
+        if (!row) {
+          // Session doesn't exist anywhere — pre-creation race or phantom
+          log("debug", `[resume] Skipping resume for ${sessionId}: not in registry or DB (pre-creation race)`);
+          throw new Error(`Session "${sessionId}" not found anywhere`);
+        }
+        if (row.status === "done" || row.status === "error" || row.status === "interrupted") {
           log("debug", `[resume] Skipping resume for ${sessionId}: session already ${row.status} in DB (registry cleaned)`);
           throw new Error(`Session "${sessionId}" already ${row.status}`);
         }
+        // Session shows "running" in DB but isn't in registry — zombie row
+        // from crash/cleanup. Can't resume without registry metadata.
+        if (row.status === "running") {
+          log("debug", `[resume] Skipping resume for ${sessionId}: DB shows running but not in registry (zombie row)`);
+          throw new Error(`Session "${sessionId}" is zombie (running in DB, not in registry)`);
+        }
       } catch (e) {
-        // If it's our own "already done" error, re-throw without emitting
-        if (e instanceof Error && e.message.startsWith(`Session "${sessionId}" already `)) throw e;
+        // If it's our own suppression error, re-throw without emitting
+        if (e instanceof Error && (
+          e.message.startsWith(`Session "${sessionId}" already `) ||
+          e.message.startsWith(`Session "${sessionId}" not found anywhere`) ||
+          e.message.startsWith(`Session "${sessionId}" is zombie`)
+        )) throw e;
         // DB lookup failed — fall through to the original behavior
       }
       const reason = `Session "${sessionId}" not found`;
