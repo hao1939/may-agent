@@ -104,8 +104,8 @@ function ensureDir(path: string): void {
 
 export function withTreeLock<T>(config: TaskTreeConfig, operation: () => T): T {
   const lockPath = `${config.treePath}.lock`;
-  const waitMs = timeoutFromEnv("AKS_RP_E2E_TREE_LOCK_WAIT_MS", 30_000);
-  const staleMs = timeoutFromEnv("AKS_RP_E2E_TREE_LOCK_STALE_MS", 2 * 60_000);
+  const waitMs = timeoutFromEnv("PROJECT_TREE_LOCK_WAIT_MS", 30_000);
+  const staleMs = timeoutFromEnv("PROJECT_TREE_LOCK_STALE_MS", 2 * 60_000);
   const deadline = Date.now() + waitMs;
   while (true) {
     try {
