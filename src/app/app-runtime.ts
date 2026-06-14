@@ -58,6 +58,7 @@ export async function runAppRuntime(opts: {
 
   let taskSessionId: string | undefined;
   let chatSession: Awaited<ReturnType<typeof startRequestedSession>>["chatSession"];
+  const humanChatEnabled = TELEGRAM_ENABLED || WEB_ENABLED || SOCKET_ENABLED;
 
   if (CONSOLE_ENABLED) attachConsoleUI(bus, () => taskSessionId ?? chatSession?.getSessionId() ?? null, CHAT_MODE);
   else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
@@ -118,7 +119,9 @@ export async function runAppRuntime(opts: {
     getChatSession: () => chatSession,
     getTelegramBot: () => telegramBot,
     getActiveReadline: () => activeRL,
-    clearActiveReadline: () => { activeRL = null; },
+    clearActiveReadline: () => {
+      activeRL = null;
+    },
   });
   installProcessHandlers();
 
@@ -126,7 +129,9 @@ export async function runAppRuntime(opts: {
     bus,
     manager,
     getChatSession: () => chatSession,
-    clearCancelLatch: () => { cancelledOnce = false; },
+    clearCancelLatch: () => {
+      cancelledOnce = false;
+    },
     projectRoot: opts.projectRoot,
     reload: handleReload,
     restart: gracefulRestart,
@@ -177,6 +182,7 @@ export async function runAppRuntime(opts: {
     interfaceAgent,
     initialTask: INITIAL_TASK,
     chatMode: CHAT_MODE,
+    humanChatEnabled,
     envSessionId: ENV_SESSION_ID,
     envParentSessionId: ENV_PARENT_SESSION_ID,
     envParentAgent: ENV_PARENT_AGENT,
@@ -192,7 +198,11 @@ export async function runAppRuntime(opts: {
     instance: opts.instanceLabel,
     socket: SOCKET_ENABLED ? SOCKET_PATH : "",
     startedAt: new Date().toISOString(),
-    startedBy: CHAT_MODE ? "human" : opts.instance.startsWith("job-") ? "cron:" + opts.instance.replace("job-", "") : "task",
+    startedBy: CHAT_MODE
+      ? "human"
+      : opts.instance.startsWith("job-")
+        ? "cron:" + opts.instance.replace("job-", "")
+        : "task",
     task: INITIAL_TASK,
     status: "running",
     sessionId: taskSessionId,
@@ -208,7 +218,7 @@ export async function runAppRuntime(opts: {
       manager,
       bus,
       loaderOpts,
-      chatMode: CHAT_MODE,
+      chatMode: Boolean(chatSession),
       chatSession,
     });
   }
@@ -236,9 +246,13 @@ export async function runAppRuntime(opts: {
       gracefulShutdown,
       socketUI,
       telegramBot,
-      setActiveReadline: (rl) => { activeRL = rl; },
+      setActiveReadline: (rl) => {
+        activeRL = rl;
+      },
       isCancelLatched: () => cancelledOnce,
-      latchCancel: () => { cancelledOnce = true; },
+      latchCancel: () => {
+        cancelledOnce = true;
+      },
       emitPrompt,
     });
   } else {

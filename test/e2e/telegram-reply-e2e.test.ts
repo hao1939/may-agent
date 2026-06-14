@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { EventBus } from "../../src/app/event-bus.js";
 import { attachTelegramBot } from "../../src/app/transport/telegram.js";
+import { attachCommandRouter } from "../../src/app/command-router.js";
 import { getDb } from "../../src/lib/requests.js";
 
 function jsonResponse(result: unknown) {
@@ -317,6 +318,7 @@ describe("telegram reply e2e", () => {
 
     const bus = new EventBus();
     const chatStarts: any[] = [];
+    const handledInputs: Array<{ message: string; source?: string }> = [];
     const comments: any[] = [];
     const steers: any[] = [];
     const replies: any[] = [];
@@ -335,6 +337,24 @@ describe("telegram reply e2e", () => {
       getSessionId: () => "",
       interfaceAgent: "may",
     });
+    const router = attachCommandRouter({
+      bus,
+      manager: {
+        status: () => [],
+        cancel: () => {},
+        resumeSession: () => "resumed",
+        run: () => "unexpected-new-session",
+      } as any,
+      getChatSession: () =>
+        ({
+          handleInput: (message: string, source?: string) => handledInputs.push({ message, source }),
+        }) as any,
+      clearCancelLatch: () => {},
+      projectRoot,
+      reload: () => {},
+      restart: () => {},
+      shutdown: () => {},
+    });
 
     await waitFor(() => {
       expect(chatStarts).toHaveLength(1);
@@ -344,6 +364,10 @@ describe("telegram reply e2e", () => {
       expect(String(chatStarts[0].data?.message)).toContain("please revise the scoped plan");
       expect(comments).toHaveLength(0);
       expect(steers).toHaveLength(0);
+      expect(handledInputs).toHaveLength(1);
+      expect(handledInputs[0].source).toBe("telegram");
+      expect(handledInputs[0].message).toContain("Conversation: tg_project_review_1");
+      expect(handledInputs[0].message).toContain("please revise the scoped plan");
       expect(replies.some((event) => event.data?.enriched === true)).toBe(true);
       expect(
         sentMessages.some(
@@ -353,6 +377,7 @@ describe("telegram reply e2e", () => {
     });
 
     bot.close();
+    router.close();
     rmSync(projectRoot, { recursive: true, force: true });
   });
 

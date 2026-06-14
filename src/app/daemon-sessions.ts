@@ -9,6 +9,7 @@ export async function startRequestedSession(opts: {
   interfaceAgent: string;
   initialTask: string | null;
   chatMode: boolean;
+  humanChatEnabled?: boolean;
   envSessionId?: string;
   envParentSessionId?: string;
   envParentAgent?: string;
@@ -17,8 +18,10 @@ export async function startRequestedSession(opts: {
   gracefulShutdown: () => void;
   gracefulRestart: () => void;
 }): Promise<{ taskSessionId?: string; chatSession?: ChatSession }> {
+  let taskSessionId: string | undefined;
+
   if (opts.initialTask && !opts.chatMode) {
-    const taskSessionId = opts.manager.run(opts.interfaceAgent, opts.initialTask, {
+    taskSessionId = opts.manager.run(opts.interfaceAgent, opts.initialTask, {
       kind: "job",
       ...(opts.envSessionId ? { sessionId: opts.envSessionId } : {}),
       ...(opts.envParentSessionId ? { parentSessionId: opts.envParentSessionId } : {}),
@@ -26,10 +29,10 @@ export async function startRequestedSession(opts: {
     });
     opts.bus.emit({ type: "info", message: `[task] Started ${opts.interfaceAgent} task session: ${taskSessionId}` });
     await opts.manager.waitForIdle(taskSessionId);
-    return { taskSessionId };
+    if (!opts.humanChatEnabled) return { taskSessionId };
   }
 
-  if (opts.chatMode) {
+  if (opts.chatMode || opts.humanChatEnabled) {
     const chatSession = new ChatSession({
       manager: opts.manager,
       bus: opts.bus,
@@ -50,7 +53,7 @@ export async function startRequestedSession(opts: {
     });
 
     opts.bus.emit({ type: "info", message: `[chat] Chat session ready. Agent: ${opts.interfaceAgent}` });
-    return { chatSession };
+    return { taskSessionId, chatSession };
   }
 
   opts.bus.emit({ type: "info", message: "[cron-only] No chat session. Running cron jobs only." });
