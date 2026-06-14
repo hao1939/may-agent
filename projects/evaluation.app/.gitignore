@@ -1,0 +1,3 @@
+*.jsonl
+/.state/
+node_modules/

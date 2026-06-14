@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "project": "evaluation",
+  "updated_at": "2026-06-14T00:00:00Z",
+  "root_task_id": "evaluation-system",
+  "tasks": {
+    "evaluation-system": {
+      "id": "evaluation-system",
+      "goal": "Evaluate agent session quality, calibrate criteria, detect drift, patrol integrity, extract strategies",
+      "status": "decomposed",
+      "parent_id": null,
+      "children": ["pipeline-health", "criteria-and-calibration", "drift-detection", "system-integrity", "strategy-learning"],
+      "created_at": "2026-06-14T00:00:00Z",
+      "updated_at": "2026-06-14T00:00:00Z",
+      "summary": "Process-oriented evaluation app. Five lanes: aftermath, deep-eval, drift, patrol, strategy. Criteria versioned. Individual evaluations are DB records, not tree nodes."
+    },
+    "pipeline-health": {
+      "id": "pipeline-health",
+      "goal": "Monitor evaluation pipeline: is aftermath keeping up? Are there gaps? Is LLM lane useful?",
+      "status": "decomposed",
+      "parent_id": "evaluation-system",
+      "children": [],
+      "created_at": "2026-06-14T00:00:00Z",
+      "updated_at": "2026-06-14T00:00:00Z",
+      "summary": "Pipeline health monitoring. Aftermath evaluates ~800 sessions/day. LLM lane runs ~20/day with avg quality 0.72."
+    },
+    "criteria-and-calibration": {
+      "id": "criteria-and-calibration",
+      "goal": "Maintain scoring criteria, calibrate against human reviews, version criteria changes",
+      "status": "decomposed",
+      "parent_id": "evaluation-system",
+      "children": [],
+      "created_at": "2026-06-14T00:00:00Z",
+      "updated_at": "2026-06-14T00:00:00Z",
+      "summary": "Criteria at v1. Calibration data: consistency-flags, human-reviews, re-evaluations all contain only 2026-04-29 placeholder stubs. No fresh disagreement data yet."
+    },
+    "drift-detection": {
+      "id": "drift-detection",
+      "goal": "Detect per-agent behavioral drift. Classify: natural evolution vs regression.",
+      "status": "decomposed",
+      "parent_id": "evaluation-system",
+      "children": [],
+      "created_at": "2026-06-14T00:00:00Z",
+      "updated_at": "2026-06-14T00:00:00Z"
+    },
+    "system-integrity": {
+      "id": "system-integrity",
+      "goal": "Patrol system compliance. Monitor active session health. Flag anomalies.",
+      "status": "decomposed",
+      "parent_id": "evaluation-system",
+      "children": [],
+      "created_at": "2026-06-14T00:00:00Z",
+      "updated_at": "2026-06-14T00:00:00Z",
+      "summary": "Patrol currently returns CRITICAL only for missing compliance-snapshot.json (known baseline gap)."
+    },
+    "strategy-learning": {
+      "id": "strategy-learning",
+      "goal": "Extract successful strategies from high-scoring sessions. Feed back into agent guidance.",
+      "status": "decomposed",
+      "parent_id": "evaluation-system",
+      "children": [],
+      "created_at": "2026-06-14T00:00:00Z",
+      "updated_at": "2026-06-14T00:00:00Z"
+    }
+  }
+}
