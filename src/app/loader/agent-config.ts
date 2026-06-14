@@ -66,7 +66,9 @@ export function loadAgentConfig(agentDir: string, bus: EventBus): AgentConfig | 
 
   try {
     const raw = readFileSync(configPath, "utf-8");
-    return JSON.parse(raw) as AgentConfig;
+    const config = JSON.parse(raw) as AgentConfig & { disabled?: boolean };
+    if (config.disabled) return null;
+    return config;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     bus.emit({ type: "info", message: `[loader] Failed to parse ${configPath}: ${msg}` });
