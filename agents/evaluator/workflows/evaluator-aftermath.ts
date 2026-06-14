@@ -45,7 +45,7 @@ type SessionEvalTrailParams = {
   source?: string;
 };
 
-function extractTrigger(task: string): any {
+export function extractTrigger(task: string): any {
   // The trigger event JSON is always appended at the END of the task text
   // by the SDK's appendEvent(). When the task text itself contains nested
   // markdown fences (common in heartbeat/owner-loop prompts that embed
@@ -53,11 +53,22 @@ function extractTrigger(task: string): any {
   // [\s\S]*? stops at the first internal ``` instead of the real closing
   // fence.
   //
-  // Strategy: find the LAST "## Trigger Event" header, then find the LAST
-  // closing ``` fence. The JSON lives between the opening ```json and that
-  // closing fence.
+  // Strategy: find the LAST line-anchored "## Trigger Event" header (preceded
+  // by an actual newline, not a JSON \n escape), then find the LAST closing
+  // ``` fence. The JSON lives between the opening ```json and that closing
+  // fence.
+  //
+  // Why line-anchored? When a session's task text contains an embedded
+  // "## Trigger Event" inside a JSON string value (e.g., aks-explorer planner
+  // sessions whose task text includes their own trigger), lastIndexOf picks
+  // the INNER occurrence. The inner occurrence is inside a JSON string where
+  // newlines are encoded as literal \n (backslash-n), while the OUTER header
+  // starts on its own line preceded by an actual newline character.
   const headerPattern = "## Trigger Event";
-  const lastHeaderIdx = task.lastIndexOf(headerPattern);
+  const lineAnchoredIdx = task.lastIndexOf("\n" + headerPattern);
+  const lastHeaderIdx = lineAnchoredIdx !== -1
+    ? lineAnchoredIdx + 1  // skip the \n prefix to point at "##"
+    : (task.startsWith(headerPattern) ? 0 : -1);
   if (lastHeaderIdx === -1) return null;
 
   const afterHeader = task.slice(lastHeaderIdx + headerPattern.length);

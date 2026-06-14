@@ -7,6 +7,7 @@ import {
   classifyEvaluationLane,
   classifyVerdict,
   evaluationHeuristicVersion,
+  extractTrigger,
   falseGoodEventPayload,
   learningFeedbackEventPayload,
   ownerEventTarget,
@@ -1528,5 +1529,67 @@ describe("evaluator aftermath transcript checks", () => {
       reviewSessionId: "s_review",
       artifactPath: "agents/evaluator/workspace/aftermath/s_1.md",
     });
+  });
+
+  it("extracts sessionId from outer trigger when task text embeds inner ## Trigger Event", () => {
+    // Regression test: aks-explorer planner sessions embed their own trigger
+    // event JSON in the task text, which contains a nested "## Trigger Event"
+    // header as a literal string. The parser must find the OUTER (line-anchored)
+    // header, not the inner one buried in JSON string values.
+    const innerTaskWithTrigger = [
+      "Planning Update Step",
+      "",
+      "Some task text here...",
+      "",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({
+        type: "project.planning.requested",
+        data: { project: "aks-rp-e2e", reason: "task-completed" },
+      }),
+      "```",
+    ].join("\\n"); // note: these are literal \n in JSON string, not real newlines
+
+    const outerTrigger = {
+      type: "session.completed",
+      source: "runtime",
+      data: {
+        sessionId: "s_planner_session_123",
+        agent: "aks-explorer",
+        status: "done",
+        task: innerTaskWithTrigger,
+      },
+    };
+
+    const taskText = [
+      "Evaluate the completed session.",
+      "",
+      "## Trigger Event",
+      "```json",
+      JSON.stringify(outerTrigger, null, 2),
+      "```",
+    ].join("\n");
+
+    const result = extractTrigger(taskText);
+    expect(result).not.toBeNull();
+    expect(result.data.sessionId).toBe("s_planner_session_123");
+    expect(result.type).toBe("session.completed");
+  });
+
+  it("extracts trigger from task that starts with ## Trigger Event", () => {
+    const taskText = [
+      "## Trigger Event",
+      "```json",
+      JSON.stringify({ type: "session.completed", data: { sessionId: "s_test" } }),
+      "```",
+    ].join("\n");
+
+    const result = extractTrigger(taskText);
+    expect(result).not.toBeNull();
+    expect(result.data.sessionId).toBe("s_test");
+  });
+
+  it("returns null when no trigger event header exists", () => {
+    expect(extractTrigger("just some text")).toBeNull();
   });
 });
