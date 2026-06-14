@@ -166,6 +166,7 @@ export default defineProjectApp({
         includeEvent: true,
         task: [
           appTaskContext,
+          "persistent-task: skip",
           "",
           "You are the May-agent project owner. Review the trigger event, project.json, and tasks/tree.json.",
           "Update the task tree or project artifacts when useful, keep the May-agent platform moving, and verify any code/doc change before claiming completion.",

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "project": "may-agent",
-  "updated_at": "2026-06-14T02:18:00Z",
+  "updated_at": "2026-06-14T09:30:00Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
@@ -122,7 +122,8 @@
       "parent_id": "project",
       "children": [
         "event-native-project-task-loops-review",
-        "cron-event-dispatch-project-scoping"
+        "cron-event-dispatch-project-scoping",
+        "fm34-guard-planning-session-fix"
       ],
       "status": "decomposed",
       "kind": "workstream",
@@ -631,6 +632,49 @@
         "observed_at": "2026-06-13T16:17:00Z",
         "evidence": "handler.started event for may-agent-project-planner at timestamp 1781367454489, triggered by scout-knowledge-lib's scheduled-library-maintenance event at 1781367454488.",
         "fix_direction": "Either (a) add a projectId field to CronEntry and filter in triggerSubscribers, or (b) make installWorkflowHandlers store the project app's event selectors alongside the subscription and check them before firing."
+      }
+    },
+    "fm34-guard-planning-session-fix": {
+      "id": "fm34-guard-planning-session-fix",
+      "parent_id": "platform-event-session-task-execution",
+      "children": [],
+      "status": "accepted",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "tech-lead",
+      "goal": "Fix FM-3.4 guard false-positive blocking 86% of may-agent planning sessions by adding a persistent-task opt-out for project-app planner workflows.",
+      "inputs": [
+        "shared/guards/finish-guard.ts",
+        "projects/may-agent.app/app.ts"
+      ],
+      "outputs": [
+        "shared/guards/finish-guard.ts",
+        "projects/may-agent.app/app.ts"
+      ],
+      "acceptance": [
+        "May-agent planner sessions no longer blocked by FM-3.4 persistent-task guard.",
+        "Other tasks with project: field and no opt-out still require persistent-task.",
+        "All existing guard tests pass unchanged.",
+        "TypeScript check clean."
+      ],
+      "forbidden": [
+        "Do not disable the persistent-task guard globally.",
+        "Do not change the guard for tasks that genuinely need persistent-task."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-event-task-execution"
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T09:30:00Z",
+        "reason": "Added persistent-task opt-out regex to isPersistentTaskRequired() in finish-guard.ts. Added 'persistent-task: skip' to may-agent planner task text. 48 guard tests pass, 39 finish-guard tests pass, TypeScript check clean. The guard dynamically loads from disk so fix is immediately live."
+      },
+      "context": {
+        "root_cause": "The FM-3.4 guard's heuristic 'has project: field → requires persistent-task workflow' falsely triggers for project-app planning sessions that use verify-wrap workflow. Planning sessions review/update task trees — they are one-shot reviews, not multi-iteration implementation work requiring persistent-task. The guard had no opt-out mechanism.",
+        "observed_at": "2026-06-14T09:12:00Z",
+        "evidence": "36 out of 42 may-agent workflow runs (85.7%) escalated with 'FM-3.4 Persistent-Task Required'. Only 1 run ever completed successfully. Other project apps (aks-rp-e2e, scout-knowledge-lib) unaffected because they use custom workflows (project-planner, knowledge-planner) rather than verify-wrap.",
+        "fix_approach": "Two-part fix: (1) Add opt-out sentinel check in isPersistentTaskRequired() for 'persistent-task: skip|false|no|off|not-required' in task text. (2) Add 'persistent-task: skip' to may-agent planner task text in app.ts."
       }
     },
     "platform-signal-intake-loop": {

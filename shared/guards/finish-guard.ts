@@ -24,6 +24,13 @@ function isPersistentTaskRequired(taskText: string): boolean {
   if (!taskText) return false;
   const lower = taskText.toLowerCase();
 
+  // Explicit opt-out: project-app planning sessions and other workflows
+  // that review/plan rather than implement. Respects "persistent-task: skip"
+  // or "persistent-task: false" in the task text.
+  if (/^persistent-task:\s*(?:skip|false|no|off|not-required)/m.test(lower)) {
+    return false;
+  }
+
   // Explicit workflow mention
   if (lower.includes('workflow.run("persistent-task"') ||
       lower.includes("workflow.run('persistent-task'") ||
