@@ -103,6 +103,29 @@ export type SessionEvent =
       };
     };
 
+type EventUrgency = "low" | "normal" | "high" | "immediate";
+type MetricPriority = "P0" | "P1" | "P2" | "P3";
+type MetricTrendPoint = {
+  ts?: number;
+  value?: number | null;
+};
+type MetricEventData = {
+  metricId: string;
+  metricName?: string;
+  project?: string;
+  alertId?: string | number | null;
+  alertType?: string;
+  alertOp?: string | null;
+  current?: number | null;
+  threshold?: number | null;
+  target?: number | null;
+  direction?: string;
+  measuredAt?: number;
+  trend?: MetricTrendPoint[];
+  message?: string;
+  priority?: MetricPriority;
+};
+
 /** System events */
 export type SystemEvent =
   | { type: "heartbeat"; agent: string; entry: string }
@@ -126,7 +149,7 @@ export type SystemEvent =
       type: "escalation.created";
       source: string;
       owner: string;
-      urgency?: "low" | "normal" | "high" | "immediate";
+      urgency?: EventUrgency;
       ttl_ms?: number;
       data: {
         escalationId: string;
@@ -231,7 +254,7 @@ export type SystemEvent =
       type: "message.created";
       source: string;
       owner: string;
-      urgency?: "low" | "normal" | "high" | "immediate";
+      urgency?: EventUrgency;
       data: {
         from: string;
         to: string;
@@ -245,7 +268,7 @@ export type SystemEvent =
       type: "message.delivery_failed";
       source: string;
       owner: string;
-      urgency?: "low" | "normal" | "high" | "immediate";
+      urgency?: EventUrgency;
       data: {
         from: string;
         to: string;
@@ -267,9 +290,24 @@ export type SystemEvent =
         priority?: "P0" | "P1" | "P2" | "P3";
       };
     }
-  | { type: "metric.breach"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; current?: number | null; threshold?: number | null; target?: number | null; message: string; priority?: "P0" | "P1" | "P2" | "P3" } }
-  | { type: "metric.recovered"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; priority?: "P0" | "P1" | "P2" | "P3" } }
-  | { type: "metric.stalled"; source?: string; owner: string; urgency?: "low" | "normal" | "high" | "immediate"; data: { metricId: string; metricName?: string; message: string; priority?: "P0" | "P1" | "P2" | "P3" } }
+  | { type: "metric.breach"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData & { message: string } }
+  | { type: "metric.recovered"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData }
+  | { type: "metric.stalled"; source?: string; owner: string; urgency?: EventUrgency; data: MetricEventData & { message: string } }
+  | {
+      type: "metric.feedback.routed";
+      source?: string;
+      owner: string;
+      timestamp?: number;
+      data: {
+        metricId: string;
+        alertId?: string | number | null;
+        project?: string | null;
+        appId: string;
+        appPath?: string;
+        route: "owner-app";
+        eventType?: string;
+      };
+    }
   | { type: "metric.threshold_changed"; source?: string; owner: string; data: { metricId: string; from?: number | null; to: number } }
   | { type: "metric.alert_resolved"; source?: string; owner: string; data: { metricId: string; alertId: number; reason?: string | null } }
   | { type: "metric.alert_judged"; source?: string; owner: string; data: { metricId: string; alertId: string | number; verdict?: string; reason?: string; evidence?: Record<string, unknown> } }
