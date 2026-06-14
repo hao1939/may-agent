@@ -4,6 +4,7 @@
   "status": "active",
   "type": "project-app",
   "priority": "P0",
+  "waitReason": "Reopened by human steering on 2026-06-14: may-agent.app should continuously collect platform failures/issues, feed them to the owner with a compact system-review packet, and turn real abnormal signals into task-tree work before claiming the platform is healthy.",
   "domainProject": {
     "id": "may-agent",
     "path": "../may-agent"
@@ -13,9 +14,14 @@
     "Keep platform design and principles in this app's docs/ tree.",
     "Use tasks/tree.json as the durable expression of project thinking, priorities, and accepted understanding.",
     "Use ../may-agent as the portable domain/runtime code workspace.",
-    "Route human steering, metric signals, and scheduled review into event-based planning.",
+    "Route human steering, metric signals, scheduled review, and abnormal runtime signals into event-based owner review.",
+    "Before claiming platform health, inspect open alerts, recent failures, stale project state, task-tree state, evaluator findings, and communication failures.",
     "Keep runtime scratch in .state/ and fold durable decisions back into docs, tasks, or code."
   ],
   "taskIndex": ["tasks/tree.json"],
-  "updatedAt": "2026-06-14T02:18:00.000Z"
+  "currentFocus": {
+    "taskId": "platform-persistence-read-models",
+    "summary": "Harden persistence read-model layer (generic project task API, kanban steering)."
+  },
+  "updatedAt": "2026-06-14T20:38:00.000Z"
 }

@@ -76,8 +76,19 @@ async function routeMayAgentEvent(
     return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
   }
 
-  if (event.type === "metric.alerted" || event.type === "metric.breach") {
+  if (
+    event.type === "metric.alerted" ||
+    event.type === "metric.breach" ||
+    event.type === "metric.stalled" ||
+    event.type === "metric.recovered"
+  ) {
     return ctx.emit(projectOwnerEvent("metric-signal", eventDetails(event)));
+  }
+
+  if (event.type === "project.tasks.ready") {
+    return ctx.emit(
+      projectOwnerEvent("ready-tasks-available", eventDetails(event)),
+    );
   }
 
   if (
@@ -129,14 +140,23 @@ export default defineProjectApp({
         "Wakes May as project owner to review the task tree, platform signals, and project-app design work.",
       on: ["project.owner.requested", "project.planning.requested"],
       handler: {
-        workflow: "verify-wrap",
+        workflow: "platform-owner-review",
         includeEvent: true,
         task: [
           appTaskContext,
           "persistent-task: skip",
           "",
-          "You are the May-agent project owner. Review the trigger event, project.json, and tasks/tree.json.",
-          "Update the task tree or project artifacts when useful, keep the May-agent platform moving, and verify any code/doc change before claiming completion.",
+          "You are entering the may-agent.app local owner-review workflow. It will build a platform system-review packet before waking May.",
+          "",
+          "Before claiming the platform is healthy, build a compact system-review packet from live evidence:",
+          "- open metric alerts and recent metric judgments/recoveries",
+          "- recent handler.failed, session.resume_failed, subscriber.failed, message.delivery_failed, and agent.config_invalid events",
+          "- stale project DB rows versus project.json/task-tree state",
+          "- task-tree runnable/active/review/blocked state",
+          "- evaluator findings or human messages about shallow/misleading platform claims",
+          "- app integrity checks that are relevant to the triggered branch",
+          "",
+          "The local workflow owns packet collection; May owns judgment, task-tree updates, fixes, verification, and escalation.",
         ].join("\n"),
         timeoutMs: 1_800_000,
       },
@@ -150,22 +170,11 @@ export default defineProjectApp({
     { type: "project.action.invoked", project: projectId },
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
-    {
-      type: "metric.alerted",
-      metricIds: [
-        "handler.success-rate",
-        "capability.session-trace-completeness",
-        "v2.spec-coverage-rate",
-      ],
-    },
-    {
-      type: "metric.breach",
-      metricIds: [
-        "handler.success-rate",
-        "capability.session-trace-completeness",
-        "v2.spec-coverage-rate",
-      ],
-    },
+    { type: "project.tasks.ready", project: projectId },
+    { type: "metric.alerted" },
+    { type: "metric.breach" },
+    { type: "metric.stalled" },
+    { type: "metric.recovered" },
   ],
 
   eventGraph: {
@@ -201,6 +210,23 @@ export default defineProjectApp({
         event: "metric.breach",
         emits: ["project.owner.requested"],
         description: "Platform metric breach wakes May to inspect and react.",
+      },
+      {
+        event: "metric.stalled",
+        emits: ["project.owner.requested"],
+        description: "Platform metric stall wakes May to inspect and react.",
+      },
+      {
+        event: "metric.recovered",
+        emits: ["project.owner.requested"],
+        description:
+          "Platform metric recovery wakes May to close stale context or update task state.",
+      },
+      {
+        event: "project.tasks.ready",
+        emits: ["project.owner.requested"],
+        description:
+          "Reconciler signals ready task leaves; owner wakes to assign or advance them.",
       },
     ],
     externalEvents: ["project.reviewed"],
