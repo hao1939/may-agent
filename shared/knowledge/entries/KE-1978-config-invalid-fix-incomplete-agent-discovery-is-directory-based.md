@@ -84,11 +84,35 @@ that lack an `agent.json`. This is a src/ change requiring ORDER-010 review.
 **Recommendation:** Option A first (agent-lane fix), with Option B as a
 durable follow-up proposal.
 
+## Update (2026-06-14, late)
+
+The config-invalid composition has shifted. The most recent event
+(id 1393681, ~19:57Z) shows **scout + evaluator** duplicates — aks-explorer
+is no longer in the latest error. This matches directory state:
+
+- `agents/aks-explorer/` — now reduced to just `last-eval.md` +
+  `last-session.md` (runtime-generated). Dev's earlier cleanup removed
+  more substantial files, but the directory still exists.
+- `agents/scout/` — contains `last-eval.md`, `last-session.md`, and a
+  `workspace/` dir with content. Scout's canonical config lives at
+  `projects/scout-knowledge-lib.app/agents/scout/agent.json`. There is
+  **no** `agent.json` in `agents/scout/`, confirming the loader discovers
+  agents by directory presence, not by `agent.json` presence.
+- `agents/evaluator/` — still has `last-session.md` + `workspace/` (with
+  aftermath dirs). No `agent.json`. Canonical config at
+  `projects/evaluation.app/agents/evaluator/agent.json`.
+
+The `agent.config-invalid-count-1h` metric reads 2 (down from 8),
+suggesting partial improvement but not resolution. The fix is the same:
+remove or relocate the residual global agent directories so the loader
+doesn't double-discover these agents.
+
 ## Falsifiers
 
-- F1: If `agents/evaluator/` and `agents/aks-explorer/` directories are
-  fully removed, config_invalid events for these agents should stop within
-  one reload cycle (~5 min).
+- F1: If `agents/evaluator/`, `agents/aks-explorer/`, and `agents/scout/`
+  directories are fully removed (or their contents relocated to the
+  project-local agent dirs), config_invalid events for these agents should
+  stop within one reload cycle (~5 min).
 - F2: If the loader uses a different discovery mechanism than directory
   presence, removing the directories will have no effect and the error
   will point to a different path.
