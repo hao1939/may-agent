@@ -169,6 +169,23 @@ describe("agent loader boundaries", () => {
     }
   });
 
+  it("loadAgentConfig returns null for disabled agent.json", () => {
+    const root = mkdtempSync(join(tmpdir(), "agent-loader-disabled-"));
+    try {
+      const agentDir = join(root, "disabled-agent");
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ name: "disabled-agent", disabled: true }));
+
+      const events: any[] = [];
+      const config = loadAgentConfig(agentDir, { emit: (event: any) => events.push(event) } as any);
+
+      expect(config).toBeNull();
+      expect(events).toEqual([]); // no error events for a clean disable
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("discovers configured agent names and skips disabled configs", () => {
     const root = mkdtempSync(join(tmpdir(), "agent-loader-discovery-"));
     try {
