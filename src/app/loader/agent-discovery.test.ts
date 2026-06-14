@@ -12,7 +12,7 @@ function tempRoot(): string {
 }
 
 describe("project-local agent discovery", () => {
-  it("discovers Project App V2 agents under .app/agents", () => {
+  it("discovers legacy embedded project-app agents under .app/agents", () => {
     const root = tempRoot();
     try {
       const project = join(root, "aks-rp-e2e");
