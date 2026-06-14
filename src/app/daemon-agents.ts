@@ -42,9 +42,17 @@ export async function prepareDaemonAgents(opts: {
   });
 
   const agentSources = listRuntimeAgentDirectories(opts.agentsRoot, opts.projectsRoot);
-  const heartbeatRoots = [...new Set(agentSources.map((agent) => agent.agentsRoot))];
+  // Build a map from agentsRoot -> projectId for project-app agent directories.
+  // Global agents/ has no projectId (undefined), project-app dirs have one.
+  const projectIdByAgentsRoot = new Map<string, string | undefined>();
+  for (const agent of agentSources) {
+    if (!projectIdByAgentsRoot.has(agent.agentsRoot)) {
+      projectIdByAgentsRoot.set(agent.agentsRoot, agent.projectId);
+    }
+  }
+  const heartbeatRoots = [...projectIdByAgentsRoot.entries()];
   const agentRootByName = new Map(agentSources.map((agent) => [agent.name, agent.agentsRoot]));
-  const autoHeartbeats = heartbeatRoots.flatMap((root) => generateAutoHeartbeats(root));
+  const autoHeartbeats = heartbeatRoots.flatMap(([root, pid]) => generateAutoHeartbeats(root, pid));
   if (autoHeartbeats.length > 0) {
     const mayCron = getAgentCrons().get("may");
     if (mayCron) {
