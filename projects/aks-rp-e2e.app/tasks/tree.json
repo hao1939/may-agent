@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-14T19:46:54.252Z",
+  "updated_at": "2026-06-14T20:12:00Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
@@ -62,7 +62,7 @@
       "archive_summary": {
         "archivedLeaves": 5
       },
-      "summary": "The task tree has two dimensions: (1) Process — how we work: source discovery → feature extraction → spec generation → replay implementation → execution → model feedback. Each process step carries knowledge about the methodology. (2) Domain — what we know: per-feature understanding of AKS behavior, organized by feature family. Domain knowledge currently lives in model/knowledge-map/model.json and features/*.yaml. Future: domain branches in the tree for deeper per-feature exploration. When a task is accepted, it gains knowledge. When archived, execution detail is lost but knowledge rolls up to the parent. Any branch can be reopened for deeper exploration.",
+      "summary": "The task tree has two dimensions: (1) Process \u2014 how we work: source discovery \u2192 feature extraction \u2192 spec generation \u2192 replay implementation \u2192 execution \u2192 model feedback. Each process step carries knowledge about the methodology. (2) Domain \u2014 what we know: per-feature understanding of AKS behavior, organized by feature family. Domain knowledge currently lives in model/knowledge-map/model.json and features/*.yaml. Future: domain branches in the tree for deeper per-feature exploration. When a task is accepted, it gains knowledge. When archived, execution detail is lost but knowledge rolls up to the parent. Any branch can be reopened for deeper exploration.",
       "context": {
         "seeder_suppression": {
           "note": "These paths have complete source-spec artifacts. Do NOT re-seed source-spec or frontier tasks for them. They are execution-gated by external blockers.",
@@ -171,7 +171,7 @@
         },
         "steady_state": {
           "confirmed_at": "2026-06-14T15:00:00Z",
-          "reason": "Project at ceiling. 353/356 tasks done, 1 active (feature-status-reconciliation-20260614). All 27 non-passing model paths terminal-classified with external blockers (product gaps, environment blocks, infra blocks). No new investigation work warranted — only the in-flight reconciliation task remains.",
+          "reason": "Project at ceiling. 353/356 tasks done, 1 active (feature-status-reconciliation-20260614). All 27 non-passing model paths terminal-classified with external blockers (product gaps, environment blocks, infra blocks). No new investigation work warranted \u2014 only the in-flight reconciliation task remains.",
           "resume_conditions": [
             "External blocker resolved (e.g. machines API preview registration, CCP TLS cert provisioning, staging ARM auth)",
             "User requests new feature family exploration",
@@ -303,7 +303,7 @@
         "evidence/archive/coverage-gap-assessment.md"
       ],
       "reusable_for": [
-        "Coverage expansion pattern: discover → spec → replay → run → classify",
+        "Coverage expansion pattern: discover \u2192 spec \u2192 replay \u2192 run \u2192 classify",
         "Execution wave planning: bun run plan --gaps"
       ],
       "state": "done",
@@ -327,7 +327,7 @@
       ],
       "reusable_for": [
         "Run tests: bun run spec <id>",
-        "Pack and run: bun run plan --feature <name> → bun run generate <plan> → bun <combined>",
+        "Pack and run: bun run plan --feature <name> \u2192 bun run generate <plan> \u2192 bun <combined>",
         "Direct ARM REST: no az CLI needed at runtime"
       ],
       "state": "done",
@@ -467,7 +467,7 @@
         "replay-batch-traffic-workload-health",
         "replay-serverless-upgrade-survival"
       ],
-      "summary": "133 replay scripts. Each replay: preflight → setup cluster → execute operations → assert → cleanup → write evidence. Uses replays/lib/arm-rest.ts for direct ARM REST (no az CLI at runtime). Setup instructions printed when prerequisites missing.",
+      "summary": "133 replay scripts. Each replay: preflight \u2192 setup cluster \u2192 execute operations \u2192 assert \u2192 cleanup \u2192 write evidence. Uses replays/lib/arm-rest.ts for direct ARM REST (no az CLI at runtime). Setup instructions printed when prerequisites missing.",
       "evidence": [
         "replays/*.ts",
         "replays/lib/arm-rest.ts",
@@ -509,7 +509,7 @@
         "expansion-replay-execution-batch",
         "live-staging-wave-1"
       ],
-      "summary": "108 of 133 paths passing (81%). Single-spec: bun run spec <id>. Combined: bun run plan → bun run generate → bun <combined>. Direct ARM REST, no az CLI at runtime. Auto-cleanup verified.",
+      "summary": "108 of 133 paths passing (81%). Single-spec: bun run spec <id>. Combined: bun run plan \u2192 bun run generate \u2192 bun <combined>. Direct ARM REST, no az CLI at runtime. Auto-cleanup verified.",
       "evidence": [
         "evidence/archive/",
         "runner/spec-runner.ts",
@@ -566,7 +566,7 @@
         "feature-staging-to-pass-promotion",
         "fail-feature-terminal-classification"
       ],
-      "summary": "Auto-update pipeline: spec run → model-update.ts patches featurePath status + evidence refs → views regenerated → model validated. 129 features, 133 paths, 219 evidence entries in model.",
+      "summary": "Auto-update pipeline: spec run \u2192 model-update.ts patches featurePath status + evidence refs \u2192 views regenerated \u2192 model validated. 129 features, 133 paths, 219 evidence entries in model.",
       "evidence": [
         "runner/model-update.ts",
         "model/knowledge-map/model.json",
@@ -1128,12 +1128,12 @@
         "last_session": "s_task_specs-batch-3-new-families",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Created 21 new atomic test specs across 5 newly discovered feature families from batch-3 nativenode source exploration. All specs follow SCHEMA.md with setup/operations/assertions/cleanup. specs/index.json updated (181→202 entries). `bun run check` passes all gates (format, whitespace, compile, wiring, check-mode-readonly, schema, typecheck).",
+        "last_worker_summary": "Created 21 new atomic test specs across 5 newly discovered feature families from batch-3 nativenode source exploration. All specs follow SCHEMA.md with setup/operations/assertions/cleanup. specs/index.json updated (181\u2192202 entries). `bun run check` passes all gates (format, whitespace, compile, wiring, check-mode-readonly, schema, typecheck).",
         "last_worker_completed_at": "2026-06-13T22:08:52.208Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-13T22:35:00.000Z",
         "accepted_by": "planner",
-        "acceptance_evidence": "21 new specs created (181→202). specs/index.json wires 202 entries. bun run check: 202 specs validated, 0 warnings. Meets 15-25 target."
+        "acceptance_evidence": "21 new specs created (181\u2192202). specs/index.json wires 202 entries. bun run check: 202 specs validated, 0 warnings. Meets 15-25 target."
       },
       "session_history": [
         "s_task_specs-batch-3-new-families"
@@ -1176,7 +1176,7 @@
         "last_worker_evidence": [],
         "accepted_at": "2026-06-13T22:35:00.000Z",
         "accepted_by": "planner",
-        "acceptance_evidence": "21 new features added (169→190). Views regenerated. bun run check passes all gates. bun run status confirms 190 features, 194 paths."
+        "acceptance_evidence": "21 new features added (169\u2192190). Views regenerated. bun run check passes all gates. bun run status confirms 190 features, 194 paths."
       },
       "session_history": [
         "s_task_model-integrate-batch-3-families"
@@ -1266,7 +1266,7 @@
         "last_session": "s_task_promote-batch-3-features",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Promoted 1 feature (deployment-safeguards-pss-level-change) from environment-blocked to pass — it was the only feature with all featurePaths passing but a stale non-pass model status. All 20 batch-3 features (private-cluster ×5, network-cni ×6, secops-fips ×3, serverless-virtual-nodes ×3, storage-csi ×4) still have unknown path status and cannot be promoted yet. Views regenerated, bun run check passes.",
+        "last_worker_summary": "Promoted 1 feature (deployment-safeguards-pss-level-change) from environment-blocked to pass \u2014 it was the only feature with all featurePaths passing but a stale non-pass model status. All 20 batch-3 features (private-cluster \u00d75, network-cni \u00d76, secops-fips \u00d73, serverless-virtual-nodes \u00d73, storage-csi \u00d74) still have unknown path status and cannot be promoted yet. Views regenerated, bun run check passes.",
         "last_worker_completed_at": "2026-06-13T22:24:52.591Z",
         "last_worker_evidence": [],
         "promoted_at": "2026-06-13T22:28:08.078Z",
@@ -1405,7 +1405,7 @@
         "current_attempt_id": "a_fix-batch-3-replay-formatting_20260613224255",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "All 21 batch-3 replay files already pass prettier formatting (all reported \"unchanged\"). `bun run check` passes completely — format, whitespace, compile, wiring, schema, and typecheck all succeed.",
+        "last_worker_summary": "All 21 batch-3 replay files already pass prettier formatting (all reported \"unchanged\"). `bun run check` passes completely \u2014 format, whitespace, compile, wiring, schema, and typecheck all succeed.",
         "last_worker_completed_at": "2026-06-13T22:43:49.269Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-13T22:50:00.000Z",
@@ -1658,7 +1658,7 @@
         "last_session": "s_task_update-ceiling-summary-wave1-final",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Updated ceiling-summary.md with wave-1 final statistics: 211 features, 215 paths, 188 pass (87.4%), 27 non-passing — all 27 terminal-classified. Document now includes: wave-1 completion summary with batch history, batch-3 model-integrate (5 families, 21 features all pass) and batch-3 replay (5 families, 21 features all pass) tables, updated gap breakdown (12 env-blocked, 10 product-gap, 3 product-constraint, 1 superseded, 1 test-methodology-gap including 2 new ossku-migration Mariner-deprecated paths), remaining uncovered SIG families (10 dirs, ~107 scenarios), evidence/archive references, and complete path index. `bun run check` passes.",
+        "last_worker_summary": "Updated ceiling-summary.md with wave-1 final statistics: 211 features, 215 paths, 188 pass (87.4%), 27 non-passing \u2014 all 27 terminal-classified. Document now includes: wave-1 completion summary with batch history, batch-3 model-integrate (5 families, 21 features all pass) and batch-3 replay (5 families, 21 features all pass) tables, updated gap breakdown (12 env-blocked, 10 product-gap, 3 product-constraint, 1 superseded, 1 test-methodology-gap including 2 new ossku-migration Mariner-deprecated paths), remaining uncovered SIG families (10 dirs, ~107 scenarios), evidence/archive references, and complete path index. `bun run check` passes.",
         "last_worker_completed_at": "2026-06-14T00:26:07.662Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T00:35:00.000Z",
@@ -1702,7 +1702,7 @@
         "last_session": "s_task_batch-6-feature-packets",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Accepted: 3 feature packets (managementplane-addon, net-integration, runtime-container) created. Feature count 23→26. All have groundTruth, judgmentRules, goE2eSource refs. bun run check passes 0 warnings.",
+        "last_worker_summary": "Accepted: 3 feature packets (managementplane-addon, net-integration, runtime-container) created. Feature count 23\u219226. All have groundTruth, judgmentRules, goE2eSource refs. bun run check passes 0 warnings.",
         "last_worker_completed_at": "2026-06-14T00:38:51.150Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T00:40:00.000Z",
@@ -1747,7 +1747,7 @@
         "last_session": "s_task_batch-6-specs",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Created 21 batch-6 specs from 3 feature packets (net-integration: 10 specs, managementplane-addon: 6 specs, runtime-container: 5 specs). All specs follow the established format with id, title, featurePathIds, sourceRefs, sourceScenario, inputs, clusterRequirements, state, assertions, setup/operations/cleanup, and staging feasibility notes. Updated specs/index.json (223→244 entries). `bun run check` passes all 8 steps (format, whitespace, compile, wiring, check-mode, schema, typecheck).",
+        "last_worker_summary": "Created 21 batch-6 specs from 3 feature packets (net-integration: 10 specs, managementplane-addon: 6 specs, runtime-container: 5 specs). All specs follow the established format with id, title, featurePathIds, sourceRefs, sourceScenario, inputs, clusterRequirements, state, assertions, setup/operations/cleanup, and staging feasibility notes. Updated specs/index.json (223\u2192244 entries). `bun run check` passes all 8 steps (format, whitespace, compile, wiring, check-mode, schema, typecheck).",
         "last_worker_completed_at": "2026-06-14T00:48:48.250Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T01:10:00Z",
@@ -1792,12 +1792,12 @@
         "last_session": "s_task_batch-6-model-integrate",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Integrated 21 batch-6 features into model.json across 3 families (managementplane-addon: 6, net-integration: 10, runtime-container: 5) with correct featurePath entries and initial `unknown` status. Model expanded from 211→232 features and 215→236 paths. `bun run check` passes all gates. ceiling-summary.md updated with new batch-6 totals and uncovered SIG count reduced from 10→7.",
+        "last_worker_summary": "Integrated 21 batch-6 features into model.json across 3 families (managementplane-addon: 6, net-integration: 10, runtime-container: 5) with correct featurePath entries and initial `unknown` status. Model expanded from 211\u2192232 features and 215\u2192236 paths. `bun run check` passes all gates. ceiling-summary.md updated with new batch-6 totals and uncovered SIG count reduced from 10\u21927.",
         "last_worker_completed_at": "2026-06-14T00:59:15.512Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T01:00:41.650Z",
         "accepted_by": "planner",
-        "acceptance_note": "21 batch-6 features integrated into model.json (managementplane-addon: 6, net-integration: 10, runtime-container: 5). Model 211→232 features, 215→236 paths. ceiling-summary.md updated. bun run check passes all gates."
+        "acceptance_note": "21 batch-6 features integrated into model.json (managementplane-addon: 6, net-integration: 10, runtime-container: 5). Model 211\u2192232 features, 215\u2192236 paths. ceiling-summary.md updated. bun run check passes all gates."
       },
       "session_history": [
         "s_task_batch-6-model-integrate"
@@ -1883,7 +1883,7 @@
         "last_session": "s_task_batch-6-check-mode-model-update",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Batch-6 check-mode execution and model update complete. Ran all 21 batch-6 replays (managementplane-addon: 6, net-integration: 10, runtime-container: 5) in --check --write-evidence mode — all 21 passed all preflight assertions. Promoted all 21 features and paths from `unknown` to `pass` in model.json with evidence references. Updated ceiling-summary.md with final totals: 209/236 paths pass (88.6%), 205/232 features pass (88.4%), zero unknown remaining. `bun run check` passes all 7 steps.",
+        "last_worker_summary": "Batch-6 check-mode execution and model update complete. Ran all 21 batch-6 replays (managementplane-addon: 6, net-integration: 10, runtime-container: 5) in --check --write-evidence mode \u2014 all 21 passed all preflight assertions. Promoted all 21 features and paths from `unknown` to `pass` in model.json with evidence references. Updated ceiling-summary.md with final totals: 209/236 paths pass (88.6%), 205/232 features pass (88.4%), zero unknown remaining. `bun run check` passes all 7 steps.",
         "last_worker_completed_at": "2026-06-14T01:06:43.474Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T01:10:00.000Z",
@@ -2046,7 +2046,7 @@
         "last_session": "s_task_batch-7-model-integrate",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Integrated all 5 batch-7 features into model.json across 4 families (acccvm: 1, arm64: 1, dataplane: 1, windows: 2) with correct featurePath entries, inputVariables, expectationVariables, and userScenarios. Model expanded from 232→237 features and 236→241 paths. `bun run check` passes all 7 steps. ceiling-summary.md updated with new batch-7 path counts, batch history table, and uncovered SIG list reduced from 7→5 families.",
+        "last_worker_summary": "Integrated all 5 batch-7 features into model.json across 4 families (acccvm: 1, arm64: 1, dataplane: 1, windows: 2) with correct featurePath entries, inputVariables, expectationVariables, and userScenarios. Model expanded from 232\u2192237 features and 236\u2192241 paths. `bun run check` passes all 7 steps. ceiling-summary.md updated with new batch-7 path counts, batch history table, and uncovered SIG list reduced from 7\u21925 families.",
         "last_worker_completed_at": "2026-06-14T01:28:15.521Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T01:29:34.924774Z",
@@ -2175,7 +2175,7 @@
         "last_session": "s_task_batch-8-check-mode-model-integration",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Successfully ran check-mode for all 25 batch-6/7 replays (3 airlock, 4 gpu, 18 industry) — all pass. Integrated results into model.json: added 25 features, 25 featurePaths, 25 evidence entries, 19 new input variables, 62 new expectation variables. Model expanded from 237 to 262 features. Views regenerated. `bun run check` passes all steps (format, whitespace, compile, wiring, check-mode-readonly, schema, typecheck).",
+        "last_worker_summary": "Successfully ran check-mode for all 25 batch-6/7 replays (3 airlock, 4 gpu, 18 industry) \u2014 all pass. Integrated results into model.json: added 25 features, 25 featurePaths, 25 evidence entries, 19 new input variables, 62 new expectation variables. Model expanded from 237 to 262 features. Views regenerated. `bun run check` passes all steps (format, whitespace, compile, wiring, check-mode-readonly, schema, typecheck).",
         "last_worker_completed_at": "2026-06-14T01:57:56.692Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T02:15:00.000Z",
@@ -2240,7 +2240,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich all 27 non-passing terminal-classified paths in model.json with structured verdict objects. ~13 paths already have verdicts (aad-rbac, ossku families). The remaining ~14 older paths (app-routing, kms, paf-throttling, vpa-cert-renewal, machines-agentpool, jwt-authenticator, planned-maintenance, trusted-access, managedsystem, virtualmachines-agentpool) lack verdict objects. For each, review existing evidence in evidence/archive/ and runs/executions/, then add a verdict with staging date, runId (if available), diagnosis category, claims passed/total, and notes. Do NOT re-run replays — synthesize from existing project evidence.",
+      "goal": "Enrich all 27 non-passing terminal-classified paths in model.json with structured verdict objects. ~13 paths already have verdicts (aad-rbac, ossku families). The remaining ~14 older paths (app-routing, kms, paf-throttling, vpa-cert-renewal, machines-agentpool, jwt-authenticator, planned-maintenance, trusted-access, managedsystem, virtualmachines-agentpool) lack verdict objects. For each, review existing evidence in evidence/archive/ and runs/executions/, then add a verdict with staging date, runId (if available), diagnosis category, claims passed/total, and notes. Do NOT re-run replays \u2014 synthesize from existing project evidence.",
       "inputs": [],
       "outputs": [
         "model/knowledge-map/model.json"
@@ -2308,7 +2308,7 @@
         "last_session": "s_task_model-final-ceiling-report-update",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Updated ceiling-summary.md to reflect the fully enriched verdict state from model.json. The report now shows per-category breakdown of all 27 non-passing paths using the 11 distinct `verdict.diagnosis` labels from model.json: product_gap (9), environment_gap (7), product_constraint (3), product_constraint_underlay (1), product_deprecated (1), environment_precondition (1), environment_dependency (1), environment (1), infra_blocked (1), superseded (1), test_methodology_gap (1). Key reclassifications documented: run-command-access moved product-gap→environment; trust-service moved environment-blocked→product_constraint; ubuntu-to-mariner moved environment-blocked→product_deprecated. All 27 path IDs and diagnosis labels verified to match model.json verdict objects exactly.",
+        "last_worker_summary": "Updated ceiling-summary.md to reflect the fully enriched verdict state from model.json. The report now shows per-category breakdown of all 27 non-passing paths using the 11 distinct `verdict.diagnosis` labels from model.json: product_gap (9), environment_gap (7), product_constraint (3), product_constraint_underlay (1), product_deprecated (1), environment_precondition (1), environment_dependency (1), environment (1), infra_blocked (1), superseded (1), test_methodology_gap (1). Key reclassifications documented: run-command-access moved product-gap\u2192environment; trust-service moved environment-blocked\u2192product_constraint; ubuntu-to-mariner moved environment-blocked\u2192product_deprecated. All 27 path IDs and diagnosis labels verified to match model.json verdict objects exactly.",
         "last_worker_completed_at": "2026-06-14T03:29:55.088Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T03:45:00.000Z",
@@ -2352,12 +2352,12 @@
         "last_session": "s_task_next-expansion-wave-network",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Network SIG expansion complete: 33 scenarios fully covered with feature YAML, specs, replays, and model integration. Created features/network-cni.yaml covering 5 sub-families (CNI Plugin:10, Datapath:8, Swift V1:5, Swift V2:5, ACNS/Retina:5). Added 27 new spec JSON files, 27 new replay TypeScript files, updated specs/index.json (274→301 entries), and updated model/knowledge-map/model.json (+27 feature paths, +27 features, +13 input variables). All 7 check phases pass: format, whitespace, compile, wiring (301 specs), check-mode-readonly, schema (301 specs/36 features, 0 warnings), typecheck.",
+        "last_worker_summary": "Network SIG expansion complete: 33 scenarios fully covered with feature YAML, specs, replays, and model integration. Created features/network-cni.yaml covering 5 sub-families (CNI Plugin:10, Datapath:8, Swift V1:5, Swift V2:5, ACNS/Retina:5). Added 27 new spec JSON files, 27 new replay TypeScript files, updated specs/index.json (274\u2192301 entries), and updated model/knowledge-map/model.json (+27 feature paths, +27 features, +13 input variables). All 7 check phases pass: format, whitespace, compile, wiring (301 specs), check-mode-readonly, schema (301 specs/36 features, 0 warnings), typecheck.",
         "last_worker_completed_at": "2026-06-14T04:33:55.356Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T04:50:00.000Z",
         "accepted_by": "planner",
-        "acceptance_note": "Verified: 27 network specs+replays created, features/network-cni.yaml covers 5 sub-families, specs index 274→301, model +27 paths +27 features +13 inputs. All 7 check phases pass. Acceptance fully met."
+        "acceptance_note": "Verified: 27 network specs+replays created, features/network-cni.yaml covers 5 sub-families, specs index 274\u2192301, model +27 paths +27 features +13 inputs. All 7 check phases pass. Acceptance fully met."
       },
       "session_history": [
         "s_task_next-expansion-wave-network"
@@ -2592,7 +2592,7 @@
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T07:29:27.592Z",
         "accepted_by": "planner",
-        "acceptance_note": "Live staging run dns-res-staging-frontier-20260614 passed: 4/4 claim assertions (service DNS, external FQDN, headless service, networkPlugin=azure), 15/15 total. Evidence archived. Note: model path not auto-updated (still test_code_gap) — model-update batch will reconcile."
+        "acceptance_note": "Live staging run dns-res-staging-frontier-20260614 passed: 4/4 claim assertions (service DNS, external FQDN, headless service, networkPlugin=azure), 15/15 total. Evidence archived. Note: model path not auto-updated (still test_code_gap) \u2014 model-update batch will reconcile."
       },
       "session_history": [
         "s_task_network-datapath-dns-staging-frontier-20260614"
@@ -2697,13 +2697,13 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich 6 stub network specs that currently have 0 claims: network-datapath-host-routing, network-datapath-wireguard-encryption, network-swift-v1-dynamic-ip-allocation, network-swift-v1-network-policy-calico, network-swift-v2-overlay-mode, network-swift-v2-multi-pool-subnet. For each: analyze the Go e2ev3 source (sigs/network/), extract ARM claims, add structured claims to the spec JSON. All 6 specs must have ≥3 claims each.",
+      "goal": "Enrich 6 stub network specs that currently have 0 claims: network-datapath-host-routing, network-datapath-wireguard-encryption, network-swift-v1-dynamic-ip-allocation, network-swift-v1-network-policy-calico, network-swift-v2-overlay-mode, network-swift-v2-multi-pool-subnet. For each: analyze the Go e2ev3 source (sigs/network/), extract ARM claims, add structured claims to the spec JSON. All 6 specs must have \u22653 claims each.",
       "inputs": [],
       "outputs": [
         "specs/network-datapath-host-routing.json,specs/network-datapath-wireguard-encryption.json,specs/network-swift-v1-dynamic-ip-allocation.json,specs/network-swift-v1-network-policy-calico.json,specs/network-swift-v2-overlay-mode.json,specs/network-swift-v2-multi-pool-subnet.json"
       ],
       "acceptance": [
-        "All 6 specs have ≥3 structured claims each (up from 0). Claims reflect actual Go e2ev3 assertions for each feature. bun run check passes."
+        "All 6 specs have \u22653 structured claims each (up from 0). Claims reflect actual Go e2ev3 assertions for each feature. bun run check passes."
       ],
       "forbidden": [],
       "conflict_scope": [
@@ -2724,7 +2724,7 @@
         "stale_history": "2 prior attempts failed silently (sessions created but process died with 0 specs enriched)",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Enriched all 6 stub network specs from 0 specific claims to 5 structured claims each (30 total claims, well above the ≥3 minimum). Each spec now has ARM-grounded assertions with coveredBy traceability, proper nested ARM body fragments, specific operation intents, and detailed judgment rules. `bun run check` passes with 0 warnings.",
+        "last_worker_summary": "Enriched all 6 stub network specs from 0 specific claims to 5 structured claims each (30 total claims, well above the \u22653 minimum). Each spec now has ARM-grounded assertions with coveredBy traceability, proper nested ARM body fragments, specific operation intents, and detailed judgment rules. `bun run check` passes with 0 warnings.",
         "last_worker_completed_at": "2026-06-14T07:51:38.472Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T07:56:54.067Z",
@@ -2739,7 +2739,7 @@
     },
     "source-gap-audit-20260614": {
       "id": "source-gap-audit-20260614",
-      "goal": "Explore 6 missing Go e2ev3 sigs and 3 partially-covered sigs to discover undocumented AKS features. MISSING (zero coverage): speculor (67 plans — storage CSI: AzureDisk/AzureFile across OS types, authorized IP ranges, private cluster networking), secops (32 plans — FIPS cluster compliance, identity binding, secure transport), serverless (35 plans — virtual node scenarios), workload (5 plans — cluster health monitor), fqdnpolicy (FQDN policy). PARTIAL (big sig, few features): traffic (114 plans, only app-routing covered — missing AppLink/mesh membership, API proxy, service mesh), node (57 plans, only ossku covered — missing artifact streaming, custom CA, ephemeral disk, FIPS node, HTTP proxy, CVM/SNP), ccp (70 plans, only 4 features — missing CoreDNS autoscaler/ENO, control plane scaling profile, mixed SKU scaling, billing, auto-upgrader). Priority: Tier 1 = speculor (storage), secops (FIPS), node (artifact streaming etc). Tier 2 = traffic beyond app-routing, ccp beyond current. For each sig: read plans/*.go, extract Scenario_ names, create feature packets, generate specs.",
+      "goal": "Explore 6 missing Go e2ev3 sigs and 3 partially-covered sigs to discover undocumented AKS features. MISSING (zero coverage): speculor (67 plans \u2014 storage CSI: AzureDisk/AzureFile across OS types, authorized IP ranges, private cluster networking), secops (32 plans \u2014 FIPS cluster compliance, identity binding, secure transport), serverless (35 plans \u2014 virtual node scenarios), workload (5 plans \u2014 cluster health monitor), fqdnpolicy (FQDN policy). PARTIAL (big sig, few features): traffic (114 plans, only app-routing covered \u2014 missing AppLink/mesh membership, API proxy, service mesh), node (57 plans, only ossku covered \u2014 missing artifact streaming, custom CA, ephemeral disk, FIPS node, HTTP proxy, CVM/SNP), ccp (70 plans, only 4 features \u2014 missing CoreDNS autoscaler/ENO, control plane scaling profile, mixed SKU scaling, billing, auto-upgrader). Priority: Tier 1 = speculor (storage), secops (FIPS), node (artifact streaming etc). Tier 2 = traffic beyond app-routing, ccp beyond current. For each sig: read plans/*.go, extract Scenario_ names, create feature packets, generate specs.",
       "parent_id": "source-discovery",
       "children": [],
       "depends_on": [],
@@ -2807,13 +2807,13 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Create replays for 15 specs that have specs but no replays in the node/secops/serverless families: node-confidential-vm-kata-snp-runtime, node-confidential-vm-snp-pool, node-custom-ca-trust-create, node-ephemeral-disk-resource-placement, node-fips-ossku-azurelinux-create, node-http-proxy-create, node-http-proxy-trusted-ca, node-http-proxy-update, secops-fips-mixed-pool-coexistence, secops-fips-pool-add-existing, secops-fips-upgrade-survival, secops-identity-kubelet-identity-config, secops-identity-system-assigned-lifecycle, serverless-virtual-nodes-network-connectivity, serverless-virtual-nodes-reenablement. For each: read the spec JSON, implement ARM REST replay with check+execute modes, ≥300 lines, matching spec claims. Register replay paths. Run bun run check.",
+      "goal": "Create replays for 15 specs that have specs but no replays in the node/secops/serverless families: node-confidential-vm-kata-snp-runtime, node-confidential-vm-snp-pool, node-custom-ca-trust-create, node-ephemeral-disk-resource-placement, node-fips-ossku-azurelinux-create, node-http-proxy-create, node-http-proxy-trusted-ca, node-http-proxy-update, secops-fips-mixed-pool-coexistence, secops-fips-pool-add-existing, secops-fips-upgrade-survival, secops-identity-kubelet-identity-config, secops-identity-system-assigned-lifecycle, serverless-virtual-nodes-network-connectivity, serverless-virtual-nodes-reenablement. For each: read the spec JSON, implement ARM REST replay with check+execute modes, \u2265300 lines, matching spec claims. Register replay paths. Run bun run check.",
       "inputs": [],
       "outputs": [
         "replays/node-confidential-vm-kata-snp-runtime.ts,replays/node-http-proxy-create.ts,replays/secops-fips-mixed-pool-coexistence.ts,replays/serverless-virtual-nodes-network-connectivity.ts"
       ],
       "acceptance": [
-        "All 15 replays created with ≥300 lines each, ARM calls matching spec claims, check+execute mode. bun run check passes."
+        "All 15 replays created with \u2265300 lines each, ARM calls matching spec claims, check+execute mode. bun run check passes."
       ],
       "forbidden": [],
       "conflict_scope": [
@@ -2830,7 +2830,7 @@
         "last_session": "s_task_replay-batch-node-secops-serverless",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Created all 15 replay files for node/secops/serverless families. All replays have ≥300 lines, implement ARM REST check+execute modes, match spec assertions, and pass `bun run check` (format, compile, wiring, check-mode-readonly, schema, typecheck).",
+        "last_worker_summary": "Created all 15 replay files for node/secops/serverless families. All replays have \u2265300 lines, implement ARM REST check+execute modes, match spec assertions, and pass `bun run check` (format, compile, wiring, check-mode-readonly, schema, typecheck).",
         "last_worker_completed_at": "2026-06-14T10:09:54.285Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T10:15:00.000Z",
@@ -2850,13 +2850,13 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Create replays for 11 specs that have specs but no replays in the traffic/workload-health/serverless families: traffic-api-proxy-enable-lifecycle, traffic-api-proxy-private-cluster-connectivity, traffic-applink-register-lifecycle, traffic-azure-service-mesh-enable-lifecycle, traffic-azure-service-mesh-mtls-enforcement, traffic-azure-service-mesh-revision-upgrade, traffic-azure-service-mesh-sidecar-injection, traffic-managed-gateway-api-create-lifecycle, traffic-managed-gateway-api-http-routing, workload-health-core-dns-readiness, workload-health-system-components-readiness. For each: read spec JSON, implement ARM REST replay with check+execute modes, ≥300 lines. Run bun run check.",
+      "goal": "Create replays for 11 specs that have specs but no replays in the traffic/workload-health/serverless families: traffic-api-proxy-enable-lifecycle, traffic-api-proxy-private-cluster-connectivity, traffic-applink-register-lifecycle, traffic-azure-service-mesh-enable-lifecycle, traffic-azure-service-mesh-mtls-enforcement, traffic-azure-service-mesh-revision-upgrade, traffic-azure-service-mesh-sidecar-injection, traffic-managed-gateway-api-create-lifecycle, traffic-managed-gateway-api-http-routing, workload-health-core-dns-readiness, workload-health-system-components-readiness. For each: read spec JSON, implement ARM REST replay with check+execute modes, \u2265300 lines. Run bun run check.",
       "inputs": [],
       "outputs": [
         "replays/traffic-azure-service-mesh-enable-lifecycle.ts,replays/traffic-api-proxy-enable-lifecycle.ts,replays/workload-health-core-dns-readiness.ts"
       ],
       "acceptance": [
-        "All 11 replays created with ≥300 lines each, ARM calls matching spec claims, check+execute mode. bun run check passes."
+        "All 11 replays created with \u2265300 lines each, ARM calls matching spec claims, check+execute mode. bun run check passes."
       ],
       "forbidden": [],
       "conflict_scope": [
@@ -2873,7 +2873,7 @@
         "last_session": "s_task_replay-batch-traffic-workload-health",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Created all 11 replays for traffic/workload-health/serverless families. Each replay has ≥300 lines, implements ARM REST replay with check+execute modes, matches spec assertions, and passes `bun run check`. All specs were added to specs/index.json.",
+        "last_worker_summary": "Created all 11 replays for traffic/workload-health/serverless families. Each replay has \u2265300 lines, implements ARM REST replay with check+execute modes, matches spec assertions, and passes `bun run check`. All specs were added to specs/index.json.",
         "last_worker_completed_at": "2026-06-14T10:10:22.877Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T10:15:00.000Z",
@@ -2979,13 +2979,13 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Create replay for serverless-virtual-nodes-upgrade-survival spec: ARM REST replay with check+execute modes, ≥300 lines. Follow pattern from serverless-virtual-nodes-reenablement.ts. Register replay path. Run bun run check.",
+      "goal": "Create replay for serverless-virtual-nodes-upgrade-survival spec: ARM REST replay with check+execute modes, \u2265300 lines. Follow pattern from serverless-virtual-nodes-reenablement.ts. Register replay path. Run bun run check.",
       "inputs": [],
       "outputs": [
         "replays/serverless-virtual-nodes-upgrade-survival.ts"
       ],
       "acceptance": [
-        "Replay created with ≥300 lines, ARM calls matching spec claims, check+execute mode. bun run check passes."
+        "Replay created with \u2265300 lines, ARM calls matching spec claims, check+execute mode. bun run check passes."
       ],
       "forbidden": [],
       "conflict_scope": [
@@ -3048,7 +3048,7 @@
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T11:10:00.000Z",
         "accepted_by": "planner",
-        "acceptance_note": "26 features promoted staging→pass. 0 staging remain. 297 pass features in model. bun run check passes."
+        "acceptance_note": "26 features promoted staging\u2192pass. 0 staging remain. 297 pass features in model. bun run check passes."
       },
       "session_id": "s_task_feature-staging-to-pass-promotion",
       "session_history": [
@@ -3087,7 +3087,7 @@
         "last_session": "s_task_fail-feature-terminal-classification",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Classified all 12 fail-status features with clear root-cause notes and updated model.json. Classification: 8 → product-gap (terminal external blockers: CLI multi-SKU bug, app-routing CCP cert, NAP pool auto-creation, ManagedSystem SKU mismatch, 3x ResetAADProfile API HTTP 400, RBAC-disabled migration HTTP 400), 1 → environment-blocked (Automatic SKU not available), 1 → blocked/test-actionable (run-command needs AAD token + RBAC binding fix), 2 → product_constraint (Mariner deprecated/removed). Zero fail features remain. bun run check passes.",
+        "last_worker_summary": "Classified all 12 fail-status features with clear root-cause notes and updated model.json. Classification: 8 \u2192 product-gap (terminal external blockers: CLI multi-SKU bug, app-routing CCP cert, NAP pool auto-creation, ManagedSystem SKU mismatch, 3x ResetAADProfile API HTTP 400, RBAC-disabled migration HTTP 400), 1 \u2192 environment-blocked (Automatic SKU not available), 1 \u2192 blocked/test-actionable (run-command needs AAD token + RBAC binding fix), 2 \u2192 product_constraint (Mariner deprecated/removed). Zero fail features remain. bun run check passes.",
         "last_worker_completed_at": "2026-06-14T11:04:54.500Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T11:07:01.416Z",
@@ -3201,14 +3201,14 @@
         "last_session": "s_task_combined-scenario-capability-audit-20260614",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Created `suites/combined-scenario-capability-audit.md` — a comprehensive audit of the combined-scenario capability across suites/, specs/, replays/, and runner/. The audit identifies one live-verified combined probe (managedsystem-add-immutability-delete-combined, 51KB hand-authored), separates it from design/prototype-only artifacts (compatibility contract, 7-path prototype YAML with missing probe, skeleton-only code generator), and identifies three priority changes needed for broader rollout: (1) make plan-run.ts read contract metadata instead of clusterRequirements, (2) make generate-combined.ts emit real assertion logic instead of `ok: true` stubs, (3) add combined-lifecycle execution mode to suite-runner.ts.",
+        "last_worker_summary": "Created `suites/combined-scenario-capability-audit.md` \u2014 a comprehensive audit of the combined-scenario capability across suites/, specs/, replays/, and runner/. The audit identifies one live-verified combined probe (managedsystem-add-immutability-delete-combined, 51KB hand-authored), separates it from design/prototype-only artifacts (compatibility contract, 7-path prototype YAML with missing probe, skeleton-only code generator), and identifies three priority changes needed for broader rollout: (1) make plan-run.ts read contract metadata instead of clusterRequirements, (2) make generate-combined.ts emit real assertion logic instead of `ok: true` stubs, (3) add combined-lifecycle execution mode to suite-runner.ts.",
         "last_worker_completed_at": "2026-06-14T15:24:14.795Z",
         "last_worker_evidence": [],
         "paused_at": "2026-06-14T16:00:00Z",
         "pause_reason": "Project at waiting status per discussion iter1. Human direction needed.",
         "accepted_at": "2026-06-14T15:30:00.000Z",
         "accepted_by": "planner",
-        "acceptance_note": "Deliverable covers all 3 acceptance criteria: exact commands (§2), live-vs-prototype separation (§3/§6 table), and prioritized runner changes (§5). 301-line report with file inventory."
+        "acceptance_note": "Deliverable covers all 3 acceptance criteria: exact commands (\u00a72), live-vs-prototype separation (\u00a73/\u00a76 table), and prioritized runner changes (\u00a75). 301-line report with file inventory."
       },
       "session_id": "s_task_combined-scenario-capability-audit-20260614",
       "session_history": [
@@ -3273,7 +3273,7 @@
           "Real staging execution attempted with cloud mutation enabled (acceptance #1)",
           "Per-scenario verdicts recorded: all 5 paths not-run, diagnosis=environment (acceptance #2)",
           "Cleanup verified: resource group deleted, az group exists returned false (acceptance #2)",
-          "Blocker: az aks create exit 1 after aks-preview workaround — needs retry task (acceptance #3)"
+          "Blocker: az aks create exit 1 after aks-preview workaround \u2014 needs retry task (acceptance #3)"
         ],
         "acceptance_note": "Execution reached Azure, cluster create failed. Creating retry task for next attempt with session timeout/aks-preview fixes."
       },
@@ -3483,12 +3483,12 @@
         "last_session": "s_task_combined-wave-plan-1-20260614",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Plan accepted: 6 combined runs across 5 feature families, 21 specs, 22→6 clusters saving 16 lifecycles. Cross-feature candidate evaluated and rejected with 4 reasons. All acceptance criteria verified. Child tasks to be created by planner.",
+        "last_worker_summary": "Plan accepted: 6 combined runs across 5 feature families, 21 specs, 22\u21926 clusters saving 16 lifecycles. Cross-feature candidate evaluated and rejected with 4 reasons. All acceptance criteria verified. Child tasks to be created by planner.",
         "last_worker_completed_at": "2026-06-14T17:11:21.367Z",
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T18:55:36.723Z",
         "reviewed_by": "task-tree-tool",
-        "review_summary": "Plan accepted: 6 combined runs across 5 feature families (storage-csi enable+pvc+snapshot, storage-csi disable, OIDC issuer, KEDA, image-cleaner, app-routing), 21 specs, 22→6 clusters saving 16 lifecycles. Cross-feature candidate evaluated and rejected with 4 documented reasons per compatibility contract. Output in suites/combined-wave-plan-1.md is detailed with per-run spec tables, compatibility justifications, conflict scopes, CRUD savings, and dependency-risk hypotheses. All 3 acceptance criteria met. Child execution tasks to be created by planner."
+        "review_summary": "Plan accepted: 6 combined runs across 5 feature families (storage-csi enable+pvc+snapshot, storage-csi disable, OIDC issuer, KEDA, image-cleaner, app-routing), 21 specs, 22\u21926 clusters saving 16 lifecycles. Cross-feature candidate evaluated and rejected with 4 documented reasons per compatibility contract. Output in suites/combined-wave-plan-1.md is detailed with per-run spec tables, compatibility justifications, conflict scopes, CRUD savings, and dependency-risk hypotheses. All 3 acceptance criteria met. Child execution tasks to be created by planner."
       },
       "session_id": "s_task_combined-wave-plan-1-20260614",
       "session_history": [
@@ -3498,7 +3498,7 @@
       "done_at": "2026-06-14T18:55:36.723Z",
       "done_by": "task-tree-tool",
       "context": {
-        "acceptance_note": "Plan accepted: 6 combined runs across 5 feature families (storage-csi enable+pvc+snapshot, storage-csi disable, OIDC issuer, KEDA, image-cleaner, app-routing), 21 specs, 22→6 clusters saving 16 lifecycles. Cross-feature candidate evaluated and rejected with 4 documented reasons per compatibility contract. Output in suites/combined-wave-plan-1.md is detailed with per-run spec tables, compatibility justifications, conflict scopes, CRUD savings, and dependency-risk hypotheses. All 3 acceptance criteria met. Child execution tasks to be created by planner."
+        "acceptance_note": "Plan accepted: 6 combined runs across 5 feature families (storage-csi enable+pvc+snapshot, storage-csi disable, OIDC issuer, KEDA, image-cleaner, app-routing), 21 specs, 22\u21926 clusters saving 16 lifecycles. Cross-feature candidate evaluated and rejected with 4 documented reasons per compatibility contract. Output in suites/combined-wave-plan-1.md is detailed with per-run spec tables, compatibility justifications, conflict scopes, CRUD savings, and dependency-risk hypotheses. All 3 acceptance criteria met. Child execution tasks to be created by planner."
       }
     },
     "combined-wave-feedback-loop-20260614": {
@@ -3552,7 +3552,7 @@
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T19:11:44.514Z",
         "reviewed_by": "task-tree-tool",
-        "review_summary": "Accepted: wave planning complete. No combined executions ran — execution requires external staging + human direction. Combined wave plan artifact (suites/combined-wave-plan-1.md) documents 6 runs saving 16 cluster lifecycles. Feedback loop deferred until executions happen."
+        "review_summary": "Accepted: wave planning complete. No combined executions ran \u2014 execution requires external staging + human direction. Combined wave plan artifact (suites/combined-wave-plan-1.md) documents 6 runs saving 16 cluster lifecycles. Feedback loop deferred until executions happen."
       },
       "session_id": "s_task_combined-wave-feedback-loop-20260614",
       "session_history": [
@@ -3562,7 +3562,7 @@
       "done_at": "2026-06-14T19:11:44.514Z",
       "done_by": "task-tree-tool",
       "context": {
-        "acceptance_note": "Accepted: wave planning complete. No combined executions ran — execution requires external staging + human direction. Combined wave plan artifact (suites/combined-wave-plan-1.md) documents 6 runs saving 16 cluster lifecycles. Feedback loop deferred until executions happen."
+        "acceptance_note": "Accepted: wave planning complete. No combined executions ran \u2014 execution requires external staging + human direction. Combined wave plan artifact (suites/combined-wave-plan-1.md) documents 6 runs saving 16 cluster lifecycles. Feedback loop deferred until executions happen."
       }
     },
     "go-e2e-source-inventory-and-feature-completion": {
@@ -3650,12 +3650,12 @@
         "pause_reason": "Project waiting per discussion iter1. Human direction needed.",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "Rebuilt go-e2e-source-inventory.md with corrected SIG→spec attribution. Fixed 5 material errors: (1) speculor now shows 27 specs (was 0) via private-cluster/net-integration/storage-csi sub-areas, (2) rp corrected to 36 specs (was 57), (3) dplat correctly owns deployment-safeguards (was misattributed to storage-csi), (4) network correctly 33 specs (was 51), (5) ccp correctly 22 specs (was 14, now includes localdns). Also discovered 8 unindexed specs and added rp as a new P0 gap (53 unmapped). All 344 specs sum correctly across SIG assignments.",
+        "last_worker_summary": "Rebuilt go-e2e-source-inventory.md with corrected SIG\u2192spec attribution. Fixed 5 material errors: (1) speculor now shows 27 specs (was 0) via private-cluster/net-integration/storage-csi sub-areas, (2) rp corrected to 36 specs (was 57), (3) dplat correctly owns deployment-safeguards (was misattributed to storage-csi), (4) network correctly 33 specs (was 51), (5) ccp correctly 22 specs (was 14, now includes localdns). Also discovered 8 unindexed specs and added rp as a new P0 gap (53 unmapped). All 344 specs sum correctly across SIG assignments.",
         "last_worker_completed_at": "2026-06-14T15:40:14.182Z",
         "last_worker_evidence": [],
         "accepted_at": "2026-06-14T16:12:00.000Z",
         "accepted_by": "planner",
-        "acceptance_note": "Evidence file (477 lines) meets all 3 acceptance criteria: SIG-level counts + status per scenario, explicit §3 revisiting all 8 previously-claimed SIGs, and prioritized extraction gap list (§10) with P0/P1/P2 tasks."
+        "acceptance_note": "Evidence file (477 lines) meets all 3 acceptance criteria: SIG-level counts + status per scenario, explicit \u00a73 revisiting all 8 previously-claimed SIGs, and prioritized extraction gap list (\u00a710) with P0/P1/P2 tasks."
       },
       "session_id": "s_task_go-e2e-source-inventory-manifest-20260614",
       "session_history": [
@@ -3976,7 +3976,7 @@
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T18:55:36.772Z",
         "reviewed_by": "task-tree-tool",
-        "review_summary": "Plan accepted: 9 extraction batches (A-I) across 8 SIG groups covering ~280 unmapped scenarios. Variant-to-artifact mapping rules (ISP→new spec, ESP→new spec, ENV→metadata, EXEC→no-op, USV→metadata) established with exceptions. 25 extraction tasks described in evidence/archive/go-e2e-gap-extraction-plan.md with source refs and variant gates per task. All 3 acceptance criteria met. Child extraction tasks to be created by planner."
+        "review_summary": "Plan accepted: 9 extraction batches (A-I) across 8 SIG groups covering ~280 unmapped scenarios. Variant-to-artifact mapping rules (ISP\u2192new spec, ESP\u2192new spec, ENV\u2192metadata, EXEC\u2192no-op, USV\u2192metadata) established with exceptions. 25 extraction tasks described in evidence/archive/go-e2e-gap-extraction-plan.md with source refs and variant gates per task. All 3 acceptance criteria met. Child extraction tasks to be created by planner."
       },
       "session_id": "s_task_go-e2e-gap-extraction-plan-from-source-and-variants-20260614",
       "session_history": [
@@ -3986,13 +3986,13 @@
       "done_at": "2026-06-14T18:55:36.772Z",
       "done_by": "task-tree-tool",
       "context": {
-        "acceptance_note": "Plan accepted: 9 extraction batches (A-I) across 8 SIG groups covering ~280 unmapped scenarios. Variant-to-artifact mapping rules (ISP→new spec, ESP→new spec, ENV→metadata, EXEC→no-op, USV→metadata) established with exceptions. 25 extraction tasks described in evidence/archive/go-e2e-gap-extraction-plan.md with source refs and variant gates per task. All 3 acceptance criteria met. Child extraction tasks to be created by planner."
+        "acceptance_note": "Plan accepted: 9 extraction batches (A-I) across 8 SIG groups covering ~280 unmapped scenarios. Variant-to-artifact mapping rules (ISP\u2192new spec, ESP\u2192new spec, ENV\u2192metadata, EXEC\u2192no-op, USV\u2192metadata) established with exceptions. 25 extraction tasks described in evidence/archive/go-e2e-gap-extraction-plan.md with source refs and variant gates per task. All 3 acceptance criteria met. Child extraction tasks to be created by planner."
       }
     },
     "all-spec-verification-and-evidence-closure": {
       "id": "all-spec-verification-and-evidence-closure",
       "parent_id": "project",
-      "state": "done",
+      "state": "backlog",
       "kind": "work",
       "priority": "P0",
       "owner": "aks-explorer",
@@ -4018,7 +4018,9 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-14T15:42:42.220Z",
-        "created_by": "task-tree-tool"
+        "created_by": "task-tree-tool",
+        "reopened_at": "2026-06-14T20:12:00Z",
+        "reopen_reason": "Metric alert: 267/335 specs still unverified; acceptance criteria unmet; hasOpenSpecVerificationWork() was false causing metric breach"
       },
       "context": {
         "archived_done_leaf_count": 7,
@@ -4065,12 +4067,12 @@
         "current_attempt_id": "a_spec-status-schema-fix-20260614_20260614192744",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "All 11 specs with invalid status values fixed across prior attempts. 10 specs changed from 'reviewed_exception' to valid statuses (6×product_gap, 2×product_constraint, 2×environment), 1 spec changed from 'environment-blocked' to 'environment'. specs/index.json also updated. `bun run check` passes with 0 schema failures, 0 warnings.",
+        "last_worker_summary": "All 11 specs with invalid status values fixed across prior attempts. 10 specs changed from 'reviewed_exception' to valid statuses (6\u00d7product_gap, 2\u00d7product_constraint, 2\u00d7environment), 1 spec changed from 'environment-blocked' to 'environment'. specs/index.json also updated. `bun run check` passes with 0 schema failures, 0 warnings.",
         "last_worker_completed_at": "2026-06-14T19:27:44.974Z",
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T19:30:12.317Z",
         "reviewed_by": "task-tree-tool",
-        "review_summary": "Verified: bun run check passes with 0 schema failures, 0 warnings. All 11 specs remapped from invalid status values (reviewed_exception→product_gap/product_constraint/environment, environment-blocked→environment). specs/index.json updated. Acceptance criteria fully met."
+        "review_summary": "Verified: bun run check passes with 0 schema failures, 0 warnings. All 11 specs remapped from invalid status values (reviewed_exception\u2192product_gap/product_constraint/environment, environment-blocked\u2192environment). specs/index.json updated. Acceptance criteria fully met."
       },
       "session_id": "s_task_spec-status-schema-fix-20260614",
       "session_history": [
@@ -4080,7 +4082,7 @@
       "done_at": "2026-06-14T19:30:12.317Z",
       "done_by": "task-tree-tool",
       "context": {
-        "acceptance_note": "Verified: bun run check passes with 0 schema failures, 0 warnings. All 11 specs remapped from invalid status values (reviewed_exception→product_gap/product_constraint/environment, environment-blocked→environment). specs/index.json updated. Acceptance criteria fully met."
+        "acceptance_note": "Verified: bun run check passes with 0 schema failures, 0 warnings. All 11 specs remapped from invalid status values (reviewed_exception\u2192product_gap/product_constraint/environment, environment-blocked\u2192environment). specs/index.json updated. Acceptance criteria fully met."
       }
     },
     "wave1-storage-csi-enrich-compatibility": {
@@ -4091,7 +4093,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich storage-csi specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata so combined runs 1 (enable+PVC+snapshot, 7 specs) and 2 (disable lifecycle, 3 specs) can be authored as combined suites. Use suites/combined-wave-plan-1.md §Run 1-2 compatibility justifications as the source of truth for which specs are compatible.",
+      "goal": "Enrich storage-csi specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata so combined runs 1 (enable+PVC+snapshot, 7 specs) and 2 (disable lifecycle, 3 specs) can be authored as combined suites. Use suites/combined-wave-plan-1.md \u00a7Run 1-2 compatibility justifications as the source of truth for which specs are compatible.",
       "inputs": [],
       "outputs": [
         "specs/storage-csi/*.spec.json"
@@ -4145,7 +4147,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich oidc-issuer specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 3 (OIDC lifecycle, 3 specs: enable, key-rotation, disable). Use suites/combined-wave-plan-1.md §Run 3 compatibility justification.",
+      "goal": "Enrich oidc-issuer specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 3 (OIDC lifecycle, 3 specs: enable, key-rotation, disable). Use suites/combined-wave-plan-1.md \u00a7Run 3 compatibility justification.",
       "inputs": [],
       "outputs": [
         "specs/oidc-issuer/*.spec.json"
@@ -4173,7 +4175,7 @@
         "current_attempt_id": "a_wave1-oidc-enrich-compatibility_20260614193703",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "All 3 OIDC issuer specs for combined Run 3 were enriched in the previous attempt and verified persisted in this attempt. All specs have compatibleGroupKey=oidc-issuer.lifecycle, aligned clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder matching the plan (5→10→15), populated canShareClusterWith arrays with pairwise cross-references, and compatibility blocks with diagnosticRisk. All 6 pairwise directions pass per compatibility contract §2.1. All files are valid JSON.",
+        "last_worker_summary": "All 3 OIDC issuer specs for combined Run 3 were enriched in the previous attempt and verified persisted in this attempt. All specs have compatibleGroupKey=oidc-issuer.lifecycle, aligned clusterShapeKey=oidc-issuer-default-enabled-k8s-1.34, sequenceOrder matching the plan (5\u219210\u219215), populated canShareClusterWith arrays with pairwise cross-references, and compatibility blocks with diagnosticRisk. All 6 pairwise directions pass per compatibility contract \u00a72.1. All files are valid JSON.",
         "last_worker_completed_at": "2026-06-14T19:38:59.964Z",
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T19:42:12.239Z",
@@ -4199,7 +4201,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich keda specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 4 (KEDA profile+runtime+CRUD, 3 specs). Use suites/combined-wave-plan-1.md §Run 4 compatibility justification.",
+      "goal": "Enrich keda specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 4 (KEDA profile+runtime+CRUD, 3 specs). Use suites/combined-wave-plan-1.md \u00a7Run 4 compatibility justification.",
       "inputs": [],
       "outputs": [
         "specs/keda/*.spec.json"
@@ -4227,7 +4229,7 @@
         "current_attempt_id": "a_wave1-keda-enrich-compatibility_20260614193312",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "All 3 KEDA specs enriched with combined run 4 compatibility metadata. compatibleGroupKey=keda.profile-runtime-crud, clusterShapeKey=standard-keda-enabled, sequenceOrder 10→20→30, pairwise canShareClusterWith arrays, diagnosticRisk, and requirements all present. Validation script confirms ALL CHECKS PASS.",
+        "last_worker_summary": "All 3 KEDA specs enriched with combined run 4 compatibility metadata. compatibleGroupKey=keda.profile-runtime-crud, clusterShapeKey=standard-keda-enabled, sequenceOrder 10\u219220\u219230, pairwise canShareClusterWith arrays, diagnosticRisk, and requirements all present. Validation script confirms ALL CHECKS PASS.",
         "last_worker_completed_at": "2026-06-14T19:33:45.901Z",
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T19:36:58.424Z",
@@ -4253,7 +4255,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich image-cleaner specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 5 (state+components, 2 specs). Use suites/combined-wave-plan-1.md §Run 5 compatibility justification.",
+      "goal": "Enrich image-cleaner specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 5 (state+components, 2 specs). Use suites/combined-wave-plan-1.md \u00a7Run 5 compatibility justification.",
       "inputs": [],
       "outputs": [
         "specs/image-cleaner/*.spec.json"
@@ -4307,7 +4309,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enrich app-routing specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 6 (enable→HTTP→disable, 3 specs). Use suites/combined-wave-plan-1.md §Run 6 compatibility justification.",
+      "goal": "Enrich app-routing specs with canShareClusterWith declarations, compatibleGroupKey, and sequenceOrder metadata for combined run 6 (enable\u2192HTTP\u2192disable, 3 specs). Use suites/combined-wave-plan-1.md \u00a7Run 6 compatibility justification.",
       "inputs": [],
       "outputs": [
         "specs/app-routing/*.spec.json"
@@ -4333,7 +4335,7 @@
         "current_attempt_id": "a_wave1-approuting-enrich-compatibility_20260614193241",
         "last_worker_result": "done",
         "last_worker_claim": "done",
-        "last_worker_summary": "All 3 app-routing specs for Run 6 were already enriched in the previous attempt and verified intact. All acceptance criteria pass: compatibleGroupKey=app-routing.enable-http-disable, clusterShapeKey=app-routing.enable-http-disable.combined, sequenceOrder (10/20/90), pairwise canShareClusterWith arrays, and state DAG chain (enable→HTTP→disable) are all correct.",
+        "last_worker_summary": "All 3 app-routing specs for Run 6 were already enriched in the previous attempt and verified intact. All acceptance criteria pass: compatibleGroupKey=app-routing.enable-http-disable, clusterShapeKey=app-routing.enable-http-disable.combined, sequenceOrder (10/20/90), pairwise canShareClusterWith arrays, and state DAG chain (enable\u2192HTTP\u2192disable) are all correct.",
         "last_worker_completed_at": "2026-06-14T19:33:12.343Z",
         "last_worker_evidence": [],
         "reviewed_at": "2026-06-14T19:36:58.373Z",
@@ -4359,7 +4361,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enumerate all Go E2Ev3 scenarios under sigs/ccp/ via devbox: ls -R sigs/ccp/plans/ and grep -rh NewScenario sigs/ccp/. Produce full listing with sub-area attribution (autoupgrader, security-patch, localdns, proxy/agent, tunnel, cert-mgmt, unknown). Classify each scenario's primary dimension as ISP/EXEC per evidence/archive/go-e2e-gap-extraction-plan.md §Batch B variant rules.",
+      "goal": "Enumerate all Go E2Ev3 scenarios under sigs/ccp/ via devbox: ls -R sigs/ccp/plans/ and grep -rh NewScenario sigs/ccp/. Produce full listing with sub-area attribution (autoupgrader, security-patch, localdns, proxy/agent, tunnel, cert-mgmt, unknown). Classify each scenario's primary dimension as ISP/EXEC per evidence/archive/go-e2e-gap-extraction-plan.md \u00a7Batch B variant rules.",
       "inputs": [],
       "outputs": [
         "evidence/archive/ccp-enumeration.md"
@@ -4413,7 +4415,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enumerate all Go E2Ev3 scenarios under sigs/speculor/ via devbox: ls -R sigs/speculor/plans/ and grep -rh NewScenario sigs/speculor/. Produce a full listing with sub-area attribution (privatecluster, netintegration, storage, unknown). Classify each scenario as ISP/ESP/ENV/EXEC/USV per evidence/archive/go-e2e-gap-extraction-plan.md §Batch A variant rules. Output the enumerated list with variant classification before any spec creation.",
+      "goal": "Enumerate all Go E2Ev3 scenarios under sigs/speculor/ via devbox: ls -R sigs/speculor/plans/ and grep -rh NewScenario sigs/speculor/. Produce a full listing with sub-area attribution (privatecluster, netintegration, storage, unknown). Classify each scenario as ISP/ESP/ENV/EXEC/USV per evidence/archive/go-e2e-gap-extraction-plan.md \u00a7Batch A variant rules. Output the enumerated list with variant classification before any spec creation.",
       "inputs": [],
       "outputs": [
         "evidence/archive/speculor-enumeration.md"
@@ -4467,7 +4469,7 @@
       "priority": "P2",
       "owner": "aks-explorer",
       "children": [],
-      "goal": "Enumerate all Go E2Ev3 scenarios under sigs/rp/ via devbox: ls -R sigs/rp/plans/ and grep -rh NewScenario sigs/rp/. For each scenario, determine if it belongs to an existing feature (managedsystem, bootstrap-profile, jwt-authenticator, virtualmachines, machines) or is cross-attributed to another SIG (traffic, security, dplat). Classify cross-attributed scenarios as no-ops before creating any new specs. Per evidence/archive/go-e2e-gap-extraction-plan.md §Batch C.",
+      "goal": "Enumerate all Go E2Ev3 scenarios under sigs/rp/ via devbox: ls -R sigs/rp/plans/ and grep -rh NewScenario sigs/rp/. For each scenario, determine if it belongs to an existing feature (managedsystem, bootstrap-profile, jwt-authenticator, virtualmachines, machines) or is cross-attributed to another SIG (traffic, security, dplat). Classify cross-attributed scenarios as no-ops before creating any new specs. Per evidence/archive/go-e2e-gap-extraction-plan.md \u00a7Batch C.",
       "inputs": [],
       "outputs": [
         "evidence/archive/rp-enumeration.md"
@@ -4521,16 +4523,16 @@
         "dry-run-step-rendering",
         "live-execution-step-tracking"
       ],
-      "goal": "Make spec runner show test steps clearly — dry-run prints the plan for human review, live execution prints and checks milestones as they complete.",
+      "goal": "Make spec runner show test steps clearly \u2014 dry-run prints the plan for human review, live execution prints and checks milestones as they complete.",
       "context": {
         "problem": "Current dry-run only prints 'Resolved spec X to replay Y'. Users can't review what the test will do before running it. Live execution streams raw stdout with no step-by-step progress.",
-        "spec_structure": "Specs have structured steps: setup[] → operations[] → assertions[] → cleanup[], each with id, surface, intent. This structure should drive the output.",
+        "spec_structure": "Specs have structured steps: setup[] \u2192 operations[] \u2192 assertions[] \u2192 cleanup[], each with id, surface, intent. This structure should drive the output.",
         "design_approach": "Design/implement/test loop: 1) Define step rendering format for dry-run, 2) Define step-event contract for replays, 3) Implement in runner + one replay, 4) Verify with real spec, 5) Roll out to other replays."
       },
       "acceptance": [
         "bun run spec <id> --dry-run prints setup steps, operations, assertions, and cleanup with human-readable descriptions",
         "Live execution prints [step N/M] progress with pass/fail status as each milestone completes",
-        "Steps output matches the spec JSON structure (setup → operations → assertions → cleanup)",
+        "Steps output matches the spec JSON structure (setup \u2192 operations \u2192 assertions \u2192 cleanup)",
         "At least one replay demonstrates the step-tracking contract end-to-end"
       ]
     },
@@ -4579,7 +4581,7 @@
       "goal": "Wire domain-checkpoint.ts into the project-planner workflow as a post-review step. After task-tree updates, scan dirty files, classify by task refs, commit done slices.",
       "context": {
         "existing_tool": "scripts/domain-checkpoint.ts already classifies dirty files into hold/candidate/needs-review. It needs a commit-execution path and integration into the owner workflow.",
-        "design": "See may-agent.app/docs/2a-design/project-app-v3.md §Owner Checkpoint Step",
+        "design": "See may-agent.app/docs/2a-design/project-app-v3.md \u00a7Owner Checkpoint Step",
         "scope": "projects/aks-rp-e2e.app/ + domain workspace. Never git add -A.",
         "not_auto_commit": "Owner decides which candidates to commit. Hold active/review work."
       },
@@ -4587,7 +4589,7 @@
         "project-planner workflow includes a checkpoint step after task-tree review",
         "Done-task files are committed with task-referencing messages",
         "Active/review-task files are held, not committed",
-        "No regressions — existing planner behavior unchanged"
+        "No regressions \u2014 existing planner behavior unchanged"
       ]
     }
   },
@@ -5369,7 +5371,7 @@
       "parent_id": "spec-runner-and-replays"
     },
     "nap-cleanup-probe-patch-to-put-fix-20260613": {
-      "goal": "Fix replays/nap-default-machines-pool-cleanup-no-machine-crud.ts: change the Auto→Manual transition ",
+      "goal": "Fix replays/nap-default-machines-pool-cleanup-no-machine-crud.ts: change the Auto\u2192Manual transition ",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
@@ -5709,7 +5711,7 @@
       "parent_id": "go-e2ev3-source-discovery"
     },
     "kms-v2plus-fail-paths-source-spec-20260612": {
-      "goal": "Explore source/material for KMS v2plus fail cluster: 8+ paths all show observed=— (never exercised).",
+      "goal": "Explore source/material for KMS v2plus fail cluster: 8+ paths all show observed=\u2014 (never exercised).",
       "status": "accepted",
       "parent_id": "go-e2ev3-source-discovery"
     },
@@ -5734,7 +5736,7 @@
       "parent_id": "go-e2ev3-source-discovery"
     },
     "managedsystem-pool-fail-source-spec-20260612": {
-      "goal": "Explore source/material for managedsystem-pool fail cluster: 4 failing paths — cli-create-default-pa",
+      "goal": "Explore source/material for managedsystem-pool fail cluster: 4 failing paths \u2014 cli-create-default-pa",
       "status": "accepted",
       "parent_id": "go-e2ev3-source-discovery"
     },
@@ -5749,7 +5751,7 @@
       "parent_id": "go-e2ev3-source-discovery"
     },
     "kms-v2-nonplus-fail-source-spec-20260612": {
-      "goal": "Explore source/material for 3 KMS v2 (non-plus) fail paths with observed=—: (1) path.kms.v2-public-c",
+      "goal": "Explore source/material for 3 KMS v2 (non-plus) fail paths with observed=\u2014: (1) path.kms.v2-public-c",
       "status": "accepted",
       "parent_id": "go-e2ev3-source-discovery"
     },
@@ -8619,7 +8621,7 @@
       "parent_id": "spec-runner-and-replays"
     },
     "managedsystem-model-path-status-promotion": {
-      "goal": "Update 5 ManagedSystem model paths from unknown→pass using existing spec execution evidence: runtime",
+      "goal": "Update 5 ManagedSystem model paths from unknown\u2192pass using existing spec execution evidence: runtime",
       "status": "accepted",
       "parent_id": "evidence-feedback-and-model-update"
     },
@@ -9234,22 +9236,22 @@
       "parent_id": "evidence-feedback-and-model-update"
     },
     "planned-maintenance-crud-replay-script": {
-      "goal": "Create replays/planned-maintenance-configuration-crud.ts — a TypeScript replay that implements the s",
+      "goal": "Create replays/planned-maintenance-configuration-crud.ts \u2014 a TypeScript replay that implements the s",
       "status": "superseded",
       "parent_id": "spec-runner-and-replays"
     },
     "deployment-safeguards-basic-replay-script": {
-      "goal": "Create replays/deployment-safeguards-basic-enable-disable.ts — a TypeScript replay that implements t",
+      "goal": "Create replays/deployment-safeguards-basic-enable-disable.ts \u2014 a TypeScript replay that implements t",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
     "kms-v2-public-public-replay-script": {
-      "goal": "Create replays/kms-v2-public-cluster-public-kv.ts — a TypeScript replay that implements the spec.kms",
+      "goal": "Create replays/kms-v2-public-cluster-public-kv.ts \u2014 a TypeScript replay that implements the spec.kms",
       "status": "superseded",
       "parent_id": "spec-runner-and-replays"
     },
     "trusted-access-lifecycle-replay-script": {
-      "goal": "Create replays/trusted-access-lifecycle.ts — a TypeScript replay that implements the spec.trusted-ac",
+      "goal": "Create replays/trusted-access-lifecycle.ts \u2014 a TypeScript replay that implements the spec.trusted-ac",
       "status": "superseded",
       "parent_id": "spec-runner-and-replays"
     },
@@ -9269,7 +9271,7 @@
       "parent_id": "feature-knowledge-and-specs"
     },
     "kms-v2-negative-cases-replay-script": {
-      "goal": "Create replays/kms-v2-negative-cases.ts — a TypeScript replay that implements the spec.kms.v2-negati",
+      "goal": "Create replays/kms-v2-negative-cases.ts \u2014 a TypeScript replay that implements the spec.kms.v2-negati",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
@@ -9364,22 +9366,22 @@
       "parent_id": "feature-knowledge-and-specs"
     },
     "pm-crud-replay-impl-v2": {
-      "goal": "Implement replays/planned-maintenance-configuration-crud.ts — a TypeScript replay that covers the sp",
+      "goal": "Implement replays/planned-maintenance-configuration-crud.ts \u2014 a TypeScript replay that covers the sp",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
     "trusted-access-replay-impl-v2": {
-      "goal": "Implement replays/trusted-access-lifecycle.ts — a TypeScript replay that covers the spec.trusted-acc",
+      "goal": "Implement replays/trusted-access-lifecycle.ts \u2014 a TypeScript replay that covers the spec.trusted-acc",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
     "kms-v2plus-negative-replay-impl": {
-      "goal": "Implement replays/kms-v2plus-negative-cases.ts — a TypeScript replay that covers the spec.kms.v2plus",
+      "goal": "Implement replays/kms-v2plus-negative-cases.ts \u2014 a TypeScript replay that covers the spec.kms.v2plus",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
     "ds-level-change-replay-impl": {
-      "goal": "Implement replays/deployment-safeguards-level-change.ts — a TypeScript replay that covers the spec.d",
+      "goal": "Implement replays/deployment-safeguards-level-change.ts \u2014 a TypeScript replay that covers the spec.d",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
@@ -9394,7 +9396,7 @@
       "parent_id": "evidence-feedback-and-model-update"
     },
     "pm-autoupgrade-mtc-replay-impl": {
-      "goal": "Implement replays/planned-maintenance-autoupgrade-mtc-window.ts — a TypeScript replay that covers th",
+      "goal": "Implement replays/planned-maintenance-autoupgrade-mtc-window.ts \u2014 a TypeScript replay that covers th",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
@@ -9499,7 +9501,7 @@
       "parent_id": "trusted-access-replay-impl-v2"
     },
     "pm-autoupgrade-mtc-replay-author": {
-      "goal": "Author replays/planned-maintenance-autoupgrade-mtc-window.ts — a TypeScript replay covering spec.pla",
+      "goal": "Author replays/planned-maintenance-autoupgrade-mtc-window.ts \u2014 a TypeScript replay covering spec.pla",
       "status": "accepted",
       "parent_id": "spec-runner-and-replays"
     },
@@ -9789,7 +9791,7 @@
       "parent_id": "ds-admissions-enforcer-replay-impl"
     },
     "ds-private-cluster-replay-code-author": {
-      "goal": "Author replays/deployment-safeguards-private-cluster.ts — a TypeScript replay implementing the 3 ARM",
+      "goal": "Author replays/deployment-safeguards-private-cluster.ts \u2014 a TypeScript replay implementing the 3 ARM",
       "status": "superseded",
       "parent_id": "ds-private-cluster-replay-author-v2"
     },
@@ -9944,7 +9946,7 @@
       "parent_id": "ds-vpa-interop-replay-impl"
     },
     "image-cleaner-erasure-replay-author": {
-      "goal": "Author replays/image-cleaner-vulnerable-image-erasure.ts — a TypeScript replay probe covering all 4 ",
+      "goal": "Author replays/image-cleaner-vulnerable-image-erasure.ts \u2014 a TypeScript replay probe covering all 4 ",
       "status": "accepted",
       "parent_id": "image-cleaner-erasure-replay-impl"
     },
@@ -9964,7 +9966,7 @@
       "parent_id": "image-cleaner-lifecycle-replay-impl"
     },
     "image-cleaner-erasure-code-author": {
-      "goal": "Author replays/image-cleaner-vulnerable-image-erasure.ts — a TypeScript replay probe covering all 4 ",
+      "goal": "Author replays/image-cleaner-vulnerable-image-erasure.ts \u2014 a TypeScript replay probe covering all 4 ",
       "status": "accepted",
       "parent_id": "image-cleaner-erasure-replay-author"
     },
