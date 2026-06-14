@@ -8,6 +8,7 @@ export interface TelegramOutboundContext {
   projectId?: string;
   summary?: string;
   data?: Record<string, unknown>;
+  replyToMessageId?: number;
 }
 
 export interface TelegramOutboundOptions {
@@ -39,18 +40,31 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
   const { bus, getSessionId, pendingChatId, sendToUser } = opts;
 
   let rootChatSessionId: string | null = null;
+  let pendingTelegramReplyToMessageId: number | undefined;
   const watchedSessions = new Set<string>();
+  const replyToMessageIdBySession = new Map<string, number>();
   const outboundBySession = new Map<string, { pendingText: string; sentAnyText: boolean; sentText: string }>();
 
   const unsubBus = bus.subscribe((event: any) => {
     const session = sessionData(event);
     const sessionId = typeof session.sessionId === "string" ? session.sessionId : undefined;
 
+    if (event.type === "chat.start.requested" && event.source === "telegram") {
+      const data = messageData(event);
+      const replyToMessageId = numberOrUndefined(data.channelMessageId);
+      if (replyToMessageId) pendingTelegramReplyToMessageId = replyToMessageId;
+      bindCurrentChatSession(replyToMessageId);
+    }
+
     if (event.type === "session.start" && sessionId && isRootChatSession(event)) {
       rootChatSessionId = sessionId;
       watchedSessions.clear();
       watchedSessions.add(sessionId);
       outboundBySession.set(sessionId, { pendingText: "", sentAnyText: false, sentText: "" });
+      if (pendingTelegramReplyToMessageId) {
+        replyToMessageIdBySession.set(sessionId, pendingTelegramReplyToMessageId);
+        pendingTelegramReplyToMessageId = undefined;
+      }
     }
 
     if (
@@ -60,6 +74,12 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
       sessionId
     ) {
       watchedSessions.add(sessionId);
+      const parentReplyToMessageId = replyToMessageIdBySession.get(String(session.parentSessionId));
+      if (parentReplyToMessageId) replyToMessageIdBySession.set(sessionId, parentReplyToMessageId);
+    }
+
+    if (sessionId && sessionId === getSessionId() && !watchedSessions.has(sessionId)) {
+      bindCurrentChatSession();
     }
 
     if (sessionId && !watchedSessions.has(sessionId)) {
@@ -100,6 +120,7 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             agent: String(session.agent),
             sessionId,
             summary,
+            replyToMessageId: replyToMessageIdBySession.get(sessionId),
           });
         } else {
           sendToUser(`✅ ${String(session.agent)}: ${summary}`, {
@@ -107,9 +128,11 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             agent: String(session.agent),
             sessionId,
             summary,
+            replyToMessageId: replyToMessageIdBySession.get(sessionId),
           });
         }
       }
+      replyToMessageIdBySession.delete(sessionId);
     }
 
     if (event.type === "session.end" && sessionId && sessionId === rootSid && pendingChatId) {
@@ -123,11 +146,18 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
           agent: String(session.agent),
           sessionId,
           summary: errMsg,
+          replyToMessageId: replyToMessageIdBySession.get(sessionId),
         });
       } else {
         const summary = String(session.summary ?? "").trim();
         if (summary && shouldSendSummary(sessionId, summary)) {
-          sendToUser(summary, { eventType: "session.end", agent: String(session.agent), sessionId, summary });
+          sendToUser(summary, {
+            eventType: "session.end",
+            agent: String(session.agent),
+            sessionId,
+            summary,
+            replyToMessageId: replyToMessageIdBySession.get(sessionId),
+          });
           state.sentAnyText = true;
           state.sentText += "\n" + summary;
         } else if (!state.sentAnyText) {
@@ -135,11 +165,13 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
             eventType: "error",
             agent: String(session.agent),
             sessionId,
+            replyToMessageId: replyToMessageIdBySession.get(sessionId),
           });
         }
       }
       rootChatSessionId = null;
       watchedSessions.clear();
+      replyToMessageIdBySession.delete(sessionId);
       outboundBySession.delete(sessionId);
     }
 
@@ -196,7 +228,26 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
 
     state.sentAnyText = true;
     state.sentText += "\n" + text;
-    sendToUser(text, { eventType: "response", agent: opts.interfaceAgent, sessionId });
+    sendToUser(text, {
+      eventType: "response",
+      agent: opts.interfaceAgent,
+      sessionId,
+      replyToMessageId: replyToMessageIdBySession.get(sessionId),
+    });
+  }
+
+  function bindCurrentChatSession(replyToMessageId?: number): string | null {
+    const sessionId = getSessionId();
+    if (!sessionId) return null;
+    rootChatSessionId = sessionId;
+    watchedSessions.add(sessionId);
+    sessionState(sessionId);
+    const effectiveReplyToMessageId = replyToMessageId ?? pendingTelegramReplyToMessageId;
+    if (effectiveReplyToMessageId) {
+      replyToMessageIdBySession.set(sessionId, effectiveReplyToMessageId);
+      pendingTelegramReplyToMessageId = undefined;
+    }
+    return sessionId;
   }
 
   function shouldSendSummary(sessionId: string, summary: string): boolean {
@@ -226,4 +277,8 @@ export function attachTelegramOutbound(opts: TelegramOutboundOptions): TelegramO
 
 function normalizeForCompare(text: string): string {
   return text.replace(/\s+/g, " ").trim();
+}
+
+function numberOrUndefined(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }

@@ -11,6 +11,37 @@ function sessionEnd(data: Record<string, unknown>, source = "runtime") {
 }
 
 describe("telegram outbound routing", () => {
+  it("binds Telegram input to an existing canonical chat session and replies to the triggering message", () => {
+    const bus = new EventBus();
+    const sent: Array<{ text: string; replyToMessageId?: number }> = [];
+    const outbound = attachTelegramOutbound({
+      bus,
+      interfaceAgent: "may",
+      projectRoot: "/tmp/project",
+      pendingChatId: "12345",
+      getSessionId: () => "s_existing",
+      sendToUser: (text, context) => sent.push({ text, replyToMessageId: context?.replyToMessageId }),
+    });
+
+    bus.emit({
+      type: "chat.start.requested",
+      source: "telegram",
+      owner: "agent:may",
+      data: {
+        agent: "may",
+        message: "please check this",
+        channel: "telegram",
+        channelThreadId: "12345",
+        channelMessageId: 701,
+      },
+    } as any);
+    bus.emit({ type: "text", sessionId: "s_existing", agent: "may", text: "I am checking it." } as any);
+
+    expect(outbound.getRootChatSessionId()).toBe("s_existing");
+    expect(sent).toEqual([{ text: "I am checking it.", replyToMessageId: 701 }]);
+    outbound.close();
+  });
+
   it("streams root chat text and avoids duplicate end summaries", () => {
     const bus = new EventBus();
     const sent: string[] = [];
@@ -48,7 +79,14 @@ describe("telegram outbound routing", () => {
 
     bus.emit(sessionStart({ sessionId: "s_root", agent: "may", kind: "chat" }, "telegram") as any);
     bus.emit(sessionStart({ sessionId: "s_child", parentSessionId: "s_root", agent: "scout" }) as any);
-    bus.emit(sessionEnd({ sessionId: "s_child", agent: "scout", status: "done", finishParams: { summary: "found a path" } }) as any);
+    bus.emit(
+      sessionEnd({
+        sessionId: "s_child",
+        agent: "scout",
+        status: "done",
+        finishParams: { summary: "found a path" },
+      }) as any,
+    );
 
     expect(sent).toEqual(["✅ scout: found a path"]);
     outbound.close();
