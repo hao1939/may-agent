@@ -12,13 +12,13 @@ The channel has three jobs:
 
 1. Let the human ask questions and steer active work.
 2. Notify the human only when attention is useful.
-3. Turn every human reply into one durable conversation that May can handle,
-   delegate, resume, or close.
+3. Turn every human reply into enriched input for the canonical May human-chat
+   session.
 
 The rule is:
 
-> A Telegram reply belongs to the conversation of the message it replies to.
-> A Telegram message that is not a reply starts a new conversation.
+> Telegram reply chains preserve local context, but all human-control messages
+> enter the same canonical May chat session.
 
 ## Current Implementation
 
@@ -30,7 +30,8 @@ outbound event
   -> telegram-client sends message and stores notification_messages row
   -> human replies to that Telegram message
   -> telegram-reply-router reconstructs context
-  -> telegram.ts acknowledges the reply and starts May with enriched context
+  -> telegram.ts acknowledges the reply and sends enriched input to May
+  -> command-router sends it to the canonical May chat session, or creates one
 ```
 
 What works now:
@@ -51,7 +52,7 @@ Observed weaknesses:
 - Many notifications are too noisy or repetitive, especially recurring metric
   and handler-failure alerts.
 - Some notification rows still miss `conversationId`, so May may need to infer
-  intent from legacy notification/session context.
+  reply context from legacy notification/session context.
 - Reply context is stored as a generic JSON blob. It works, but lacks a stable
   typed shape for subject, severity, action hints, and resolution state.
 - The bot still needs better final-result confirmations after May handles a
@@ -122,18 +123,22 @@ Not:
 Approval sent to project event project.focus.approval.submitted.
 ```
 
-## Priority 1: Conversation Continuity
+## Priority 1: One May Human-Chat Session
 
 The first priority is smooth communication:
 
-> The Telegram reply chain is the conversation boundary.
+> May has one canonical human-chat session. Human channels feed that session.
 
-That is the rule humans expect. If the human replies to an existing bot message,
-the reply continues that conversation. If the human sends a bare message, it
-starts a new conversation.
+Telegram, Web UI, and default terminal input should all connect to the same May
+human-chat session. Telegram reply chains are still useful, but only as local
+context attached to the message. They should not select or create separate May
+sessions.
 
-May owns the Telegram channel. A reply should go to May with the conversation
-context attached. May then decides how to handle it:
+Terminal can be more flexible: by default it uses the canonical May chat
+session, but operator/debug commands may attach to other sessions explicitly.
+
+May owns the human-control channel. Every human message goes to May with source
+and context attached. May then decides how to handle it:
 
 - fix the issue directly,
 - delegate to another agent,
@@ -142,10 +147,10 @@ context attached. May then decides how to handle it:
 - ask the human a follow-up,
 - or close the conversation with a result.
 
-This keeps Telegram simple. The transport does not need to know whether a reply
-should become a project event, a session steer, an escalation resolution, or a
-new investigation. It only needs to preserve the conversation and deliver the
-packet to May.
+This keeps every user interface simple. The transport does not need to know
+whether a reply should become a project event, a session steer, an escalation
+resolution, or a new investigation. It only needs to preserve local context and
+deliver the packet to May.
 
 Transport boundary:
 
@@ -156,7 +161,17 @@ Transport boundary:
 - Do not execute project decisions, classify approvals, or repair blockers in
   transport code. May and project agents do that work.
 
-The channel needs a conversation envelope:
+May session rule:
+
+```text
+human input from Telegram/Web UI/default terminal
+  -> canonical May human-chat session
+  -> if the session is idle/running: send input to it
+  -> if the session is cold/resumable: resume it
+  -> if missing: create it
+```
+
+The local channel context needs an envelope:
 
 ```ts
 interface TelegramConversationContext {
@@ -186,25 +201,22 @@ interface TelegramConversationContext {
 
 Human-visible text is not routing data. Prose like `From: aks-explorer` or
 `Project: aks-rp-e2e` is useful to the human, but the router should use the
-stored `conversationId` and `originalIssue`.
+stored `conversationId` and `originalIssue` only to enrich May's input.
 
 Recommended flow:
 
 1. Human replies to a Telegram message.
 2. Router looks up `reply_to_message_id` in `notification_messages`.
-3. If the stored notification has `conversationId`, the reply continues that
-   conversation.
-4. If it has no `conversationId`, the router creates a conversation around the
-   stored notification as legacy fallback.
-5. The reply is delivered to May as a conversation input with original issue
-   context attached.
-6. May replies to the latest Telegram message in that conversation when asking
-   follow-up questions or reporting the result.
+3. If the stored notification has `conversationId`, the router includes it in
+   the enriched May input.
+4. If it has no `conversationId`, the router still includes the stored
+   notification/session context as legacy fallback.
+5. The reply is delivered to the canonical May human-chat session with original
+   issue context attached.
+6. May may answer through the originating channel, notify the human through
+   another channel, delegate to a project owner, or emit a typed event.
 
-The router may still support direct typed events for legacy narrow UI-style
-actions, but that is compatibility, not the default design.
-
-This preserves natural conversation while keeping the original issue attached.
+This preserves natural conversation while avoiding per-channel May sessions.
 
 ### Conversation Examples
 
@@ -226,10 +238,7 @@ Message sent while May brokers a project escalation:
     "agent": "may",
     "sessionId": "s_may_broker_456"
   },
-  "expectedClosure": [
-    "escalation.resolved",
-    "project.planning.requested"
-  ]
+  "expectedClosure": ["escalation.resolved", "project.planning.requested"]
 }
 ```
 
@@ -249,7 +258,7 @@ Plain May chat response:
 
 The component that sends a human-facing message should provide:
 
-- `conversationId` when continuing a conversation
+- `conversationId` when continuing a local Telegram reply chain
 - `originalIssue` when the message is about an escalation, project, task, or
   blocked session
 - `lastHandledBy` when May delegated or resumed work
@@ -267,7 +276,8 @@ If the original or last-handling session is gone, the reply is still not lost:
 ```text
 reply to Telegram message
   -> read conversationId + originalIssue + lastHandledBy
-  -> deliver conversation input to May
+  -> enrich the human text
+  -> deliver input to the canonical May human-chat session
   -> May decides whether to resume, delegate, replan, or ask follow-up
   -> May confirms what happened
 ```
@@ -286,7 +296,8 @@ Human reply: <reply>
 Handle the reply. Close or update the original issue when done.
 ```
 
-Do not silently drop the reply if the previous session cannot be resumed.
+Do not silently drop the reply if the previous worker/project session cannot be
+resumed. The canonical May chat session should still receive the enriched input.
 
 ### May As Broker For Escalations
 
@@ -294,9 +305,10 @@ It is acceptable, and often desirable, for `escalation.created` to route to May
 first. May is the human-facing broker and can decide whether the issue needs a
 human, another agent, or an automatic repair.
 
-When May reaches out to the human, the human reply returns to the same
-conversation. May's notification must include the original escalation as
-`originalIssue`, so May can fix, delegate, resolve, or replan the real problem.
+When May reaches out to the human, the human reply returns to the canonical May
+human-chat session with Telegram reply-chain context attached. May's
+notification must include the original escalation as `originalIssue`, so May can
+fix, delegate, resolve, or replan the real problem.
 
 Current weak pattern:
 
@@ -317,9 +329,9 @@ escalation.created
   -> May receives it
   -> May sends message.created to human with conversationId + originalIssue
   -> human replies to that Telegram message
-  -> reply continues the same conversation and returns to May
+  -> reply enters the canonical May chat with originalIssue attached
   -> May fixes/delegates/resolves/replans the original issue
-  -> May replies with the result in the same Telegram conversation
+  -> May confirms the result through the appropriate human channel
 ```
 
 May should receive a packet like:
@@ -359,8 +371,8 @@ interface TelegramNotificationData {
   text: string;
   summary?: string;
 
-  subject?: string;        // "AKS RP E2E focus approval"
-  kind?: string;           // "approval" | "blocker" | "failure" | "digest" | "session"
+  subject?: string; // "AKS RP E2E focus approval"
+  kind?: string; // "approval" | "blocker" | "failure" | "digest" | "session"
   severity?: "P0" | "P1" | "P2" | "P3";
 
   projectPath?: string;
@@ -370,7 +382,7 @@ interface TelegramNotificationData {
 
   conversationId?: string;
   conversation?: TelegramConversationContext;
-  actionHints?: string[];  // ["approve", "adjust <changes>", "hold"]
+  actionHints?: string[]; // ["approve", "adjust <changes>", "hold"]
 
   staleAfterMs?: number;
   dedupKey?: string;
@@ -387,13 +399,13 @@ decision itself.
 Reply routing should stay deterministic:
 
 1. If the human message replies to a Telegram message with a stored
-   `conversationId`, deliver the reply to May as input for that conversation.
-2. Else if it replies to a stored notification without `conversationId`, create
-   a new conversation seeded by the stored notification and deliver it to May.
-3. Else if it replies to a Telegram quote with no DB row, create a new
-   conversation seeded by the quoted text and deliver it to May.
-4. Else if it is a bare Telegram message, create a new conversation and deliver
-   it to May.
+   `conversationId`, include that id and its context in the May input.
+2. Else if it replies to a stored notification without `conversationId`, enrich
+   the May input from the stored notification/session context.
+3. Else if it replies to a Telegram quote with no DB row, enrich the May input
+   from the quoted text.
+4. Else if it is a bare Telegram message, send it as normal input to the
+   canonical May human-chat session.
 5. Legacy notifications without a conversation envelope should still be
    enriched with the stored notification/session context and delivered to May.
 6. Project-specific events, escalation resolution, session resume, and task
@@ -405,7 +417,69 @@ If the notification is stale, do not silently execute it. Send a short message:
 That request is stale. I opened a fresh status check instead.
 ```
 
-Then emit a normal chat/status request with the stale context attached.
+Then emit normal May input with the stale context attached.
+
+## Human Channel Adapters
+
+For now, do not introduce a new built-in service concept. The simpler rule is:
+
+> Human channels are platform adapters. They all feed the canonical May
+> human-chat session.
+
+Each adapter should stay small:
+
+```text
+Telegram adapter
+  -> inbound Telegram messages
+  -> outbound Telegram replies/notifications
+  -> Telegram message id context store
+
+Web UI adapter
+  -> browser chat input
+  -> May chat stream
+  -> links to project/task/event pages
+
+Terminal adapter
+  -> default input to canonical May chat
+  -> explicit attach/debug commands for other sessions
+
+Read-model command adapter
+  -> /status, /projects, /tasks, /sessions
+  -> fast deterministic responses without starting extra LLM work
+```
+
+Adapter responsibilities:
+
+- Accept human input from one channel.
+- Add channel-local context, such as Telegram reply-chain context.
+- Send input to the canonical May human-chat session.
+- Deliver May output or acknowledgements back to the human when appropriate.
+- Provide fast read-only commands where a full May turn is unnecessary.
+
+Adapter non-responsibilities:
+
+- Do not decide project plans.
+- Do not classify approvals.
+- Do not repair blockers.
+- Do not own project task trees.
+- Do not replace project/domain UIs.
+
+This keeps the current architecture simple:
+
+```text
+human channel adapter
+  -> canonical May human-chat session
+  -> May decides/delegates/emits events
+  -> adapter delivers visible result when needed
+```
+
+Projects may still provide their own domain UI under project routes, but that UI
+should call stable project actions or emit project events. It should not reach
+into human-channel adapter internals.
+
+If Telegram, Web UI, and terminal later duplicate too much code, we can factor
+shared mechanics into a built-in human-interface module. That should be a
+refactor after the adapter boundaries are clear, not a design requirement now.
 
 ## No Silent Drops
 
@@ -421,7 +495,7 @@ There are two levels:
 Examples:
 
 ```text
-Received. I attached your reply to this conversation and May is handling it.
+Received. I attached the reply context and May is handling it.
 ```
 
 ```text
@@ -429,8 +503,8 @@ Received. I found the original issue and May is checking it now.
 ```
 
 ```text
-Received. The previous worker session is gone, so May opened a fresh turn with
-the original issue attached.
+Received. The previous worker session is gone, so May is handling it in the
+human-chat session with the original issue attached.
 ```
 
 ```text
@@ -446,8 +520,7 @@ the original issue attached.
 
 Current implementation gap: `telegram.ts` sends delivery acknowledgements when
 it accepts a reply, but final result confirmation still depends on May sending a
-follow-up in the same conversation. The conversation design requires that
-closure to be explicit.
+follow-up. The human-chat design requires that closure to be explicit.
 
 ## Noise Control
 
