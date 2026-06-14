@@ -25,7 +25,7 @@ const EVENT_RETENTION_DAYS = 7;
 const SESSION_RETENTION_DAYS = 14;
 const DIGEST_RETENTION_DAYS = 14;       // session_digests: matches session retention
 const WORKFLOW_RETENTION_DAYS = 14;     // workflow_runs: matches session retention
-const SNAPSHOT_RETENTION_DAYS = 30;
+const SNAPSHOT_RETENTION_DAYS = 14;
 const EVALUATION_RETENTION_DAYS = 30;   // evaluations: analytical value, retain longer
 const VACUUM_THRESHOLD = 1000; // Run VACUUM if total deletions exceed this
 
