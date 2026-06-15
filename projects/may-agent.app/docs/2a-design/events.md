@@ -654,7 +654,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800 rows as of 2026-06-15 post-retention); rate **collapsed** post-Spec-3 restart (07:03Z Jun 15): 0/hr last 2h, ~5/hr last 6h, down from prior ~26/hr baseline. Stale session references cleared by restart. Remaining retries target one dead planner session. Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1962: no handler subscriber; KE-2005: rate collapse confirmed |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800 rows as of 2026-06-15 post-retention); rate rebounded after initial Spec-3 collapse: 14–48/hr Jun 14 13:00–Jun 15 05:00Z across task/planner/problem sessions, then dropped to 0/hr by ~05:00Z Jun 15 (last event 04:53Z). The initial "collapse" (KE-2005) was transient — resume attempts resumed within hours and persisted for ~16h before truly stopping. Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1962: no handler subscriber |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -813,7 +813,7 @@ harmful but will not match any handler's `on:` filter. Two temporal clusters:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~2,800 rows as of 2026-06-15 post-retention; rate collapsed post-Spec-3 restart to <5/hr, down from ~26/hr baseline — KE-2005 confirmed; residual retries target one dead planner session).
+when the target session cannot be found (~2,800 rows as of 2026-06-15 post-retention; rate rebounded post-Spec-3: 14–48/hr for ~16h before stopping at 04:53Z Jun 15; KE-2005's "collapse" claim was premature).
 Split shifted: ~50% task, ~41% planner, ~8% problem (was planner-dominated until Jun 14).
 
 ### Consumer Reality
