@@ -24,21 +24,30 @@ describe("eval-llm-scan handler", () => {
     const runtime = createTestRuntime({ root, persist, agents });
     const db = runtime.db;
     const runWorkflow = vi.fn(async (_workflow: string, _task: string) => {
-      const artifactDir = join(root, "agents", "evaluator", "workspace", "deep-evals");
+      const artifactDir = join(
+        root,
+        "agents",
+        "evaluator",
+        "workspace",
+        "deep-evals",
+      );
       mkdirSync(artifactDir, { recursive: true });
-      writeFileSync(join(artifactDir, "s_candidate.json"), JSON.stringify({
-        sessionId: "s_candidate",
-        agent: "dev",
-        quality: 0.8,
-        efficiency: 0.7,
-        productiveCalls: 3,
-        wastedCalls: 1,
-        verdict: "good",
-        issues: ["useful implementation"],
-        overall: { resultDelivered: true, valueProduced: "patch" },
-        usage: {},
-        failureChains: [],
-      }));
+      writeFileSync(
+        join(artifactDir, "s_candidate.json"),
+        JSON.stringify({
+          sessionId: "s_candidate",
+          agent: "dev",
+          quality: 0.8,
+          efficiency: 0.7,
+          productiveCalls: 3,
+          wastedCalls: 1,
+          verdict: "good",
+          issues: ["useful implementation"],
+          overall: { resultDelivered: true, valueProduced: "patch" },
+          usage: {},
+          failureChains: [],
+        }),
+      );
       return { status: "done" as const, summary: "ok", runId: "wr_deep" };
     });
     const ctx = {
@@ -48,7 +57,11 @@ describe("eval-llm-scan handler", () => {
         paths: { ...runtime.sdk.paths, root, persist, agents },
         getDb: () => db,
         runWorkflow,
-        runAgent: vi.fn(() => { throw new Error("runAgent should not be called by eval-llm-scan handler"); }),
+        runAgent: vi.fn(() => {
+          throw new Error(
+            "runAgent should not be called by eval-llm-scan handler",
+          );
+        }),
         emit: vi.fn(),
         log: vi.fn(),
       },
@@ -61,7 +74,16 @@ describe("eval-llm-scan handler", () => {
     const endedAt = Date.now() - 60_000;
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["s_candidate", "dev", "fix a bug", "done", "workflow:dev-heartbeat", endedAt - 30_000, endedAt, 7],
+      [
+        "s_candidate",
+        "dev",
+        "fix a bug",
+        "done",
+        "workflow:dev-heartbeat",
+        endedAt - 30_000,
+        endedAt,
+        7,
+      ],
     );
 
     const handler = create(ctx, {
@@ -79,21 +101,43 @@ describe("eval-llm-scan handler", () => {
     expect(runWorkflow).toHaveBeenCalledWith(
       "evaluator-deep-eval",
       expect.stringContaining("[deep-eval] Evaluate session s_candidate"),
-      { source: "evaluator" },
+      { source: "evaluator", projectId: "evaluation" },
     );
     expect(ctx.sdk.runAgent).not.toHaveBeenCalled();
-    expect(ctx.sdk.emit).toHaveBeenCalledWith("handler.workflow_dispatched", expect.objectContaining({
-      handler: "eval-llm-scan",
-      workflow: "evaluator-deep-eval",
-      workflowRunId: "wr_deep",
-      sessionId: "s_candidate",
-    }));
+    expect(ctx.sdk.emit).toHaveBeenCalledWith(
+      "handler.workflow_dispatched",
+      expect.objectContaining({
+        handler: "eval-llm-scan",
+        workflow: "evaluator-deep-eval",
+        projectId: "evaluation",
+        workflowRunId: "wr_deep",
+        sessionId: "s_candidate",
+      }),
+    );
 
     await handler();
 
-    const row = db.prepare("SELECT verdict, evaluatedByHeuristic FROM evaluations WHERE sessionId = ?").get("s_candidate") as { verdict: string; evaluatedByHeuristic: number } | null;
+    const row = db
+      .prepare(
+        "SELECT verdict, evaluatedByHeuristic FROM evaluations WHERE sessionId = ?",
+      )
+      .get("s_candidate") as {
+      verdict: string;
+      evaluatedByHeuristic: number;
+    } | null;
     expect(row).toEqual({ verdict: "good", evaluatedByHeuristic: 0 });
-    expect(existsSync(join(ctx.sdk.paths.root, "agents", "evaluator", "workspace", "deep-evals", "s_candidate.json"))).toBe(true);
+    expect(
+      existsSync(
+        join(
+          ctx.sdk.paths.root,
+          "agents",
+          "evaluator",
+          "workspace",
+          "deep-evals",
+          "s_candidate.json",
+        ),
+      ),
+    ).toBe(true);
   });
 
   it("does not emit handler.failed while deep evaluator workflow is still running", async () => {
@@ -101,11 +145,24 @@ describe("eval-llm-scan handler", () => {
     const endedAt = Date.now() - 60_000;
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["s_candidate", "dev", "fix a bug", "done", "workflow:dev-heartbeat", endedAt - 30_000, endedAt, 7],
+      [
+        "s_candidate",
+        "dev",
+        "fix a bug",
+        "done",
+        "workflow:dev-heartbeat",
+        endedAt - 30_000,
+        endedAt,
+        7,
+      ],
     );
     runWorkflow.mockImplementation(async () => {
       await new Promise(() => {});
-      return { status: "done" as const, summary: "unreachable", runId: "wr_never" };
+      return {
+        status: "done" as const,
+        summary: "unreachable",
+        runId: "wr_never",
+      };
     });
 
     const handler = create(ctx, {
@@ -120,11 +177,17 @@ describe("eval-llm-scan handler", () => {
     await handler();
 
     expect(runWorkflow).toHaveBeenCalledTimes(1);
-    expect(ctx.sdk.emit).toHaveBeenCalledWith("evaluation.deep_dispatched", expect.objectContaining({
-      source: "eval-llm-scan",
-      sessionId: "s_candidate",
-    }));
-    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.failed", expect.anything());
+    expect(ctx.sdk.emit).toHaveBeenCalledWith(
+      "evaluation.deep_dispatched",
+      expect.objectContaining({
+        source: "eval-llm-scan",
+        sessionId: "s_candidate",
+      }),
+    );
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith(
+      "handler.failed",
+      expect.anything(),
+    );
   });
 
   it("records workflow failures as evaluation.deep_failed without marking the handler failed", async () => {
@@ -132,9 +195,20 @@ describe("eval-llm-scan handler", () => {
     const endedAt = Date.now() - 60_000;
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["s_candidate", "dev", "fix a bug", "done", "workflow:dev-heartbeat", endedAt - 30_000, endedAt, 7],
+      [
+        "s_candidate",
+        "dev",
+        "fix a bug",
+        "done",
+        "workflow:dev-heartbeat",
+        endedAt - 30_000,
+        endedAt,
+        7,
+      ],
     );
-    runWorkflow.mockRejectedValue(new Error("deep eval timed out after 240000ms"));
+    runWorkflow.mockRejectedValue(
+      new Error("deep eval timed out after 240000ms"),
+    );
 
     const handler = create(ctx, {
       handlerConfig: {
@@ -148,13 +222,19 @@ describe("eval-llm-scan handler", () => {
     await handler();
     await Promise.resolve();
 
-    expect(ctx.sdk.emit).toHaveBeenCalledWith("evaluation.deep_failed", expect.objectContaining({
-      source: "eval-llm-scan",
-      workflow: "evaluator-deep-eval",
-      sessionId: "s_candidate",
-      agent: "dev",
-      error: "deep eval timed out after 240000ms",
-    }));
-    expect(ctx.sdk.emit).not.toHaveBeenCalledWith("handler.failed", expect.anything());
+    expect(ctx.sdk.emit).toHaveBeenCalledWith(
+      "evaluation.deep_failed",
+      expect.objectContaining({
+        source: "eval-llm-scan",
+        workflow: "evaluator-deep-eval",
+        sessionId: "s_candidate",
+        agent: "dev",
+        error: "deep eval timed out after 240000ms",
+      }),
+    );
+    expect(ctx.sdk.emit).not.toHaveBeenCalledWith(
+      "handler.failed",
+      expect.anything(),
+    );
   });
 });

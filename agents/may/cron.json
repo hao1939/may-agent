@@ -2,7 +2,7 @@
   {
     "name": "db-retention",
     "type": "job",
-    "intervalMs": 86400000,
+    "intervalMs": 3600000,
     "handler": "db-retention",
     "agent": "may",
     "enabled": true,
@@ -10,7 +10,8 @@
     "context": [
       "agents/may/handlers/db-retention.ts",
       "projects/may-agent.app/project.json"
-    ]
+    ],
+    "lastModified": "2026-06-14T21:50:18.565Z"
   },
   {
     "name": "heartbeat",
@@ -308,9 +309,7 @@
       "project.completed",
       "project.blocked",
       "project.health.finding",
-      "project.owner.incomplete",
-      "metric.breach",
-      "metric.recovered"
+      "project.owner.incomplete"
     ],
     "context": [
       "projects/may-agent.app/project.json",
@@ -537,122 +536,6 @@
     "context": [
       "agents/amy/heartbeat.md"
     ]
-  },
-  {
-    "name": "heartbeat-scout",
-    "type": "job",
-    "intervalMs": 1800000,
-    "enabled": false,
-    "handler": {
-      "workflow": "scout-heartbeat",
-      "agent": "scout",
-      "task": "[heartbeat] You are scout. Read your heartbeat.md and do your work.",
-      "timeoutMs": 1800000
-    },
-    "on": [
-      "heartbeat.trigger"
-    ],
-    "context": [
-      "agents/scout/heartbeat.md",
-      "projects/scout-knowledge-lib.app/project.json"
-    ],
-    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
-  },
-  {
-    "name": "scout-explore-arxiv",
-    "type": "job",
-    "intervalMs": 14400000,
-    "enabled": false,
-    "description": "Scout routine: explore arXiv for AI agent papers.",
-    "handler": {
-      "workflow": "scout-explore",
-      "agent": "scout",
-      "task": "Explore arXiv for recent AI agent papers. Use this exact API base only: https://export.arxiv.org/api/query . Never use http://export.arxiv.org. Fetch with curl -sL, use sortOrder=descending (not desc), inspect the returned summary/abstract text before writing any Summary or Implication, and skip arXiv rather than guessing if this HTTPS endpoint is unreachable.",
-      "timeoutMs": 1200000
-    },
-    "offsetMs": 0,
-    "context": [
-      "agents/scout/heartbeat.md",
-      "projects/scout-knowledge-lib.app/project.json"
-    ],
-    "lastModified": "2026-06-05T06:39:51.054Z",
-    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
-  },
-  {
-    "name": "scout-explore-hn",
-    "type": "job",
-    "intervalMs": 3600000,
-    "enabled": false,
-    "description": "Scout routine: explore Hacker News for agent discussions.",
-    "handler": {
-      "workflow": "scout-explore",
-      "agent": "scout",
-      "task": "Explore Hacker News for AI agent discussions.",
-      "timeoutMs": 600000
-    },
-    "offsetMs": 900000,
-    "context": [
-      "agents/scout/heartbeat.md",
-      "projects/scout-knowledge-lib.app/project.json"
-    ],
-    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
-  },
-  {
-    "name": "scout-explore-xhs",
-    "type": "job",
-    "intervalMs": 3600000,
-    "enabled": false,
-    "description": "Scout routine: explore XHS for Chinese AI community trends.",
-    "handler": {
-      "workflow": "scout-explore",
-      "agent": "scout",
-      "task": "Explore 小红书 (XHS) for Chinese AI community trends.",
-      "timeoutMs": 600000
-    },
-    "offsetMs": 1800000,
-    "context": [
-      "agents/scout/heartbeat.md",
-      "projects/scout-knowledge-lib.app/project.json"
-    ],
-    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
-  },
-  {
-    "name": "scout-explore-github",
-    "type": "job",
-    "intervalMs": 3600000,
-    "enabled": false,
-    "description": "Scout routine: explore GitHub for agent frameworks and tools.",
-    "handler": {
-      "workflow": "scout-explore",
-      "agent": "scout",
-      "task": "Explore GitHub for trending AI agent repos and tools.",
-      "timeoutMs": 600000
-    },
-    "offsetMs": 2700000,
-    "context": [
-      "agents/scout/heartbeat.md",
-      "projects/scout-knowledge-lib.app/project.json"
-    ],
-    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
-  },
-  {
-    "name": "scout-daily-digest",
-    "type": "job",
-    "intervalMs": 86400000,
-    "enabled": false,
-    "description": "Scout daily: compile digest and send via Telegram.",
-    "handler": {
-      "workflow": "scout-daily-digest",
-      "agent": "scout",
-      "task": "Compile today's research digest and send to Hao.",
-      "timeoutMs": 300000
-    },
-    "offsetMs": 0,
-    "context": [
-      "agents/scout/heartbeat.md",
-      "projects/scout-knowledge-lib.app/project.json"
-    ],
-    "_disabled_reason": "Migrated to scout-knowledge-lib.app — 2026-06-14"
   },
   {
     "name": "heartbeat-dev",

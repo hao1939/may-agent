@@ -153,7 +153,7 @@ Run ready tasks.
     });
   });
 
-  it("signals ready leaves from a project app task tree instead of launching the owner loop", async () => {
+  it("routes project app owner work to project.owner.requested instead of launching a generic owner loop", async () => {
     const root = join(tmpdir(), `project-app-task-tree-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     roots.push(root);
     const projectsRoot = join(root, "projects");
@@ -164,17 +164,21 @@ Run ready tasks.
 id: task-demo.app
 owner: evaluator
 status: active
+type: project-app
 max_concurrent: 2
 ---
 
 # Task Demo App
 `);
     writeFileSync(join(taskDir, "tree.json"), JSON.stringify({
+      version: 2,
+      root_task_id: "project",
       tasks: {
-        project: { status: "active", children: ["lane"] },
-        lane: { status: "active", children: ["ready-a", "done-a"] },
-        "ready-a": { status: "ready", children: [] },
-        "done-a": { status: "accepted", children: [] },
+        project: { state: "backlog", children: ["lane"] },
+        lane: { state: "backlog", children: ["ready-a", "ready-b", "done-a"] },
+        "ready-a": { state: "backlog", children: [] },
+        "ready-b": { state: "backlog", children: [], depends_on: ["done-a"] },
+        "done-a": { state: "done", children: [] },
       },
     }, null, 2));
 
@@ -185,15 +189,15 @@ max_concurrent: 2
     expect(agentCalls).toEqual([]);
     expect(workflowCalls).toEqual([]);
     expect(emitted).toContainEqual({
-      type: "project.tasks.ready",
+      type: "project.owner.requested",
       data: {
-        project: "task-demo.app",
-        projectId: "evaluator/task-demo.app",
+        project: "task-demo",
+        projectId: "task-demo",
+        projectApp: "task-demo.app",
         projectPath: "projects/task-demo.app",
-        domainProject: "task-demo",
-        readyTaskIds: ["ready-a"],
-        maxConcurrent: 2,
-        requested_by: "project-reconciler",
+        owner: "evaluator",
+        reason: "active project needs work",
+        requested_by: "project-handler",
       },
     });
   });

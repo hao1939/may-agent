@@ -61,10 +61,16 @@ describe("metrics-snapshot registry and queries", () => {
     expect(failedTriageBlock).toContain("COUNT(DISTINCT s.sessionId) as c");
   });
 
-  it("counts skipped aftermath evaluations as acted-on failures for session.failed-triage-rate-3h", () => {
+  it("counts any evaluated session as triaged for session.failed-triage-rate-3h (no verdict filter)", () => {
     const source = metricsSnapshotSource();
-
-    expect(source).toContain("AND e.verdict IN ('needs_improvement', 'skipped')");
+    const triageBlock = source.slice(
+      source.indexOf('record("session.failed-triage-rate-3h"') - 1500,
+      source.indexOf('record("session.failed-triage-rate-3h"') + 200,
+    );
+    // The numerator JOIN guarantees an evaluation row exists — that alone means triaged.
+    // There must be NO verdict filter that would exclude acceptable/good sessions.
+    expect(triageBlock).not.toContain("e.verdict IN");
+    expect(triageBlock).toContain("JOIN evaluations e ON e.sessionId = s.sessionId");
   });
 
   it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {

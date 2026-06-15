@@ -51,6 +51,7 @@ const DEFAULT_ACTIVE_WINDOW_MS = 30 * 60_000;
 const DEFAULT_ARTIFACT_LIMIT = 3;
 const DEEP_EVAL_VERSION = 1;
 const DEEP_EVAL_WORKFLOW = "evaluator-deep-eval";
+const DEEP_EVAL_PROJECT_ID = "evaluation";
 
 function clamp01(value: unknown, fallback: number): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -65,8 +66,12 @@ function nonNegativeInt(value: unknown, fallback = 0): number {
 }
 
 function normalizeVerdict(value: unknown): string {
-  const raw = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  if (["good", "acceptable", "needs_improvement", "low_quality"].includes(raw)) return raw;
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  if (["good", "acceptable", "needs_improvement", "low_quality"].includes(raw))
+    return raw;
   return "needs_improvement";
 }
 
@@ -78,7 +83,10 @@ function extractJsonObject(text: string): Record<string, unknown> | null {
     const end = candidate.lastIndexOf("}");
     if (start < 0 || end <= start) continue;
     try {
-      return JSON.parse(candidate.slice(start, end + 1)) as Record<string, unknown>;
+      return JSON.parse(candidate.slice(start, end + 1)) as Record<
+        string,
+        unknown
+      >;
     } catch {
       continue;
     }
@@ -86,16 +94,25 @@ function extractJsonObject(text: string): Record<string, unknown> | null {
   return null;
 }
 
-export function parseDeepEvaluationArtifact(text: string, expectedSessionId: string, expectedAgent: string): DeepEvaluation | null {
+export function parseDeepEvaluationArtifact(
+  text: string,
+  expectedSessionId: string,
+  expectedAgent: string,
+): DeepEvaluation | null {
   const parsed = extractJsonObject(text);
   if (!parsed) return null;
   if (String(parsed.sessionId ?? "") !== expectedSessionId) return null;
   if (String(parsed.agent ?? "") !== expectedAgent) return null;
 
-  const issues = Array.isArray(parsed.issues) ? parsed.issues.map(String).filter(Boolean).slice(0, 20) : [];
-  const overall = parsed.overall && typeof parsed.overall === "object" && !Array.isArray(parsed.overall)
-    ? { ...(parsed.overall as Record<string, unknown>) }
-    : {};
+  const issues = Array.isArray(parsed.issues)
+    ? parsed.issues.map(String).filter(Boolean).slice(0, 20)
+    : [];
+  const overall =
+    parsed.overall &&
+    typeof parsed.overall === "object" &&
+    !Array.isArray(parsed.overall)
+      ? { ...(parsed.overall as Record<string, unknown>) }
+      : {};
   overall.deepEvalVersion = DEEP_EVAL_VERSION;
   overall.deepEval = true;
 
@@ -104,15 +121,22 @@ export function parseDeepEvaluationArtifact(text: string, expectedSessionId: str
     agent: expectedAgent,
     quality: clamp01(parsed.quality, 0.55),
     efficiency: clamp01(parsed.efficiency, 0.55),
-    productiveCalls: nonNegativeInt(parsed.productiveCalls ?? parsed.productive_calls),
+    productiveCalls: nonNegativeInt(
+      parsed.productiveCalls ?? parsed.productive_calls,
+    ),
     wastedCalls: nonNegativeInt(parsed.wastedCalls ?? parsed.wasted_calls),
     verdict: normalizeVerdict(parsed.verdict),
     issues,
     overall,
-    usage: parsed.usage && typeof parsed.usage === "object" && !Array.isArray(parsed.usage)
-      ? parsed.usage as Record<string, unknown>
-      : null,
-    failureChains: Array.isArray(parsed.failureChains) ? parsed.failureChains : [],
+    usage:
+      parsed.usage &&
+      typeof parsed.usage === "object" &&
+      !Array.isArray(parsed.usage)
+        ? (parsed.usage as Record<string, unknown>)
+        : null,
+    failureChains: Array.isArray(parsed.failureChains)
+      ? parsed.failureChains
+      : [],
   };
 }
 
@@ -130,7 +154,11 @@ function transcriptPath(persistDir: string, sessionId: string): string {
   return join(persistDir, "sessions", "history", sessionId, "session.jsonl");
 }
 
-export function buildDeepEvalTask(candidate: Candidate, persistDir: string, root: string): string {
+export function buildDeepEvalTask(
+  candidate: Candidate,
+  persistDir: string,
+  root: string,
+): string {
   const transcript = transcriptPath(persistDir, candidate.sessionId);
   const artifact = artifactPath(root, candidate.sessionId);
   return [
@@ -146,18 +174,22 @@ export function buildDeepEvalTask(candidate: Candidate, persistDir: string, root
     "Write exactly one JSON object to the artifact path below. Do not edit source/config files for this task.",
     "",
     "## Session",
-    JSON.stringify({
-      sessionId: candidate.sessionId,
-      agent: candidate.agent,
-      status: candidate.status,
-      source: candidate.source,
-      startedAt: candidate.startedAt,
-      endedAt: candidate.endedAt,
-      opCount: candidate.opCount ?? 0,
-      task: candidate.task,
-      heuristicVerdict: candidate.heuristicVerdict,
-      heuristicIssues: candidate.heuristicIssues,
-    }, null, 2),
+    JSON.stringify(
+      {
+        sessionId: candidate.sessionId,
+        agent: candidate.agent,
+        status: candidate.status,
+        source: candidate.source,
+        startedAt: candidate.startedAt,
+        endedAt: candidate.endedAt,
+        opCount: candidate.opCount ?? 0,
+        task: candidate.task,
+        heuristicVerdict: candidate.heuristicVerdict,
+        heuristicIssues: candidate.heuristicIssues,
+      },
+      null,
+      2,
+    ),
     "",
     "## Transcript Path",
     transcript,
@@ -167,33 +199,44 @@ export function buildDeepEvalTask(candidate: Candidate, persistDir: string, root
     "",
     "## Required JSON Schema",
     "```json",
-    JSON.stringify({
-      sessionId: candidate.sessionId,
-      agent: candidate.agent,
-      quality: 0.0,
-      efficiency: 0.0,
-      productiveCalls: 0,
-      wastedCalls: 0,
-      verdict: "good | acceptable | needs_improvement | low_quality",
-      issues: ["short concrete issue or learning signal"],
-      overall: {
-        resultDelivered: true,
-        valueProduced: "what changed or what useful answer was produced",
-        evidence: "specific transcript/file evidence",
-        learningCandidate: false,
+    JSON.stringify(
+      {
+        sessionId: candidate.sessionId,
+        agent: candidate.agent,
+        quality: 0.0,
+        efficiency: 0.0,
+        productiveCalls: 0,
+        wastedCalls: 0,
+        verdict: "good | acceptable | needs_improvement | low_quality",
+        issues: ["short concrete issue or learning signal"],
+        overall: {
+          resultDelivered: true,
+          valueProduced: "what changed or what useful answer was produced",
+          evidence: "specific transcript/file evidence",
+          learningCandidate: false,
+        },
+        usage: {},
+        failureChains: [],
       },
-      usage: {},
-      failureChains: [],
-    }, null, 2),
+      null,
+      2,
+    ),
     "```",
   ].join("\n");
 }
 
-function readValidArtifact(root: string, row: { sessionId: string; agent: string }): DeepEvaluation | null {
+function readValidArtifact(
+  root: string,
+  row: { sessionId: string; agent: string },
+): DeepEvaluation | null {
   const path = artifactPath(root, row.sessionId);
   if (!existsSync(path)) return null;
   try {
-    return parseDeepEvaluationArtifact(readFileSync(path, "utf-8"), row.sessionId, row.agent);
+    return parseDeepEvaluationArtifact(
+      readFileSync(path, "utf-8"),
+      row.sessionId,
+      row.agent,
+    );
   } catch {
     return null;
   }
@@ -229,14 +272,21 @@ function processArtifacts(db: any, root: string, limit: number): number {
   const dir = artifactDir(root);
   if (!existsSync(dir)) return 0;
   let recorded = 0;
-  for (const file of readdirSync(dir).filter((name) => name.endsWith(".json")).sort().reverse()) {
+  for (const file of readdirSync(dir)
+    .filter((name) => name.endsWith(".json"))
+    .sort()
+    .reverse()) {
     if (recorded >= limit) break;
     const sessionId = basename(file, ".json");
-    const session = db.prepare("SELECT sessionId, agent FROM sessions WHERE sessionId = ?").get(sessionId) as { sessionId: string; agent: string } | null;
+    const session = db
+      .prepare("SELECT sessionId, agent FROM sessions WHERE sessionId = ?")
+      .get(sessionId) as { sessionId: string; agent: string } | null;
     if (!session) continue;
-    const alreadyDeep = db.prepare(
-      "SELECT 1 FROM evaluations WHERE sessionId = ? AND evaluatedByHeuristic = 0",
-    ).get(sessionId);
+    const alreadyDeep = db
+      .prepare(
+        "SELECT 1 FROM evaluations WHERE sessionId = ? AND evaluatedByHeuristic = 0",
+      )
+      .get(sessionId);
     if (alreadyDeep) continue;
     const evaluation = readValidArtifact(root, session);
     if (!evaluation) continue;
@@ -246,7 +296,9 @@ function processArtifacts(db: any, root: string, limit: number): number {
   return recorded;
 }
 
-function normalizeCandidate(row: Record<string, unknown> | null | undefined): Candidate | null {
+function normalizeCandidate(
+  row: Record<string, unknown> | null | undefined,
+): Candidate | null {
   if (!row) return null;
   return {
     sessionId: String(row.sessionId ?? ""),
@@ -257,12 +309,17 @@ function normalizeCandidate(row: Record<string, unknown> | null | undefined): Ca
     startedAt: Number(row.startedAt ?? 0),
     endedAt: row.endedAt == null ? null : Number(row.endedAt),
     opCount: row.opCount == null ? null : Number(row.opCount),
-    heuristicVerdict: row.heuristicVerdict == null ? null : String(row.heuristicVerdict),
-    heuristicIssues: row.heuristicIssues == null ? null : String(row.heuristicIssues),
+    heuristicVerdict:
+      row.heuristicVerdict == null ? null : String(row.heuristicVerdict),
+    heuristicIssues:
+      row.heuristicIssues == null ? null : String(row.heuristicIssues),
   };
 }
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  entry: CronEntry,
+) => {
   const config = (entry.handlerConfig ?? {}) as ScanConfig;
   const backfillHours = config.backfillHours ?? DEFAULT_BACKFILL_HOURS;
   const fallbackDelayMs = config.fallbackDelayMs ?? DEFAULT_FALLBACK_DELAY_MS;
@@ -279,8 +336,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
 
     const recorded = processArtifacts(db, root, artifactLimit);
     if (recorded > 0) {
-      ctx.sdk.emit("evaluation.deep_recorded", { source: "eval-llm-scan", count: recorded });
-      ctx.sdk.log("info", `[eval-llm-scan] Recorded ${recorded} deep evaluation artifact(s).`);
+      ctx.sdk.emit("evaluation.deep_recorded", {
+        source: "eval-llm-scan",
+        count: recorded,
+      });
+      ctx.sdk.log(
+        "info",
+        `[eval-llm-scan] Recorded ${recorded} deep evaluation artifact(s).`,
+      );
       return;
     }
 
@@ -292,24 +355,38 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
     });
 
     if (scan.activeDeepEval) {
-      ctx.sdk.log("info", "[eval-llm-scan] Recent deep evaluation is still active; skipping dispatch.");
+      ctx.sdk.log(
+        "info",
+        "[eval-llm-scan] Recent deep evaluation is still active; skipping dispatch.",
+      );
       return;
     }
 
     const candidate = normalizeCandidate(scan.candidate);
     if (!candidate) {
-      ctx.sdk.log("info", "[eval-llm-scan] No eligible session needs non-heuristic evaluation.");
+      ctx.sdk.log(
+        "info",
+        "[eval-llm-scan] No eligible session needs non-heuristic evaluation.",
+      );
       return;
     }
 
     const task = buildDeepEvalTask(candidate, persistDir, root);
-    ctx.sdk.log("info", `[eval-llm-scan] Dispatching evaluator for ${candidate.sessionId}.`);
+    ctx.sdk.log(
+      "info",
+      `[eval-llm-scan] Dispatching evaluator for ${candidate.sessionId}.`,
+    );
 
-    ctx.sdk.runWorkflow(DEEP_EVAL_WORKFLOW, task, { source: "evaluator" })
+    ctx.sdk
+      .runWorkflow(DEEP_EVAL_WORKFLOW, task, {
+        source: "evaluator",
+        projectId: DEEP_EVAL_PROJECT_ID,
+      })
       .then((result) => {
         ctx.sdk.emit("handler.workflow_dispatched", {
           handler: "eval-llm-scan",
           workflow: DEEP_EVAL_WORKFLOW,
+          projectId: DEEP_EVAL_PROJECT_ID,
           source: "evaluator",
           workflowRunId: result.runId ?? null,
           status: result.status,
@@ -319,7 +396,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
       })
       .catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);
-        ctx.sdk.log("warn", `[eval-llm-scan] Deep evaluator workflow did not complete: ${msg}`);
+        ctx.sdk.log(
+          "warn",
+          `[eval-llm-scan] Deep evaluator workflow did not complete: ${msg}`,
+        );
         ctx.sdk.emit("evaluation.deep_failed", {
           source: "eval-llm-scan",
           workflow: DEEP_EVAL_WORKFLOW,

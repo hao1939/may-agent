@@ -126,6 +126,8 @@ function projectPolicy(content: string): ProjectPolicy {
 export function analyzeProject(project: ProjectInfo): ProjectStewardReport {
   const parsed = parseProjectTasks(project.content);
   const policy = projectPolicy(project.content);
+  const meta = parseProjectMeta(project.content);
+  const isProjectApp = meta.type === "project-app";
   const taskCounts = {
     total: parsed.tasks.length,
     ready: parsed.tasks.filter((task) => task.status === "ready").length,
@@ -153,7 +155,9 @@ export function analyzeProject(project: ProjectInfo): ProjectStewardReport {
     });
   }
 
-  if (project.status === "active" && parsed.tasks.length > 0 && parsed.errors.length === 0) {
+  // Project-apps manage tasks via tasks/tree.json, not inline markdown.
+  // Skip task-based findings for them — the inline task count is always 0.
+  if (!isProjectApp && project.status === "active" && parsed.tasks.length > 0 && parsed.errors.length === 0) {
     const plan = planProjectTasks(parsed.tasks, { maxConcurrent: maxConcurrent(project.content) });
     const maxAttempts = maxTaskAttempts(project.content);
     const repeated = plan.dispatchable.find((task) => task.attempts >= maxAttempts);
@@ -176,7 +180,8 @@ export function analyzeProject(project: ProjectInfo): ProjectStewardReport {
   }
 
   if (
-    project.status === "active"
+    !isProjectApp
+    && project.status === "active"
     && parsed.tasks.length === 0
     && !project.formatErrors?.length
     && parsed.errors.length === 0

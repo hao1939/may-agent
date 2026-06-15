@@ -84,6 +84,20 @@ function projectIdFor(project: ProjectInfo): string {
   return `${project.owner}/${project.relPath.split("/").pop()}`;
 }
 
+function projectSlug(project: ProjectInfo): string {
+  return project.relPath.split("/").pop() ?? project.relPath;
+}
+
+function isProjectApp(project: ProjectInfo): boolean {
+  const meta = parseProjectMeta(project.content);
+  return meta.type?.toLowerCase() === "project-app" || projectSlug(project).endsWith(".app");
+}
+
+function domainProjectIdForApp(project: ProjectInfo): string {
+  const slug = projectSlug(project);
+  return slug.endsWith(".app") ? slug.slice(0, -".app".length) : slug;
+}
+
 function taskSource(taskId: string): string {
   return `project-task:${taskId}`;
 }
@@ -439,75 +453,6 @@ function activeProjectTaskIds(ctx: HandlerContext, projectId: string): string[] 
   return [...ids];
 }
 
-type ProjectAppTaskNode = {
-  status?: unknown;
-  children?: unknown;
-};
-
-type ProjectAppTaskTree = {
-  tasks?: unknown;
-};
-
-function normalizeTaskChildren(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item)) : [];
-}
-
-function projectAppReadyLeafSummary(project: ProjectInfo): { readyLeafIds: string[]; activeLeafIds: string[] } | null {
-  const treePath = resolve(dirname(project.projectFile), "tasks/tree.json");
-  if (!existsSync(treePath)) return null;
-
-  let tree: ProjectAppTaskTree;
-  try {
-    tree = JSON.parse(readFileSync(treePath, "utf-8")) as ProjectAppTaskTree;
-  } catch {
-    return null;
-  }
-
-  if (!tree.tasks || typeof tree.tasks !== "object" || Array.isArray(tree.tasks)) return null;
-
-  const readyLeafIds: string[] = [];
-  const activeLeafIds: string[] = [];
-  for (const [taskId, rawTask] of Object.entries(tree.tasks as Record<string, ProjectAppTaskNode>)) {
-    if (!rawTask || typeof rawTask !== "object" || Array.isArray(rawTask)) continue;
-    const children = normalizeTaskChildren(rawTask.children);
-    if (children.length > 0) continue;
-    const status = typeof rawTask.status === "string" ? rawTask.status : "";
-    if (status === "ready") readyLeafIds.push(taskId);
-    if (status === "active" || status === "claimed_done") activeLeafIds.push(taskId);
-  }
-
-  return {
-    readyLeafIds: readyLeafIds.sort(),
-    activeLeafIds: activeLeafIds.sort(),
-  };
-}
-
-function signalReadyProjectAppTasks(
-  ctx: HandlerContext,
-  project: ProjectInfo,
-  projectId: string,
-): { handled: boolean; launched: number; reason: string } {
-  const summary = projectAppReadyLeafSummary(project);
-  if (!summary) return { handled: false, launched: 0, reason: "no app task tree" };
-  if (summary.activeLeafIds.length > 0) {
-    return { handled: true, launched: 0, reason: "app task leaf already active" };
-  }
-  if (summary.readyLeafIds.length === 0) {
-    return { handled: false, launched: 0, reason: "no ready app task leaves" };
-  }
-
-  ctx.sdk.emit("project.tasks.ready", {
-    project: project.relPath.split("/").pop() ?? projectId,
-    projectId,
-    projectPath: project.relPath,
-    domainProject: (project.relPath.split("/").pop() ?? "").replace(/\.app$/, ""),
-    readyTaskIds: summary.readyLeafIds,
-    maxConcurrent: projectMaxConcurrent(project.content),
-    requested_by: "project-reconciler",
-  });
-  return { handled: true, launched: 1, reason: `signaled ${summary.readyLeafIds.length} ready app task(s)` };
-}
-
 function dispatchReadyProjectTasks(
   ctx: HandlerContext,
   project: ProjectInfo,
@@ -651,6 +596,22 @@ function launchProjectOwner(
   reason: string,
   ownerLoopsInFlight: Set<string>,
 ): void {
+  if (isProjectApp(project)) {
+    const projectApp = projectSlug(project);
+    const projectDomain = domainProjectIdForApp(project);
+    ctx.sdk.log("info", `[project] Routing ${project.relPath} owner wake to project app workflow: ${reason}`);
+    ctx.sdk.emit("project.owner.requested", {
+      project: projectDomain,
+      projectId: projectDomain,
+      projectApp,
+      projectPath: project.relPath,
+      owner: project.owner,
+      reason,
+      requested_by: "project-handler",
+    });
+    return;
+  }
+
   if (ownerLoopsInFlight.has(projectId)) {
     emitSkip(ctx, `Skip ${project.relPath} — project owner already running`, {
       projectId,
@@ -870,19 +831,6 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const projectId = projectIdFor(project);
 
       if (project.status === "active" && !project.formatErrors?.length && launched < ph.MAX_LAUNCHES_PER_TICK) {
-        const appTaskSignal = signalReadyProjectAppTasks(ctx, project, projectId);
-        if (appTaskSignal.handled) {
-          if (appTaskSignal.launched > 0) {
-            pState.lastLaunch = now;
-            if (!pState.launchTimestamps) pState.launchTimestamps = [];
-            pState.launchTimestamps = pState.launchTimestamps.filter((t: number) => now - t < 7200_000);
-            pState.launchTimestamps.push(now);
-            pState.consecutiveSkips = 0;
-            launched += appTaskSignal.launched;
-          }
-          continue;
-        }
-
         const taskDispatch = dispatchReadyProjectTasks(ctx, project, projectId, ph.MAX_LAUNCHES_PER_TICK - launched);
         if (taskDispatch.handled) {
           if (taskDispatch.launched > 0) {

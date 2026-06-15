@@ -136,7 +136,7 @@ describe("metric-alert-reactor", () => {
 
     expect(runs).toEqual([]);
     expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "may" });
     expect(workflows[0].task).toContain("Run metric alert triage for arc.down");
     expect(workflows[0].task).toContain('"type": "metric.breach"');
     expect(workflows[0].task).toContain('"metricId": "arc.down"');
@@ -161,7 +161,7 @@ describe("metric-alert-reactor", () => {
     await handler();
 
     expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "may" });
     expect(logs.some((msg) => msg.includes("ended without judgment"))).toBe(true);
   });
 
@@ -199,7 +199,7 @@ describe("metric-alert-reactor", () => {
     await handler();
 
     expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "may" });
     expect(workflows[0].task).toContain('"metricId": "arc.quality"');
   });
 
@@ -217,7 +217,7 @@ describe("metric-alert-reactor", () => {
     });
 
     expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "may" });
     expect(logs.some((msg) => msg.includes("Missing metricId"))).toBe(false);
   });
 
@@ -236,7 +236,7 @@ describe("metric-alert-reactor", () => {
     await handler();
 
     expect(workflows).toHaveLength(1);
-    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "arc" });
+    expect(workflows[0]).toMatchObject({ name: "metric-alert-triage", source: "may" });
     expect(workflows[0].task).toContain('"metricId": "arc.coverage"');
   });
 

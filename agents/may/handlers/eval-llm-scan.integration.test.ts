@@ -15,18 +15,28 @@ describe("eval-llm-scan", () => {
   });
 
   function setup() {
-    const root = join(tmpdir(), `eval-llm-scan-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `eval-llm-scan-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     const persist = join(root, ".state");
     const agentsRoot = join(root, "agents");
     tempDirs.push(root);
-    mkdirSync(join(agentsRoot, "evaluator", "workspace", "deep-evals"), { recursive: true });
+    mkdirSync(join(agentsRoot, "evaluator", "workspace", "deep-evals"), {
+      recursive: true,
+    });
     mkdirSync(persist, { recursive: true });
 
     const runtime = createTestRuntime({ root, persist, agents: agentsRoot });
     const db = runtime.db;
     const logs: string[] = [];
     const emitted: Array<{ type: string; data?: Record<string, unknown> }> = [];
-    const runWorkflowCalls: Array<{ workflow: string; task: string; source?: string }> = [];
+    const runWorkflowCalls: Array<{
+      workflow: string;
+      task: string;
+      source?: string;
+      projectId?: string;
+    }> = [];
 
     const ctx = {
       sdk: {
@@ -34,28 +44,60 @@ describe("eval-llm-scan", () => {
         paths: { ...runtime.sdk.paths, root, persist, agents: agentsRoot },
         getDb: () => db,
         log: (_level: string, msg: string) => logs.push(msg),
-        emit: (type: string, data?: Record<string, unknown>) => emitted.push({ type, data }),
-        runWorkflow: async (workflow: string, task: string, opts?: { source?: string }) => {
-          runWorkflowCalls.push({ workflow, task, source: opts?.source });
-          const sessionId = task.match(/Evaluate session (s_[^ ]+)/)?.[1] ?? "s_target";
-          const artifactPath = join(root, "agents", "evaluator", "workspace", "deep-evals", `${sessionId}.json`);
-          writeFileSync(artifactPath, JSON.stringify({
-            sessionId,
-            agent: "scout",
-            quality: 0.92,
-            efficiency: 0.8,
-            productiveCalls: 8,
-            wastedCalls: 1,
-            verdict: "good",
-            issues: ["strong synthesis worth learning from"],
-            overall: { resultDelivered: true, valueProduced: "useful research note", learningCandidate: true },
-            usage: {},
-            failureChains: [],
-          }), "utf-8");
-          return { runId: "wr_eval", status: "done", summary: "wrote artifact" };
+        emit: (type: string, data?: Record<string, unknown>) =>
+          emitted.push({ type, data }),
+        runWorkflow: async (
+          workflow: string,
+          task: string,
+          opts?: { source?: string; projectId?: string },
+        ) => {
+          runWorkflowCalls.push({
+            workflow,
+            task,
+            source: opts?.source,
+            projectId: opts?.projectId,
+          });
+          const sessionId =
+            task.match(/Evaluate session (s_[^ ]+)/)?.[1] ?? "s_target";
+          const artifactPath = join(
+            root,
+            "agents",
+            "evaluator",
+            "workspace",
+            "deep-evals",
+            `${sessionId}.json`,
+          );
+          writeFileSync(
+            artifactPath,
+            JSON.stringify({
+              sessionId,
+              agent: "scout",
+              quality: 0.92,
+              efficiency: 0.8,
+              productiveCalls: 8,
+              wastedCalls: 1,
+              verdict: "good",
+              issues: ["strong synthesis worth learning from"],
+              overall: {
+                resultDelivered: true,
+                valueProduced: "useful research note",
+                learningCandidate: true,
+              },
+              usage: {},
+              failureChains: [],
+            }),
+            "utf-8",
+          );
+          return {
+            runId: "wr_eval",
+            status: "done",
+            summary: "wrote artifact",
+          };
         },
         runAgent: async () => {
-          throw new Error("eval-llm-scan should dispatch evaluator-deep-eval workflow");
+          throw new Error(
+            "eval-llm-scan should dispatch evaluator-deep-eval workflow",
+          );
         },
       },
     } as any;
@@ -67,7 +109,16 @@ describe("eval-llm-scan", () => {
     db.run(
       `INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [sessionId, "scout", "learn from an external project", "done", "workflow:project", now - 60 * 60_000, now - 50 * 60_000, 9],
+      [
+        sessionId,
+        "scout",
+        "learn from an external project",
+        "done",
+        "workflow:project",
+        now - 60 * 60_000,
+        now - 50 * 60_000,
+        9,
+      ],
     );
     db.run(
       `INSERT INTO evaluations (
@@ -95,18 +146,22 @@ describe("eval-llm-scan", () => {
   }
 
   it("parses valid deep evaluation artifacts", () => {
-    const parsed = parseDeepEvaluationArtifact(JSON.stringify({
-      sessionId: "s1",
-      agent: "dev",
-      quality: 1.5,
-      efficiency: "0.75",
-      productive_calls: 4,
-      wasted_calls: 2,
-      verdict: "needs improvement",
-      issues: ["missing verification"],
-      overall: { resultDelivered: false },
-      failureChains: [],
-    }), "s1", "dev");
+    const parsed = parseDeepEvaluationArtifact(
+      JSON.stringify({
+        sessionId: "s1",
+        agent: "dev",
+        quality: 1.5,
+        efficiency: "0.75",
+        productive_calls: 4,
+        wasted_calls: 2,
+        verdict: "needs improvement",
+        issues: ["missing verification"],
+        overall: { resultDelivered: false },
+        failureChains: [],
+      }),
+      "s1",
+      "dev",
+    );
 
     expect(parsed).toMatchObject({
       sessionId: "s1",
@@ -118,7 +173,10 @@ describe("eval-llm-scan", () => {
       verdict: "needs_improvement",
       issues: ["missing verification"],
     });
-    expect(parsed?.overall).toMatchObject({ deepEval: true, deepEvalVersion: 1 });
+    expect(parsed?.overall).toMatchObject({
+      deepEval: true,
+      deepEvalVersion: 1,
+    });
   });
 
   it("dispatches one evaluator workflow and records the artifact on the next scan", async () => {
@@ -134,18 +192,38 @@ describe("eval-llm-scan", () => {
     await Promise.resolve();
 
     expect(runWorkflowCalls).toHaveLength(1);
-    expect(runWorkflowCalls[0]).toMatchObject({ workflow: "evaluator-deep-eval", source: "evaluator" });
-    expect(runWorkflowCalls[0].task).toContain("real value, not just process cleanliness");
-    expect(emitted.some((event) => event.type === "evaluation.deep_dispatched")).toBe(true);
+    expect(runWorkflowCalls[0]).toMatchObject({
+      workflow: "evaluator-deep-eval",
+      source: "evaluator",
+      projectId: "evaluation",
+    });
+    expect(runWorkflowCalls[0].task).toContain(
+      "real value, not just process cleanliness",
+    );
+    expect(
+      emitted.some((event) => event.type === "evaluation.deep_dispatched"),
+    ).toBe(true);
 
     await handler();
 
-    const row = db.prepare(
-      "SELECT evaluatedByHeuristic, skippedByJs, verdict, quality, overall FROM evaluations WHERE sessionId = ?",
-    ).get("s_target") as any;
-    expect(row).toMatchObject({ evaluatedByHeuristic: 0, skippedByJs: 0, verdict: "good", quality: 0.92 });
-    expect(JSON.parse(row.overall)).toMatchObject({ deepEval: true, learningCandidate: true });
-    expect(emitted.some((event) => event.type === "evaluation.deep_recorded")).toBe(true);
+    const row = db
+      .prepare(
+        "SELECT evaluatedByHeuristic, skippedByJs, verdict, quality, overall FROM evaluations WHERE sessionId = ?",
+      )
+      .get("s_target") as any;
+    expect(row).toMatchObject({
+      evaluatedByHeuristic: 0,
+      skippedByJs: 0,
+      verdict: "good",
+      quality: 0.92,
+    });
+    expect(JSON.parse(row.overall)).toMatchObject({
+      deepEval: true,
+      learningCandidate: true,
+    });
+    expect(
+      emitted.some((event) => event.type === "evaluation.deep_recorded"),
+    ).toBe(true);
   });
 
   it("does not fail the handler while a deep evaluator workflow is still running", async () => {
@@ -153,8 +231,17 @@ describe("eval-llm-scan", () => {
     const now = Date.now();
     insertCandidate(db, now);
 
-    ctx.sdk.runWorkflow = async (workflow: string, task: string, opts?: { source?: string }) => {
-      runWorkflowCalls.push({ workflow, task, source: opts?.source });
+    ctx.sdk.runWorkflow = async (
+      workflow: string,
+      task: string,
+      opts?: { source?: string; projectId?: string },
+    ) => {
+      runWorkflowCalls.push({
+        workflow,
+        task,
+        source: opts?.source,
+        projectId: opts?.projectId,
+      });
       await new Promise(() => {});
       return { runId: "wr_never", status: "done", summary: "unreachable" };
     };
@@ -166,8 +253,12 @@ describe("eval-llm-scan", () => {
     await handler();
 
     expect(runWorkflowCalls).toHaveLength(1);
-    expect(emitted.some((event) => event.type === "handler.failed")).toBe(false);
-    expect(emitted.some((event) => event.type === "evaluation.deep_dispatched")).toBe(true);
+    expect(emitted.some((event) => event.type === "handler.failed")).toBe(
+      false,
+    );
+    expect(
+      emitted.some((event) => event.type === "evaluation.deep_dispatched"),
+    ).toBe(true);
   });
 
   it("does not dispatch while a recent deep evaluator session is running", async () => {
@@ -177,11 +268,22 @@ describe("eval-llm-scan", () => {
     db.run(
       `INSERT INTO sessions (sessionId, agent, task, status, source, startedAt)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      ["s_eval_running", "evaluator", "deep eval", "running", "eval-llm-scan", now - 60_000],
+      [
+        "s_eval_running",
+        "evaluator",
+        "deep eval",
+        "running",
+        "eval-llm-scan",
+        now - 60_000,
+      ],
     );
 
     const handler = create(ctx, {
-      handlerConfig: { backfillHours: 24, fallbackDelayMs: 1, activeWindowMs: 30 * 60_000 },
+      handlerConfig: {
+        backfillHours: 24,
+        fallbackDelayMs: 1,
+        activeWindowMs: 30 * 60_000,
+      },
     } as any);
 
     await handler();
