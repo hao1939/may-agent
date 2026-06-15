@@ -2,305 +2,210 @@
 
 ## Purpose
 
-The task tree is a project's process map: how the agent works on the goal,
-what methodology steps exist, what process knowledge was learned, and where
-active work is. It is not a TODO list, scheduler queue, or attempt log.
+The task tree is the project owner's durable thinking map. It shows how the
+project is understood, how the goal is decomposed, what work is active, what was
+learned, and where humans can steer the project.
 
-The tree is structured by process, informed by domain, but not a domain
-tracker. Task decomposition uses domain knowledge to scope leaves correctly.
-Task acceptance produces domain knowledge that feeds into the domain model.
-The tree retains process knowledge — how we got there, what worked, what to
-reuse. The domain model retains domain knowledge — what's true about the
-subject.
+It is not a scheduler queue, retry log, or workflow attempt history. Runtime
+attempts belong in infra traces. Domain facts belong in the domain workspace.
+The task tree links to both, but its job is to keep the project reasoning
+reviewable.
 
-For example, a leaf task "Execute KMS v2plus-enable-cmk against staging"
-contains domain context (which feature, expected behavior, known blocker).
-But the tree's job is to route that work. When accepted, the domain knowledge
-(path status, evidence) goes into the domain model. The tree keeps the process
-knowledge (this execution approach worked, reuse for similar paths).
+Done tasks stay useful. They are milestones, decisions, verified outputs, or
+process knowledge that the project owner and future workers can reuse. Noisy
+attempt detail should be archived or linked out, not preserved as live tree
+branches.
 
-The tree is also the main human steering surface. A human should be able to
-review any branch, understand why it exists, and attach feedback directly to
-that context. The project owner consumes that feedback when it updates the tree.
+The tree is managed exclusively through task-tree tools. Direct JSON edits are
+for migration and repair only.
 
-Accepted tasks are durable process knowledge. They record methodology,
-milestones, and facts the agent can reuse later; they are not merely completed
-work to hide as soon as execution finishes.
+## Core Principle
 
-The tree is managed exclusively by tools. No direct JSON editing.
+> The project owner is the brain. The task-tree tool enforces structure and
+> computes projections. Workers execute assigned leaves and return evidence.
 
-## Core Design Principle
+Workflow code should wake owners and workers, pass compact context, and emit
+events. It should not encode project strategy, task decomposition policy, retry
+policy, or domain truth.
 
-> The tool enforces structure and computes projections. The project owner makes
-> project judgments. The worker only claims executable leaves and submits
-> evidence.
+## Persisted State Model
 
-## Node Lifecycle
+A task has exactly one persisted `state`:
 
-> **Cross-reference**: `project-app-v3.md` defines the owner/workflow event
-> contract around this tree. This document is the tool/data spec: what the tree
-> library enforces and what the UI projects.
+| State     | Meaning                                                                    | Who sets it                       |
+| --------- | -------------------------------------------------------------------------- | --------------------------------- |
+| `backlog` | Work exists but is not currently executing.                                | Owner                             |
+| `active`  | A worker/session owns this task execution.                                 | Assignment tool / worker workflow |
+| `review`  | Worker returned a claim; owner must judge result, evidence, and next step. | Worker                            |
+| `done`    | Owner accepted the result as durable project understanding.                | Owner                             |
+| `blocked` | Owner confirmed a real external blocker with an exact resume condition.    | Owner                             |
 
+Only these five values are valid persisted states.
+
+The word `state` is canonical. Older files may still use `status` during
+migration; tools may read `status` as compatibility input, but new writes should
+write `state`.
+
+## Not States
+
+Keep the lifecycle small. These concepts are important, but they are not
+persisted states:
+
+| Concept             | Representation                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| Ready/runnable      | Computed from `backlog` leaf + dependencies done + no active conflict.                       |
+| Decomposed          | Structural: `children.length > 0`; optional tag or kind may explain branch type.             |
+| Proposed            | `backlog` with context such as `approval.state` or `priority`.                               |
+| Accepted            | `done`; acceptance details live in `done_at`, `done_by`, `summary`, `evidence`.              |
+| Failed              | `review` with `result: "failed"` and evidence; owner decides rework, block, or done-partial. |
+| Superseded/replaced | `state: "done"` with `resolution: "replaced"` and `replaced_by`, or archive if low value.    |
+| Cancelled           | `state: "done"` with `resolution: "cancelled"` and reason.                                   |
+| Waiting/no_work     | Invalid. Convert to concrete `backlog`, exact `blocked`, or `done` with a clear resolution.  |
+
+This keeps the tree readable and prevents the workflow from circling through
+control states instead of solving the project.
+
+## Lifecycle
+
+```text
+backlog -> active -> review -> done
+                         -> backlog   (rework, split, retry, or follow-up)
+                         -> blocked   (real external blocker)
+
+blocked -> backlog       (resume condition satisfied)
+backlog -> done          (rare owner-recorded fact, milestone, or cancellation)
 ```
-backlog → active → review → accepted
-                          → backlog      (owner reworks)
-                          → blocked      (owner confirms external blocker)
-                          → superseded   (owner replaces with better work)
-```
 
-### Persisted statuses
+Parent nodes use the same five states. A parent with children is not in a
+special "decomposed" state. Its state is the owner's current rollup judgment for
+that branch:
 
-| Status       | Meaning                                                   | Who sets it                   |
-| ------------ | --------------------------------------------------------- | ----------------------------- |
-| `backlog`    | Work to be done                                           | Owner creates or reworks it   |
-| `active`     | Worker is executing                                       | Worker claims it              |
-| `review`     | Worker finished, claim needs verification                 | Worker submits it             |
-| `accepted`   | Owner verified the claim; durable project understanding   | Owner accepts it              |
-| `blocked`    | Concrete external blocker confirmed by owner              | Owner sets it                 |
-| `superseded` | Replaced by better understanding                          | Owner replaces it             |
-| `decomposed` | Not a leaf; children represent the work                   | Owner decomposes it           |
+- `backlog`: branch has open child work or needs more decomposition.
+- `active`: branch is currently being driven through active child work.
+- `review`: child results require owner rollup before the branch is trusted.
+- `done`: owner rolled up the branch into durable understanding.
+- `blocked`: the whole branch is stopped by a confirmed external blocker.
 
-### Derived predicates (computed by tools, never persisted)
-
-| Predicate             | Meaning                                                         |
-| --------------------- | --------------------------------------------------------------- |
-| `ready` / `runnable`  | Backlog leaf + all depends_on accepted + no conflict overlap    |
-| `dependency-blocked`  | Backlog but depends_on not yet accepted                         |
-| `conflict-blocked`    | Backlog but conflict_scope overlaps with active task            |
-| `stale`               | Untouched beyond staleness threshold                            |
-| `needs-decomposition` | Backlog leaf that is too large for a single worker session      |
-| `rollup-hint`         | All children accepted — owner should review for parent accept |
-| `blocked-hint`        | A child is blocked — owner should review parent state         |
-| `frontier`            | Next actionable work                                            |
-| `kanban-lane`         | Which Kanban column this node belongs to                        |
+The tool computes parent hints; it does not mutate parent state by itself.
 
 ## Roles
 
-### Worker
-
-- Asks for one runnable backlog leaf via `tree.next()`
-- Claims it (`backlog → active`)
-- Executes the task
-- Submits to `review` with result + evidence
-- If the worker encounters an obstacle, it submits `review` with
-  `result: "blocked_claim"` and evidence of the blocker. The owner
-  decides whether it is a real external blocked, local rework,
-  superseded, or accepted partial progress.
-- Does NOT set blocked directly, replan, decompose, or create siblings
-
 ### Project Owner
 
-- Reviews `review` tasks and decides: accept, rework (back to backlog),
-  block (confirm external), supersede, or decompose further
-- Creates new `backlog` tasks
-- Supersedes outdated branches
-- Applies parent transitions based on tool rollup hints
-- Records accepted knowledge summaries and evidence
-- Triggers archive of low-value detail while preserving useful milestones
-- Owns all tree shape mutations
-- Creates or links visible problem-solving tasks when failures/blockers appear,
-  and reconciles `project.problem.resolved` / `project.problem.escalated` events
-  back into affected task branches
+The owner owns all project judgment:
 
-Owner wakeups may start with a deterministic quick-refill pass: assign
-already-ready, clear, dependency-satisfied, non-conflicting leaves up to worker
-capacity and dispatch `project.task.assigned` immediately. This does not make
-new project judgments; it only executes work the owner already marked ready.
-If quick refill fills capacity and there is no pending review or high-priority
-human steering, the wake may finish without an owner-agent judgment session.
-If human steering, review work, or unclear tree state exists, the owner-agent
-judgment session still runs after quick refill.
+- decomposes tasks and creates backlog leaves
+- reviews `review` claims
+- rolls up parent branches
+- records done summaries and evidence links
+- decides whether a failure means rework, retry, split, replacement, or block
+- confirms real external blockers
+- assigns runnable backlog leaves
+- folds human steering and problem-solver results into the tree
+
+The owner should keep moving until available worker capacity is filled or the
+tree records exact blockers explaining why it cannot be filled.
+
+### Worker
+
+The worker receives one owner-created assignment:
+
+- verifies it owns the current active task/attempt
+- works only that task
+- writes or links evidence
+- emits a completion claim into `review`
+
+The worker must not reshape sibling branches, roll up parents, mark a task
+done, create planning/control tasks, or decide project strategy.
 
 ### Problem Solver
 
-The problem solver is a focused worker for blockers and failures. It is woken by
-`project.problem.requested`, investigates one stable `problemKey`, and emits
-`project.problem.resolved` or `project.problem.escalated`.
+The problem solver is a focused worker for failures and blockers. It is woken by
+problem events, investigates one root cause, and returns evidence. It may fix
+local runner, replay, app, or environment defects. It does not mutate durable
+task meaning.
 
-It can:
+The owner reconciles the solver result into the affected task branches.
 
-- inspect affected tasks, run artifacts, domain files, and runtime/session
-  evidence
-- fix local runner, replay, test, or app defects
-- verify that the fix removes the blocker, or prove that the blocker is external
-- produce exact resume conditions and affected-task recommendations
+## Tool Responsibilities
 
-It cannot:
-
-- accept tasks or roll up parents
-- reshape task branches
-- assign/retry task leaves directly
-- mark the project complete
-
-The project owner owns the durable tree decision after the solver reports back.
-
-Problem-solving tasks are normal visible tree nodes, usually under the affected
-lane or a small problem-solving branch. Use one shared node for one shared root
-cause:
-
-```json
-{
-  "id": "staging-arm-auth-unavailable-20260612",
-  "kind": "problem_solver",
-  "status": "active",
-  "context": {
-    "problemKey": "aks-rp-e2e:staging-arm-auth-unavailable",
-    "affectedTasks": [
-      "ms-create-time-staging-execute-20260612",
-      "wi-upgrade-survival-staging-execute-20260612"
-    ]
-  },
-  "goal": "Diagnose why staging replay workers cannot acquire ARM credentials, fix local runner environment when possible, or escalate with exact resume conditions.",
-  "outputs": [".state/problem-runs.jsonl", "tasks/tree.json"],
-  "acceptance": [
-    "Root cause classified",
-    "Affected tasks have a retry, supersede, or escalation path"
-  ]
-}
-```
-
-This keeps problem resolution large and loud without introducing another owner.
-
-### Tool
-
-- Enforces structural invariants on every mutation
-- Computes derived predicates (readiness, rollup hints, Kanban, staleness)
-- Projections are read-only — the tool does not mutate parent status
-  based on child state. It computes rollup hints; the owner applies
-  parent transitions.
-- Auto-collapses superseded chains (structural cleanup, not judgment)
-- Archives accepted detail only when the owner asks for compaction with an
-  explicit knowledge summary
-
-## Structural Invariants
-
-The tool enforces on every mutation:
-
-1. Every node has exactly one parent (except root).
-2. Node IDs are unique.
-3. `active` must have been `backlog` with computed readiness satisfied.
-4. `review` must have `result` and `evidence` fields.
-5. `accepted` can only transition from `review` (owner verified).
-6. `superseded` must have `supersededBy` and `reason`.
-7. `blocked` must have `blocker` with `condition` and `category`.
-8. `decomposed` nodes have children; leaf nodes do not.
-9. `superseded` and accepted knowledge claims are immutable. Tool-owned
-   archival metadata may be added without changing the accepted claim.
-10. No references to non-existent nodes.
-11. No circular dependencies.
-
-## Rollup and Parent Status
-
-Parent status is NOT automatically mutated by the tool. The tool computes
-rollup hints; the owner decides:
-
-| Hint                    | Tool computes                 | Owner decides                                         |
-| ----------------------- | ----------------------------- | ----------------------------------------------------- |
-| All children `accepted` | `rollup-hint: all-accepted`   | Accept parent, or keep decomposed if more work needed |
-| Any child `blocked`     | `blocked-hint: child-blocked` | Block parent, rework the child, or supersede          |
-| Mix of statuses         | No hint                       | Keep decomposed                                       |
-
-This keeps the owner as the brain. The tool never makes project judgments.
-
-A project may expose a narrow candidate-generation tool for liveness, such as
-"seed backlog from known model gaps." Such a tool is still a task-tree tool: it
-creates only reviewable backlog nodes from explicit project data, avoids
-duplicate open work, writes audit context, and never accepts, blocks, or
-supersedes work. The owner workflow may use it as a fallback when the frontier
-is empty or underfilled, but later review remains an owner decision.
-
-## Accepted Knowledge
-
-An `accepted` node means the owner verified the worker claim and turned it
-into project knowledge. Accepted nodes should answer:
-
-- What did we learn or prove?
-- What evidence supports the claim?
-- What can future work reuse?
-- Does this close the parent branch, or does it reveal more work?
-
-Useful accepted nodes stay visible in the live tree as milestones. Examples:
-
-- a golden path that future features should reuse
-- a feature behavior verified by real staging execution
-- a reusable runner/script pattern
-- a project decision that changes how future tasks should be planned
-
-Low-value accepted detail should be archived. Examples:
-
-- mechanical subtasks after their parent summary captures the result
-- repeated execution attempts
-- obsolete rework branches
-- raw logs already linked from evidence
-
-Accepted knowledge fields:
-
-```json
-{
-  "status": "accepted",
-  "summary": "REST add-existing ManagedSystem pool lifecycle passed on staging.",
-  "evidence": ["runs/managedsystem-rest-add-existing/run.json"],
-  "reusable_for": [
-    "managedsystem delete lifecycle",
-    "managedsystem immutability checks"
-  ],
-  "accepted_at": "2026-06-12T...",
-  "accepted_by": "owner"
-}
-```
-
-The tree should preserve the accepted backbone of project understanding. It
-should archive noisy detail, not erase what the project has learned.
-
-Accepted knowledge is immutable after acceptance. Later work can supersede it
-with better understanding, but should not silently rewrite the original claim.
-
-## Tool API
+The task-tree tool provides safe primitives:
 
 ```typescript
-// Planner mutations
-tree.create(parentId, task); // add backlog leaf
-tree.decompose(nodeId, children); // split leaf into children
-tree.accept(nodeId, reason, knowledge); // verify and accept claim
-tree.rework(nodeId, reason); // review → back to backlog
-tree.supersede(nodeId, reason, replacementIds); // replace with better work
-tree.block(nodeId, blocker); // confirm external blocker
-tree.unblock(nodeId, reason); // clear blocker
+// Owner mutations
+tree.create(parentId, task); // add backlog leaf or branch
+tree.decompose(nodeId, children); // add children and keep parent state valid
+tree.rework(nodeId, reason); // review -> backlog
+tree.markDone(nodeId, summary); // review/backlog -> done
+tree.block(nodeId, blocker); // review/backlog -> blocked
+tree.unblock(nodeId, reason); // blocked -> backlog
+tree.replace(nodeId, replacementIds); // done + resolution/replaced_by metadata
 
-// Worker mutations
-tree.claim(nodeId); // backlog → active
-tree.submit(nodeId, result, evidence); // active → review
+// Assignment / worker mutations
+tree.assign(nodeId, assignment); // backlog -> active
+tree.submit(nodeId, result, evidence); // active -> review
 
-// Cleanup (owner-triggered)
-tree.archive(nodeId, summary); // collapse low-value accepted detail
-tree.prune(nodeId, reason); // remove irrelevant subtree
-
-// Derived queries (tool-owned projections)
-tree.status(); // compact summary
-tree.next(); // runnable backlog leaves
-tree.readiness(nodeId); // why this task is or isn't ready
-tree.kanban(); // Kanban projection with readiness badges
-tree.rollup(nodeId); // parent rollup hints
-tree.stale(olderThan); // untouched nodes
-tree.check(); // integrity validation
+// Read-only projections
+tree.summary();
+tree.next();
+tree.readiness(nodeId);
+tree.kanban();
+tree.rollup(nodeId);
+tree.check();
 ```
 
-## Tree UI and Kanban Projection
+The tool enforces structure and computes projections. It should reject invalid
+states and invalid transitions. It should not infer project strategy.
 
-The tree view is the primary human/agent reasoning surface. It should show:
+## Derived Projections
 
-- the task goal or claim as the primary text
-- the reason this branch exists
-- accepted knowledge summaries and evidence links
-- child status summaries for decomposed parents
-- task-linked human feedback controls
-- derived readiness only as a badge on backlog leaves
+Derived predicates are computed fresh and never persisted as state:
 
-Task IDs, leases, conflict scopes, and scheduler details are secondary
-metadata. They should not dominate the tree view.
+| Predicate             | Meaning                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `runnable`            | Backlog leaf; all dependencies are done; no conflict with active work. |
+| `dependency-blocked`  | Backlog leaf waiting for dependency completion.                        |
+| `conflict-blocked`    | Backlog leaf conflicts with active work.                               |
+| `needs-decomposition` | Backlog leaf appears too broad for one worker session.                 |
+| `rollup-hint`         | Children suggest the owner should review parent state.                 |
+| `stale`               | Task has not moved within the configured threshold.                    |
 
-Human feedback from the tree UI should wake the project owner directly. Over
-`/api/events`, keep the durable project event payload under `data`:
+Example readiness:
+
+```typescript
+function isRunnable(node): boolean {
+  if (node.state !== "backlog") return false;
+  if (node.children.length > 0) return false;
+  for (const dep of node.depends_on ?? []) {
+    if (tasks[dep].state !== "done") return false;
+  }
+  for (const active of activeTasks) {
+    if (active.conflict_scope === node.conflict_scope) return false;
+  }
+  return true;
+}
+```
+
+## Rollup
+
+Parent state is owner judgment, not an automatic aggregate. The tool only emits
+hints:
+
+| Hint                         | Owner decision                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------ |
+| All children `done`          | Mark parent `done`, or add remaining backlog if the branch is not actually complete. |
+| Any child `review`           | Review child evidence before trusting the branch.                                    |
+| Any child `blocked`          | Confirm branch blocker, create local unblock/retry work, or move to unrelated work.  |
+| Child mix is stale/confusing | Rewrite, split, archive, or replace the branch.                                      |
+
+When a parent becomes `done`, it must carry a useful summary of what the branch
+proved or learned. Do not hide useful milestones. Archive only low-value
+mechanical detail after the parent summary preserves the understanding.
+
+## Human Steering
+
+Human feedback should attach to the closest relevant task node and wake the
+owner directly with a context-rich event:
 
 ```json
 {
@@ -313,7 +218,6 @@ Human feedback from the tree UI should wake the project owner directly. Over
     "reason": "human-steering",
     "params": {
       "task_id": "project",
-      "action": "reflect_and_add_missing_work",
       "comment": "Review this branch and add missing Go-test discovery work.",
       "context": {
         "ui": "kanban"
@@ -323,76 +227,43 @@ Human feedback from the tree UI should wake the project owner directly. Over
 }
 ```
 
-Do not route explicit task-tree steering through a generic comment transport.
-Discussion streams may keep an audit copy, but the owner wakeup event is the
-control path. Human steering should use high urgency; routine watchdog/refill
-wakes can stay normal urgency.
+Do not require comments or discussion entries as an intermediate control path.
+Discussion streams may keep an audit copy, but the owner wake event is what
+moves the project.
 
-The owner must treat recent high-priority human steering as pending owner input,
-not only as the current trigger event. A watchdog/refill wake may be the event
-that starts owner review, but the owner prompt should still surface pending
-high-priority human steering before routine refill work. If the user points out
-a missing root task or lane, the owner must either create the task
-under the requested parent or record an explicit refusal/blocker in the tree.
+## Kanban Projection
 
-Kanban is a workflow projection, not the source of truth.
+Kanban is a workflow projection of the tree, not a second source of truth.
+Only leaf tasks should appear as cards. Branch nodes appear in the tree view.
 
-`tree.kanban()` computes lanes and readiness badges. The UI should prefer the
-tool-owned projection. If the persisted projection is stale relative to the
-current tree, the UI must show a stale-projection warning before using a
-tree-derived display fallback. The fallback is a display repair, not a new
-source of truth; the task-tree tool still owns the canonical projection.
+| Lane        | Source                                      |
+| ----------- | ------------------------------------------- |
+| Backlog     | `backlog` leaf tasks, with readiness badges |
+| In Progress | `active` leaf tasks                         |
+| Review      | `review` leaf tasks                         |
+| Blocked     | `blocked` leaf tasks                        |
+| Done        | `done` leaf tasks and visible milestones    |
 
-| Lane        | Source           |
-| ----------- | ---------------- |
-| Backlog     | `backlog` nodes  |
-| In Progress | `active` nodes   |
-| Review      | `review` nodes   |
-| Blocked     | `blocked` nodes  |
-| Done        | `accepted` nodes |
+Readiness badges may show why a backlog card is runnable, dependency-blocked,
+conflict-blocked, stale, or too large. There is no `ready` lane and no persisted
+`ready` state.
 
-Superseded nodes and archived accepted detail are tree history, not workflow
-state. They belong in the tree view for understanding how thinking evolved,
-not in the Kanban board which shows current actionable work.
+Collapsed tree nodes should show child counts by the five states so a human can
+hide detail without losing branch health.
 
-Only leaf nodes appear as cards. `decomposed` parents are structural — they
-appear in the tree view, not the Kanban.
+## Focus Plans
 
-The project Kanban page should present three surfaces together:
-
-- Project health metrics: flow, knowledge coverage, live execution, and
-  hygiene signals from the registered metric system.
-- Current workflow projection: leaf task cards by lane, with compact readiness
-  and blocker context.
-- Task tree context: the owner's reasoning tree, accepted knowledge, evidence,
-  child status summaries, and task-local feedback.
-
-Human interaction should be close to context. The page should provide:
-
-- project-level steering near metrics for refill, execution review, alert
-  triage, and next-move feedback
-- task-level steering on the selected tree node for split, audit, challenge,
-  unblock, escalation, or rework
-- direct `project.owner.requested` events for explicit human steering, with
-  selected task id, UI source, and free-form comment in `data.params`
-
-## Focus Plan Branches
-
-The task tree can also hold the project's current mid-term plan. This is useful
-for long-running projects where the fast owner/worker loop keeps work moving
-but humans still need to know whether the project is moving in the right
-direction.
-
-A focus plan is a normal tree branch, not a second project system:
+A focus plan is a normal task branch that exposes mid-term strategy. It is not a
+separate planning system and not a workflow-control branch.
 
 ```json
 {
   "id": "focus-20260613-rest-execution-feedback",
   "kind": "focus_plan",
-  "status": "proposed",
+  "state": "backlog",
   "goal": "For the next 24h, prioritize REST replay execution and evidence feedback over broad new feature discovery.",
   "context": {
-    "horizon": "24h or until accepted",
+    "horizon": "24h or until done",
     "approval": {
       "state": "requested",
       "escalation_id": "esc_..."
@@ -411,316 +282,141 @@ A focus plan is a normal tree branch, not a second project system:
 }
 ```
 
-The focus branch should answer three human questions quickly:
+Focus progress states such as `on_track`, `off_track`, `completed`, `stale`, and
+`blocked` belong under `context.progress_review.state`; they are not task
+lifecycle states.
 
-- What is the project trying to accomplish in the next focus horizon?
-- How will we know the focus is succeeding?
-- Is the focus currently on track, off track, completed, blocked, or awaiting
-  approval?
+## Integrity Checks
 
-Focus planning does not replace decomposition. It should point to or group
-concrete work under existing domain lanes such as source discovery, spec
-generation, replay implementation, execution, and model feedback. Avoid
-creating a separate tree of control tasks like "make plan" or "review plan";
-use the focus branch to expose the current strategy and progress judgment.
+`tree.check()` validates:
 
-Status guidance:
+- every task has one valid `state`
+- no persisted `ready`, `proposed`, `accepted`, `superseded`, or `decomposed`
+  task state remains after migration
+- every reference points to an existing node
+- no parent-child cycle or dependency cycle exists
+- root exists and is reachable
+- leaves have empty `children`
+- child tasks point back to the correct `parent_id`
+- `active` tasks have assignment/session context
+- `review` tasks have result and evidence or a clear claim packet
+- `done` tasks have a summary, resolution, or archive summary
+- replaced tasks have `resolution: "replaced"` and `replaced_by`
+- `blocked` tasks have `blocker.condition`, owner, and resume condition
+- dependencies reference tasks whose `state` must become `done`
+- visible tree size/depth/child-count limits are warnings, not hidden policy
 
-| Focus state            | Meaning                                                                 |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `proposed` / `backlog` | Direction is drafted but not approved or not yet active.                |
-| `active`               | Approved focus is currently driving owner/worker choices.               |
-| `review`               | Focus reached its horizon or success criteria and needs owner rollup.   |
-| `blocked`              | Focus cannot proceed without a concrete external input or decision.     |
-| `accepted`             | Focus completed and produced reusable project understanding.            |
-| `superseded`           | A later focus replaced this one with a recorded reason.                 |
-
-Progress review is part of the focus branch context. A recurring focus-plan
-workflow should update `context.progress_review` with a compact judgment:
-
-- `on_track` — keep assigning work inside this focus
-- `off_track` — notify human or pivot after approval
-- `completed` — roll up accepted knowledge and propose next focus
-- `stale` — no material progress; owner must repair or replace the focus
-- `blocked` — exact blocker and resume condition are known
-
-Human approval should be linked on the focus branch through an escalation id or
-human decision note. The task tree remains the durable source of truth after the
-Telegram/UI exchange is resolved.
-
-Backlog cards include readiness badges:
-
-| Badge                 | Meaning                                 |
-| --------------------- | --------------------------------------- |
-| `runnable`            | Ready to dispatch                       |
-| `dependency-blocked`  | Waiting on another task                 |
-| `conflict-blocked`    | Conflict scope overlap with active task |
-| `stale`               | Untouched beyond threshold              |
-| `needs-decomposition` | Too large for single worker session     |
-
-## Readiness Computation
-
-`tree.next()` returns runnable tasks, computed fresh each call:
-
-```typescript
-function isReady(node): boolean {
-  if (node.status !== "backlog") return false;
-  if (node.children.length > 0) return false;
-  for (dep of node.depends_on) {
-    if (tasks[dep].status !== "accepted") return false;
-  }
-  for (active of activeTasks) {
-    if (active.conflict_scope === node.conflict_scope) return false;
-  }
-  return true;
-}
-```
-
-No persisted ready state. No stale readiness.
-
-`tree.readiness(nodeId)` explains why:
-
-```json
-{
-  "ready": false,
-  "reasons": [
-    "depends_on 'setup-cluster' is not accepted (status: active)",
-    "conflict_scope 'staging-cluster' has active task 'run-spec-a'"
-  ]
-}
-```
-
-## Integrity Checker
-
-`tree.check()` validates the full tree:
-
-### Structural checks
-
-- Every reference (children, depends_on, supersededBy) points to existing node.
-- No circular dependencies or parent-child cycles.
-- No orphan nodes.
-- No duplicate IDs.
-- Root exists and is reachable.
-
-### State checks
-
-- `review` nodes have `result` and `evidence`.
-- `accepted` nodes have `summary` and evidence references, unless the accepted
-  node is a pure rollup with `archive_summary`.
-- `superseded` nodes have `supersededBy` and `reason`.
-- `blocked` nodes have `blocker.condition`.
-- `decomposed` nodes have children.
-- Leaves have no children.
-
-### Rollup hints
-
-- Parent with all children `accepted`: emit `rollup-hint` for owner review.
-- Parent with any child `blocked`: emit `blocked-hint` for owner review.
-
-### Design compliance checks
-
-- No undefined or ambiguous statuses.
-- No `no_work`, `waiting`, `unknown`, `maybe-later`, `ready`, or empty status.
-- No superseded chain longer than 3 (tool auto-collapses).
-- No parent with more than 15 children (warn, owner should group).
-- No depth greater than 5 (warn, owner should flatten).
-- Total visible (non-archived) nodes should not exceed 50 (warn).
-
-### Staleness checks
-
-- `backlog` nodes older than 7 days.
-- `active` nodes older than 24 hours.
-- `blocked` nodes older than 14 days.
-
-## Outdated and Orphan Handling
-
-### Superseded by better understanding
-
-```typescript
-tree.supersede("test-ms-via-cli", {
-  reason: "CLI default-payload bug, REST is the proven path",
-  replacementIds: ["test-ms-via-rest"],
-});
-```
-
-Cascades: non-terminal children become `superseded` with reason
-`parent-superseded`. This is structural cleanup, not judgment — the owner
-already decided to supersede the parent.
-
-### Stale by time
-
-`tree.stale(olderThan)` returns untouched nodes. The owner reviews each:
-
-- Still relevant → touch
-- Irrelevant → prune
-- Blocked → add concrete blocker
-
-### No fake terminal states
-
-The tool rejects ambiguous states. If work cannot proceed, the owner must
-express why:
-
-- Concrete blocker → `tree.block(nodeId, { condition, category })`
-- Wrong approach → `tree.supersede(nodeId, reason, replacements)`
-- Needs rework → `tree.rework(nodeId, reason)` (back to backlog)
-- Done → `tree.accept(nodeId, reason)`
-
-"No work", "waiting", or vague states are integrity violations.
-
-## Compaction
-
-### Archive accepted detail (owner-triggered)
-
-**Before archiving, the owner must roll up knowledge.** The parent node's
-`summary`, `evidence`, and `reusable_for` fields must capture what the subtree
-learned — not just "38 subtasks completed." If a human reads only the parent
-after archiving, they should understand:
-
-- What was learned or proved
-- Where the evidence is
-- What future work can reuse from this branch
-
-The tool should reject `tree.archive()` if the parent has no `summary` or if
-the summary is shorter than 50 characters (likely a placeholder).
-
-When the owner decides an accepted subtree is complete and the child detail
-is no longer useful as live project understanding:
-
-```typescript
-tree.archive("managedsystem-pool", {
-  summary:
-    "ManagedSystem pool REST lifecycle verified on staging. 9/9 paths pass. " +
-    "Proven minimal add-existing payload: {properties:{mode:'ManagedSystem'}}. " +
-    "CLI has default-payload bug (known product gap).",
-});
-```
-
-Children move to `tasks/archive.json`. The parent keeps the accepted knowledge
-summary, evidence refs, and reusable-for hints. `tree.status()` hides archived
-details; `tree.detail(nodeId)` retrieves them.
-
-Do not archive a useful milestone just because it is done. Archive only when a
-short accepted summary preserves the knowledge better than the full subtree.
-
-### Collapse superseded chains (tool-automatic)
-
-A → B → C collapses to C with note "supersedes A, B". Intermediate nodes move
-to archive. This is structural cleanup — no judgment needed.
-
-### Archive location
-
-Live tree: `tasks/tree.json` — current thinking, active work, and accepted
-knowledge milestones, ideally ≤50 visible nodes.
-Archive: `tasks/archive.json` — collapsed low-value accepted detail and
-superseded chains with evidence links. Detail retrievable via
-`tree.detail(nodeId)`.
-
-The live tree should always be readable by a human in under a minute.
-
-### Limits
-
-| Limit                   | Value | Enforcement                     |
-| ----------------------- | ----- | ------------------------------- |
-| Max visible nodes       | 50    | Checker warns                   |
-| Max children per parent | 15    | Checker warns, owner groups     |
-| Max depth               | 5     | Checker warns, owner flattens   |
-| Max superseded chain    | 3     | Tool auto-collapses             |
+The checker reports rollup and liveness hints; it does not fix project meaning.
 
 ## Data Structure
 
-### tasks/tree.json (live thinking)
-
 ```json
 {
-  "version": 1,
+  "version": 2,
   "project": "example",
-  "updated_at": "2026-06-12T...",
+  "updated_at": "2026-06-12T00:00:00Z",
   "root_task_id": "goal",
   "tasks": {
     "goal": {
       "id": "goal",
       "goal": "Project goal description",
-      "status": "decomposed",
+      "state": "backlog",
       "parent_id": null,
       "children": ["feature-a", "feature-b"],
-      "created_at": "2026-06-01T...",
-      "updated_at": "2026-06-12T..."
+      "created_at": "2026-06-01T00:00:00Z",
+      "updated_at": "2026-06-12T00:00:00Z"
     },
     "feature-a": {
       "id": "feature-a",
-      "goal": "Feature A full lifecycle",
-      "status": "accepted",
+      "goal": "Feature A lifecycle",
+      "state": "done",
       "summary": "Feature A lifecycle is verified by staging REST replay.",
       "evidence": ["runs/feature-a-basic/run.json"],
       "reusable_for": ["Feature A negative cases", "Feature A cleanup checks"],
-      "archived": true,
-      "archive_summary": "4 tasks accepted, 8 evidence refs",
       "parent_id": "goal",
       "children": [],
-      "created_at": "2026-06-01T...",
-      "updated_at": "2026-06-10T..."
+      "created_at": "2026-06-01T00:00:00Z",
+      "updated_at": "2026-06-10T00:00:00Z"
     },
     "fb-spec-1": {
       "id": "fb-spec-1",
       "goal": "Feature B basic behavior",
-      "status": "backlog",
+      "state": "backlog",
       "parent_id": "feature-b",
       "children": [],
       "depends_on": [],
-      "created_at": "2026-06-10T...",
-      "updated_at": "2026-06-10T..."
+      "created_at": "2026-06-10T00:00:00Z",
+      "updated_at": "2026-06-10T00:00:00Z"
     }
-  }
-}
-```
-
-### tasks/archive.json (collapsed detail)
-
-```json
-{
-  "feature-a-spec-1": {
-    "goal": "Feature A basic behavior",
-    "status": "accepted",
-    "parent_id": "feature-a",
-    "archived_at": "2026-06-10T...",
-    "evidence": ["run_123.json"]
   }
 }
 ```
 
 ## Node Fields
 
-| Field             | Required          | Description                                                        |
-| ----------------- | ----------------- | ------------------------------------------------------------------ |
-| `id`              | yes               | Unique node identifier                                             |
-| `goal`            | yes               | What this task accomplishes                                        |
-| `status`          | yes               | backlog, active, review, accepted, blocked, superseded, decomposed |
-| `parent_id`       | yes (except root) | Parent node ID                                                     |
-| `children`        | yes               | Child node IDs (empty for leaves)                                  |
-| `created_at`      | yes               | ISO timestamp                                                      |
-| `updated_at`      | yes               | ISO timestamp                                                      |
-| `depends_on`      | no                | Node IDs that must be accepted first                               |
-| `result`          | no                | Worker result (required at review)                                 |
-| `evidence`        | no                | Evidence refs (required at review)                                 |
-| `summary`         | no                | Accepted knowledge summary or review result summary                |
-| `reusable_for`    | no                | Future tasks/branches that can reuse this knowledge                |
-| `accepted_at`     | no                | ISO timestamp when owner accepted the claim                        |
-| `accepted_by`     | no                | Planner/owner that accepted the claim                              |
-| `supersededBy`    | no                | Replacement node IDs (required when superseded)                    |
-| `reason`          | no                | Why superseded/blocked/reworked                                    |
-| `blocker`         | no                | `{ condition, category }` (required when blocked)                  |
-| `conflict_scope`  | no                | Mutex group for parallel dispatch                                  |
-| `archived`        | no                | True when subtree is collapsed                                     |
-| `archive_summary` | no                | Human-readable summary of archived subtree                         |
-| `priority`        | no                | Dispatch priority within backlog                                   |
+| Field             | Required        | Description                                                                                |
+| ----------------- | --------------- | ------------------------------------------------------------------------------------------ |
+| `id`              | yes             | Unique task id.                                                                            |
+| `goal`            | yes             | What this task accomplishes or records.                                                    |
+| `state`           | yes             | One of `backlog`, `active`, `review`, `done`, `blocked`.                                   |
+| `parent_id`       | yes except root | Parent task id.                                                                            |
+| `children`        | yes             | Child task ids; empty for leaves.                                                          |
+| `created_at`      | yes             | ISO timestamp.                                                                             |
+| `updated_at`      | yes             | ISO timestamp.                                                                             |
+| `depends_on`      | no              | Task ids that must be `done` before this leaf is runnable.                                 |
+| `result`          | no              | Worker claim when state is `review`.                                                       |
+| `evidence`        | no              | Evidence references.                                                                       |
+| `summary`         | no              | Done/review summary or branch rollup.                                                      |
+| `resolution`      | no              | `completed`, `replaced`, `cancelled`, or another explicit owner resolution for done tasks. |
+| `replaced_by`     | no              | Replacement task ids when `resolution` is `replaced`.                                      |
+| `blocker`         | no              | Confirmed external blocker with condition, owner, and resume condition.                    |
+| `conflict_scope`  | no              | Mutex group for parallel dispatch.                                                         |
+| `session`         | no              | Primary task session and handoff summary.                                                  |
+| `context`         | no              | Compact task-owned working context.                                                        |
+| `context_ref`     | no              | Spillover file for large task-owned context.                                               |
+| `archived`        | no              | True when low-value detail has been collapsed.                                             |
+| `archive_summary` | no              | Human-readable summary of archived subtree.                                                |
+| `tags`            | no              | Optional labels such as `focus_plan`, `milestone`, or `needs-review`.                      |
 
-## Integration
+## Migration
 
-The tree integrity checker runs as part of `bun run check`:
+Existing apps may still contain older `status` values. Migrate task data with a
+small audited tool, not by hand-editing large JSON files.
 
+Mapping:
+
+| Old field/value            | New representation                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `status`                   | Rename to `state`. Keep read compatibility temporarily.                                                                              |
+| `accepted`                 | `state: "done"`, preserve `accepted_at/by` or migrate to `done_at/by`.                                                               |
+| `done`                     | Keep `state: "done"`.                                                                                                                |
+| `ready`                    | `state: "backlog"`; readiness is computed.                                                                                           |
+| `proposed`                 | `state: "backlog"`; approval/proposal detail stays in `context`.                                                                     |
+| `decomposed` with children | Choose branch state from owner rollup: usually `backlog`, `active`, `review`, `done`, or `blocked`; structure comes from `children`. |
+| `decomposed` leaf          | Invalid old data. Convert to `backlog` unless evidence proves it is `done` or `blocked`.                                             |
+| `superseded`               | `state: "done"`, `resolution: "replaced"`, `replaced_by: [...]`, `reason`.                                                           |
+| `cancelled`                | `state: "done"`, `resolution: "cancelled"`, `reason`.                                                                                |
+
+Parent migration guidance:
+
+- all children done and parent has a useful summary: parent `done`
+- any child active and branch is currently being driven: parent `active`
+- any child review and branch needs owner rollup: parent `review`
+- any child blocked and no unrelated child work can progress: parent `blocked`
+- otherwise parent `backlog`
+
+After migration, run `tree.check()` and compare `tree.kanban()` counts with the
+UI. The UI should read counts directly from the task-tree tool projection.
+
+## App Integration
+
+The tree integrity checker should run as part of each app's `bun run check`.
+
+Recommended order:
+
+```text
+format -> syntax -> typecheck -> app integrity -> task tree integrity -> tests
 ```
-format → whitespace → compile → wiring → schema → tree → typecheck
-```
 
-Fails on structural violations. Warns on staleness and limit thresholds.
-Emits rollup hints for owner attention.
+The check should fail on invalid states, broken references, and impossible
+transitions. It may warn on staleness, depth, and tree-size limits.

@@ -180,6 +180,22 @@ Keep workflow entrypoints local to the app. A workflow is where the app's
 project-specific judgment, prompts, domain commands, and side effects live, so
 it should be reviewed with the app that owns it.
 
+Prefer app-local workflows over global May handlers for project behavior. Global
+handlers may discover apps, deliver events, provide generic compatibility, and
+surface missing closure, but they should not become the place where a specific
+project's owner packet, planning loop, task assignment policy, or domain repair
+logic lives. When behavior is specific to `may-agent.app`, `aks-rp-e2e.app`,
+`evaluation.app`, or another app, put that behavior under that app's
+`workflows/` directory and route to it from `app.ts`.
+
+For `.app` projects, the legacy global project handler is only a backstop. If it
+detects that a project app needs owner attention, it should emit a targeted
+`project.owner.requested` event for the app's domain project id. It should not
+read `tasks/tree.json`, compute runnable leaves, dispatch task workers, or fork a
+generic owner session for that app. The app-local owner workflow owns those
+decisions because it has the right project packet, task-tree rules, and domain
+context.
+
 Move reusable mechanics into `@may-agent/sdk` when they are domain-neutral:
 
 - project-app manifest types and `defineProjectApp`

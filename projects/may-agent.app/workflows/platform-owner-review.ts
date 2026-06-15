@@ -119,22 +119,31 @@ function compactRows(
 function recentEvents(
   ctx: WorkflowContext,
   types: string[],
-): Record<string, unknown> {
+): { data: Record<string, unknown>; consumedMessageIds: number[] } {
   const since = Date.now() - 60 * 60_000;
-  const result: Record<string, unknown> = {};
+  const data: Record<string, unknown> = {};
+  const consumedMessageIds: number[] = [];
   for (const type of types) {
     try {
       const rows = ctx.query.events({ type, since, limit: 8 }).rows as Array<
         Record<string, unknown>
       >;
-      result[type] = compactRows(rows);
+      // Track message.created event IDs so the caller can mark them handled.
+      if (type === "message.created") {
+        for (const row of rows) {
+          if (typeof row.id === "number" && row.status === "pending") {
+            consumedMessageIds.push(row.id);
+          }
+        }
+      }
+      data[type] = compactRows(rows);
     } catch (error) {
-      result[type] = {
+      data[type] = {
         error: error instanceof Error ? error.message : String(error),
       };
     }
   }
-  return result;
+  return { data, consumedMessageIds };
 }
 
 function queryRows(
@@ -151,7 +160,7 @@ function queryRows(
 function buildReviewPacket(
   ctx: WorkflowContext,
   appDir: string,
-): Record<string, unknown> {
+): { packet: Record<string, unknown>; consumedMessageIds: number[] } {
   const projectJson = parseJsonFile(join(appDir, "project.json"));
   const projectRows = queryRows(ctx, () =>
     ctx.query.projects({ id: "may-agent.app", limit: 5 }),
@@ -166,33 +175,63 @@ function buildReviewPacket(
     ctx.query.sessions({ agent: "may", status: "running", limit: 10 }),
   );
 
+  const abnormalEvents = recentEvents(ctx, [
+    "handler.failed",
+    "session.resume_failed",
+    "subscriber.failed",
+    "message.delivery_failed",
+    "agent.config_invalid",
+    "metric.breach",
+    "metric.recovered",
+    "metric.stalled",
+    "message.created",
+  ]);
+
+  // Collect ALL pending message.created events for lifecycle management,
+  // not just the 1h window used for the review packet display.
+  // The review packet shows recent events (1h, limit 8) for owner context,
+  // but lifecycle needs to mark ALL pending messages as handled to prevent
+  // accumulation between the 1h lookback and 24h expiry threshold.
+  const allPendingMessageIds = [...abnormalEvents.consumedMessageIds];
+  try {
+    const LIFECYCLE_LOOKBACK_MS = 25 * 60 * 60_000; // 25h — slightly wider than expiry to catch edge cases
+    const allPendingMessages = ctx.query.events({
+      type: "message.created",
+      owner: "agent:may",
+      since: Date.now() - LIFECYCLE_LOOKBACK_MS,
+      limit: 200,
+    }).rows as Array<Record<string, unknown>>;
+    for (const row of allPendingMessages) {
+      if (
+        typeof row.id === "number" &&
+        row.status === "pending" &&
+        !allPendingMessageIds.includes(row.id)
+      ) {
+        allPendingMessageIds.push(row.id);
+      }
+    }
+  } catch { /* best-effort: fall back to recentEvents IDs only */ }
+
   return {
-    generated_at: new Date().toISOString(),
-    project_json: {
-      id: projectJson.id,
-      owner: projectJson.owner,
-      status: projectJson.status,
-      currentFocus: projectJson.currentFocus,
+    packet: {
+      generated_at: new Date().toISOString(),
+      project_json: {
+        id: projectJson.id,
+        owner: projectJson.owner,
+        status: projectJson.status,
+        currentFocus: projectJson.currentFocus,
+      },
+      runtime_project_rows: projectRows,
+      project_state_mismatch: projectRows.some(
+        (row) => row.status !== projectJson.status,
+      ),
+      task_tree: taskTreePacket(appDir),
+      open_alerts: openAlerts,
+      recent_abnormal_events: abnormalEvents.data,
+      owner_sessions: compactRows(ownerSessions, 10),
+      active_may_sessions: compactRows(activeMaySessions, 10),
     },
-    runtime_project_rows: projectRows,
-    project_state_mismatch: projectRows.some(
-      (row) => row.status !== projectJson.status,
-    ),
-    task_tree: taskTreePacket(appDir),
-    open_alerts: openAlerts,
-    recent_abnormal_events: recentEvents(ctx, [
-      "handler.failed",
-      "session.resume_failed",
-      "subscriber.failed",
-      "message.delivery_failed",
-      "agent.config_invalid",
-      "metric.breach",
-      "metric.recovered",
-      "metric.stalled",
-      "message.created",
-    ]),
-    owner_sessions: compactRows(ownerSessions, 10),
-    active_may_sessions: compactRows(activeMaySessions, 10),
+    consumedMessageIds: allPendingMessageIds,
   };
 }
 
@@ -215,8 +254,50 @@ function resultSummary(result: unknown): string {
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const appDir = field(ctx.task, "app") ?? "/app/projects/may-agent.app";
   const projectDir = field(ctx.task, "project") ?? "/app/projects/may-agent";
-  const packet = buildReviewPacket(ctx, appDir);
+
+  // Expire stale pending messages older than 24h on each review cycle.
+  // This prevents unbounded growth of the pending count.
+  try {
+    const STALE_MESSAGE_AGE_MS = 24 * 60 * 60_000; // 24 hours
+    const expired = ctx.query.expireStaleMessages(STALE_MESSAGE_AGE_MS);
+    if (expired > 0) {
+      ctx.emit({
+        type: "message.lifecycle",
+        action: "expire_stale",
+        expired,
+        olderThanMs: STALE_MESSAGE_AGE_MS,
+      });
+    }
+  } catch { /* best-effort: don't block review if expiry fails */ }
+
+  // Expire stale pending signal events (session.resume_failed, metric.breach/recovered/stalled)
+  // older than 24h. These are non-actionable historical noise once reviewed.
+  try {
+    const STALE_SIGNAL_AGE_MS = 24 * 60 * 60_000; // 24 hours
+    if (typeof ctx.query.expireStaleSignalEvents === "function") {
+      const expiredSignals = ctx.query.expireStaleSignalEvents(STALE_SIGNAL_AGE_MS);
+      if (expiredSignals > 0) {
+        ctx.emit({
+          type: "signal.lifecycle",
+          action: "expire_stale_signals",
+          expired: expiredSignals,
+          olderThanMs: STALE_SIGNAL_AGE_MS,
+        });
+      }
+    }
+  } catch { /* best-effort: don't block review if signal expiry fails */ }
+
+  const { packet, consumedMessageIds } = buildReviewPacket(ctx, appDir);
   const packetJson = JSON.stringify(packet, null, 2);
+
+  // Mark consumed message.created events as handled so they don't reappear.
+  // This closes the lifecycle gap where the owner workflow reads messages
+  // but never transitions them from pending → handled.
+  try {
+    if (consumedMessageIds.length > 0 && typeof ctx.query.markInboxHandled === "function") {
+      ctx.query.markInboxHandled(consumedMessageIds, "may");
+    }
+  } catch { /* best-effort: don't block review if marking fails */ }
 
   // Safety cap: if the serialized packet exceeds 200KB, something is wrong.
   // Truncate to prevent recursive amplification from bloating session tasks.

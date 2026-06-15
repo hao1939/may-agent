@@ -82,6 +82,44 @@ async function routeMayAgentEvent(
     event.type === "metric.stalled" ||
     event.type === "metric.recovered"
   ) {
+    // Only wake the platform owner for metrics owned by may (platform metrics).
+    // Project-specific metrics (e.g. aks-rp-e2e.task.*) are owned by their
+    // respective project apps and should not trigger a full platform review.
+    const metricOwner = eventString(event, "owner");
+    if (metricOwner && metricOwner !== "agent:may") {
+      return ctx.noop(
+        `metric owned by ${metricOwner}, not platform — skipping owner wake`,
+      );
+    }
+
+    // metric.recovered is informational — the problem resolved itself.
+    // Don't spend session budget on a wake; the next scheduled project.tick
+    // (4h interval) naturally captures the recovered state.
+    // Without this guard, breach→review→recover→review loops consume the
+    // entire 6-sessions/day budget for no actionable work.
+    if (event.type === "metric.recovered") {
+      return ctx.noop(
+        "metric recovered — informational, captured in next scheduled review",
+      );
+    }
+
+    // Project-health observation metrics measure the RESULT of owner reviews
+    // (e.g. "are there active tasks?" / "are there findings?"). They create
+    // a circular dependency when they trigger owner wakes:
+    //   no active task → breach → owner wake → review → recover → breach again
+    // Defer these to the next scheduled project.tick (4h) to break the loop.
+    const DEFERRED_HEALTH_METRICS = new Set([
+      "project.health.finding-count",
+      "project.owner-incomplete-count",
+      "project.owner-judgment-needed-count",
+    ]);
+    const metricId = eventString(event, "metricId");
+    if (metricId && DEFERRED_HEALTH_METRICS.has(metricId)) {
+      return ctx.noop(
+        `health-observation metric ${metricId} deferred to scheduled project.tick review`,
+      );
+    }
+
     return ctx.emit(projectOwnerEvent("metric-signal", eventDetails(event)));
   }
 
@@ -96,6 +134,10 @@ async function routeMayAgentEvent(
     event.type === "project.planning.requested"
   ) {
     return ctx.noop("handled by may-agent owner workflow handler");
+  }
+
+  if (event.type === "project.reviewed") {
+    return ctx.noop("terminal signal — review cycle complete, no further routing needed");
   }
 
   return undefined;
@@ -122,7 +164,7 @@ export default defineProjectApp({
     {
       id: "platform-review",
       enabled: true,
-      intervalMs: 3_600_000,
+      intervalMs: 14_400_000, // 4h — aligns with 6 sessions/day budget
       event: {
         type: "project.tick",
         project: projectId,
@@ -209,7 +251,8 @@ export default defineProjectApp({
       {
         event: "metric.breach",
         emits: ["project.owner.requested"],
-        description: "Platform metric breach wakes May to inspect and react.",
+        description:
+          "Platform metric breach wakes May to inspect and react. Health-observation metrics (project.health.*, project.owner-*) are deferred to scheduled project.tick to prevent circular breach→review→recover loops.",
       },
       {
         event: "metric.stalled",
@@ -218,9 +261,9 @@ export default defineProjectApp({
       },
       {
         event: "metric.recovered",
-        emits: ["project.owner.requested"],
+        emits: [],
         description:
-          "Platform metric recovery wakes May to close stale context or update task state.",
+          "Platform metric recovery is informational — nooped to prevent breach→recover→review loops from burning session budget.",
       },
       {
         event: "project.tasks.ready",

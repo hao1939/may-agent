@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["app.ts", "types/**/*.ts"]
+  "include": ["app.ts", "workflows/**/*.ts", "types/**/*.ts"]
 }
