@@ -101,6 +101,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, entry: Cron
              AND CAST(json_extract(e.overall, '$.heuristicVersion') AS INTEGER) < ?
            )
        )
+       /* KE-2000 Spec 2: skip quick-exit successful sessions — they are
+          trivially categorizable from metadata and waste evaluator budget */
+       AND NOT (s.status = 'done' AND s.error IS NULL AND COALESCE(s.opCount, 0) <= 10)
        ORDER BY COALESCE(s.endedAt, s.startedAt) DESC
        LIMIT ?`,
       [cutoff, fallbackCutoff, heuristicVersion, limit],

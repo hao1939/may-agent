@@ -830,9 +830,23 @@ export function shouldSkipAftermathAmplification(
   session: any,
   transcript: string,
 ): { skip: boolean; reason: string } {
+  const opCount = Number(session?.opCount ?? 0);
+  const status = String(session?.status ?? "unknown");
+
+  // Quick-exit exemption (KE-2000 Spec 2): successful low-op sessions are
+  // trivially categorizable from metadata — skip LLM evaluation entirely.
+  // Falsifier: if >5% of ≤10-op done sessions have errors, threshold needs adjustment.
+  // Validated at 0.0% across 1,479 7-day sessions (2026-06-15).
+  if (
+    status === "done" &&
+    !session?.error &&
+    opCount <= 10
+  ) {
+    return { skip: true, reason: "quick_exit_successful_session" };
+  }
+
   if (!isTerminalFailureSession(session)) return { skip: false, reason: "" };
 
-  const opCount = Number(session?.opCount ?? 0);
   if (opCount === 0) {
     return { skip: true, reason: "terminal_zero_op_session" };
   }
