@@ -59,15 +59,28 @@ gates **before** the LLM session starts:
    (gate: `circuit_breaker`). Auto-resets after 1 hour (`AUTO_RESET_MS`).
    Source: `@may-agent/sdk/src/circuit-breaker.ts`.
 
-2. **Dispatch dedup guard** — If the agent's heartbeat is repeatedly failing
-   dispatch checks, the heartbeat is skipped (gate: `dispatch_dedup`).
-   Source: `@may-agent/sdk/src/dispatch-dedup-guard.ts`.
+2. **Dispatch dedup guard** — If the agent's heartbeat accumulates ≥3 error
+   outcomes in a 7-day window (`MAX_FAILURES_BEFORE_BLOCK=3`,
+   `WINDOW_DAYS=7`), the heartbeat is permanently blocked until either a
+   success resets the counter or the 7-day window expires. Unlike the
+   circuit breaker, **there is no auto-reset timer**. State is persisted in
+   `.state/dispatch-dedup.json`. Manual escape hatch: call `unblock()` or
+   edit the JSON file. Source: `@may-agent/sdk/src/dispatch-dedup-guard.ts`.
 
 **Known issue (KE-1696):** The circuit breaker counts **all** errors equally,
 including zero-op provider startup failures where the LLM was never called.
 This creates false positives: a transient provider outage can disable a
 healthy agent for up to an hour. A fix would exclude `opCount = 0` errors
 from the consecutive count; this requires a `src/` change.
+
+**Known issue (KE-1992):** The dispatch dedup guard's 7-day block without
+auto-reset creates a liveness trap for heartbeats. A provider blip producing
+3 rapid zero-op errors disables the heartbeat for up to 7 days, even for
+agents with >96% heartbeat success rates. The evaluator heartbeat was blocked
+for 9.7+ hours on 2026-06-15 by this mechanism. The circuit breaker's 1-hour
+auto-reset never activates because the dedup guard prevents the heartbeat
+from reaching the circuit breaker. Fix: exempt heartbeats from dedup guard,
+or add an auto-reset timer matching the circuit breaker design.
 
 ## What Gets Loaded
 
