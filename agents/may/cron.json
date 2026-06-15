@@ -300,7 +300,7 @@
     "intervalMs": 1800000,
     "handler": "project",
     "agent": "may",
-    "enabled": true,
+    "enabled": false,
     "message": "[cron:project-resume] Scan active projects and resume.",
     "description": "Detect projects needing attention, dispatch tasks or owner agent sessions. Event triggers provide immediate reaction; timer is backup scan.",
     "on": [
@@ -314,7 +314,8 @@
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/projects.md"
-    ]
+    ],
+    "_disabled_reason": "All projects migrated to .app — apps own their schedules. Legacy reconciler no longer needed. 2026-06-15"
   },
   {
     "name": "project-steward",
