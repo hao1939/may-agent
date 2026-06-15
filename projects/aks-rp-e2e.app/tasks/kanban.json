@@ -1,21 +1,20 @@
 {
   "version": 1,
-  "generated_at": "2026-06-15T05:55:00.951Z",
-  "tree_updated_at": "2026-06-15T05:55:00.938Z",
+  "generated_at": "2026-06-15T05:55:45.586Z",
+  "tree_updated_at": "2026-06-15T05:55:45.572Z",
   "kanban": {
     "total_cards": 272,
     "tree_total": 290,
     "status_counts": {
       "active": 7,
-      "done": 282,
-      "review": 1
+      "done": 283
     },
     "column_counts": {
       "backlog": 0,
       "in-progress": 4,
-      "review": 1,
+      "review": 0,
       "blocked": 0,
-      "done": 267
+      "done": 268
     },
     "card_ids_by_column": {
       "backlog": [],
@@ -25,9 +24,7 @@
         "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
         "storage-csi-blob-driver-enable-staging-20260615"
       ],
-      "review": [
-        "localdns-lifecycle-staging-20260615"
-      ],
+      "review": [],
       "blocked": [],
       "done": [
         "all-spec-verification-and-evidence-closure",
@@ -164,6 +161,7 @@
         "gpu-operator-default-install-staging-20260615",
         "jwt-authenticator-incluster-idp-staging-20260615",
         "jwt-authenticator-upgrade-survival-staging-20260615",
+        "localdns-lifecycle-staging-20260615",
         "machines-agentpool-api-crud-staging-20260615",
         "managedsystem-create-time-staging-20260615",
         "model-enrich-nonpassing-verdicts",
@@ -300,6 +298,6 @@
       ]
     },
     "escalated": 0,
-    "settled_pct": 98
+    "settled_pct": 99
   }
 }

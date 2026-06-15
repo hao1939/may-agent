@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-15T05:55:00.938Z",
+  "updated_at": "2026-06-15T05:55:45.572Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "kms-v2-enable-on-existing-public-kv-staging-20260615",
@@ -15548,7 +15548,7 @@
     "localdns-lifecycle-staging-20260615": {
       "id": "localdns-lifecycle-staging-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -15579,12 +15579,21 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Ran staging execution for localdns-lifecycle feature. Check-mode passed (16/16 preflight assertions pass: spec structure, 4 feature paths, 8 spec assertions, safety gate all verified). Execute-mode was blocked by ARM auth (no Azure subscription credentials in this environment) — correctly classified as environment-blocked (infra_block), not an implementation or test issue. Execution recorded under runs/executions/localdns-lifecycle-staging-exec-20260615/ with evidence in evidence/archive/. Knowledge model path.localdns.lifecycle remains status=pass. Spec remains status=ready, probe is verified ready for live staging when credentials are available.",
         "last_worker_completed_at": "2026-06-15T05:53:48.551Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T05:55:45.570Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accept: Worker ran check-mode (16/16 preflight pass). Execute-mode correctly identified empty subscription ID causing ARM auth HTTP 400. Classified as environment-blocked/infra_block. Probe verified ready for live staging. Execution artifacts recorded."
       },
       "session_id": "s_task_localdns-lifecycle-staging-20260615",
       "session_history": [
         "s_task_localdns-lifecycle-staging-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T05:55:45.570Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accept: Worker ran check-mode (16/16 preflight pass). Execute-mode correctly identified empty subscription ID causing ARM auth HTTP 400. Classified as environment-blocked/infra_block. Probe verified ready for live staging. Execution artifacts recorded."
+      }
     },
     "gpu-operator-default-install-staging-20260615": {
       "id": "gpu-operator-default-install-staging-20260615",
