@@ -511,6 +511,13 @@ runnable without May-agent.
 
 ## Project Handler
 
+> **Status (2026-06-15):** The legacy project cron handler (`project` entry in
+> `agents/may/cron.json`) was **disabled** on 2026-06-15 — all active projects
+> have migrated to `.app` layout and own their schedules via `app.ts`. The
+> handler code still exists for reference and possible future re-enablement,
+> but it does not run. The project steward and project creative audit handlers
+> remain active. See also KE-2011 (orphaned metrics from this handler).
+
 `agents/may/handlers/project.ts` is an event-driven reconciler with a
 30-minute timer fallback:
 - Treats project events (`project.nudge`, `project.task.finished`,
@@ -563,14 +570,18 @@ activity:
   auto-handler for known project metrics, so the original metric event can wake
   project reconciliation with metric id/current/threshold context before generic
   metric-alert triage is considered.
-- `project.reconcile.trigger-count` records each project reconciler pass with a
+- `project.reconcile.trigger-count` ~~records each project reconciler pass with a
   note identifying event vs timer, event type, target project, action count, and
-  launched count.
-- `project.reconcile.launched-count` records how many task or owner sessions a
-  reconciler pass launched.
-- `project.reconcile.event-latency-ms` records milliseconds from event timestamp
+  launched count.~~ **Orphaned** — handler disabled 2026-06-15; metrics left
+  `status='active'` with no snapshotter. These are the entire source of
+  `capability.status-reality-mismatch-count=3`. Proposed deactivation in
+  KE-2011.
+- `project.reconcile.launched-count` ~~records how many task or owner sessions a
+  reconciler pass launched.~~ **Orphaned** — same as above.
+- `project.reconcile.event-latency-ms` ~~records milliseconds from event timestamp
   to reconciler handling. It alerts above 5 minutes because the normal
-  event-driven path should not wait for the fallback scan.
+  event-driven path should not wait for the fallback scan.~~ **Orphaned** — same
+  as above.
 - `project.owner-incomplete-count` counts active projects with no open work.
   This should normally be zero. A nonzero value means the owner loop needs to
   replan, set waiting/blocked/terminal state, or escalate.
@@ -652,7 +663,9 @@ CREATE TABLE projects (
 
 ## Implementation
 
-- **Project handler:** `agents/may/handlers/project.ts`
+- **Project handler:** `agents/may/handlers/project.ts` — **disabled
+  2026-06-15** (cron entry `enabled: false`). All active projects now use `.app`
+  layout with their own `app.ts` handler. Code retained for reference.
 - **Project steward:** `agents/may/handlers/project-steward.ts` scans project
   docs/tasks read-only and reports deterministic findings as
   `project.health.finding` events plus project health metrics. (The former
@@ -670,6 +683,10 @@ CREATE TABLE projects (
 
 ## Current Gaps To Close
 
+- **Orphaned project.reconcile.* metrics (KE-2011):** The 3 metrics owned by
+  the disabled project handler are still `status='active'`, inflating
+  `capability.status-reality-mismatch-count` by 3. Fix: set them to `inactive`.
+  Proposal at `agents/arc/workspace/proposals/2026-06-15-deactivate-orphaned-project-reconcile-metrics.md`.
 - Project cache schema should stay generated or checked against `schema.ts` so
   docs do not drift into non-existent columns.
 - Project docs are the context map. Runtime projections should not become a
