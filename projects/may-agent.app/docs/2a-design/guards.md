@@ -285,6 +285,27 @@ files as "not matching this session's deliverables" — the fix is to
 suppress the event emission for that case, not just the agent-facing
 warning.
 
+**Snapshot 2026-06-15 ~07:42Z** (40min post-restart window, 19 total):
+
+**Spec 3 fix LIVE.** Runtime restarted at 07:03Z with rebuilt bundle
+(07:01Z, commit 48cfe5a8). `commit-guard.ts` now returns `undefined`
+when no session-owned files are dirty, eliminating the ambient warning
+event. Rate dropped from **~225/hr → ~60/hr** (73% reduction). Zero
+ambient commit-guard "none match this session" triggers post-restart.
+
+| Signal | Count | Share |
+|--------|------:|------:|
+| finish() uncommitted (session-owned) | 7 | 37% |
+| SESSION_BASH_GREP | 5 | 26% |
+| SESSION_BASH_CAT | 3 | 16% |
+| READ_DEDUP | 2 | 11% |
+| SESSION_READ | 1 | 5% |
+
+Remaining triggers are 100% legitimate behavioral signals. Guard SNR
+inverted from ~2% signal to ~100% signal. Projected 24h total: ~1,440
+(threshold 4,500, headroom 3×). Rolling metric will clear pre-fix
+data by ~01:00Z Jun 16. See KE-2003.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
