@@ -105,3 +105,9 @@ __pycache__/
 
 # Project app runtime scratch.
 /projects/*.app/.state/
+
+# Generated/copied top-level artifacts - not source-of-truth
+/ui/
+/packages/
+/may-agent-latest
+/chrome-profile/
