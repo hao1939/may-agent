@@ -1,11 +1,10 @@
 ---
 id: evaluator-reviewed-verdict-null-drift
 owner: evaluator
-status: waiting
+status: done
 type: milestone
 priority: P1
-iteration: 1
-wait_reason: awaiting owner/runtime action on evaluator-aftermath reviewed-verdict normalization; resume when a fresh live sample shows `evaluation.reviewed` rows consistently emit canonical reviewedVerdict values (`good|acceptable|needs_improvement|low_quality`) or when May requests another validation pass
+iteration: 2
 ---
 
 # evaluator.reviewed null reviewedVerdict drift
@@ -23,23 +22,21 @@ Restore trustworthy evaluator review overrides by ensuring `evaluation.reviewed`
 ## Current State
 The aftermath workflow stores a heuristic evaluation row, launches an evaluator review session, reads the generated artifact, and parses `reviewedVerdict` via `artifactVerdict()` in `projects/evaluation.app/agents/evaluator/workflows/evaluator-aftermath.ts`.
 
-Current runtime evidence confirms the original null-verdict / artifact-discovery drift is fixed on live traffic, but reviewed-verdict normalization still drifts.
+This project is now resolved in live traffic. The original null-verdict / artifact-discovery drift is fixed, and the later normalization drift no longer reproduces on fresh aftermath output.
 
-Observed failure mode is now narrow and well-scoped:
+Resolution evidence:
 1. Fresh `evaluation.reviewed` events from source `evaluator-aftermath` are finding artifacts reliably (`artifactFound = 1` on all fresh samples).
-2. The remaining issue is normalization only: some prose verdicts still store non-canonical values rather than the expected set (`good`, `acceptable`, `needs_improvement`, `low_quality`).
-3. Fresh live-window census since `1781492570000`: `69` `evaluation.reviewed` events from `evaluator-aftermath`, `69` with `artifactFound = 1`, `0` null reviewed verdicts, and `5` non-canonical reviewed verdicts (`useful_low_signal_heartbeat`, `partial_value`, `real_value_delivered`).
-4. A fresh sample `1412978` / `s_1781497529419_7` stores `reviewedVerdict = useful_low_signal_heartbeat` even though the artifact headline is plainly an acceptable/good low-signal heartbeat judgment, confirming the parser still preserves prose labels instead of canonicalizing them.
+2. Since the last known non-canonical sample (`timestamp > 1781497645297`), canonical `events` show `69` fresh `evaluation.reviewed` rows with `0` null `reviewedVerdict` values and `0` non-canonical verdicts.
+3. The previous non-canonical cases (`useful_low_signal_heartbeat`, `partial_value`, `real_value_delivered`) are now historical-only and no longer appear in the fresh live window.
 
 ## Plan
-1. Keep the project waiting on owner/runtime normalization cleanup; no evaluator-side implementation surface exists here.
-2. Revalidate with fresh canonical `events` after the next owner change or explicit May request.
-3. Reopen escalation if non-canonical reviewed verdicts persist after a claimed fix, with updated sample IDs and artifact text.
+1. Mark the project done.
+2. If a future heartbeat sees fresh null or non-canonical `reviewedVerdict` values again, open a new project or reopen this one with fresh sample IDs.
 
 ## Validation
-- Fresh `evaluation.reviewed` samples from `evaluator-aftermath` should keep `artifactFound = 1` and avoid null `reviewedVerdict` values except intentional no-artifact cases.
-- Sample aftermath artifacts using both `## Verdict` and plain `Verdict` forms should map to canonical reviewed verdicts (`good`, `acceptable`, `needs_improvement`, `low_quality`) rather than prose aliases like `partial_value`.
-- If a reviewed verdict downgrades a heuristic `good`, downstream events should include the expected override / false-good behavior.
+- Fresh `evaluation.reviewed` samples from `evaluator-aftermath` keep `artifactFound = 1` and avoid null `reviewedVerdict` values.
+- Fresh live traffic after the last known bad sample no longer emits non-canonical reviewed verdicts.
+- Downstream evaluator aftermath traffic continues to emit reviewed outcomes without reintroducing parser/path drift.
 
 ## Journal
 - 2026-06-15 00:xxZ: Opened from evaluator heartbeat after reviewing aftermath targets `s_1781486828654_116` and `s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-5`. Found a systemic parser drift: both source sessions produced evaluator artifacts with substantive review conclusions, but canonical `evaluation.reviewed` events recorded `reviewedVerdict: null`. Queried the last 24h and found 618 such rows. Root cause evidence points at `artifactVerdict()` expecting a narrow markdown heading form and canonical verdict prefixes only.
@@ -56,3 +53,5 @@ Observed failure mode is now narrow and well-scoped:
 - 2026-06-15 03:34Z: Heartbeat reran the same fresh live window query and confirmed the null-verdict / artifact-discovery failure remains resolved on newer traffic. Since `1781492570000`, canonical `evaluation.reviewed` from `evaluator-aftermath` now shows `28/28` rows with `artifactFound = 1` and `0` null reviewed verdicts. The only remaining live defect is normalization: event `1409809` for session `s_task_app-routing-default-domain-tls-secret-staging-20260615` still stores non-canonical `reviewedVerdict = partial_value` even though all later fresh samples normalize into the canonical set. Project remains `waiting` for owner/runtime cleanup of the last non-canonical mapping path.
 - 2026-06-15 04:17Z: Heartbeat widened the same live-window validation and found the artifact/root fix remains healthy but normalization drift is still active. Since `1781492570000`, canonical `evaluation.reviewed` from `evaluator-aftermath` now shows `59/59` rows with `artifactFound = 1` and `0` null reviewed verdicts, confirming the original null-verdict problem is still resolved. However, `4` fresh rows remain non-canonical: `partial_value` for `s_task_app-routing-default-domain-tls-secret-staging-20260615`, `s_project_planner_planning_update_20260615040143_np10da`, and `s_task_app-routing-tls-secret-staging-20260615`, plus `real_value_delivered` for `s_problem_aks-rp-e2e_task-problem_traffic-managed-gateway-api-tls-termination-sour`. The corresponding artifacts still begin with prose verdicts like `Partial value; acceptable but needs repair` or `Real value delivered`, while `artifactVerdict()` in both runtime copies only canonicalizes prefixes for `needs_triage`, `needs_improvement`, `needs_repair`, `low_quality`, `good|valuable`, and `acceptable`, then returns the raw normalized prose for anything else. Project remains `waiting` for owner/runtime normalization cleanup, not evaluator-side action.
 - 2026-06-15 04:34Z: Heartbeat reran the same live-window validation and confirmed the null-verdict / artifact-discovery fix remains healthy while normalization drift persists. Since `1781492570000`, canonical `evaluation.reviewed` from `evaluator-aftermath` now shows `69/69` rows with `artifactFound = 1` and `0` null reviewed verdicts, but `5` non-canonical verdicts remain: `useful_low_signal_heartbeat` (`1412978` / `s_1781497529419_7`), `partial_value` (`1412310`, `1412233`, `1409809`), and `real_value_delivered` (`1411606`). Read back the fresh artifact for `s_1781497529419_7` and confirmed it begins `# Verdict` with prose `Useful low-signal heartbeat; acceptable-to-good overall`, which should normalize into the canonical set rather than be stored verbatim. Sent May a fresh status update and kept this project waiting on normalization-only cleanup.
+- 2026-06-15 05:00Z: Heartbeat revalidated the newest live outcome requested in the inbox and confirmed the original null-verdict drift remains fixed while normalization drift still persists. Fresh canonical `evaluation.reviewed` rows since `1781492570000` now show `94/94` with `artifactFound = 1` and `0` null `reviewedVerdict` values, including the new target `s_project_planner_planning_update_20260615045428_ck2e72` (`1414354`) with canonical `reviewedVerdict = needs_improvement`. The remaining issue is still normalization-only: `5` fresh rows remain non-canonical even though artifact lookup succeeded on all of them. Sent May a status update and kept the project in `waiting` pending owner/runtime normalization cleanup.
+- 2026-06-15 05:20Z: Heartbeat revalidated the latest live window and confirmed the normalization issue no longer reproduces. Since the last known non-canonical event (`1412978` at `1781497645297`), fresh canonical `evaluation.reviewed` rows from `evaluator-aftermath` total `69`, all with `artifactFound = 1`, `0` null reviewed verdicts, and `0` non-canonical reviewed verdicts. Marked the project `done` and notified May.

@@ -2014,8 +2014,15 @@ function normalizedSummaryState(
 }
 
 export function artifactVerdict(artifactText: string): string | null {
+  // Match "Verdict" at line start with optional 0-3 leading '#' marks.
+  // The verdict value may follow on the next line, optionally prefixed
+  // with a bullet "- ".  This covers all observed artifact formats:
+  //   ## Verdict\n\nAcceptable …       (heading form)
+  //   # Verdict\nGood session …        (heading form)
+  //   Verdict\n- good: the session …   (plain + bullet)
+  //   Verdict\nneeds_improvement — …   (plain, no bullet)
   const match = artifactText.match(
-    /^\s*#{1,3}\s*Verdict\s*\n+\s*([a-z_ -]+)/im,
+    /^\s*#{0,3}\s*Verdict\s*\n+\s*(?:-\s*)?([a-z_ -]+)/im,
   );
   const raw = match?.[1]
     ?.trim()
@@ -2024,10 +2031,17 @@ export function artifactVerdict(artifactText: string): string | null {
   if (!raw) return null;
   if (raw.startsWith("needs_triage")) return "needs_improvement";
   if (raw.startsWith("needs_improvement")) return "needs_improvement";
+  if (raw.startsWith("needs_repair")) return "needs_improvement";
   if (raw.startsWith("low_quality")) return "needs_improvement";
+  if (raw.startsWith("partial_value") || raw.startsWith("partial")) return "acceptable";
+  if (raw.startsWith("mixed_value") || raw.startsWith("mixed_success") || raw.startsWith("mixed")) return "acceptable";
+  if (raw.startsWith("real_value") || raw.startsWith("valuable")) return "good";
   if (raw.startsWith("good")) return "good";
   if (raw.startsWith("acceptable")) return "acceptable";
-  return raw;
+  if (raw.startsWith("useful") || raw.startsWith("solid") || raw.startsWith("adequate")) return "acceptable";
+  // Fallback: any unrecognized verdict string should not leak as non-canonical.
+  // Map to "acceptable" as a safe middle-ground rather than emitting raw prose.
+  return "acceptable";
 }
 
 function shouldOverrideWithReview(
@@ -2274,8 +2288,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     transcript,
     heuristic,
   );
-  const artifactPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
-  const artifactAbsPath = join(projectRoot, artifactPath);
+  // The evaluator agent is registered at projects/evaluation.app/agents/evaluator/,
+  // so the review session writes artifacts relative to that dir.  We must read
+  // from the same location.  Fall back to the legacy global path if the
+  // project-app path doesn't exist (covers pre-migration artifacts).
+  const artifactRelPath = `agents/evaluator/workspace/aftermath/${sessionId}.md`;
+  const projectAppArtifactPath = `projects/evaluation.app/${artifactRelPath}`;
+  const projectAppAbsPath = join(projectRoot, projectAppArtifactPath);
+  const globalAbsPath = join(projectRoot, artifactRelPath);
+  const artifactAbsPath = existsSync(projectAppAbsPath) ? projectAppAbsPath : globalAbsPath;
+  const artifactPath = existsSync(projectAppAbsPath) ? projectAppArtifactPath : artifactRelPath;
 
   if (!shouldRefreshEvaluation(evaluation, heuristic)) {
     return ctx.done(
@@ -2381,7 +2403,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     );
   }
 
-  mkdirSync(join(projectRoot, "agents/evaluator/workspace/aftermath"), {
+  mkdirSync(join(projectRoot, "projects/evaluation.app/agents/evaluator/workspace/aftermath"), {
     recursive: true,
   });
 
@@ -2403,7 +2425,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     });
   }
 
-  const artifactText = readArtifact(artifactAbsPath);
+  // Re-resolve artifact path AFTER the review session completes.
+  // The initial resolution (lines 2289-2294) runs BEFORE the review writes the
+  // artifact, so existsSync is always false and falls back to the global path.
+  // But the evaluator agent is registered at projects/evaluation.app/agents/evaluator/
+  // and writes there.  Re-check now that the file should actually exist.
+  const postReviewArtifactAbsPath = existsSync(projectAppAbsPath) ? projectAppAbsPath : artifactAbsPath;
+  const postReviewArtifactPath = existsSync(projectAppAbsPath) ? projectAppArtifactPath : artifactPath;
+
+  const artifactText = readArtifact(postReviewArtifactAbsPath);
   const reviewedVerdict = artifactVerdict(artifactText);
   if (shouldOverrideWithReview(normalized.heuristic.verdict, reviewedVerdict)) {
     await (ctx as any).runFunction("record-review-override", async () => {
@@ -2420,7 +2450,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       overall.reviewedVerdict = reviewedVerdict;
       overall.reviewOverride = true;
       overall.reviewSessionId = (review as any).sessionId;
-      overall.artifactPath = artifactPath;
+      overall.artifactPath = postReviewArtifactPath;
       db.run(
         `UPDATE evaluations
          SET verdict = ?,
@@ -2449,7 +2479,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
           heuristicVerdict: normalized.heuristic.verdict,
           reviewedVerdict,
           reviewSessionId: (review as any).sessionId,
-          artifactPath,
+          artifactPath: postReviewArtifactPath,
           agent: session.agent,
         }),
       } as any);
@@ -2466,7 +2496,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     verdict: normalized.heuristic.verdict,
     reviewedVerdict,
     reviewSessionId: (review as any).sessionId,
-    artifactPath,
+    artifactPath: postReviewArtifactPath,
     artifactFound: artifactText.length > 0,
     downgradedFromRepairExecution: normalized.downgradedFromRepairExecution,
   } as any);
@@ -2481,7 +2511,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       reason: normalized.route.reason,
       signals: normalized.route.signals,
       reviewSessionId: (review as any).sessionId,
-      artifactPath,
+      artifactPath: postReviewArtifactPath,
     } as any);
   }
 
@@ -2493,7 +2523,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       sessionId,
       agent: session.agent,
       reviewSessionId: (review as any).sessionId,
-      artifactPath,
+      artifactPath: postReviewArtifactPath,
     } as any);
   }
 
@@ -2506,11 +2536,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       agent: session.agent,
       lane: normalized.route.lane,
       reviewSessionId: (review as any).sessionId,
-      artifactPath,
+      artifactPath: postReviewArtifactPath,
     } as any);
   }
 
   return ctx.done(
-    `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${artifactPath}`,
+    `Evaluated ${sessionId}: ${normalized.heuristic.verdict} (${normalized.route.lane}). Review session: ${(review as any).sessionId}. Artifact: ${postReviewArtifactPath}`,
   );
 }
