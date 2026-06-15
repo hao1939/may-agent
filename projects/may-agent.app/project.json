@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Platform stable (43/49 done, 6 backlog, 3 runnable P2). Guard alert fix completed: previous session committed only last-eval.md files but 94 other dirty files remained, causing ongoing guard triggers (4558 still climbing). This session committed ALL dirty files in 8 logical groups and added .gitignore entries for generated artifacts (ui/, packages/, may-agent-latest, chrome-profile/). Worktree now clean (0 dirty files). Guard 24h rolling counts will now genuinely drain. Zero session.resume_failed in last hour (fix working). Zero handler.failed/agent.config_invalid/subscriber.failed. Message lifecycle operational (1 pending P2 evaluator status update). Evaluator verdict normalization fully resolved."
+    "summary": "Platform stable (43/49 done, 6 backlog, 3 runnable P2). Zero handler.failed/session.resume_failed/agent.config_invalid/subscriber.failed in last hour. Guard alerts 1845/1846 open (P3): ~291 guard.triggered/hr from 'uncommitted files exist' warn on every session finish — root cause is aks-rp-e2e worker-generated tree.json/kanban.json constantly re-dirtied. Committed latest dirty files; threshold calibration request pending human review. Message lifecycle operational. Evaluator verdict normalization resolved. Evaluator P1 review-request (#1416611) acknowledged — prior session overscoped broad commits."
   },
-  "updatedAt": "2026-06-15T07:15:00.000Z"
+  "updatedAt": "2026-06-15T08:01:00.000Z"
 }

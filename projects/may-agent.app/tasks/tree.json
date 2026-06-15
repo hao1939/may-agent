@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-15T07:15:00.000Z",
+  "updated_at": "2026-06-15T08:01:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "43 tasks done, 6 backlog, 0 active (49 total). Guard alert root cause fully fixed: committed ALL 94 dirty files (not just 5 last-eval.md) in 8 logical groups + .gitignore for generated artifacts. Worktree clean. Guard 24h counts will now drain. Zero session.resume_failed, handler.failed, agent.config_invalid. Message lifecycle operational.",
+  "note": "43 tasks done, 6 backlog, 0 active (49 total). Platform operationally healthy: zero failures across all handler/session/agent/subscriber categories. Guard alerts 1845/1846 (P3) still open: ~291 guard.triggered/hr from 'uncommitted files exist' structural noise. Root cause is aks-rp-e2e workers re-dirtying tree.json/kanban.json every ~5s. Threshold calibration request pending human review (message 1416353). Evaluator P1 review acknowledged (1416611).",
   "max_concurrent": 3,
   "tasks": {
     "project": {
