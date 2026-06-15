@@ -853,7 +853,7 @@ enforces these windows:
 | `sessions` | 14 days | `startedAt < now - 14d` |
 | `session_digests` | 14 days | `created_at < now - 14d` |
 | `workflow_runs` | 14 days | `startedAt < now - 14d` |
-| `metric_snapshots` | 30 days | `measured_at < now - 30d` |
+| `metric_snapshots` | 14 days | `measured_at < now - 14d` |
 | `evaluations` | 30 days | `createdAt < now - 30d` |
 
 After deletions exceed 1,000 rows, a `VACUUM` reclaims disk space.
