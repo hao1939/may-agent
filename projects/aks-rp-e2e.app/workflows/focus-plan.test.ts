@@ -23,7 +23,7 @@ async function makeWorkspace() {
         tasks: {
           project: {
             id: "project",
-            status: "decomposed",
+            state: "backlog",
             children: ["execution-and-verification"],
             goal: "Learn AKS RP input and expectation space.",
             outputs: ["tasks/tree.json"],
@@ -32,7 +32,7 @@ async function makeWorkspace() {
           "execution-and-verification": {
             id: "execution-and-verification",
             parent_id: "project",
-            status: "decomposed",
+            state: "backlog",
             kind: "lane",
             children: ["run-rest-spec-batch"],
             goal: "Execute runnable specs and feed evidence back.",
@@ -42,7 +42,7 @@ async function makeWorkspace() {
           "run-rest-spec-batch": {
             id: "run-rest-spec-batch",
             parent_id: "execution-and-verification",
-            status: "backlog",
+            state: "backlog",
             kind: "domain_leaf",
             priority: "P1",
             children: [],

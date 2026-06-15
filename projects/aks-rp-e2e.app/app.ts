@@ -18,27 +18,6 @@ const taskTreeContext = [
   "projects/aks-rp-e2e.app/tasks/README.md",
 ];
 
-const projectMetricIds = [
-  "aks-rp-e2e.task.ready-count",
-  "aks-rp-e2e.task.active-count",
-  "aks-rp-e2e.task.blocked-count",
-  "aks-rp-e2e.task.completed-24h",
-  "aks-rp-e2e.task.no-work-with-gaps",
-  "aks-rp-e2e.task.ready-starvation-with-gaps",
-  "aks-rp-e2e.task.capacity-underfilled-with-gaps",
-  "aks-rp-e2e.model.unknown-path-count",
-  "aks-rp-e2e.model.failed-path-count",
-  "aks-rp-e2e.model.blocked-path-count",
-  "aks-rp-e2e.feature.unknown-count",
-  "aks-rp-e2e.spec.total-count",
-  "aks-rp-e2e.replay.script-count",
-  "aks-rp-e2e.run.live-started-24h",
-  "aks-rp-e2e.run.live-succeeded-24h",
-  "aks-rp-e2e.run.live-failed-24h",
-  "aks-rp-e2e.run.live-idle-with-runnable-work",
-  "aks-rp-e2e.artifact.duplicate-group-count",
-];
-
 function projectOwnerEvent(
   reason: string,
   params: unknown = {},
@@ -196,7 +175,7 @@ function humanUnblockEscalation(
       projectId,
       sourceAgent: "aks-explorer",
       reason:
-        "aks-rp-e2e has no ready or active task while knowledge-model gaps remain.",
+        "aks-rp-e2e has no runnable backlog, active, or review task while knowledge-model gaps remain.",
       requestedAction:
         "Reply with steering, approval, missing context, or an unblock decision so the project owner can repair the task tree and continue.",
       severity: "P0",
@@ -521,8 +500,8 @@ export default defineProjectApp({
     { type: "task.requeued", project: projectId },
     "escalation.resolved",
     "escalation.dismissed",
-    { type: "metric.breach", metricIds: projectMetricIds },
-    { type: "metric.recovered", metricIds: projectMetricIds },
+    { type: "metric.breach", project: projectId },
+    { type: "metric.recovered", project: projectId },
     { type: "coverage.gap.detected", project: projectId },
   ],
 

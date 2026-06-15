@@ -28,6 +28,17 @@ function testContext() {
 }
 
 describe("app event contract", () => {
+  test("manifest subscribes to project metric events", () => {
+    expect(app.events).toContainEqual({
+      type: "metric.breach",
+      project: "aks-rp-e2e",
+    });
+    expect(app.events).toContainEqual({
+      type: "metric.recovered",
+      project: "aks-rp-e2e",
+    });
+  });
+
   test("task.requeued wakes owner review with task context", async () => {
     const { ctx, emitted } = testContext();
 
@@ -35,7 +46,7 @@ describe("app event contract", () => {
       type: "task.requeued",
       projectId: "aks-rp-e2e",
       taskId: "feature-a-replay",
-      status: "ready",
+      state: "backlog",
       reason: "session-stale",
       session_id: "s_task_feature_a_replay",
       goal: "Run feature A replay.",
@@ -48,7 +59,7 @@ describe("app event contract", () => {
     expect(emitted[0].params).toMatchObject({
       task: {
         taskId: "feature-a-replay",
-        status: "ready",
+        state: "backlog",
         reason: "session-stale",
         session_id: "s_task_feature_a_replay",
         goal: "Run feature A replay.",

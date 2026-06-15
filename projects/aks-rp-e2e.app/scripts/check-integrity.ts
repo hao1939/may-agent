@@ -12,6 +12,7 @@ type AgentConfig = {
 type ProjectJson = {
   id?: string;
   owner?: string;
+  status?: string;
   type?: string;
   domainProject?: {
     id?: string;
@@ -100,6 +101,8 @@ type ProjectApp = {
 
 type TaskNode = {
   id?: string;
+  parent_id?: string | null;
+  state?: string;
   status?: string;
   children?: string[];
   depends_on?: string[] | string;
@@ -109,6 +112,8 @@ type TaskNode = {
 };
 
 type TaskTree = {
+  project_lifecycle?: string;
+  root_task_id?: string;
   tasks?: Record<string, TaskNode>;
   active_task_ids?: string[];
   active_task_id?: string | null;
@@ -118,6 +123,16 @@ const appDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const domainWorkflowNames = new Set(["spec-runner"]);
 const errors: string[] = [];
 const warnings: string[] = [];
+
+function taskState(task: TaskNode | undefined): string {
+  const raw = task?.state ?? task?.status ?? "";
+  if (raw === "accepted") return "done";
+  if (raw === "ready" || raw === "proposed") return "backlog";
+  if (raw === "superseded" || raw === "cancelled") return "done";
+  if (raw === "decomposed") return "backlog";
+  if (raw === "claimed_done" || raw === "rejected") return "review";
+  return raw;
+}
 
 function fail(message: string): void {
   errors.push(message);
@@ -558,6 +573,11 @@ function validateTaskTree(
   for (const [taskId, task] of Object.entries(tasks)) {
     if (task.id && task.id !== taskId)
       fail(`task key ${taskId} has mismatched id ${task.id}`);
+    if ("status" in task)
+      fail(`task ${taskId} uses legacy status field; use state`);
+    const state = taskState(task);
+    if (!["backlog", "active", "review", "done", "blocked"].includes(state))
+      fail(`task ${taskId} has invalid state ${state || "(missing)"}`);
     for (const childId of task.children ?? []) {
       if (!taskIds.has(childId))
         fail(`task ${taskId} references missing child ${childId}`);
@@ -568,7 +588,7 @@ function validateTaskTree(
       );
     if ("gate_status" in task)
       fail(
-        `task ${taskId} uses legacy gate_status; ready/proposed/blocked must carry the state`,
+        `task ${taskId} uses legacy gate_status; use depends_on, blocker, or context`,
       );
     const dependsOn = Array.isArray(task.depends_on)
       ? task.depends_on
@@ -578,14 +598,6 @@ function validateTaskTree(
     for (const dependencyId of dependsOn) {
       if (!taskIds.has(dependencyId))
         fail(`task ${taskId} depends_on missing task ${dependencyId}`);
-    }
-    if (
-      task.status === "ready" &&
-      dependsOn.some(
-        (dependencyId) => tasks[dependencyId]?.status !== "accepted",
-      )
-    ) {
-      fail(`ready task ${taskId} has unsatisfied depends_on`);
     }
     if (
       task.workflow &&
@@ -616,6 +628,63 @@ function validateTaskTree(
     warn(
       `tasks/tree.json has ${roots.length} roots; review whether the tree is still human-readable`,
     );
+
+  function isLeaf(task: TaskNode): boolean {
+    return (task.children ?? []).length === 0;
+  }
+
+  function rolledUpParentState(task: TaskNode): string {
+    const childStates = (task.children ?? [])
+      .map((childId) => taskState(tasks[childId]))
+      .filter(Boolean);
+    if (childStates.length === 0) return taskState(task);
+    if (childStates.includes("active")) return "active";
+    if (childStates.includes("review")) return "review";
+    if (childStates.includes("blocked")) return "blocked";
+    if (childStates.includes("backlog")) return "backlog";
+    return "done";
+  }
+
+  for (const [taskId, task] of Object.entries(tasks)) {
+    if (isLeaf(task)) continue;
+    const state = taskState(task);
+    const rolledUp = rolledUpParentState(task);
+    if (state !== rolledUp) {
+      fail(
+        `task ${taskId} state ${state} does not match child rollup ${rolledUp}`,
+      );
+    }
+  }
+
+  const activeLeaves = Object.values(tasks)
+    .filter((task) => isLeaf(task) && taskState(task) === "active")
+    .map((task) => task.id)
+    .filter((id): id is string => Boolean(id))
+    .sort();
+  const configuredActiveLeaves = [...(tree.active_task_ids ?? [])].sort();
+  if (JSON.stringify(configuredActiveLeaves) !== JSON.stringify(activeLeaves)) {
+    fail(
+      `active_task_ids (${configuredActiveLeaves.join(", ") || "none"}) must match active leaf tasks (${activeLeaves.join(", ") || "none"})`,
+    );
+  }
+  const expectedActiveTaskId =
+    (tree.active_task_ids ?? []).find(
+      (id) => taskState(tasks[id]) === "active",
+    ) ?? null;
+  if ((tree.active_task_id ?? null) !== expectedActiveTaskId) {
+    fail(
+      `active_task_id (${tree.active_task_id ?? "none"}) must be ${expectedActiveTaskId ?? "none"}`,
+    );
+  }
+  const hasOpenLeaf = Object.values(tasks).some(
+    (task) => isLeaf(task) && taskState(task) !== "done",
+  );
+  const expectedLifecycle = hasOpenLeaf ? "active" : "closed";
+  if (tree.project_lifecycle && tree.project_lifecycle !== expectedLifecycle) {
+    fail(
+      `project_lifecycle ${tree.project_lifecycle} must be ${expectedLifecycle} based on leaf task states`,
+    );
+  }
 }
 
 validatePackageJson();

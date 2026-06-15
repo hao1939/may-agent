@@ -75,6 +75,10 @@ function buildWorkerPrompt(input: {
 You are executing exactly one aks-rp-e2e task assigned by the project owner.
 Do not reshape the tree, create sibling branches, roll up parents, or run
 planner work from this session.
+If the assigned task mentions tasks/tree.json, child-task creation, branch
+creation, rollout tasks, or tree updates, treat that as owner-review output:
+write the plan/proposal/evidence in the domain workspace and report what the
+project owner should add to the tree. Do not edit the live task tree yourself.
 
 Use the task as the context container. Read the relevant domain files, do the
 task body, write the requested output/evidence, then finish your response with

@@ -37,10 +37,14 @@ folder does not keep a parallel task event log.
   `specs/index.json`, `replays/<name>.ts`, `runs/executions/`, and
   `evidence/archive/`.
 - Only leaf tasks are executable.
-- `ready` means the planner may assign it now. If a task is waiting for another task, keep
-  it `proposed` and list the upstream ids in `depends_on`. If it is waiting on
-  a real external/human/environment condition, keep it `blocked` and describe
-  the condition in `blocker`.
+- Task state uses the canonical five-state model: `backlog`, `active`,
+  `review`, `done`, and `blocked`. Runnable work is computed from backlog
+  leaves; do not persist `ready`, `proposed`, `accepted`, `superseded`, or
+  `decomposed` as task states.
+- If a task waits for another task, keep it `backlog` and list the upstream ids
+  in `depends_on`. If it waits on a real external/human/environment condition,
+  keep it `blocked` and describe the exact condition and resume path in
+  `blocker`.
 - Do not use `gates` or `gate_status` in `tasks/tree.json`. They were a legacy
   catch-all for dependencies, safety constraints, external blockers, and live
   execution approval. Use `depends_on`, `forbidden`, `blocker`, structured
@@ -53,12 +57,19 @@ folder does not keep a parallel task event log.
   decomposition of that responsibility, an executable leaf, or a review that
   corrects the decomposition. Avoid vague branches such as "follow up",
   "try again", or per-run root planner tasks.
-- Each decomposed parent should make sense to a reviewer: its children should
+- Each parent with children should make sense to a reviewer: its children should
   explain how the parent will be resolved. If that is no longer true, create a
-  review/hygiene task to split, rewrite, or supersede the branch.
-- Bad, duplicate, stale, or misleading branches should be marked `superseded`
-  with a short reason and replacement link when possible. Do not keep building
-  project understanding around them.
+  review/hygiene task to split, rewrite, or mark the branch done with a
+  replacement/cancellation resolution.
+- Bad, duplicate, stale, or misleading branches should be marked `done` with
+  `resolution: "replaced"` and a short replacement link when possible. Do not
+  keep building project understanding around them.
+- The live tree should stay lean enough for the planner and humans to review.
+  Completed leaf detail may be rolled up with
+  `bun run task-tree compact-done --limit N`, which archives the removed leaves
+  under `tasks/archive/` and records compact roll-up metadata on the parent.
+  Do not archive open leaves or completed leaves still referenced by
+  `depends_on`.
 - The top-level task tree should follow the project value loop, not workflow
   implementation details: learn feature intent, generate runnable specs,
   execute specs through runner/replays, diagnose evidence, feed results back
@@ -73,11 +84,14 @@ folder does not keep a parallel task event log.
   breach should feed back into the task tree. Metric breaches wake the project
   owner; only confirmed human/ownership blockers become escalations.
 - A single active task is not enough to call the project healthy while model
-  gaps remain. The owner should keep a small ready backlog up to the app's
+  gaps remain. The owner should keep enough runnable backlog to fill the app's
   parallelism target, unless the task tree visibly records why capacity cannot
-  be filled. `ready-starvation-with-gaps` and
+  be filled. `runnable-starvation-with-gaps` and
   `capacity-underfilled-with-gaps` are owner refill signals; only
-  `no-work-with-gaps` is the high-urgency human unblock signal.
+  `no-work-with-gaps` is the high-urgency no-executable-progress signal.
+  Review leaves do not suppress it: if only review remains, the owner must
+  accept, reject, split, or create follow-up tasks instead of waiting for the
+  human to notice.
 - If an owner wake times out or leaves no assignable backlog while worker
   capacity is underfilled and model gaps remain, the app may seed a bounded
   number of concrete backlog leaves from the knowledge model plus existing
@@ -111,8 +125,8 @@ folder does not keep a parallel task event log.
 - Learning is not terminal by itself. A feature is useful only when source
   knowledge, spec shape, replay execution, evidence diagnosis, and model
   feedback close the loop or expose an exact external blocker.
-- Test-spec design has a standard contract. A spec-ready task is not accepted
-  unless the spec has scenario/scope, ordered `testLifecycle`, concrete
+- Test-spec design has a standard contract. A spec task is not `done` unless
+  the spec has scenario/scope, ordered `testLifecycle`, concrete
   operations, meaningful product assertions, execution variants,
   execution strategy, dependencies, deduped run artifacts/evidence, and explicit
   non-goals.
@@ -134,7 +148,7 @@ folder does not keep a parallel task event log.
   a feature-local audit/fix leaf under that feature branch.
 - Task leaves that create or revise a test spec should include acceptance
   criteria for the spec contract. Verification should inspect both the spec file
-  and the feature page rendering before accepting the task.
+  and the feature page rendering before marking the task `done`.
 - Dry-run is not e2e verification. A runnable spec is verified only after a real
   execution reaches verdict-driving product assertions, records result and
   diagnosis, records cleanup state, and produces evidence that can feed the
@@ -146,7 +160,7 @@ folder does not keep a parallel task event log.
   task-owned worker session should run the domain runner through explicit
   project commands such as `bun runner/spec-runner.ts`; it must record terminal
   artifacts before reporting completion.
-- A native spec-runner task is accepted only from terminal live artifacts:
+- A native spec-runner task is `done` only from terminal live artifacts:
   `result.json`, `diagnosis.json`, `summary.md`, and `steps.jsonl`. A canceled
   dry-run, local check, queued run, or running status keeps the task unverified.
 - Replay `--check` is an idempotent local validation command. Workers may use it
@@ -157,30 +171,30 @@ folder does not keep a parallel task event log.
   separate leaf under `evidence-feedback-and-model-update`; the runner task
   proves what happened, and the feedback task decides how that evidence changes
   the knowledge model, spec, replay, or next work.
-- The feature-learning queue is a conveyor. After one selected feature is
-  accepted or externally blocked, return to `evidence/archive/feature-learning-queue.md`
+- The feature-learning queue is a conveyor. After one selected feature is done
+  or externally blocked, return to `evidence/archive/feature-learning-queue.md`
   and schedule the next safe local feature before treating the project as
   blocked.
 - A task can be decomposed into child tasks when it is too large or unclear.
-- A blocked task is reviewable. If the ready frontier is empty, create or run a
-  blocked-review leaf that classifies the blocker and looks for safe local
+- A blocked task is reviewable. If the runnable frontier is empty, create or run
+  a blocked-review leaf that classifies the blocker and looks for safe local
   unblock, split, correction, or evidence work.
 - Escalation is a task overlay for confirmed ownership-boundary blockers, not a
   new top-level branch. When a blocked task truly needs another owner or human,
   store `escalation_id` and `escalation` on that task and emit
   `escalation.created` with owner, requested action, evidence, dedup key, and
   resume condition. `fixed` or `answered` resolutions move the task back to
-  `ready`; rejected/dismissed escalations keep the task visibly blocked for
+  `backlog`; rejected/dismissed escalations keep the task visibly blocked for
   review.
-- `no_work`, "no safe local work", and "waiting" are not accepted terminal
-  results. Convert them into a concrete ready task, an exact blocked resume
-  condition, a human-question task, or a superseded task with its replacement.
+- `no_work`, "no safe local work", and "waiting" are not valid terminal
+  results. Convert them into a concrete backlog task, an exact blocked resume
+  condition, a human-question task, or a done/replaced task with its replacement.
 - Human-question tasks are explicit input boundaries. Keep them visible in the
   tree, but do not auto-review them as ordinary stale blockers.
 - Worker progress is not completion or final blockage. Worker `done`,
   `partial`, and `blocked` results arrive as `project.task.completed` events.
   The owner then updates the task tree and decides whether the task becomes
-  accepted, review, repaired, replaced, retried, split, or truly blocked.
+  done, review, repaired, replaced, retried, split, or truly blocked.
   `blocked` means "the worker believes it found a blocker"; the owner must
   verify the evidence and concrete resume condition before leaving a task
   blocked.
@@ -203,10 +217,15 @@ folder does not keep a parallel task event log.
 - The project owner agent is the brain. Workflows wake agent sessions and
   expose safe task-tree primitives; workflows do not encode project strategy,
   branch repair policy, or domain judgment.
+- Agents should mutate `tasks/tree.json` through task-tree tools, not by direct
+  whole-file edits. Tool writes take the tree lock, repair rollups, refresh
+  kanban, and prevent stale sessions from overwriting newer planner/watchdog
+  changes. If a needed mutation has no safe primitive, create an app-tooling
+  task before hand-editing the live tree.
 - The task tree is the owner's workspace and context container. It serves the
   owner; it is not the controller. Task-tree processing code should be tools
   for the LLM. Use app-local commands such as `bun run task-tree summary`,
-  `bun run task-tree frontier`, `bun run task-tree promote-clear`,
+  `bun run task-tree frontier`, `bun run task-tree confirm-runnable`,
   `bun run task-tree add`, `bun run task-tree assign`, and
   `bun run task-tree complete` for reviewed task-tree operations.
 - Owner work runs through the project owner. Each wake has two owner steps:
@@ -214,7 +233,7 @@ folder does not keep a parallel task event log.
   compact planning packet and should classify what changed without editing
   `tree.json`; it should stay bounded and prefer the packet over rediscovery.
   The update step uses that review and the latest packet to repair
-  decomposition, review worker progress, create new leaves, assign ready
+  decomposition, review worker progress, create new leaves, assign runnable
   leaves, and unblock the project.
 - Owner session memory is non-authoritative. Each owner wake should reason
   from the latest compact planning packet, `tasks/tree.json`, trigger context,
@@ -223,9 +242,10 @@ folder does not keep a parallel task event log.
   or domain commands when needed. Reusing stale planner conclusions is a bug;
   if the tree says review work or domain gaps remain, the owner must judge
   that current state and move it forward.
-- If `ready + active` is empty while review, blocked, or proposed work exists,
+- If runnable backlog plus active work is empty while review, blocked, or
+  unresolved backlog work exists,
   treat the wake as a reconciliation incident. Make a durable tree decision
-  before broad investigation: accept verified reviews, create retry/follow-up
+  before broad investigation: mark verified reviews done, create retry/follow-up
   leaves for resolved blockers, link unresolved blockers to one visible problem
   task, and assign clear leaves. Do not spend the whole planning wake
   rediscovering context without recording the next action.
@@ -280,10 +300,11 @@ folder does not keep a parallel task event log.
 - Legacy planning/control nodes such as `project-control`,
   `project-planning-loop*`, and `project-frontier-replan-*` are history only.
   They must not be assigned as worker tasks, must not consume active capacity,
-  and should be superseded when they appear in the executable frontier.
+  and should be marked `done` with `resolution: "replaced"` when they appear in
+  the executable frontier.
 - The robust execution loop is: event or timer wakes the owner; the owner
   reviews progress, repairs, rolls up, refills the task tree, and explicitly
-  assigns ready leaves with `task-tree assign`; the workflow emits
+  assigns runnable backlog leaves with `task-tree assign`; the workflow emits
   `project.task.assigned`; each worker executes exactly one assigned task and
   emits `project.task.completed`; completion wakes the owner again. The timer
   is only a safety net for missed events or stale sessions.
@@ -296,21 +317,21 @@ folder does not keep a parallel task event log.
   assignment.
 - A task event should carry enough compact context for the next handler and UI
   to understand what changed without blindly rediscovering the task: task id,
-  parent id, status, owner/workflow, session id, goal, inputs, outputs,
+  parent id, state, owner/workflow, session id, goal, inputs, outputs,
   acceptance, conflict scope, compact `context`, blocker, verification, and
   worker evidence fields when available. The task tree remains the mutation
   source of truth; event payloads are the handoff packet.
 - Owner and worker are intentionally decoupled. The owner workflow is sequential
   and owns task-tree meaning: decomposition, repair, verification, parent rollup,
-  ready promotion, and assignment. Workers may run in parallel, but each worker
-  owns only one assigned task execution and emits `project.task.completed`;
-  workers must not create tree branches, roll up parents, or emit owner wake
-  events directly.
+  runnable-backlog assignment, and blocker classification. Workers may run in
+  parallel, but each worker owns only one assigned task execution and emits
+  `project.task.completed`; workers must not create tree branches, roll up
+  parents, or emit owner wake events directly.
 - Domain repo commits are owner-owned checkpoints. A worker may modify
-  `../aks-rp-e2e`, but it must not commit. After the owner accepts worker
-  output, it may checkpoint a coherent accepted slice in the domain repo when no
+  `../aks-rp-e2e`, but it must not commit. After the owner marks worker output
+  done, it may checkpoint a coherent done slice in the domain repo when no
   active/review task still owns the same files, `bun run check` passes, and the
-  commit message references the accepted task ids. The owner should use
+  commit message references the done task ids. The owner should use
   `bun run domain:checkpoint` from the app directory to inspect dirty files and
   hold mixed or still-reviewable work. No separate commit event is needed; a
   commit is one owner action during normal review/rollup.

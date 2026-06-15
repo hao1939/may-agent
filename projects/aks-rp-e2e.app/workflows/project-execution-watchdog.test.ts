@@ -27,11 +27,11 @@ async function makeProject() {
   return dir;
 }
 
-function task(id: string, status: string, extra: Record<string, unknown> = {}) {
+function task(id: string, state: string, extra: Record<string, unknown> = {}) {
   return {
     id,
     parent_id: id === "project" ? null : "project",
-    status,
+    state,
     children: [],
     goal: `${id} goal.`,
     inputs: [],
@@ -57,7 +57,7 @@ async function writeTree(
     active_task_ids: [],
     tasks: {
       project: {
-        ...task("project", "decomposed", { outputs: ["tasks/tree.json"] }),
+        ...task("project", "backlog", { outputs: ["tasks/tree.json"] }),
         children: Object.keys(tasks),
       },
       ...tasks,
@@ -145,17 +145,17 @@ describe("project execution watchdog", () => {
 
     expect(result.status).toBe("done");
     expect(result.message).toContain(
-      "Watchdog emitted project.owner.requested: watchdog-ready-work.",
+      "Watchdog emitted project.owner.requested: watchdog-runnable-backlog.",
     );
     expect(dispatched).toEqual([
       {
         type: "project.owner.requested",
         payload: {
           project: "aks-rp-e2e",
-          reason: "watchdog-ready-work",
+          reason: "watchdog-runnable-backlog",
           maxConcurrent: 3,
           requested_by: "project-execution-watchdog",
-          readyTaskIds: ["backlog-task"],
+          runnableBacklogTaskIds: ["backlog-task"],
         },
       },
     ]);
@@ -163,7 +163,7 @@ describe("project execution watchdog", () => {
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["backlog-task"].status).toBe("backlog");
+    expect(updated.tasks["backlog-task"].state).toBe("backlog");
   });
 
   test("wakes owner for an active leaf whose runtime session is no longer running", async () => {
@@ -216,7 +216,7 @@ describe("project execution watchdog", () => {
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["active-task"].status).toBe("active");
+    expect(updated.tasks["active-task"].state).toBe("active");
     expect(updated.tasks["active-task"].trace?.stale_active_restart_count).toBe(
       undefined,
     );
@@ -275,11 +275,11 @@ describe("project execution watchdog", () => {
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["active-task"].status).toBe("active");
+    expect(updated.tasks["active-task"].state).toBe("active");
     expect(updated.tasks["active-task"].blocker).toBeUndefined();
   });
 
-  test("wakes owner when open work has no ready assignable leaves", async () => {
+  test("wakes owner when open work has no runnable backlog leaves", async () => {
     const projectDir = await makeProject();
     await writeTree(projectDir, {
       "blocked-task": task("blocked-task", "blocked", {

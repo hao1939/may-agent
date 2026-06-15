@@ -9,9 +9,10 @@
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
   appendPlannerRun,
-  assignReadyTasks,
+  assignRunnableBacklogTasks,
   drainTaskAssignments,
   planningPacket,
+  repairTaskTreeRollups,
   requeueStaleActiveTasks,
   seedModelGapBacklog,
   taskTreeConfig,
@@ -155,7 +156,7 @@ function buildPlannerPrompt(input: {
 This is step 2 of 2 for the same planner wake. Use the event review from step
 1 and the latest compact task-tree packet below. Now update the task tree,
 repair bad decomposition, roll up completed work, create concrete next leaves,
-and assign ready work when useful.
+and assign runnable backlog work when useful.
 
 You are the project owner agent for aks-rp-e2e. The workflow is only a wakeup
 adapter. You are the brain.
@@ -193,14 +194,14 @@ Core operating model:
   execution intent, and user steering belong in tasks/tree.json as task context
   or standing tasks, not in this workflow prompt.
 - This is a bounded planning pass, but it should do enough work to make the
-  next project state clear. Review worker progress first. Then create/promote
-  concrete leaves, assign ready leaves, close completed branches, or record
+  next project state clear. Review worker progress first. Then create
+  concrete leaves, assign runnable backlog leaves, close completed branches, or record
   exact blockers.
-- If active+ready is empty and review/blocked/proposed work exists, this is a
+- If active+runnable backlog is empty and review/blocked/dependency-waiting backlog work exists, this is a
   refill/reconciliation incident. Make task-tree mutations before deep
-  investigation: accept verified review work, create retry/follow-up leaves for
+  investigation: mark verified review work done, create retry/follow-up leaves for
   resolved blockers, link unresolved blockers to one visible problem task, and
-  assign clear ready leaves. Do not spend the whole wake rediscovering context.
+  assign clear runnable leaves. Do not spend the whole wake rediscovering context.
 - For project.problem.* events, trust the solver summary as new evidence. If an
   escalated event summary says the local cause was fixed and verified, treat it
   as resolved-but-misclassified, record that in the affected branch, and create
@@ -210,7 +211,7 @@ Core operating model:
   the event review, and at most two targeted reads. After that, choose a tree
   action. Follow-up investigation belongs in newly created worker/problem tasks.
 - Stop once the next useful project action is clear and recorded, or once you
-  have assigned enough ready work for this wake.
+  have assigned enough runnable work for this wake.
   Do not stop merely because one rollup or one new leaf was created.
 - If the frontier is empty, do not stop at analysis. Add concrete work under one
   of the durable value-loop lanes according to the task-tree context, unless
@@ -220,18 +221,19 @@ Core operating model:
   task/lane, either create the missing task under the requested parent or record
   a concrete refusal/blocker in the tree.
 - Domain repo commits are planner checkpoints, not worker actions and not a
-  separate event loop. When accepted task output has accumulated in
+  separate event loop. When done task output has accumulated in
   ${input.projectDir}, use the checkpoint helper, review dirty files against the
-  task tree, run domain checks, and commit a coherent accepted slice. Do not
+  task tree, run domain checks, and commit a coherent done slice. Do not
   commit active/review work or broad mixed diffs. Record the commit hash in the
-  accepted task trace/context or parent branch before moving on.
+  done task trace/context or parent branch before moving on.
 
 Use these commands from the app directory:
 - bun run task-tree summary
 - bun run task-tree packet
 - bun run task-tree frontier
-- bun run task-tree promote-clear --limit 10
-- bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--status proposed|backlog|ready]
+- bun run task-tree confirm-runnable --limit 10
+- bun run task-tree add <task-id> --parent <lane-id> --goal "..." --output <path> --acceptance "..." --conflict-scope <scope> [--state backlog|blocked]
+- bun run task-tree mark-done <task-id> --summary "why the review is accepted"
 - bun run task-tree assign <task-id> [--worker ${input.agent}]
 - bun run task-tree show <task-id>
 - bun run domain:checkpoint
@@ -244,8 +246,14 @@ Useful domain workspace commands:
 - cd ${input.projectDir} && git status --short
 - cd ${input.projectDir} && git diff --stat
 
-You may edit ${input.appDir}/tasks/tree.json directly when the safe primitive is
-not enough, but keep the tree domain-shaped and reviewable.
+Do not edit ${input.appDir}/tasks/tree.json directly. Use the task-tree commands
+so updates take the tree lock, repair rollups, keep kanban in sync, and avoid
+overwriting newer planner/watchdog changes. If the current primitive is not
+enough, create a focused app-tooling task under the relevant lane instead of
+hand-writing the tree.
+Do not rewrite ${input.appDir}/project.json or convert it to markdown. It is an
+app manifest, not the planning workspace. Put project thinking, focus state,
+review findings, and follow-up work in tasks/tree.json through task-tree tools.
 
 Current app: ${input.appDir}
 Domain workspace: ${input.projectDir}
@@ -284,7 +292,7 @@ metric/stale-active event that clearly needs deeper evidence.
 
 Focus:
 - What woke the planner?
-- Which ready, active, review, or blocked tasks are relevant?
+- Which runnable backlog, active, review, or blocked tasks are relevant?
 - Did a worker claim need validation? If yes, what evidence should planning
   trust or distrust?
 - Is this a problem event? If yes, which blocked/failed/review tasks share the
@@ -359,13 +367,13 @@ function frontierUnderfilled(
   maxConcurrentTasks: number,
 ): boolean {
   return (
-    packet.frontier.ready.length === 0 &&
+    packet.frontier.runnable.length === 0 &&
     packet.active_task_ids.length < maxConcurrentTasks
   );
 }
 
 function frontierNeedsBacklogDepth(packet: TaskPlanningPacket): boolean {
-  return packet.frontier.ready.length === 0;
+  return packet.frontier.runnable.length === 0;
 }
 
 function routineRefillReason(rawTask: string): string | null {
@@ -374,6 +382,8 @@ function routineRefillReason(rawTask: string): string | null {
   return [
     "watchdog-open-work-reconcile",
     "watchdog-capacity-underfilled",
+    "watchdog-runnable-backlog",
+    // Compatibility for events emitted before the task-state cleanup.
     "watchdog-ready-work",
     "watchdog-settled-active-project-refill",
   ].includes(reason)
@@ -391,8 +401,34 @@ function canUseDeterministicRefill(input: {
   if (input.humanSteering.length > 0) return false;
   if (input.packet.frontier.review.length > 0) return false;
   if (input.packet.frontier.blocked.length > 0) return false;
-  if (input.packet.frontier.proposed.length > 0) return false;
   return frontierUnderfilled(input.packet, input.maxConcurrentTasks);
+}
+
+function settledActiveNoopResult(input: {
+  rawTask: string;
+  packet: TaskPlanningPacket;
+  humanSteering: Record<string, unknown>[];
+  requeuedStaleTaskIds: string[];
+}): string | null {
+  const reason = triggerValue(parseTriggerEvent(input.rawTask), "reason");
+  const settledWithActiveWork =
+    input.humanSteering.length === 0 &&
+    input.requeuedStaleTaskIds.length === 0 &&
+    input.packet.active_task_ids.length > 0 &&
+    input.packet.frontier.runnable.length === 0 &&
+    input.packet.frontier.review.length === 0 &&
+    input.packet.frontier.blocked.length === 0;
+  if (!settledWithActiveWork) return null;
+  if (
+    reason === "watchdog-stale-active-review" &&
+    staleActiveTaskIds(input.rawTask).length > 0
+  ) {
+    return "Watchdog stale-active review was a false positive: no listed task was requeued, active work is still running, and no runnable/review/blocked frontier needs owner judgment.";
+  }
+  if (reason === "task-completed") {
+    return "Task-completed wake is already settled in the task tree: no review task remains, active work is still running, and no runnable/blocked frontier needs owner judgment.";
+  }
+  return null;
 }
 
 function resultLooksInterrupted(result: unknown): boolean {
@@ -424,6 +460,29 @@ function staleActiveTaskIds(rawTask: string): string[] {
     .filter(Boolean);
 }
 
+function appendNoopPlannerRun(input: {
+  appDir: string;
+  result: string;
+  steps: string[];
+  packet: TaskPlanningPacket;
+  initialRepair: ReturnType<typeof repairTaskTreeRollups>;
+  requeuedStaleTaskIds: string[];
+}): void {
+  appendPlannerRun(input.appDir, {
+    kind: "planner_wake",
+    status: "idle",
+    ran_agent: false,
+    steps: input.steps,
+    assigned_task_ids: [],
+    repaired_rollups: input.initialRepair.repaired,
+    requeued_stale_task_ids: input.requeuedStaleTaskIds,
+    seeded_task_ids: [],
+    seed_skipped: [],
+    active_task_ids: input.packet.active_task_ids,
+    result: input.result,
+  });
+}
+
 export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const projectDir = field(ctx.task, "project") ?? "/app/projects/aks-rp-e2e";
   const appDir = resolveAppDir(projectDir, field(ctx.task, "app"));
@@ -440,14 +499,33 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   });
 
   let humanSteering = recentHumanSteering(ctx);
+  const initialRepair = repairTaskTreeRollups(config);
   const requeuedStaleTaskIds = requeueStaleActiveTasks(config, {
     taskIds: staleActiveTaskIds(ctx.task),
     reason: "watchdog-stale-active-review",
   });
-  assignReadyTasks(config, { worker });
+  assignRunnableBacklogTasks(config, { worker });
   const quickAssignments = drainTaskAssignments(config);
   dispatchAssignedTasks(ctx, quickAssignments);
   let packet = planningPacket(config);
+
+  const noopResult = settledActiveNoopResult({
+    rawTask: ctx.task,
+    packet,
+    humanSteering,
+    requeuedStaleTaskIds,
+  });
+  if (noopResult) {
+    appendNoopPlannerRun({
+      appDir,
+      result: noopResult,
+      steps: ["settled-active-noop"],
+      packet,
+      initialRepair,
+      requeuedStaleTaskIds,
+    });
+    return ctx.done(noopResult);
+  }
 
   if (
     quickAssignments.length > 0 &&
@@ -463,10 +541,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       assigned_task_ids: quickAssignments.map(
         (assignment) => assignment.taskId,
       ),
+      repaired_rollups: initialRepair.repaired,
       requeued_stale_task_ids: requeuedStaleTaskIds,
       active_task_ids: packet.active_task_ids,
       result:
-        "Quick refill assigned ready tasks up to worker capacity; skipped owner-agent planning for this routine wake.",
+        "Quick refill assigned runnable backlog tasks up to worker capacity; skipped owner-agent planning for this routine wake.",
     });
     return ctx.done(
       `Planner quick-refill assigned ${quickAssignments.length} task(s): ${quickAssignments
@@ -489,7 +568,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       0,
       config.maxConcurrent -
         packet.active_task_ids.length -
-        packet.frontier.ready.length,
+        packet.frontier.runnable.length,
     );
     const seedReason = `routine-refill:${reason}`;
     const seedResult = seedModelGapBacklog(config, {
@@ -497,7 +576,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       reason: seedReason,
     });
     if (seedResult.created.length > 0) {
-      assignReadyTasks(config, { worker });
+      assignRunnableBacklogTasks(config, { worker });
       const seededAssignments = drainTaskAssignments(config);
       dispatchAssignedTasks(ctx, seededAssignments);
       packet = planningPacket(config);
@@ -509,6 +588,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         assigned_task_ids: seededAssignments.map(
           (assignment) => assignment.taskId,
         ),
+        repaired_rollups: initialRepair.repaired,
         requeued_stale_task_ids: requeuedStaleTaskIds,
         seeded_task_ids: seedResult.created,
         seed_reason: seedReason,
@@ -532,6 +612,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       ran_agent: false,
       steps: ["deterministic-refill-exhausted"],
       assigned_task_ids: [],
+      repaired_rollups: initialRepair.repaired,
       requeued_stale_task_ids: requeuedStaleTaskIds,
       seeded_task_ids: [],
       seed_reason: seedReason,
@@ -593,6 +674,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       message: err instanceof Error ? err.message : String(err),
     };
   }
+  const finalRepair = repairTaskTreeRollups(config);
   packet = planningPacket(config);
 
   let ownerAssignments = drainTaskAssignments(config);
@@ -607,7 +689,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       0,
       config.maxConcurrent -
         packet.active_task_ids.length -
-        packet.frontier.ready.length,
+        packet.frontier.runnable.length,
     );
     seedReason = resultLooksInterrupted(plannerResult)
       ? "planner-timeout-underfilled-frontier"
@@ -617,7 +699,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       reason: seedReason,
     });
     if (seedResult.created.length > 0) {
-      assignReadyTasks(config, { worker });
+      assignRunnableBacklogTasks(config, { worker });
       ownerAssignments = drainTaskAssignments(config);
       dispatchAssignedTasks(ctx, ownerAssignments);
       packet = planningPacket(config);
@@ -653,6 +735,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     steps: ["event-review", "planning-update"],
     assigned_task_ids: assignments.map((assignment) => assignment.taskId),
     requeued_stale_task_ids: requeuedStaleTaskIds,
+    repaired_rollups: [...initialRepair.repaired, ...finalRepair.repaired],
     seeded_task_ids: seedResult?.created ?? [],
     seed_reason: seedResult?.created.length ? seedReason : undefined,
     seed_skipped: seedResult?.skipped?.slice(0, 12) ?? [],

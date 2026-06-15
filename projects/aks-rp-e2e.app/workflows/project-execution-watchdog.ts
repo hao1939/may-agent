@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { Database } from "bun:sqlite";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 import {
+  normalizeTaskTreeInPlace,
   withTreeLock,
   type TaskTreeConfig,
   type TaskTree,
@@ -35,7 +36,7 @@ type ActiveTaskSnapshot = {
 };
 
 type WatchdogTreeSnapshot = {
-  readyTaskIds: string[];
+  runnableBacklogTaskIds: string[];
   activeTasks: ActiveTaskSnapshot[];
   activeCount: number;
   hasOpenWork: boolean;
@@ -69,17 +70,19 @@ function buildTaskTreeConfig(config: WatchdogConfig): TaskTreeConfig {
 
 function readTree(path: string): TaskTree | null {
   if (!existsSync(path)) return null;
-  return readJson<TaskTree | null>(path, null);
+  const tree = readJson<TaskTree | null>(path, null);
+  return tree ? normalizeTaskTreeInPlace(tree) : null;
 }
 
 function isLeaf(task: TaskTree["tasks"][string]): boolean {
   return (task.children ?? []).length === 0;
 }
 
-function readyLeaves(tree: TaskTree): Array<TaskTree["tasks"][string]> {
+function runnableBacklogLeaves(
+  tree: TaskTree,
+): Array<TaskTree["tasks"][string]> {
   return Object.values(tree.tasks).filter(
-    (task) =>
-      isLeaf(task) && (task.status === "ready" || task.status === "backlog"),
+    (task) => isLeaf(task) && task.status === "backlog",
   );
 }
 
@@ -103,8 +106,7 @@ function activeTaskSnapshots(tree: TaskTree): ActiveTaskSnapshot[] {
 
 function hasOpenWork(tree: TaskTree): boolean {
   return Object.values(tree.tasks).some(
-    (task) =>
-      !["accepted", "superseded", "decomposed"].includes(task.status),
+    (task) => !["done"].includes(task.status ?? "backlog"),
   );
 }
 
@@ -186,7 +188,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
       const activeTasks = activeTaskSnapshots(tree);
 
       return {
-        readyTaskIds: readyLeaves(tree)
+        runnableBacklogTaskIds: runnableBacklogLeaves(tree)
           .map((task) => task.id)
           .sort(),
         activeTasks,
@@ -212,10 +214,10 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }
 
-  if (recovery.readyTaskIds.length > 0) {
-    const reason = "watchdog-ready-work";
+  if (recovery.runnableBacklogTaskIds.length > 0) {
+    const reason = "watchdog-runnable-backlog";
     emitOwnerRequested(ctx, config, reason, {
-      readyTaskIds: recovery.readyTaskIds,
+      runnableBacklogTaskIds: recovery.runnableBacklogTaskIds,
     });
     return ctx.done(`Watchdog emitted project.owner.requested: ${reason}.`);
   }

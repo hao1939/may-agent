@@ -8,4 +8,5 @@ agents/*/workspace/**
 !agents/*/workspace/.gitkeep
 node_modules/
 tasks/archive/*.json
+!tasks/archive/done-leaves-*.json
 tasks/*.bak*

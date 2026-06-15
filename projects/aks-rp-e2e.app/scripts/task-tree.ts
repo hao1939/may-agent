@@ -3,14 +3,17 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   assignTask,
+  compactDoneLeaves,
   completeTask,
   createTask,
   drainTaskAssignments,
+  confirmRunnableBacklogLeaves,
   peekTaskAssignments,
   kanbanTaskTreeState,
+  markTaskDone,
   planningPacket,
-  promoteClearProposedLeaves,
   readTask,
+  repairTaskTreeRollups,
   summarizeTaskTree,
   taskTreeConfig,
   type TaskCompletionClaim,
@@ -23,9 +26,12 @@ function usage(): never {
   bun run task-tree packet
   bun run task-tree kanban
   bun run task-tree kanban-snapshot
+  bun run task-tree repair-rollups
+  bun run task-tree compact-done [--limit N]
   bun run task-tree frontier
-  bun run task-tree promote-clear [--limit N]
-  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--status proposed|backlog|ready|blocked]
+  bun run task-tree confirm-runnable [--limit N]
+  bun run task-tree add <task-id> --parent <task-id> --goal "..." --output <path> --acceptance "..." [--state backlog|blocked]
+  bun run task-tree mark-done <task-id> --summary "review accepted"
   bun run task-tree assign <task-id> [--worker agent-name]
   bun run task-tree assignments
   bun run task-tree drain-assignments
@@ -71,18 +77,12 @@ function commaListOption(name: string): string[] {
     .filter(Boolean);
 }
 
-function statusOption(): "proposed" | "backlog" | "ready" | "blocked" {
-  const raw = option("--status") ?? "proposed";
-  if (
-    raw === "proposed" ||
-    raw === "backlog" ||
-    raw === "ready" ||
-    raw === "blocked"
-  )
-    return raw;
-  throw new Error(
-    `Invalid --status ${raw}; expected proposed, backlog, ready, or blocked`,
-  );
+function stateOption(): "backlog" | "blocked" {
+  const raw = option("--state") ?? option("--status") ?? "backlog";
+  if (raw === "blocked") return "blocked";
+  if (raw === "backlog" || raw === "ready" || raw === "proposed")
+    return "backlog";
+  throw new Error(`Invalid --state ${raw}; expected backlog or blocked`);
 }
 
 function priorityOption(): "P0" | "P1" | "P2" | "P3" {
@@ -130,12 +130,25 @@ if (command === "summary") {
   console.log(JSON.stringify(kanbanTaskTreeState(config).kanban, null, 2));
 } else if (command === "kanban-snapshot") {
   console.log(JSON.stringify(writeKanbanSnapshot(config), null, 2));
-} else if (command === "frontier") {
-  console.log(JSON.stringify(summarizeTaskTree(config).frontier, null, 2));
-} else if (command === "promote-clear") {
+} else if (command === "repair-rollups") {
+  console.log(JSON.stringify(repairTaskTreeRollups(config), null, 2));
+} else if (command === "compact-done") {
   console.log(
     JSON.stringify(
-      promoteClearProposedLeaves(config, numberOption("--limit", 10)),
+      compactDoneLeaves(config, {
+        limit: numberOption("--limit", 200),
+        reason: option("--reason") ?? "operator requested task tree roll-up",
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "frontier") {
+  console.log(JSON.stringify(summarizeTaskTree(config).frontier, null, 2));
+} else if (command === "confirm-runnable" || command === "promote-clear") {
+  console.log(
+    JSON.stringify(
+      confirmRunnableBacklogLeaves(config, numberOption("--limit", 10)),
       null,
       2,
     ),
@@ -186,7 +199,7 @@ if (command === "summary") {
       createTask(config, {
         id: taskId,
         parentId,
-        status: statusOption(),
+        state: stateOption(),
         kind: option("--kind") ?? "domain_leaf",
         priority: priorityOption(),
         owner: option("--owner") ?? process.env.WORKER ?? "aks-explorer",
@@ -200,6 +213,21 @@ if (command === "summary") {
         depends_on: commaListOption("--depends-on"),
         context: contextOption(),
         blocker: option("--blocker"),
+      }),
+      null,
+      2,
+    ),
+  );
+} else if (command === "mark-done") {
+  const taskId = process.argv[3];
+  const summary = option("--summary");
+  if (!taskId || !summary) usage();
+  console.log(
+    JSON.stringify(
+      markTaskDone(config, {
+        taskId,
+        summary,
+        resolution: option("--resolution"),
       }),
       null,
       2,

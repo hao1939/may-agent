@@ -11,6 +11,7 @@ type ProjectJson = {
 
 type TaskNode = {
   id?: string;
+  state?: string;
   status?: string;
   goal?: string;
   parent_id?: string | null;
@@ -68,6 +69,16 @@ function readJson<T>(path: string): T | null {
   } catch {
     return null;
   }
+}
+
+function taskState(task: TaskNode): string {
+  const raw = task.state ?? task.status ?? "";
+  if (raw === "accepted") return "done";
+  if (raw === "ready" || raw === "proposed") return "backlog";
+  if (raw === "superseded" || raw === "cancelled") return "done";
+  if (raw === "decomposed") return "backlog";
+  if (raw === "claimed_done" || raw === "rejected") return "review";
+  return raw;
 }
 
 function git(args: string[]): string {
@@ -204,8 +215,8 @@ function scopeMatchesPath(path: string, scope: string): boolean {
 
 function relatedTasks(path: string): RelatedTask[] {
   return Object.values(taskTree.tasks ?? {})
-    .filter((task): task is TaskNode & { id: string; status: string } =>
-      Boolean(task.id && task.status),
+    .filter((task): task is TaskNode & { id: string } =>
+      Boolean(task.id && (task.state || task.status)),
     )
     .filter((task) => {
       const declaredPaths = [
@@ -218,7 +229,7 @@ function relatedTasks(path: string): RelatedTask[] {
         declaredScopes.some((value) => scopeMatchesPath(path, value))
       );
     })
-    .map((task) => ({ id: task.id, status: task.status }))
+    .map((task) => ({ id: task.id, status: taskState(task) }))
     .sort(
       (a, b) =>
         statusRank(a.status) - statusRank(b.status) || a.id.localeCompare(b.id),
@@ -230,13 +241,9 @@ function statusRank(status: string): number {
     {
       active: 0,
       review: 1,
-      claimed_done: 1,
-      accepted: 2,
+      done: 2,
       blocked: 3,
-      ready: 4,
-      backlog: 5,
-      proposed: 6,
-      superseded: 7,
+      backlog: 4,
     }[status] ?? 9
   );
 }
@@ -249,9 +256,9 @@ function summarizeFiles(changes: GitChange[]): FileCheckpoint[] {
   return changes.map((change) => {
     const related = relatedTasks(change.path);
     const activeOrReview = related.filter((task) =>
-      ["active", "review", "claimed_done"].includes(task.status),
+      ["active", "review"].includes(task.status),
     );
-    const accepted = related.filter((task) => task.status === "accepted");
+    const accepted = related.filter((task) => task.status === "done");
     const recommendation: FileCheckpoint["recommendation"] =
       activeOrReview.length > 0
         ? "hold"

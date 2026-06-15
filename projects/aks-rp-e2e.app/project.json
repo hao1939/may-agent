@@ -4,7 +4,6 @@
   "status": "active",
   "type": "project-app",
   "priority": "P1",
-  "iteration": 218,
   "policy": {
     "maxConcurrent": 5,
     "maxTaskAttempts": 2,
@@ -14,9 +13,7 @@
     "id": "aks-rp-e2e",
     "path": "../aks-rp-e2e",
     "repo": "git@github.com:hao1939/aks-rp-e2e.git",
-    "branch": "main",
-    "observedRevision": "dca46cc",
-    "lastSyncedAt": "2026-06-09T09:41:44Z"
+    "branch": "main"
   },
   "goal": "Drive AKS RP e2e feature knowledge, runnable test specs, replay execution, evidence diagnosis, and model feedback.",
   "strategy": [
@@ -24,47 +21,44 @@
     "Ground each feature with a reference packet so pass/fail judgment has a source-of-truth bundle.",
     "Generate runnable REST-first test specs and TypeScript replays in the domain project.",
     "Execute specs through the domain runner when gated, then feed verdict-driving evidence back into the model.",
-    "Keep feature extraction, replay implementation, evidence feedback, and user review moving in parallel through the task tree."
+    "Plan and run combined-scenario suites so compatible specs share CRUD lifecycles, save AKS capacity, and expose dependency bugs.",
+    "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
-  "runtimeBoundary": {
-    "appOwns": [
-      "project.json",
-      "app.ts",
-      "agents/",
-      "workflows/",
-      "tasks/",
-      "ui/",
-      "e2e/",
-      "archive/"
-    ],
-    "domainOwns": [
-      "features/",
-      "specs/",
-      "replays/",
-      "runner/",
-      "runs/",
-      "evidence/",
-      "model/",
-      "suites/"
-    ],
-    "runtimeOwns": [
-      "events",
-      "workflow runs",
-      "large journals",
-      "session transcripts",
-      "agent scratch output"
-    ]
-  },
   "currentState": {
-    "summary": "Major expansion overnight. 297 features (+128), 293 paths (+120), 260 pass (88.7%). 344 specs, 301 replays, 51 feature packets. 11+ new feature families (network, net-integration, private-cluster, runtime-container, secure-tls, serverless, mgmt-addon, node-pool-config, storage-csi, secops, artifact-streaming). Source gap audit explored 6 Go e2ev3 sigs. 4 skeleton-replay-upgrade tasks active, 2 in review."
+    "summary": "Broadened execution. 361 paths (327 pass, 90.6%). 5 active (net-integration LB custom-IP, private-cluster BYO-subnet + CNI-overlay, storage-csi UltraSSD, VMs-managedsystem combined). 2 runnable (JWT upgrade-survival, private-cluster BYO-DNS). 262 done / 272 total.",
+    "activeTaskId": null,
+    "metrics": {
+      "features": 401,
+      "featuresPass": 305,
+      "paths": 361,
+      "pathsPass": 327,
+      "passRatePaths": "90.6%",
+      "passRateFeatures": "76.1%",
+      "tasksCompleted": 262,
+      "tasksActive": 5,
+      "tasksRunnable": 2,
+      "tasksTotal": 272,
+      "uncommittedChanges": 54,
+      "lastCommit": "b4b7c25"
+    }
   },
   "currentFocus": {
-    "summary": "Skeleton replay upgrades + source gap completion. 4 active tasks upgrading ~40 skeleton replays to execute-ready. 2 review tasks (node-pool-config replay, CCP source-gap). Planner self-directing effectively through source→spec→replay pipeline and selective live staging.",
-    "nextAction": "Complete 4 active skeleton-replay tasks. Accept 2 reviews. Model-integrate CCP features. Continue source exploration for remaining sigs.",
-    "activeTaskIds": ["mgmtplane-addon-skeleton-replay-upgrade", "net-integration-skeleton-replay-upgrade", "ossku-migration-skeleton-replay-upgrade", "runtime-security-skeleton-replay-upgrade"],
-    "focusPlanId": "focus-expansion-live-verification-20260613",
-    "priorFocusPlanId": "focus-coverage-plateau-next-phase-20260613",
-    "priorFocusResult": "completed"
+    "summary": "3 active tasks at late-stage frontier. CCP security-patch azurelinux (attempt 9) + ubuntu2404 (attempt 15) — persistent source-spec exploration. Private-cluster CNI overlay staging. VM autoscale resolved via existing evidence.",
+    "nextAction": "Let 3 active finish. Accept VM autoscale review. CCP security-patch attempts are high — may need terminal classification if source-spec frontier is exhausted.",
+    "activeTaskIds": [
+      "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-14",
+      "ccp-vpa-os-arch-variants-staging-frontier-20260615-9",
+      "traffic-api-proxy-access-control-fix-staging-20260615"
+    ],
+    "focusPlanId": "focus-plan-quality-hardening",
+    "focusPlanStatus": "active",
+    "priorFocusPlanId": "focus-plan-20260614-combined-source-hygiene",
+    "priorFocusResult": "completed",
+    "focusReview": {
+      "reviewedAt": "2026-06-15T06:55:00.000Z",
+      "result": "on_track",
+      "note": "Broadened to new feature areas: net-integration LB, private-cluster BYO-subnet/CNI-overlay, storage-csi UltraSSD, VMs-managedsystem. 327/361 pass (90.6%). 5 active + 2 runnable. 262/272 done. CCP security-patch tasks closed. Pipeline executing draft specs across diverse feature families."
+    }
   },
   "focusPlan": {
     "cadence": {
@@ -74,18 +68,11 @@
     "approval": {
       "channel": "escalation.created -> human:operator",
       "purpose": "Approve direction and risk envelope, not every leaf task."
-    },
-    "durableState": [
-      "tasks/tree.json focus_plan branch",
-      "project.json currentFocus summary"
-    ],
-    "progressReview": {
-      "expectation": "Every scheduled review records whether the current focus is on_track, off_track, completed, stale, or blocked, then wakes normal planning."
     }
   },
   "taskIndex": [
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-14T09:15:00.000Z"
+  "updatedAt": "2026-06-15T06:55:00.000Z"
 }

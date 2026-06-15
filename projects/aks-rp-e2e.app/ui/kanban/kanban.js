@@ -6,11 +6,13 @@ let state = {
   tree: null,
   kanban: null,
   metrics: [],
+  metricHistory: new Map(),
   metricAlerts: [],
   metricWarning: "",
   kanbanSource: "",
   kanbanWarning: "",
   project: "",
+  projectMeta: null,
   selectedTaskId: null,
   collapsedTaskIds: new Set(),
 };
@@ -27,16 +29,12 @@ function attrEsc(value) {
   return esc(value).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-function taskColor(status) {
-  if (status === "backlog" || status === "proposed") return "var(--muted)";
-  if (status === "accepted") return "var(--green)";
-  if (status === "ready") return "var(--blue)";
-  if (status === "active") return "var(--blue)";
-  if (status === "review") return "var(--purple)";
-  if (status === "claimed_done") return "var(--purple)";
-  if (status === "rejected") return "var(--red)";
-  if (status === "blocked") return "var(--yellow)";
-  if (status === "superseded") return "var(--muted)";
+function taskColor(stateName) {
+  if (stateName === "backlog") return "var(--muted)";
+  if (stateName === "active") return "var(--blue)";
+  if (stateName === "review") return "var(--purple)";
+  if (stateName === "blocked") return "var(--yellow)";
+  if (stateName === "done") return "var(--green)";
   return "var(--muted)";
 }
 
@@ -53,7 +51,19 @@ const METRIC_GROUPS = [
     ],
   },
   {
-    title: "Knowledge",
+    title: "Spec Verification",
+    description: "Are indexed specs verified, failing, ready, or still draft?",
+    metrics: [
+      ["aks-rp-e2e.spec.total-count", "Specs"],
+      ["aks-rp-e2e.spec.verified-count", "Verified"],
+      ["aks-rp-e2e.spec.unverified-count", "Unverified"],
+      ["aks-rp-e2e.spec.failed-count", "Failed"],
+      ["aks-rp-e2e.spec.ready-count", "Ready"],
+      ["aks-rp-e2e.spec.draft-count", "Draft"],
+    ],
+  },
+  {
+    title: "Model",
     description: "How much AKS input and expectation space is still open?",
     metrics: [
       ["aks-rp-e2e.model.unknown-path-count", "Unknown paths"],
@@ -66,7 +76,6 @@ const METRIC_GROUPS = [
     title: "Execution",
     description: "Are specs turning into live staging feedback?",
     metrics: [
-      ["aks-rp-e2e.spec.total-count", "Specs"],
       ["aks-rp-e2e.replay.script-count", "Scripts"],
       ["aks-rp-e2e.run.live-started-24h", "Runs 24h"],
       ["aks-rp-e2e.run.live-succeeded-24h", "Passed 24h"],
@@ -79,6 +88,8 @@ const METRIC_GROUPS = [
     metrics: [
       ["aks-rp-e2e.run.live-failed-24h", "Failed 24h"],
       ["aks-rp-e2e.artifact.duplicate-group-count", "Duplicate groups"],
+      ["aks-rp-e2e.spec.reviewed-exception-count", "Exceptions"],
+      ["aks-rp-e2e.spec.unverified-without-work", "No verification work"],
     ],
   },
 ];
@@ -87,26 +98,51 @@ const METRIC_FALLBACKS = {
   "aks-rp-e2e.task.active-count": (stats) => stats.active,
   "aks-rp-e2e.task.ready-count": (stats) => stats.backlog,
   "aks-rp-e2e.task.blocked-count": (stats) => stats.blocked,
+  "aks-rp-e2e.task.completed-24h": () =>
+    state.projectMeta?.currentState?.metrics?.tasksCompleted24h,
+  "aks-rp-e2e.spec.total-count": () =>
+    state.projectMeta?.currentState?.metrics?.specs,
+  "aks-rp-e2e.spec.verified-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsVerified,
+  "aks-rp-e2e.spec.reviewed-exception-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsReviewedExceptions,
+  "aks-rp-e2e.spec.unverified-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsUnverified,
+  "aks-rp-e2e.spec.failed-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsFailed,
+  "aks-rp-e2e.spec.blocked-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsBlocked,
+  "aks-rp-e2e.spec.ready-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsReady,
+  "aks-rp-e2e.spec.draft-count": () =>
+    state.projectMeta?.currentState?.metrics?.specsDraft,
+  "aks-rp-e2e.replay.script-count": () =>
+    state.projectMeta?.currentState?.metrics?.replays,
 };
 
+function taskState(task) {
+  const raw = task?.state || task?.status || "unknown";
+  if (raw === "ready" || raw === "proposed") return "backlog";
+  if (raw === "claimed_done" || raw === "rejected") return "review";
+  if (raw === "accepted" || raw === "superseded") return "done";
+  if (["backlog", "active", "review", "blocked", "done"].includes(raw))
+    return raw;
+  return "unknown";
+}
+
 function normalizedStatus(task) {
-  const status = task?.status || "unknown";
-  if (status === "ready" || status === "proposed") return "backlog";
-  if (status === "claimed_done" || status === "rejected") return "review";
-  return status;
+  return taskState(task);
 }
 
 function statusLabel(task) {
-  const status = normalizedStatus(task);
+  const status = taskState(task);
   return (
     {
       backlog: "Backlog",
       active: "In Progress",
       review: "Review",
       blocked: "Blocked",
-      accepted: "Accepted",
-      superseded: "Archived",
-      decomposed: "Decomposed",
+      done: "Done",
     }[status] || status
   );
 }
@@ -145,7 +181,7 @@ function isHumanQuestionTask(task) {
 }
 
 function hasExternalBlockSignal(task) {
-  if (!task || task.status !== "blocked") return false;
+  if (!task || taskState(task) !== "blocked") return false;
   if (task.kind === "human_question") return true;
   if (hasClosedGate(task) || (task.gates || []).length > 0) return true;
   if (isReviewTask(task) || isPlanningTask(task)) return false;
@@ -180,24 +216,12 @@ function hasOpenEscalation(task) {
 }
 
 function kanbanColumn(task) {
-  if (
-    isPlanningTask(task) &&
-    ["proposed", "ready", "active"].includes(task.status)
-  )
-    return "planning";
-  if (task.status === "proposed") return "backlog";
-  if (task.status === "ready") return "backlog";
-  if (task.status === "active") return "in-progress";
-  if (
-    task.status === "review" ||
-    task.status === "claimed_done" ||
-    task.status === "rejected"
-  )
-    return "review";
-  if (task.status === "blocked")
-    return hasExternalBlockSignal(task) ? "blocked" : "review";
-  if (task.status === "accepted") return "done";
-  if (task.status === "superseded") return "archive";
+  const stateName = taskState(task);
+  if (stateName === "backlog") return "backlog";
+  if (stateName === "active") return "in-progress";
+  if (stateName === "review") return "review";
+  if (stateName === "blocked") return "blocked";
+  if (stateName === "done") return "done";
   return null;
 }
 
@@ -207,13 +231,10 @@ function kanbanLabel(task) {
   return (
     {
       backlog: "Backlog",
-      planning: "Planning",
-      ready: "Ready",
       "in-progress": "In Progress",
       review: "Review",
       blocked: "Blocked",
       done: "Done",
-      archive: "Archive",
     }[column] || "Structure"
   );
 }
@@ -314,9 +335,7 @@ function topBranchId(tree, task) {
 function activeLeaves(tree) {
   return Object.values(tree?.tasks || {})
     .filter(
-      (task) =>
-        isLeaf(task) &&
-        ["active", "review", "claimed_done"].includes(task.status),
+      (task) => isLeaf(task) && ["active", "review"].includes(taskState(task)),
     )
     .sort(taskSort(tree));
 }
@@ -375,15 +394,14 @@ function taskReusableFor(task) {
 }
 
 function readinessInfo(tree, task) {
-  if (!task || !isLeaf(task) || normalizedStatus(task) !== "backlog")
-    return null;
+  if (!task || !isLeaf(task) || taskState(task) !== "backlog") return null;
   const depends = (task.depends_on || []).filter(Boolean);
-  const unmet = depends.find((id) => tree?.tasks?.[id]?.status !== "accepted");
+  const unmet = depends.find((id) => taskState(tree?.tasks?.[id]) !== "done");
   if (unmet) {
     const dep = tree?.tasks?.[unmet];
     return {
       label: "dependency blocked",
-      detail: `${unmet} is ${dep?.status || "missing"}`,
+      detail: `${unmet} is ${dep ? taskState(dep) : "missing"}`,
       color: "var(--yellow)",
     };
   }
@@ -420,12 +438,11 @@ function readinessInfo(tree, task) {
 }
 
 function treeRowSummary(tree, task) {
-  const acceptedSummary =
-    normalizedStatus(task) === "accepted" ? taskKnowledgeSummary(task) : "";
-  if (acceptedSummary) return `Learned: ${acceptedSummary}`;
+  const doneSummary =
+    taskState(task) === "done" ? taskKnowledgeSummary(task) : "";
+  if (doneSummary) return `Learned: ${doneSummary}`;
   const blocker = taskBlocker(task);
-  if (normalizedStatus(task) === "blocked" && blocker)
-    return `Blocked: ${blocker}`;
+  if (taskState(task) === "blocked" && blocker) return `Blocked: ${blocker}`;
   const readiness = readinessInfo(tree, task);
   if (readiness) return readiness.detail;
   if (task.archive_summary) {
@@ -445,7 +462,7 @@ function taskStats(tree) {
   if (!projection) throw new Error("Kanban projection is unavailable");
   const columnCounts = projection.column_counts || {};
   const counts = projection.status_counts || {};
-  const accepted = columnCounts.done || 0;
+  const done = columnCounts.done || 0;
   const blocked = columnCounts.blocked || 0;
   const escalated = projection.escalated || 0;
   const active = columnCounts["in-progress"] || 0;
@@ -455,15 +472,12 @@ function taskStats(tree) {
     counts,
     workflowCounts: counts,
     columnCounts,
-    accepted,
+    done,
     blocked,
     escalated,
     active,
-    planning: columnCounts.planning || 0,
     backlog: columnCounts.backlog || 0,
-    ready: columnCounts.ready || 0,
     review: columnCounts.review || 0,
-    archive: columnCounts.archive || 0,
     settledPct: projection.settled_pct || 0,
     treeTotal: projection.tree_total || 0,
   };
@@ -471,14 +485,11 @@ function taskStats(tree) {
 
 function emptyKanbanColumns() {
   return {
-    planning: [],
     backlog: [],
-    ready: [],
     "in-progress": [],
     review: [],
     blocked: [],
     done: [],
-    archive: [],
   };
 }
 
@@ -487,7 +498,7 @@ function buildBrowserKanbanProjection(tree) {
   const columns = emptyKanbanColumns();
   const statusCounts = {};
   for (const task of Object.values(tree?.tasks || {})) {
-    const status = task?.status || "unknown";
+    const status = taskState(task);
     statusCounts[status] = (statusCounts[status] || 0) + 1;
   }
   for (const task of cards) {
@@ -506,7 +517,7 @@ function buildBrowserKanbanProjection(tree) {
     escalated: cards.filter(hasOpenEscalation).length,
     settled_pct: cards.length
       ? Math.round(
-          (((columns.done || []).length + (columns.archive || []).length) /
+          (((columns.done || []).length + (columns.blocked || []).length) /
             cards.length) *
             100,
         )
@@ -531,16 +542,7 @@ function descendantStatusCounts(tree, task) {
 }
 
 function renderStatusSummary(counts, label = "hidden") {
-  const order = [
-    "active",
-    "backlog",
-    "review",
-    "blocked",
-    "accepted",
-    "decomposed",
-    "superseded",
-    "unknown",
-  ];
+  const order = ["backlog", "active", "review", "blocked", "done", "unknown"];
   const entries = Object.entries(counts || {})
     .filter(([, count]) => count > 0)
     .sort(([a], [b]) => {
@@ -575,27 +577,47 @@ async function loadMetrics() {
     state.metricAlerts = (data.alerts || []).filter((alert) =>
       String(alert.metricId || alert.metric_id || "").startsWith("aks-rp-e2e."),
     );
+    const histories = await Promise.all(
+      state.metrics.map((metric) =>
+        fetchJson(
+          `/api/metrics/${encodeURIComponent(metric.id)}/history?days=7`,
+        ).catch(() => ({ snapshots: [] })),
+      ),
+    );
+    state.metricHistory = new Map(
+      state.metrics.map((metric, index) => [
+        metric.id,
+        histories[index]?.snapshots || [],
+      ]),
+    );
     state.metricWarning = "";
   } catch (error) {
     state.metrics = [];
+    state.metricHistory = new Map();
     state.metricAlerts = [];
     state.metricWarning = `Project metrics are unavailable: ${error?.message || String(error)}`;
   }
 }
 
 async function loadData() {
-  const [projectData, taskData, kanbanData] = await Promise.all([
-    fetchJson(
-      `/api/projects/content?path=${encodeURIComponent(PROJECT_PATH)}`,
-    ).catch(() => ({ content: "" })),
-    fetchJson(
-      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/tree.json")}`,
-    ),
-    fetchJson(
-      `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/kanban.json")}`,
-    ),
-  ]);
+  const [projectData, appProjectData, taskData, kanbanData] = await Promise.all(
+    [
+      fetchJson(
+        `/api/projects/content?path=${encodeURIComponent(PROJECT_PATH)}`,
+      ).catch(() => ({ content: "" })),
+      fetchJson(
+        `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("project.json")}`,
+      ).catch(() => ({ content: "{}" })),
+      fetchJson(
+        `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/tree.json")}`,
+      ),
+      fetchJson(
+        `/api/projects/artifact?path=${encodeURIComponent(APP_PATH)}&file=${encodeURIComponent("tasks/kanban.json")}`,
+      ),
+    ],
+  );
   state.project = projectData.content || "";
+  state.projectMeta = JSON.parse(appProjectData.content || "{}");
   state.tree = JSON.parse(taskData.content || "{}");
   const kanbanSnapshot = JSON.parse(kanbanData.content || "{}");
   if (!kanbanSnapshot?.kanban?.card_ids_by_column)
@@ -659,10 +681,10 @@ function formatMetricValue(value) {
   return String(value);
 }
 
-function metricHealth(metric) {
+function metricHealth(metric, value) {
   if (!metric) return { label: "local", tone: "neutral" };
   if (metric.alertOpen) return { label: "alert", tone: "alert" };
-  const current = Number(metric.current);
+  const current = Number(value ?? metric.current);
   const threshold = Number(metric.threshold);
   if (!Number.isFinite(current) || !Number.isFinite(threshold))
     return { label: metric.priority || "active", tone: "neutral" };
@@ -677,17 +699,104 @@ function metricHealth(metric) {
 
 function metricValueFor(id, stats) {
   const metric = projectMetricsById().get(id);
-  if (metric) return { metric, value: metric.current };
   const fallback = METRIC_FALLBACKS[id];
+  if (metric) {
+    return {
+      metric,
+      value:
+        metric.current == null || metric.current === ""
+          ? fallback
+            ? fallback(stats)
+            : null
+          : metric.current,
+    };
+  }
   return {
     metric: null,
     value: fallback ? fallback(stats) : null,
   };
 }
 
+function snapshotValue(snapshot) {
+  const value =
+    snapshot?.value ??
+    snapshot?.current ??
+    snapshot?.metric_value ??
+    snapshot?.measurement;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function metricSeries(id, value) {
+  const snapshots = state.metricHistory.get(id) || [];
+  const values = snapshots.map(snapshotValue).filter((item) => item != null);
+  const current = Number(value);
+  if (Number.isFinite(current)) {
+    if (!values.length || values[values.length - 1] !== current) {
+      values.push(current);
+    }
+  }
+  if (values.length === 1) values.push(values[0]);
+  return values;
+}
+
+function renderMetricSparkline(id, metric, value, health) {
+  const values = metricSeries(id, value);
+  const hasHistory = (state.metricHistory.get(id) || []).length >= 2;
+  if (!values.length) {
+    return `<div class="metric-chart metric-chart-empty">No samples</div>`;
+  }
+
+  const width = 160;
+  const height = 42;
+  const pad = 3;
+  const threshold = Number(metric?.threshold);
+  const numericThreshold = Number.isFinite(threshold) ? threshold : null;
+  const domain = [...values];
+  if (numericThreshold != null) domain.push(numericThreshold);
+  let min = Math.min(...domain);
+  let max = Math.max(...domain);
+  if (min === max) {
+    min -= 1;
+    max += 1;
+  }
+  const range = max - min || 1;
+  const xStep = (width - pad * 2) / Math.max(1, values.length - 1);
+  const yFor = (item) =>
+    height - pad - ((item - min) / range) * (height - pad * 2);
+  const points = values
+    .map((item, index) => `${pad + index * xStep},${yFor(item).toFixed(2)}`)
+    .join(" ");
+  const thresholdLine =
+    numericThreshold == null
+      ? ""
+      : `<line x1="${pad}" y1="${yFor(numericThreshold).toFixed(2)}" x2="${width - pad}" y2="${yFor(numericThreshold).toFixed(2)}" class="metric-threshold" />`;
+  const first = values[0];
+  const last = values[values.length - 1];
+  const delta = last - first;
+  const deltaLabel =
+    values.length < 2
+      ? "flat"
+      : `${delta > 0 ? "+" : ""}${formatMetricValue(delta)}`;
+  const trendTone = delta === 0 ? "neutral" : delta > 0 ? "up" : "down";
+  const strokeClass =
+    health.tone === "alert" ? "metric-line-alert" : "metric-line";
+
+  return `<div class="metric-chart" aria-label="${attrEsc(id)} trend">
+    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img">
+      ${thresholdLine}
+      <polyline class="${strokeClass}" points="${points}" />
+    </svg>
+    <div class="metric-trend">
+      <span>${hasHistory ? "7d trend" : "waiting for samples"}</span>
+      <strong class="trend-${trendTone}">${esc(deltaLabel)}</strong>
+    </div>
+  </div>`;
+}
+
 function renderMetricTile(id, label, stats) {
   const { metric, value } = metricValueFor(id, stats);
-  const health = metricHealth(metric);
+  const health = metricHealth(metric, value);
   const detail = metric
     ? [
         metric.priority,
@@ -707,6 +816,7 @@ function renderMetricTile(id, label, stats) {
       <span class="metric-state">${esc(health.label)}</span>
     </div>
     <div class="metric-number">${esc(formatMetricValue(value))}</div>
+    ${renderMetricSparkline(id, metric, value, health)}
     <div class="metric-detail">${esc(detail)}</div>
   </div>`;
 }
@@ -813,8 +923,8 @@ function renderSummary(tree) {
         ${activeTasks.length > 5 ? `<div class="active-task-row"><span>${activeTasks.length - 5} more active tasks</span></div>` : ""}
       </div>`
       : `<div class="muted">${esc(activeNote)}</div>`;
-  const progressAccepted = stats.total
-    ? Math.round((stats.accepted / stats.total) * 100)
+  const progressDone = stats.total
+    ? Math.round((stats.done / stats.total) * 100)
     : 0;
   const progressBlocked = stats.total
     ? Math.round((stats.blocked / stats.total) * 100)
@@ -823,18 +933,6 @@ function renderSummary(tree) {
     stats.total && stats.active
       ? Math.max(1, Math.round((stats.active / stats.total) * 100))
       : 0;
-  const workflowTasks = kanbanTasks(tree);
-  const planningTasks = workflowTasks.filter(
-    (task) => kanbanColumn(task) === "planning",
-  );
-  const activePlanning = planningTasks.filter(
-    (task) => task.status === "active",
-  ).length;
-  const planningNeedsBatch =
-    activePlanning > 0 &&
-    stats.backlog === 0 &&
-    stats.ready === 0 &&
-    stats.active === 0;
   return `<section class="summary-grid">
     <div class="panel current-panel">
       <div class="panel-head">
@@ -842,13 +940,12 @@ function renderSummary(tree) {
           <div class="kicker">Current Work</div>
           <div class="title">${esc(activeTitle)}</div>
         </div>
-        <span class="pill" style="color:${taskColor(active?.status)}">${active ? esc(kanbanLabel(active)) : "Idle"}</span>
+        <span class="pill" style="color:${taskColor(taskState(active))}">${active ? esc(kanbanLabel(active)) : "Idle"}</span>
       </div>
       ${activeWorkHtml}
       ${state.kanbanWarning ? `<div class="notice" data-testid="kanban-projection-warning">${esc(state.kanbanWarning)}</div>` : ""}
-      ${planningNeedsBatch ? `<div class="notice" data-testid="planning-empty-backlog-warning">Owner review is active but Backlog is empty. The owner should create a batch of executable project work before execution can parallelize.</div>` : ""}
-      <div class="progress" title="${stats.accepted} accepted, ${stats.blocked} blocked, ${stats.active} active, ${stats.total} total">
-        <span class="progress-accepted" style="width:${progressAccepted}%"></span>
+      <div class="progress" title="${stats.done} done, ${stats.blocked} blocked, ${stats.active} active, ${stats.total} total">
+        <span class="progress-accepted" style="width:${progressDone}%"></span>
         <span class="progress-active" style="width:${progressActive}%"></span>
         <span class="progress-blocked" style="width:${progressBlocked}%"></span>
       </div>
@@ -858,8 +955,7 @@ function renderSummary(tree) {
         ${renderMetric("in progress", stats.active, "var(--blue)")}
         ${renderMetric("review", stats.review, "var(--orange)")}
         ${renderMetric("blocked", stats.blocked, "var(--yellow)")}
-        ${renderMetric("done", stats.accepted, "var(--green)")}
-        ${renderMetric("archived", stats.archive, "var(--muted)")}
+        ${renderMetric("done", stats.done, "var(--green)")}
         ${renderMetric("open escalations", stats.escalated, "var(--orange)")}
       </div>
     </div>
@@ -923,8 +1019,26 @@ function renderKanban(tree) {
         .map((id) => tree.tasks?.[id])
         .filter(Boolean);
     }
-    columnsByKey.backlog = [...columnsByKey.backlog, ...columnsByKey.ready];
-    columnsByKey.ready = [];
+    const legacyMappings = {
+      planning: "backlog",
+      ready: "backlog",
+      active: "in-progress",
+      archive: "done",
+    };
+    for (const [legacyKey, canonicalKey] of Object.entries(legacyMappings)) {
+      const tasks = (projectedColumns[legacyKey] || [])
+        .map((id) => tree.tasks?.[id])
+        .filter(Boolean);
+      columnsByKey[canonicalKey].push(...tasks);
+    }
+    for (const [key, tasks] of Object.entries(columnsByKey)) {
+      const seen = new Set();
+      columnsByKey[key] = tasks.filter((task) => {
+        if (seen.has(task.id)) return false;
+        seen.add(task.id);
+        return true;
+      });
+    }
   } else {
     for (const task of kanbanTasks(tree)) {
       const column = kanbanColumn(task);
@@ -932,25 +1046,18 @@ function renderKanban(tree) {
     }
   }
   const columns = [
-    ["planning", "Planning"],
     ["backlog", "Backlog"],
     ["in-progress", "In Progress"],
     ["review", "Review"],
     ["blocked", "Blocked"],
     ["done", "Done"],
-    ["archive", "Archive"],
   ];
-  const visibleColumns = columns.filter(
-    ([key]) => key !== "planning" || columnsByKey[key].length > 0,
-  );
   const limits = {
     done: 20,
-    planning: 8,
     backlog: 16,
     blocked: 20,
     "in-progress": 16,
     review: 16,
-    archive: 8,
   };
   return `<section class="panel" data-testid="kanban-board">
     <div class="panel-head">
@@ -961,7 +1068,7 @@ function renderKanban(tree) {
       <span class="muted">leaf task cards from ${TASK_TREE_FILE}${state.kanbanSource ? ` via ${esc(state.kanbanSource)}` : ""}</span>
     </div>
     <div class="kanban">
-      ${visibleColumns
+      ${columns
         .map(([key, label]) => {
           const items = columnsByKey[key].sort(sort);
           const limit = limits[key] || 12;
@@ -982,7 +1089,7 @@ function renderTree(tree) {
       <div>
         <div class="kicker">Project Thinking</div>
         <div class="title">Task Tree</div>
-        <div class="muted">Agent plan, accepted knowledge, open work, and task-linked human steering.</div>
+        <div class="muted">Agent plan, done knowledge, open work, and task-linked human steering.</div>
       </div>
       <span class="muted">${esc(tree.project_lifecycle || "active")}</span>
     </div>
@@ -1070,8 +1177,8 @@ function renderDetail() {
   const escalation = taskEscalation(task);
   const readiness = readinessInfo(state.tree, task);
   const blocker = taskBlocker(task);
-  const acceptedKnowledge =
-    normalizedStatus(task) === "accepted" ? taskKnowledgeSummary(task) : "";
+  const doneKnowledge =
+    taskState(task) === "done" ? taskKnowledgeSummary(task) : "";
   const reusableFor = taskReusableFor(task);
   return `<aside class="detail panel" data-testid="task-detail">
     <div>
@@ -1086,19 +1193,19 @@ function renderDetail() {
       </div>
     </div>
     ${
-      normalizedStatus(task) === "accepted"
+      taskState(task) === "done"
         ? `<div class="detail-section knowledge-panel">
-      <div class="kicker">Accepted Knowledge</div>
+      <div class="kicker">Done Knowledge</div>
       <div class="detail-list">
-        <div>${esc(acceptedKnowledge || "Accepted by the project owner as verified project understanding.")}</div>
+        <div>${esc(doneKnowledge || "Recorded by the project owner as reusable project understanding.")}</div>
         <div>Evidence: ${evidenceLinks(task)}</div>
         ${
           reusableFor.length
             ? `<div>Reusable for: ${esc(reusableFor.join(", "))}</div>`
             : ""
         }
-        ${task.accepted_at || task.trace?.accepted_at ? `<div>Accepted at: ${esc(task.accepted_at || task.trace?.accepted_at)}</div>` : ""}
-        ${task.accepted_by || task.trace?.accepted_by ? `<div>Accepted by: ${esc(task.accepted_by || task.trace?.accepted_by)}</div>` : ""}
+        ${task.done_at || task.trace?.done_at || task.accepted_at || task.trace?.accepted_at ? `<div>Done at: ${esc(task.done_at || task.trace?.done_at || task.accepted_at || task.trace?.accepted_at)}</div>` : ""}
+        ${task.done_by || task.trace?.done_by || task.accepted_by || task.trace?.accepted_by ? `<div>Done by: ${esc(task.done_by || task.trace?.done_by || task.accepted_by || task.trace?.accepted_by)}</div>` : ""}
       </div>
     </div>`
         : ""
@@ -1218,19 +1325,21 @@ function prefillAdvance() {
   state.selectedTaskId = active?.id || state.selectedTaskId;
   render();
   setSteerText(
-    `[resume] Advance aks-rp-e2e through aks-rp-e2e.app/tasks/tree.json.\n\nCurrent task: ${active?.id || "none"}\n\nUse the task tree as the project thinking surface. Keep working until blocked by a concrete gate/input, complete, or budget-limited. Do not accept no_work or waiting as terminal. Verify claims and record accepted knowledge before accepting tasks.`,
+    `[resume] Advance aks-rp-e2e through aks-rp-e2e.app/tasks/tree.json.\n\nCurrent task: ${active?.id || "none"}\n\nUse the task tree as the project thinking surface. Keep working until blocked by a concrete gate/input, complete, or budget-limited. Do not accept no_work or waiting as terminal. Verify claims and record done knowledge before closing tasks.`,
     "global-steer-text",
   );
 }
 
 function prefillReviewFrontier() {
   const blocked = Object.values(state.tree?.tasks || {})
-    .filter((task) => task.status === "blocked" && hasExternalBlockSignal(task))
+    .filter(
+      (task) => taskState(task) === "blocked" && hasExternalBlockSignal(task),
+    )
     .slice(0, 8)
     .map((task) => `- ${task.id}: ${task.blocker || task.goal}`)
     .join("\n");
   setSteerText(
-    `[task-steer] aks-rp-e2e frontier review\n\naction: review_frontier\n\nReview the current blocked/review frontier and decide what can still move locally. Convert vague no-work/waiting into concrete backlog work, exact blocker, human question, or supersession. Preserve accepted knowledge that future tasks can reuse.\n\nBlocked sample:\n${blocked || "- none"}`,
+    `[task-steer] aks-rp-e2e frontier review\n\naction: review_frontier\n\nReview the current blocked/review frontier and decide what can still move locally. Convert vague no-work/waiting into concrete backlog work, exact blocker, human question, or obsolete done work. Preserve done knowledge that future tasks can reuse.\n\nBlocked sample:\n${blocked || "- none"}`,
     "global-steer-text",
   );
 }
@@ -1273,12 +1382,12 @@ function prefillSelected(action) {
   if (!task) return;
   const escalation = taskEscalation(task);
   const prompts = {
-    review: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: review\n\nReview this task's status, evidence, accepted knowledge, blockers, and parent rollup. Tell me whether it is correctly represented in aks-rp-e2e.app/tasks/tree.json and what should happen next.`,
+    review: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: review\n\nReview this task's state, evidence, done knowledge, blockers, and parent rollup. Tell me whether it is correctly represented in aks-rp-e2e.app/tasks/tree.json and what should happen next.`,
     split: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: split\n\nIf this task is too broad or blocked ambiguously, split it into smaller executable child tasks. Preserve safety gates, forbidden actions, and evidence links.`,
-    challenge: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: challenge\n\nChallenge this task status. Check whether the claim is overaccepted, under-specified, blocked for the wrong reason, or missing a concrete next step.`,
+    challenge: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: challenge\n\nChallenge this task state. Check whether the claim is over-closed, under-specified, blocked for the wrong reason, or missing a concrete next step.`,
     escalate: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: escalate\n\nReview whether this task is blocked by a real ownership boundary. If yes, create or refresh a task-linked escalation with owner, requested action, evidence, and resume condition. If local rework is possible, do not escalate; create backlog follow-up work instead.\n\nCurrent blocker: ${taskBlocker(task) || "none"}`,
-    resolve: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: resolve_escalation\n\nResolve escalation ${escalation?.id || task.escalation_id || "(missing)"} for this task. Record outcome fixed or answered only if the task can resume now; otherwise use rejected, needs_human, or superseded with evidence. Wake project execution after updating the task.\n\nResolution summary: `,
-    "reject-escalation": `[task-steer] aks-rp-e2e task ${task.id}\n\naction: reject_escalation\n\nReject or dismiss escalation ${escalation?.id || task.escalation_id || "(missing)"} if the request is invalid, obsolete, or not enough to unblock the task. Explain what should happen next in the task tree.`,
+    resolve: `[task-steer] aks-rp-e2e task ${task.id}\n\naction: resolve_escalation\n\nResolve escalation ${escalation?.id || task.escalation_id || "(missing)"} for this task. Record outcome fixed or answered only if the task can resume now; otherwise keep it blocked, ask for human input, or close it as obsolete done work with evidence. Wake project execution after updating the task.\n\nResolution summary: `,
+    "reject-escalation": `[task-steer] aks-rp-e2e task ${task.id}\n\naction: reject_escalation\n\nDismiss escalation ${escalation?.id || task.escalation_id || "(missing)"} if the request is invalid, obsolete, or not enough to unblock the task. Explain what should happen next in the task tree.`,
   };
   setSteerText(prompts[action] || prompts.review);
 }
@@ -1312,7 +1421,7 @@ async function sendSteering(
           ui: "kanban",
           input: textareaId === "global-steer-text" ? "project" : "task",
           selectedTaskId: task?.id || state.selectedTaskId || "",
-          selectedTaskStatus: task ? normalizedStatus(task) : "",
+          selectedTaskState: task ? taskState(task) : "",
         },
       },
     };

@@ -58,7 +58,7 @@ describe("task worker", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: ["spec-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -67,7 +67,7 @@ describe("task worker", () => {
             "spec-task": {
               id: "spec-task",
               parent_id: "project",
-              status: "ready",
+              state: "backlog",
               kind: "domain_leaf",
               workflow: "spec-runner",
               priority: "P1",
@@ -89,6 +89,7 @@ describe("task worker", () => {
     );
 
     let observedSessionId = "";
+    let observedPrompt = "";
     const assignment = assignTask(config(projectDir), { taskId: "spec-task" });
     const dispatched: Array<{
       type: string;
@@ -112,10 +113,11 @@ describe("task worker", () => {
       runAgent: async () => ({ status: "success" }),
       runAgentSession: async (
         _agent: string,
-        _prompt: string,
+        prompt: string,
         sessionId: string,
       ) => {
         observedSessionId = sessionId;
+        observedPrompt = prompt;
         return { status: "success", message: "RESULT: done" };
       },
       summarize: () => "",
@@ -123,6 +125,7 @@ describe("task worker", () => {
 
     expect(result.status).toBe("done");
     expect(observedSessionId).toBe("s_task_spec-task");
+    expect(observedPrompt).toContain("Do not edit the live task tree yourself");
 
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
@@ -131,7 +134,8 @@ describe("task worker", () => {
     expect(updated.tasks["spec-task"].session_history).toContain(
       "s_task_spec-task",
     );
-    expect(updated.tasks["spec-task"].status).toBe("review");
+    expect(updated.tasks["spec-task"].state).toBe("review");
+    expect(updated.tasks["spec-task"].status).toBeUndefined();
     expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("done");
     expect(dispatched).toHaveLength(1);
     expect(dispatched[0]).toMatchObject({
@@ -161,7 +165,7 @@ describe("task worker", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: ["spec-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -170,7 +174,7 @@ describe("task worker", () => {
             "spec-task": {
               id: "spec-task",
               parent_id: "project",
-              status: "ready",
+              state: "backlog",
               kind: "domain_leaf",
               workflow: "spec-runner",
               priority: "P1",
@@ -223,7 +227,8 @@ describe("task worker", () => {
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["spec-task"].status).toBe("review");
+    expect(updated.tasks["spec-task"].state).toBe("review");
+    expect(updated.tasks["spec-task"].status).toBeUndefined();
     expect(updated.tasks["spec-task"].blocker).toBeUndefined();
     expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("blocked");
     expect(dispatched[0]).toMatchObject({
@@ -253,7 +258,7 @@ describe("task worker", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: ["spec-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -262,7 +267,7 @@ describe("task worker", () => {
             "spec-task": {
               id: "spec-task",
               parent_id: "project",
-              status: "ready",
+              state: "backlog",
               kind: "domain_leaf",
               workflow: "spec-runner",
               priority: "P1",
@@ -315,7 +320,8 @@ describe("task worker", () => {
     const updated = JSON.parse(
       await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["spec-task"].status).toBe("review");
+    expect(updated.tasks["spec-task"].state).toBe("review");
+    expect(updated.tasks["spec-task"].status).toBeUndefined();
     expect(updated.tasks["spec-task"].trace.last_worker_result).toBe("partial");
     expect(dispatched[0]).toMatchObject({
       type: "project.task.completed",

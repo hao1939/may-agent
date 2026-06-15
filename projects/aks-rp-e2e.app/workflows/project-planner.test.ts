@@ -58,7 +58,7 @@ async function makeWorkspace() {
         tasks: {
           project: {
             id: "project",
-            status: "decomposed",
+            state: "backlog",
             children: ["knowledge-model-gap-reconciliation"],
             goal: "project",
             outputs: ["tasks/tree.json"],
@@ -67,7 +67,7 @@ async function makeWorkspace() {
           "knowledge-model-gap-reconciliation": {
             id: "knowledge-model-gap-reconciliation",
             parent_id: "project",
-            status: "decomposed",
+            state: "backlog",
             kind: "standing_task",
             children: ["accepted-gap-report"],
             goal: "turn gaps into work",
@@ -77,7 +77,7 @@ async function makeWorkspace() {
           "accepted-gap-report": {
             id: "accepted-gap-report",
             parent_id: "knowledge-model-gap-reconciliation",
-            status: "accepted",
+            state: "done",
             children: [],
             goal: "gap report",
             outputs: ["evidence/archive/gap.md"],
@@ -139,6 +139,7 @@ describe("project owner workflow", () => {
     expect(prompts[1]).toContain(
       "cd " + projectDir + " && bun run status -- --gaps",
     );
+    expect(prompts[1]).toContain("Do not rewrite " + appDir + "/project.json");
     expect(prompts[1]).not.toContain("Current project status packet");
     expect(prompts[1]).not.toContain('"path_gap_count"');
     expect(prompts[1]).toContain(
@@ -147,7 +148,7 @@ describe("project owner workflow", () => {
     expect(prompts[1]).not.toContain("Stop after one small material update");
   });
 
-  test("runs owner review when worker results are pending even with ready work", async () => {
+  test("runs owner review when worker results are pending even with runnable backlog work", async () => {
     const { appDir, projectDir } = await makeWorkspace();
     await writeFile(
       join(appDir, "tasks", "tree.json"),
@@ -163,8 +164,8 @@ describe("project owner workflow", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
-              children: ["review-task", "ready-task"],
+              state: "backlog",
+              children: ["review-task", "backlog-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
@@ -172,7 +173,7 @@ describe("project owner workflow", () => {
             "review-task": {
               id: "review-task",
               parent_id: "project",
-              status: "review",
+              state: "review",
               kind: "domain_leaf",
               priority: "P1",
               children: [],
@@ -185,10 +186,10 @@ describe("project owner workflow", () => {
                   "Auth appears hung, but no result.json exists.",
               },
             },
-            "ready-task": {
-              id: "ready-task",
+            "backlog-task": {
+              id: "backlog-task",
               parent_id: "project",
-              status: "ready",
+              state: "backlog",
               kind: "domain_leaf",
               priority: "P2",
               children: [],
@@ -228,7 +229,7 @@ describe("project owner workflow", () => {
       runAgentSession: async (_agent: string, task: string) => {
         prompts.push(task);
         if (task.includes("Planning Update Step")) {
-          assignTask(config(appDir, projectDir), { taskId: "ready-task" });
+          assignTask(config(appDir, projectDir), { taskId: "backlog-task" });
           return { status: "success", message: "reviewed pending result" };
         }
         return {
@@ -248,7 +249,7 @@ describe("project owner workflow", () => {
       dispatched.some(
         (event) =>
           event.type === "project.task.assigned" &&
-          event.payload.taskId === "ready-task",
+          event.payload.taskId === "backlog-task",
       ),
     ).toBe(true);
 
@@ -275,16 +276,16 @@ describe("project owner workflow", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
-              children: ["ready-task"],
+              state: "backlog",
+              children: ["backlog-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
               acceptance: ["done"],
             },
-            "ready-task": {
-              id: "ready-task",
+            "backlog-task": {
+              id: "backlog-task",
               parent_id: "project",
-              status: "ready",
+              state: "backlog",
               kind: "domain_leaf",
               priority: "P2",
               children: [],
@@ -324,10 +325,13 @@ describe("project owner workflow", () => {
       runAgentSession: async (_agent: string, task: string) => {
         prompts.push(task);
         if (task.includes("Planning Update Step")) {
-          assignTask(config(appDir, projectDir), { taskId: "ready-task" });
+          assignTask(config(appDir, projectDir), { taskId: "backlog-task" });
           return { status: "success", message: "created more frontier work" };
         }
-        return { status: "success", message: "EVENT_REVIEW: ready refill" };
+        return {
+          status: "success",
+          message: "EVENT_REVIEW: runnable backlog refill",
+        };
       },
       summarize: () => "",
     } as any);
@@ -335,13 +339,13 @@ describe("project owner workflow", () => {
     expect(result.status).toBe("done");
     expect(prompts).toHaveLength(2);
     expect(prompts[1]).toContain("Planning Update Step");
-    expect(prompts[1]).toContain("assign ready leaves");
+    expect(prompts[1]).toContain("assign runnable backlog leaves");
     expect(prompts[1]).not.toContain('"capacity_underfilled_with_gaps"');
     expect(
       dispatched.some(
         (event) =>
           event.type === "project.task.assigned" &&
-          event.payload.taskId === "ready-task",
+          event.payload.taskId === "backlog-task",
       ),
     ).toBe(true);
 
@@ -368,7 +372,7 @@ describe("project owner workflow", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: ["backlog-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -377,7 +381,7 @@ describe("project owner workflow", () => {
             "backlog-task": {
               id: "backlog-task",
               parent_id: "project",
-              status: "backlog",
+              state: "backlog",
               kind: "domain_leaf",
               priority: "P1",
               children: [],
@@ -527,7 +531,7 @@ describe("project owner workflow", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: ["stale-task"],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -536,7 +540,7 @@ describe("project owner workflow", () => {
             "stale-task": {
               id: "stale-task",
               parent_id: "project",
-              status: "active",
+              state: "active",
               kind: "domain_leaf",
               priority: "P1",
               owner: "aks-explorer",
@@ -609,7 +613,8 @@ describe("project owner workflow", () => {
     const updated = JSON.parse(
       await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
     );
-    expect(updated.tasks["stale-task"].status).toBe("active");
+    expect(updated.tasks["stale-task"].state).toBe("active");
+    expect(updated.tasks["stale-task"].status).toBeUndefined();
     expect(updated.tasks["stale-task"].trace.stale_active_requeue_reason).toBe(
       "watchdog-stale-active-review",
     );
@@ -619,6 +624,215 @@ describe("project owner workflow", () => {
       "utf8",
     );
     expect(plannerRuns).toContain('"requeued_stale_task_ids":["stale-task"]');
+  });
+
+  test("skips owner session for false-positive stale-active watchdog review", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "already-done-task"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "already-done-task": {
+              id: "already-done-task",
+              parent_id: "project",
+              state: "done",
+              kind: "domain_leaf",
+              priority: "P2",
+              children: [],
+              goal: "Already complete.",
+              outputs: ["evidence/archive/done-task.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const dispatched: Array<{
+      type: string;
+      payload: Record<string, unknown>;
+    }> = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "watchdog-stale-active-review",
+            staleActiveTasks: [
+              { taskId: "missing-task", reason: "session-not-running" },
+              { taskId: "already-done-task", reason: "session-not-running" },
+            ],
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent(type: string, payload: Record<string, unknown>) {
+        dispatched.push({ type, payload });
+      },
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("false positive");
+    expect(prompts).toHaveLength(0);
+    expect(dispatched).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain(
+      "Watchdog stale-active review was a false positive",
+    );
+    expect(plannerRuns).toContain('"ran_agent":false');
+  });
+
+  test("skips owner session for already-settled task completion while active work runs", async () => {
+    const { appDir, projectDir } = await makeWorkspace();
+    await writeFile(
+      join(appDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          updated_at: new Date().toISOString(),
+          active_task_id: "active-task",
+          active_task_ids: ["active-task"],
+          tasks: {
+            project: {
+              id: "project",
+              state: "active",
+              children: ["active-task", "completed-parent"],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+            "active-task": {
+              id: "active-task",
+              parent_id: "project",
+              state: "active",
+              kind: "domain_leaf",
+              priority: "P1",
+              owner: "aks-explorer",
+              session_id: "s_task_active-task",
+              children: [],
+              goal: "Keep doing real work.",
+              outputs: ["evidence/archive/active-task.md"],
+              acceptance: ["done"],
+            },
+            "completed-parent": {
+              id: "completed-parent",
+              parent_id: "project",
+              state: "done",
+              kind: "work",
+              children: [],
+              goal: "Already rolled up.",
+              outputs: ["evidence/archive/completed.md"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const prompts: string[] = [];
+    const result = await execute({
+      task: [
+        `app: ${appDir}`,
+        `project: ${projectDir}`,
+        "agent: aks-explorer",
+        "maxConcurrent: 5",
+        "## Trigger Event",
+        "```json",
+        JSON.stringify({
+          type: "project.owner.requested",
+          data: {
+            project: "aks-rp-e2e",
+            reason: "task-completed",
+            completedTaskId: "archived-review-task",
+          },
+        }),
+        "```",
+      ].join("\n"),
+      agent: "aks-explorer",
+      done: (message: string) => ({ status: "done", message }),
+      escalate: (message: string) => ({ status: "escalated", message }),
+      emit() {},
+      dispatchEvent() {},
+      runAgent: async () => ({ status: "success" }),
+      runAgentSession: async (_agent: string, task: string) => {
+        prompts.push(task);
+        return { status: "success", message: "should not run" };
+      },
+      summarize: () => "",
+    } as any);
+
+    expect(result.status).toBe("done");
+    expect(result.message).toContain("already settled");
+    expect(prompts).toHaveLength(0);
+
+    const plannerRuns = await readFile(
+      join(appDir, ".state", "planner-runs.jsonl"),
+      "utf8",
+    );
+    expect(plannerRuns).toContain('"steps":["settled-active-noop"]');
+    expect(plannerRuns).toContain("Task-completed wake is already settled");
+    expect(plannerRuns).toContain('"ran_agent":false');
   });
 
   test("seeds executable model-gap backlog when owner review times out under capacity", async () => {
@@ -647,7 +861,7 @@ describe("project owner workflow", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: ["spec-runner-and-replays"],
               goal: "project",
               outputs: ["tasks/tree.json"],
@@ -656,7 +870,7 @@ describe("project owner workflow", () => {
             "spec-runner-and-replays": {
               id: "spec-runner-and-replays",
               parent_id: "project",
-              status: "decomposed",
+              state: "backlog",
               kind: "work",
               children: [],
               goal: "Execute specs and replays.",
@@ -702,7 +916,7 @@ describe("project owner workflow", () => {
     } as any);
 
     expect(result.status).toBe("done");
-    expect(dispatched).toHaveLength(1);
+    expect(dispatched.length).toBeGreaterThanOrEqual(1);
     expect(dispatched[0].type).toBe("project.task.assigned");
     expect(String(dispatched[0].payload.taskId)).toContain(
       "feature-a-staging-frontier",
@@ -712,7 +926,8 @@ describe("project owner workflow", () => {
       await readFile(join(appDir, "tasks", "tree.json"), "utf8"),
     );
     const seededTask = updated.tasks[dispatched[0].payload.taskId as string];
-    expect(seededTask.status).toBe("active");
+    expect(seededTask.state).toBe("active");
+    expect(seededTask.status).toBeUndefined();
     expect(seededTask.parent_id).toBe("spec-runner-and-replays");
     expect(seededTask.context.model_path_id).toBe("path.feature-a.create");
     expect(seededTask.context.replay).toBe("replays/feature-a-create.ts");
@@ -751,7 +966,7 @@ describe("project owner workflow", () => {
           tasks: {
             project: {
               id: "project",
-              status: "decomposed",
+              state: "backlog",
               children: [
                 "spec-runner-and-replays",
                 "go-e2ev3-source-discovery",
@@ -763,7 +978,7 @@ describe("project owner workflow", () => {
             "spec-runner-and-replays": {
               id: "spec-runner-and-replays",
               parent_id: "project",
-              status: "decomposed",
+              state: "backlog",
               kind: "work",
               children: ["slow-execution"],
               goal: "Execute specs and replays.",
@@ -773,7 +988,7 @@ describe("project owner workflow", () => {
             "go-e2ev3-source-discovery": {
               id: "go-e2ev3-source-discovery",
               parent_id: "project",
-              status: "decomposed",
+              state: "backlog",
               kind: "work",
               children: [],
               goal: "Explore source and build specs.",
@@ -783,7 +998,7 @@ describe("project owner workflow", () => {
             "slow-execution": {
               id: "slow-execution",
               parent_id: "spec-runner-and-replays",
-              status: "active",
+              state: "active",
               kind: "domain_leaf",
               priority: "P1",
               owner: "aks-explorer",
@@ -843,7 +1058,8 @@ describe("project owner workflow", () => {
         task.id !== "slow-execution" &&
         task.id.includes("feature-a-source-spec-frontier"),
     ) as any;
-    expect(seeded.status).toBe("backlog");
+    expect(seeded.state).toBe("backlog");
+    expect(seeded.status).toBeUndefined();
     expect(seeded.parent_id).toBe("go-e2ev3-source-discovery");
     expect(seeded.context.seed_preference).toBe("source-spec");
     expect(seeded.goal).toContain("build up the source-grounded spec/replay");

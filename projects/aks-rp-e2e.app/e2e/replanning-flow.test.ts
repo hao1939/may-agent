@@ -42,22 +42,31 @@ describe("replanning flow e2e", () => {
 
     expect(plan.rejectedPaths).toEqual([]);
     expect(plan.acceptedPathIds).toEqual(selectedPathIds);
-    expect(plan.groups).toHaveLength(2);
-    expect(plan.groups[0]?.selectedPathIds).toEqual([
-      "path.managedsystem.rest-add-existing.minimal-rest",
-      "path.managedsystem.delete-existing",
+    expect(plan.groups).toHaveLength(1);
+    expect(plan.groups[0]?.selectedPathIds).toEqual(selectedPathIds);
+    expect(plan.groups[0]?.specIds).toEqual([
+      "spec.managedsystem.add-immutability-delete-combined",
     ]);
-    expect(plan.groups[1]?.selectedPathIds).toEqual([
-      "path.managedsystem.mode-immutability",
-    ]);
+    expect(plan.groups[0]?.operations.map((operation) => operation.id)).toEqual(
+      [
+        "op.put-managedsystem-pool",
+        "op.get-managedsystem-pool",
+        "op.put-vmsize-mutation",
+        "op.get-after-vmsize-rejection",
+        "op.put-mode-system",
+        "op.get-after-mode-rejection",
+        "op.delete-managedsystem-pool",
+        "op.poll-deleted",
+      ],
+    );
     expect(plan.metrics.selectedScenarioCount).toBe(1);
-    expect(plan.metrics.behaviorAssertionCount).toBe(12);
-    expect(plan.metrics.baselineClusterCrudCount).toBe(3);
-    expect(plan.metrics.replannedClusterCrudCount).toBe(2);
-    expect(plan.metrics.clusterCrudSaved).toBe(1);
-    expect(plan.metrics.expectationDensity).toBe(6);
-    expect(plan.groups[0]?.diagnosticClean).toBe(false);
-    expect(plan.groups[1]?.diagnosticClean).toBe(true);
+    expect(plan.metrics.behaviorAssertionCount).toBe(14);
+    expect(plan.metrics.baselineClusterCrudCount).toBe(1);
+    expect(plan.metrics.replannedClusterCrudCount).toBe(1);
+    expect(plan.metrics.clusterCrudSaved).toBe(0);
+    expect(plan.metrics.expectationDensity).toBe(14);
+    expect(plan.metrics.diagnosticCleanGroupCount).toBe(1);
+    expect(plan.groups[0]?.diagnosticClean).toBe(true);
 
     const probe = renderCombinedProbe(plan);
     expect(probe).toContain("AKS_RP_E2E_DRY_RUN");
@@ -66,13 +75,15 @@ describe("replanning flow e2e", () => {
     );
     expect(probe).toContain("path.managedsystem.mode-immutability");
     expect(probe).toContain("path.managedsystem.delete-existing");
-    expect(probe).toContain("managedSystem.rejectedField.httpStatus");
-    expect(probe).toContain("agentPool.managedsystem.deleted");
+    expect(probe).toContain("op.put-managedsystem-pool");
+    expect(probe).toContain("op.delete-managedsystem-pool");
+    expect(probe).toContain("fieldRejection.vmSize.rp.request.accepted=false");
+    expect(probe).toContain("delete.agentPool.managedsystem.deleted=true");
 
     const outDir = await mkdtemp(join(tmpdir(), "aks-rp-e2e-replan-"));
     const artifacts = writeReplanArtifacts(plan, outDir);
     const writtenPlan = JSON.parse(await readFile(artifacts.planPath, "utf8"));
-    expect(writtenPlan.metrics.clusterCrudSaved).toBe(1);
+    expect(writtenPlan.metrics.clusterCrudSaved).toBe(0);
 
     const run = Bun.spawnSync({
       cmd: ["bun", artifacts.probePath],
@@ -90,12 +101,9 @@ describe("replanning flow e2e", () => {
     expect(run.exitCode, stderr).toBe(0);
     expect(stdout).toContain("[dry-run] PUT");
     expect(stdout).toContain("[dry-run] DELETE");
-    expect(stdout).toContain("clusterCrud baseline=3 replanned=2 saved=1");
+    expect(stdout).toContain("clusterCrud baseline=1 replanned=1 saved=0");
     expect(stdout).toContain(
-      "group=group.01 paths=path.managedsystem.rest-add-existing.minimal-rest,path.managedsystem.delete-existing",
-    );
-    expect(stdout).toContain(
-      "group=group.02 paths=path.managedsystem.mode-immutability",
+      "group=group.01 paths=path.managedsystem.rest-add-existing.minimal-rest,path.managedsystem.mode-immutability,path.managedsystem.delete-existing",
     );
   });
 });
