@@ -24,7 +24,7 @@ Reduce evaluator aftermath routing false positives by calibrating `success_candi
 - Recent event `1422836` (`evaluation.false_good`) shows a `success_candidate` route later downgraded from `good` to `acceptable` for session `s_task_net-integration-authorized-ip-ranges-feature-yaml-20260615`.
 - Repo search shows many aftermath notes already identifying the same pattern: planner/event-review sessions are being downgraded or routed oddly because material-output and `repair_execution` heuristics assume builder-style artifacts.
 - A fresh `guard.triggered` event (`1426206`) also confirms evaluator workflow hygiene still needs to prefer targeted transcript extraction over broad dumps.
-- 2026-06-15 heartbeat sampling sharpened the dominant cluster: in the last 24h, live event counts are now `evaluation.false_good=76`, `evaluation.success_candidate=415`, and `evaluation.reviewed=928`; `aks-explorer` alone accounts for `60` of the `76` false-good rows.
+- 2026-06-15 heartbeat sampling sharpened the dominant cluster: in the last 24h, live event counts are now `evaluation.false_good=82`, `evaluation.success_candidate≈418+`, and `evaluation.reviewed≈927+`; `aks-explorer` alone accounts for `63` of the `82` false-good rows.
 - Sampled aftermaths show the current heuristic gap is not fake output detection anymore; it is missing an intermediate "acceptable / marginal value" state. The overturned `good` sessions usually did produce real artifacts and verification, but reviews downgraded them for duplicate already-complete work, constraint misses inside referenced artifacts, stale evidence pointers, wrong output paths, cross-artifact inconsistency, broad formatting churn, or overclaiming broader health than the evidence supports.
 - Fresh samples `s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-30`, `s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-32`, and `s_task_aad-rbac-rbac-disabled-to-aadv2-staging-frontier-retry-20260615` make the dominant live pattern concrete: the router marked them `good` + `success_candidate` because they had `file write/edit` and `verification command` signals, but aftermath review downgraded them to `acceptable` for task-contract misses, path/output mistakes, inconsistent artifact classification, or completion overclaim.
 - The live code path still only emits heuristic verdicts `good` or `needs_improvement`; `transcriptOutputSignals()` plus `classifyEvaluationLane()` treat any good session with file writes/commits as a `success_candidate`, while `normalizeEvaluationState()` only downgrades unresolved `repair_execution` to `acceptable`. That leaves no pre-review lane for “real but marginal” success cases, so many such sessions enter review already over-scored.
@@ -47,6 +47,14 @@ Reduce evaluator aftermath routing false positives by calibrating `success_candi
   depends_on: []
   attempts: 1
 
+- id: package-marginal-success-calibration
+  status: pending
+  assignee: evaluator
+  goal: Draft an owner-visible calibration proposal for `workflows/evaluator-aftermath.ts` that preserves strong audit/validation sessions but routes marginal material-output sessions away from heuristic `good`, using the current `aks-explorer` false-good cluster plus cross-agent counterexamples.
+  run: agent
+  depends_on: [sample-false-good-clusters]
+  attempts: 0
+
 ## Validation
 - Fewer reviewed `success_candidate` sessions overturned to `acceptable` solely for low-artifact/text-only workflow shapes.
 - New evaluator aftermath reviews stop repeatedly citing the same planner/event-review routing mismatch.
@@ -56,3 +64,4 @@ Reduce evaluator aftermath routing false positives by calibrating `success_candi
 - 2026-06-15: Heartbeat created this project after reviewing pending evaluator events, the current false-good metric, and repeated aftermath artifacts pointing to planner/text-only routing mismatch.
 - 2026-06-15: Heartbeat sampled fresh `evaluation.false_good` events and aftermath artifacts. The dominant live problem is now narrower than the original hypothesis: most false-good reversals are `good -> acceptable`, concentrated in `aks-rp-e2e`, and caused by binary heuristic over-scoring of marginal-but-real sessions (duplicate already-complete work, stale evidence links, constraint misses in referenced artifacts, formatting churn, or overclaiming). Next step is a code-level calibration proposal around the missing intermediate state in `evaluator-aftermath.ts`.
 - 2026-06-15: Follow-up heartbeat refreshed the live counts (`false_good=76`, `success_candidate=415`, `reviewed=928`; `aks-explorer=60` false-goods), confirmed three concrete `aks-explorer` downgrade patterns (forbidden replay defaults, wrong output tree, and cross-artifact inconsistency / overclaim), and re-read `transcriptOutputSignals()`, `classifyEvaluationLane()`, and `normalizeEvaluationState()`. Judgment: the main gap is no pre-review route/verdict for “real but marginal” sessions; planner text-only mismatch remains real but secondary.
+- 2026-06-15: Heartbeat re-sampled live events after a fresh worker review. Counts moved to `false_good=79`, `success_candidate=418`, `reviewed=927`, with `aks-explorer=61` false-goods. New counterexample `s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-32` was routed `success_candidate` and stayed `good`, while nearby `ubuntu2404` and `secops-identity-kubelet` samples were downgraded to `acceptable` for explicit contract/consistency misses. Judgment: the calibration should stay narrow—do not penalize all preexisting-artifact audit sessions. Focus on separating high-quality audit+validation work from marginal sessions that miss forbidden-condition checks, stale derived artifacts, or cross-artifact consistency.
