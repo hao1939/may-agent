@@ -156,9 +156,9 @@ These are measured but not in the prioritized tables above.
 - `project.owner-incomplete-count` — active projects with no open work (steward signal)
 - `project.owner-judgment-needed-count` — project tasks needing owner judgment (steward signal)
 - `project.task-parser-error-count` — project task parser errors (steward signal)
-- `project.reconcile.event-latency-ms` — latency from project event to reconciler action
-- `project.reconcile.launched-count` — reconciler-launched actions
-- `project.reconcile.trigger-count` — reconciler invocations
+- `project.reconcile.event-latency-ms` — latency from project event to reconciler action (**orphaned** — legacy project handler disabled 2026-06-15; see KE-2011. DB status still 'active', inflating `capability.status-reality-mismatch-count` by 3. Should be set to 'inactive'.)
+- `project.reconcile.launched-count` — reconciler-launched actions (**orphaned** — see above)
+- `project.reconcile.trigger-count` — reconciler invocations (**orphaned** — see above)
 
 **Scout:**
 - `scout.downstream-reference-files-7d` — files referencing scout knowledge (7d)
