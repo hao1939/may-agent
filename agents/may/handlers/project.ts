@@ -597,18 +597,11 @@ function launchProjectOwner(
   ownerLoopsInFlight: Set<string>,
 ): void {
   if (isProjectApp(project)) {
-    const projectApp = projectSlug(project);
-    const projectDomain = domainProjectIdForApp(project);
-    ctx.sdk.log("info", `[project] Routing ${project.relPath} owner wake to project app workflow: ${reason}`);
-    ctx.sdk.emit("project.owner.requested", {
-      project: projectDomain,
-      projectId: projectDomain,
-      projectApp,
-      projectPath: project.relPath,
-      owner: project.owner,
-      reason,
-      requested_by: "project-handler",
-    });
+    // Project-apps own their schedules and workflow handlers.
+    // The legacy reconciler should NOT emit owner wakes for them —
+    // it creates redundant sessions that burn the app's session budget.
+    // The app's own schedules (project.tick, heartbeat, etc.) drive it.
+    ctx.sdk.log("info", `[project] Skip ${project.relPath} — project-app owns its own schedules`);
     return;
   }
 
@@ -831,6 +824,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       const projectId = projectIdFor(project);
 
       if (project.status === "active" && !project.formatErrors?.length && launched < ph.MAX_LAUNCHES_PER_TICK) {
+        // Project-apps own their task dispatch — skip legacy reconciler
+        if (isProjectApp(project)) continue;
         const taskDispatch = dispatchReadyProjectTasks(ctx, project, projectId, ph.MAX_LAUNCHES_PER_TICK - launched);
         if (taskDispatch.handled) {
           if (taskDispatch.launched > 0) {
