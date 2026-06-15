@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-15T07:00:00.000Z",
+  "updated_at": "2026-06-15T13:10:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "44 tasks done, 6 backlog, 0 active (50 total). All error channels clear since restart (pid 569767): 397+ handler.completed, 0 handler.failed, 0 session.resume_failed, 0 agent.config_invalid, 0 message.delivery_failed. Guard alerts 1845/1846 plateauing ~4597 (threshold 4500, down from peak 4632), DEFERRED_METRICS in app.ts prevents wasteful wakes. Alert 1848 (aks-rp-e2e) aks-explorer-owned, correctly nooped. Message lifecycle: 0 pending, 156 handled, 338 expired. Evaluator aftermath gap (14/264, 5.3%) evaluator-owned. All 16 cron handlers 0 errors.",
+  "note": "44 tasks done, 7 backlog, 0 active (51 total). FIXED: stale /app/node_modules/@may-agent/sdk replaced with symlink to live packages/sdk — root cause of 108 aks-explorer handler failures (withTreeLock2 not defined + Bundle failed). All aks-rp-e2e workflows verified OK. Evaluator calibration project (18% false-good rate) is pending-review, evaluator-owned. Guard alerts 1845/1846 recovered. Next: consider adding SDK freshness guard to prevent stale-copy recurrence.",
   "max_concurrent": 3,
   "tasks": {
     "project": {

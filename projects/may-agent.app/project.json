@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Platform operational (44/51 done, 7 backlog, 4 runnable P2). Alert 1855 (provider-error-count-1h) recovered to 10 (<12 threshold), triage session running. Alert 1856 (stale-active-count) spiked to 35 then self-resolved to 3 — transient measurement lag, not systemic. Alerts 1857/1858 (task-parser-error, health-finding) caused by non-canonical result field in evaluator-aftermath-routing-calibration/project.md — fixed to 'succeeded'. Guard alerts 1845/1846 (4583/4574 vs 4500 threshold) deferred, trending down. Evaluator false-good calibration project active (18% vs 5% target) — sampling task done, next task is code-level calibration proposal. Scout heartbeat-scout handler.failed (FM-3.4 guard block) escalated to human."
+    "summary": "Platform operational (44/51 done, 7 backlog, 4 runnable P2). FIXED: stale /app/node_modules/@may-agent/sdk copy replaced with symlink to live source — was causing aks-explorer handler failures (withTreeLock2 not defined + Bundle failed, 108 pending events). Root cause: SDK file-link installed as directory copy on Jun 9, but SDK gained project-task-tree-store.ts and new exports after that. Compiled-binary workflow bundler resolved stale copy. All 5 aks-rp-e2e workflows now bundle correctly. Evaluator calibration project (18% vs 5% false-good target) is pending-review — evaluator-owned, analysis mature, code proposal ready. Guard alert 1845/1846 recovered below threshold."
   },
-  "updatedAt": "2026-06-15T11:00:00.000Z"
+  "updatedAt": "2026-06-15T13:10:00.000Z"
 }
