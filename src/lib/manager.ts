@@ -865,54 +865,38 @@ export class SubagentManager {
    * should check `_sessions.has(sessionId)` first and use steer/input for
    * live sessions.
    */
-  /**
-   * Resume a cold (done/error/interrupted) session with a new user message.
-   *
-   * Reuses the original sessionId so the JSONL transcript grows in place
-   * (Telegram-style: one persistent thread per chat). The new message is
-   * appended after the rebuilt transcript as the next user turn.
-   *
-   * Throws if the session is unknown or already active in memory — callers
-   * should check `_sessions.has(sessionId)` first and use steer/input for
-   * live sessions.
-   */
-  resumeSession(sessionId: string, message: string, opts?: { source?: string; timeoutMs?: number }): string {
+  resumeSession(sessionId: string, message: string, opts?: { source?: string; timeoutMs?: number; suppressBenignRaceEvent?: boolean }): string {
     if (this._sessions.has(sessionId)) {
       const reason = `Session "${sessionId}" is already active — use steer/input instead`;
+      if (opts?.suppressBenignRaceEvent) {
+        log("debug", `[resume] Skipping already-active resume failure for ${sessionId} from ${opts.source ?? "unknown"}`);
+        throw new Error(reason);
+      }
       this.emitSessionResumeFailed(sessionId, this._registry.getSession(sessionId), reason, "already_active", true);
       throw new Error(reason);
     }
     const meta = this._registry.getSession(sessionId);
     if (!meta) {
-      // Check DB before emitting noise: if the session doesn't exist in DB,
-      // already completed, or is a stale "running" row without registry
-      // metadata, this is a benign race — don't emit session.resume_failed.
+      // Check DB to decide whether this is a dead session (cleaned up or
+      // never existed) vs. a live session that just isn't in the registry.
+      // Dead sessions (not in DB, or terminal in DB) are noise — suppress
+      // the event entirely to avoid 500+ daily session.resume_failed events
+      // for sessions that will never recover (KE-2000 Spec 1).
+      let dbStatus: string | null = null;
       try {
-        const db = getDb(this._persistDir);
-        const row = db.prepare("SELECT status FROM sessions WHERE sessionId = ?").get(sessionId) as { status: string } | null;
-        if (!row) {
-          // Session doesn't exist anywhere — pre-creation race or phantom
-          log("debug", `[resume] Skipping resume for ${sessionId}: not in registry or DB (pre-creation race)`);
-          throw new Error(`Session "${sessionId}" not found anywhere`);
-        }
-        if (row.status === "done" || row.status === "error" || row.status === "interrupted") {
-          log("debug", `[resume] Skipping resume for ${sessionId}: session already ${row.status} in DB (registry cleaned)`);
-          throw new Error(`Session "${sessionId}" already ${row.status}`);
-        }
-        // Session shows "running" in DB but isn't in registry — zombie row
-        // from crash/cleanup. Can't resume without registry metadata.
-        if (row.status === "running") {
-          log("debug", `[resume] Skipping resume for ${sessionId}: DB shows running but not in registry (zombie row)`);
-          throw new Error(`Session "${sessionId}" is zombie (running in DB, not in registry)`);
-        }
-      } catch (e) {
-        // If it's our own suppression error, re-throw without emitting
-        if (e instanceof Error && (
-          e.message.startsWith(`Session "${sessionId}" already `) ||
-          e.message.startsWith(`Session "${sessionId}" not found anywhere`) ||
-          e.message.startsWith(`Session "${sessionId}" is zombie`)
-        )) throw e;
-        // DB lookup failed — fall through to the original behavior
+        const row = getDb(this._persistDir)
+          .prepare("SELECT status FROM sessions WHERE sessionId = ?")
+          .get(sessionId) as { status: string } | null;
+        dbStatus = row?.status ?? null;
+      } catch { /* best-effort DB lookup */ }
+
+      const isDeadSession = !dbStatus || dbStatus === "done" || dbStatus === "error" || dbStatus === "interrupted";
+      if (isDeadSession || opts?.suppressBenignRaceEvent) {
+        log(
+          "debug",
+          `[resume] Suppressing resume_failed event for dead/missing session ${sessionId} from ${opts?.source ?? "unknown"}; dbStatus=${dbStatus ?? "missing"}`,
+        );
+        throw new Error(`Session "${sessionId}" not found`);
       }
       const reason = `Session "${sessionId}" not found`;
       this.emitSessionResumeFailed(sessionId, null, reason, "session_not_found", false);
