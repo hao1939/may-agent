@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Platform stable (43/49 done, 6 backlog, 3 runnable P2). Guard alert root cause fixed: 4430/4516 (98%) guard triggers were from a single dirty auto-generated file (agents/aks-explorer/last-eval.md) plus 4 other dirty last-eval.md files — committed to resolve guard.triggered-count-24h and guard.warned-count-24h alerts. Alerts will auto-resolve as 24h window ages out. Project health metrics all at 0. session.resume_failed down to 27, draining naturally. Evaluator verdict normalization working (all recent verdicts canonical). Message lifecycle operational. Zero handler.failed/agent.config_invalid/subscriber.failed."
+    "summary": "Platform stable (43/49 done, 6 backlog, 3 runnable P2). Guard alert fix completed: previous session committed only last-eval.md files but 94 other dirty files remained, causing ongoing guard triggers (4558 still climbing). This session committed ALL dirty files in 8 logical groups and added .gitignore entries for generated artifacts (ui/, packages/, may-agent-latest, chrome-profile/). Worktree now clean (0 dirty files). Guard 24h rolling counts will now genuinely drain. Zero session.resume_failed in last hour (fix working). Zero handler.failed/agent.config_invalid/subscriber.failed. Message lifecycle operational (1 pending P2 evaluator status update). Evaluator verdict normalization fully resolved."
   },
-  "updatedAt": "2026-06-15T06:45:00.000Z"
+  "updatedAt": "2026-06-15T07:15:00.000Z"
 }
