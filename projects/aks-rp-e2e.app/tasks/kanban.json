@@ -1,33 +1,28 @@
 {
   "version": 1,
-  "generated_at": "2026-06-15T05:58:51.023Z",
-  "tree_updated_at": "2026-06-15T05:58:51.009Z",
+  "generated_at": "2026-06-15T06:08:24.308Z",
+  "tree_updated_at": "2026-06-15T06:08:24.292Z",
   "kanban": {
-    "total_cards": 273,
-    "tree_total": 291,
+    "total_cards": 277,
+    "tree_total": 295,
     "status_counts": {
-      "active": 6,
-      "done": 283,
-      "review": 2
+      "active": 3,
+      "done": 292
     },
     "column_counts": {
       "backlog": 0,
-      "in-progress": 3,
-      "review": 2,
+      "in-progress": 2,
+      "review": 0,
       "blocked": 0,
-      "done": 268
+      "done": 275
     },
     "card_ids_by_column": {
       "backlog": [],
       "in-progress": [
-        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
-        "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
-        "storage-csi-blob-driver-enable-staging-20260615"
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-12",
+        "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17"
       ],
-      "review": [
-        "kms-v2-enable-on-existing-public-kv-staging-20260615",
-        "network-cni-cilium-dataplane-staging-20260615"
-      ],
+      "review": [],
       "blocked": [],
       "done": [
         "all-spec-verification-and-evidence-closure",
@@ -96,6 +91,8 @@
         "ccp-metricsserver-component-lifecycle-staging-frontier-20260614-2",
         "ccp-security-patch-azurelinux-source-spec-frontier-20260614",
         "ccp-security-patch-azurelinux-source-spec-frontier-20260615",
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-11",
         "ccp-security-patch-azurelinux-source-spec-frontier-20260615-2",
         "ccp-security-patch-azurelinux-source-spec-frontier-20260615-3",
         "ccp-security-patch-azurelinux-source-spec-frontier-20260615-4",
@@ -116,6 +113,7 @@
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-13",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-14",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-15",
+        "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-2",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-3",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-4",
@@ -164,6 +162,7 @@
         "gpu-operator-default-install-staging-20260615",
         "jwt-authenticator-incluster-idp-staging-20260615",
         "jwt-authenticator-upgrade-survival-staging-20260615",
+        "kms-v2-enable-on-existing-public-kv-staging-20260615",
         "localdns-lifecycle-staging-20260615",
         "machines-agentpool-api-crud-staging-20260615",
         "managedsystem-create-time-staging-20260615",
@@ -181,6 +180,7 @@
         "net-integration-outbound-migration-natgw-to-lb-staging-20260615",
         "net-integration-user-assigned-nat-gateway-staging-20260615",
         "network-acns-retina-staging-frontier-20260614",
+        "network-cni-cilium-dataplane-staging-20260615",
         "network-cni-netpol-calico-staging-frontier-20260614",
         "network-datapath-dns-staging-frontier-20260614",
         "network-datapath-ipvs-staging-frontier-20260614",
@@ -203,6 +203,7 @@
         "private-cluster-vnet-integration-auth-service-tags-staging-20260615",
         "private-cluster-vnet-integration-batch-staging-20260615",
         "private-cluster-vnet-integration-byo-subnet-staging-20260615",
+        "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
         "private-cluster-vnet-integration-cni-overlay-staging-20260615",
         "private-cluster-vnet-integration-shared-subnet-staging-20260615",
         "promote-21-unknown-features-pass",
@@ -222,6 +223,7 @@
         "spec-status-schema-fix-20260614",
         "specs-batch-3-new-families",
         "staging-ossku-remaining-4",
+        "storage-csi-blob-driver-enable-staging-20260615",
         "storage-csi-byok-staging-20260615",
         "storage-csi-draft-replays",
         "storage-csi-encryption-at-host-staging-20260615",
@@ -301,6 +303,6 @@
       ]
     },
     "escalated": 0,
-    "settled_pct": 98
+    "settled_pct": 99
   }
 }

@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-15T05:58:51.009Z",
+  "updated_at": "2026-06-15T06:08:24.292Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
+  "active_task_id": "ccp-security-patch-azurelinux-source-spec-frontier-20260615-12",
   "tasks": {
     "project": {
       "id": "project",
@@ -66,7 +66,11 @@
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-14",
         "ccp-security-patch-azurelinux-source-spec-frontier-20260615-9",
         "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-15",
-        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10"
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-11",
+        "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16",
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-12",
+        "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17"
       ],
       "parent_id": null,
       "priority": "P1",
@@ -470,7 +474,7 @@
       "archive_summary": "Replay pipeline. 203 subtasks completed over project lifetime.",
       "archived": true,
       "summary": "Replay pipeline established. 133 replay scripts created. Active execution moved to execution-and-verification.",
-      "state": "active",
+      "state": "done",
       "resolution": "completed"
     },
     "phase-2-coverage-completion": {
@@ -671,7 +675,7 @@
         "accepted_by": "planner",
         "acceptance_note": "All children terminal. Lane complete at project ceiling (262 features, 266 paths, 89.8%)."
       },
-      "state": "active",
+      "state": "done",
       "resolution": "completed",
       "context": {
         "archived_done_leaf_count": 14,
@@ -14454,7 +14458,7 @@
     "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615": {
       "id": "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -14492,21 +14496,36 @@
         "model_status": "untested",
         "spec": "specs/private-cluster-vnet-integration-byo-subnet.json",
         "replay": "replays/private-cluster-vnet-integration-byo-subnet.ts",
-        "seed_preference": "execution"
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted: Live staging execution byo-subnet-staging-v4-20260615 passed (1/1 claim assertions OK). Cluster created with enableVnetIntegration=true and BYO apiserver-subnet, GET confirmed profile match, provisioningState=Succeeded. Model-proposal recommends promote-to-pass. Evidence archived. Cleanup initiated. One diagnostic timeout (command invoke) is non-blocking."
       },
       "trace": {
         "created_at": "2026-06-15T05:00:00.267Z",
         "created_by": "model-gap-frontier-seeder",
-        "current_attempt_id": "a_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615_20260615050000",
-        "assigned_at": "2026-06-15T05:00:00.293Z",
+        "assigned_at": "2026-06-15T06:02:03.634Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615"
+        "last_session": "s_task_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
+        "stale_active_requeued_at": "2026-06-15T06:02:03.613Z",
+        "stale_active_requeue_reason": "watchdog-stale-active-review",
+        "previous_attempt_id": "a_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615_20260615050000",
+        "current_attempt_id": "a_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615_20260615060203",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Closed the knowledge-model gap for path.private-cluster-vnet-integration-byo-subnet. Implemented the full ARM REST execution body in the probe (previously only had a placeholder), ran it through the spec-runner, and achieved a live staging PASS. The cluster was created with enableVnetIntegration=true and a BYO API server subnet, GET confirmed the profile matches, provisioningState=Succeeded, and cleanup was initiated. The knowledge model is updated to status=pass with alignment=confirmed.",
+        "last_worker_completed_at": "2026-06-15T06:02:03.861Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:05:34.732Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: Live staging execution byo-subnet-staging-v4-20260615 passed (1/1 claim assertions OK). Cluster created with enableVnetIntegration=true and BYO apiserver-subnet, GET confirmed profile match, provisioningState=Succeeded. Model-proposal recommends promote-to-pass. Evidence archived. Cleanup initiated. One diagnostic timeout (command invoke) is non-blocking."
       },
       "session_id": "s_task_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
       "session_history": [
         "s_task_private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:05:34.732Z",
+      "done_by": "task-tree-tool"
     },
     "jwt-authenticator-upgrade-survival-staging-20260615": {
       "id": "jwt-authenticator-upgrade-survival-staging-20260615",
@@ -15441,7 +15460,7 @@
     "kms-v2-enable-on-existing-public-kv-staging-20260615": {
       "id": "kms-v2-enable-on-existing-public-kv-staging-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -15472,17 +15491,26 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Completed staging execution for kms-v2-enable-on-existing-public-kv. Check-mode passed (25/25 preflight assertions). Live execution attempt blocked by devbox SSH auth (expected infra_block), but feature already has 2 prior passing live staging runs (Jun 10 + Jun 11, 20/20 assertions, all 17 phases pass, cleanup confirmed). Updated spec status from ready→validated, knowledge model path goldenPathChain to all-true, added evidence registry entries and run records.",
         "last_worker_completed_at": "2026-06-15T05:56:22.681Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:00:56.633Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted. Feature already validated by 2 prior passing live staging runs (Jun 10 + Jun 11, 20/20 assertions, 17/17 phases, cleanup confirmed). Check-mode re-confirmed 25/25 preflight on Jun 15. Spec status advanced to validated. Prior evidence sufficient for path verdict."
       },
       "session_id": "s_task_kms-v2-enable-on-existing-public-kv-staging-20260615",
       "session_history": [
         "s_task_kms-v2-enable-on-existing-public-kv-staging-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:00:56.633Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted. Feature already validated by 2 prior passing live staging runs (Jun 10 + Jun 11, 20/20 assertions, 17/17 phases, cleanup confirmed). Check-mode re-confirmed 25/25 preflight on Jun 15. Spec status advanced to validated. Prior evidence sufficient for path verdict."
+      }
     },
     "network-cni-cilium-dataplane-staging-20260615": {
       "id": "network-cni-cilium-dataplane-staging-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -15513,17 +15541,26 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Completed live staging execution for network-cni-cilium-dataplane. Wired spec→replay via probeRef/mutationGate, ran check-mode (4/4 preflight pass), then executed via spec-runner --execute. Live ARM REST created AKS cluster with networkDataplane=cilium, networkPlugin=azure, networkPluginMode=overlay in eastus2. All 5/5 claim assertions pass: cluster creation Succeeded, networkProfile persisted correctly, Cilium agent config validated, 2-node connectivity infrastructure confirmed. Diagnosis: product_pass. Spec advanced ready→verified. Knowledge model updated with live execution evidence.",
         "last_worker_completed_at": "2026-06-15T05:58:51.008Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:01:36.549Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted. Live ARM staging execution completed: cluster created with networkDataplane=cilium, networkPlugin=azure, networkPluginMode=overlay. All 5/5 claim assertions pass. Spec advanced ready→verified. Knowledge model updated with execution evidence. Product pass confirmed."
       },
       "session_id": "s_task_network-cni-cilium-dataplane-staging-20260615",
       "session_history": [
         "s_task_network-cni-cilium-dataplane-staging-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:01:36.549Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted. Live ARM staging execution completed: cluster created with networkDataplane=cilium, networkPlugin=azure, networkPluginMode=overlay. All 5/5 claim assertions pass. Spec advanced ready→verified. Knowledge model updated with execution evidence. Product pass confirmed."
+      }
     },
     "storage-csi-blob-driver-enable-staging-20260615": {
       "id": "storage-csi-blob-driver-enable-staging-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -15549,12 +15586,26 @@
         "assigned_at": "2026-06-15T05:50:41.696Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_storage-csi-blob-driver-enable-staging-20260615"
+        "last_session": "s_task_storage-csi-blob-driver-enable-staging-20260615",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Completed staging execution for storage-csi-blob-driver-enable. Check mode passed (5/5 preflight), then live execution passed (10/10 total assertions, 4/4 claims). Cluster created in eastus2 with storageProfile.blobCSIDriver.enabled=true, ARM GET confirmed persistence, provisioningState=Succeeded. Spec advanced from ready→pass. Knowledge model updated with execution evidence.",
+        "last_worker_completed_at": "2026-06-15T06:06:53.069Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:08:24.289Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: staging execution passed - check mode 5/5 preflight, live execution 10/10 assertions 4/4 claims. Cluster created in eastus2 with storageProfile.blobCSIDriver.enabled=true, ARM GET confirmed persistence, provisioningState=Succeeded. Spec advanced ready→pass. Knowledge model updated."
       },
       "session_id": "s_task_storage-csi-blob-driver-enable-staging-20260615",
       "session_history": [
         "s_task_storage-csi-blob-driver-enable-staging-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:08:24.289Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: staging execution passed - check mode 5/5 preflight, live execution 10/10 assertions 4/4 claims. Cluster created in eastus2 with storageProfile.blobCSIDriver.enabled=true, ARM GET confirmed persistence, provisioningState=Succeeded. Spec advanced ready→pass. Knowledge model updated."
+      }
     },
     "localdns-lifecycle-staging-20260615": {
       "id": "localdns-lifecycle-staging-20260615",
@@ -15659,6 +15710,198 @@
     "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10": {
       "id": "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
       "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Explore source/material for path.ccp-security-patch.azurelinux and build up the source-grounded spec/replay frontier before scheduling more slow staging execution. Create missing feature/spec/replay artifacts from source material. Feed the result into the runner lane for later high-value verification.",
+      "inputs": [],
+      "outputs": [
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Feature/source packet identifies the source scenario and expected behavior.",
+        "A runnable spec and replay script are created or an exact external blocker is recorded.",
+        "The new work is linked to the knowledge-model path and ready for runner verification."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:ccp-security-patch-azurelinux",
+        "path:path.ccp-security-patch.azurelinux"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-timeout-underfilled-frontier",
+        "model_path_id": "path.ccp-security-patch.azurelinux",
+        "feature_id": "ccp-security-patch-azurelinux",
+        "model_status": "staging-inconclusive",
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted. All source-spec-frontier artifacts complete: feature packet, spec (16/16 check-mode assertions), replay execution-ready. 6 live staging runs confirm 11/11 assertions pass. Terminal gap is external AzureLinux patch image availability cadence (environment). No further frontier work needed."
+      },
+      "trace": {
+        "created_at": "2026-06-15T05:56:17.573Z",
+        "created_by": "model-gap-frontier-seeder",
+        "current_attempt_id": "a_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10_20260615055617",
+        "assigned_at": "2026-06-15T05:56:17.597Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All artifacts for path.ccp-security-patch.azurelinux are fully complete and at maximum maturity. Feature packet (features/ccp-security-patch-azurelinux.yaml), spec (specs/ccp-security-patch-azurelinux-prod-mtc.json), and replay (replays/ccp-security-patch-azurelinux-prod-mtc.ts) all exist, are execution-ready, and linked to the knowledge model. Check-mode validation ran 16/16 assertions pass. 6 live staging executions all confirm structural soundness (11/11 assertions pass each run). Terminal classification is environment — the only remaining gap is external AzureLinux patch image availability cadence. No further source-spec-frontier work is needed.",
+        "last_worker_completed_at": "2026-06-15T05:59:59.006Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:01:36.498Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted. All source-spec-frontier artifacts complete: feature packet, spec (16/16 check-mode assertions), replay execution-ready. 6 live staging runs confirm 11/11 assertions pass. Terminal gap is external AzureLinux patch image availability cadence (environment). No further frontier work needed."
+      },
+      "session_id": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
+      "session_history": [
+        "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:01:36.498Z",
+      "done_by": "task-tree-tool"
+    },
+    "ccp-security-patch-azurelinux-source-spec-frontier-20260615-11": {
+      "id": "ccp-security-patch-azurelinux-source-spec-frontier-20260615-11",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Explore source/material for path.ccp-security-patch.azurelinux and build up the source-grounded spec/replay frontier before scheduling more slow staging execution. Create missing feature/spec/replay artifacts from source material. Feed the result into the runner lane for later high-value verification.",
+      "inputs": [],
+      "outputs": [
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Feature/source packet identifies the source scenario and expected behavior.",
+        "A runnable spec and replay script are created or an exact external blocker is recorded.",
+        "The new work is linked to the knowledge-model path and ready for runner verification."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:ccp-security-patch-azurelinux",
+        "path:path.ccp-security-patch.azurelinux"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-timeout-underfilled-frontier",
+        "model_path_id": "path.ccp-security-patch.azurelinux",
+        "feature_id": "ccp-security-patch-azurelinux",
+        "model_status": "staging-inconclusive",
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted: All feature/spec/replay artifacts already at maximum maturity. Check-mode passed 16/16 assertions. Terminal classification is environment (patch image availability cadence). Artifacts linked to knowledge model and ready for runner re-verification when newer image published."
+      },
+      "trace": {
+        "created_at": "2026-06-15T06:02:02.702Z",
+        "created_by": "model-gap-frontier-seeder",
+        "current_attempt_id": "a_ccp-security-patch-azurelinux-source-spec-frontier-20260615-11_20260615060202",
+        "assigned_at": "2026-06-15T06:02:02.729Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-11",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All feature/spec/replay artifacts for path.ccp-security-patch.azurelinux are already at maximum maturity. Check-mode validation passed 16/16 assertions. The feature packet, spec, and replay are fully linked to the knowledge model and ready for runner verification. Terminal classification is 'environment' (patch image availability cadence). Frontier assessment evidence written.",
+        "last_worker_completed_at": "2026-06-15T06:04:43.007Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:06:10.047Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: All feature/spec/replay artifacts already at maximum maturity. Check-mode passed 16/16 assertions. Terminal classification is environment (patch image availability cadence). Artifacts linked to knowledge model and ready for runner re-verification when newer image published."
+      },
+      "session_id": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-11",
+      "session_history": [
+        "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-11"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:06:10.047Z",
+      "done_by": "task-tree-tool"
+    },
+    "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16": {
+      "id": "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16",
+      "parent_id": "project",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Explore source/material for path.ccp-security-patch.ubuntu2404 and build up the source-grounded spec/replay frontier before scheduling more slow staging execution. Create missing feature/spec/replay artifacts from source material. Feed the result into the runner lane for later high-value verification.",
+      "inputs": [],
+      "outputs": [
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Feature/source packet identifies the source scenario and expected behavior.",
+        "A runnable spec and replay script are created or an exact external blocker is recorded.",
+        "The new work is linked to the knowledge-model path and ready for runner verification."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:ccp-security-patch-ubuntu2404",
+        "path:path.ccp-security-patch.ubuntu2404"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-timeout-underfilled-frontier",
+        "model_path_id": "path.ccp-security-patch.ubuntu2404",
+        "feature_id": "ccp-security-patch-ubuntu2404",
+        "model_status": "environment",
+        "seed_preference": "execution",
+        "acceptance_note": "Accepted: Full artifact chain verified (feature, spec, replay, evidence, model). Check-mode re-verification passes 16/16. Live staging execution yielded staging-inconclusive due to no newer Ubuntu 2404 patch image available (environment timing, not product defect). Path at environment ceiling, ready for re-execution when newer image published."
+      },
+      "trace": {
+        "created_at": "2026-06-15T06:02:02.702Z",
+        "created_by": "model-gap-frontier-seeder",
+        "current_attempt_id": "a_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16_20260615060202",
+        "assigned_at": "2026-06-15T06:02:02.729Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "All artifacts for path.ccp-security-patch.ubuntu2404 already exist and are fully verified. The complete artifact chain — feature (features/ccp-security-patch-ubuntu2404.yaml), spec (specs/ccp-security-patch-ubuntu2404-prod-mtc.json), replay (replays/ccp-security-patch-ubuntu2404-prod-mtc.ts), execution evidence (evidence/archive/ccp-security-patch-ubuntu2404-staging-20260615-*.json), and knowledge model integration (model.json features/featurePaths/evidenceRegistry entries) — is consistent and complete. Check-mode re-verification passes 16/16 preflight assertions. Live staging execution (2026-06-14) yielded staging-inconclusive due to no newer AKSUbuntu-2404 patch image being available (environment timing dependency, not a product defect). Path is at the environment ceiling and ready for runner re-execution when a newer security image is published.",
+        "last_worker_completed_at": "2026-06-15T06:04:42.009Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T06:06:10.098Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: Full artifact chain verified (feature, spec, replay, evidence, model). Check-mode re-verification passes 16/16. Live staging execution yielded staging-inconclusive due to no newer Ubuntu 2404 patch image available (environment timing, not product defect). Path at environment ceiling, ready for re-execution when newer image published."
+      },
+      "session_id": "s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16",
+      "session_history": [
+        "s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-16"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T06:06:10.098Z",
+      "done_by": "task-tree-tool"
+    },
+    "ccp-security-patch-azurelinux-source-spec-frontier-20260615-12": {
+      "id": "ccp-security-patch-azurelinux-source-spec-frontier-20260615-12",
+      "parent_id": "project",
       "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
@@ -15695,24 +15938,75 @@
         "seed_preference": "execution"
       },
       "trace": {
-        "created_at": "2026-06-15T05:56:17.573Z",
+        "created_at": "2026-06-15T06:07:01.564Z",
         "created_by": "model-gap-frontier-seeder",
-        "current_attempt_id": "a_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10_20260615055617",
-        "assigned_at": "2026-06-15T05:56:17.597Z",
+        "current_attempt_id": "a_ccp-security-patch-azurelinux-source-spec-frontier-20260615-12_20260615060701",
+        "assigned_at": "2026-06-15T06:07:01.588Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10"
+        "last_session": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-12"
       },
-      "session_id": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
+      "session_id": "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-12",
       "session_history": [
-        "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-10"
+        "s_task_ccp-security-patch-azurelinux-source-spec-frontier-20260615-12"
+      ]
+    },
+    "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17": {
+      "id": "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17",
+      "parent_id": "project",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Explore source/material for path.ccp-security-patch.ubuntu2404 and build up the source-grounded spec/replay frontier before scheduling more slow staging execution. Create missing feature/spec/replay artifacts from source material. Feed the result into the runner lane for later high-value verification.",
+      "inputs": [],
+      "outputs": [
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/"
+      ],
+      "acceptance": [
+        "Feature/source packet identifies the source scenario and expected behavior.",
+        "A runnable spec and replay script are created or an exact external blocker is recorded.",
+        "The new work is linked to the knowledge-model path and ready for runner verification."
+      ],
+      "forbidden": [
+        "Do not treat dry-run output as live verification.",
+        "Do not hard-code credentials, subscription IDs, or tenant-specific secrets.",
+        "Do not bypass project runner artifacts when executing live staging work."
+      ],
+      "conflict_scope": [
+        "feature:ccp-security-patch-ubuntu2404",
+        "path:path.ccp-security-patch.ubuntu2404"
+      ],
+      "context": {
+        "seeded_by": "model-gap-frontier",
+        "seed_reason": "planner-timeout-underfilled-frontier",
+        "model_path_id": "path.ccp-security-patch.ubuntu2404",
+        "feature_id": "ccp-security-patch-ubuntu2404",
+        "model_status": "environment",
+        "seed_preference": "execution"
+      },
+      "trace": {
+        "created_at": "2026-06-15T06:07:01.564Z",
+        "created_by": "model-gap-frontier-seeder",
+        "current_attempt_id": "a_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17_20260615060701",
+        "assigned_at": "2026-06-15T06:07:01.588Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17"
+      },
+      "session_id": "s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17",
+      "session_history": [
+        "s_task_ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17"
       ]
     }
   },
   "active_task_ids": [
-    "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
-    "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
-    "storage-csi-blob-driver-enable-staging-20260615"
+    "ccp-security-patch-azurelinux-source-spec-frontier-20260615-12",
+    "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-17"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
