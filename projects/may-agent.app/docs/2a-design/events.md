@@ -654,7 +654,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~3,500+ rows as of 2026-06-14, ~660/24h, ~28/hour); all `session_not_found` — 24h mix: ~68% planner, ~32% task, ~1% problem (composition re-shifted back to planner-dominated; ~25% of session starts, down from ~38%). Fix: dedup_key (KE-1837, ORDER-010 src/ change required) |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800 rows as of 2026-06-15 post-retention, ~620/24h, ~26/hour); all `session_not_found`. Daily trend plateaued at ~727–728/day (Jun 14–15). Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1951 falsified stabilization — growth is structural, KE-1962 confirmed no handler subscriber |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -802,17 +802,18 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 
 ### Data Quality: Malformed event_type rows
 
-As of 2026-06-12, 7 events have an entire JSON blob stored in `event_type`
+As of 2026-06-15, 11 events have an entire JSON blob stored in `event_type`
 instead of a plain dot-separated string (e.g.
 `{"type":"project.execution.requested","project":"aks-rp-e2e",...}`). These
 were injected via codex/operator and bypass the normal emit path. They are not
-harmful but will not match any handler's `on:` filter. Query to find them:
-`SELECT * FROM events WHERE event_type LIKE '{%'`.
+harmful but will not match any handler's `on:` filter. Two temporal clusters:
+7 events from ~5.3 days ago, 4 events from ~0.3 days ago (KE-1991). Query:
+`SELECT * FROM events WHERE LENGTH(event_type) > 100`.
 
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~2,800+ rows as of 2026-06-15, ~740/24h, ~30/hour; grew 3.8× Jun 9–13, KE-1932; KE-1951 falsified stabilization — growth is structural).
+when the target session cannot be found (~2,800 rows as of 2026-06-15 post-retention, ~620/24h, ~26/hour; grew 3.8× Jun 9–13, KE-1932; KE-1951 falsified stabilization — growth is structural; plateaued ~727–728/day Jun 14–15; KE-1962: no handler subscriber).
 Split shifted: ~50% task, ~41% planner, ~8% problem (was planner-dominated until Jun 14).
 
 ### Consumer Reality
