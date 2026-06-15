@@ -501,10 +501,15 @@ Some of these are currently dynamic event-store names rather than variants in
 `SystemEvent`. The design direction is to type the stable core names while still
 allowing adapter-local evidence events when needed.
 
-For task-driven projects, `project.task.dispatched` and
-`project.task.finished` are the task lifecycle events to teach in handler and
-SDK examples. `project.iteration` remains a project-owner loop signal used by
-current health metrics and historical rows; do not use it as the general task
+For task-driven projects, the **live** task lifecycle events are
+`project.task.assigned` (planner assigns task to worker) and
+`project.task.completed` (task engine records completion). These have
+1,293 and 2,822 rows respectively as of 2026-06-15 and are the events to
+teach in handler and SDK examples. The older `project.task.dispatched` and
+`project.task.finished` pair (legacy project handler) has only 2 rows each
+and is effectively dead — do not use them as the canonical example.
+`project.iteration` remains a project-owner loop signal used by current
+health metrics and historical rows; do not use it as the general task
 lifecycle example.
 
 ## Inbox (time-window based)
