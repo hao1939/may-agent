@@ -232,6 +232,29 @@ Structural breach continues. (**Update 2026-06-14**: Threshold was raised
 to 3,500 in metrics-snapshot.ts, resolving the breach. Current ~3,200/day
 sits comfortably below the new threshold.)
 
+**Snapshot 2026-06-15 ~05:30Z** (6h window, 1,402 total; 24h ~4,385):
+
+Monoculture regime: 98.1% of triggers are `beforeToolCall` commit-guard
+"uncommitted files exist" warnings. 100% of these fire on files the
+guard itself identifies as "not matching this session's deliverables."
+
+| Signal | 6h Count | Share |
+|--------|-------:|------:|
+| commit-guard (tool.finish) | 952 | 67.9% |
+| commit-guard (tool.bash) | 230 | 16.4% |
+| commit-guard (tool.read) | 193 | 13.8% |
+| read-before-edit (tier 1) | 26 | 1.9% |
+| hallucinated-path (tier 1) | 1 | 0.1% |
+
+Rate: 232 triggers/hour. Threshold 4,500 breaching <1 day after the
+3,500→4,500 raise (commit ac70bb0ab). **KE-1998 F1 confirmed**: static
+thresholds cannot track the noise floor growth. Threshold calibration
+history shows decreasing headroom life: 4d → 3d → 1d → <1d.
+
+Root-cause fix required: scope commit-guard to session-relevant files
+only (the "Alternative (deferred)" from the 2026-06-15 threshold
+proposal). See KE-1999.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
