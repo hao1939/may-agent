@@ -654,7 +654,7 @@ Row counts below are **surviving rows** (7-day retention applies to `events` tab
 | `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
 | `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
 | `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800 rows as of 2026-06-15 post-retention, ~620/24h, ~26/hour); all `session_not_found`. Daily trend plateaued at ~727–728/day (Jun 14–15). Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1951 falsified stabilization — growth is structural, KE-1962 confirmed no handler subscriber |
+| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ✅ live (~2,800 rows as of 2026-06-15 post-retention); rate **collapsed** post-Spec-3 restart (07:03Z Jun 15): 0/hr last 2h, ~5/hr last 6h, down from prior ~26/hr baseline. Stale session references cleared by restart. Remaining retries target one dead planner session. Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1962: no handler subscriber; KE-2005: rate collapse confirmed |
 | `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
 
 **Human control intents**
@@ -813,7 +813,7 @@ harmful but will not match any handler's `on:` filter. Two temporal clusters:
 Note: `session.completed` is translated from `session.end` in daemon event
 subscribers. `session.failed` is not a live runtime event. `project.status_changed`
 still has no emitter. `session.resume_failed` fires actively from session-recovery
-when the target session cannot be found (~2,800 rows as of 2026-06-15 post-retention, ~620/24h, ~26/hour; grew 3.8× Jun 9–13, KE-1932; KE-1951 falsified stabilization — growth is structural; plateaued ~727–728/day Jun 14–15; KE-1962: no handler subscriber).
+when the target session cannot be found (~2,800 rows as of 2026-06-15 post-retention; rate collapsed post-Spec-3 restart to <5/hr, down from ~26/hr baseline — KE-2005 confirmed; residual retries target one dead planner session).
 Split shifted: ~50% task, ~41% planner, ~8% problem (was planner-dominated until Jun 14).
 
 ### Consumer Reality
