@@ -157,12 +157,12 @@ through 2026-06-10.
 - **2026-06-10:** Raised from 2,000 to 2,500 by may (commit 483ca44d8).
   Rationale: ~91% of guard triggers are ambient uncommitted-files warnings,
   structural noise floor ~1,800/day.
-- **Current (verified 2026-06-14):** Thresholds are **3,500** in the live
-  metrics-snapshot.ts registry (P3 priority). The structural noise floor
-  has risen to ~3,100–3,300/day as session volume grew (~1,800 sessions/day).
-  The 95.8% noise ratio (beforeToolCall "uncommitted files" warnings) means
-  the threshold primarily tracks session volume, not behavioral deterioration.
-  Guard SNR remains inverted: ~136 real signals/day vs ~3,119 ambient noise.
+- **2026-06-14:** Raised from 3,500 to **4,500** (commit ac70bb0ab).
+  Rationale: structural noise floor rose to ~3,100–3,300/day with session
+  volume growth (~1,800 sessions/day). 95.8% of triggers are ambient
+  uncommitted-files warnings (commit-guard). Guard SNR remains inverted:
+  ~136 real signals/day vs ~3,100+ ambient noise. Current readings
+  (~3,950/day) sit within headroom below the 4,500 threshold.
 
 Key structural observations from the full snapshot history:
 - Combined commit-guard (uncommitted-files + finish()-uncommitted) is
