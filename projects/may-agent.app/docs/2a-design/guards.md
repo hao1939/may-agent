@@ -306,6 +306,31 @@ inverted from ~2% signal to ~100% signal. Projected 24h total: ~1,440
 (threshold 4,500, headroom 3×). Rolling metric will clear pre-fix
 data by ~01:00Z Jun 16. See KE-2003.
 
+**Snapshot 2026-06-15 ~15:40Z** (T+8.5h steady-state confirmation):
+
+Guard noise fix **confirmed stable.** 24h rolling metric dropped
+below threshold (~4,000, threshold 4,500 — cleared ~7h earlier than
+projected). Last 2h: 156 triggers at ~78/hr, **100% legitimate
+behavioral signals.** Zero ambient commit-guard noise since fix.
+
+| Signal | 2h Count | Share |
+|--------|-------:|------:|
+| SESSION_BASH_CAT | 137 | 87.8% |
+| read-before-edit (C1.1) | 8 | 5.1% |
+| Other (finish-guard, misc) | 11 | 7.1% |
+
+Per-agent (2h): evaluator ~83%, aks-explorer ~12%, other ~5%.
+Composition: SESSION_BASH_CAT dominance (evaluator catting session
+JSONL) is the new largest signal — a legitimate behavioral pattern,
+not noise. Ghost metabolism (session.resume_failed): 0 in last 11h,
+263 in prior 24h (all pre-05:00Z). Confirmed structurally resolved.
+
+**Status: STABLE.** Guard noise (Face 1 of KE-1998) and ghost
+metabolism (Face 3) are structurally resolved. The remaining waste
+source is planning_update timeout (Face 2 — see KE-2006, Spec 4
+proposal filed). Guard threshold 4,500 has 3× headroom at current
+~1,872/day projected rate.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
