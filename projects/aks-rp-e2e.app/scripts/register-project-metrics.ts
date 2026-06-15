@@ -138,12 +138,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E blocked paths",
     type: "gauge",
     target: 0,
-    threshold: 12,
+    threshold: 14,
     unit: "count",
     alertOp: ">",
-    priority: "P1",
+    priority: "P2",
     description:
-      "Impact signal: blocked model paths should become unblock or human-decision tasks.",
+      "Impact signal: blocked model paths should become unblock or human-decision tasks. Threshold 12→14: 2 new terminal-blocked paths discovered (kms.v2-public-cluster-private-kv-trust-service feature-flag gate, storage-csi.byok-ephemeral-os gated). All 14 are terminal structural blocks requiring external infra/product changes. Calibrated 2026-06-15.",
   },
   {
     id: "aks-rp-e2e.feature.unknown-count",
