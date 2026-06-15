@@ -465,7 +465,7 @@
     "type": "job",
     "handler": "eval-llm-scan",
     "agent": "evaluator",
-    "enabled": false,
+    "enabled": true,
     "intervalMs": 1800000,
     "description": "Bounded non-heuristic evaluator lane. Processes at most one terminal session per run and records only validated artifacts.",
     "handlerConfig": {
@@ -478,7 +478,7 @@
       "projects/may-agent.app/project.json",
       "projects/evaluation.app/project.json"
     ],
-    "_disabled_reason": "Migrated to evaluation.app schedules — 2026-06-15"
+    "_disabled_reason": "Rollback 2026-06-15: evaluation.app schedule emitted evaluation.deep.scan directly to evaluator-deep-eval, which bypassed eval-llm-scan artifact recording and stalled non-heuristic eval writes."
   },
   {
     "name": "escalation",

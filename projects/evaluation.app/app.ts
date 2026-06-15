@@ -146,7 +146,7 @@ export default defineProjectApp({
     },
     {
       id: "eval-llm-scan",
-      enabled: true,
+      enabled: false,
       intervalMs: 1_800_000, // 30min — one deep eval candidate per run
       event: {
         type: "evaluation.deep.scan",
