@@ -1,30 +1,33 @@
 {
   "version": 1,
-  "generated_at": "2026-06-15T05:55:45.586Z",
-  "tree_updated_at": "2026-06-15T05:55:45.572Z",
+  "generated_at": "2026-06-15T05:56:22.696Z",
+  "tree_updated_at": "2026-06-15T05:56:22.682Z",
   "kanban": {
-    "total_cards": 272,
-    "tree_total": 290,
+    "total_cards": 273,
+    "tree_total": 291,
     "status_counts": {
       "active": 7,
-      "done": 283
+      "done": 283,
+      "review": 1
     },
     "column_counts": {
       "backlog": 0,
       "in-progress": 4,
-      "review": 0,
+      "review": 1,
       "blocked": 0,
       "done": 268
     },
     "card_ids_by_column": {
       "backlog": [],
       "in-progress": [
-        "kms-v2-enable-on-existing-public-kv-staging-20260615",
+        "ccp-security-patch-azurelinux-source-spec-frontier-20260615-10",
         "network-cni-cilium-dataplane-staging-20260615",
         "private-cluster-vnet-integration-byo-subnet-staging-frontier-20260615",
         "storage-csi-blob-driver-enable-staging-20260615"
       ],
-      "review": [],
+      "review": [
+        "kms-v2-enable-on-existing-public-kv-staging-20260615"
+      ],
       "blocked": [],
       "done": [
         "all-spec-verification-and-evidence-closure",
@@ -298,6 +301,6 @@
       ]
     },
     "escalated": 0,
-    "settled_pct": 99
+    "settled_pct": 98
   }
 }
