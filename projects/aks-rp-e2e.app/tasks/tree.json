@@ -1,7 +1,7 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-15T05:54:43.845Z",
+  "updated_at": "2026-06-15T05:55:00.938Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": "kms-v2-enable-on-existing-public-kv-staging-20260615",
@@ -14978,7 +14978,7 @@
     "private-cluster-vnet-integration-shared-subnet-staging-20260615": {
       "id": "private-cluster-vnet-integration-shared-subnet-staging-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -15011,12 +15011,21 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Ran staging execution for private-cluster-vnet-integration-shared-subnet. Implemented full execution-ready replay, ran check-mode (5/5 preflight pass), then executed via spec-runner --execute with live ARM REST calls. Discovered a product constraint: AKS RP explicitly rejects shared subnets — ARM returns HTTP 400 InvalidParameter \"apiServerAccessProfile.subnetId is not allowed to be same with agent node subnet\". Tested both delegated (SubnetIsDelegated error) and non-delegated (InvalidParameter error) approaches. Classified as product_constraint, advanced spec status draft→staged, added path to knowledge model with failure classification.",
         "last_worker_completed_at": "2026-06-15T05:50:41.411Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T05:54:53.738Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accept: Real ARM REST execution with live calls confirmed product constraint — AKS RP explicitly rejects shared subnets (InvalidParameter: apiServerAccessProfile.subnetId not allowed same as agent node subnet). Both delegated and non-delegated approaches tested. Correctly classified as product_constraint. Spec advanced to staged. Knowledge model updated."
       },
       "session_id": "s_task_private-cluster-vnet-integration-shared-subnet-staging-20260615",
       "session_history": [
         "s_task_private-cluster-vnet-integration-shared-subnet-staging-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T05:54:53.738Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accept: Real ARM REST execution with live calls confirmed product constraint — AKS RP explicitly rejects shared subnets (InvalidParameter: apiServerAccessProfile.subnetId not allowed same as agent node subnet). Both delegated and non-delegated approaches tested. Correctly classified as product_constraint. Spec advanced to staged. Knowledge model updated."
+      }
     },
     "net-integration-natgw-v2-dualstack-staging-20260615": {
       "id": "net-integration-natgw-v2-dualstack-staging-20260615",
@@ -15277,7 +15286,7 @@
     "storage-csi-windows-staging-20260615": {
       "id": "storage-csi-windows-staging-20260615",
       "parent_id": "spec-runner-and-replays",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -15310,12 +15319,21 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Completed staging execution for storage-csi-windows-base. Check-mode passed (preflight OK). Execute-mode via spec-runner ran but the probe is a stub — it returns 'gated' because the ARM PUT + assertion logic for Windows CSI node pools is not yet implemented. Outcome classified as execution_gated_implementation_gap / blocked. Feature path advanced from draft to blocked in both the spec and knowledge model. All execution artifacts recorded under runs/executions/storage-csi-windows-base-staging-task-20260615/.",
         "last_worker_completed_at": "2026-06-15T05:49:16.939Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-15T05:55:00.935Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accept: Worker correctly identified probe is a stub (no ARM execution body for Windows CSI node pools). Preflight and safety gate passed, but probe returned gated. Correctly classified as implementation_gap/blocked. Spec and knowledge model updated to blocked status. Execution artifacts recorded. This is a known gap requiring probe authoring."
       },
       "session_id": "s_task_storage-csi-windows-staging-20260615",
       "session_history": [
         "s_task_storage-csi-windows-staging-20260615"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-15T05:55:00.935Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accept: Worker correctly identified probe is a stub (no ARM execution body for Windows CSI node pools). Preflight and safety gate passed, but probe returned gated. Correctly classified as implementation_gap/blocked. Spec and knowledge model updated to blocked status. Execution artifacts recorded. This is a known gap requiring probe authoring."
+      }
     },
     "net-integration-user-assigned-nat-gateway-staging-20260615": {
       "id": "net-integration-user-assigned-nat-gateway-staging-20260615",

@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "generated_at": "2026-06-15T05:54:43.858Z",
-  "tree_updated_at": "2026-06-15T05:54:43.845Z",
+  "generated_at": "2026-06-15T05:55:00.951Z",
+  "tree_updated_at": "2026-06-15T05:55:00.938Z",
   "kanban": {
     "total_cards": 272,
     "tree_total": 290,
     "status_counts": {
       "active": 7,
-      "done": 280,
-      "review": 3
+      "done": 282,
+      "review": 1
     },
     "column_counts": {
       "backlog": 0,
       "in-progress": 4,
-      "review": 3,
+      "review": 1,
       "blocked": 0,
-      "done": 265
+      "done": 267
     },
     "card_ids_by_column": {
       "backlog": [],
@@ -26,9 +26,7 @@
         "storage-csi-blob-driver-enable-staging-20260615"
       ],
       "review": [
-        "localdns-lifecycle-staging-20260615",
-        "private-cluster-vnet-integration-shared-subnet-staging-20260615",
-        "storage-csi-windows-staging-20260615"
+        "localdns-lifecycle-staging-20260615"
       ],
       "blocked": [],
       "done": [
@@ -205,6 +203,7 @@
         "private-cluster-vnet-integration-batch-staging-20260615",
         "private-cluster-vnet-integration-byo-subnet-staging-20260615",
         "private-cluster-vnet-integration-cni-overlay-staging-20260615",
+        "private-cluster-vnet-integration-shared-subnet-staging-20260615",
         "promote-21-unknown-features-pass",
         "promote-batch-3-features",
         "promote-pass-specs-to-verified",
@@ -228,6 +227,7 @@
         "storage-csi-full-cache-os-disk-staging-20260615",
         "storage-csi-ultrassd-staging-20260615",
         "storage-csi-windows-base-staging-20260615",
+        "storage-csi-windows-staging-20260615",
         "traffic-api-proxy-ac-enable-proxy-staging-20260615",
         "traffic-api-proxy-access-control-fix-retry-20260615",
         "traffic-api-proxy-access-control-fix-staging-20260615",
@@ -300,6 +300,6 @@
       ]
     },
     "escalated": 0,
-    "settled_pct": 97
+    "settled_pct": 98
   }
 }
