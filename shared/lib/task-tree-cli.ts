@@ -11,13 +11,22 @@
  */
 
 import { readFileSync } from "node:fs";
-import { check, status, kanban, next, type TaskTree, type Violation } from "./task-tree.ts";
+import {
+  check,
+  status,
+  kanban,
+  next,
+  type TaskTree,
+  type Violation,
+} from "./task-tree.ts";
 
 const command = process.argv[2];
 const treePath = process.argv[3];
 
 if (!command || !treePath) {
-  console.error("Usage: bun task-tree-cli.ts <check|status|kanban|next> <tree.json>");
+  console.error(
+    "Usage: bun task-tree-cli.ts <check|status|kanban|next> <tree.json>",
+  );
   process.exit(2);
 }
 
@@ -30,26 +39,36 @@ if (command === "check") {
   const hints = violations.filter((v) => v.severity === "hint");
 
   for (const v of violations) {
-    const icon = v.severity === "error" ? "FAIL" : v.severity === "warning" ? "WARN" : "HINT";
+    const icon =
+      v.severity === "error"
+        ? "FAIL"
+        : v.severity === "warning"
+          ? "WARN"
+          : "HINT";
     const node = v.nodeId ? ` ${v.nodeId}` : "";
     console.log(`${icon} ${v.code}${node}: ${v.message}`);
   }
 
-  console.log(`\n${errors.length} errors, ${warnings.length} warnings, ${hints.length} hints`);
+  console.log(
+    `\n${errors.length} errors, ${warnings.length} warnings, ${hints.length} hints`,
+  );
   if (errors.length) process.exitCode = 1;
 } else if (command === "status") {
   const s = status(tree);
   console.log(`\nProject: ${s.project}`);
   console.log(`Updated: ${s.updatedAt}`);
   console.log(`Nodes: ${s.totalNodes} (${s.archivedNodes} archived)`);
-  console.log(`\nBy status:`);
-  for (const [st, count] of Object.entries(s.byStatus).sort((a, b) => b[1] - a[1])) {
+  console.log(`\nBy state:`);
+  for (const [st, count] of Object.entries(s.byStatus).sort(
+    (a, b) => b[1] - a[1],
+  )) {
     console.log(`  ${st}: ${count}`);
   }
   if (s.activeWork.length) console.log(`\nActive: ${s.activeWork.join(", ")}`);
   if (s.blockedWork.length) console.log(`Blocked: ${s.blockedWork.join(", ")}`);
   if (s.reviewWork.length) console.log(`Review: ${s.reviewWork.join(", ")}`);
-  if (s.nextReady.length) console.log(`Ready: ${s.nextReady.join(", ")}`);
+  if (s.nextRunnable.length)
+    console.log(`Runnable: ${s.nextRunnable.join(", ")}`);
   for (const h of s.rollupHints) {
     console.log(`Hint: ${h.nodeId} — ${h.hint}: ${h.detail}`);
   }
