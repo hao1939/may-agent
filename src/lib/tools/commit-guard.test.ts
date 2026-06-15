@@ -598,15 +598,15 @@ describe("commit-guard deliverable scoping", () => {
     expect(result?.reason).not.toContain("git add shared/");
   });
 
-  it("warns instead of blocking when dirty shared files are unrelated", async () => {
+  it("silently allows finish when dirty shared files are all unrelated to this session", async () => {
     const root = setupRepo();
     writeFileSync(join(root, "agents/shared/unrelated.md"), "unrelated");
 
     const guard = createCommitGuard("may", root);
     const result = await guard(finishContext(["agents/shared/owned.md"]) as any);
 
-    expect(result?.block).toBe(false);
-    expect(result?.reason).toContain("none match this session");
+    // KE-2000 Spec 3: no guard event for unrelated dirty files
+    expect(result).toBeUndefined();
   });
 
   it("falls back to agent directory when no deliverables or direct writes are known", async () => {

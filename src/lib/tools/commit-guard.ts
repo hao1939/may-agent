@@ -253,12 +253,12 @@ export function createCommitGuard(
         : fileLines.filter((line) => changedPathFromStatusLine(line).startsWith(`${agentPathPrefix}/`));
 
       if (ownedFileLines.length === 0) {
-        return {
-          block: false,
-          reason:
-            `Uncommitted files exist in the ${repo.label}, but none match this session's deliverables or write/edit paths. ` +
-            `Do not commit unrelated files just to satisfy finish().`,
-        };
+        // No session-owned files are dirty — unrelated dirty files in the shared
+        // worktree are not this session's responsibility. Return undefined (silent
+        // pass-through) to avoid emitting a guard.triggered event for every
+        // finish() call when the worktree has unrelated dirty state.
+        // KE-2000 Spec 3: this was the #1 source of guard noise (~2000/day).
+        return undefined;
       }
 
       const fileCount = ownedFileLines.length;
