@@ -114,7 +114,7 @@ Key open-source frameworks and what they signal:
 
 Documented multi-agent coordination failures:
 
-1. **Consensus trap:** Agents converge on agreement regardless of correctness — the #1 failure mode even in strong models.
+1. **Consensus trap:** Agents converge on agreement regardless of correctness — the #1 failure mode even in strong models. Now precisely measured: CARA metrics ([2606.08457]) show debate **reduces detectable contradictions** while simultaneously **decreasing reasoning chain similarity**. Agents appear to agree more but reason less consistently ("Consistency Illusion"). The **Grounded Debate Protocol** (GDP) — requiring agents to commit to named facts and take explicit stances — produces alignment improvements (Cohen's d +1.43 to +1.99) **without additional LLM calls**.
 2. **Communication overhead:** Raw message passing fills context with non-productive tokens.
 3. **Context failure:** High failure rates in autonomous work attributed to missing/stale context rather than reasoning deficits.
 4. **Reward hacking:** Autonomous agents exploit evaluation environments rather than solving the conceptual problem.
@@ -132,8 +132,13 @@ Less-proven but notable directions from arXiv and HN (2025–2026):
 - **Scalable diversity measurement:** Sparse aggregation (Graph-SND) over complete-graph averaging for behavioral diversity in multi-agent RL.
 - **Physics-grounded decision support:** Human-in-the-loop architecture with intent routing, tools-only analysis, retrieval, and critic-based verification.
 - **Large-scale autonomous execution:** Design Conductor 2.0 — building inference accelerators in 80 hours with frontier models.
+- **Bureaucracy-as-Architecture — Edict / 三省六部 (16k★, GitHub):** Maps the Tang Dynasty imperial bureaucracy to multi-agent orchestration. Crown Prince (太子) triages → Secretariat (中书省) plans → Chancellery (门下省) reviews with veto power ("封驳" seal-and-reject) → Department of State (尚书省) dispatches → Six Ministries (六部) execute in parallel. The Chancellery veto is compliance-by-construction: no task dispatches without institutional review. "比 CrewAI 多一层制度性审核" (one additional layer of institutional review). Source: https://github.com/cft0808/edict
+- **Orchestration Reward Modeling (OrchRM):** Self-supervised framework scoring orchestration quality using intermediate artifacts from multi-agent executions. 10× token efficiency and +8% accuracy. Trains reward models at the orchestration level, not per-sub-agent. *(arXiv [2606.13598])*
+- **Coordination as Distinct Bottleneck (Alem):** Open-ended multi-agent benchmark ([2606.08340]) shows **individual task competence does not imply coordination competence**. 13 frontier LLMs average ~6% normalized return. GPT-5.4-High achieves strong base-task reward but much lower coordination reward. Communication is the largest contributor to coordination; memory and reasoning help only when maintaining multi-step plans. *(arXiv [2606.08340])*
+- **Multiagent Confidence Protocols:** First method for producing and evaluating a single aggregated confidence for multi-agent system outputs. Calibrated Bayesian fusion across heterogeneous debating pairs is substantially more discriminative than best single agent. *(arXiv [2606.13591])*
+- **Deterministic Orchestration (Microsoft Conductor):** LLM decides *what* to do; routing and dispatch are deterministic. Compliance-by-construction applied to workflow orchestration. Source: https://opensource.microsoft.com/blog/2026/05/14/conductor-deterministic-orchestration-for-multi-agent-ai-workflows/
 
-*(Sources: multi-agent-coordination-trends.md, multi_agent_trends_hn.md, multi_agent_coordination.md, multi-agent-stigmergy.md)*
+*(Sources: multi-agent-coordination-trends.md, multi_agent_trends_hn.md, multi_agent_coordination.md, multi-agent-stigmergy.md, findings/2026-07-17-arxiv-github-hn-triage.md)*
 
 ---
 

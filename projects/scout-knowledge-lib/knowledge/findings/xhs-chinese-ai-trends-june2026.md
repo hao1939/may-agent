@@ -831,3 +831,222 @@ Three predictions are now entering their forecast windows. Status check:
 **Self-evolving agents (自进化智能体):** Added as tracked paradigm with ✅ — already named.
 
 **Meta-observation on prediction accuracy:** Our timeline estimates have been systematically 2-4 weeks late. 上下文工程 was named before we predicted it. 技能工程 was confirmed before our forecast window opened. The XHS paradigm cycle is closer to 3-4 weeks than 6 weeks, and the academic→XHS pipeline runs 2-4 weeks (not 2-3 months). Future predictions should subtract 2 weeks from initial estimates.
+
+---
+
+## Finding 37: Loop Engineering Discourse Explosion — From Naming to Maturation (added 2026-06-14, XHS live scan)
+
+**Engagement:** 902❤ + 1,938 saves (top guide post) / 336❤ + 529 saves (paradigm transition post) / 120❤ (8-image explainer) + dozens of derivative posts
+**Source:** XHS search "循环工程 loop engineering agent", June 14 2026 live scan
+
+The Loop Engineering (循环工程) discourse has moved decisively from **naming phase to maturation phase** since the June 13 snapshot. Key signals:
+
+### 37a. Structured Practitioner Guides Now Dominant
+
+- 清华鑫哥讲AI智能体: "Agent Loop构建、步骤、实战之完整指南" (902❤, **1,938 saves** — saves outpacing likes ~2:1 indicates high utility signal)
+- Comments reveal active practitioners: "已经有好几个loop在跑了" / "真正困难的是loop状态和上下文设计"
+- VibeCoder: "Harness翻篇，Loop Engineering来了" (336❤, 529 saves) — explicit paradigm succession framing with structured task taxonomy:
+  - ✅ Suitable for loops: CI red-light repair, PR review cleanup, log/monitor patrol, dependency upgrades
+  - ⚠️ Not suitable: vague refactors, security/payment paths, taste-dependent product changes
+
+### 37b. Skeptical Backlash = Maturation Signal
+
+- "又有新词了家人们" (8 likes on skeptical comment)
+- "harness没loop？新东西在哪里？ 真就三十年前os名词拿出来换个壳再讲一遍呗" — directly names the OS Recapitulation pattern from KE-1975
+- "看来看去还是harness那些东西啊" — backlash from Harness Engineering practitioners
+- "loop效率很低啊" — efficiency critique emerging
+
+**Why this matters:** The backlash pattern is a POSITIVE maturation signal. When the community begins to name what's NOT new, the remaining genuine innovations get sharper definition. The skeptics are correct that loop/harness/cron share ancestry, but the new primitive is **loop state + context preservation + stop conditions**, which none of the predecessors had.
+
+### 37c. Token Cost Critique as Loop Engineering's Achilles Heel
+
+One highly-liked comment crystallizes the challenge: "给agent加循环 token翻几倍 模型厂商收入翻倍 使用者产出能翻倍吗" (7 likes) — "Add loops to agents, tokens multiply. Model companies' revenue multiplies. Does user output multiply?"
+
+This connects directly to the Token Squeeze finding (Finding 39 below) and our KE-1981 Waiting Economy: the true cost of loops is wall-clock time, not token count. The community hasn't yet made this distinction.
+
+---
+
+## Finding 38: Multi-Agent Unattended Operation Case Study — 140K Lines in 4 Days (added 2026-06-14, XHS live scan)
+
+**Engagement:** 199❤, **360 saves**, 38 comments
+**Source:** https://www.xiaohongshu.com/explore/6a2d1c16000000003502053e
+**Author:** 小天fotos (Shaanxi) — building "Niuma" / OpenClaw system
+
+The most technically detailed multi-agent production case study observed on XHS to date:
+
+### Architecture (extracted from XHS AI summary + author comments)
+- **System:** "Niuma" (牛马), used to refactor itself — the system rebuilt itself over 4 days 11 hours
+- **Scale:** 140,000 lines of code refactored, 633 commits, ~3% failure rate
+- **Orchestration:** YAML-defined DAG — serial, parallel, fan-out, merge topologies
+- **Agent design:** Single-responsibility nodes (analyze → code → test), each with independent Docker image
+- **Handoff:** Structured data templates between nodes (no direct agent conversation)
+- **Quality gate:** "Scorecard" audit layer — automated output checking (command output, code format, PR linkage)
+- **Coordinator:** "Codax" — receives tasks, starts YAML templates, monitors node state, intervenes or stops when needed
+- **Model:** Many flows run on Qwen3.6-27B (local model, cost-efficient)
+- **Open source:** Planned — server + CLI first, frontend later
+
+### Comment Signals Revealing Independent Convergence
+- "为啥觉得我在做的跟你这个一样" (Hunan commenter building same DAG topology for business automation)
+- "session分片" + "压缩机模块" — local-model user independently discovering context compression
+- "是状态机吗" — community recognizing FSM pattern
+- "和claude code dynamic workflow有什么区别？" → Author: "比那个高级多了"
+
+**Why this matters:** This is the first verified XHS report of multi-agent systems running autonomously for days (not hours). The architecture — YAML DAG + structured handoff + scorecard audit + single-responsibility nodes — is the **exact production architecture** our system uses (YAML task definitions, typed acceptance criteria, per-agent context isolation). The independent convergence validates our architectural decisions.
+
+**Connection to existing predictions:** This case study is a lived demonstration of 技能工程 (each node = a skill) + 循环工程 (DAG = loop with structured state) + 上下文工程 (structured handoff prevents context pollution). The three paradigms converge in practice.
+
+---
+
+## Finding 39: Token Squeeze — Cost Becoming Invisible From Both Ends (added 2026-06-14, XHS live scan)
+
+**Engagement:** 54❤, 40 saves
+**Source:** https://www.xiaohongshu.com/explore/6a278750000000001c027177
+**Author:** 木鱼的AI大厂情报 (Shanghai)
+
+A concise analysis of token pricing being squeezed from two directions:
+
+1. **Supply-side zero-pricing:** Agnes AI made text/image/video API tokens completely free on June 1. Billions of tokens distributed in 3 days, using only 1/5 of reserved compute.
+
+2. **Demand-side outcome-pricing:** Intercom charges $0.99 per resolved customer issue. No resolution = no charge. Token count is invisible to the buyer.
+
+**Key framing:** "一边说 token 不要钱了，一边说 token 跟你没关系了" — "One side says tokens are free, the other says tokens have nothing to do with you."
+
+**Connection to Loop Engineering cost critique:** The comment on Finding 37 ("token翻几倍") assumes token-as-cost-unit. The Token Squeeze finding suggests this assumption is being undermined. If tokens become free or invisible, the Loop Engineering cost objection evaporates — but the wall-clock cost (KE-1981) remains.
+
+**Prediction:** When token pricing reaches zero, the community will rediscover that **time is the scarce resource, not compute**. This connects to our Waiting Economy thesis (KE-1981) and the s/op metric blind spot.
+
+---
+
+## Finding 40: AI Coding Backlash Deepens — "The Most Expensive Mistake" Discourse (added 2026-06-14, XHS live scan)
+
+**Engagement:** 657❤, **537 saves**, 126 comments
+**Source:** https://www.xiaohongshu.com/explore/6a15494c000000003802082b
+**Author:** Jackie的AI思考笔记 (Beijing) — citing George Hotz "The Eternal Sloptember"
+
+Extends Finding 2 (古法编程 backlash) with a more structurally sophisticated critique:
+
+### Core Argument
+George Hotz's thesis (after 6 months of serious AI coding usage): introducing AI agents into software development may be "one of the most expensive mistakes in the history of software development."
+
+Key distinction: "把'能高效生成代码'误认为'能完成软件工程'" — confusing "can efficiently generate code" with "can complete software engineering."
+
+### Comment Discourse (126 comments — rich signal)
+The most technically engaged comment thread observed this session:
+
+- **Nuanced middle ground emerging:** "快速验证对于搞算法的太友好了" (algorithm prototyping) vs "先上线迭代起来 商业模式真跑通了再重构也不亏" (MVP-then-refactor)
+- **Shit-mountain acceleration:** "原来人力需要1年堆出座做小屎山，现在1周就能堆一座大屎山" (1 year for small human shit-mountain → 1 week for large AI shit-mountain)
+- **Review persistence:** "我还是坚持古法review 虽然不是古法开发了" — traditional review survives even as generation shifts to AI
+- **Harness as answer to criticism:** "会有驾驭ai这类词汇，你驾驭不了那就会有大坑，顶多算'用'而不是'驾驭'" — Harness Engineering positioned as the counter to Hotz's critique
+
+**Why this matters:** The 657❤ engagement (vs 1,674❤ for the original 古法编程 post) shows the backlash discourse is sustained and deepening, not a one-off reaction. The community is developing a **stable counter-narrative** to pure AI enthusiasm: AI generation + human/structural review (harness) = viable. AI generation alone = expensive mistake. This maps to our Compilation Gradient Stage 1→2 transition.
+
+---
+
+## Finding 41: Paradigm Naming Fatigue Emerges — "Sleep Engineering" Meme (added 2026-06-14, XHS live scan)
+
+**Engagement:** 5 likes on meta-comment in 902❤ post
+**Source:** Comment thread on Agent Loop guide post
+
+Two comments signal community self-awareness about paradigm naming velocity:
+
+- "最后大家追求的是sleep engineering" (5 likes) — "What everyone really wants is sleep engineering"
+- "我需要make-money engineering" — "I need make-money engineering"
+
+**Why this matters as a signal:** Paradigm naming fatigue is a **late-maturation indicator**. When a community begins parodying its own naming cycle (Prompt Eng → Harness Eng → Context Eng → Loop Eng → Skill Eng → ???), it signals:
+
+1. The naming cycle itself is recognized as a phenomenon
+2. Diminishing returns on new paradigm names
+3. Potential consolidation phase approaching — the community may stop creating new "-Engineering" names and start integrating existing ones
+
+**Prediction update:** The paradigm naming cycle (Finding 6) may be approaching its ceiling. Rather than predicting the NEXT engineering paradigm name, we should watch for a **consolidation paradigm** that subsumes multiple existing ones. 自进化智能体 (self-evolving agents) is the leading candidate — it subsumes skill, memory, loop, and context engineering into one meta-framework.
+
+---
+
+## Finding 42: Harness Engineering (驾驭工程) Still Active Despite "Loop" Succession (added 2026-06-14, XHS live scan)
+
+**Engagement:** 36❤, 65 saves (new post, 13 hours old)
+**Source:** https://www.xiaohongshu.com/explore/6a2e569a0000000016026d97
+**Author:** 橘子铁 (Beijing)
+
+Despite VibeCoder's "Harness翻篇" (Harness is over) framing, new Harness Engineering content continues:
+
+- "Agent = LLM + Harness(驾驭工程)" — framing LLM as 30% of agent value, harness as 70%
+- Components listed: context compression, memory retrieval, tool routing, safety checks, termination control, loop scheduling
+- Tags still using #Harness despite Loop being the new buzzword
+
+**Why this matters:** The "Harness翻篇" announcement was premature. In practice, Loop Engineering is a SUBSET of Harness Engineering, not a successor. Harness includes loop control but also context management, tool routing, safety — components that don't fit cleanly into the "loop" frame. The community hasn't fully digested this yet.
+
+This validates our prediction (from Section 1 of the main knowledge file) that the paradigm lifecycle acceleration would produce naming fatigue: each new term covers ~60-70% of the previous term's territory, leading to confusion about what's actually new.
+
+---
+
+## Prediction Status Update (2026-06-14 — Live XHS Scan)
+
+| Prediction | Previous Status | Updated Status | Evidence From This Scan |
+|---|---|---|---|
+| **循环工程 maturation** | Named (confirmed Jun 13) | **ENTERED MATURATION** — guides, backlash, derivatives all present | 902❤ guide + skeptical comments + "paradigm naming fatigue" meme |
+| **Token cost as loop blocker** | Not tracked | **NEW — EMERGING** | "token翻几倍" critique + Token Squeeze finding + Agnes AI free tokens |
+| **Paradigm naming fatigue** | Not tracked | **NEW — EMERGING** | "sleep engineering" meme + "又有新词了" backlash |
+| **Multi-agent days-long autonomy** | Theoretical | **PRODUCTION EVIDENCE** — 140K lines / 4 days | OpenClaw/Niuma case study with 633 commits, 3% failure rate |
+| **AI coding backlash → Harness resolution** | 古法编程 noted | **DEEPENING** — 657❤ second wave + Harness positioned as answer | George Hotz thesis reaching Chinese community; "驾驭不了那就会有大坑" |
+| **护栏效应** | Early Jul 2026 entering window | **ON TRACK** — Harness/guardrail discourse intensifying | Forge results not yet named on XHS but harness-as-guardrail framing active |
+
+---
+
+## Finding 43: Cross-Source Structural Turn Convergence (added 2026-06-16, HN scan)
+
+**Source:** HN Algolia API (June 14-15 stories)
+**Type:** Cross-source triangulation (XHS login-gated this session)
+
+### Signal: "AI is code — and can't be prompted into being smarter"
+
+**Engagement:** 104pts, 66 comments (The Register, June 14)
+
+The Register published an article arguing that AI models are fundamentally code — and like all code, they can't be improved by telling them to be better. They can only be improved through architectural changes: better data flow, better constraints, better instrumentation.
+
+Key HN comment that maps directly to XHS's Structural Turn: *"We get better outcomes from the same algorithms by improving data flow, constraints, instrumentation etc. Prompting, retrieval, context engineering seem like the LLM equivalent."*
+
+**Why this matters for XHS predictions:** This is the Western discourse independently arriving at the same conclusion the XHS community reached in May-June 2026 through the 循环工程 and 古法编程 movements. The convergence pattern:
+
+| Community | Starting Point | Conclusion |
+|---|---|---|
+| XHS (May) | 古法编程 — AI coding produces waste | Discrimination must be coupled to generation |
+| XHS (June) | 循环工程 — Design the loops, not the prompts | Architectural improvement > behavioral tuning |
+| HN/Register (June 14) | "AI is code" — Models can't be prompted smarter | Improvement comes from infrastructure, not instructions |
+
+All three arrive at the Structural Turn from different entry points. The convergence strengthens confidence in the 护栏效应 prediction — when this article reaches XHS (1-2 week latency typical), it will merge with existing Harness Engineering discourse.
+
+### Signal: Agent Governance Layer as Product Category
+
+Three independent HN projects in two weeks define governance as a distinct product layer:
+
+1. **V-COS** (June 14): "Governance layer that keeps AI coding agents coherent" — open-source
+2. **Microsoft Agent Control Specification** (June 2, 6pts): Portable runtime governance for AI agents — protocol-level
+3. **Accountable AI Agent Network** (June 11): Principled multi-agent accountability framework
+
+The Agent Control Specification is the strongest signal: Microsoft formalizing runtime governance as a *specification* (not a product) follows the same path MCP took from Anthropic product feature to industry protocol. If this pattern repeats, governance moves from product differentiator to table-stakes protocol in 3-6 months.
+
+**XHS implication:** Accelerates 治理即技能 prediction. The specification treats governance as a portable, installable artifact — which IS skill-shaped governance. When XHS picks up the Agent Control Specification (likely via Microsoft China channels), expect 治理协议 discourse.
+
+### Signal: ACM Endorses 古法编程 Thesis (Institutional Validation)
+
+ACM officially warned that vibe coding "skips core engineering practices" (June 12, TNS). Low HN engagement (4pts) suggests the practitioner community already internalized this. But institutional validation from the ACM is significant for the XHS leading-indicator pattern:
+
+| Timeline | Event |
+|---|---|
+| May 2026 | XHS 古法编程 post (1,674❤) — community-level signal |
+| June 12, 2026 | ACM official warning — institutional-level signal |
+
+XHS preceded ACM by ~4 weeks. Maintains the documented pattern: "XHS names patterns 4-8 weeks before Western discourse adopts them."
+
+### Signal: Constraint-as-Quality — "Ponytail" (39pts, June 14)
+
+Agent tool that forces AI to "think like the laziest senior dev." Constrains the agent to do minimal, highest-value work only. This is the direct operationalization of the Discrimination Deficit (KE-1919): instead of improving the agent's judgment, constrain its action space until only high-quality actions remain.
+
+**Connection to 护栏效应:** Ponytail works exactly like Forge's guardrails but at the planning layer instead of the execution layer. Forge narrows execution space (53%→99% on 8B). Ponytail narrows planning space. Both achieve quality through constraint, not capability. The XHS community predicted this with 小模型+好架构.
+
+---
+
+## Methodological Note (2026-06-16)
+
+**XHS Access Degradation:** XHS now requires login for search results and redirects individual note pages to the app ("当前内容仅支持在小红书 APP 内查看"). This session relied on cross-source triangulation via HN Algolia API rather than direct XHS observation. Signal quality is lower without XHS engagement metrics (❤/saves/comments). Future sessions should investigate maintaining a logged-in browser session for XHS access.

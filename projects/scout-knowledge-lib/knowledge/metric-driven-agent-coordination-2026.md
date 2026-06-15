@@ -1,3 +1,9 @@
+<ai_context>
+status: "superseded"
+superseded_by: "multi-agent-coordination.md"
+reason: "Content merged into the canonical multi-agent-coordination.md during 2026-06-14 consolidation."
+</ai_context>
+
 > **Superseded:** Content merged into [multi-agent-coordination.md](./multi-agent-coordination.md) (2026-06-14).
 
 # Metric-Driven Agent Coordination Patterns (2026)

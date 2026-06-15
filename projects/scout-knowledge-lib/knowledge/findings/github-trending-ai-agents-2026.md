@@ -1,8 +1,8 @@
 # GitHub Trending AI Agent Repos & Tools — June 2026
 
-**Source:** GitHub Search API (live queries, June 13 & June 15 2026)  
-**Last updated:** 2026-06-15  
-**Prior version:** June 13 scan (this file, updated with June 15 delta)
+**Source:** GitHub Search API (live queries, June 13, June 15, & June 20 2026)  
+**Last updated:** 2026-06-20  
+**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta (this update)
 
 ---
 
@@ -391,4 +391,280 @@ Checked all 20+ memory repos again. **Zero** implement forgetting, decay, or mem
 
 ---
 
-*Data sourced from GitHub Search API, June 13 & 15, 2026. Star counts are approximate and change daily. June 15 data was truncated by API rate limits after ~6 query batches.*
+*Data sourced from GitHub Search API, June 13, 15, & 20, 2026. Star counts are approximate and change daily. June 15 data was truncated by API rate limits after ~6 query batches.*
+
+---
+
+## 🆕 June 20 Delta: New Trends, Categories & Notable Repos
+
+### Trend 1: Code Knowledge Graphs (New Category)
+
+Pre-indexed code knowledge graphs that auto-sync on code changes — giving agents a semantic map of the codebase instead of raw file search.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 49k | **colbymchenry/codegraph** | Pre-indexed code knowledge graph, auto-syncs, 100% local, supports 8+ coding agents | TypeScript | Jan 2026 |
+| 5k | **MinishLab/semble** | Fast semantic code search — 98% fewer tokens than grep+read via embeddings | Python | Apr 2026 |
+
+**Why it matters:** These repos address the core context-engineering problem from the *agent* side: instead of the agent calling `grep` + `read` and flooding its context window, it queries a pre-indexed knowledge graph or embedding search and gets only relevant code. codegraph at 49k★ is the fastest-growing tool repo from Q1 2026. Semble's MCP-native code search complements headroom's output compression (KE-1924): one reduces what goes IN to the agent, the other compresses what comes OUT of tools.
+
+### Trend 2: Sandboxed Agent Orchestration (Crystallizing)
+
+Orchestration tools now treat sandboxing as a first-class primitive, not an afterthought.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 6k | **mattpocock/sandcastle** | Orchestrate sandboxed coding agents in TypeScript with `sandcastle.run()` | TypeScript | Mar 2026 |
+| 6k | **TencentCloud/CubeSandbox** | Instant, concurrent, lightweight sandbox for agents | Rust | Apr 2026 |
+| 5k | **agent-infra/sandbox** | All-in-one sandbox: browser + shell + file + MCP + VSCode | Python | Aug 2025 |
+
+**Why it matters:** The "98% Problem" from harness engineering (the harness is the 2% that determines safety) is being addressed with purpose-built sandbox primitives. sandcastle (Matt Pocock, TypeScript community influence) makes sandboxed agent orchestration a one-liner. CubeSandbox (Tencent) optimizes for instant concurrent sandbox creation. Both validate KE-1924 (Constraint Placement): the sandbox IS the constraint, at the infrastructure level.
+
+### Trend 3: Agent-Trainable Skills (SkillOpt — Microsoft Research)
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 6.4k | **microsoft/SkillOpt** | Text-space optimizer that trains reusable natural-language skills from agent trajectories | Python | May 2026 |
+| 10k | **OpenPipe/ART** | Agent Reinforcement Trainer — GRPO for multi-step agents on real tasks | Python | Mar 2025 |
+
+**Why it matters:** SkillOpt is the first major framework for **automated skill generation** — the system observes agent trajectories, identifies reusable patterns, and produces deployable `best_skill.md` artifacts. This closes the loop on the Skills Economy: skills are no longer hand-authored, they're *trained* from execution traces. ART complements this with reinforcement learning at the agent level (GRPO). Together they represent the "self-improving agent" trajectory that KE-1915 (Skills Absorption) predicted.
+
+**Critical connection to our system:** SkillOpt's trajectory-driven skill generation is exactly the "promotion mechanism" identified as missing in KE-1966 (Governance Gresham's Law) — validated soft patterns get promoted into hard skills, bridging the governance gap.
+
+### Trend 4: Agent-Native Data & Query Interfaces
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 5k | **withcoral/coral** | One SQL interface over APIs, files, and live sources — built for agents | Rust | Apr 2026 |
+| 5.6k | **TencentCloud/TencentDB-Agent-Memory** | 4-tier progressive pipeline memory, fully local, zero API deps | TypeScript | Apr 2026 |
+| 16k | **googleapis/mcp-toolbox** | MCP server for databases | Go | Jun 2024 |
+
+**Why it matters:** Coral unifies heterogeneous data sources (APIs, files, live streams) behind a SQL interface purpose-built for agents. TencentDB-Agent-Memory implements a 4-tier progressive memory pipeline (the most structured memory architecture among open repos) with local-first design. Both represent the "agent-native database" category — data infrastructure redesigned around agent access patterns rather than human query patterns.
+
+### Trend 5: Agent Self-Healing & Observability
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 811 | **superloglabs/superlog** | Open-source observability that uses AI agents to self-heal your software (created Jun 2, 2026 — 2 weeks old) | TypeScript | Jun 2026 |
+| 25k | **jarrodwatts/claude-hud** | Real-time HUD: context usage, active tools, running agents, session state | JavaScript | Jan 2026 |
+| 1.1k | **future-agi/future-agi** | End-to-end eval, tracing, guardrails, gateway | Python | Apr 2026 |
+
+**Why it matters:** Superlog (2 weeks old, 800+ stars) represents a new pattern: AI agents monitoring and self-healing production software. This is agents-as-SREs — the inverse of the typical "observe the agent" pattern. claude-hud at 25k★ has become the standard real-time observability layer for Claude Code sessions.
+
+### Trend 6: Programming Languages for Agents
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 5k | **vercel-labs/zerolang** | "The Programming Language for Agents" | C++ | May 2026 |
+
+**Why it matters:** A purpose-built programming language for agents (from Vercel Labs, 1 month old, already 5k★) is a strong signal that the agent ecosystem is moving beyond "LLMs writing in human languages" toward languages designed for agent execution patterns — deterministic, verifiable, composable. This echoes the "control flow replacing prompt engineering" trend (May 2026 HN) taken to its logical conclusion: a language rather than a framework.
+
+### Trend 7: Agent Desktop Companions & Fleet Management
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 12k | **fathah/hermes-desktop** | Desktop companion for Hermes Agent | TypeScript | Apr 2026 |
+| 7.9k | **EKKOLearnAI/hermes-studio** | Web dashboard: multi-platform chat, session management, scheduled jobs, analytics | TypeScript | Apr 2026 |
+| 16k | **gastownhall/gastown** | Multi-agent workspace manager | Go | Dec 2025 |
+| 8.5k | **getpaseo/paseo** | Orchestrate multiple coding agents from desktop and mobile | TypeScript | Oct 2025 |
+
+**Why it matters:** The "fleet management" layer is consolidating. Practitioners running 3+ agents 24/7 (as seen in HN findings) need fleet-level visibility. hermes-studio and gastown are the leading open-source options. paseo adds mobile-first orchestration — managing agent fleets from a phone.
+
+### Trend 8: Domain Skills Explosion Beyond Engineering
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 19k | **alchaincyf/huashu-design** | HTML-native design skill, high-fidelity prototypes | HTML | Apr 2026 |
+| 17k | **op7418/guizang-ppt-skill** | Polished slide decks with editorial layouts | HTML | Apr 2026 |
+| 16k | **google-labs-code/design.md** | DESIGN.md format spec — visual identity docs for agents | TypeScript | Apr 2026 |
+| 9.6k | **browser-use/video-use** | Video editing via coding agents | Python | Apr 2026 |
+| 6.3k | **earthtojake/text-to-cad** | Agent skills for CAD, robotics, hardware design | JavaScript | Apr 2026 |
+| 4.7k | **calesthio/OpenMontage** | 12 pipelines, 52 tools, 500+ skills for agentic video production | Python | Mar 2026 |
+
+**Why it matters:** The skills economy is rapidly expanding beyond coding into design, video, CAD, presentation, and robotics. google-labs-code/design.md (16k★) is especially significant — it proposes a standard format (`DESIGN.md`) that gives agents a persistent, structured representation of a project's visual identity. This is infrastructure-level context (KE-1924) for non-code domains.
+
+### Star Velocity Winners (June 15 → June 20)
+
+| Repo | Stars (Jun 15) | Stars (Jun 20) | Δ | Notes |
+|------|---------------|----------------|---|-------|
+| **NousResearch/hermes-agent** | ~184k | 193k | +9k | Continued mega-growth |
+| **karpathy/autoresearch** | ~82k | 87k | +5k | Automated ML research capturing interest |
+| **colbymchenry/codegraph** | ~45k | 49k | +4k | Code knowledge graph — fast rising |
+| **garrytan/gbrain** | ~20k | 23k | +3k | Garry Tan's opinionated agent brain |
+| **esengine/DeepSeek-Reasonix** | ~19k | 22k | +3k | DeepSeek coding agent — non-Anthropic growth |
+| **multica-ai/multica** | ~34k | 37k | +3k | Managed agents platform |
+| **THU-MAIC/OpenMAIC** | ~16k | 19k | +3k | Multi-agent interactive classroom (Chinese academia) |
+
+### Updated Architecture Patterns (June 20)
+
+| Pattern | Status (Jun 15) | Status (Jun 20) | Key Change |
+|---------|-----------------|-----------------|------------|
+| **Code Knowledge Graphs** | (not tracked) | 🆕 Rising fast | codegraph 49k★, semble 5k★ |
+| **Agent-Trainable Skills** | (not tracked) | 🆕 Research→Product | microsoft/SkillOpt closes the skill authoring loop |
+| **Sandboxed Orchestration** | (implicit in harnesses) | 🆕 Standalone primitive | sandcastle, CubeSandbox make sandbox a one-liner |
+| **Agent-Native Languages** | (not tracked) | 🆕 Early signal | zerolang from Vercel Labs (5k★ in 1 month) |
+| **Agent Self-Healing** | (not tracked) | 🆕 Early signal | superlog: agents healing prod systems |
+| **Skills-as-Code** | 🔥 Entering saturation | 🔥 Saturated + expanding to non-code domains | Design, CAD, video, slides |
+| **Context Engineering** | 🆕 Crystallizing | ✅ Established | code knowledge graphs are the newest expression |
+| **Agent Memory** | 🔥 Converging with skills | 🔥 4-tier pipelines emerging | TencentDB-Agent-Memory, MemOS |
+| **Harness Engineering** | 🔥 Mature | ✅ Fully mature — books published | Now foundational, no longer a trend |
+| **Domain Agent Studios** | 🆕 Growing | 🔥 Exploding | Design, video, CAD, robotics, education |
+
+### The Forgetting Gap: Third Consecutive Scan, Still Zero
+
+Checked all memory repos again. **Zero** implement forgetting, decay, or memory lifecycle governance. All remain append-only. This is the widest research-to-practice gap in the current agent landscape (KE-1920). The arXiv evidence is unequivocal (5+ papers recommending forgetting); the tooling ecosystem is ignoring it entirely.
+
+### Cross-Reference Updates (June 20 KE Connections)
+
+| GitHub Trend (Jun 20) | Related KE | Connection |
+|----------------------|-----------|------------|
+| codegraph (code knowledge graphs) | KE-1924, KE-1967 | Infrastructure-level context; could bridge code-knowledge split by giving knowledge-agents code structure access |
+| SkillOpt (auto-generated skills) | KE-1966, KE-1915 | The missing "promotion mechanism" — soft patterns → hard skills from trajectories |
+| sandcastle (sandbox-first orchestration) | KE-1924, KE-1965 | Constraint at infrastructure level; sandbox replaces advisory warnings |
+| zerolang (agent programming language) | KE-1927 | Structural turn taken to its logical endpoint |
+| superlog (agent self-healing) | KE-1968 | If heartbeat agents self-healed via observation rather than polling, the heartbeat tax shrinks |
+| Domain skills explosion | KE-1915 | Skills Absorption beyond code — the thesis applies to all structured work |
+
+---
+
+## 🆕 June 21 Delta: Fresh Scan — New Repos, Star Movements & Emerging Patterns
+
+### Star Velocity Tracker (June 20 → June 21)
+
+Notable star-count movements from the existing corpus:
+
+| Repo | Stars (Jun 20) | Stars (Jun 21) | Δ | Signal |
+|------|---------------|----------------|---|--------|
+| **NousResearch/hermes-agent** | 193k | 193k | stable | Plateauing after explosive growth |
+| **anthropics/skills** | 147k | 150k | +3k | Still actively growing |
+| **colbymchenry/codegraph** | 49k | 49k | stable | Established in code-knowledge-graph category |
+| **aaif-goose/goose** | 47k | 49k | +2k | Rust-based agent gaining traction |
+| **CherryHQ/cherry-studio** | 46k | 47k | +1k | Steady growth for AI desktop app |
+| **hesreallyhim/awesome-claude-code** | — | 46k | NEW | Curated skills/hooks/slash-commands list (was below scan threshold before) |
+| **multica-ai/multica** | 37k | 37k | stable | Managed agents platform steady |
+| **vercel-labs/agent-skills** | — | 28k | NEW | Vercel's official agent skills collection — enterprise credibility signal |
+| **oraios/serena** | — | 25k | NEW | MCP toolkit: semantic retrieval & editing for coding agents |
+| **topoteretes/cognee** | 17k | 18k | +1k | AI memory platform growth continues |
+| **memvid/memvid** | 16k | 16k | stable | Serverless memory layer |
+| **osaurus-ai/osaurus** | — | 5.8k | NEW | Native macOS agent harness (Swift) — first notable Swift-based harness |
+
+### New Category: Agent MicroVM & Process Isolation
+
+A new infrastructure pattern emerging around lightweight VM-based agent isolation — directly validating the "Process Isolation" primitive from KE-1975 (OS Recapitulation).
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 2.4k | **deeplethe/forkd** | fork() for AI agent microVMs. Spawn 100 children in ~100ms from warm parent, BRANCH a live agent state | Rust | May 2026 |
+| 1.7k | **Helvesec/rmux** | Universal Rust multiplexer with typed SDK — drive any CLI/TUI app from code, native agent integration | Rust | May 2026 |
+
+**Why it matters:** forkd (2.4k★, 1 month old) implements literal process-fork semantics for agent state — you can snapshot a running agent and spawn branches. This is the OS "fork()" syscall rebuilt for agents. rmux provides the IPC layer (multiplexed CLI driving). Together they represent the "Process Isolation" and "IPC" OS primitives from KE-1975 being built in the correct dependency order. Both are Rust — confirming Rust's rise as the infrastructure language for agent systems.
+
+### New Category: Token-Efficient & Small-Model Agents
+
+Purpose-built agents designed for extreme token efficiency or small local models — the "less is more" counter-trend to scaling.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 4.5k | **DietrichGebert/ponytail** | "Makes your AI agent think like the laziest senior dev in the room." The best code is the code you don't write | JavaScript | Jun 2026 |
+| 4.1k | **opensquilla/opensquilla** | Token-Efficient AI Agent: same budget, higher intelligence density | Python | May 2026 |
+| 1.8k | **Doorman11991/smallcode** | AI coding agent optimized for small LLMs. 87% benchmark with 4B-active model | JavaScript | May 2026 |
+| 1.3k | **gi-dellav/zerostack** | Minimal coding agent in Rust, optimized for memory footprint and performance | Rust | May 2026 |
+
+**Why it matters:** This cluster represents a counter-movement to the "bigger models, bigger harnesses" trend. ponytail (4.5k★, 2 days old, fastest new repo this scan) explicitly optimizes for NOT doing work — architectural laziness as a design principle. opensquilla optimizes intelligence-per-token. smallcode achieves 87% benchmark performance with a 4B-parameter model. zerostack minimizes the agent binary itself. Together they validate the "Guardrails as Small-Model Equalizer" finding from HN (KE-1965): structural constraint makes small models competitive.
+
+### New Category: Agent Virtual Filesystems
+
+Agents need a consistent view of project state — virtual filesystems are the emerging answer.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 3.2k | **strukto-ai/mirage** | Unified Virtual Filesystem for AI Agents | TypeScript | May 2026 |
+| 1.2k | **Kaelio/ktx** | Executable context layer for data/analytics agents — structured filesystem for Claude Code, Codex | TypeScript | May 2026 |
+
+**Why it matters:** mirage (3.2k★) builds a virtual FS layer specifically for agents — abstracting away the real filesystem into an agent-friendly interface. ktx adds an "executable context" layer that agents can query and manipulate as structured data. Both address the OS "Filesystem Hierarchy" primitive from KE-1975. The HORMA filesystem metaphor from arXiv is being implemented in practice.
+
+### New Category: Agent-Native Terminals & IDEs
+
+Operating system vendors are now building agent integration directly into terminals and productivity tools.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 1.0k | **microsoft/intelligent-terminal** | Fork of Windows Terminal with native agent integration | C++ | May 2026 |
+| 6.8k | **alibaba/open-code-review** | Battle-tested at Alibaba scale: hybrid architecture code review | Go | May 2026 |
+| 4.1k | **KunAgent/Kun** | AI agent workspace with Code and Write modes built into your application | TypeScript | May 2026 |
+| 3.3k | **OpenBMB/PilotDeck** | Task-oriented AI Agent productivity platform | TypeScript | May 2026 |
+
+**Why it matters:** Microsoft forking Windows Terminal to add native agent integration is a platform-level signal — the terminal itself is becoming agent-aware. Alibaba's open-code-review (6.8k★) brings battle-tested agent code review from production scale (implies thousands of daily agent-generated PRs). This is the "agent-as-default-colleague" phase, not the "agent-as-novelty-tool" phase.
+
+### New Notable Individual Repos
+
+| Stars | Repo | What It Does | Why Notable |
+|-------|------|-------------|-------------|
+| 6.7k | **nexu-io/html-anything** | Agentic HTML editor with 75 skills | Agent-native design tool, skills-native from day one |
+| 3.1k | **nexu-io/html-video** | HTML → video for coding agents | Video production as an agent skill |
+| 1.4k | **beenuar/AiSOC** | AI-powered Security Operations Center | Agent-native SOC: alert fusion + purple-team drills |
+| 1.3k | **rpamis/comet** | Agent skill harness with phase-guarded automation | Lifecycle-aware: idea → archive with phase gates |
+| 1.0k | **baoyu-design** | Run Claude Design locally as agent skill | Design tool as installable skill |
+| 0.9k | **omnigent-ai/omnigent** | Meta-harness over all AI agents | "Meta-harness" pattern — harness-of-harnesses |
+| 0.8k | **UditAkhourii/adhd** | Tree-of-thought with pruning for coding agents | Explicit search-space pruning skill |
+| 0.8k | **vibecode-pro-max-kit** | Spec-driven coding harness for vibecoders | "Your AI forgets. This remembers." — memory as selling point |
+
+### New Signals from MCP & Tool Connectivity
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 25k | **oraios/serena** | MCP toolkit with semantic retrieval and editing | Python | Mar 2025 |
+| 44k | **ChromeDevTools/chrome-devtools-mcp** | Chrome DevTools for coding agents | TypeScript | Sep 2025 |
+| 1.7k | **MicrosoftDocs/mcp** | Official Microsoft Learn MCP Server and CLI | TypeScript | Jun 2025 |
+
+**Key signal:** Chrome DevTools releasing an official MCP server (44k★) means browser DevTools are now agent-accessible as a first-class tool. Microsoft's official MCP server (1.7k★) confirms institutional adoption of MCP beyond startups.
+
+### Updated Architecture Patterns (June 21)
+
+| Pattern | Status (Jun 20) | Status (Jun 21) | Key Change |
+|---------|-----------------|-----------------|------------|
+| **Agent MicroVMs** | (not tracked) | 🆕 Early signal | forkd: fork() for agents, 2.4k★ in 1 month |
+| **Token-Efficient Agents** | (implicit) | 🆕 Crystallizing | 4 repos, counter-trend to scaling |
+| **Agent Virtual Filesystems** | (not tracked) | 🆕 Emerging | mirage, ktx — OS filesystem primitive for agents |
+| **Agent-Native Terminals** | (not tracked) | 🆕 Platform-level | Microsoft forking Windows Terminal for agents |
+| **Meta-Harnesses** | (single repo) | 🆕 Pattern | omnigent: harness-of-harnesses layer forming |
+| **Skills-as-Code** | 🔥 Saturated | 🔥 Hyper-saturated | Vercel official skills (28k★), satire skills thriving |
+| **Agent Memory** | 🔥 4-tier pipelines | 🔥 Still no forgetting | osaurus adds macOS-native memory; gap persists |
+| **Context Engineering** | ✅ Established | ✅ Mature | Virtual FS and executable context expand the concept |
+| **Harness Engineering** | ✅ Fully mature | ✅ Meta-phase | Meta-harnesses (harnesses wrapping harnesses) emerging |
+| **Agent Security** | 🆕 Emerging | 🔥 Growing | AiSOC: full SOC as agent system |
+
+### The Forgetting Gap: Fourth Consecutive Scan, Still Zero
+
+Checked all memory repos again, including osaurus (5.8k★, macOS-native with persistent memory), cognee (18k★), and mem0 (59k★). **Zero** implement forgetting, decay, or memory lifecycle management. All remain append-only. The forgetting gap is now the most consistently validated negative finding across four consecutive scans (June 13, 15, 20, 21). The nine independent memory-protocol projects with `forget` verbs identified in KE-1969 remain research/niche; none have entered the mainstream tooling ecosystem.
+
+### The OS Recapitulation Validated (KE-1975 Connection)
+
+This scan's new repos map precisely onto the OS primitive stack from KE-1975:
+
+| OS Primitive | KE-1975 Status | June 21 Repos | Signal |
+|---|---|---|---|
+| Process Isolation | Predicted as foundational | forkd (fork() for agents), rmux (IPC multiplexer) | Being built in Rust |
+| Filesystem Hierarchy | Predicted as needed | mirage (virtual FS), ktx (executable context layer) | Being built in TypeScript |
+| Memory Management | Predicted as missing | Still zero forgetting implementations | Gap persists |
+| Preemptive Scheduling | Predicted as needed | ponytail ("laziest dev" = scheduling via NOT running) | Inverted approach |
+| IPC | Predicted as needed | rmux typed SDK, omnigent meta-harness | Cross-agent channels forming |
+
+This is the first scan where multiple repos independently implement the exact OS primitives KE-1975 predicted were missing, in approximately the correct dependency order (isolation → filesystem → IPC). Memory management/GC remains the persistent gap.
+
+### Cross-Reference Updates (June 21 KE Connections)
+
+| GitHub Trend (Jun 21) | Related KE | Connection |
+|----------------------|-----------|------------|
+| forkd (agent microVMs) | KE-1975 (OS Recapitulation) | Process isolation primitive being built; validates the "build in OS order" thesis |
+| ponytail (laziest-dev agent) | KE-1968 (Heartbeat Tax) | Architectural laziness = avoiding the heartbeat tax by design |
+| opensquilla (token-efficient agent) | KE-1925 (Quality-Waste Paradox) | Intelligence-per-token optimization = waste reduction at the agent level |
+| smallcode (87% on 4B model) | KE-1965 (Guard Paradox) | Small models + structural constraints = competitive performance (validates Forge pattern) |
+| mirage (virtual filesystem) | KE-1975 (OS Recapitulation) | Filesystem hierarchy primitive for agents — HORMA metaphor implemented |
+| microsoft/intelligent-terminal | KE-1976 (Accidental Skill) | Platform vendors embedding agent support = agents as default, not optional |
+| omnigent (meta-harness) | KE-1973 (Compiler Gap) | Meta-harnesses may become the compiler layer — translating soft patterns across harnesses |
+| osaurus (macOS-native harness) | KE-1967 (Code-Knowledge Split) | Native OS integration could bridge ecosystems by making agents first-class OS citizens |
+
+---
+
+*Data sourced from GitHub Search API, June 13, 15, 20, & 21, 2026. Star counts are approximate and change daily.*

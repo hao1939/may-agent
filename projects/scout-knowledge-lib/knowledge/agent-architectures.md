@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-06-17"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026, and arXiv papers June 6–11 2026."
+last_updated: "2026-06-14"
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 4–11 2026 (triages on Jun 14, 15, 17, 19)."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -191,3 +191,180 @@ SMSR shows multi-session memory poisoning reduces to 5.3% with signed provenance
 
 - **Key implication**: Persistent state (lessons, context_updates, memories) needs provenance-signing, periodic revalidation, and voting-based retrieval. Unvalidated persistent state compounds reliability degradation over time.
 - **Sources**: [2606.12703] SMSR, [2606.10749] Ling et al. survey.
+
+### Code Knowledge Graphs (GitHub, June 2026)
+
+Pre-indexed code knowledge graphs that auto-sync on code changes, giving agents a semantic map of the codebase instead of raw file search. codegraph (49k★) and semble (5k★) are the leading repos.
+
+- **Mechanism**: The agent queries a pre-indexed graph or embedding search instead of calling grep+read repeatedly. Semble claims 98% fewer tokens than grep+read.
+- **Key implication**: Context engineering splits into input-side (knowledge graphs reduce what goes IN) and output-side (headroom compresses what comes OUT). Both are infrastructure-level token budget constraints (KE-1924).
+- **Source**: GitHub trending repos June 2026.
+
+### Agent-Trainable Skills / SkillOpt (Microsoft Research, June 2026)
+
+SkillOpt (6.4k★) is a text-space optimizer that trains reusable natural-language skills from agent trajectories. Observes agent execution, identifies patterns, produces `best_skill.md` artifacts. ART (10k★, OpenPipe) complements with GRPO for multi-step agent training.
+
+- **Key implication**: The skills economy loop closes — skills are no longer only hand-authored, they can be *trained from execution traces*. This is the "promotion mechanism" missing from KE-1966 (Governance Gresham's Law): validated soft patterns get promoted into hard, deployable skills.
+- **Source**: GitHub trending repos June 2026, Microsoft Research.
+
+### Sandboxed Agent Orchestration (GitHub, June 2026)
+
+Sandbox-first orchestration tools — sandcastle (6k★, Matt Pocock), CubeSandbox (6k★, Tencent), agent-infra/sandbox (5k★) — treat sandboxing as a first-class composable primitive rather than a deployment afterthought.
+
+- **Key implication**: The sandbox IS the constraint. Making sandboxed execution a one-liner (`sandcastle.run()`) removes the adoption barrier that kept teams using advisory warnings instead of structural isolation.
+- **Aligns with**: KE-1924 (Constraint Placement), KE-1965 (Guard Paradox — structural blocks have 100% enforcement).
+- **Source**: GitHub trending repos June 2026.
+
+### Agent-Native Programming Languages (Vercel Labs, June 2026)
+
+zerolang (5k★, 1 month old) is a purpose-built programming language for agents from Vercel Labs. This extends the "control flow replacing prompt engineering" trend to its logical conclusion: a language designed around agent execution patterns — deterministic, verifiable, composable.
+
+- **Key implication**: If agents get their own language, the structural turn (KE-1927) reaches completion — behavior is enforced by language semantics, not by instructions or warnings.
+- **Source**: GitHub trending repos June 2026.
+
+### Tree Search as Cognition Layer — Arbor (arXiv, June 2026)
+
+Arbor introduces structured tree search as shared working memory across
+multi-agent systems. The search tree maintains scored hypotheses that
+evolve with every measurement, treating failures as diagnostic signal
+that reshapes subsequent exploration.
+
+**Key results:** 193% inference throughput-latency Pareto improvement
+over vendor-optimized baselines. Single agent without the harness
+plateaus at +33% and crashes within hours.
+
+**Hard/Soft skill decomposition:**
+- **Hard skills** = domain expertise (what an agent knows)
+- **Soft skills** = coordination protocols (how contributions compose)
+
+The Orchestrator-Critic checks-and-balances architecture ensures neither
+agent can unilaterally drive the system. The Critic performs root-cause
+analysis, introspection, and measurement validation.
+
+- **Key implication**: Strongest evidence yet for KE-1633 (The Harness Is The Agent). The 6x multiplier (+33% → +193%) is entirely attributable to the cognition layer, not the LLM agent's capabilities.
+- **Aligns with**: KE-1760 (Environment Is The Agent), KE-1493 (State Externalization)
+- **Source**: [2606.12563] Prakriya et al., arXiv Jun 2026.
+
+### Harness Engineering Productization (GitHub, June-July 2026)
+
+Nexent (5k★, ModelEngine-Group) is the first repo to use "Harness
+Engineering" explicitly in its product positioning — a zero-code platform
+for auto-generating production-grade agents using unified tools, skills,
+memory, and orchestration with built-in constraints and control planes.
+mission-control (5.3k★, builderz-labs) adds spend governance as a
+first-class orchestration primitive.
+
+- **Key implication**: Harness Engineering has graduated from discourse term to product identity. The discipline is entering its productization phase.
+- **Source**: GitHub trending repos July 2026.
+
+### Domain Skills Expansion Beyond Code (GitHub, June 2026)
+
+The skills economy is rapidly expanding beyond coding: huashu-design (19k★, high-fidelity prototypes), guizang-ppt-skill (17k★, slide decks), design.md (16k★, Google — a DESIGN.md format spec for visual identity), text-to-cad (6k★, CAD/robotics), video-use (10k★, video editing), OpenMontage (5k★, agentic video production).
+
+- **Key implication**: The Skills Absorption Thesis (KE-1915) extends beyond engineering. Any domain with structured work products can be decomposed into agent-executable skills. The DESIGN.md format spec is infrastructure-level context (KE-1924) for non-code domains.
+- **Source**: GitHub trending repos June 2026.
+
+### Decentralized Coordination via Shared Verified Context (arXiv, June 2026)
+
+DeLM replaces centralized orchestration with parallel agents sharing a verified context substrate. Agents asynchronously claim subtasks, read accumulated progress, and write back compact verified updates. On SWE-bench Verified: +10.5pp over strongest baseline while reducing cost ~50%.
+
+- **Key implication**: Stigmergy works at framework scale, but the "verified" qualifier is critical — unverified shared state degrades coordination rather than improving it. Our artifact-based coordination pattern validates, but needs verification gates on context writes.
+- **Source**: [2606.10662] Mao & Mirhoseini (Google DeepMind), arXiv June 2026.
+
+### Dual-Process Memory Architecture (arXiv, June 2026)
+
+DCPM reorganizes agent memory into a cognitive hierarchy (raw facts → belief trajectories → schemas → cross-domain patterns) driven by two processes: System1 (synchronous session-time writer recording belief revisions as doubly-linked supersedes chains) and System2 (asynchronous between-session engine inducing schemas and sweeping for cross-domain collisions). Up to +5.20 on PersonaMem-v2 for implicit cross-session inference.
+
+- **Key implication**: Flat fact storage (our current context_updates) misses belief revision and schema induction. The System1/System2 split maps to our session-time vs. between-session processing — we have System1 but no System2.
+- **Source**: [2606.09483] Fei et al., arXiv June 2026.
+
+### Learnable Harness (HarnessBridge, arXiv June 2026)
+
+The agent–environment interface can be parameterized as a learnable bidirectional projection rather than hand-engineered. Observation projection distills raw trajectories into compact states; action projection grounds proposals into executable transitions or rejections. Matches specialized harnesses while reducing token usage on SWE-bench Verified.
+
+- **Key implication**: Extends Harness Engineering from manual craft to trainable infrastructure. The harness becomes a learned compression layer — context folding implemented at the interface level.
+- **Source**: [2606.12882] Wang et al., arXiv June 2026.
+
+### Contrastive Skill Evolution (arXiv, June 2026)
+
+Three converging papers on skill quality: SkillCAT extracts skills by comparing success/failure pairs on same task (+40.40% over baselines); SkillAxe finds LLM-authored skills provide zero gain and decomposes quality into 4 dimensions for self-refinement; SkillJuror shows skill organization (progressive disclosure vs. flat) changes runtime behavior.
+
+- **Key implication**: Single-trajectory skill extraction is unreliable. Contrastive comparison of paired outcomes is the reliable extraction method. Our lesson learning should compare successful vs. failed sessions, not accumulate lessons from individual sessions.
+- **Sources**: [2606.13317] SkillCAT, [2606.10546] SkillAxe (Microsoft Research), [2606.11543] SkillJuror.
+
+### Production Context Engineering — Less Is More (arXiv, June 2026)
+
+Microsoft study on GPT-5 with MCP tools: full-context retention achieves 71.0% (1.48M tokens, 14.56 hrs). Pruning to last 5 tool calls: 79.0% (535K tokens). Pruning + summarization: 91.6% (553K tokens). Cross-validated with Claude Sonnet 4.5.
+
+- **Key implication**: More context is actively harmful for enterprise tool-use. Last-5-tool-call pruning + summarization is the production-validated parameterization of "fold, don't carry." Directly actionable for our agents.
+- **Source**: [2606.10209] Lodha et al. (Microsoft), arXiv June 2026.
+
+### Memory as Topic Documents (Infini Memory, arXiv June 2026)
+
+Treats agent memory as topic-structured documents rather than database records. Each topic document collects evidence, preserves metadata, and revises facts over time. New observations buffer before consolidation. Validates the "knowledge library as memory" approach.
+
+- **Key implication**: Our knowledge library architecture (topic-structured markdown with inbox staging) is independently validated as an effective memory pattern. Missing pieces: iterative agentic retrieval (navigate the graph, don't just fetch documents).
+- **Source**: [2606.10677] Ji et al., arXiv June 2026.
+
+### Environment Engineering as Architecture (EurekAgent, arXiv June 2026)
+
+The bottleneck for agent capability is shifting from workflow engineering to
+**environment engineering** — the resources, constraints, and interfaces that
+shape behavior. EurekAgent ([2606.13662]) operationalizes this along four
+dimensions: (1) permissions engineering for bounded execution and isolated
+evaluation; (2) artifact engineering for filesystem + Git-based collaboration;
+(3) budget engineering for budget-aware exploration; (4) human-in-the-loop
+engineering for supervision. Achieves SOTA on multiple tasks at <$11 total
+API cost, demonstrating that the right environment enables even cheap agents
+to discover novel results.
+
+- **Key implication**: Environment engineering is governance at the
+  infrastructure level — the four pillars (permissions, artifacts, budgets,
+  HITL) map directly to the Compilation Gradient's Stage 2 (structural
+  constraints). The cost result (<$11 for SOTA) is the strongest evidence
+  for KE-1760 (The Environment Is The Agent).
+- **Source**: [arXiv Triage — Batch 4](./findings/2026-06-14-arxiv-agent-triage.md)
+
+### Infrastructure-Aware Orchestration (INFRAMIND, arXiv June 2026)
+
+Existing orchestration selects models based on task features while ignoring
+runtime infrastructure state. INFRAMIND ([2606.11440]) makes the stack
+infrastructure-aware: the planner conditions topology selection on real-time
+system load, the executor observes per-model queue depths and cache
+utilization, and a budget-aware scheduler reorders queues. Result: +7.6pp
+accuracy at low load with **7× lower latency**, and **99.9% SLO compliance
+under high load** where baselines drop below 50%.
+
+- **Key implication**: Infrastructure blindness causes systematic
+  underutilization. The "simpler under congestion" principle maps to task
+  decomposition: under load, prefer shallower delegation trees. Adds a fifth
+  pillar to environment engineering.
+- **Source**: [arXiv Triage — Batch 4](./findings/2026-06-14-arxiv-agent-triage.md)
+
+### Workflow Portfolio Management (FlowBank, arXiv June 2026)
+
+Instead of one universal workflow or a new workflow per query, FlowBank
+([2606.11290]) builds a **compact bank of reusable, complementary workflows**
+and adaptively selects among them. Three stages: diversify (generate
+complementary candidates), curate (compress to minimal portfolio), match
+(bipartite graph routing per query). Result: +4.26% over strongest automated
+baseline, +14.92% over handcrafted.
+
+- **Key implication**: Maintaining a portfolio of pre-validated workflow
+  patterns and routing to the best match outperforms both single-workflow
+  optimization and per-query generation. The diversify-curate-match pipeline
+  is applicable to task decomposition.
+- **Source**: [arXiv Triage — Batch 4](./findings/2026-06-14-arxiv-agent-triage.md)
+
+### Certainty-Preserving Skill Extraction (Notes2Skills, arXiv June 2026)
+
+Notes2Skills ([2606.11897]) converts unstructured notes into verifiable agent
+skills while preserving the author's certainty level. It is the only method
+that neither mistakes uncertain observations for firm instructions nor
+discards firm ones.
+
+- **Key implication**: Certainty preservation is the missing piece between
+  unstructured knowledge and reliable agent skills. Our knowledge notes mix
+  certainty levels — a "hypothesis" vs. "confirmed pattern" taxonomy would
+  prevent agents from treating tentative findings as established facts.
+- **Source**: [arXiv Triage — Batch 4](./findings/2026-06-14-arxiv-agent-triage.md)

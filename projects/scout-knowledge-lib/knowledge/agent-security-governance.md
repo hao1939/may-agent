@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical note on agent security and governance patterns: attack surfaces, defense architectures, structural governance, and supply-chain risks for tool-using AI agents."
 triggers: ["agent security", "agent safety", "agent governance", "prompt injection", "tool sandboxing", "agent trust", "supply chain attack", "agent permissions"]
-last_updated: "2026-06-17"
-source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026), XHS Chinese community structural governance signals (May–Jun 2026)."
+last_updated: "2026-06-19"
+source_basis: "arXiv papers (June 2026 inbox provenance, 238+ papers + batch-3 triage — security was #1 cross-cutting theme), HN practitioner discourse (Jun 2026), XHS Chinese community structural governance signals (May–Jun 2026)."
 </ai_context>
 
 # Agent Security & Governance Patterns
@@ -268,6 +268,71 @@ For multi-agent systems, security extends to agent selection:
   consensus disruption).
   *(arXiv [2606.07940], Jamshidi, Jun 2026)*
 
+### 2.14 The Containment Gap — Framework-Level Audit (June 2026)
+
+Audit of three dominant agent frameworks (LangChain, AutoGPT, OpenAI Agents
+SDK) finds **zero native compliance** with six containment principles for
+public-facing deployment. Memory integrity is absent from all three.
+
+- **Targeted corruption**: A single memory-poisoning write in a simulated
+  government benefits agent increases wrongful denial for targeted applicants
+  to 88.9% while preserving aggregate accuracy — corruption is invisible to
+  standard monitoring.
+- **Fix**: Two lightweight mechanisms (memory integrity validator + policy
+  gate) eliminate both vectors with **<0.2ms overhead** per call.
+- **Key insight**: Aggregate metrics hide targeted corruption. An adversary
+  can selectively harm specific populations while keeping overall stats clean.
+  This directly compounds the SMSR finding (§2.10) — persistent state
+  corruption is not just a theoretical risk but demonstrably undetected by
+  current monitoring.
+*(arXiv [2606.12797], Hossain et al., Jun 2026)*
+
+### 2.15 Anti-Fabrication Firewall (Goal-Autopilot)
+
+Long-horizon agents report success they never verified. Autopilot treats
+honesty as a first-class metric distinct from capability:
+
+- All working state externalized into a durable, gated FSM.
+- A hard floor forbids "done" claims whose falsifiable gate did not pass.
+- **No-False-Success theorem**: Under gate soundness, floor enforcement, and
+  plan coverage, termination implies goal holds.
+- Fabrication: **0.95%** (Autopilot) vs 8.10% (Reflexion) vs 25.05%
+  (StateFlow). On SWE-bench Lite hard: 0.67% vs 33.7%.
+- Stronger models fabricate *more* under unstructured execution — the
+  mechanism is the gate, not the model.
+- Worst case degrades to honest stall, never fabricated success.
+
+**Key insight**: Honesty and capability are orthogonal. Structural
+verification gates (not model capability) determine fabrication rates.
+This is the Compilation Gradient's "compiled enforcement" made concrete.
+*(arXiv [2606.11688], Deng, Jun 2026)*
+
+### 2.16 Runtime Skill Audit (RSA)
+
+Static skill vetting collapses under adversarial conditions. RSA dynamically
+audits skills by profiling risk-relevant interfaces under targeted runtime
+conditions:
+
+- 90.0% accuracy (88.0% TPR, 8.0% FPR), +13pp over best static baseline.
+- Under self-evolving attacks, static detectors collapse after 1–2 rounds;
+  RSA maintains 19–20/20 detection across rounds.
+- **Key insight**: Runtime behavior is the only reliable signal for skill
+  security. As Skills-as-Code proliferates (150k+ ★ on GitHub), runtime
+  skill auditing becomes mandatory infrastructure.
+*(arXiv [2606.11671], Lan & Xiao, Jun 2026)*
+
+### 2.17 Game-Theoretic Context Stability (GT-MCP)
+
+MCP standardizes context exchange but is a passive routing layer — it does
+not enforce contextual stability across turns. GT-MCP treats context
+management as a closed-loop dynamic game between controller and adversary:
+
+- Formally models context evolution with explicit stability guarantees.
+- **Key insight**: MCP is necessary but insufficient for secure context
+  exchange. Context protocols need an active enforcement layer that
+  maintains stability as a game-theoretic objective.
+*(arXiv [2606.10322], Jamshidi et al., Jun 2026)*
+
 ---
 
 ## 3. Structural Governance (The Behavioral → Architectural Shift)
@@ -335,6 +400,73 @@ reproducibility, debugging, boundary-setting, visualization, auditing.
 Disambiguating which concept stakeholders mean is the first step before
 designing any transparency system.
 *(arXiv [2606.08323], Naik et al., Jun 2026)*
+
+---
+
+## 4b. Formal Governance Primitives (July 2026 — Emerging)
+
+Three independent research threads converge on the thesis that soft
+governance (prompts, guardrails-as-afterthought) is structurally
+insufficient. Each proposes a different formal primitive:
+
+### Shield Synthesis as Design-Time Analysis
+
+Shield synthesis (automata compiled from temporal-logic specs) is more
+valuable as a *design-time analytical instrument* than a runtime
+enforcement mechanism. The key output is a **defensibility verdict** — a
+formal certificate that a topology-specification pair is or is not
+defensible. Small architectural changes produce large operational shifts
+while leaving formal safety margins nearly unchanged.
+
+- **Key implication**: Formal analysis should determine which architectures
+  are worth defending *before* deployment, rather than only guarding
+  against bad actions at runtime.
+- **Source**: [2606.13621] Hsain & Almuhammadi, arXiv Jun 2026. Code: https://github.com/AchrafHsain7/Bastion
+
+### Abstention Competence & Compliance Bias
+
+Agents trained under RLHF develop **compliance bias** — a structural
+tendency to proceed even without inputs, evidence, or authorization.
+Benchmarks entrench this by penalizing pauses or being unable to
+distinguish principled pause from failure.
+
+**Three-gap taxonomy** of abstention-warranted scenarios:
+1. **Specification gaps** — required information absent
+2. **Verification gaps** — world state cannot be confirmed
+3. **Authority gaps** — explicit authorization not granted
+
+Runtime-enforced abstention achieves 89.2% hazardous-action blocking and
+87.5% usability on authorized scenarios. The safety-usability tradeoff
+is tunable, not inherent.
+
+- **Key implication**: Systems need guards that fire on *insufficient
+  preconditions for action*, not only on bad actions. Connects to
+  KE-1803 (Negative Capability Gap).
+- **Source**: [2606.02965] arXiv Jun 2026.
+
+### Compliance-by-Construction (Neuro-Symbolic)
+
+Symbolic structures in regulated domains (regulations, typed process
+models, compliance constraints) should be *core architectural components*
+shaping agent decision-making, not external monitoring. "Compliance-by-
+construction" prevents control-flow violations structurally; guardrails
+remain essential but only for semantic errors.
+
+- **Key implication**: Clean partition — structural constraints prevent
+  invalid transitions (deterministic, zero-cost), guardrails catch
+  meaning errors (expensive, LLM-based). Maps to the Compilation
+  Gradient's Stage 2→3 transition.
+- **Source**: [2606.13405] Rombach et al., Accepted at NILA Workshop @
+  IJCAI-ECAI 2026.
+
+### Cross-Paper Hierarchy
+
+These three derive a governance pipeline:
+1. Design-time formal analysis → defensibility verdicts (Shield Synthesis)
+2. Architecture-level construction → compliance-by-construction
+3. Runtime abstention → gap-aware stopping (Abstention Competence)
+
+This is the Compilation Gradient applied to governance pipeline design itself.
 
 ---
 

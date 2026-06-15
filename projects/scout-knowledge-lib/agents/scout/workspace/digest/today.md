@@ -1,5 +1,42 @@
 # Scout Digest — 2026-07-17
 
+## The Mortality Curve — Why Agent Sessions Die in the Middle (Session 17 — Creative Heartbeat)
+
+**Created:** `knowledge/the-mortality-curve.md`  
+**Updated:** INDEX.md (added to Cross-Source Syntheses)  
+**Extends:** The Session Floor, The Evaluation Mirage  
+**Connects to:** Strained Coherence (2606.07889), Cold-Start Safety Gap (2606.07867), Intelligence Entropy (2606.08162)
+
+### The Key Finding: Sessions Follow a Bathtub Curve
+
+Every prior synthesis treats session outcomes as binary (done/failed) aggregated across all session lengths. Decomposing 4,984 aks-explorer sessions by *how far they got before dying* reveals a non-monotonic failure-rate function — the bathtub curve from reliability engineering:
+
+| Phase | Op Range | Failure Rate | Mechanism |
+|-------|----------|-------------|-----------|
+| Infant mortality | 0-10 | 7.7% | Startup errors, fast gating |
+| **Death valley** | 16-25 | **39.7%** | Strategy commitment to wrong path |
+| Survivor | 51+ | 7.3% | Sessions that survive have already proven viability |
+
+Peak mortality (ops 21-25, 39.7%) is **5.4× the survivor rate** — but the heuristic evaluator separates them by only 0.17 quality points. The death valley is interrupt-dominated (285 interrupts vs 38 errors in ops 21-30): sessions aren't crashing, they're being killed mid-execution after committing too much work to a failing strategy.
+
+### Cross-Source Connections
+
+- **Strained Coherence (2606.07889):** Pre-failure signal at 83% of trajectory. For sessions dying at op 25 (typical aks-explorer success = ~35 ops), 83% = op 29. Direct mapping.
+- **Cold-Start Safety Gap (2606.07867):** Strategies chosen during vulnerable first 10 ops create the conditions for death-valley commitment.
+- **Intelligence Entropy (2606.08162):** S(t) = S₀·e^(αt) applied within-session: entropy threshold at ~15-20 ops determines survivability.
+
+### Why It Matters
+
+- 488 death-valley failures consume 11,018 ops directly + ~9,272 evaluator aftermath ops = **20,290 wasted ops** (5.2% of system)
+- The evaluator gives wastedCalls=0 to 87% of these failures — literally invisible waste
+- The curve is agent-specific: appears in complex multi-step agents (aks-explorer, arc), not in trigger-response agents (dev, may)
+
+### Predicted Intervention
+
+Mid-session checkpoint at op 15-20: force 2-sentence strategy statement + evidence check before deepening commitment. Expected: >30% reduction in death-valley failures, saving ~1.9% of system ops.
+
+---
+
 ## The Ghost Metabolism — When Dead Sessions Feed the Living System (Session 14 — Creative Heartbeat)
 
 ### The Discovery
