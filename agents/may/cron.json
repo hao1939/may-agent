@@ -17,7 +17,7 @@
     "name": "heartbeat",
     "type": "job",
     "intervalMs": 1800000,
-    "enabled": true,
+    "enabled": false,
     "description": "May's heartbeat — follow-up, system health, initiative (30min). Per-agent heartbeat workflow. ",
     "lastModified": "2026-05-26T00:10:30.227Z",
     "handler": {
@@ -32,7 +32,8 @@
     "context": [
       "agents/may/heartbeat.md",
       "projects/may-agent.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Redundant with may-agent.app platform-review (4h schedule) — 2026-06-15"
   },
   {
     "name": "heartbeat-bob",
@@ -441,7 +442,7 @@
     "type": "job",
     "handler": "session-aftermath-scan",
     "agent": "evaluator",
-    "enabled": true,
+    "enabled": false,
     "intervalMs": 420000,
     "description": "Every 7 minutes, evaluate terminal sessions missed by the completion event; skip sessions ended less than 7 minutes ago.",
     "handlerConfig": {
@@ -456,14 +457,15 @@
     "context": [
       "projects/may-agent.app/project.json",
       "projects/evaluation.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to evaluation.app schedules — 2026-06-15"
   },
   {
     "name": "eval-llm-scan",
     "type": "job",
     "handler": "eval-llm-scan",
     "agent": "evaluator",
-    "enabled": true,
+    "enabled": false,
     "intervalMs": 1800000,
     "description": "Bounded non-heuristic evaluator lane. Processes at most one terminal session per run and records only validated artifacts.",
     "handlerConfig": {
@@ -475,7 +477,8 @@
     "context": [
       "projects/may-agent.app/project.json",
       "projects/evaluation.app/project.json"
-    ]
+    ],
+    "_disabled_reason": "Migrated to evaluation.app schedules — 2026-06-15"
   },
   {
     "name": "escalation",

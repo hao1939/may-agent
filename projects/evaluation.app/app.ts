@@ -42,7 +42,9 @@ async function routeEvaluationEvent(
     event.type === "session.completed" ||
     event.type === "evaluation.session.requested" ||
     event.type === "evaluation.deep.requested" ||
-    event.type === "evaluation.tick"
+    event.type === "evaluation.tick" ||
+    event.type === "evaluation.aftermath.scan" ||
+    event.type === "evaluation.deep.scan"
   ) {
     return ctx.noop(`${event.type} is handled by workflowHandlers`);
   }
@@ -133,6 +135,24 @@ export default defineProjectApp({
         lane: "patrol",
       },
     },
+    {
+      id: "session-aftermath-scan",
+      enabled: true,
+      intervalMs: 420_000, // 7min — backfill terminal sessions missed by completion event
+      event: {
+        type: "evaluation.aftermath.scan",
+        project: projectId,
+      },
+    },
+    {
+      id: "eval-llm-scan",
+      enabled: true,
+      intervalMs: 1_800_000, // 30min — one deep eval candidate per run
+      event: {
+        type: "evaluation.deep.scan",
+        project: projectId,
+      },
+    },
   ],
 
   workflowHandlers: [
@@ -185,6 +205,38 @@ export default defineProjectApp({
       },
       context: evaluationContext,
     },
+    {
+      name: "evaluation-aftermath-scan",
+      type: "job",
+      enabled: true,
+      description:
+        "Backfill safety net: evaluate terminal sessions missed by session.completed event (7min delay, limit 1).",
+      on: ["evaluation.aftermath.scan"],
+      handler: {
+        workflow: "evaluator-aftermath",
+        agent: "evaluator",
+        includeEvent: true,
+        task: `${appTaskContext}\nBackfill: evaluate the oldest terminal session that has no evaluation yet (ended >7min ago).`,
+        timeoutMs: 900_000,
+      },
+      context: evaluationContext,
+    },
+    {
+      name: "evaluation-deep-scan",
+      type: "job",
+      enabled: true,
+      description:
+        "Bounded non-heuristic evaluator lane: find one candidate for deep LLM evaluation per run.",
+      on: ["evaluation.deep.scan"],
+      handler: {
+        workflow: "evaluator-deep-eval",
+        agent: "evaluator",
+        includeEvent: true,
+        task: `${appTaskContext}\nFind one recent session eligible for deep (non-heuristic) evaluation and run it.`,
+        timeoutMs: 1_800_000,
+      },
+      context: evaluationContext,
+    },
   ],
 
   events: [
@@ -192,6 +244,8 @@ export default defineProjectApp({
     "evaluation.session.requested",
     "evaluation.deep.requested",
     "evaluation.tick",
+    "evaluation.aftermath.scan",
+    "evaluation.deep.scan",
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
