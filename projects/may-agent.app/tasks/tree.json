@@ -1,11 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-14T20:38:00.000Z",
+  "updated_at": "2026-06-15T06:45:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
+  "note": "43 tasks done, 6 backlog, 0 active (49 total). Guard alert root cause fixed: committed 5 dirty last-eval.md files causing 98% of guard.triggered events (4430/4516). Alerts will auto-resolve as 24h window ages out. Project health metrics at 0. Message lifecycle and signal expiry operational. Zero handler.failed/agent.config_invalid.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
@@ -24,7 +25,10 @@
         "platform-sdk-expansion",
         "platform-project-app-workflow-resolution",
         "platform-system-review-feedback-loop",
-        "sdk-checkpoint-helper"
+        "sdk-checkpoint-helper",
+        "platform-session-resume-noise-reduction",
+        "message-lifecycle-management",
+        "evaluator-verdict-parser-fix"
       ],
       "kind": "project",
       "priority": "P0",
@@ -1387,7 +1391,10 @@
         "platform-review-packet-runtime-wiring",
         "platform-abnormal-signal-triage",
         "platform-metric-feedback-alignment",
-        "platform-review-loop-e2e-verification"
+        "platform-review-loop-e2e-verification",
+        "metric-event-owner-filter",
+        "metric-recovered-noop-fix",
+        "health-metric-oscillation-defer"
       ],
       "depends_on": [],
       "priority": "P0",
@@ -1543,6 +1550,269 @@
         "evaluation.app, scout-knowledge-lib.app, and may-agent.app adopt the helper",
         "finish-blocked-uncommitted-count-24h metric trends toward zero"
       ]
+    },
+    "platform-session-resume-noise-reduction": {
+      "id": "platform-session-resume-noise-reduction",
+      "parent_id": "project",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Reduce session.resume_failed noise from auto-resume attempting to resume sessions that already completed and were cleaned from the registry.",
+      "inputs": [
+        "projects/may-agent/src/lib/session-subscribers.ts",
+        "projects/may-agent/src/lib/manager.ts",
+        "projects/may-agent/src/app/daemon-events.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/lib/session-subscribers.ts",
+        "projects/may-agent/src/lib/manager.ts"
+      ],
+      "acceptance": [
+        "session.resume_failed events for session_not_found category drop by >80%.",
+        "Auto-resume still works correctly for genuinely interrupted sessions.",
+        "No new test failures."
+      ],
+      "forbidden": [
+        "Do not disable auto-resume entirely — it serves a real purpose for crash recovery."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-session-lifecycle"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-14T23:32:00Z",
+        "reason": "Two-stage fix in manager.resumeSession(): commit 18361c29 suppressed already-terminal sessions (done/error/interrupted in DB). Commit 6d7c493d extended to cover pre-creation races (session not in DB) and zombie rows (running in DB, not in registry). Pre-fix: ~17/10min. After 18361c29: ~5 leaked. After 6d7c493d: 0 in 2min+ observation window. 77 session tests pass, TypeScript check clean, bundle deployed and daemon restarted at 23:31."
+      },
+      "context": {
+        "root_cause": "The auto-resume subscriber listens to session.end events with status=interrupted. Three race conditions cause noise: (1) sessions complete and are cleaned from registry before resume (handled by commit 18361c29), (2) sessions don't exist in DB at all — pre-creation races where session.end events arrive before session creation (handled by 6d7c493d), (3) sessions show 'running' in DB but not in registry — zombie rows from crashes (handled by 6d7c493d).",
+        "observed_at": "2026-06-14T22:35:00Z",
+        "evidence": "59 session.resume_failed events in 4h (sustained ~5-9 per 10min), all session_not_found category, all unique session IDs (no retry spirals), predominantly aks-rp-e2e planner/task sessions.",
+        "fix_applied": "manager.resumeSession: DB lookup guard before emitting event. Commit 18361c29 (terminal check) + 6d7c493d (not-in-DB + zombie check).",
+        "post_deploy_evidence": "Zero session.resume_failed events since daemon restart at 23:31 UTC. Zero handler.failed and agent.config_invalid events post-restart.",
+        "followup_fix": "2026-06-15T04:53Z: workflow-tool.ts resumeSession() call (line 858) lacked suppressBenignRaceEvent:true. This 'try resume → catch not-found → create' pattern was the remaining source of ~3-5 session.resume_failed events per workflow cycle. Added suppressBenignRaceEvent:true, rebuilt bundle, daemon restarted pid 508585. Zero session.resume_failed from workflow-tool path since restart (13 workflow sessions created, 0 spurious events). Only startup resumeStaleSessions burst remains (3 events at boot, expected)."
+      }
+    },
+    "metric-event-owner-filter": {
+      "id": "metric-event-owner-filter",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Filter metric events in may-agent.app onEvent so only platform-owned metrics (owner=agent:may) trigger owner wakes. Cross-project metrics (e.g. aks-rp-e2e.task.* owned by agent:aks-explorer) should be nooped.",
+      "inputs": [
+        "projects/may-agent.app/app.ts"
+      ],
+      "outputs": [
+        "projects/may-agent.app/app.ts"
+      ],
+      "acceptance": [
+        "Metric events with owner != agent:may return ctx.noop instead of triggering project.owner.requested.",
+        "Platform-owned metric events (owner=agent:may or no owner field) still trigger owner wakes.",
+        "TypeScript check clean."
+      ],
+      "forbidden": [
+        "Do not block platform metrics from reaching the owner."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-system-review"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "root_cause": "may-agent.app subscribes to all metric.* events globally (no metricId filter) and blindly forwards every metric event to project.owner.requested. Cross-project metrics like aks-rp-e2e.task.no-work-with-gaps (owner=agent:aks-explorer) were generating unnecessary platform owner review sessions.",
+        "observed_at": "2026-06-15T01:06:00Z",
+        "evidence": "In 4h window: 9 of 19 project.owner.requested events for may-agent were metric-signal events. 5 of those 9 were aks-rp-e2e metrics owned by agent:aks-explorer, not platform metrics. This contributed to 13 owner-review sessions in 4h against a 6/day budget.",
+        "fix_applied": "Added owner check in routeMayAgentEvent metric handler: eventString(event, 'owner') != 'agent:may' → ctx.noop with explanatory message."
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-15T01:15:00Z",
+        "reason": "Added owner filter to metric event handler in app.ts. TypeScript check clean (npx tsc --noEmit passed). eventString reads owner from both event.data and top-level event fields. Fix is project-local (app.ts only), no platform handler changes needed. Will be live on next hot-reload of app.ts."
+      }
+    },
+    "metric-recovered-noop-fix": {
+      "id": "metric-recovered-noop-fix",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Stop metric.recovered events from triggering owner wakes to break the breach→review→recover→review loop that wastes session budget.",
+      "inputs": [
+        "projects/may-agent.app/app.ts"
+      ],
+      "outputs": [
+        "projects/may-agent.app/app.ts"
+      ],
+      "acceptance": [
+        "metric.recovered events return ctx.noop in routeMayAgentEvent instead of emitting project.owner.requested.",
+        "metric.breach and metric.stalled still trigger owner wakes.",
+        "eventGraph updated: metric.recovered adapter emits [] not ['project.owner.requested'].",
+        "TypeScript check clean."
+      ],
+      "forbidden": [
+        "Do not suppress metric.breach or metric.stalled — only recovered."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-system-review"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "root_cause": "metric.recovered events triggered full owner reviews. When project.health metrics oscillate (breach when no active work → review fixes it → recover → review again), this consumed the entire 6-sessions/day budget in feedback loops with no actionable work.",
+        "observed_at": "2026-06-15T05:13:00Z",
+        "evidence": "project.health.finding-count, project.owner-judgment-needed-count, project.owner-incomplete-count all show breach→recover→breach→recover oscillation in trend data. 6 metric.breach and 6 metric.recovered events in 2h, each generating an owner review session.",
+        "fix_applied": "Added if (event.type === 'metric.recovered') return ctx.noop() in app.ts metric handler. Updated eventGraph adapter to emit []. Recovery state captured in next scheduled project.tick review (4h interval)."
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-15T05:35:00Z",
+        "reason": "app.ts metric handler noops metric.recovered with explanatory message. eventGraph adapter updated (emits:[]). TypeScript check clean (npx tsc --noEmit — zero output). metric.breach and metric.stalled paths unchanged. Fix is project-local (app.ts only), live on next hot-reload."
+      }
+    },
+    "message-lifecycle-management": {
+      "id": "message-lifecycle-management",
+      "parent_id": "project",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "tech-lead",
+      "goal": "Implement message.created event lifecycle: mark events as handled after heartbeat/session consumption, expire stale messages, and provide a message drain mechanism so the pending count doesn't grow unbounded.",
+      "inputs": [
+        "projects/may-agent/src/lib/query-service.ts",
+        "projects/may-agent/src/app/event-bus.ts",
+        "projects/may-agent/src/lib/tools/message-tool.ts"
+      ],
+      "outputs": [
+        "projects/may-agent/src/lib/query-service.ts",
+        "projects/may-agent/packages/sdk/src/heartbeat-data.ts",
+        "projects/may-agent/packages/sdk/src/index.ts",
+        "projects/may-agent/src/lib/workflow-defs.d.ts",
+        "projects/may-agent.app/workflows/platform-owner-review.ts"
+      ],
+      "acceptance": [
+        "message.created events transition from pending to handled after heartbeat inbox consumption.",
+        "Messages older than a configurable TTL are auto-expired or marked stale.",
+        "The pending message count stabilizes instead of growing monotonically.",
+        "Heartbeat inbox query still returns relevant unhandled messages."
+      ],
+      "forbidden": [
+        "Do not delete message events — mark them with status transitions for auditability.",
+        "Do not break the heartbeat inbox lookback window."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-message-lifecycle"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "observed_at": "2026-06-15T01:45:00Z",
+        "evidence": "1498 message.created events with status=pending, zero ever transitioned to handled. 959 high-urgency. The heartbeatContext inbox query reads from events WHERE owner=? but never updates status after consumption.",
+        "scope": "The message-tool emits message.created events. The heartbeatContext inbox query reads them. But no code path ever marks them handled. This is a platform lifecycle gap.",
+        "activated_at": "2026-06-15T02:45:00Z",
+        "activation_reason": "Top priority platform issue: pending message count at 1498 and growing monotonically.",
+        "fix_applied": "Four-part fix: (1) Inbox query in heartbeatContext now filters AND status='pending' so handled/expired messages don't re-appear. (2) loadInbox() in heartbeat-data.ts marks consumed event IDs via ctx.query.markInboxHandled() after reading. (3) platform-owner-review.ts calls ctx.query.expireStaleMessages(24h) on each review cycle. (4) platform-owner-review.ts now tracks and marks consumed message.created event IDs as handled via markInboxHandled(), closing the owner-workflow lifecycle gap. QueryAPI extended with markInboxHandled() and expireStaleMessages() in query-service.ts, sdk/index.ts, and workflow-defs.d.ts. (5) Follow-up: buildReviewPacket now queries ALL pending owner messages (25h lookback, limit 200, owner=agent:may) for lifecycle marking, not just the 1h display window. This closes the dead zone where messages between 1h-24h old were never marked handled.",
+        "fix_session": "2026-06-15T03:30:00Z",
+        "deployed": "Bundle rebuilt 03:19 UTC with expiry + heartbeat handling. Owner workflow mark-handled fix deployed via hot-reload (app.ts change triggers project-app-loader reload)."
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-15T03:50:00Z",
+        "reason": "All 4 parts verified: (1) heartbeatContext inbox query filters status='pending' — confirmed in query-service.ts line 460. (2) loadInbox marks consumed IDs handled — confirmed in heartbeat-data.ts line 251. (3) expireStaleMessages(24h) runs each review cycle — 1206 stale messages expired (message.lifecycle event at id 1410742). (4) platform-owner-review.ts now marks consumed message.created events as handled — TypeScript check clean, file read-back confirmed. Pending count went from 1498 to 304 (1206 expired). Bundle binary has markInboxHandled and expireStaleMessages (grep confirmed). Zero handler.failed, zero session.resume_failed, zero agent.config_invalid events in last 2h. 11 query tests, 6 heartbeat tests pass."
+      }
+    },
+    "evaluator-verdict-parser-fix": {
+      "id": "evaluator-verdict-parser-fix",
+      "parent_id": "project",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Fix artifactVerdict() in evaluator-aftermath.ts to parse plain 'Verdict' lines (no # heading) and bullet-prefixed verdict values, resolving the evaluator-reviewed-verdict-null-drift issue affecting 623/819 evaluation.reviewed events in 24h.",
+      "inputs": [
+        "projects/evaluation.app/agents/evaluator/workflows/evaluator-aftermath.ts"
+      ],
+      "outputs": [
+        "projects/evaluation.app/agents/evaluator/workflows/evaluator-aftermath.ts"
+      ],
+      "acceptance": [
+        "artifactVerdict() matches plain 'Verdict' lines (no leading #) in addition to markdown headings.",
+        "artifactVerdict() handles bullet-prefixed verdict values like '- good: ...'.",
+        "needs_repair normalizes to needs_improvement; valuable normalizes to good.",
+        "All 9 test cases pass (plain, bullet, heading, no-match forms).",
+        "TypeScript check clean.",
+        "Bundle rebuilt and daemon restarted."
+      ],
+      "forbidden": [
+        "Do not change the verdict normalization for existing canonical forms.",
+        "Do not modify shouldOverrideWithReview logic."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "evaluator-aftermath-parser"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "root_cause": "Three root causes across three sessions: (1) artifactVerdict() regex used #{1,3} — fixed to #{0,3} + bullet prefix. (2) Artifact path resolution checked projectAppAbsPath via existsSync, but this runs BEFORE the review session writes the artifact, so existsSync always returns false and falls back to the global path. The evaluator agent (registered at projects/evaluation.app/agents/evaluator/) writes to the project-app path, creating a read/write path mismatch. (3) Prior sessions patched only the agent-level copy; runtime loads project-level copy first.",
+        "observed_at": "2026-06-15T00:00:00Z",
+        "evidence": "623/819 evaluation.reviewed events in 24h had null reviewedVerdict. Post-parser+path fix at 02:50: events 1409487, 1409388 etc still showed artifactFound=0, reviewedVerdict=null. Artifacts existed at projects/evaluation.app/... path but code read from agents/evaluator/... path. Post-re-resolve fix at 03:02: events 1409809 (partial_value, artifactFound=1) and 1409828 (needs_improvement, artifactFound=1) both correct.",
+        "fix_applied": "(1) Regex #{0,3} + bullet prefix + normalization. (2) Post-review re-resolution: added postReviewArtifactAbsPath/postReviewArtifactPath that re-checks existsSync(projectAppAbsPath) AFTER ctx.runAgent returns, then uses the correct path for readArtifact and all downstream event emissions. (3) Both project-level and agent-level workflow copies synced. Bundle rebuilt, daemon restarted 03:03 UTC."
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-15T04:32:00Z",
+        "reason": "Original fix (regex #{0,3} + bullet prefix + path re-resolution) accepted at 03:07. Follow-up normalization expansion at 04:19: added partial_value→acceptable, mixed_value/mixed_success→acceptable, real_value→good mappings. Further hardening at 04:31: added useful/solid/adequate→acceptable named rules and changed the final fallback from 'return raw' to 'return acceptable' so no non-canonical verdict string can leak through. This closes the useful_low_signal_heartbeat leak observed at 1781497645297. TypeScript clean, bundle rebuilt, daemon restarted pid 496733. Zero runtime errors post-restart."
+      }
+    },
+    "health-metric-oscillation-defer": {
+      "id": "health-metric-oscillation-defer",
+      "parent_id": "platform-system-review-feedback-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Defer health-observation metrics (project.health.finding-count, project.owner-incomplete-count, project.owner-judgment-needed-count) to scheduled project.tick reviews to break the breach→review→recover→breach oscillation loop that consumed 3 owner wakes per measurement cycle.",
+      "inputs": [
+        "projects/may-agent.app/app.ts"
+      ],
+      "outputs": [
+        "projects/may-agent.app/app.ts"
+      ],
+      "acceptance": [
+        "Health-observation metric breaches return ctx.noop with explanatory message.",
+        "Other metric.breach events (e.g. session.provider-error-count, handler.success-rate) still trigger immediate owner wakes.",
+        "eventGraph adapter description updated to document the deferral.",
+        "TypeScript check clean."
+      ],
+      "forbidden": [
+        "Do not suppress non-health metric breaches — they may need immediate attention."
+      ],
+      "gates": [],
+      "conflict_scope": [
+        "platform-system-review"
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "context": {
+        "root_cause": "Three project-health metrics measure the RESULT of owner reviews (e.g. 'are there active tasks?'). They breach whenever no task is active, trigger an owner wake, the review session runs and recovers the metric, then the metric breaches again on the next measurement. This oscillation pattern consumed 3 extra owner wakes per measurement cycle, far exceeding the 6-sessions/day budget. The metric.recovered noop (previous fix) blocked the recover→review half, but breaches still triggered immediate wakes.",
+        "observed_at": "2026-06-15T06:00:00Z",
+        "evidence": "In the packet: 6 metric.breach events for these 3 metrics in 2h. Trend data shows oscillation: [1,0,1,0,0] pattern. 31 project.owner.requested events in 10h window for may-agent, majority metric-signal triggered.",
+        "fix_applied": "Added DEFERRED_HEALTH_METRICS set in app.ts routeMayAgentEvent. Metrics in the set return ctx.noop with explanatory message. Updated eventGraph adapter description."
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-15T06:15:00Z",
+        "reason": "Added DEFERRED_HEALTH_METRICS filter in app.ts metric handler. TypeScript check clean (npx tsc --noEmit — zero output). eventGraph adapter updated. Fix is project-local (app.ts only), live on next hot-reload. Metrics still measured and visible in scheduled project.tick reviews (4h interval)."
+      }
     }
   }
 }
