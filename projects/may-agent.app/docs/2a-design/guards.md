@@ -161,8 +161,12 @@ through 2026-06-10.
   Rationale: structural noise floor rose to ~3,100–3,300/day with session
   volume growth (~1,800 sessions/day). 95.8% of triggers are ambient
   uncommitted-files warnings (commit-guard). Guard SNR remains inverted:
-  ~136 real signals/day vs ~3,100+ ambient noise. Current readings
-  (~3,950/day) sit within headroom below the 4,500 threshold.
+  ~136 real signals/day vs ~3,100+ ambient noise.
+- **2026-06-15:** Threshold 4,500 **breached** at ~4,512 triggers/day,
+  <24h after the raise. 5th breach confirms KE-1998 F1: static thresholds
+  cannot track the growing noise floor. Headroom life: 4d→3d→1d→<1d.
+  Further threshold raises are no longer viable. Root-cause fix required
+  (see KE-1999, KE-2000 Repair Spec #3).
 
 Key structural observations from the full snapshot history:
 - Combined commit-guard (uncommitted-files + finish()-uncommitted) is
@@ -254,6 +258,32 @@ history shows decreasing headroom life: 4d → 3d → 1d → <1d.
 Root-cause fix required: scope commit-guard to session-relevant files
 only (the "Alternative (deferred)" from the 2026-06-15 threshold
 proposal). See KE-1999.
+
+**Snapshot 2026-06-15 ~05:40Z** (6h window, 1,453 total; 24h 4,512):
+
+**Threshold breached.** `guard.triggered-count-24h` = 4,512 (threshold
+4,500). KE-1999 F1 confirmed: the 5th ratchet lasted <24h. All
+`beforeToolCall` triggers (1,418/1,453, 97.6%) are the same commit-guard
+ambient warning about unrelated dirty files.
+
+| Signal | 6h Count | Share |
+|--------|-------:|------:|
+| commit-guard (tool.finish) | 979 | 67.4% |
+| commit-guard (tool.bash) | 229 | 15.8% |
+| commit-guard (tool.read) | 210 | 14.5% |
+| read-before-edit (tier 1) | 34 | 2.3% |
+| hallucinated-path (tier 1) | 1 | 0.1% |
+
+Per-agent (6h): evaluator 921 (63.4%), aks-explorer 347 (23.9%),
+may 92 (6.3%), scout 55 (3.8%), arc 26 (1.8%), dev 12 (0.8%).
+
+**Status**: Static threshold calibration is exhausted. Raising to 5000+
+would buy <24h based on the accelerating pattern. The root-cause fix
+(scope commit-guard to session-relevant files) is the only viable path.
+See KE-1999, KE-2000 Repair Spec #3. The guard already identifies the
+files as "not matching this session's deliverables" — the fix is to
+suppress the event emission for that case, not just the agent-facing
+warning.
 
 ### Known issue: guard name conflation
 
