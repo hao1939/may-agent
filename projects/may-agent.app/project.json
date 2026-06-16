@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Platform stable (45/52 done, 7 backlog, 4 runnable). Calibrated handler.heartbeat-coverage metric: threshold 3→2, target 5→2 (only 2 heartbeat crons enabled: dev+arc). Alert 1891 will auto-resolve on next snapshot. Remaining open alert (aks-rp-e2e.run.live-failed-24h id:1881) is domain-owned by aks-explorer. Zero platform-caused handler.failed/session.resume_failed/agent.config_invalid in 2h. Evaluator messages are P2 informational."
+    "summary": "KE-2016 DB size fix hardened: added post-VACUUM WAL checkpoint to db-retention to prevent transient ~2x WAL spike when VACUUM rewrites the entire DB through WAL. Alert 1899 auto-resolved (1365 MB). Open alerts 1898+1881 are aks-rp-e2e domain (aks-explorer owned). Platform stable."
   },
-  "updatedAt": "2026-06-16T08:30:00.000Z"
+  "updatedAt": "2026-06-16T18:52:00.000Z"
 }

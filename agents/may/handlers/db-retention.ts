@@ -201,6 +201,18 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     totalDeleted += oversizedDeleted;
 
+    // ── WAL checkpoint to reclaim WAL disk space (KE-2016) ────────────────
+    // WAL grows unboundedly when concurrent connections hold read transactions.
+    // TRUNCATE mode resets WAL to zero bytes if no readers are active; PASSIVE
+    // at least checkpoints committed frames without blocking.
+    try {
+      ctx.sdk.log("info", `[db-retention] Running PRAGMA wal_checkpoint(TRUNCATE)...`);
+      db.run("PRAGMA wal_checkpoint(TRUNCATE)");
+      ctx.sdk.log("info", `[db-retention] WAL checkpoint complete`);
+    } catch (e) {
+      ctx.sdk.log("info", `[db-retention] WAL checkpoint failed (non-critical): ${e}`);
+    }
+
     // ── VACUUM if significant deletions occurred ─────────────────────────
     // Always VACUUM if oversized rows were deleted — they can be 200MB+ each
     if (totalDeleted >= VACUUM_THRESHOLD || oversizedDeleted > 0) {
@@ -208,6 +220,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         ctx.sdk.log("info", `[db-retention] Running VACUUM (${totalDeleted} rows deleted)...`);
         db.run("VACUUM");
         ctx.sdk.log("info", `[db-retention] VACUUM complete`);
+        // Post-VACUUM checkpoint: VACUUM in WAL mode rewrites the entire DB
+        // through the WAL (~1.4GB), causing a transient spike visible to
+        // metrics-snapshot. Checkpoint immediately to reclaim that space.
+        try {
+          db.run("PRAGMA wal_checkpoint(TRUNCATE)");
+          ctx.sdk.log("info", `[db-retention] Post-VACUUM WAL checkpoint complete`);
+        } catch (e2) {
+          ctx.sdk.log("info", `[db-retention] Post-VACUUM WAL checkpoint failed (non-critical): ${e2}`);
+        }
       } catch (e) {
         ctx.sdk.log("info", `[db-retention] VACUUM failed (non-critical): ${e}`);
       }
