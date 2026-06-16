@@ -330,12 +330,12 @@ const metrics: MetricDef[] = [
     name: "AKS RP E2E duplicate artifact groups",
     type: "gauge",
     target: 0,
-    threshold: 30,
+    threshold: 40,
     unit: "count",
     alertOp: ">",
     priority: "P2",
     description:
-      "Loop hygiene signal: repeated same-purpose artifacts indicate agents may be cycling.",
+      "Loop hygiene signal: repeated same-purpose artifacts indicate agents may be cycling. Threshold 30→40: structural floor is 31 groups from legitimate staging-frontier iterations, source-spec-frontier runs, and probe batches across active features (top: ccp-security-patch-ubuntu2404 36, ccp-security-patch-azurelinux 30, ccp-vpa-os-arch 22). Only a sudden jump above 40 indicates real agent cycling. Calibrated 2026-06-16.",
   },
 ];
 
