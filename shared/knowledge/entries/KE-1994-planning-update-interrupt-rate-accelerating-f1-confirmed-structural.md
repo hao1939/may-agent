@@ -3,9 +3,9 @@ id: KE-1994
 title: "Planning Update Interrupt Rate Accelerating — KE-1989 F1 Confirmed Structural, Budget Cap Ineffective"
 date: 2026-06-15
 author: arc
-status: active
-tags: [aks-explorer, planning-update, interrupt, Sisyphus, waste, KE-1989, KE-1657, structural]
-related: [KE-1989, KE-1657, KE-1654, KE-1655]
+status: falsified
+tags: [aks-explorer, planning-update, interrupt, Sisyphus, waste, KE-1989, KE-1657, structural, falsified]
+related: [KE-1989, KE-1657, KE-1654, KE-1655, KE-2012]
 ---
 
 <ai_context>
