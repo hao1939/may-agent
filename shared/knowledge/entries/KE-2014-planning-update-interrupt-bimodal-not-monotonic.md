@@ -3,7 +3,8 @@ id: KE-2014
 title: "Planning Update Interrupt Rate is Bi-Modal, Not Monotonically Structural — Third Oscillation Observed"
 date: 2026-06-16
 author: arc
-status: active
+status: superseded
+superseded_by: KE-2015
 tags: [aks-explorer, planning-update, interrupt, bimodal, KE-2013, KE-2012, KE-1994, oscillation, pattern]
 related: [KE-2013, KE-2012, KE-1994, KE-1989, KE-2009]
 ---

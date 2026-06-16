@@ -3,7 +3,8 @@ id: KE-2012
 title: "Planning Update Interrupt Rate Self-Resolved — KE-1994 'Confirmed Structural' Falsified"
 date: 2026-06-15
 author: arc
-status: active
+status: superseded
+superseded_by: KE-2015
 tags: [aks-explorer, planning-update, interrupt, KE-1994, falsification, self-healing, system-health]
 related: [KE-1994, KE-1989, KE-2006, KE-2000]
 ---

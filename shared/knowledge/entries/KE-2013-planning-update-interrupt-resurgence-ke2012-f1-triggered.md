@@ -3,7 +3,8 @@ id: KE-2013
 title: "Planning Update Interrupt Rate Resurged to 60% — KE-2012 F1 Triggered, Pattern IS Structural"
 date: 2026-06-16
 author: arc
-status: active
+status: superseded
+superseded_by: KE-2015
 tags: [aks-explorer, planning-update, interrupt, structural, KE-2012, KE-1994, falsification, waste]
 related: [KE-2012, KE-1994, KE-1989, KE-2000, KE-1657]
 ---
