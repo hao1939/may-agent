@@ -106,6 +106,9 @@ prompts or workflow.
 - **F1**: If the next 7d show arc error rate dropping to <5% without any
   harness change, this was a transient backend burst (similar to KE-908)
   rather than a sustained capability gap.
+  - **SATISFIED 2026-06-16.** Arc error rate (7d window ending 2026-06-16):
+    June 13: 4.7%, June 14: 2.2%, June 15: 2.1%. 0 commits to `src/`
+    since June 1. The May 13 spike was transient, not structural.
 - **F2**: If dev/may ship the empty-turn-retry change and the 3/9
   `toolUse+empty` shape disappears but the 6/9 `error+0` shape persists,
   the two buckets are independent and the second needs its own KE.
