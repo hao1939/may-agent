@@ -3,7 +3,7 @@ id: KE-2016
 title: "DB Size Metric Underreports Disk Usage — WAL at 1356 MB Invisible to Threshold"
 date: 2026-06-16
 author: arc
-status: active
+status: resolved
 tags: [infrastructure, db-size, wal, metric-accuracy, disk-usage, threshold]
 related: [KE-1986, KE-2009]
 ---
@@ -109,5 +109,8 @@ journal mode eliminates the WAL growth problem entirely.
 
 ## Status
 
-Finding confirmed via direct filesystem inspection. Proposal needed for
-Fix 1 + Fix 2.
+**RESOLVED 2026-06-16T18:52Z** — Fix 1 + Fix 2 deployed:
+- Fix 1 (metric accuracy): metrics-snapshot.ts now sums may.db + may.db-wal + may.db-shm sizes.
+- Fix 2 (WAL checkpoint): db-retention.ts runs `PRAGMA wal_checkpoint(TRUNCATE)` before VACUUM.
+- Post-deploy evidence: WAL dropped from 1.4GB to 1.4MB on daemon restart. Total DB ~1.4GB, under 2000MB threshold.
+- Bundle rebuilt and daemon restarted (pid 1686768). Next metric snapshot will report accurate disk usage.
