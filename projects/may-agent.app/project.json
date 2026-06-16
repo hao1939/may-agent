@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Platform operational (44/51 done, 7 backlog, 4 runnable P2). FIXED: stale /app/node_modules/@may-agent/sdk copy replaced with symlink to live source — was causing aks-explorer handler failures (withTreeLock2 not defined + Bundle failed, 108 pending events). Root cause: SDK file-link installed as directory copy on Jun 9, but SDK gained project-task-tree-store.ts and new exports after that. Compiled-binary workflow bundler resolved stale copy. All 5 aks-rp-e2e workflows now bundle correctly. Evaluator calibration project (18% vs 5% false-good target) is pending-review — evaluator-owned, analysis mature, code proposal ready. Guard alert 1845/1846 recovered below threshold."
+    "summary": "Platform stable (45/52 done, 7 backlog, 4 runnable). Calibrated handler.heartbeat-coverage metric: threshold 3→2, target 5→2 (only 2 heartbeat crons enabled: dev+arc). Alert 1891 will auto-resolve on next snapshot. Remaining open alert (aks-rp-e2e.run.live-failed-24h id:1881) is domain-owned by aks-explorer. Zero platform-caused handler.failed/session.resume_failed/agent.config_invalid in 2h. Evaluator messages are P2 informational."
   },
-  "updatedAt": "2026-06-15T13:10:00.000Z"
+  "updatedAt": "2026-06-16T08:30:00.000Z"
 }
