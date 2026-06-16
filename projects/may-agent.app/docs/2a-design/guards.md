@@ -325,11 +325,36 @@ JSONL) is the new largest signal — a legitimate behavioral pattern,
 not noise. Ghost metabolism (session.resume_failed): 0 in last 11h,
 263 in prior 24h (all pre-05:00Z). Confirmed structurally resolved.
 
+**Snapshot 2026-06-16 ~14:30Z** (T+31h steady-state, full 24h):
+
+Spec 3 fix **durably stable** — 31h post-restart, zero ambient commit-guard
+"none match" noise. Guard total dropped from ~3,200/day (pre-fix) to
+~1,992/day (post-fix, first full 24h). Rate: ~83/hr.
+
+| Signal | 24h Count | Share |
+|--------|-------:|------:|
+| finish() uncommitted (session-owned) | 817 | 41.0% |
+| SESSION_BASH_CAT | 498 | 25.0% |
+| READ_DEDUP | 307 | 15.4% |
+| SESSION_READ | 190 | 9.5% |
+| SESSION_BASH_GREP | 59 | 3.0% |
+| PATH_HALLUCINATION | 33 | 1.7% |
+| finish(success) guard | 9 | 0.5% |
+| read-before-edit (Tier 1) | 82 | — |
+| hallucinated-path (Tier 1) | 1 | — |
+
+Composition shift from T+8.5h: SESSION_BASH_CAT dropped from 88% to 25%
+(evaluator load diluted by other agents). finish() uncommitted is now
+the dominant signal — all session-relevant (not ambient noise). Diverse
+baseline restored: no single signal >50%. PATH_HALLUCINATION (33/day)
+is almost entirely aks-explorer `/home/` paths.
+
 **Status: STABLE.** Guard noise (Face 1 of KE-1998) and ghost
 metabolism (Face 3) are structurally resolved. The remaining waste
 source is planning_update timeout (Face 2 — see KE-2006, Spec 4
-proposal filed). Guard threshold 4,500 has 3× headroom at current
-~1,872/day projected rate.
+proposal filed). Guard threshold 4,500 has 2.3× headroom at current
+~1,992/day steady-state rate. Headroom is conservative; no further
+threshold calibration needed.
 
 ### Known issue: guard name conflation
 
