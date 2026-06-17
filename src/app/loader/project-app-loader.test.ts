@@ -591,7 +591,7 @@ describe("project app loader", () => {
           .get("sample-owner")!
           .getEntries()
           .map((entry) => entry.name),
-      ).toEqual(["sample-wake"]);
+      ).toEqual(["sample-schedule-wake"]);
 
       writeApp(
         appDir,
@@ -618,7 +618,7 @@ describe("project app loader", () => {
           .get("sample-owner")!
           .getEntries()
           .map((entry) => entry.name),
-      ).toEqual(["sample-review"]);
+      ).toEqual(["sample-schedule-review"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -679,8 +679,75 @@ describe("project app loader", () => {
       });
 
       expect(resolverCalls).toBe(0);
-      expect(cron.hasHandler("sample-review")).toBe(true);
-      expect(cron.getEntries().map((entry) => entry.name)).toEqual(["sample-review"]);
+      expect(cron.hasHandler("sample-schedule-review")).toBe(true);
+      expect(cron.getEntries().map((entry) => entry.name)).toEqual(["sample-schedule-review"]);
+      cron.stop();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps schedule entries separate from workflow handlers with similar names", async () => {
+    const root = tempRoot();
+    try {
+      const projectsRoot = join(root, "projects");
+      const appDir = join(projectsRoot, "sample.app");
+      writeAgent(appDir, "owner", "sample-owner");
+      writeApp(
+        appDir,
+        `{
+        id: "sample",
+        schedules: [{
+          id: "worker",
+          enabled: true,
+          intervalMs: 60000,
+          event: { type: "project.work", project: "sample" }
+        }],
+        workflowHandlers: [{
+          name: "sample-worker",
+          enabled: true,
+          on: ["project.work"],
+          handler: { workflow: "worker", task: "work" }
+        }]
+      }`,
+      );
+
+      const bus = new EventBus();
+      const agentCrons = new Map<string, Cron>();
+      const manager = { hasAgent: () => true } as any;
+
+      await installProjectApps({
+        projectsRoot,
+        projectRoot: root,
+        manager,
+        bus,
+        agentCrons,
+      });
+
+      const cron = agentCrons.get("sample-owner")!;
+      const handled: string[] = [];
+      cron.registerHandler("sample-worker", async () => {
+        handled.push("sample-worker");
+      });
+      cron.subscribeToBus(bus);
+      cron.start();
+
+      expect(
+        cron
+          .getEntries()
+          .map((entry) => entry.name)
+          .sort(),
+      ).toEqual(["sample-schedule-worker", "sample-worker"]);
+
+      bus.emit({
+        type: "project.work",
+        source: "test",
+        owner: "human:test",
+        data: { project: "sample" },
+      } as any);
+      await waitForMicrotasks();
+
+      expect(handled).toEqual(["sample-worker"]);
       cron.stop();
     } finally {
       rmSync(root, { recursive: true, force: true });

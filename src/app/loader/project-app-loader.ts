@@ -413,7 +413,7 @@ function installSchedules(opts: ProjectAppLoaderOptions, cron: Cron, descriptor:
   let count = 0;
   const currentNames = new Set<string>();
   for (const schedule of descriptor.app.schedules ?? []) {
-    const entryName = `${descriptor.id}-${schedule.id}`;
+    const entryName = `${descriptor.id}-schedule-${schedule.id}`;
     currentNames.add(entryName);
     const entry: CronEntry = {
       name: entryName,
@@ -448,7 +448,7 @@ function attachAppEventRouter(opts: ProjectAppLoaderOptions, descriptors: Projec
 
   appRouterDescriptorsByBus.set(opts.bus, descriptors);
   opts.bus.subscribe((rawEvent) => {
-  const event = flattenEvent(rawEvent);
+    const event = flattenEvent(rawEvent);
     for (const descriptor of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
       if (!shouldOfferToApp(descriptor.app, event, descriptor.id, descriptor.owner)) continue;
       const ownerMetricFeedback = isOwnerMetricFeedbackForApp(event, descriptor.owner);
