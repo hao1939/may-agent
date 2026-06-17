@@ -168,12 +168,98 @@ may-agent.app
 - Not replacing infra with app logic — infra still measures and recovers. The
   app judges and plans.
 
-### Implementation Path
+### Budget-Safe Review Cadence
 
-1. Add operational metrics to `metrics-snapshot.ts` (session budget, planner
-   timeout rate, escalation count)
-2. Add `ops-health-review` schedule to `may-agent.app/app.ts` (1h)
-3. Add `ops-health` lane to `may-agent.app/tasks/tree.json`
-4. Disable `closed-loop-steward`, `project-creative-audit`, `daily-alert-review`
-5. Migrate `coaching-consumer` and `feedback-echo-sync` to evaluation.app
-6. Verify: may-agent.app catches the problems we fixed manually within 1h
+The ops-health-review fires hourly as a **deterministic handler** (no LLM).
+It builds a compact health packet from DB queries:
+- open metric alerts by priority
+- session budget violations
+- pending escalation count
+- planner timeout rate
+- duplicate dispatch events
+- daemon heartbeat staleness
+
+May only wakes (LLM session) when the packet has a meaningful signal:
+- any P0 metric breached
+- P1 metric breached for >1h without owner action
+- escalation pending >1h
+- daemon heartbeat stale >5min
+
+Silent packets (all green) are a no-op — no session consumed.
+
+### Metric Priority Classification
+
+Each operational metric has an explicit priority:
+
+| Metric | Priority | Action |
+|--------|----------|--------|
+| `runtime.daemon-heartbeat-stale` | P0 | Immediate human escalation |
+| `handler.duplicate-dispatch-rate` | P0 | Immediate owner wake |
+| `event.unhandled-count` | P1 | Owner review within 1h |
+| `session.budget-violation-count` | P1 | Owner review within 1h |
+| `session.planner-timeout-rate-6h` | P1 | Owner review within 1h |
+| `escalation.pending-count` | P1 | Owner review within 1h |
+| `problem.unknown-result-rate-24h` | P2 | Visible in health rollup |
+| `event.loop-detected-count` | P2 | Visible in health rollup |
+| `task.no-progress-duration` | P2 | Visible in health rollup |
+| `conversation.unclosed-human-reply-count` | P2 | Visible in health rollup |
+
+P0 = immediate owner wake + possible human escalation.
+P1 = owner review soon (next health packet with signal).
+P2 = visible in daily rollup only.
+
+### Handler Migration Gate
+
+Do not disable overlapping handlers until the replacement is proven.
+For each handler migration, require:
+
+1. Which signal replaces it (metric, event, or app schedule)
+2. Who owns the signal (which app or infra handler)
+3. What task/event closes the loop (how does the owner act)
+4. One replay/regression test showing the new path works for the exact
+   failure class the handler was designed to catch
+
+Migration order (each step must pass the gate before the next):
+- `daily-alert-review` → replaced by may-agent.app daily-ops-digest schedule
+- `closed-loop-steward` → replaced by ops-health-review + metric-alert-reactor
+- `project-creative-audit` → replaced by project-steward + may-agent.app review
+- `coaching-consumer` → migrate to evaluation.app
+- `feedback-echo-sync` → migrate to evaluation.app
+
+### "Problem Unknown" Metric Source
+
+`problem.unknown-result-rate-24h` comes from structured workflow outcomes,
+not text matching. After the problem-solver fix (explicit `PROBLEM_RESULT`
+declaration), the source is the event type field:
+- `project.problem.resolved` → counted as resolved
+- `project.problem.escalated` → counted as escalated
+- `project.problem.unknown` → counted as unknown
+
+The metric is `unknown_count / total_count` from the events table. No regex,
+no heuristic, no fragile text rules.
+
+### Verification: Replay Real Incidents
+
+Each scenario that failed during our manual review becomes a test case:
+
+1. **Duplicate cron subscription** — given two subscribeToBus calls on same
+   cron, verify only one dispatch per event
+2. **Planner timeout loop** — given a planning_update session that times out,
+   verify the task it was creating is not duplicated on next wake
+3. **Stale blocked task** — given a task blocked >6h, verify ops-health
+   surfaces it within 1h
+4. **No ready/active task after restart** — given empty frontier after daemon
+   restart, verify the metric fires and reaches the owner
+5. **Telegram reply dropped** — given daemon-heartbeat-stale, verify human
+   escalation within 5min
+6. **Metric breach not routed to owner** — given a metric.breach event,
+   verify it reaches the owning app within one measurement cycle
+
+### Implementation Order
+
+1. Refine proposal with ownership, priority, budget, and closure semantics ← done
+2. Add missing operational metric definitions to `metrics-snapshot.ts`
+3. Add a cheap deterministic health-packet builder (handler, no LLM)
+4. Route only meaningful breaches to may-agent.app owner (signal-gated)
+5. Create the `ops-health` task lane in may-agent.app task tree
+6. Migrate overlapping handlers one by one after replay tests prove coverage
