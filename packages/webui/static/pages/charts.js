@@ -1,5 +1,5 @@
 // Shared chart helpers used by the live and metrics pages.
-function renderSparklineWithValues(points, threshold, width, height) {
+function renderSparklineWithValues(points, threshold, width, height, alertOp) {
   if (!points || points.length === 0) return '<div style="color:var(--fg2);font-size:12px;height:' + height + 'px;display:flex;align-items:center;justify-content:center">Collecting data...</div>';
   var values = points.map(function(p) { return p.value; });
   var min = Math.min.apply(null, values.concat([threshold != null ? threshold * 0.8 : values[0]]));
@@ -17,7 +17,8 @@ function renderSparklineWithValues(points, threshold, width, height) {
   });
 
   var latest = values[values.length - 1];
-  var color = threshold == null ? 'var(--accent)' : (latest >= threshold ? 'var(--green)' : 'var(--red)');
+  var breached = threshold != null && ((alertOp === 'above' || alertOp === '>') ? latest > threshold : latest < threshold);
+  var color = threshold == null ? 'var(--accent)' : (breached ? 'var(--red)' : 'var(--green)');
   var lastX = ((values.length - 1) * xStep).toFixed(1);
   var lastYVal = yPos(latest).toFixed(1);
 
@@ -51,4 +52,3 @@ function renderSparklineWithValues(points, threshold, width, height) {
   svg += '</svg>';
   return svg;
 }
-

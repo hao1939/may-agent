@@ -29,18 +29,21 @@ import { buildLoopTrace, type LoopTraceTarget } from "./read-model/loop-trace.js
 // ── Public API ────────────────────────────────────────────────────────
 
 const LIVE_VITAL_METRIC_IDS = [
+  "runtime.daemon-heartbeat-stale",
+  "runtime.project-app-schedule-orphan-count-1h",
   "agent.heartbeat-dark-count-2h",
   "agent.config-invalid-count-1h",
   "handler.success-rate",
   "session.error-rate-6h",
   "session.first-turn-error-count-1h",
   "session.empty-assistant-stop-count-1h",
+  "session.planner-timeout-rate-6h",
   "message.delivery-failed-count-1h",
+  "escalation.pending-count",
   "capability.zombie-session-count",
   "evaluator.stale-running-session-count",
   "eval.llm-coverage-lag-h",
   "project.iterations-24h",
-  "system.real-output-24h",
 ];
 
 export interface WebUIOptions {
