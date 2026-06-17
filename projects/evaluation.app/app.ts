@@ -68,6 +68,14 @@ async function routeEvaluationEvent(
     );
   }
 
+  if (event.type === "metric.recovered") {
+    return ctx.emit(
+      evaluationReviewRequested("metric-recovered", {
+        metric: eventDetails(event),
+      }),
+    );
+  }
+
   if (event.type === "project.action.invoked") {
     return ctx.emit(
       evaluationReviewRequested("project-action", {
@@ -246,6 +254,8 @@ export default defineProjectApp({
     "evaluation.tick",
     "evaluation.aftermath.scan",
     "evaluation.deep.scan",
+    "metric.breach",
+    "metric.recovered",
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
@@ -289,6 +299,11 @@ export default defineProjectApp({
         event: "metric.breach",
         emits: ["evaluation.tick"],
         description: "Metric breaches become evaluation health-review ticks.",
+      },
+      {
+        event: "metric.recovered",
+        emits: ["evaluation.tick"],
+        description: "Metric recoveries become evaluation health-review ticks.",
       },
       {
         event: "project.action.invoked",
