@@ -152,6 +152,9 @@ const RETIRED_METRIC_IDS = [
   "capability.message-conversation-close-rate",
   "capability.trend-7d",
   "project.missing-owner-workflow-count",
+  "project.reconcile.trigger-count",
+  "project.reconcile.launched-count",
+  "project.reconcile.event-latency-ms",
 ];
 
 /** Snapshot retention: keep 30 days of history */
