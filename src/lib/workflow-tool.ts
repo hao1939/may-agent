@@ -854,12 +854,18 @@ export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
       if (sid) {
         try {
           onEvent?.({ type: "workflow.step_started", step: agentName, sessionId: sid });
-          if (!manager.hasActiveSession(sid))
-            manager.resumeSession(sid, effectiveTask, {
-              source: `workflow:${workflow.name}`,
-              timeoutMs: stepOpts?.timeoutMs,
-            });
-          taskResult = await waitForStep(sid);
+          if (!manager.hasActiveSession(sid)) {
+            try {
+              taskResult = manager.result(sid);
+            } catch {
+              manager.resumeSession(sid, effectiveTask, {
+                source: `workflow:${workflow.name}`,
+                timeoutMs: stepOpts?.timeoutMs,
+                suppressBenignRaceEvent: true,
+              });
+            }
+          }
+          if (!taskResult) taskResult = await waitForStep(sid);
           taskResult = { ...taskResult, messages: manager.progress(sid, 1000) };
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);

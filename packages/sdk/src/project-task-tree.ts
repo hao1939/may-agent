@@ -7,6 +7,7 @@ import {
   normalizeStringArray,
   readTaskTree,
   saveTaskTree,
+  taskState,
   withTreeLock,
   type TaskTreeConfig,
   type TaskNode,
@@ -25,32 +26,25 @@ export type TaskTreeToolConfig = {
 export type TaskTreeSummary = {
   updated_at?: string;
   total: number;
+  leaf_total: number;
   roots: string[];
   active_task_ids: string[];
+  tree_counts: Record<string, number>;
   counts: Record<string, number>;
   frontier: {
-    ready: string[];
+    runnable: string[];
     active: string[];
     review: string[];
-    claimed_done: string[];
     blocked: string[];
-    proposed: string[];
   };
 };
 
-export type TaskKanbanColumn =
-  | "planning"
-  | "backlog"
-  | "ready"
-  | "in-progress"
-  | "review"
-  | "blocked"
-  | "done"
-  | "archive";
+export type TaskKanbanColumn = "backlog" | "in-progress" | "review" | "blocked" | "done";
 
 export type TaskKanbanProjection = {
   total_cards: number;
   tree_total: number;
+  tree_status_counts?: Record<string, number>;
   status_counts: Record<string, number>;
   column_counts: Record<TaskKanbanColumn, number>;
   card_ids_by_column: Record<TaskKanbanColumn, string[]>;
@@ -73,6 +67,7 @@ export type TaskKanbanSnapshot = {
 export type TaskPlanningSnapshot = {
   id: string;
   parent_id?: string | null;
+  state: string;
   status: string;
   kind?: string;
   priority?: string;
@@ -88,14 +83,30 @@ export type TaskPlanningSnapshot = {
   trace?: Record<string, unknown>;
 };
 
+export type ModelPathStatusEntry = {
+  id: string;
+  status: string;
+  rootCauseClass?: string;
+  label?: string;
+  verdictFinal?: boolean;
+  retestCondition?: string;
+};
+
+export type ModelStatusSummary = {
+  total: number;
+  passing: number;
+  non_passing: number;
+  non_passing_paths: ModelPathStatusEntry[];
+};
+
 export type TaskPlanningPacket = TaskTreeSummary & {
   frontier_details: {
-    ready: TaskPlanningSnapshot[];
+    runnable: TaskPlanningSnapshot[];
     active: TaskPlanningSnapshot[];
     review: TaskPlanningSnapshot[];
     blocked: TaskPlanningSnapshot[];
-    proposed: TaskPlanningSnapshot[];
   };
+  model_status_summary?: ModelStatusSummary;
 };
 
 export type TaskCompletionClaim = "done" | "partial" | "blocked";
@@ -112,14 +123,30 @@ export type TaskAssignment = {
   assigned_at: string;
 };
 
-export type ReadyAssignmentResult = {
+export type RunnableBacklogAssignmentResult = {
   assignments: TaskAssignment[];
   skipped: Array<{ taskId: string; reason: string }>;
+};
+
+export type TaskTreeRepairResult = {
+  changed: boolean;
+  lifecycle?: string;
+  active_task_ids: string[];
+  repaired: Array<{ taskId: string; from: string; to: string }>;
+};
+
+export type TaskTreeCompactResult = {
+  changed: boolean;
+  archived: number;
+  protected: number;
+  archivePath?: string;
+  remainingTotal: number;
 };
 
 export type CreateTaskInput = {
   id: string;
   parentId: string;
+  state?: "backlog" | "blocked";
   status?: "proposed" | "backlog" | "ready" | "blocked";
   kind?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
@@ -134,6 +161,18 @@ export type CreateTaskInput = {
   depends_on?: string[];
   context?: Record<string, unknown>;
   blocker?: string;
+};
+
+export type MarkTaskDoneInput = {
+  taskId: string;
+  summary: string;
+  resolution?: string;
+};
+
+export type RejectTaskReviewInput = {
+  taskId: string;
+  reason: string;
+  freshSession?: boolean;
 };
 
 export function taskTreeConfig(input: TaskTreeToolConfig): ToolConfig {
@@ -237,39 +276,37 @@ function hasExternalBlockSignal(task: TaskNode): boolean {
 }
 
 export function taskKanbanColumn(task: TaskNode): TaskKanbanColumn | null {
-  if (isPlanningTask(task) && ["proposed", "backlog", "ready", "active"].includes(task.status)) return "planning";
-  if (task.status === "proposed") return "backlog";
   if (task.status === "backlog") return "backlog";
-  if (task.status === "ready") return "backlog";
   if (task.status === "active") return "in-progress";
-  if (task.status === "review" || task.status === "claimed_done" || task.status === "rejected") return "review";
+  if (task.status === "review") return "review";
   if (task.status === "blocked") return hasExternalBlockSignal(task) ? "blocked" : "review";
-  if (task.status === "accepted") return "done";
-  if (task.status === "superseded") return "archive";
+  if (task.status === "done") return "done";
   return null;
 }
 
 function emptyKanbanColumns(): Record<TaskKanbanColumn, string[]> {
   return {
-    planning: [],
     backlog: [],
-    ready: [],
     "in-progress": [],
     review: [],
     blocked: [],
     done: [],
-    archive: [],
   };
 }
 
 function summarizeKanbanLoadedTree(tree: TaskTree): TaskKanbanProjection {
   const tasks = Object.values(tree.tasks ?? {});
-  const statusCounts: Record<string, number> = {};
+  const treeStatusCounts: Record<string, number> = {};
   for (const task of tasks) {
-    statusCounts[task.status] = (statusCounts[task.status] ?? 0) + 1;
+    const state = taskState(task);
+    treeStatusCounts[state] = (treeStatusCounts[state] ?? 0) + 1;
   }
   const cardIdsByColumn = emptyKanbanColumns();
-  for (const task of tasks.filter((task) => task.id !== tree.root_task_id && isLeaf(task)).sort(taskSort)) {
+  const cardTasks = tasks.filter((task) => task.id !== tree.root_task_id && isLeaf(task)).sort(taskSort);
+  const statusCounts: Record<string, number> = {};
+  for (const task of cardTasks) {
+    const state = taskState(task);
+    statusCounts[state] = (statusCounts[state] ?? 0) + 1;
     const column = taskKanbanColumn(task);
     if (column) cardIdsByColumn[column].push(task.id);
   }
@@ -277,10 +314,11 @@ function summarizeKanbanLoadedTree(tree: TaskTree): TaskKanbanProjection {
     Object.entries(cardIdsByColumn).map(([column, ids]) => [column, ids.length]),
   ) as Record<TaskKanbanColumn, number>;
   const totalCards = Object.values(columnCounts).reduce((sum, count) => sum + count, 0);
-  const settled = columnCounts.done + columnCounts.blocked + columnCounts.archive;
+  const settled = columnCounts.done + columnCounts.blocked;
   return {
     total_cards: totalCards,
     tree_total: tasks.length,
+    tree_status_counts: treeStatusCounts,
     status_counts: statusCounts,
     column_counts: columnCounts,
     card_ids_by_column: cardIdsByColumn,
@@ -308,7 +346,8 @@ function writeKanbanSnapshotForTree(config: ToolConfig, tree: TaskTree): TaskKan
   return snapshot;
 }
 
-function saveTaskTreeWithKanbanSnapshot(config: ToolConfig, tree: TaskTree): TaskKanbanSnapshot {
+export function saveTaskTreeWithKanbanSnapshot(config: ToolConfig, tree: TaskTree): TaskKanbanSnapshot {
+  applyTaskTreeRollups(tree);
   saveTaskTree(config, tree);
   return writeKanbanSnapshotForTree(config, tree);
 }
@@ -320,6 +359,182 @@ function activeIds(tree: TaskTree): string[] {
     .map((task) => task.id);
 }
 
+function openLeafIds(tree: TaskTree): string[] {
+  return Object.values(tree.tasks)
+    .filter((task) => isLeaf(task) && task.status !== "done")
+    .sort(taskSort)
+    .map((task) => task.id);
+}
+
+function rolledUpParentState(tree: TaskTree, task: TaskNode): string {
+  const childStates = normalizeStringArray(task.children)
+    .map((id) => tree.tasks[id]?.status)
+    .filter((state): state is string => Boolean(state));
+  if (!childStates.length) return task.status ?? "backlog";
+  if (childStates.includes("active")) return "active";
+  if (childStates.includes("review")) return "review";
+  if (childStates.includes("blocked")) return "blocked";
+  if (childStates.includes("backlog")) return "backlog";
+  return "done";
+}
+
+function applyTaskTreeRollups(tree: TaskTree): TaskTreeRepairResult {
+  const repaired: TaskTreeRepairResult["repaired"] = [];
+  const visit = (taskId: string): void => {
+    const task = tree.tasks[taskId];
+    if (!task) return;
+    for (const childId of normalizeStringArray(task.children)) visit(childId);
+    if (!normalizeStringArray(task.children).length) return;
+    const nextState = rolledUpParentState(tree, task);
+    if (task.status !== nextState) {
+      repaired.push({
+        taskId: task.id,
+        from: task.status ?? "unknown",
+        to: nextState,
+      });
+      task.status = nextState;
+      task.state = nextState;
+    }
+  };
+  if (tree.root_task_id) visit(tree.root_task_id);
+
+  const nextActiveIds = activeIds(tree);
+  const nextLifecycle = openLeafIds(tree).length > 0 ? "active" : "closed";
+  const changed =
+    repaired.length > 0 ||
+    tree.project_lifecycle !== nextLifecycle ||
+    JSON.stringify(tree.active_task_ids ?? []) !== JSON.stringify(nextActiveIds) ||
+    (tree.active_task_id ?? null) !== (nextActiveIds[0] ?? null);
+  tree.project_lifecycle = nextLifecycle;
+  tree.active_task_ids = nextActiveIds;
+  tree.active_task_id = nextActiveIds[0] ?? null;
+  return {
+    changed,
+    lifecycle: nextLifecycle,
+    active_task_ids: nextActiveIds,
+    repaired,
+  };
+}
+
+export function repairTaskTreeRollups(config: ToolConfig): TaskTreeRepairResult {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const result = applyTaskTreeRollups(tree);
+
+    if (result.changed) {
+      saveTaskTreeWithKanbanSnapshot(config, tree);
+      appendToolJournal(config, {
+        kind: "task_tree_rollup_repaired",
+        lifecycle: result.lifecycle,
+        active_task_ids: result.active_task_ids,
+        repaired: result.repaired,
+      });
+    }
+    return result;
+  });
+}
+
+function compactArchiveName(): string {
+  return `done-leaves-${new Date().toISOString().replace(/\D/g, "").slice(0, 14)}.json`;
+}
+
+export function compactDoneLeaves(
+  config: ToolConfig,
+  input: { limit?: number; reason?: string } = {},
+): TaskTreeCompactResult {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const dependencyRefs = new Set(Object.values(tree.tasks).flatMap((task) => normalizeStringArray(task.depends_on)));
+    const candidates = Object.values(tree.tasks)
+      .filter(
+        (task) =>
+          task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && !dependencyRefs.has(task.id),
+      )
+      .sort(taskSort);
+    const protectedCount = Object.values(tree.tasks).filter(
+      (task) => task.id !== tree.root_task_id && isLeaf(task) && task.status === "done" && dependencyRefs.has(task.id),
+    ).length;
+    const selected = candidates.slice(0, Math.max(0, input.limit ?? 200));
+    if (selected.length === 0) {
+      return {
+        changed: false,
+        archived: 0,
+        protected: protectedCount,
+        remainingTotal: Object.keys(tree.tasks).length,
+      };
+    }
+
+    const archiveRelPath = join("tasks", "archive", compactArchiveName());
+    const archivePath = join(config.appDir, archiveRelPath);
+    mkdirSync(dirname(archivePath), { recursive: true });
+    writeFileSync(
+      archivePath,
+      `${JSON.stringify(
+        {
+          version: 1,
+          generated_at: new Date().toISOString(),
+          reason: input.reason ?? "compact done task leaves",
+          archived: selected.length,
+          tasks: selected,
+        },
+        null,
+        2,
+      )}\n`,
+      "utf-8",
+    );
+
+    const parentCounts = new Map<string, number>();
+    for (const task of selected) {
+      const parentId = task.parent_id ?? "";
+      const parent = parentId ? tree.tasks[parentId] : undefined;
+      if (parent) {
+        parent.children = normalizeStringArray(parent.children).filter((childId) => childId !== task.id);
+        parentCounts.set(parent.id, (parentCounts.get(parent.id) ?? 0) + 1);
+      }
+      delete tree.tasks[task.id];
+    }
+
+    for (const [parentId, count] of parentCounts) {
+      const parent = tree.tasks[parentId];
+      if (!parent) continue;
+      const context =
+        parent.context && typeof parent.context === "object" && !Array.isArray(parent.context) ? parent.context : {};
+      const existingCount = typeof context.archived_done_leaf_count === "number" ? context.archived_done_leaf_count : 0;
+      const existingArchives = Array.isArray(context.rollup_archives) ? context.rollup_archives : [];
+      parent.context = {
+        ...context,
+        archived_done_leaf_count: existingCount + count,
+        rollup_archives: [
+          {
+            archive: archiveRelPath,
+            archived: count,
+            at: new Date().toISOString(),
+          },
+          ...existingArchives,
+        ].slice(0, 5),
+      };
+    }
+
+    const repair = applyTaskTreeRollups(tree);
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_tree_done_leaves_compacted",
+      archive: archiveRelPath,
+      archived: selected.length,
+      protected: protectedCount,
+      repaired: repair.repaired,
+      reason: input.reason,
+    });
+    return {
+      changed: true,
+      archived: selected.length,
+      protected: protectedCount,
+      archivePath: archiveRelPath,
+      remainingTotal: Object.keys(tree.tasks).length,
+    };
+  });
+}
+
 function frontierIds(tree: TaskTree, status: string): string[] {
   return Object.values(tree.tasks)
     .filter((task) => isLeaf(task) && task.status === status)
@@ -328,13 +543,24 @@ function frontierIds(tree: TaskTree, status: string): string[] {
     .map((task) => task.id);
 }
 
-function isAssignableBacklogStatus(status: string): boolean {
-  return status === "backlog" || status === "ready";
+function isWorkerExecutableBacklogLeaf(task: TaskNode): boolean {
+  if (!isLeaf(task)) return false;
+  if (task.status !== "backlog") return false;
+  if (isPlanningTask(task)) return false;
+  if (task.kind === "work" || task.kind === "focus_plan" || task.kind === "durable_lane") return false;
+  return true;
+}
+
+function isRunnableBacklogLeaf(tree: TaskTree, task: TaskNode): boolean {
+  if (!isWorkerExecutableBacklogLeaf(task)) return false;
+  if (!isClearEnough(task)) return false;
+  if (!dependenciesSatisfied(tree, task)) return false;
+  return !activeLeaves(tree).some((active) => conflictScopesOverlap(active, task));
 }
 
 function frontierAssignableIds(tree: TaskTree): string[] {
   return Object.values(tree.tasks)
-    .filter((task) => isLeaf(task) && isAssignableBacklogStatus(task.status))
+    .filter((task) => isRunnableBacklogLeaf(tree, task))
     .sort(taskSort)
     .slice(0, 20)
     .map((task) => task.id);
@@ -377,10 +603,12 @@ function compactTrace(trace: TaskNode["trace"]): Record<string, unknown> {
 
 function compactTask(task: TaskNode): TaskPlanningSnapshot {
   const trace = compactTrace(task.trace);
+  const state = taskState(task);
   return {
     id: task.id,
     parent_id: task.parent_id,
-    status: task.status,
+    state,
+    status: state,
     kind: task.kind,
     priority: task.priority,
     owner: task.owner,
@@ -406,7 +634,7 @@ function frontierDetails(tree: TaskTree, status: string): TaskPlanningSnapshot[]
 
 function frontierAssignableDetails(tree: TaskTree): TaskPlanningSnapshot[] {
   return Object.values(tree.tasks)
-    .filter((task) => isLeaf(task) && isAssignableBacklogStatus(task.status))
+    .filter((task) => isRunnableBacklogLeaf(tree, task))
     .sort(taskSort)
     .slice(0, 8)
     .map(compactTask);
@@ -414,26 +642,33 @@ function frontierAssignableDetails(tree: TaskTree): TaskPlanningSnapshot[] {
 
 function summarizeLoadedTree(tree: TaskTree): TaskTreeSummary {
   const tasks = tree.tasks ?? {};
-  const counts: Record<string, number> = {};
+  const treeCounts: Record<string, number> = {};
   for (const task of Object.values(tasks)) {
-    counts[task.status] = (counts[task.status] ?? 0) + 1;
+    const state = taskState(task);
+    treeCounts[state] = (treeCounts[state] ?? 0) + 1;
+  }
+  const leaves = Object.values(tasks).filter((task) => isLeaf(task));
+  const counts: Record<string, number> = {};
+  for (const task of leaves) {
+    const state = taskState(task);
+    counts[state] = (counts[state] ?? 0) + 1;
   }
   const childIds = new Set(Object.values(tasks).flatMap((task) => normalizeStringArray(task.children)));
   return {
     updated_at: tree.updated_at,
     total: Object.keys(tasks).length,
+    leaf_total: leaves.length,
     roots: Object.keys(tasks)
       .filter((id) => !childIds.has(id))
       .sort(),
     active_task_ids: activeIds(tree),
+    tree_counts: treeCounts,
     counts,
     frontier: {
-      ready: frontierAssignableIds(tree),
+      runnable: frontierAssignableIds(tree),
       active: frontierIds(tree, "active"),
-      review: [...frontierIds(tree, "review"), ...frontierIds(tree, "claimed_done")],
-      claimed_done: frontierIds(tree, "claimed_done"),
+      review: frontierIds(tree, "review"),
       blocked: frontierIds(tree, "blocked"),
-      proposed: frontierIds(tree, "proposed"),
     },
   };
 }
@@ -442,16 +677,16 @@ export function summarizeTaskTree(config: ToolConfig): TaskTreeSummary {
   if (!existsSync(config.treePath))
     return {
       total: 0,
+      leaf_total: 0,
       roots: [],
       active_task_ids: [],
+      tree_counts: {},
       counts: {},
       frontier: {
-        ready: [],
+        runnable: [],
         active: [],
         review: [],
-        claimed_done: [],
         blocked: [],
-        proposed: [],
       },
     };
 
@@ -478,20 +713,55 @@ export function writeKanbanSnapshot(config: ToolConfig): TaskKanbanSnapshot {
   });
 }
 
+function loadModelStatusSummary(config: ToolConfig): ModelStatusSummary | undefined {
+  const modelPath = join(config.projectDir, "model", "knowledge-map", "model.json");
+  if (!existsSync(modelPath)) return undefined;
+  try {
+    const raw = JSON.parse(readFileSync(modelPath, "utf-8"));
+    const paths: Array<Record<string, unknown>> = Array.isArray(raw?.paths) ? raw.paths : [];
+    if (paths.length === 0) return undefined;
+    const passing = paths.filter((p) => p.status === "pass");
+    const nonPassing = paths.filter((p) => p.status !== "pass");
+    const nonPassingEntries: ModelPathStatusEntry[] = nonPassing.map((p) => {
+      const entry: ModelPathStatusEntry = {
+        id: String(p.id ?? ""),
+        status: String(p.status ?? "unknown"),
+      };
+      if (p.rootCauseClass) entry.rootCauseClass = String(p.rootCauseClass);
+      if (p.label) entry.label = truncate(String(p.label), 200);
+      if (p.verdictFinal === true) entry.verdictFinal = true;
+      if (p.retestCondition) entry.retestCondition = truncate(String(p.retestCondition), 300);
+      return entry;
+    });
+    return {
+      total: paths.length,
+      passing: passing.length,
+      non_passing: nonPassing.length,
+      non_passing_paths: nonPassingEntries,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export function planningPacket(config: ToolConfig): TaskPlanningPacket {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const summary = summarizeLoadedTree(tree);
-    return {
+    const modelSummary = loadModelStatusSummary(config);
+    const packet: TaskPlanningPacket = {
       ...summary,
       frontier_details: {
-        ready: frontierAssignableDetails(tree),
+        runnable: frontierAssignableDetails(tree),
         active: frontierDetails(tree, "active"),
-        review: [...frontierDetails(tree, "review"), ...frontierDetails(tree, "claimed_done")].slice(0, 8),
+        review: frontierDetails(tree, "review"),
         blocked: frontierDetails(tree, "blocked"),
-        proposed: frontierDetails(tree, "proposed"),
       },
     };
+    if (modelSummary) {
+      packet.model_status_summary = modelSummary;
+    }
+    return packet;
   });
 }
 
@@ -535,10 +805,17 @@ function createAssignmentForTask(
 ): TaskAssignment {
   const attemptId =
     input.attemptId ?? `a_${task.id.replace(/[^A-Za-z0-9_-]+/g, "_")}_${now.replace(/\D/g, "").slice(0, 14)}`;
+  const wantsFreshSession =
+    (task.trace?.review_reject_fresh_session === true || task.trace?.stale_active_fresh_session === true) &&
+    !task.session_id;
+  const defaultSessionId = wantsFreshSession
+    ? `${stableTaskSessionId(task)}_retry_${now.replace(/\D/g, "").slice(0, 14)}`
+    : stableTaskSessionId(task);
   const sessionId =
-    typeof task.session_id === "string" && task.session_id.trim() ? task.session_id.trim() : stableTaskSessionId(task);
+    typeof task.session_id === "string" && task.session_id.trim() ? task.session_id.trim() : defaultSessionId;
   const worker = input.worker ?? task.owner ?? config.worker;
   task.status = "active";
+  task.state = "active";
   task.owner = worker;
   task.session_id = sessionId;
   task.session_history = [...new Set([...(task.session_history ?? []), sessionId])];
@@ -596,6 +873,7 @@ export function requeueStaleActiveTasks(
   input: {
     taskIds: string[];
     reason?: string;
+    freshSession?: boolean;
   },
 ): string[] {
   const uniqueIds = [...new Set(input.taskIds.filter(Boolean))];
@@ -607,15 +885,18 @@ export function requeueStaleActiveTasks(
     for (const taskId of uniqueIds) {
       const task = tree.tasks[taskId];
       if (!task || !isLeaf(task) || task.status !== "active") continue;
-      task.status = "ready";
+      task.status = "backlog";
+      task.state = "backlog";
       task.trace = {
         ...(task.trace ?? {}),
         stale_active_requeued_at: now,
         stale_active_requeue_reason: input.reason ?? "session-not-running",
+        stale_active_fresh_session: input.freshSession === true,
         previous_attempt_id:
           task.trace && typeof task.trace.current_attempt_id === "string" ? task.trace.current_attempt_id : undefined,
         current_attempt_id: undefined,
       };
+      if (input.freshSession) task.session_id = undefined;
       requeued.push(task.id);
     }
     if (requeued.length > 0) {
@@ -632,24 +913,22 @@ export function requeueStaleActiveTasks(
   });
 }
 
-export function assignReadyTasks(
+export function assignRunnableBacklogTasks(
   config: ToolConfig,
   input: {
     worker?: string;
     limit?: number;
   } = {},
-): ReadyAssignmentResult {
+): RunnableBacklogAssignmentResult {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const assignments: TaskAssignment[] = [];
-    const skipped: ReadyAssignmentResult["skipped"] = [];
+    const skipped: RunnableBacklogAssignmentResult["skipped"] = [];
     const capacity = Math.max(0, config.maxConcurrent - activeLeaves(tree).length);
     const limit = Math.max(0, Math.min(input.limit ?? capacity, capacity));
     if (limit <= 0) return { assignments, skipped };
 
-    for (const task of Object.values(tree.tasks)
-      .filter((candidate) => isAssignableBacklogStatus(candidate.status))
-      .sort(taskSort)) {
+    for (const task of Object.values(tree.tasks).filter(isWorkerExecutableBacklogLeaf).sort(taskSort)) {
       if (assignments.length >= limit) break;
       if (!isLeaf(task)) {
         skipped.push({ taskId: task.id, reason: "not-leaf" });
@@ -704,9 +983,10 @@ export function assignTask(
     const tree = readTaskTree(config);
     const task = tree.tasks[input.taskId];
     if (!task) throw new Error(`Task not found: ${input.taskId}`);
-    if (!isAssignableBacklogStatus(task.status))
-      throw new Error(`Task ${task.id} is ${task.status}, not backlog/ready`);
+    if (task.status !== "backlog") throw new Error(`Task ${task.id} is ${task.status}, not runnable backlog`);
     if (!isLeaf(task)) throw new Error(`Task ${task.id} is not a leaf`);
+    if (!isWorkerExecutableBacklogLeaf(task))
+      throw new Error(`Task ${task.id} is not a worker-executable backlog leaf`);
     if (!isClearEnough(task)) throw new Error(`Task ${task.id} is not clear enough to assign`);
     if (!dependenciesSatisfied(tree, task)) throw new Error(`Task ${task.id} has unsatisfied dependencies`);
     const active = activeLeaves(tree);
@@ -737,13 +1017,15 @@ export function createTask(config: ToolConfig, input: CreateTaskInput): TaskNode
     if (tree.tasks[input.id]) throw new Error(`Task already exists: ${input.id}`);
     const parent = tree.tasks[input.parentId];
     if (!parent) throw new Error(`Parent task not found: ${input.parentId}`);
-    const status = input.status ?? "proposed";
+    const requestedState = input.state ?? input.status ?? "backlog";
+    const status = requestedState === "blocked" ? "blocked" : "backlog";
     if (status === "blocked" && !input.blocker?.trim()) throw new Error("Blocked tasks require --blocker");
     if (status !== "blocked" && input.blocker?.trim()) throw new Error("--blocker is only valid with --status blocked");
 
     const task: TaskNode = {
       id: input.id,
       parent_id: input.parentId,
+      state: status,
       status,
       kind: input.kind ?? "domain_leaf",
       priority: input.priority ?? "P2",
@@ -772,24 +1054,26 @@ export function createTask(config: ToolConfig, input: CreateTaskInput): TaskNode
       kind: "task_created",
       task_id: task.id,
       parent_id: input.parentId,
+      state: task.status,
       status: task.status,
     });
     return task;
   });
 }
 
-export function promoteClearProposedLeaves(config: ToolConfig, limit = 10): string[] {
+export function confirmRunnableBacklogLeaves(config: ToolConfig, limit = 10): string[] {
   return withTreeLock(config, () => {
     const tree = readTaskTree(config);
     const promoted: string[] = [];
     const candidates = Object.values(tree.tasks)
-      .filter((task) => task.status === "proposed" && isLeaf(task))
+      .filter((task) => task.status === "backlog" && isLeaf(task))
       .sort(taskSort);
     for (const task of candidates) {
       if (promoted.length >= limit) break;
       if (!isClearEnough(task)) continue;
       if (!dependenciesSatisfied(tree, task)) continue;
-      task.status = "ready";
+      task.status = "backlog";
+      task.state = "backlog";
       task.trace = {
         ...(task.trace ?? {}),
         promoted_at: new Date().toISOString(),
@@ -800,7 +1084,7 @@ export function promoteClearProposedLeaves(config: ToolConfig, limit = 10): stri
     if (promoted.length) {
       saveTaskTreeWithKanbanSnapshot(config, tree);
       appendToolJournal(config, {
-        kind: "tasks_promoted",
+        kind: "tasks_confirmed_runnable",
         task_ids: promoted,
       });
     }
@@ -831,6 +1115,7 @@ export function completeTask(
       last_worker_evidence: input.evidence ?? [],
     };
     task.status = "review";
+    task.state = "review";
     task.blocker = undefined;
     task.trace = trace;
     tree.active_task_ids = activeIds(tree);
@@ -840,8 +1125,81 @@ export function completeTask(
       kind: "task_worker_completed",
       task_id: task.id,
       result: input.claim,
+      state: task.status,
       status: task.status,
       summary: input.summary,
+    });
+    return task;
+  });
+}
+
+export function markTaskDone(config: ToolConfig, input: MarkTaskDoneInput): TaskNode {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    const now = new Date().toISOString();
+    task.status = "done";
+    task.state = "done";
+    task.blocker = undefined;
+    task.resolution = input.resolution ?? task.resolution ?? "completed";
+    task.done_at = now;
+    task.done_by = "task-tree-tool";
+    task.trace = {
+      ...(task.trace ?? {}),
+      reviewed_at: now,
+      reviewed_by: "task-tree-tool",
+      review_summary: input.summary,
+    };
+    const context =
+      task.context && typeof task.context === "object" && !Array.isArray(task.context) ? task.context : {};
+    task.context = {
+      ...context,
+      acceptance_note: input.summary,
+    };
+    tree.active_task_ids = activeIds(tree);
+    tree.active_task_id = tree.active_task_ids[0] ?? null;
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_marked_done",
+      task_id: task.id,
+      resolution: task.resolution,
+      summary: input.summary,
+    });
+    return task;
+  });
+}
+
+export function rejectTaskReview(config: ToolConfig, input: RejectTaskReviewInput): TaskNode {
+  return withTreeLock(config, () => {
+    const tree = readTaskTree(config);
+    const task = tree.tasks[input.taskId];
+    if (!task) throw new Error(`Task not found: ${input.taskId}`);
+    if (task.status !== "review") throw new Error(`Task ${task.id} is ${task.status}, not review`);
+    if (!isLeaf(task)) throw new Error(`Task ${task.id} is not a leaf`);
+    const now = new Date().toISOString();
+    const previousAttemptId =
+      typeof task.trace?.current_attempt_id === "string" ? task.trace.current_attempt_id : undefined;
+    task.status = "backlog";
+    task.state = "backlog";
+    task.blocker = undefined;
+    task.trace = {
+      ...(task.trace ?? {}),
+      review_rejected_at: now,
+      review_rejected_by: "task-tree-tool",
+      review_reject_reason: input.reason,
+      review_reject_fresh_session: input.freshSession === true,
+      previous_attempt_id: previousAttemptId,
+      current_attempt_id: undefined,
+    };
+    if (input.freshSession) task.session_id = undefined;
+    tree.active_task_ids = activeIds(tree);
+    tree.active_task_id = tree.active_task_ids[0] ?? null;
+    saveTaskTreeWithKanbanSnapshot(config, tree);
+    appendToolJournal(config, {
+      kind: "task_review_rejected",
+      task_id: task.id,
+      reason: input.reason,
     });
     return task;
   });

@@ -179,6 +179,28 @@ export interface QueryAPI {
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
+
+  /**
+   * Mark inbox message events as handled after a heartbeat/session consumes them.
+   * Transitions events from status='pending' to status='handled'.
+   * Returns the number of rows updated.
+   */
+  markInboxHandled(eventIds: number[], handledBy?: string): number;
+
+  /**
+   * Expire stale pending message events older than the given age.
+   * Transitions from status='pending' to status='expired'.
+   * Returns the number of rows expired.
+   */
+  expireStaleMessages(olderThanMs: number): number;
+
+  /**
+   * Expire stale pending signal events (session.resume_failed, metric.breach,
+   * metric.recovered) older than the given age.
+   * These are non-actionable historical noise once their window passes.
+   * Returns the number of rows expired.
+   */
+  expireStaleSignalEvents(olderThanMs: number): number;
 }
 
 export interface QueryServiceOptions {
@@ -443,6 +465,7 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         `SELECT id, event_type as eventType, data, urgency, timestamp
          FROM events
          WHERE owner = ?
+           AND status = 'pending'
            AND timestamp > ?
            AND (ttl_ms IS NULL OR timestamp + ttl_ms > ?)
          ORDER BY CASE WHEN urgency = 'immediate' THEN 0 ELSE 1 END,
@@ -821,6 +844,57 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
       const rows = statement.all(...(isPragma ? params : [...params, limit + 1]));
       return result(rows, limit);
     },
+
+    markInboxHandled(eventIds, handledBy) {
+      if (!eventIds.length) return 0;
+      const db = opts.getDb();
+      const now = Date.now();
+      const agent = handledBy ?? "system";
+      let updated = 0;
+      // Use individual updates to avoid SQL injection from dynamic IN clauses
+      const stmt = db.prepare(
+        `UPDATE events SET status = 'handled', handled_by = ?, result = 'consumed'
+         WHERE id = ? AND status = 'pending'`,
+      );
+      for (const id of eventIds) {
+        const info = stmt.run(agent, id) as { changes?: number };
+        updated += info.changes ?? 0;
+      }
+      return updated;
+    },
+
+    expireStaleMessages(olderThanMs) {
+      const db = opts.getDb();
+      const cutoff = Date.now() - olderThanMs;
+      const info = db.prepare(
+        `UPDATE events SET status = 'expired', reason = 'stale'
+         WHERE status = 'pending'
+           AND event_type = 'message.created'
+           AND timestamp < ?`,
+      ).run(cutoff) as { changes?: number };
+      return info.changes ?? 0;
+    },
+
+    expireStaleSignalEvents(olderThanMs) {
+      const db = opts.getDb();
+      const cutoff = Date.now() - olderThanMs;
+      const signalTypes = [
+        'session.resume_failed',
+        'metric.breach',
+        'metric.recovered',
+        'metric.stalled',
+        'handler.failed',
+        'agent.config_invalid',
+      ];
+      const placeholders = signalTypes.map(() => '?').join(', ');
+      const info = db.prepare(
+        `UPDATE events SET status = 'expired', reason = 'stale_signal'
+         WHERE status = 'pending'
+           AND event_type IN (${placeholders})
+           AND timestamp < ?`,
+      ).run(...signalTypes, cutoff) as { changes?: number };
+      return info.changes ?? 0;
+    },
   };
 }
 
@@ -860,5 +934,8 @@ export function createUnavailableQueryService(reason: string): QueryAPI {
     evaluatorDeepEvalScan: failEvaluatorDeepEvalScan,
     evaluatorAftermathContext: failEvaluatorAftermathContext,
     sql: fail,
+    markInboxHandled: () => { throw new Error(reason); },
+    expireStaleMessages: () => { throw new Error(reason); },
+    expireStaleSignalEvents: () => { throw new Error(reason); },
   };
 }
