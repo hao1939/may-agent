@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-17T09:10:30.931Z",
+  "updated_at": "2026-06-17T10:37:21.403311+00:00",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "54 tasks done, 6 backlog, 0 active (60 total). Project task read model and UI state rendering are fixed; remaining backlog is V3 adoption playbook, SDK checkpoint helper, and shared Kanban steering actions.",
+  "note": "54 tasks done, 7 backlog, 0 active (61 total). Remaining backlog: V3 adoption playbook, SDK checkpoint helper, shared Kanban steering actions, and schedule-tick event-handled convention.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
@@ -33,7 +33,8 @@
         "auto-heartbeat-fm34-guard-fix",
         "project-task-ui-fix",
         "transcript-secret-redaction-fix",
-        "db-size-metric-wal-fix"
+        "db-size-metric-wal-fix",
+        "schedule-tick-event-handled-convention"
       ],
       "kind": "project",
       "priority": "P0",
@@ -716,7 +717,7 @@
         "reason": "Added eventProjectId helper and project-scope filter in triggerSubscribers. 3 new tests pass (cross-project mismatch blocked, same-project fires, no-project-field fires). All 7 cron tests pass, 24 related tests pass, TypeScript check clean."
       },
       "context": {
-        "root_cause": "Cron buildEventSubscriptions indexes handlers by event type only. triggerSubscribers fires all handlers subscribed to project.planning.requested regardless of the event's project field. The app event router (shouldOfferToApp/matchesSelector in project-app-loader.ts) already filters correctly, but cron's workflow handler dispatch bypasses this — the event arrives on the bus, cron's subscribeToBus catches it, and triggerSubscribers fires without project filtering.",
+        "root_cause": "Cron buildEventSubscriptions indexes handlers by event type only. triggerSubscribers fires all handlers subscribed to project.planning.requested regardless of the event's project field. The app event router (shouldOfferToApp/matchesSelector in project-app-loader.ts) already filters correctly, but cron's workflow handler dispatch bypasses this \u2014 the event arrives on the bus, cron's subscribeToBus catches it, and triggerSubscribers fires without project filtering.",
         "observed_at": "2026-06-13T16:17:00Z",
         "evidence": "handler.started event for may-agent-project-planner at timestamp 1781367454489, triggered by scout-knowledge-lib's scheduled-library-maintenance event at 1781367454488.",
         "fix_direction": "Either (a) add a projectId field to CronEntry and filter in triggerSubscribers, or (b) make installWorkflowHandlers store the project app's event selectors alongside the subscription and check them before firing."
@@ -760,7 +761,7 @@
         "reason": "Added persistent-task opt-out regex to isPersistentTaskRequired() in finish-guard.ts. Added 'persistent-task: skip' to may-agent planner task text AND may heartbeat cron handler task text. 48 guard tests pass, 39 finish-guard tests pass, TypeScript check clean. The guard dynamically loads from disk so fix is immediately live. Heartbeat cron.json fix deployed 2026-06-14T11:59Z to address residual 8% heartbeat FM-3.4 blocks caused by injected event signals containing 'project:' at line start."
       },
       "context": {
-        "root_cause": "The FM-3.4 guard's heuristic 'has project: field → requires persistent-task workflow' falsely triggers for project-app planning sessions that use verify-wrap workflow. Planning sessions review/update task trees — they are one-shot reviews, not multi-iteration implementation work requiring persistent-task. The guard had no opt-out mechanism.",
+        "root_cause": "The FM-3.4 guard's heuristic 'has project: field \u2192 requires persistent-task workflow' falsely triggers for project-app planning sessions that use verify-wrap workflow. Planning sessions review/update task trees \u2014 they are one-shot reviews, not multi-iteration implementation work requiring persistent-task. The guard had no opt-out mechanism.",
         "observed_at": "2026-06-14T09:12:00Z",
         "evidence": "36 out of 42 may-agent workflow runs (85.7%) escalated with 'FM-3.4 Persistent-Task Required'. Only 1 run ever completed successfully. Other project apps (aks-rp-e2e, scout-knowledge-lib) unaffected because they use custom workflows (project-planner, knowledge-planner) rather than verify-wrap.",
         "fix_approach": "Two-part fix: (1) Add opt-out sentinel check in isPersistentTaskRequired() for 'persistent-task: skip|false|no|off|not-required' in task text. (2) Add 'persistent-task: skip' to may-agent planner task text in app.ts."
@@ -805,7 +806,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T15:22:00Z",
-        "reason": "Superseded by may-agent-project-planner workflow handler in app.ts. The planner wakes on project.tick (hourly), metric signals, comments, and task events — performing exactly the signal-intake function described by this task. No separate signal-intake workflow is needed. The referenced workflow 'signal-intake' never existed; the verify-wrap-based planner handler is the correct mechanism."
+        "reason": "Superseded by may-agent-project-planner workflow handler in app.ts. The planner wakes on project.tick (hourly), metric signals, comments, and task events \u2014 performing exactly the signal-intake function described by this task. No separate signal-intake workflow is needed. The referenced workflow 'signal-intake' never existed; the verify-wrap-based planner handler is the correct mechanism."
       }
     },
     "cron-config-stale-context-cleanup": {
@@ -828,7 +829,7 @@
         "All cron integration tests pass."
       ],
       "forbidden": [
-        "Do not remove cron entries — only update their context paths."
+        "Do not remove cron entries \u2014 only update their context paths."
       ],
       "gates": [],
       "conflict_scope": [
@@ -837,7 +838,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-13T18:45:00Z",
-        "reason": "Replaced 27 stale context paths: system-operations/project.md → may-agent.app/project.json, agent-system-evolution/project.md → may-agent.app/project.json, scout-second-brain-learning/project.md → scout-knowledge-lib.app/project.json. Updated daily-alert-review handler task/projectId. All 23 cron tests pass."
+        "reason": "Replaced 27 stale context paths: system-operations/project.md \u2192 may-agent.app/project.json, agent-system-evolution/project.md \u2192 may-agent.app/project.json, scout-second-brain-learning/project.md \u2192 scout-knowledge-lib.app/project.json. Updated daily-alert-review handler task/projectId. All 23 cron tests pass."
       },
       "state": "done",
       "resolution": "completed"
@@ -880,9 +881,9 @@
         "observed_at": "2026-06-13T18:12:00Z",
         "resolved_at": "2026-06-13T21:01:00Z",
         "deploy_status": {
-          "devbox_host": "DEPLOYED — binary eventProjectId present, timestamp 18:08 UTC",
-          "aks_rp_e2e_container": "DEPLOYED — binary 100423808 bytes, timestamp 18:24 UTC",
-          "codespace_container": "DEPLOYED — binary rebuilt at 21:01 UTC, eventProjectId present (2 matches), daemon restarted 21:03 UTC"
+          "devbox_host": "DEPLOYED \u2014 binary eventProjectId present, timestamp 18:08 UTC",
+          "aks_rp_e2e_container": "DEPLOYED \u2014 binary 100423808 bytes, timestamp 18:24 UTC",
+          "codespace_container": "DEPLOYED \u2014 binary rebuilt at 21:01 UTC, eventProjectId present (2 matches), daemon restarted 21:03 UTC"
         }
       },
       "state": "done",
@@ -1133,7 +1134,7 @@
         "All tests pass."
       ],
       "forbidden": [
-        "Do not change the aks-rp-e2e local copy — it keeps its project-specific names."
+        "Do not change the aks-rp-e2e local copy \u2014 it keeps its project-specific names."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1142,7 +1143,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T14:15:00Z",
-        "reason": "Renamed AKS_RP_E2E_TREE_LOCK_WAIT_MS → PROJECT_TREE_LOCK_WAIT_MS and AKS_RP_E2E_TREE_LOCK_STALE_MS → PROJECT_TREE_LOCK_STALE_MS in shared SDK. TypeScript clean, 18 tests pass. Commit 4c01303a."
+        "reason": "Renamed AKS_RP_E2E_TREE_LOCK_WAIT_MS \u2192 PROJECT_TREE_LOCK_WAIT_MS and AKS_RP_E2E_TREE_LOCK_STALE_MS \u2192 PROJECT_TREE_LOCK_STALE_MS in shared SDK. TypeScript clean, 18 tests pass. Commit 4c01303a."
       },
       "state": "done",
       "resolution": "completed"
@@ -1209,7 +1210,7 @@
         "Tests cover the duplicate-name-across-directories scenario."
       ],
       "forbidden": [
-        "Do not remove the duplicate detection entirely — duplicates within the same scope should still error."
+        "Do not remove the duplicate detection entirely \u2014 duplicates within the same scope should still error."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1243,7 +1244,7 @@
         "/usr/local/bin/may-agent"
       ],
       "acceptance": [
-        "Binary at /usr/local/bin/may-agent includes commit 851e134f (or later) — verify with: grep -ao 'priorIsGlobal' /usr/local/bin/may-agent",
+        "Binary at /usr/local/bin/may-agent includes commit 851e134f (or later) \u2014 verify with: grep -ao 'priorIsGlobal' /usr/local/bin/may-agent",
         "Daemon restarted via supervisorctl and all 4 project apps load correctly.",
         "agent.config_invalid events stop recurring after restart.",
         "evaluator-aftermath handler.failed errors stop (workflow found via correct agent dir)."
@@ -1269,7 +1270,7 @@
           "851e134f fix(message-tool): use globalAgentsRoot so project-scoped agents can message system agents",
           "df551721 fix(loader): project-app agents silently override global stubs with same name",
           "199af9a5 fix(web): scan project-local agents in handleAgents API",
-          "7d510da6 feat(app-loader): app brings its own agent — auto-register owner on load"
+          "7d510da6 feat(app-loader): app brings its own agent \u2014 auto-register owner on load"
         ],
         "post_deploy_evidence": "Zero agent.config_invalid events since 15:31 restart. Zero handler.failed events. Zero message.delivery_failed events. priorIsGlobal verified in binary (2 matches)."
       }
@@ -1295,7 +1296,7 @@
         "evaluation.app's evaluation-aftermath handler continues to process session.completed events."
       ],
       "forbidden": [
-        "Do not remove the job entry — keep it disabled with a reason for audit trail."
+        "Do not remove the job entry \u2014 keep it disabled with a reason for audit trail."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1380,7 +1381,7 @@
         "reason": "Commit ad25fd6c adds agentWorkflowDirForProjectApp() and uses it in runWorkflow as fallback. 9 tests pass (bun test). TypeScript clean. Confirmed fix works during brief window when bundle binary ran (scout-explore and scout-daily-digest dispatched successfully)."
       },
       "context": {
-        "root_cause": "SDK runWorkflow builds workflowDir as agents/<agent>/workflows/ (global). For project-app-owned agents like scout (owned by scout-knowledge-lib.app), workflows live at projects/scout-knowledge-lib.app/agents/scout/workflows/ — a path never searched. projectWorkflowDir searches projects/<id>.app/workflows/ but not the agent-specific subdir.",
+        "root_cause": "SDK runWorkflow builds workflowDir as agents/<agent>/workflows/ (global). For project-app-owned agents like scout (owned by scout-knowledge-lib.app), workflows live at projects/scout-knowledge-lib.app/agents/scout/workflows/ \u2014 a path never searched. projectWorkflowDir searches projects/<id>.app/workflows/ but not the agent-specific subdir.",
         "observed_at": "2026-06-14T17:02:00Z",
         "evidence": "36 handler.failed events for scout-explore, scout-heartbeat, scout-daily-digest in 3h window. Error: 'Workflow scout-explore not found'.",
         "commit": "ad25fd6c"
@@ -1830,7 +1831,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T20:25:00Z",
-        "reason": "Triaged 3 signal classes: (1) handler.failed heartbeat-scout — root cause was running binary (/usr/local/bin/may-agent, 19:25) lacking commit f9cebab8 (heartbeat-loader projectId propagation); fixed by rebuilding bundle and supervisorctl restart at 20:23 UTC, heartbeat-scout now starts successfully. (2) agent.config_invalid — last event at 19:17 from pre-fix binary, zero events since 20:02 restart, metric will auto-recover as 1h window ages out. (3) session.resume_failed — 27/30 are project_planner sessions (aks-rp-e2e), 3 are task worker sessions; all category=session_not_found for ephemeral sessions that completed and were cleaned up before resume attempts; not a platform defect, normal cleanup pattern."
+        "reason": "Triaged 3 signal classes: (1) handler.failed heartbeat-scout \u2014 root cause was running binary (/usr/local/bin/may-agent, 19:25) lacking commit f9cebab8 (heartbeat-loader projectId propagation); fixed by rebuilding bundle and supervisorctl restart at 20:23 UTC, heartbeat-scout now starts successfully. (2) agent.config_invalid \u2014 last event at 19:17 from pre-fix binary, zero events since 20:02 restart, metric will auto-recover as 1h window ages out. (3) session.resume_failed \u2014 27/30 are project_planner sessions (aks-rp-e2e), 3 are task worker sessions; all category=session_not_found for ephemeral sessions that completed and were cleaned up before resume attempts; not a platform defect, normal cleanup pattern."
       }
     },
     "platform-metric-feedback-alignment": {
@@ -1876,7 +1877,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-14T20:25:00Z",
-        "reason": "This session is the e2e verification. It was triggered by human steering, received the system-review packet from platform-owner-review.ts, identified real failures (heartbeat-scout handler.failed due to undeployed binary), fixed the root cause (rebuilt bundle + supervisorctl restart), triaged all 3 abnormal signal classes with evidence, updated the task tree with acceptance verdicts, and verified post-deploy health. Not a shallow healthy claim — each finding has DB-queried evidence."
+        "reason": "This session is the e2e verification. It was triggered by human steering, received the system-review packet from platform-owner-review.ts, identified real failures (heartbeat-scout handler.failed due to undeployed binary), fixed the root cause (rebuilt bundle + supervisorctl restart), triaged all 3 abnormal signal classes with evidence, updated the task tree with acceptance verdicts, and verified post-deploy health. Not a shallow healthy claim \u2014 each finding has DB-queried evidence."
       }
     },
     "sdk-checkpoint-helper": {
@@ -1890,8 +1891,8 @@
       "goal": "Extract the owner checkpoint pattern from aks-rp-e2e.app into @may-agent/sdk as a reusable helper. Other apps (evaluation.app, scout-knowledge-lib.app, may-agent.app) adopt it.",
       "context": {
         "prerequisite": "aks-rp-e2e.app proves the pattern first (owner-checkpoint-step task)",
-        "design": "See docs/2a-design/project-app-v3.md §Owner Checkpoint Step",
-        "sdk_scope": "Classify dirty files by task-tree output refs, group into commit slices, commit with task-referencing messages. Domain-neutral — no AKS/evaluator/scout specifics."
+        "design": "See docs/2a-design/project-app-v3.md \u00a7Owner Checkpoint Step",
+        "sdk_scope": "Classify dirty files by task-tree output refs, group into commit slices, commit with task-referencing messages. Domain-neutral \u2014 no AKS/evaluator/scout specifics."
       },
       "acceptance": [
         "SDK exports a checkpoint helper usable by any project-app owner workflow",
@@ -1922,7 +1923,7 @@
         "No new test failures."
       ],
       "forbidden": [
-        "Do not disable auto-resume entirely — it serves a real purpose for crash recovery."
+        "Do not disable auto-resume entirely \u2014 it serves a real purpose for crash recovery."
       ],
       "gates": [],
       "conflict_scope": [
@@ -1936,12 +1937,12 @@
         "reason": "Two-stage fix in manager.resumeSession(): commit 18361c29 suppressed already-terminal sessions (done/error/interrupted in DB). Commit 6d7c493d extended to cover pre-creation races (session not in DB) and zombie rows (running in DB, not in registry). Pre-fix: ~17/10min. After 18361c29: ~5 leaked. After 6d7c493d: 0 in 2min+ observation window. 77 session tests pass, TypeScript check clean, bundle deployed and daemon restarted at 23:31."
       },
       "context": {
-        "root_cause": "The auto-resume subscriber listens to session.end events with status=interrupted. Three race conditions cause noise: (1) sessions complete and are cleaned from registry before resume (handled by commit 18361c29), (2) sessions don't exist in DB at all — pre-creation races where session.end events arrive before session creation (handled by 6d7c493d), (3) sessions show 'running' in DB but not in registry — zombie rows from crashes (handled by 6d7c493d).",
+        "root_cause": "The auto-resume subscriber listens to session.end events with status=interrupted. Three race conditions cause noise: (1) sessions complete and are cleaned from registry before resume (handled by commit 18361c29), (2) sessions don't exist in DB at all \u2014 pre-creation races where session.end events arrive before session creation (handled by 6d7c493d), (3) sessions show 'running' in DB but not in registry \u2014 zombie rows from crashes (handled by 6d7c493d).",
         "observed_at": "2026-06-14T22:35:00Z",
         "evidence": "59 session.resume_failed events in 4h (sustained ~5-9 per 10min), all session_not_found category, all unique session IDs (no retry spirals), predominantly aks-rp-e2e planner/task sessions.",
         "fix_applied": "manager.resumeSession: DB lookup guard before emitting event. Commit 18361c29 (terminal check) + 6d7c493d (not-in-DB + zombie check).",
         "post_deploy_evidence": "Zero session.resume_failed events since daemon restart at 23:31 UTC. Zero handler.failed and agent.config_invalid events post-restart.",
-        "followup_fix": "2026-06-15T04:53Z: workflow-tool.ts resumeSession() call (line 858) lacked suppressBenignRaceEvent:true. This 'try resume → catch not-found → create' pattern was the remaining source of ~3-5 session.resume_failed events per workflow cycle. Added suppressBenignRaceEvent:true, rebuilt bundle, daemon restarted pid 508585. Zero session.resume_failed from workflow-tool path since restart (13 workflow sessions created, 0 spurious events). Only startup resumeStaleSessions burst remains (3 events at boot, expected)."
+        "followup_fix": "2026-06-15T04:53Z: workflow-tool.ts resumeSession() call (line 858) lacked suppressBenignRaceEvent:true. This 'try resume \u2192 catch not-found \u2192 create' pattern was the remaining source of ~3-5 session.resume_failed events per workflow cycle. Added suppressBenignRaceEvent:true, rebuilt bundle, daemon restarted pid 508585. Zero session.resume_failed from workflow-tool path since restart (13 workflow sessions created, 0 spurious events). Only startup resumeStaleSessions burst remains (3 events at boot, expected)."
       }
     },
     "metric-event-owner-filter": {
@@ -1976,7 +1977,7 @@
         "root_cause": "may-agent.app subscribes to all metric.* events globally (no metricId filter) and blindly forwards every metric event to project.owner.requested. Cross-project metrics like aks-rp-e2e.task.no-work-with-gaps (owner=agent:aks-explorer) were generating unnecessary platform owner review sessions.",
         "observed_at": "2026-06-15T01:06:00Z",
         "evidence": "In 4h window: 9 of 19 project.owner.requested events for may-agent were metric-signal events. 5 of those 9 were aks-rp-e2e metrics owned by agent:aks-explorer, not platform metrics. This contributed to 13 owner-review sessions in 4h against a 6/day budget.",
-        "fix_applied": "Added owner check in routeMayAgentEvent metric handler: eventString(event, 'owner') != 'agent:may' → ctx.noop with explanatory message."
+        "fix_applied": "Added owner check in routeMayAgentEvent metric handler: eventString(event, 'owner') != 'agent:may' \u2192 ctx.noop with explanatory message."
       },
       "verification": {
         "verdict": "accepted",
@@ -1991,7 +1992,7 @@
       "kind": "work",
       "priority": "P0",
       "owner": "may",
-      "goal": "Stop metric.recovered events from triggering owner wakes to break the breach→review→recover→review loop that wastes session budget.",
+      "goal": "Stop metric.recovered events from triggering owner wakes to break the breach\u2192review\u2192recover\u2192review loop that wastes session budget.",
       "inputs": [
         "projects/may-agent.app/app.ts"
       ],
@@ -2005,7 +2006,7 @@
         "TypeScript check clean."
       ],
       "forbidden": [
-        "Do not suppress metric.breach or metric.stalled — only recovered."
+        "Do not suppress metric.breach or metric.stalled \u2014 only recovered."
       ],
       "gates": [],
       "conflict_scope": [
@@ -2014,15 +2015,15 @@
       "state": "done",
       "resolution": "completed",
       "context": {
-        "root_cause": "metric.recovered events triggered full owner reviews. When project.health metrics oscillate (breach when no active work → review fixes it → recover → review again), this consumed the entire 6-sessions/day budget in feedback loops with no actionable work.",
+        "root_cause": "metric.recovered events triggered full owner reviews. When project.health metrics oscillate (breach when no active work \u2192 review fixes it \u2192 recover \u2192 review again), this consumed the entire 6-sessions/day budget in feedback loops with no actionable work.",
         "observed_at": "2026-06-15T05:13:00Z",
-        "evidence": "project.health.finding-count, project.owner-judgment-needed-count, project.owner-incomplete-count all show breach→recover→breach→recover oscillation in trend data. 6 metric.breach and 6 metric.recovered events in 2h, each generating an owner review session.",
+        "evidence": "project.health.finding-count, project.owner-judgment-needed-count, project.owner-incomplete-count all show breach\u2192recover\u2192breach\u2192recover oscillation in trend data. 6 metric.breach and 6 metric.recovered events in 2h, each generating an owner review session.",
         "fix_applied": "Added if (event.type === 'metric.recovered') return ctx.noop() in app.ts metric handler. Updated eventGraph adapter to emit []. Recovery state captured in next scheduled project.tick review (4h interval)."
       },
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-15T05:35:00Z",
-        "reason": "app.ts metric handler noops metric.recovered with explanatory message. eventGraph adapter updated (emits:[]). TypeScript check clean (npx tsc --noEmit — zero output). metric.breach and metric.stalled paths unchanged. Fix is project-local (app.ts only), live on next hot-reload."
+        "reason": "app.ts metric handler noops metric.recovered with explanatory message. eventGraph adapter updated (emits:[]). TypeScript check clean (npx tsc --noEmit \u2014 zero output). metric.breach and metric.stalled paths unchanged. Fix is project-local (app.ts only), live on next hot-reload."
       }
     },
     "message-lifecycle-management": {
@@ -2052,7 +2053,7 @@
         "Heartbeat inbox query still returns relevant unhandled messages."
       ],
       "forbidden": [
-        "Do not delete message events — mark them with status transitions for auditability.",
+        "Do not delete message events \u2014 mark them with status transitions for auditability.",
         "Do not break the heartbeat inbox lookback window."
       ],
       "gates": [],
@@ -2074,7 +2075,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-15T03:50:00Z",
-        "reason": "All 4 parts verified: (1) heartbeatContext inbox query filters status='pending' — confirmed in query-service.ts line 460. (2) loadInbox marks consumed IDs handled — confirmed in heartbeat-data.ts line 251. (3) expireStaleMessages(24h) runs each review cycle — 1206 stale messages expired (message.lifecycle event at id 1410742). (4) platform-owner-review.ts now marks consumed message.created events as handled — TypeScript check clean, file read-back confirmed. Pending count went from 1498 to 304 (1206 expired). Bundle binary has markInboxHandled and expireStaleMessages (grep confirmed). Zero handler.failed, zero session.resume_failed, zero agent.config_invalid events in last 2h. 11 query tests, 6 heartbeat tests pass."
+        "reason": "All 4 parts verified: (1) heartbeatContext inbox query filters status='pending' \u2014 confirmed in query-service.ts line 460. (2) loadInbox marks consumed IDs handled \u2014 confirmed in heartbeat-data.ts line 251. (3) expireStaleMessages(24h) runs each review cycle \u2014 1206 stale messages expired (message.lifecycle event at id 1410742). (4) platform-owner-review.ts now marks consumed message.created events as handled \u2014 TypeScript check clean, file read-back confirmed. Pending count went from 1498 to 304 (1206 expired). Bundle binary has markInboxHandled and expireStaleMessages (grep confirmed). Zero handler.failed, zero session.resume_failed, zero agent.config_invalid events in last 2h. 11 query tests, 6 heartbeat tests pass."
       }
     },
     "evaluator-verdict-parser-fix": {
@@ -2110,7 +2111,7 @@
       "state": "done",
       "resolution": "completed",
       "context": {
-        "root_cause": "Three root causes across three sessions: (1) artifactVerdict() regex used #{1,3} — fixed to #{0,3} + bullet prefix. (2) Artifact path resolution checked projectAppAbsPath via existsSync, but this runs BEFORE the review session writes the artifact, so existsSync always returns false and falls back to the global path. The evaluator agent (registered at projects/evaluation.app/agents/evaluator/) writes to the project-app path, creating a read/write path mismatch. (3) Prior sessions patched only the agent-level copy; runtime loads project-level copy first.",
+        "root_cause": "Three root causes across three sessions: (1) artifactVerdict() regex used #{1,3} \u2014 fixed to #{0,3} + bullet prefix. (2) Artifact path resolution checked projectAppAbsPath via existsSync, but this runs BEFORE the review session writes the artifact, so existsSync always returns false and falls back to the global path. The evaluator agent (registered at projects/evaluation.app/agents/evaluator/) writes to the project-app path, creating a read/write path mismatch. (3) Prior sessions patched only the agent-level copy; runtime loads project-level copy first.",
         "observed_at": "2026-06-15T00:00:00Z",
         "evidence": "623/819 evaluation.reviewed events in 24h had null reviewedVerdict. Post-parser+path fix at 02:50: events 1409487, 1409388 etc still showed artifactFound=0, reviewedVerdict=null. Artifacts existed at projects/evaluation.app/... path but code read from agents/evaluator/... path. Post-re-resolve fix at 03:02: events 1409809 (partial_value, artifactFound=1) and 1409828 (needs_improvement, artifactFound=1) both correct.",
         "fix_applied": "(1) Regex #{0,3} + bullet prefix + normalization. (2) Post-review re-resolution: added postReviewArtifactAbsPath/postReviewArtifactPath that re-checks existsSync(projectAppAbsPath) AFTER ctx.runAgent returns, then uses the correct path for readArtifact and all downstream event emissions. (3) Both project-level and agent-level workflow copies synced. Bundle rebuilt, daemon restarted 03:03 UTC."
@@ -2118,7 +2119,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-15T04:32:00Z",
-        "reason": "Original fix (regex #{0,3} + bullet prefix + path re-resolution) accepted at 03:07. Follow-up normalization expansion at 04:19: added partial_value→acceptable, mixed_value/mixed_success→acceptable, real_value→good mappings. Further hardening at 04:31: added useful/solid/adequate→acceptable named rules and changed the final fallback from 'return raw' to 'return acceptable' so no non-canonical verdict string can leak through. This closes the useful_low_signal_heartbeat leak observed at 1781497645297. TypeScript clean, bundle rebuilt, daemon restarted pid 496733. Zero runtime errors post-restart."
+        "reason": "Original fix (regex #{0,3} + bullet prefix + path re-resolution) accepted at 03:07. Follow-up normalization expansion at 04:19: added partial_value\u2192acceptable, mixed_value/mixed_success\u2192acceptable, real_value\u2192good mappings. Further hardening at 04:31: added useful/solid/adequate\u2192acceptable named rules and changed the final fallback from 'return raw' to 'return acceptable' so no non-canonical verdict string can leak through. This closes the useful_low_signal_heartbeat leak observed at 1781497645297. TypeScript clean, bundle rebuilt, daemon restarted pid 496733. Zero runtime errors post-restart."
       }
     },
     "health-metric-oscillation-defer": {
@@ -2128,7 +2129,7 @@
       "kind": "work",
       "priority": "P0",
       "owner": "may",
-      "goal": "Defer health-observation metrics (project.health.finding-count, project.owner-incomplete-count, project.owner-judgment-needed-count) to scheduled project.tick reviews to break the breach→review→recover→breach oscillation loop that consumed 3 owner wakes per measurement cycle.",
+      "goal": "Defer health-observation metrics (project.health.finding-count, project.owner-incomplete-count, project.owner-judgment-needed-count) to scheduled project.tick reviews to break the breach\u2192review\u2192recover\u2192breach oscillation loop that consumed 3 owner wakes per measurement cycle.",
       "inputs": [
         "projects/may-agent.app/app.ts"
       ],
@@ -2142,7 +2143,7 @@
         "TypeScript check clean."
       ],
       "forbidden": [
-        "Do not suppress non-health metric breaches — they may need immediate attention."
+        "Do not suppress non-health metric breaches \u2014 they may need immediate attention."
       ],
       "gates": [],
       "conflict_scope": [
@@ -2151,7 +2152,7 @@
       "state": "done",
       "resolution": "completed",
       "context": {
-        "root_cause": "Three project-health metrics measure the RESULT of owner reviews (e.g. 'are there active tasks?'). They breach whenever no task is active, trigger an owner wake, the review session runs and recovers the metric, then the metric breaches again on the next measurement. This oscillation pattern consumed 3 extra owner wakes per measurement cycle, far exceeding the 6-sessions/day budget. The metric.recovered noop (previous fix) blocked the recover→review half, but breaches still triggered immediate wakes.",
+        "root_cause": "Three project-health metrics measure the RESULT of owner reviews (e.g. 'are there active tasks?'). They breach whenever no task is active, trigger an owner wake, the review session runs and recovers the metric, then the metric breaches again on the next measurement. This oscillation pattern consumed 3 extra owner wakes per measurement cycle, far exceeding the 6-sessions/day budget. The metric.recovered noop (previous fix) blocked the recover\u2192review half, but breaches still triggered immediate wakes.",
         "observed_at": "2026-06-15T06:00:00Z",
         "evidence": "In the packet: 6 metric.breach events for these 3 metrics in 2h. Trend data shows oscillation: [1,0,1,0,0] pattern. 31 project.owner.requested events in 10h window for may-agent, majority metric-signal triggered.",
         "fix_applied": "Added DEFERRED_HEALTH_METRICS set in app.ts routeMayAgentEvent. Metrics in the set return ctx.noop with explanatory message. Updated eventGraph adapter description."
@@ -2159,7 +2160,7 @@
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-15T06:15:00Z",
-        "reason": "Added DEFERRED_HEALTH_METRICS filter in app.ts metric handler. TypeScript check clean (npx tsc --noEmit — zero output). eventGraph adapter updated. Fix is project-local (app.ts only), live on next hot-reload. Metrics still measured and visible in scheduled project.tick reviews (4h interval)."
+        "reason": "Added DEFERRED_HEALTH_METRICS filter in app.ts metric handler. TypeScript check clean (npx tsc --noEmit \u2014 zero output). eventGraph adapter updated. Fix is project-local (app.ts only), live on next hot-reload. Metrics still measured and visible in scheduled project.tick reviews (4h interval)."
       }
     },
     "auto-heartbeat-fm34-guard-fix": {
@@ -2194,7 +2195,7 @@
       "state": "done",
       "resolution": "completed",
       "context": {
-        "root_cause": "heartbeat-loader.ts generateAutoHeartbeats() generates heartbeat cron entries for project-app agents (e.g. scout). The task text did not include 'persistent-task: skip', so the FM-3.4 guard blocked heartbeat sessions as requiring persistent-task workflow. Heartbeats are one-shot creative sessions that read heartbeat.md and do autonomous work — they don't need persistent-task.",
+        "root_cause": "heartbeat-loader.ts generateAutoHeartbeats() generates heartbeat cron entries for project-app agents (e.g. scout). The task text did not include 'persistent-task: skip', so the FM-3.4 guard blocked heartbeat sessions as requiring persistent-task workflow. Heartbeats are one-shot creative sessions that read heartbeat.md and do autonomous work \u2014 they don't need persistent-task.",
         "observed_at": "2026-06-15T06:50:00Z",
         "evidence": "handler.failed event id 1418506 at timestamp 1781506298420: heartbeat-scout blocked by FM-3.4 Persistent-Task Required. Same root-cause class as fm34-guard-planning-session-fix but in auto-generated heartbeats instead of explicit workflow handlers.",
         "fix_applied": "Added '\\npersistent-task: skip' to the task template string in heartbeat-loader.ts line 69. Bundle rebuilt, daemon restarted pid 569767.",
@@ -2219,7 +2220,7 @@
         "url": "http://localhost:8080/projects/aks-rp-e2e.app/tasks",
         "api": "GET /api/projects/tasks?path=projects/aks-rp-e2e.app returns tree metadata but statusCounts incorrectly shows all tasks as 'unknown'",
         "root_cause": "API reads 'status' field but tree.json uses 'state' field (per task-tree-engine design). The taskState() normalizer exists in shared/lib/task-tree.ts but the HTTP server doesn't use it.",
-        "design_ref": "may-agent.app/docs/2a-design/webui.md — task tree surface"
+        "design_ref": "may-agent.app/docs/2a-design/webui.md \u2014 task tree surface"
       },
       "acceptance": [
         "/projects/:id/tasks shows correct state counts (backlog, active, review, done, blocked)",
@@ -2267,7 +2268,7 @@
         "projects/may-agent/test/unit/transcript-redaction.test.ts"
       ],
       "acceptance": [
-        "appendSessionMessage() redacts JWT tokens (eyJ…) before writing to session.jsonl.",
+        "appendSessionMessage() redacts JWT tokens (eyJ\u2026) before writing to session.jsonl.",
         "Bearer tokens, accessToken assignments, and password/secret/token key-value pairs are redacted.",
         "Normal text passes through unchanged (fast path avoids deep scan).",
         "All 7 redaction tests pass.",
@@ -2275,8 +2276,8 @@
         "Bundle rebuilt and daemon restarted."
       ],
       "forbidden": [
-        "Do not mutate the in-memory message — only the persisted copy.",
-        "Do not modify the memory-sanitizer.ts — it covers a different write path."
+        "Do not mutate the in-memory message \u2014 only the persisted copy.",
+        "Do not modify the memory-sanitizer.ts \u2014 it covers a different write path."
       ],
       "gates": [],
       "conflict_scope": [
@@ -2321,7 +2322,7 @@
         "Bundle rebuilt and daemon restarted with fix."
       ],
       "forbidden": [
-        "Do not change the metric threshold — only fix the measurement accuracy."
+        "Do not change the metric threshold \u2014 only fix the measurement accuracy."
       ],
       "gates": [],
       "conflict_scope": [
@@ -2334,13 +2335,33 @@
         "observed_at": "2026-06-16T18:48:00Z",
         "evidence": "KE-2016 documented the issue. Evaluator P1 message (event 1473752) escalated arc heartbeat misjudgment caused by the misleading metric. du -sh showed 1.4G may.db + 1.4G may.db-wal.",
         "fix_applied": "Two fixes: (1) metrics-snapshot.ts sums may.db + may.db-wal + may.db-shm sizes. (2) db-retention.ts runs PRAGMA wal_checkpoint(TRUNCATE) before VACUUM. Bundle rebuilt, daemon restarted pid 1686768.",
-        "post_deploy_evidence": "WAL dropped from 1.4GB to 1.4MB on restart. Total DB ~1.4GB (under 2000MB threshold). Zero handler.failed, zero agent.config_invalid events post-restart. TypeScript check clean (npx tsc --noEmit — zero output)."
+        "post_deploy_evidence": "WAL dropped from 1.4GB to 1.4MB on restart. Total DB ~1.4GB (under 2000MB threshold). Zero handler.failed, zero agent.config_invalid events post-restart. TypeScript check clean (npx tsc --noEmit \u2014 zero output)."
       },
       "verification": {
         "verdict": "accepted",
         "ts": "2026-06-16T18:52:00Z",
         "reason": "Both fixes deployed: metrics-snapshot.ts sums all DB files (lines 1077-1082), db-retention.ts runs wal_checkpoint(TRUNCATE) (lines 209-210). TypeScript check clean. Bundle rebuilt with wal_checkpoint (2 grep matches). WAL dropped from 1.4GB to 1.4MB on daemon restart. Zero failures post-restart. KE-2016 status updated to RESOLVED."
       }
+    },
+    "schedule-tick-event-handled-convention": {
+      "id": "schedule-tick-event-handled-convention",
+      "parent_id": "project",
+      "state": "backlog",
+      "kind": "work",
+      "priority": "P2",
+      "owner": "may",
+      "children": [],
+      "goal": "Adopt the event-handled marking convention for schedule tick events. After a workflow run completes for a schedule-sourced event, mark the triggering event as handled. Aligns may-agent.app and aks-rp-e2e.app with evaluation.app's pattern.",
+      "context": {
+        "root_cause": "may-agent.app and aks-rp-e2e.app emit schedule ticks that stay status=pending even after workflow_runs execute successfully. evaluation.app marks them handled.",
+        "metric": "runtime.project-app-schedule-orphan-count-1h (alert 1917) fires because of this gap.",
+        "deferred_in_app_ts": "Added to DEFERRED_METRICS in app.ts to prevent reactive wake loops until this fix lands."
+      },
+      "acceptance": [
+        "Schedule tick events from may-agent.app and aks-rp-e2e.app get marked handled after their workflow runs complete",
+        "runtime.project-app-schedule-orphan-count-1h metric resolves to 0",
+        "DEFERRED_METRICS entry for this metric is removed from app.ts"
+      ]
     }
   }
 }

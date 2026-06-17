@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Alert 1924 (provider-error) auto-resolved at 13:32 UTC. Alert 1923 (first-turn=21, threshold=15) declining; expected auto-resolve ~13:57 UTC as 12:57 burst ages out of 1h window. 105 sessions since burst, 0 new errors. aks-rp-e2e alert 1922 owned by aks-explorer. escalation.pending-count=5 (human-action backlog). evaluator-quality-gap-calibration active under evaluator (planner false-good HEURISTIC_VERSION=11 fix in progress, false-good rate 0.1605 vs target 0.05). 0 handler.failed, 0 session.resume_failed. 7 backlog leaves (P2 docs/design), 0 active."
+    "summary": "Alerts 1923/1924 (provider errors) resolved. Open alerts #1922 (aks-rp-e2e blocked-count=8, external-gate) and #1926 (duplicate-group=46, threshold registration pending) both owned by aks-explorer—nudged. escalation.pending-count=7 (human-action backlog, deferred in app.ts). Transient lock-timeout burst in aks-rp-e2e resolved (no stale lock). evaluator-quality-gap-calibration active under evaluator (planner false-good fix in progress). 0 handler.failed (may-agent), 0 session.resume_failed. 7 backlog leaves (P2 docs/design), 0 active."
   },
-  "updatedAt": "2026-06-17T13:38:00.000Z"
+  "updatedAt": "2026-06-17T14:45:00.000Z"
 }

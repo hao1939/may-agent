@@ -134,6 +134,21 @@ async function routeMayAgentEvent(
       // (guard noise scoping). Remove these once the scoping fix lands.
       "guard.triggered-count-24h",
       "guard.warned-count-24h",
+      // Category 3: schedule-orphan false positive — may-agent.app and
+      // aks-rp-e2e.app don't mark triggering events as "handled" even
+      // though workflow_runs execute successfully. The measurement counts
+      // these pending events as orphans. Root cause is a missing event-
+      // marking convention (evaluation.app has it, others don't).
+      // Tracked as task: schedule-tick-event-handled-convention.
+      // Remove once the convention fix lands.
+      "runtime.project-app-schedule-orphan-count-1h",
+      // Category 4: escalation pending count measures a human-action
+      // backlog. All pending escalations require human-provided artifacts
+      // (external files, clean git baselines) that May cannot self-service.
+      // Waking May repeatedly to re-inspect escalations it already triaged
+      // is wasteful. The scheduled project.tick (4h) surfaces the count
+      // for awareness; the human gets notified via the daily ops digest.
+      "escalation.pending-count",
     ]);
     const metricId = eventString(event, "metricId");
     if (metricId && DEFERRED_METRICS.has(metricId)) {
@@ -365,7 +380,7 @@ export default defineProjectApp({
         event: "metric.breach",
         emits: ["project.owner.requested"],
         description:
-          "Platform metric breach wakes May to inspect and react. Deferred metrics (health-observation: project.health.*, project.owner-*; delegated: guard.*-count-24h) are captured in scheduled project.tick instead of immediate wakes.",
+          "Platform metric breach wakes May to inspect and react. Deferred metrics (health-observation: project.health.*, project.owner-*; delegated: guard.*-count-24h; human-backlog: escalation.pending-count) are captured in scheduled project.tick instead of immediate wakes.",
       },
       {
         event: "metric.stalled",
