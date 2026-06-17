@@ -77,8 +77,8 @@ const ALL_METRICS: MetricDef[] = [
   { id: "evaluator.false-good-rate-sample", name: "Reviewed good sessions overturned (24h)", owner: "evaluator", type: "gauge", target: 0.05, threshold: 0.60, unit: "ratio", alert_op: ">", priority: "P2" },
   { id: "evaluator.success-candidates-24h", name: "Good sessions marked for learning (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
   { id: "evaluator.success-learnings-24h", name: "Learnings extracted from good sessions (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
-  { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 1, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "scout.knowledge-practice-loaded", name: "Scout knowledge practice loaded", owner: "scout", project: "scout-second-brain-learning", type: "health", target: 1, threshold: 1, unit: "boolean", alert_op: "<", priority: "P2",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "scout.knowledge-preamble-coverage", name: "Scout knowledge preamble coverage", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 0.25, threshold: 0.15, unit: "ratio", alert_op: "<", priority: "P3" },
@@ -1070,11 +1070,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("infra.bus.event-count-1h", eventCount1h);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.bus.event-count-1h: ${e}`); }
 
-    // I2: infra.persist.db-size-mb — DB file size
+    // I2: infra.persist.db-size-mb — DB file size (includes WAL + SHM per KE-2016)
     try {
       const dbPath = join(ctx.sdk.paths.root, ".state", "may.db");
       if (existsSync(dbPath)) {
-        const sizeMb = parseFloat((statSync(dbPath).size / (1024 * 1024)).toFixed(2));
+        let totalBytes = statSync(dbPath).size;
+        const walPath = dbPath + "-wal";
+        const shmPath = dbPath + "-shm";
+        if (existsSync(walPath)) totalBytes += statSync(walPath).size;
+        if (existsSync(shmPath)) totalBytes += statSync(shmPath).size;
+        const sizeMb = parseFloat((totalBytes / (1024 * 1024)).toFixed(2));
         record("infra.persist.db-size-mb", sizeMb);
       }
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.persist.db-size-mb: ${e}`); }

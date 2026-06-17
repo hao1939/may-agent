@@ -157,6 +157,20 @@ tree.check();
 The tool enforces structure and computes projections. It should reject invalid
 states and invalid transitions. It should not infer project strategy.
 
+The project root should stay focused on durable project responsibilities, but
+that is owner judgment, not a hard tool decision. The task-tree tool manages
+schema, frame, layout, links, locks, derived projections, and safe mutations. It
+does not decide whether task content belongs under a specific branch.
+
+`tree.check()` must validate tree shape, not only JSON shape:
+
+- exactly one root, matching `root_task_id`
+- every child pointer and `parent_id` agrees both ways
+- no missing child, parent, dependency, or active-task references
+- no persisted legacy states such as `ready`, `accepted`, or `decomposed`
+- root, parent, child, dependency, and active-task references are internally
+  consistent
+
 ## Derived Projections
 
 Derived predicates are computed fresh and never persisted as state:

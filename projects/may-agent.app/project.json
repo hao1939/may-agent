@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "KE-2016 DB size fix hardened: added post-VACUUM WAL checkpoint to db-retention to prevent transient ~2x WAL spike when VACUUM rewrites the entire DB through WAL. Alert 1899 auto-resolved (1365 MB). Open alerts 1898+1881 are aks-rp-e2e domain (aks-explorer owned). Platform stable."
+    "summary": "Platform stable. Zero open alerts, zero handler failures in 13h+. DB size fix holding (1.4G + 4M WAL). Calibrated evaluator.stale-running-session-count threshold 0→1 to cut transient alert noise (~9 alerts/48h self-resolving in avg 11min). 21 pending messages all for aks-explorer/human — may inbox clear. 4 backlog tasks remain (P2 docs/UI)."
   },
-  "updatedAt": "2026-06-16T18:52:00.000Z"
+  "updatedAt": "2026-06-17T03:10:00.000Z"
 }

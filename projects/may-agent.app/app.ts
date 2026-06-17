@@ -103,20 +103,30 @@ async function routeMayAgentEvent(
       );
     }
 
-    // Project-health observation metrics measure the RESULT of owner reviews
-    // (e.g. "are there active tasks?" / "are there findings?"). They create
-    // a circular dependency when they trigger owner wakes:
-    //   no active task → breach → owner wake → review → recover → breach again
-    // Defer these to the next scheduled project.tick (4h) to break the loop.
-    const DEFERRED_HEALTH_METRICS = new Set([
+    // Deferred metrics: breaches for these metric IDs do NOT trigger immediate
+    // owner wakes. They are captured in the next scheduled project.tick (4h).
+    //
+    // Two categories:
+    // 1. Health-observation metrics that measure the RESULT of owner reviews
+    //    (e.g. "are there active tasks?"). They create circular dependencies:
+    //      no active task → breach → owner wake → review → recover → breach
+    // 2. Known-root-cause metrics where the fix is delegated and repeated
+    //    owner wakes are wasteful until the implementation lands.
+    const DEFERRED_METRICS = new Set([
+      // Category 1: health-observation oscillation
       "project.health.finding-count",
       "project.owner-incomplete-count",
       "project.owner-judgment-needed-count",
+      // Category 2: guard noise — root cause is aks-rp-e2e beforeToolCall
+      // churn (98% of triggers). Fix delegated to dev as KE-2000 Spec 3
+      // (guard noise scoping). Remove these once the scoping fix lands.
+      "guard.triggered-count-24h",
+      "guard.warned-count-24h",
     ]);
     const metricId = eventString(event, "metricId");
-    if (metricId && DEFERRED_HEALTH_METRICS.has(metricId)) {
+    if (metricId && DEFERRED_METRICS.has(metricId)) {
       return ctx.noop(
-        `health-observation metric ${metricId} deferred to scheduled project.tick review`,
+        `deferred metric ${metricId} — captured in scheduled project.tick review, not immediate wake`,
       );
     }
 
@@ -199,6 +209,12 @@ export default defineProjectApp({
           "- app integrity checks that are relevant to the triggered branch",
           "",
           "The local workflow owns packet collection; May owns judgment, task-tree updates, fixes, verification, and escalation.",
+          "",
+          "Scope discipline:",
+          "- Only commit files that are directly tied to the diagnosed root cause or task-tree updates in THIS project (may-agent.app).",
+          "- Do NOT commit unrelated files from other projects (aks-rp-e2e, scout, evaluation) just to clear guard dirtiness.",
+          "- If dirty files exist in other projects, note them as informational — their project owners are responsible for commits.",
+          "- Guard cleanup commits must be narrowly scoped: only .gitignore, project.json, or task tree files that THIS review session modified.",
         ].join("\n"),
         timeoutMs: 1_800_000,
       },
@@ -252,7 +268,7 @@ export default defineProjectApp({
         event: "metric.breach",
         emits: ["project.owner.requested"],
         description:
-          "Platform metric breach wakes May to inspect and react. Health-observation metrics (project.health.*, project.owner-*) are deferred to scheduled project.tick to prevent circular breach→review→recover loops.",
+          "Platform metric breach wakes May to inspect and react. Deferred metrics (health-observation: project.health.*, project.owner-*; delegated: guard.*-count-24h) are captured in scheduled project.tick instead of immediate wakes.",
       },
       {
         event: "metric.stalled",
