@@ -133,7 +133,7 @@ describe("metrics-snapshot session health metrics", () => {
     expect(metric("evaluator.stale-running-session-count")).toMatchObject({
       current: 1,
       target: 0,
-      threshold: 0,
+      threshold: 1,
       priority: "P1",
     });
   });
@@ -512,6 +512,34 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       ["hb_may", "may", "[heartbeat] May", "done", "workflow:may-heartbeat", now - 20 * 60_000, now - 19 * 60_000, 2],
     );
+    for (let i = 0; i < 4; i++) {
+      db.run(
+        "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          `planner_done_${i}`,
+          "aks-explorer",
+          "Planning Update Step",
+          "done",
+          "workflow:project-planner",
+          now - (50 - i) * 60_000,
+          now - (49 - i) * 60_000,
+          2,
+        ],
+      );
+    }
+    db.run(
+      "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        "planner_timeout_like",
+        "aks-explorer",
+        "Planning Update Step",
+        "interrupted",
+        "workflow:project-planner",
+        now - 30 * 60_000,
+        now - 25 * 60_000,
+        1,
+      ],
+    );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       ["s_zero_op", "arc", "call model", "error", now - 10 * 60_000, now - 9 * 60_000, "Connection error", 0],
@@ -545,8 +573,28 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       ["agent.config_invalid", "may", JSON.stringify({ count: 2, message: "Unknown model" }), now - 5 * 60_000],
     );
     db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      ["runtime.daemon.heartbeat", "daemon", "agent:may", JSON.stringify({ pid: 123, interfaceAgent: "may", socketEnabled: true }), now - 60_000],
+    );
+    db.run(
       "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
       ["message.delivery_failed", "may", JSON.stringify({ from: "evaluator", to: "functions.message", reason: "invalid target" }), now - 4 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      ["escalation.created", "agent:may", JSON.stringify({ escalationId: "esc_open_1", sourceAgent: "arc", reason: "open", requestedAction: "review" }), now - 4 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      ["escalation.created", "agent:may", JSON.stringify({ escalationId: "esc_open_2", sourceAgent: "arc", reason: "open", requestedAction: "review" }), now - 3 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      ["escalation.created", "agent:may", JSON.stringify({ escalationId: "esc_closed", sourceAgent: "arc", reason: "closed", requestedAction: "review" }), now - 3 * 60_000],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      ["escalation.resolved", "agent:may", JSON.stringify({ escalationId: "esc_closed", outcome: "fixed", summary: "closed" }), now - 2 * 60_000],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
@@ -570,11 +618,14 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     const metric = (id: string) => db.prepare("SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
     expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
     expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 10, priority: "P1" });
+    expect(metric("runtime.daemon-heartbeat-stale")).toMatchObject({ current: 0, owner: "may", target: 0, threshold: 0, priority: "P0" });
+    expect(metric("session.planner-timeout-rate-6h")).toMatchObject({ current: 0.2, owner: "may", target: 0.05, threshold: 0.25, priority: "P1" });
+    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
     expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 2, priority: "P2" });
     expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
-    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 1400, priority: "P3" });
-    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 1200, priority: "P3" });
+    expect(metric("escalation.pending-count")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 3, priority: "P1" });
+    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 4500, priority: "P3" });
+    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 4500, priority: "P3" });
     expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
     expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
   });

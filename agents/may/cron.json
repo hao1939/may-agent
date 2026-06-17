@@ -582,7 +582,7 @@
   {
     "name": "daily-alert-review",
     "intervalMs": 86400000,
-    "enabled": true,
+    "enabled": false,
     "handler": {
       "workflow": "verify-wrap",
       "agent": "may",
@@ -590,7 +590,7 @@
       "projectId": "may-agent",
       "timeoutMs": 900000
     },
-    "description": "Daily metric alert review and report generation",
+    "description": "Disabled after replacement by projects/may-agent.app daily-ops-digest schedule with replay coverage.",
     "context": [
       "projects/may-agent.app/project.json"
     ]

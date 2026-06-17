@@ -70,6 +70,32 @@ infra behavior remains owned by a global agent such as May.
 4. `eval-llm-scan`: bounded and useful now; migrate reads after alert/project
    paths are cleaner.
 
+## Migration Gates
+
+Do not disable an enabled operational handler just because a newer observer or
+project-app path exists. Disable only after the replacement path has all four
+parts:
+
+1. **Replacement signal** — the event, metric, packet, or schedule that will
+   notice the same condition.
+2. **Owner** — the app or agent that receives the signal and judges it.
+3. **Closure path** — how the owner records fixed, accepted, escalated, or
+   ignored-with-evidence.
+4. **Proof** — static integrity check, unit test, replay test, or live
+   verification artifact showing the replacement catches the old incident.
+
+| Handler | Replacement candidate | Gate before disabling | Current decision |
+|---|---|---|---|
+| `daily-alert-review` | `may-agent.app` `daily-ops-digest` schedule plus `ops-health-review` packets | Replacement signal: `project.ops_digest.tick`; owner: `may-agent.app` owner May; closure path: report, notification, `project.ops_digest.created`, and `project.owner.requested` when open/noisy/missing-owner conditions need judgment; proof: `workflows/daily-ops-digest.test.ts` seeds open/noisy alerts and verifies report, notification, and owner wake. | Disabled in `agents/may/cron.json`. The report path moved from `outputs/YYYY-MM-DD-alert-review.md` to `.state/daily-ops-digests/YYYY-MM-DD-alert-review.md` because digest output is runtime state, not committed project knowledge. |
+| `closed-loop-steward` | `ops-health-review` signals plus metric owner routing through `metric-alert-reactor`/project owner events | Replays cover stale P1 alert, unresolved escalation, failed message delivery, and recovered alert validation without losing `metric.alert_judged` closure. | Keep enabled. The observer reduces silent drift but does not replace alert-closure judgment yet. |
+| `project-creative-audit` | Project owner planning plus `project-steward` structural findings | Replay shows unknown semantic project issues become owner-visible proposals without the global fallback, including stale/misleading task-tree decomposition cases. | Keep enabled. It is proposal-only and still covers unknown unknowns. |
+| `coaching-consumer` | `evaluation.app` feedback events or metrics owned by evaluator/coach | Evaluation app owns coaching queue production, coach receives durable feedback signals, and at least one replay verifies low-quality pattern feedback reaches the coach without file polling. | Keep enabled. Ownership target is evaluation/coach, but replacement is not built. |
+| `feedback-echo-sync` | Evaluation app or runtime feedback writer that updates agent feedback files from evaluation events | Event-driven feedback update is implemented and replayed; stale feedback cleanup still works; no subprocess/SQLite race reappears. | Keep enabled. It is deterministic, cheap, and fixes a prior flaky subprocess path. |
+
+Migration work should update this table first, then change `agents/may/cron.json`
+only in the same patch that adds proof. If proof is missing, the handler stays
+enabled and the missing proof becomes a task.
+
 ## Validation
 
 - Existing helper coverage: workflow-backed handler config uses

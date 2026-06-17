@@ -9,7 +9,7 @@ caught or recovered from autonomously. The monitoring infrastructure exists
 
 Problems we fixed manually:
 1. Evaluator created 300+ standalone projects from unscoped metric.breach
-2. May burned 47 sessions/day (6 budget) from redundant legacy handler
+2. May woke repeatedly from redundant legacy handler overlap
 3. Scout heartbeat double-dispatch from subscribeToBus called twice
 4. Planner 46% timeout rate with no actionable surfacing
 5. Daemon crash with no internal detection (telegram stopped responding)
@@ -57,15 +57,16 @@ state and no clear owner.
 
 `metrics-snapshot` fires every 5min and measures everything. `session-recovery`
 runs every 5min. But:
-- Session budget violations have no metric (47/day vs 6 budget)
-- Duplicate dispatch has no metric
+- Duplicate dispatch had no static lifecycle check
 - Planner timeout rate has no metric (it's an interrupted session — same bucket
   as everything else)
 - Escalation accumulation has no metric (count grows silently)
-- Problem-solver result quality has no metric (unknown vs resolved vs escalated)
+- Problem-solver result quality has no structured contract (unknown vs resolved
+  vs escalated)
 
-The metrics exist for some things but not for the operational patterns that
-actually cause waste.
+The system has metrics for some things, but it needs a cleaner split between
+static integrity checks for structural mistakes and runtime metrics for
+recurring live behavior.
 
 ## Proposal: System Operations as may-agent.app's Core Responsibility
 
@@ -92,16 +93,50 @@ APP (may-agent.app):
 This is the same pattern as aks-rp-e2e.app (infra runs specs, app judges
 results) and evaluation.app (infra runs aftermath, app judges quality).
 
+### Observation vs Action
+
+Separate observing from acting:
+
+```text
+Observer = collect facts, detect signals, build packets, record evidence
+Actor    = judge signals, change state, run workflows, fix code, notify humans
+```
+
+Observation is always safe and should be always on. Acting is gated by owner,
+urgency, confidence, and reversibility.
+
+Observers:
+- run deterministic checks, metrics, and scans
+- collect enough context for an owner to understand the signal
+- emit events, findings, packets, and evidence
+- may run frequently because they do not mutate project strategy
+
+Actors:
+- are the responsible owner app, owner workflow, or explicitly approved
+  deterministic repair
+- decide whether a signal is noise, a real problem, an accepted exception, or a
+  request for human judgment
+- mutate task trees, files, config, sessions, alerts, or external systems
+- must close the loop with result, evidence, or escalation
+
+This split lets the system be proactive without becoming jumpy. When unsure,
+observe and preserve context first; act only when the signal is owned and the
+expected closure is clear.
+
 ### Concrete changes
 
 **1. Consolidate overlapping handlers**
 
-Disable and replace:
-- `closed-loop-steward` → redundant with metric-alert-reactor + may-agent.app
-  owner review
-- `project-creative-audit` → redundant with project-steward + app owner review
-- `daily-alert-review` → becomes a may-agent.app schedule (daily digest, not a
-  separate handler)
+Disable only after the migration gate is proven:
+- `daily-alert-review` → replaced by `may-agent.app` `daily-ops-digest`
+  schedule. The digest writes a runtime report, notifies the human with
+  context, emits `project.ops_digest.created`, and wakes May when open/noisy
+  conditions need judgment.
+- `closed-loop-steward` → candidate replacement is metric-alert-reactor plus
+  may-agent.app owner review, but keep enabled until alert-closure judgment
+  replays prove no loss.
+- `project-creative-audit` → candidate replacement is project-steward plus app
+  owner review, but keep enabled until semantic fallback replays prove no loss.
 
 Keep:
 - `metric-alert-reactor` as the generic P0 fallback
@@ -119,7 +154,7 @@ Before adding runtime metrics, classify each failure mode:
 |---------|-----------|-----|
 | Unscoped metric.breach routing | Static app manifest check | Event subscription is declarative — check at load time |
 | Duplicate subscribeToBus lifecycle | Unit test + static ownership rule | Structural bug, not runtime drift |
-| Handler overlap vs budget | Static schedule/budget check | Declared intervals × handlers vs sessionsPerDay |
+| Handler overlap | Static schedule/ownership check | Declared handlers should have one clear owner and purpose |
 | Planner timeout rate | Runtime metric | Recurring runtime behavior, varies with tree size |
 | Daemon heartbeat stale | Runtime metric/watchdog | Only runtime can observe liveness |
 | Regex false escalations | Structured output contract + tests | Fixed by removing the guess; test the contract |
@@ -130,50 +165,67 @@ Static checks to add (run at `bun run check` / app integrity):
 - Every app event has a route, handler, or explicit external/terminal classification
 - Every handler declares emitted events; emitted events are handled or terminal
 - No duplicate cron lifecycle ownership: creator owns create/load/subscribe/start
-- App schedule budget fits declared sessionsPerDay
 - Metric registry and metrics doc agree on id, owner, priority, threshold
 - Active metric has owner, priority, threshold, source, and closure path
 - No retired/orphaned handler/metric still active in cron.json
 - Task tree schema integrity: parent links, unique IDs, valid states, no orphans
 
-**3. Runtime metrics (small active set)**
+**3. Runtime monitoring and proactive metrics**
 
-Only add metrics for things that are genuinely runtime-variable and not
-catchable by static checks:
+Runtime monitoring is for live behavior: things static checks cannot know,
+things that drift after startup, and unexpected symptoms that should make the
+system more solid after investigation.
+
+Use two layers:
+
+1. **Active metrics** for important live conditions that should be watched
+   continuously.
+2. **Ops health packet observations** for broader symptoms that may be
+   one-off, exploratory, or not yet worth making into permanent metrics.
+
+Active metrics should stay small and proactive:
 
 | Metric | Priority | Rationale |
 |--------|----------|-----------|
 | `runtime.daemon-heartbeat-stale` | P0 | Only runtime knows if process is alive |
-| `session.budget-violation-count` | P1 | Budget is declared but not enforced; violations accumulate at runtime |
 | `session.planner-timeout-rate-6h` | P1 | Varies with tree size, model response time |
 | `escalation.pending-count` | P1 | Accumulation is a runtime pattern |
 
 Temporary (retire after static coverage proves the fix):
 - `handler.duplicate-dispatch-rate` — validate the cron lifecycle fix, then retire
 
-Do NOT add (either static-checkable or premature):
-- `event.loop-detected-count` — static manifest check covers this
-- `event.unhandled-count` — static manifest check covers this
+Ops health packet observations may include:
+- recent `handler.failed`, `subscriber.failed`, and `message.delivery_failed`
+  events
+- unhandled or unknown event types observed at runtime
+- repeated dispatch symptoms for the same event/handler pair
+- stale queues, stale pending escalations, or missing closure signals
+- abnormal task-tree/project-state drift reported by project-steward
+- recent human-facing delivery failures or dropped conversation replies
+
+These observations let the system be proactive without permanently expanding
+the metric registry. When an observation repeats or needs an alert threshold,
+promote it to an active metric with owner, priority, threshold, source, closure
+path, and retirement condition when appropriate.
+
+Do not add these as permanent metrics yet:
+- `event.loop-detected-count` — static manifest check covers declared loops;
+  runtime packet can still surface unexpected loop symptoms
+- `event.unhandled-count` — static manifest check covers declared app events;
+  runtime packet can still surface dynamic unhandled events
 - `task.no-progress-duration` — project-steward already surfaces stale tasks
-- `conversation.unclosed-human-reply-count` — not yet a proven failure mode
+- `conversation.unclosed-human-reply-count` — keep as packet observation until
+  repeated
 - `problem.unknown-result-rate-24h` — structured contract + test covers this
-  planner sessions
-- `escalation.pending-count`: unresolved escalations older than 1h
-- `problem.unknown-result-rate-24h`: problem-solver sessions returning
-  "unknown" / total
 
-These are cheap DB queries. They make invisible waste visible.
+**4. Add signal-gated ops review**
 
-**3. Increase may-agent.app review cadence for ops signals**
+Keep the existing platform-review schedule for design/planning work. Add a
+separate `ops-health-review` schedule that builds a deterministic health packet
+as an observer. It only wakes May, the actor, when there is a meaningful signal
+that needs judgment or closure.
 
-Change the platform-review schedule from 4h to 1h for the operational health
-lane. The 4h cadence is fine for design/planning work but too slow for
-operational issues (47 sessions burned before anyone noticed).
-
-Or: add a separate `ops-health-review` schedule at 1h that only checks
-operational metrics, distinct from the 4h design review.
-
-**4. may-agent.app task tree: ops-health branch**
+**5. may-agent.app task tree: ops-health branch**
 
 Add a durable `ops-health` branch. It is not a permanent active lane —
 it is a place for finite review/repair tasks. When a task completes, its
@@ -181,7 +233,7 @@ findings and decisions roll up into the branch context. New tasks are
 created only when a real signal demands investigation or repair.
 
 Example tasks (finite, created when signal demands):
-- `add-static-integrity-checks`: implement the 8 static checks listed above
+- `add-static-integrity-checks`: implement the static checks listed above
 - `add-daemon-heartbeat-metric`: add runtime.daemon-heartbeat-stale to snapshot
 - `migrate-daily-alert-review`: prove replacement, then disable handler
 - `investigate-planner-timeout-46pct`: one-time analysis of timeout cause
@@ -196,12 +248,12 @@ surfaces a problem that needs owner judgment.
 may-agent.app
   schedules:
     platform-review (4h)     — design, conventions, SDK work
-    ops-health-review (1h)   — operational metrics, budget, escalations
-    daily-ops-digest (24h)   — daily summary to human
+    ops-health-review (1h)   — deterministic health packet and signal gating
+    daily-ops-digest (24h)   — deterministic daily alert report and human summary
 
   task tree:
     platform-design/         — existing: SDK, conventions, project-app design
-    ops-health/              — new: session budgets, planner efficiency, handler hygiene
+    ops-health/              — new: liveness, planner efficiency, handler hygiene
     ui-improvements/         — existing: project task UI fixes
 ```
 
@@ -213,43 +265,48 @@ may-agent.app
   shared judgment. The app provides the shared judgment.
 - Not replacing infra with app logic — infra still measures and recovers. The
   app judges and plans.
+- Not making every observation actionable — the system can record weak signals
+  without waking an actor until the signal repeats, becomes urgent, or needs
+  closure.
 
-### Budget-Safe Review Cadence
+### Signal-Gated Review Cadence
 
-The ops-health-review runs hourly as a **deterministic handler** (no LLM).
-It builds a compact health packet from DB queries and compares against
-thresholds. The handler itself is pure code — no agent session consumed.
+The ops-health-review runs hourly as a **deterministic observer** (no LLM).
+It builds a compact health packet from DB queries, recent events, active metric
+state, and static/integrity check summaries. The handler itself is pure code —
+no agent session consumed.
 
 May only wakes (LLM session) when the packet crosses a meaningful threshold:
 - P0 metric breached (immediate)
 - P1 metric breached with no owner action for >1h
 - Escalation pending >1h with no resolution
 - Daemon heartbeat stale >5min
+- Repeated packet observation suggests an unexpected runtime issue
 
-All other states are silent. The packet is logged for observability but does
-not trigger a session. Daily ops-digest is the one scheduled LLM wake for
-non-urgent rollup.
+All other states are logged for observability but do not trigger a session.
+Daily ops-digest is the scheduled rollup for non-urgent patterns. May reviews
+whether packet observations should become static checks, regression tests,
+active metrics, accepted exceptions, or finite ops-health tasks.
 
 ### Metric Priority Classification
 
-Each operational metric has an explicit priority:
+Each active operational metric has an explicit priority:
 
 | Metric | Priority | Action |
 |--------|----------|--------|
 | `runtime.daemon-heartbeat-stale` | P0 | Immediate human escalation |
-| `handler.duplicate-dispatch-rate` | P0 | Immediate owner wake |
-| `event.unhandled-count` | P1 | Owner review within 1h |
-| `session.budget-violation-count` | P1 | Owner review within 1h |
 | `session.planner-timeout-rate-6h` | P1 | Owner review within 1h |
 | `escalation.pending-count` | P1 | Owner review within 1h |
-| `problem.unknown-result-rate-24h` | P2 | Visible in health rollup |
-| `event.loop-detected-count` | P2 | Visible in health rollup |
-| `task.no-progress-duration` | P2 | Visible in health rollup |
-| `conversation.unclosed-human-reply-count` | P2 | Visible in health rollup |
+
+Temporary metric while the cron lifecycle fix is being validated:
+
+| Metric | Priority | Action |
+|--------|----------|--------|
+| `handler.duplicate-dispatch-rate` | P1 | Owner review if it repeats after the static/unit fix |
 
 P0 = immediate owner wake + possible human escalation.
 P1 = owner review soon (next health packet with signal).
-P2 = visible in daily rollup only.
+Temporary metrics must have an explicit retirement condition.
 
 ### Handler Migration Gate
 
@@ -266,22 +323,24 @@ For each handler migration, require:
 
 Migration order (each step must pass the gate before the next):
 - `daily-alert-review` → replaced by may-agent.app daily-ops-digest schedule
+  and disabled in May cron after replay proof
 - `closed-loop-steward` → replaced by ops-health-review + metric-alert-reactor
 - `project-creative-audit` → replaced by project-steward + may-agent.app review
 - `coaching-consumer` → migrate to evaluation.app
 - `feedback-echo-sync` → migrate to evaluation.app
 
-### "Problem Unknown" Metric Source
+### Problem Solver Result Contract
 
-`problem.unknown-result-rate-24h` comes from structured workflow outcomes,
-not text matching. After the problem-solver fix (explicit `PROBLEM_RESULT`
-declaration), the source is the event type field:
+Problem-solver outcomes should be structured workflow results, not text
+matching. After the problem-solver fix, every problem-solver workflow must emit
+one explicit result event:
 - `project.problem.resolved` → counted as resolved
 - `project.problem.escalated` → counted as escalated
 - `project.problem.unknown` → counted as unknown
 
-The metric is `unknown_count / total_count` from the events table. No regex,
-no heuristic, no fragile text rules.
+This is a contract plus regression-test concern. Do not add
+`problem.unknown-result-rate-24h` as a permanent metric unless unknown outcomes
+repeat after the structured contract is in place.
 
 ### Verification: Replay Real Incidents
 
@@ -302,9 +361,22 @@ Each scenario that failed during our manual review becomes a test case:
 
 ### Implementation Order
 
-1. Refine proposal with ownership, priority, budget, and closure semantics ← done
-2. Add missing operational metric definitions to `metrics-snapshot.ts`
-3. Add a cheap deterministic health-packet builder (handler, no LLM)
-4. Route only meaningful breaches to may-agent.app owner (signal-gated)
-5. Create the `ops-health` task lane in may-agent.app task tree
-6. Migrate overlapping handlers one by one after replay tests prove coverage
+1. Refine proposal with ownership, priority, signal gating, and closure semantics ← done
+2. Add app/static integrity checks and wire them into `bun run check`
+3. Add the small active runtime metrics to `metrics-snapshot.ts`
+4. Add a cheap deterministic health-packet builder (handler, no LLM)
+5. Route only meaningful breaches to may-agent.app owner (signal-gated)
+6. Create the `ops-health` task branch in may-agent.app task tree
+7. Migrate overlapping handlers one by one after replay tests prove coverage
+
+### Implementation Status
+
+- Static integrity checks, active runtime metrics, and `ops-health-review` are
+  implemented and wired into `may-agent.app`.
+- `daily-alert-review` is replaced by the project-local `daily-ops-digest`
+  schedule. Replay coverage in `workflows/daily-ops-digest.test.ts` proves that
+  an open/noisy alert set writes a report, notifies the human with context, and
+  wakes May with the digest signal. The old global May cron entry is disabled.
+- `closed-loop-steward`, `project-creative-audit`, `coaching-consumer`, and
+  `feedback-echo-sync` remain enabled until their replacements pass the same
+  migration gate.

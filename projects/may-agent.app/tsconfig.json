@@ -6,10 +6,17 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"]
+      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/testing": ["../may-agent/packages/sdk/src/testing.ts"]
     },
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["app.ts", "workflows/**/*.ts", "types/**/*.ts"]
+  "include": [
+    "app.ts",
+    "workflows/**/*.ts",
+    "scripts/**/*.ts",
+    "types/**/*.ts"
+  ],
+  "exclude": ["**/*.test.ts", "archive/**", ".state/**", "node_modules/**"]
 }

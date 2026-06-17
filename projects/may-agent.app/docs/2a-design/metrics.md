@@ -96,10 +96,13 @@ until they become necessary for keeping the loop running.
 | `handler.heartbeat-coverage` | Are heartbeat sessions happening broadly? | `COUNT(DISTINCT agent)` from heartbeat sessions (2h) | 2 | 2 | below |
 | `agent.heartbeat-dark-count-2h` | Did any scheduled heartbeat agent go dark? | enabled heartbeat cron agents with no heartbeat session in 2h | 0 | 0 | above |
 | `agent.config-invalid-count-1h` | Did runtime skip an agent due to invalid config? | durable `agent.config_invalid` events (1h) | 0 | 0 | above |
+| `runtime.daemon-heartbeat-stale` | Is the daemon keepalive still emitting durable observations? | latest `runtime.daemon.heartbeat` event age | 0 | 0 | above |
 | `session.error-rate-6h` | Is anything failing? | `error+interrupted / total` from sessions (6h). The `error='Clean start (fresh)'` exclusion (KE-797) is **non-functional** because `sessions.error` is nearly always NULL (KE-1558, KE-1878); the COALESCE fallback makes all interrupted sessions count as errors (KE-1778). **Known distortion:** the project-planner `planning_update` workflow is the primary interruption source (~69% interrupt rate, ~126/day); aks-explorer task sessions also contribute. The true error-only rate is ~0.8–2%, but the metric lumps interruptions with errors and reports ~0.09–0.13 (see KE-1644, KE-1778, KE-1872). **Failure conservation (KE-1900):** a 36-hour measurement across an architectural transition showed total non-success rate conserved at ~10% while error-only dropped 12× (10.1% → 0.85%) — failures reclassified from `error` to `interrupted`, not eliminated. This metric measures label assignment, not reliability. Fix requires src/ change (ORDER-010). | 0.10 | 0.30 | above |
+| `session.planner-timeout-rate-6h` | Is project planning repeatedly interrupted or timing out? | timeout-like `workflow:project-planner` terminal sessions / all terminal planner sessions (6h, neutral if sample <5) | 0.05 | 0.25 | above |
 | `session.first-turn-error-count-1h` | Is the provider/model failing before the agent can act? | recent error/interrupted sessions whose first assistant transcript row has `stopReason=error` or provider error text | 0 | 15 | above |
 | `message.delivery-failed-count-1h` | Are inter-agent messages failing to route? | `message.delivery_failed` events (1h) | 0 | 0 | above |
-| `evaluator.stale-running-session-count` | Is work hanging? | running/idle non-evaluator sessions older than stale cutoff | 0 | 0 | above |
+| `escalation.pending-count` | Are escalations accumulating without closure? | unresolved `escalation.created` events with no resolved/dismissed event | 0 | 3 | above |
+| `evaluator.stale-running-session-count` | Is work hanging? | running/idle non-evaluator sessions older than stale cutoff | 0 | 1 | above |
 
 ### Quality / Output
 
@@ -127,6 +130,7 @@ These are measured but not in the prioritized tables above.
 - `handler.failed-count` — failures in 6h
 - `handler.p95-duration` — 95th percentile handler duration in 6h
 - `handler.fires-per-hour` — handler starts in 1h
+- `runtime.daemon-heartbeat-stale` — daemon keepalive observation is missing or older than 7 minutes
 - `infra.bus.event-count-1h` — total event bus events in 1h (volume indicator)
 - `infra.bus.subscriber-failed-count-1h` — event bus subscriber failures in 1h
 - `infra.messages.delivery-rate` — inter-agent message delivery success rate
@@ -170,7 +174,11 @@ These are measured but not in the prioritized tables above.
 - `session.empty-assistant-stop-count-1h` — sessions ending with empty assistant response (1h)
 - `session.finish-blocked-uncommitted-count-24h` — finish blocked by uncommitted changes (24h raw count)
 - `session.finish-blocked-unresolved-count-24h` — unresolved finish-blocked dirty exits (24h strict)
+- `session.planner-timeout-rate-6h` — project planner interruption/timeout reliability
 - `session.provider-error-count-1h` — provider errors at any turn (1h)
+
+**Escalation:**
+- `escalation.pending-count` — open escalation backlog that still needs owner closure
 
 ### Retired From Active Alerting
 

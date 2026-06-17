@@ -107,7 +107,8 @@ function compactRows(
     const compact: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(row)) {
       if (typeof value === "string" && value.length > MAX_FIELD) {
-        compact[key] = `${value.slice(0, MAX_FIELD)}...[truncated ${value.length} chars]`;
+        compact[key] =
+          `${value.slice(0, MAX_FIELD)}...[truncated ${value.length} chars]`;
       } else {
         compact[key] = value;
       }
@@ -210,7 +211,9 @@ function buildReviewPacket(
         allPendingMessageIds.push(row.id);
       }
     }
-  } catch { /* best-effort: fall back to recentEvents IDs only */ }
+  } catch {
+    /* best-effort: fall back to recentEvents IDs only */
+  }
 
   return {
     packet: {
@@ -268,14 +271,17 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         olderThanMs: STALE_MESSAGE_AGE_MS,
       });
     }
-  } catch { /* best-effort: don't block review if expiry fails */ }
+  } catch {
+    /* best-effort: don't block review if expiry fails */
+  }
 
   // Expire stale pending signal events (session.resume_failed, metric.breach/recovered/stalled)
   // older than 24h. These are non-actionable historical noise once reviewed.
   try {
     const STALE_SIGNAL_AGE_MS = 24 * 60 * 60_000; // 24 hours
     if (typeof ctx.query.expireStaleSignalEvents === "function") {
-      const expiredSignals = ctx.query.expireStaleSignalEvents(STALE_SIGNAL_AGE_MS);
+      const expiredSignals =
+        ctx.query.expireStaleSignalEvents(STALE_SIGNAL_AGE_MS);
       if (expiredSignals > 0) {
         ctx.emit({
           type: "signal.lifecycle",
@@ -285,7 +291,9 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
         });
       }
     }
-  } catch { /* best-effort: don't block review if signal expiry fails */ }
+  } catch {
+    /* best-effort: don't block review if signal expiry fails */
+  }
 
   const { packet, consumedMessageIds } = buildReviewPacket(ctx, appDir);
   const packetJson = JSON.stringify(packet, null, 2);
@@ -294,10 +302,15 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   // This closes the lifecycle gap where the owner workflow reads messages
   // but never transitions them from pending → handled.
   try {
-    if (consumedMessageIds.length > 0 && typeof ctx.query.markInboxHandled === "function") {
+    if (
+      consumedMessageIds.length > 0 &&
+      typeof ctx.query.markInboxHandled === "function"
+    ) {
       ctx.query.markInboxHandled(consumedMessageIds, "may");
     }
-  } catch { /* best-effort: don't block review if marking fails */ }
+  } catch {
+    /* best-effort: don't block review if marking fails */
+  }
 
   // Safety cap: if the serialized packet exceeds 200KB, something is wrong.
   // Truncate to prevent recursive amplification from bloating session tasks.

@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-17T06:30:00.000Z",
+  "updated_at": "2026-06-17T09:10:30.931Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "46 tasks done, 7 backlog, 0 active (53 total). Recovering from provider outage (~03:30-05:30 UTC) that triggered session error amplification loop (134 0-op errors from project-planner + metric-alert-triage retries). Alert 1901 (error-rate-6h=0.54) still open; trailing window, provider metrics recovered. System healthy in last 1h. 4 backlog leaf tasks remain (P1-P2 docs/UI).",
+  "note": "54 tasks done, 6 backlog, 0 active (60 total). Project task read model and UI state rendering are fixed; remaining backlog is V3 adoption playbook, SDK checkpoint helper, and shared Kanban steering actions.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
@@ -25,6 +25,7 @@
         "platform-sdk-expansion",
         "platform-project-app-workflow-resolution",
         "platform-system-review-feedback-loop",
+        "platform-ops-observe-act-loop",
         "sdk-checkpoint-helper",
         "platform-session-resume-noise-reduction",
         "message-lifecycle-management",
@@ -234,7 +235,25 @@
       "conflict_scope": [
         "platform-read-models"
       ],
-      "state": "backlog"
+      "state": "done",
+      "summary": "Closed the read-model workstream after /api/projects/tasks gained canonical state normalization, malformed-tree diagnostics, tests, and shared Kanban consumption.",
+      "evidence": [
+        "projects/may-agent/src/app/http/server.ts",
+        "projects/may-agent/test/integration/http-project-tasks-read-model.test.ts",
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent.app/outputs/generic-project-task-read-model-hardening.md",
+        "bun run check (projects/may-agent): pass"
+      ],
+      "reusable_for": [
+        "shared project task UI",
+        "Project App V3 read models"
+      ],
+      "done_at": "2026-06-17T09:06:50.549Z",
+      "done_by": "codex",
+      "accepted_at": "2026-06-17T09:06:50.549Z",
+      "accepted_by": "codex",
+      "resolution": "completed",
+      "updated_at": "2026-06-17T09:06:50.550Z"
     },
     "generic-project-task-read-model-hardening": {
       "id": "generic-project-task-read-model-hardening",
@@ -261,10 +280,31 @@
       "conflict_scope": [
         "platform-read-models"
       ],
-      "state": "backlog",
+      "state": "done",
       "context": {
         "migrated_from_proposed_state": true
-      }
+      },
+      "summary": "Hardened the generic project task read model: canonical state normalization, legacy status compatibility, actionable malformed-tree errors, focused tests, and shared Kanban state consumption.",
+      "evidence": [
+        "projects/may-agent/src/app/http/server.ts",
+        "projects/may-agent/test/integration/http-project-tasks-read-model.test.ts",
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent.app/outputs/generic-project-task-read-model-hardening.md",
+        "bun test test/integration/http-project-tasks-read-model.test.ts (projects/may-agent): pass",
+        "bun run check (projects/may-agent): pass",
+        "buildProjectTasksReadModel(may-agent.app tree): backlog 9, done 51, no unknown bucket"
+      ],
+      "reusable_for": [
+        "shared project task API",
+        "project Kanban/task UI",
+        "Project App V3 task tree migration"
+      ],
+      "done_at": "2026-06-17T09:06:07.968Z",
+      "done_by": "codex",
+      "accepted_at": "2026-06-17T09:06:07.968Z",
+      "accepted_by": "codex",
+      "resolution": "completed",
+      "updated_at": "2026-06-17T09:06:07.969Z"
     },
     "platform-web-ui-observability": {
       "id": "platform-web-ui-observability",
@@ -302,7 +342,7 @@
         "ts": "2026-06-13T21:16:00Z",
         "reason": "Generic project task API and shared Kanban board are live for all 3 project apps. WebUI build synced. Only the P2 steering actions design remains as future work."
       },
-      "state": "done",
+      "state": "backlog",
       "resolution": "completed"
     },
     "project-kanban-api-read-model": {
@@ -450,7 +490,7 @@
         "ts": "2026-06-13T21:16:00Z",
         "reason": "V2 layout migration accepted, second-adopter rollup superseded by V3 design. V3 loader, project-scope filter, and 3 live apps validate the adoption pattern. Only the P2 adoption playbook doc remains as a future documentation task."
       },
-      "state": "done",
+      "state": "backlog",
       "resolution": "completed"
     },
     "platform-v2-layout-migration": {
@@ -1417,6 +1457,313 @@
         "reason": "All 5 children completed: packet-contract, runtime-wiring, abnormal-signal-triage, metric-feedback-alignment, review-loop-e2e-verification. The system-review feedback loop is operational."
       }
     },
+    "platform-ops-observe-act-loop": {
+      "id": "platform-ops-observe-act-loop",
+      "parent_id": "project",
+      "children": [
+        "ops-model-proposal-capture",
+        "app-static-integrity-checks",
+        "ops-health-observer-packet",
+        "ops-active-runtime-metrics",
+        "ops-handler-migration-gates",
+        "ops-incident-replay-verification"
+      ],
+      "kind": "workstream",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Implement the system operations model with a clean observer/actor split: static checks prevent structural drift, runtime observers surface live issues, and May acts only when ownership and closure are clear.",
+      "inputs": [
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
+        "projects/may-agent.app/app.ts",
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent/src/",
+        "agents/may/handlers/"
+      ],
+      "outputs": [
+        "projects/may-agent.app/scripts/check-integrity.ts",
+        "projects/may-agent.app/package.json",
+        "projects/may-agent.app/tasks/tree.json",
+        "agents/may/handlers/metrics-snapshot.ts",
+        "projects/may-agent.app/workflows/"
+      ],
+      "acceptance": [
+        "App structural integrity is checked by the app package.",
+        "Ops-health observation is deterministic and does not mutate strategy.",
+        "Only meaningful runtime signals wake May or humans.",
+        "Every actor path records closure evidence.",
+        "Handler migrations require a replacement signal and replay/static coverage."
+      ],
+      "forbidden": [
+        "Do not make every observation wake an actor.",
+        "Do not encode platform judgment in generic infra handlers.",
+        "Do not add permanent metrics for one-off issues without recurrence evidence."
+      ],
+      "conflict_scope": [
+        "platform-ops-observe-act"
+      ],
+      "context": {
+        "design": "Observer collects facts, detects signals, builds packets, and records evidence. Actor judges, mutates state, fixes code, notifies humans, and closes loops.",
+        "proposal": "projects/may-agent.app/docs/3-proposals/system-operations-model.md"
+      },
+      "state": "done",
+      "summary": "System operations model workstream completed with design, static integrity, deterministic observer, active runtime metrics, handler migration gates, and incident replay/regression coverage.",
+      "evidence": [
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
+        "projects/may-agent.app/scripts/check-integrity.ts",
+        "projects/may-agent.app/workflows/ops-health-review.ts",
+        "projects/may-agent.app/workflows/ops-health-review.test.ts",
+        "agents/may/handlers/metrics-snapshot.ts",
+        "bun run check (projects/may-agent.app): pass",
+        "bun test test/integration/cron-event-subscription.test.ts (projects/may-agent): pass",
+        "bun test workflows/project-planner.test.ts --timeout 30000 (projects/aks-rp-e2e.app): pass",
+        "bun test /app/agents/may/handlers/metrics-snapshot-session-health.test.ts: pass"
+      ],
+      "reusable_for": [
+        "may-agent.app operations review",
+        "project app observer/actor split",
+        "handler migration gate reviews"
+      ],
+      "done_at": "2026-06-17T08:57:57.925Z",
+      "done_by": "codex",
+      "accepted_at": "2026-06-17T08:57:57.925Z",
+      "accepted_by": "codex",
+      "resolution": "completed",
+      "updated_at": "2026-06-17T08:57:57.926Z"
+    },
+    "ops-model-proposal-capture": {
+      "id": "ops-model-proposal-capture",
+      "parent_id": "platform-ops-observe-act-loop",
+      "children": [],
+      "kind": "design",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Capture the system operations model proposal, including static checks first, proactive runtime observations, and the observer/actor split.",
+      "inputs": [
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md"
+      ],
+      "outputs": [
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md"
+      ],
+      "acceptance": [
+        "Proposal distinguishes Observer from Actor.",
+        "Proposal removes ops-budget framing.",
+        "Proposal explains when observations become metrics, tests, tasks, or accepted exceptions."
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-17T00:00:00Z",
+        "reason": "Proposal updated with Observation vs Action, signal-gated review cadence, proactive runtime packet observations, and a small active metrics set."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "app-static-integrity-checks": {
+      "id": "app-static-integrity-checks",
+      "parent_id": "platform-ops-observe-act-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Add an app-local static integrity check that validates may-agent.app manifest/event graph shape and task-tree links before runtime drift can happen.",
+      "inputs": [
+        "projects/may-agent.app/app.ts",
+        "projects/may-agent.app/tasks/tree.json",
+        "projects/may-agent.app/package.json",
+        "projects/may-agent.app/tsconfig.json"
+      ],
+      "outputs": [
+        "projects/may-agent.app/scripts/check-integrity.ts",
+        "projects/may-agent.app/package.json",
+        "projects/may-agent.app/tsconfig.json",
+        "projects/may-agent.app/tasks/tree.json"
+      ],
+      "acceptance": [
+        "bun run integrity validates declared app events are routed, handled, adapted, or external.",
+        "bun run integrity validates workflow handlers, schedules, action events, eventGraph emits, context paths, and task-tree structural links.",
+        "bun run check includes the integrity check.",
+        "The checker validates schema and shape, not task content quality or project strategy."
+      ],
+      "forbidden": [
+        "Do not fail backlog tasks merely because their goals need refinement.",
+        "Do not inspect runtime DB state in the static integrity check."
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-17T00:00:00Z",
+        "reason": "Added scripts/check-integrity.ts, wired package.json check to run integrity, added scripts/**/*.ts to tsconfig, removed invalid local dependency edge from sdk-checkpoint-helper. bun run integrity passes."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "ops-health-observer-packet": {
+      "id": "ops-health-observer-packet",
+      "parent_id": "platform-ops-observe-act-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "goal": "Implement deterministic ops-health-review observation that builds a compact health packet without waking May unless a meaningful signal needs judgment or closure.",
+      "inputs": [
+        "projects/may-agent.app/app.ts",
+        "projects/may-agent.app/workflows/platform-owner-review.ts",
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md"
+      ],
+      "outputs": [
+        "projects/may-agent.app/app.ts",
+        "projects/may-agent.app/workflows/",
+        "projects/may-agent.app/.state/"
+      ],
+      "acceptance": [
+        "ops-health-review observes recent failures, unhandled/unknown event symptoms, stale queues, project-state drift, and human-facing delivery failures.",
+        "Silent packets are recorded for observability but do not wake an actor.",
+        "Repeated, urgent, or closure-needed observations emit project.owner.requested with packet context."
+      ],
+      "forbidden": [
+        "Do not mutate task trees or project strategy inside the observer.",
+        "Do not wake May for every weak observation."
+      ],
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-17T00:00:00Z",
+        "reason": "Added workflows/ops-health-review.ts and app.ts schedule/workflow wiring. The workflow records .state/ops-health-packets.jsonl, emits project.ops_health.observed every run, and only emits project.owner.requested when P0 alerts, stale P1 alerts, stale escalations, or repeated runtime symptoms are present. It does not call runAgent or mutate task strategy."
+      },
+      "state": "done",
+      "resolution": "completed"
+    },
+    "ops-active-runtime-metrics": {
+      "id": "ops-active-runtime-metrics",
+      "parent_id": "platform-ops-observe-act-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "may",
+      "goal": "Add the small active runtime metrics that cannot be caught statically and need proactive observation.",
+      "inputs": [
+        "agents/may/handlers/metrics-snapshot.ts",
+        "projects/may-agent.app/docs/2a-design/metrics.md",
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md"
+      ],
+      "outputs": [
+        "agents/may/handlers/metrics-snapshot.ts",
+        "projects/may-agent.app/docs/2a-design/metrics.md"
+      ],
+      "acceptance": [
+        "runtime.daemon-heartbeat-stale is defined with owner, priority, threshold, source, and closure path.",
+        "session.planner-timeout-rate-6h is defined with owner, priority, threshold, source, and closure path.",
+        "escalation.pending-count is defined with owner, priority, threshold, source, and closure path.",
+        "handler.duplicate-dispatch-rate is temporary with explicit retirement condition if implemented."
+      ],
+      "forbidden": [
+        "Do not add permanent metrics for event loops, unhandled events, conversation closure, or problem unknown rate until packet observations show recurrence."
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "done_at": "2026-06-17T08:47:11.208Z",
+      "done_by": "task-tree-tool",
+      "trace": {
+        "reviewed_at": "2026-06-17T08:47:11.208Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Added the small active runtime metric set: runtime.daemon-heartbeat-stale from durable daemon keepalive events, session.planner-timeout-rate-6h from workflow:project-planner terminal sessions, and escalation.pending-count from unresolved escalation lifecycle events. Updated metrics design docs and focused metrics tests; no duplicate-dispatch metric added because recurrence should remain packet-observed until proven repeated."
+      },
+      "context": {
+        "acceptance_note": "Added the small active runtime metric set: runtime.daemon-heartbeat-stale from durable daemon keepalive events, session.planner-timeout-rate-6h from workflow:project-planner terminal sessions, and escalation.pending-count from unresolved escalation lifecycle events. Updated metrics design docs and focused metrics tests; no duplicate-dispatch metric added because recurrence should remain packet-observed until proven repeated."
+      }
+    },
+    "ops-handler-migration-gates": {
+      "id": "ops-handler-migration-gates",
+      "parent_id": "platform-ops-observe-act-loop",
+      "children": [],
+      "kind": "work",
+      "priority": "P1",
+      "owner": "may",
+      "goal": "Migrate overlapping operational handlers only after replacement observer/actor paths are proven by static checks or replay tests.",
+      "inputs": [
+        "projects/may-agent.app/docs/2a-design/handler-audit.md",
+        "agents/may/handlers/",
+        "agents/may/cron.json"
+      ],
+      "outputs": [
+        "projects/may-agent.app/docs/2a-design/handler-audit.md",
+        "agents/may/cron.json"
+      ],
+      "acceptance": [
+        "daily-alert-review replacement path is proven before disabling.",
+        "closed-loop-steward replacement path is proven before disabling.",
+        "project-creative-audit replacement path is proven before disabling.",
+        "coaching-consumer and feedback-echo-sync ownership is clarified or moved to evaluation.app."
+      ],
+      "forbidden": [
+        "Do not disable a handler without documenting replacement signal, owner, closure path, and replay/static coverage."
+      ],
+      "state": "done",
+      "resolution": "completed",
+      "done_at": "2026-06-17T08:51:17.380Z",
+      "done_by": "task-tree-tool",
+      "trace": {
+        "reviewed_at": "2026-06-17T08:51:17.380Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Added handler migration gates to docs/2a-design/handler-audit.md. The gate requires replacement signal, owner, closure path, and proof before disabling an operational handler. daily-alert-review is now replaced by may-agent.app daily-ops-digest with replay proof and disabled in agents/may/cron.json. closed-loop-steward, project-creative-audit, coaching-consumer, and feedback-echo-sync remain enabled because replacement proof is not complete."
+      },
+      "context": {
+        "acceptance_note": "Added handler migration gates to docs/2a-design/handler-audit.md. The gate requires replacement signal, owner, closure path, and proof before disabling an operational handler. daily-alert-review is now replaced by may-agent.app daily-ops-digest with replay proof and disabled in agents/may/cron.json. closed-loop-steward, project-creative-audit, coaching-consumer, and feedback-echo-sync remain enabled because replacement proof is not complete.",
+        "daily_alert_review_migration": {
+          "replacement_signal": "project.ops_digest.tick",
+          "owner": "may-agent.app owner May",
+          "closure_path": "daily report, Telegram notification, project.ops_digest.created, and project.owner.requested when open/noisy/missing-owner conditions need judgment",
+          "proof": "projects/may-agent.app/workflows/daily-ops-digest.test.ts"
+        }
+      }
+    },
+    "ops-incident-replay-verification": {
+      "id": "ops-incident-replay-verification",
+      "parent_id": "platform-ops-observe-act-loop",
+      "children": [],
+      "kind": "test",
+      "priority": "P1",
+      "owner": "may",
+      "goal": "Add replay or regression coverage for the incidents that motivated the system operations model.",
+      "inputs": [
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
+        "projects/may-agent/src/",
+        "agents/may/handlers/"
+      ],
+      "outputs": [
+        "projects/may-agent/test/",
+        "agents/may/handlers/*.test.ts"
+      ],
+      "acceptance": [
+        "Duplicate cron subscription dispatch is covered.",
+        "Planner timeout retry does not duplicate task creation.",
+        "Stale blocked work or missing frontier reaches the owner through observation.",
+        "Daemon/Telegram liveness issue reaches human escalation path.",
+        "Metric breach routes to the owning app within one measurement cycle."
+      ],
+      "forbidden": [
+        "Do not rely on prose-only verification claims."
+      ],
+      "state": "done",
+      "summary": "Added executable ops-health replay coverage and verified existing regression suites for duplicate cron subscription, planner timeout refill, and active runtime metric owner signals.",
+      "evidence": [
+        "projects/may-agent.app/workflows/ops-health-review.test.ts",
+        "projects/may-agent.app/workflows/ops-health-review.ts",
+        "projects/may-agent.app/package.json",
+        "bun run check (projects/may-agent.app): pass, 4 ops-health-review tests pass",
+        "bun test test/integration/cron-event-subscription.test.ts (projects/may-agent): pass, 9 tests",
+        "bun test workflows/project-planner.test.ts --timeout 30000 (projects/aks-rp-e2e.app): pass, 11 tests",
+        "bun test /app/agents/may/handlers/metrics-snapshot-session-health.test.ts: pass, 9 tests"
+      ],
+      "reusable_for": [
+        "may-agent.app ops observer/actor loop",
+        "project app metric-breach owner wake verification",
+        "runtime incident replay tests"
+      ],
+      "done_at": "2026-06-17T08:57:57.925Z",
+      "done_by": "codex",
+      "accepted_at": "2026-06-17T08:57:57.925Z",
+      "accepted_by": "codex",
+      "resolution": "completed",
+      "updated_at": "2026-06-17T08:57:57.925Z"
+    },
     "platform-review-packet-contract": {
       "id": "platform-review-packet-contract",
       "goal": "Define the minimal system-review packet May receives on project.tick, human steering, metric feedback, and abnormal runtime signals: open alerts, recent failures, recovery evidence, task-tree/project integrity, app checks, communication failures, evaluator findings, and trend anomalies.",
@@ -1540,9 +1887,6 @@
       "priority": "P2",
       "owner": "may",
       "children": [],
-      "depends_on": [
-        "owner-checkpoint-step"
-      ],
       "goal": "Extract the owner checkpoint pattern from aks-rp-e2e.app into @may-agent/sdk as a reusable helper. Other apps (evaluation.app, scout-knowledge-lib.app, may-agent.app) adopt it.",
       "context": {
         "prerequisite": "aks-rp-e2e.app proves the pattern first (owner-checkpoint-step task)",
@@ -1865,7 +2209,7 @@
     "project-task-ui-fix": {
       "id": "project-task-ui-fix",
       "parent_id": "project",
-      "state": "backlog",
+      "state": "done",
       "kind": "work",
       "priority": "P1",
       "owner": "may",
@@ -1882,7 +2226,27 @@
         "Task tree renders as collapsible hierarchy with state badges",
         "Non-done tasks are visible by default, done tasks collapsed",
         "Clicking a task shows goal, acceptance, evidence, children"
-      ]
+      ],
+      "summary": "Fixed the shared project task UI for canonical V3 task states: counts no longer show unknown, lanes are backlog/active/review/blocked/done, done work is collapsed by default, hierarchy renders, and card clicks open the detail drawer.",
+      "evidence": [
+        "projects/may-agent/src/app/http/server.ts",
+        "projects/may-agent/packages/webui/static/pages/project-kanban.js",
+        "projects/may-agent/packages/webui/static/styles.css",
+        "projects/platform/ui/pages/project-kanban.js",
+        "curl /api/projects/tasks?path=projects/may-agent.app: statusCounts backlog 7, done 53",
+        "headless Chrome screenshot /tmp/may-agent-tasks-wait.png",
+        "headless Chrome interaction: first card opens #task-detail-drawer and .done-lane is closed"
+      ],
+      "reusable_for": [
+        "shared project task UI",
+        "Project App V3 Kanban"
+      ],
+      "done_at": "2026-06-17T09:10:30.930Z",
+      "done_by": "codex",
+      "accepted_at": "2026-06-17T09:10:30.930Z",
+      "accepted_by": "codex",
+      "resolution": "completed",
+      "updated_at": "2026-06-17T09:10:30.931Z"
     },
     "transcript-secret-redaction-fix": {
       "id": "transcript-secret-redaction-fix",

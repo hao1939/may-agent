@@ -72,6 +72,18 @@ async function routeMayAgentEvent(
     );
   }
 
+  if (event.type === "project.ops_health.observed") {
+    return ctx.noop(
+      "ops-health observation recorded — no direct owner fallback",
+    );
+  }
+
+  if (event.type === "project.ops_digest.created") {
+    return ctx.noop(
+      "daily ops digest recorded — owner wake is emitted by the digest workflow when needed",
+    );
+  }
+
   if (event.type === "project.action.invoked") {
     return ctx.emit(projectOwnerEvent("project-action", eventDetails(event)));
   }
@@ -147,7 +159,9 @@ async function routeMayAgentEvent(
   }
 
   if (event.type === "project.reviewed") {
-    return ctx.noop("terminal signal — review cycle complete, no further routing needed");
+    return ctx.noop(
+      "terminal signal — review cycle complete, no further routing needed",
+    );
   }
 
   return undefined;
@@ -174,16 +188,85 @@ export default defineProjectApp({
     {
       id: "platform-review",
       enabled: true,
-      intervalMs: 14_400_000, // 4h — aligns with 6 sessions/day budget
+      intervalMs: 14_400_000, // 4h design/planning cadence
       event: {
         type: "project.tick",
         project: projectId,
         lane: "platform-review",
       },
     },
+    {
+      id: "ops-health-review",
+      enabled: true,
+      intervalMs: 3_600_000,
+      event: {
+        type: "project.ops_health.tick",
+        project: projectId,
+        lane: "ops-health-review",
+      },
+    },
+    {
+      id: "daily-ops-digest",
+      enabled: true,
+      intervalMs: 86_400_000,
+      event: {
+        type: "project.ops_digest.tick",
+        project: projectId,
+        lane: "daily-ops-digest",
+      },
+    },
   ],
 
   workflowHandlers: [
+    {
+      name: "may-agent-daily-ops-digest",
+      type: "job",
+      enabled: true,
+      description:
+        "Builds the deterministic daily platform alert digest, notifies the human, and wakes May for open/noisy conditions.",
+      on: ["project.ops_digest.tick"],
+      handler: {
+        workflow: "daily-ops-digest",
+        includeEvent: true,
+        task: [
+          appTaskContext,
+          "persistent-task: skip",
+          "",
+          "You are entering the may-agent.app daily ops digest workflow.",
+          "Build the deterministic alert digest, notify the human with context, and wake May only when open/noisy/missing-owner conditions need judgment.",
+        ].join("\n"),
+        timeoutMs: 120_000,
+      },
+      context: [
+        ...taskTreeContext,
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
+        "projects/may-agent.app/docs/2a-design/handler-audit.md",
+      ],
+    },
+    {
+      name: "may-agent-ops-health-review",
+      type: "job",
+      enabled: true,
+      description:
+        "Runs a deterministic ops-health observer packet and wakes May only for meaningful signals.",
+      on: ["project.ops_health.tick"],
+      handler: {
+        workflow: "ops-health-review",
+        includeEvent: true,
+        task: [
+          appTaskContext,
+          "persistent-task: skip",
+          "",
+          "You are entering the may-agent.app ops-health observer workflow.",
+          "Build and record a deterministic health packet. Do not wake May unless a meaningful signal needs owner judgment or closure.",
+        ].join("\n"),
+        timeoutMs: 120_000,
+      },
+      context: [
+        ...taskTreeContext,
+        "projects/may-agent.app/docs/3-proposals/system-operations-model.md",
+      ],
+    },
     {
       name: "may-agent-project-planner",
       type: "job",
@@ -225,6 +308,10 @@ export default defineProjectApp({
   events: [
     { type: "project.comment.created", project: projectId },
     { type: "project.tick", project: projectId },
+    { type: "project.ops_health.tick", project: projectId },
+    { type: "project.ops_health.observed", project: projectId },
+    { type: "project.ops_digest.tick", project: projectId },
+    { type: "project.ops_digest.created", project: projectId },
     { type: "project.action.invoked", project: projectId },
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
@@ -237,6 +324,16 @@ export default defineProjectApp({
 
   eventGraph: {
     handlers: {
+      "may-agent-daily-ops-digest": {
+        emits: ["project.ops_digest.created", "project.owner.requested"],
+        description:
+          "Produces the daily alert digest, notifies the human, and wakes May for open/noisy digest findings.",
+      },
+      "may-agent-ops-health-review": {
+        emits: ["project.ops_health.observed", "project.owner.requested"],
+        description:
+          "Deterministically observes platform health and wakes May only for meaningful signals.",
+      },
       "may-agent-project-planner": {
         emits: ["project.reviewed"],
         description:
@@ -288,7 +385,11 @@ export default defineProjectApp({
           "Reconciler signals ready task leaves; owner wakes to assign or advance them.",
       },
     ],
-    externalEvents: ["project.reviewed"],
+    externalEvents: [
+      "project.reviewed",
+      "project.ops_health.observed",
+      "project.ops_digest.created",
+    ],
     intentionalCycles: [
       {
         id: "human-or-timer-to-platform-review",
