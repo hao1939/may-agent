@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Post-outage recovery continuing. Alert 1901 (error-rate-6h) decaying: 0.57→0.54→0.52 as 161 zero-op amplification errors age out of the 6h window. Concurrent triage session actively judging alert 1901. 2h error rate healthy at 6.6% (10/152). No active platform tasks; 7 backlog tasks (4 runnable P1-P2 docs/UI). 41 stale noise messages from outage amplification will expire via 24h lifecycle. AKS lock-timeout transient, lock file already cleared."
+    "summary": "Post-outage recovery progressing. Dispatch-dedup unblocked; evaluator/scout/arc heartbeats resuming (all running in latest cycle). Alert 1901 (error-rate-6h) decaying 0.57→0.41 as outage errors age out; should resolve within ~2h. Alert 1909 (provider-error-count-1h=15) is intermittent Github Copilot endpoint unavailability (claude-opus-4.6 + gpt-5.4), not local. Alert 1908 (dark-count=1) will resolve as arc's latest heartbeat completes. 7 backlog tasks (4 runnable P1-P2 docs/UI). No active may-agent platform tasks."
   },
-  "updatedAt": "2026-06-17T06:40:00.000Z"
+  "updatedAt": "2026-06-17T06:58:00.000Z"
 }
