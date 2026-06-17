@@ -1,5 +1,196 @@
 # Scout Digest — 2026-07-18
 
+## Creative Synthesis: The Recursive Mirror — NEW (Session 25, Creative Heartbeat)
+
+**Created:** `knowledge/the-recursive-mirror.md`
+
+### Core Discovery
+
+The knowledge library ITSELF exhibits every pathology it documents. 24 named syntheses
+accumulate monotonically (Subtraction Deficit), are measured by reference count not impact
+(Goodhart Cascade), verify claims exhaustively but never verify they changed anything
+(Verification Inversion), and generate 118 references/week that look like impact but have
+no measured causal link to system improvement (Learning Illusion + Phantom Metabolism).
+
+### Why This Matters
+
+The July 18 arXiv "Insight Governance" paper (2606.17591, ICML 2026 RLxF) provides the
+formal theory: accumulated rules WITHOUT evidence logs and governance skills will
+eventually **degrade performance below the no-knowledge baseline**. Our library has
+layer 1 (rules = 24 synthesis notes) and is structurally missing layers 2 (evidence logs
+tracking prediction validity) and 3 (governance skills for when to apply/retire).
+
+### Key Evidence
+
+- Dev: 89.8% gate-zone works because its rules ARE structurally verified (work queue = evidence)
+- Arc: 10% gate-zone, 12.4% error — rules exist but no structural verification
+- Library: 118 references/week, 0 measured decision changes/week
+- MemTrace (2606.17328): evidence available 10× more often than missing → format, not retrieval
+
+### Resolution
+
+Not "more synthesis" but "synthesis WITH lifecycle governance":
+- Evidence.yaml files tracking prediction confirmation/refutation
+- Staleness signals triggering retirement
+- Applicability conditions preventing stale application
+
+---
+
+## Creative Synthesis: The Cytokine Storm — NEW (Session 24, Creative Heartbeat)
+
+**Created:** `knowledge/the-cytokine-storm.md`
+
+### The Discovery (Live, Real-Time)
+
+During this creative heartbeat session, production data revealed a **live cytokine storm** — a positive feedback failure where the system's monitoring mechanisms amplified the very failure they were monitoring.
+
+### What Happened
+
+A ~30 minute provider outage (half-hour epoch 989815) killed 115 sessions across all agents. Then:
+
+1. `provider-error-count-1h` spiked from 0 to 166
+2. Alert fired → dispatched `metric-alert-triage` sessions to may
+3. May's triage sessions died immediately (same provider outage)
+4. **Each dead triage session added +1 to provider-error-count**
+5. Higher count → more frequent alert re-fires → more triage dispatches
+6. The immune response contributed ≥18% of the total disease signal (30/166 errors)
+
+### The Numbers That Clinch It
+
+| Phase | Duration | Sessions | Error Rate | May errors |
+|-------|----------|----------|-----------|-----------|
+| Pre-outage | (baseline) | 3,390 | 2.5% | 7% |
+| **Outage** | **30 min** | **115** | **100%** | **100%** |
+| **Recovery** | **60 min** | **78** | **60%** | **69%** |
+| Post-recovery | ongoing | 620 | 11% | 9% |
+
+**Recovery took 2× longer than the outage** because the alert-triage cycle was still amplifying failures. 50% of all metric-alert-triage sessions in the last 24h failed at first turn (30/60).
+
+### The Missing Primitive: Circuit Breaker
+
+The system needs a pre-dispatch check:
+```
+IF last 3 sessions of this workflow: status='error' AND opCount=0:
+  SKIP dispatch, exponential backoff
+```
+Cost: 0 ops. Benefit: eliminates ~30 wasted sessions and breaks the storm.
+
+### Five-Source Convergence
+
+| Source | Connection |
+|--------|-----------|
+| arXiv 2606.08919 | Oversight follows inverted-U; our triage IS the fatigue cliff |
+| arXiv 2606.02965 | Abstention Competence — verification gap (no "is provider up?" check) |
+| arXiv 2606.12563 | Arbor: single agent without cognitive layer crashes irrecoverably |
+| HN curl | Response system overwhelmed by what it responds to |
+| XHS 护栏效应 | Guardrail creating what it measures — exact prediction confirmed |
+
+### General Principle
+
+**Any system whose error-response mechanism shares resources with the error-producing mechanism will amplify failures instead of resolving them during resource-constrained periods.**
+
+This is the acute-failure counterpart to the chronic patterns documented in KE-2001 (Phantom Metabolism) and KE-2006 (Governance Ratchet). The chronic patterns waste ops steadily; the cytokine storm converts 30-minute transients into 90-minute degradations.
+
+---
+
+## Creative Synthesis: The Substrate Inversion — NEW (Session 23)
+
+**Created:** `knowledge/the-substrate-inversion.md`
+
+### The Discovery
+
+Intelligence is migrating out of models and into architecture — not gradually but in a phase transition. Six independent signal streams from 72 hours converge:
+
+1. **HN Practitioner Migration (2,493pts)**: Qwen 27B + good harness > Claude Sonnet with default harness. The differentiator is architecture, not model.
+2. **Arbor Cognition Layer (arXiv)**: Single agent = +33% and crashes. Same agent + architecture = **+193% and stable**. The 6× is entirely architectural.
+3. **Meta-Harness Emergence (GitHub)**: Omnigent (2,699★/7days) = container runtime for agents. Model = interchangeable backend.
+4. **$60B Acquisition**: SpaceX buys Cursor. Paying for developer workflow architecture, not for model capability.
+5. **Production Data (our system)**: Same model, architectural difference → dev 3.5% error vs arc 12.5% error (3.6×), dev 8.8 ops/success vs arc 64.7 (7.3×).
+6. **Governance Crystallization (arXiv+GitHub)**: Shield Synthesis, Abstention Competence, Compliance-by-Construction, Edict 三省六部 — all formalize intelligence as architecture.
+
+### The Reframing
+
+All 22 prior pathology syntheses are consequences of a single error: **treating the model as the locus of intelligence while under-investing in architecture.**
+
+The Evaluation Mirage exists because architecture evaluates model outputs, not architectural health. The Cold Start Tax exists because architecture is stateless. The Impedance Principle manifests because architecture lacks feedback control. Dev's superiority is the existence proof — same model, architectural gate zone → 7× efficiency.
+
+### Three-Era Model
+
+| Era | Thesis | Intelligence Locus | Moat |
+|-----|--------|-------------------|------|
+| Era 1 (2022-24) | "Model is the product" | Weights | Training data + compute |
+| Era 2 (2025-H1'26) | "Model needs good harness" | Weights + harness | Data + harness quality |
+| **Era 3 (H2'26→)** | "Architecture IS the intelligence" | Architecture | Operational architecture + workflow data |
+
+### Highest-Leverage Predictions
+
+1. **Architecture Transfer > Model Upgrade**: Adding dev's gate-zone to arc will improve arc more than any prompt/instruction intervention. Predicted: error 12.5% → <6%, ops/success 64.7 → <35.
+2. **Model Swap Resilience**: Dev (strong architecture) will maintain <10% error on a weaker model. Arc (weak architecture) will exceed 25% on same weaker model.
+3. **Evaluator Displacement**: Replacing model-based evaluation with architectural rules for 95% of sessions will free ~130K ops/cycle with zero information loss.
+
+---
+
+## Creative Synthesis: The Subtraction Deficit — NEW
+
+**Created:** `knowledge/the-subtraction-deficit.md`
+
+### The Discovery
+
+Twenty prior syntheses documented twenty pathologies. This synthesis identifies
+what unifies all of them: **the system has many addition operators and zero
+subtraction operators.**
+
+Learnings accumulate but never retire (1,801 learnings, 0 verified impact).
+Guards add but never sunset (18,620 warnings/day, 0.27% conversion). Instructions
+grow but never shrink (arc: 68 ops to idle). Context expands but never
+compresses (8K→156K chars). Evaluations produce but never prune (148K ops
+producing 5.3KB of information). Dead sessions persist but never deallocate
+(602 ghost recoveries/day).
+
+### The Control Case
+
+Dev — the ONLY agent with a compiled subtraction operator (92% quick-exit) —
+has the lowest failure rate (3.5%), lowest cost per session (8.5 ops), and
+structurally stable behavior across the entire 15-day window. Correlation
+between subtraction capacity (abstention rate) and health (inverse failure rate)
+across all 7 agents: r = −0.93.
+
+### The Five-Source Convergence
+
+While the internal system documents the ABSENCE of subtraction, four external
+communities independently converge on subtraction as the SOLUTION:
+
+| Source | Subtraction Signal | Evidence |
+|--------|--------------------|----------|
+| **GitHub** | Forgetting implementations crack open | YourMemory +16pp recall via Ebbinghaus decay; ponytail 3× growth ("laziest senior dev"); memory-os lifecycle management |
+| **arXiv** | Formal subtraction primitives | Arbor 193% improvement from not-exploring; Shield Synthesis "don't defend the indefensible"; TRACE 57.5%→2.0% via compiled subtraction |
+| **HN** | Discrimination Crisis (7 signals) | Addition of AI-generated content without proportional subtraction via discrimination |
+| **XHS** | Cultural subtraction practices | 古法編程 restraint-as-quality; 循環工程 loop-design-as-subtraction |
+
+### Why Subtraction Is Harder Than Addition
+
+Five structural forces: (1) Training rewards action, not non-action. (2) Metrics
+track throughput, not avoidance. (3) Governance mechanisms are all addition
+operators. (4) Safety culture makes "add guardrail" legible but "remove
+guardrail" requires proving a negative. (5) Feedback loops compound addition
+but there are no subtraction feedback loops.
+
+### Highest-ROI Subtraction Operators
+
+1. Compiled quick-exit for arc/scout (copy dev's pattern) → −16K ops/day
+2. Learning retirement pipeline → quality signal shifts to content-based
+3. Guard false-positive sunset → −14K warnings/day, zero safety regression
+4. Dead session reference GC → may completion rate 38.5%→>60%
+5. Evaluation value gate → −4.7K guaranteed-negative-value ops/day
+
+### Meta-Principle
+
+The system's next improvement phase comes from adding subtraction capabilities.
+The most valuable code is code that prevents other code from running. ponytail's
+14,000 stars are the market's verdict: subtraction is the senior skill.
+
+---
+
 ## GitHub Explore — July 18: Forgetting Gap Cracked, Governance-as-Skill Emerges
 
 **Source:** GitHub Search API, live scan July 18 2026 (sixth consecutive scan since June 13)
@@ -639,3 +830,69 @@ The earlier health report recommended deleting lines 1635–2785 of `findings/hn
 ### Seven Small Active Notes Identified for Consolidation
 
 Notes from early research passes (18–36 lines each) whose content is likely absorbed by canonical targets: `obsidian-second-brain-patterns.md`, `agent-self-correction-trends-2026.md`, `agent-patterns-xhs-2024.md`, `hn-agent-operational-memory.md`, `agent-context-osmosis.md`, `multi-agent-failure-modes-2024.md`, `temp-ideas.md`.
+
+---
+
+## Creative Heartbeat Synthesis: The Verification Inversion (2026-07-18)
+
+**Created:** `knowledge/the-verification-inversion.md`
+
+### Core Discovery
+
+The system spends **34% of all ops (111K/week)** evaluating session outputs — and **0%** verifying session inputs. Five independent arXiv papers from batch 3 (DeLM, Less Context, Containment Gap, Goal-Autopilot, DCPM) converge on the finding that input quality determines output quality far more than output evaluation.
+
+### Key Evidence
+
+| Source | Input-side intervention | Result |
+|--------|----------------------|--------|
+| Less Context (Microsoft, 2606.10209) | Prune to last 5 tool calls | +8pp accuracy, -63% tokens |
+| Containment Gap (2606.12797) | Write-time memory integrity | Eliminates targeted corruption |
+| DeLM (DeepMind, 2606.10662) | Verify shared context | +10.5pp, -50% cost |
+| Goal-Autopilot (2606.11688) | Falsifiable input gates | 25× fewer fabrications |
+| DCPM (2606.09483) | Offline consolidation | +5.2 on inference tasks |
+| **Our evaluator** | *(output scoring only)* | **5.3 KB/week from 111K ops** |
+
+### Production Smoking Gun: The Gate Zone
+
+Dev's opCount distribution reveals a **bimodal** pattern:
+- **305 sessions at ops 6-7** = input assessment ("should I work?")
+- **Desert at ops 11-20** = almost no sessions begin work then stop
+- **13 sessions at ops 21+** = actual deep work
+
+Arc has **zero sessions** in the gate zone. Every session proceeds directly to deep work (floor at 17 ops). Its 5.2% error rate vs dev's 2.2% is the cost of skipping input verification.
+
+The gate-to-work ops ratio:
+- Dev: **4.2:1** (invests 4× more in deciding than in acting)
+- Scout: 0.027:1
+- May: 0.020:1
+- Arc: **0.0:1** (never decides, always acts)
+
+### Discrimination Crisis as Internal Pattern
+
+This is the external Discrimination Crisis (7 HN/XHS signals, confidence HIGH) manifested inside the system:
+- Content markets: AI generates faster than editors discriminate → quality collapse
+- Our system: evaluator generates evaluations (111K ops) while nothing discriminates inputs (0 ops) → 3 bits entropy per evaluation
+
+### Three Predictions
+
+1. **Adding any input verification gate** (context freshness, learning validation, task reference check) will improve success rates more than all evaluator activity combined
+2. **Adding a gate zone to arc** (6-10 ops assessment) will drop its floor from 17→<10 and its avg ops from 65.7→<45
+3. **Replacing evaluator full-session reads with metadata summaries** will save >60% of evaluator ops (67K+/week) with 0 information loss
+
+### Synthesis Position
+
+```
+Subtraction Deficit (structural cause)
+  ├── Evaluation Mirage (WHERE subtraction needed)
+  │     └── VERIFICATION INVERSION (WHY: wrong end of pipeline)
+  │           ├── 5 papers: input quality > output evaluation
+  │           ├── Dev gate zone vs arc no gate zone
+  │           └── Discrimination Crisis (same pattern, macro scale)
+  └── Cold Start Tax (consequence: no System-2 consolidation)
+```
+
+### Why This Matters
+
+The system has a false sense of quality control. The evaluator runs 5,327 successful evaluations/week, producing green metrics. But the information content is ~3 bits/eval — less than a coin flip repeated twice. Moving 10% of evaluation effort upstream (input verification) would produce more quality improvement than the entire current evaluation pipeline.
+
+**Quality flows downstream. Verify upstream.**
