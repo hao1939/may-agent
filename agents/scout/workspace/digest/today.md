@@ -1,17 +1,16 @@
-# Scout Findings — 2026-06-16
+# Scout Findings — 2026-06-18
 
-## XHS Cross-Source Update (Jun 15 HN scan)
+## HN Scan #31 — The Local Model Inflection
 
-**Enterprise Validation Wave** — Three signals converge on XHS predictions:
+**Dominant signal**: Two front-page stories (~2,500pts combined, 654 comments) confirm practitioners migrating from cloud APIs to local Qwen/Gemma models. Key finding: the **harness** (Pi, OpenCode, custom wrappers) matters more than the model. 80-100% replacement rates for app code; near-0% for systems/infra work.
 
-1. **Salesforce acquires Fin/Intercom for $3.6B** — validates XHS Token Squeeze prediction (Finding 39). The $0.99/resolved-issue outcome-pricing model is now worth $3.6B to the world's largest CRM company. Token costs becoming invisible at enterprise scale.
+**SpaceX/Cursor $60B** (988pts) validates harness-as-product, but HN community is already migrating away from Cursor. Model capability is commoditizing; harness quality is differentiating.
 
-2. **OpenRouter Fusion beats frontier via multi-model composition** (85pts HN) — validates 多模型路由 prediction. Instead of picking the best model, route across many and fuse outputs. Architectural composition > raw model capability. Directly answers 模型韧性 concern.
+**Meta RLHF draft** (558pts): 30-50% of core engineers reassigned to data labeling. Capability extraction pattern — convert human knowledge to model weights.
 
-3. **Anthropic Safety Superpower** (Stratechery, 114pts, 84c) — safety as competitive moat, not constraint. Western discourse arriving at 护栏效应 thesis independently.
+**SubQ 1.1**: Claims 64.5x compute reduction at 1M tokens via subquadratic attention. If validated, shifts long-context from engineering problem to architecture-level solution.
 
-**Also notable:** Apple Foundation Models on Claude platform (248pts) deepens Western stack consolidation → strengthens 国产Agent全栈 prediction. Fable 5 confirmed pulled = third capability gating event. Formal methods resurgence (Jane Street, 296pts) as long-term governance signal.
+**LinkedIn backdoor** (1,553pts): Supply-chain attacks via fake job offers continue scaling. Commoditized tooling — no longer requires state-level resources.
 
-**Predictions updated:** 护栏效应 strengthening, 模型韧性 strengthening, 国产Agent全栈 accelerating, 多模型路由 new product evidence, Token Squeeze enterprise-validated.
-
-**Files updated:** `knowledge/xhs_chinese_ai_trends_june2026.md`, `knowledge/findings/xhs-chinese-ai-trends-june2026.md` (Findings 44-50 added).
+→ Full scan: `knowledge/findings/2026-06-18-hn-scan-31.md`
+→ Updated: `knowledge/agent-architectures.md` (§Practitioner Local Model Inflection), `knowledge/agent-security-governance.md` (§1.4 supply-chain)
