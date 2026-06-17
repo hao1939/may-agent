@@ -58,8 +58,12 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
   { id: "agent.config-invalid-count-1h", name: "Agent config load errors (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  { id: "runtime.daemon-heartbeat-stale", name: "Daemon heartbeat stale", owner: "may", type: "health", target: 0, threshold: 0, unit: "boolean", alert_op: ">", priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 1 } } },
   // Sessions
   { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
+  { id: "session.planner-timeout-rate-6h", name: "Project planner interruption/timeout rate (6h)", owner: "may", type: "gauge", target: 0.05, threshold: 0.25, unit: "ratio", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "sustained", consecutive: 2 } } },
   { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "session.provider-error-count-1h", name: "Provider errors at any turn (1h)", owner: "may", type: "health", target: 0, threshold: 25, unit: "count", alert_op: ">", priority: "P1",
@@ -106,6 +110,8 @@ const ALL_METRICS: MetricDef[] = [
     config: { alert: { mode: "consecutive_failures", count: 2 } } },
   { id: "message.delivery-failed-count-1h", name: "Message delivery failures (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
     config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  { id: "escalation.pending-count", name: "Pending escalations", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P1",
+    config: { alert: { mode: "sustained", consecutive: 2 } } },
   // v2 infra metrics (I1-I4)
   { id: "infra.bus.event-count-1h", name: "Event bus events (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 10, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
   { id: "infra.bus.subscriber-failed-count-1h", name: "Event bus subscriber failures (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
@@ -603,6 +609,16 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring agent.config-invalid-count-1h: ${e}`); }
 
     try {
+      const row = db.prepare(
+        `SELECT MAX(timestamp) as lastHeartbeat
+         FROM events
+         WHERE event_type = 'runtime.daemon.heartbeat'`,
+      ).get() as { lastHeartbeat?: number | null } | undefined;
+      const lastHeartbeat = Number(row?.lastHeartbeat ?? 0);
+      record("runtime.daemon-heartbeat-stale", lastHeartbeat > 0 && now - lastHeartbeat <= 7 * 60_000 ? 0 : 1);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring runtime.daemon-heartbeat-stale: ${e}`); }
+
+    try {
       // Exclude long-running agent session handlers from p95 — heartbeats,
       // eval-poller, and task-execution-workers are agent sessions that run for
       // minutes/hours, not infrastructure reactor latency. Including them makes
@@ -644,6 +660,31 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
 
     try {
+      const total = count(
+        `SELECT COUNT(*) as c
+         FROM sessions
+         WHERE startedAt > ?
+           AND source = 'workflow:project-planner'
+           AND status IN ('done', 'error', 'interrupted')`,
+        sixH,
+      );
+      const timeoutLike = count(
+        `SELECT COUNT(*) as c
+         FROM sessions
+         WHERE startedAt > ?
+           AND source = 'workflow:project-planner'
+           AND status IN ('error', 'interrupted')
+           AND (
+             lower(COALESCE(error, '')) LIKE '%timeout%'
+             OR status = 'interrupted'
+             OR (status = 'error' AND COALESCE(endedAt, startedAt) - startedAt >= 4 * 60 * 1000)
+           )`,
+        sixH,
+      );
+      record("session.planner-timeout-rate-6h", total >= 5 ? parseFloat((timeoutLike / total).toFixed(4)) : 0, total);
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.planner-timeout-rate-6h: ${e}`); }
+
+    try {
       const candidates = db.prepare(
         `SELECT sessionId
          FROM sessions
@@ -681,6 +722,26 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         count("SELECT COUNT(*) as c FROM events WHERE event_type = 'message.delivery_failed' AND timestamp > ?", oneH),
       );
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring message.delivery-failed-count-1h: ${e}`); }
+
+    try {
+      record(
+        "escalation.pending-count",
+        count(
+          `SELECT COUNT(*) as c
+           FROM events created
+           WHERE created.event_type = 'escalation.created'
+             AND COALESCE(created.status, 'pending') NOT IN ('resolved', 'dismissed', 'handled')
+             AND json_valid(created.data)
+             AND NOT EXISTS (
+               SELECT 1
+               FROM events closed
+               WHERE closed.event_type IN ('escalation.resolved', 'escalation.dismissed')
+                 AND json_valid(closed.data)
+                 AND json_extract(closed.data, '$.escalationId') = json_extract(created.data, '$.escalationId')
+             )`,
+        ),
+      );
+    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring escalation.pending-count: ${e}`); }
 
     try {
       record(
@@ -948,16 +1009,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked'"));
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-count: ${e}`); }
 
-    // Stale: active projects with no iteration event in 48h (single query, no N+1)
+    // Stale: active projects with no activity event in 48h (single query, no N+1)
+    // v3 project apps emit project.owner.requested / project.reviewed / project.tick
+    // instead of the legacy project.iteration event. Count any of these as activity.
+    // Match on both the DB id (e.g. "may-agent.app") and the project slug without .app
+    // (e.g. "may-agent") since event sources use the slug form (project-app:may-agent).
     try {
       const stale = count(
         `SELECT COUNT(*) as c FROM projects p
          WHERE p.status = 'active'
            AND NOT EXISTS (
              SELECT 1 FROM events e
-             WHERE e.event_type = 'project.iteration'
+             WHERE e.event_type IN ('project.iteration', 'project.owner.requested', 'project.reviewed', 'project.tick')
                AND e.timestamp > ?
-               AND e.data LIKE '%' || p.id || '%'
+               AND (e.data LIKE '%' || p.id || '%'
+                    OR e.source LIKE '%' || p.id || '%'
+                    OR e.data LIKE '%' || REPLACE(p.id, '.app', '') || '%'
+                    OR e.source LIKE '%' || REPLACE(p.id, '.app', '') || '%')
            )`, fortyEightH);
       record("project.stale-active-count", stale);
     } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring stale-active-count: ${e}`); }

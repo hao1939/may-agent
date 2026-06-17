@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Post-outage recovery progressing. Dispatch-dedup unblocked; evaluator/scout/arc heartbeats resuming (all running in latest cycle). Alert 1901 (error-rate-6h) decaying 0.57→0.41 as outage errors age out; should resolve within ~2h. Alert 1909 (provider-error-count-1h=15) is intermittent Github Copilot endpoint unavailability (claude-opus-4.6 + gpt-5.4), not local. Alert 1908 (dark-count=1) will resolve as arc's latest heartbeat completes. 7 backlog tasks (4 runnable P1-P2 docs/UI). No active may-agent platform tasks."
+    "summary": "Fixed stale-active metric (Alert 1914): query only checked legacy project.iteration events, missing v3 project-app activity (project.owner.requested/reviewed/tick). Fix broadens the query and accounts for .app suffix mismatch in event sources. Stale count drops from 4→1 (only evaluator-quality-gap-calibration remains stale, which is correctly flagged as needing evaluator owner judgment). Alert 1901 (error-rate-6h=0.29) now below threshold, will auto-resolve. Alerts 1910-1912 are evaluator-quality-gap-calibration health findings — evaluator owns that project. 8 backlog tasks remain."
   },
-  "updatedAt": "2026-06-17T06:58:00.000Z"
+  "updatedAt": "2026-06-17T08:42:00.000Z"
 }
