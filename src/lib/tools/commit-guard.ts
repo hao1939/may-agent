@@ -31,7 +31,7 @@ type RepoLayout = "app" | "legacy-agents";
 
 function isGeneratedRuntimePath(path: string, agentName: string, layout: RepoLayout): boolean {
   const agentPrefix = layout === "app" ? `agents/${agentName}` : agentName;
-  return path === `${agentPrefix}/last-session.md`;
+  return path === `${agentPrefix}/last-session.md` || path === `${agentPrefix}/last-eval.md`;
 }
 
 function normalizeAgentRepoPath(path: string, layout: RepoLayout = "legacy-agents"): string | undefined {

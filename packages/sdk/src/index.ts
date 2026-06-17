@@ -203,6 +203,12 @@ export interface QueryAPI {
   evaluatorDeepEvalScan(filter?: EvaluatorDeepEvalScanQuery): EvaluatorDeepEvalScanContext;
   evaluatorAftermathContext(filter: EvaluatorAftermathContextQuery): EvaluatorAftermathContext;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
+  /** Mark inbox events as handled after consumption. Returns count updated. */
+  markInboxHandled(eventIds: number[], handledBy?: string): number;
+  /** Expire stale pending messages older than the given age. Returns count expired. */
+  expireStaleMessages(olderThanMs: number): number;
+  /** Expire stale pending signal events (session.resume_failed, metric.breach/recovered/stalled) older than the given age. Returns count expired. */
+  expireStaleSignalEvents(olderThanMs: number): number;
 }
 
 // ── Metrics API ───────────────────────────────────────────────────────
@@ -898,10 +904,14 @@ export {
   dependenciesSatisfied,
   isClearEnough,
   isLeaf,
+  normalizeTaskTreeInPlace,
   normalizeStringArray,
+  rawTaskState,
   readTaskTree,
   saveTaskTree,
+  setTaskState,
   taskEventSnapshot,
+  taskState,
   withTreeLock,
 } from "./project-task-tree-store.js";
 export type { TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-store.js";
@@ -909,17 +919,22 @@ export type { TaskNode, TaskTree, TaskTreeConfig } from "./project-task-tree-sto
 export {
   appendPlannerRun,
   appendToolJournal,
-  assignReadyTasks,
+  assignRunnableBacklogTasks,
   assignTask,
+  compactDoneLeaves,
   completeTask,
+  confirmRunnableBacklogLeaves,
   createTask,
   drainTaskAssignments,
   kanbanTaskTreeState,
+  markTaskDone,
   peekTaskAssignments,
   planningPacket,
-  promoteClearProposedLeaves,
   readTask,
+  rejectTaskReview,
   requeueStaleActiveTasks,
+  repairTaskTreeRollups,
+  saveTaskTreeWithKanbanSnapshot,
   summarizeTaskTree,
   taskKanbanColumn,
   taskTreeConfig,
@@ -927,13 +942,18 @@ export {
 } from "./project-task-tree.js";
 export type {
   CreateTaskInput,
-  ReadyAssignmentResult,
+  RunnableBacklogAssignmentResult,
   TaskAssignment,
   TaskCompletionClaim,
   TaskKanbanColumn,
   TaskKanbanProjection,
   TaskKanbanSnapshot,
   TaskKanbanState,
+  TaskTreeCompactResult,
+  TaskTreeRepairResult,
+  ModelPathStatusEntry,
+  ModelStatusSummary,
+  RejectTaskReviewInput,
   TaskPlanningPacket,
   TaskPlanningSnapshot,
   TaskTreeSummary,

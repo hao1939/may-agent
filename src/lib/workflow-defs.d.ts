@@ -79,6 +79,9 @@ interface QueryAPI {
   evaluatorDeepEvalScan(filter?: Record<string, unknown>): Record<string, unknown>;
   evaluatorAftermathContext(filter: Record<string, unknown>): Record<string, unknown>;
   sql(sql: string, params?: unknown[], opts?: { limit?: number }): QueryResult;
+  markInboxHandled(eventIds: number[], handledBy?: string): number;
+  expireStaleMessages(olderThanMs: number): number;
+  expireStaleSignalEvents(olderThanMs: number): number;
 }
 
 /** Context provided to workflow execute() functions. */

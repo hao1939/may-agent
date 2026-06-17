@@ -6,7 +6,7 @@
  *   2. The toggle reveals inactive projects (sandbox platform is "waiting").
  *   3. The platform row's route target uses the canonical id form
  *      (`routeTo('/projects/' + 'platform')`) — not a full path.
- *   4. Clicking the row navigates to `#/projects/platform` and resolves
+ *   4. Clicking the row navigates to `/projects/platform` and resolves
  *      `_projectDetailPath` to `projects/platform`.
  *   5. Typing a comment + clicking the submit button POSTs to
  *      `/api/projects/comment`, the success banner appears.
@@ -166,14 +166,14 @@ describe.skipIf(E2E_NO_UI)("E8: project comment via served UI", () => {
         /routeTo\(\s*['"]\/projects\/['"]\s*\+\s*['"]platform['"]\s*\)/.test(platformRouteAttr ?? ""),
       ).toBe(true);
 
-      // 4. Click row → canonical hash + resolved path
+      // 4. Click row -> canonical route + resolved path
       await page.evaluate(() => {
         const rows = Array.from(document.querySelectorAll('tr[onclick*="routeTo"]'));
         const row = rows.find((r) => (r.textContent ?? "").includes("platform")) as HTMLElement | undefined;
         row?.click();
       });
       await page.waitForFunction(
-        () => location.hash === "#/projects/platform",
+        () => location.pathname === "/projects/platform" && location.hash === "",
         { timeout: 5000 },
       );
       await page.waitForFunction(

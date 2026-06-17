@@ -519,29 +519,45 @@ describe("workflow tool: ctx.agent", () => {
 });
 
 describe("workflow tool: ctx.runAgentSession", () => {
-  function mockManager(mockOpts: { resumeMissing?: boolean } = {}) {
+  function mockManager(mockOpts: { resumeMissing?: boolean; archived?: Record<string, string> } = {}) {
     const calls: Array<{ method: string; sessionId?: string; agent?: string; task?: string; source?: string }> = [];
-    const results = new Map<string, Promise<{
-      sessionId: string;
-      status: "done";
-      lastAssistantText: string;
-      messages: Array<{ timestamp: number }>;
-      duration: string;
-      outputDir: string;
-    }>>();
-    const completed = (sessionId: string, text: string) => Promise.resolve({
-      sessionId,
-      status: "done" as const,
-      lastAssistantText: text,
-      messages: [{ timestamp: 1 }],
-      duration: "0.0s",
-      outputDir: "",
-    });
+    const results = new Map<
+      string,
+      Promise<{
+        sessionId: string;
+        status: "done";
+        lastAssistantText: string;
+        messages: Array<{ timestamp: number }>;
+        duration: string;
+        outputDir: string;
+      }>
+    >();
+    const completed = (sessionId: string, text: string) =>
+      Promise.resolve({
+        sessionId,
+        status: "done" as const,
+        lastAssistantText: text,
+        messages: [{ timestamp: 1 }],
+        duration: "0.0s",
+        outputDir: "",
+      });
 
     return {
       calls,
       manager: {
         result: (sessionId: string) => {
+          calls.push({ method: "result", sessionId });
+          const archivedText = mockOpts.archived?.[sessionId];
+          if (archivedText) {
+            return {
+              sessionId,
+              status: "done" as const,
+              lastAssistantText: archivedText,
+              messages: [{ timestamp: 1 }],
+              duration: "0.0s",
+              outputDir: "",
+            };
+          }
           throw new Error(`no archived result for ${sessionId}`);
         },
         hasActiveSession: (sessionId: string) => {
@@ -601,8 +617,41 @@ describe("workflow tool: ctx.runAgentSession", () => {
     if (parsed.type === "done") {
       expect(parsed.summary).toBe("s_existing:resumed: continue task");
     }
-    expect(calls.some(call => call.method === "resumeSession" && call.sessionId === "s_existing")).toBe(true);
-    expect(calls.some(call => call.method === "run")).toBe(false);
+    expect(calls.some((call) => call.method === "resumeSession" && call.sessionId === "s_existing")).toBe(true);
+    expect(calls.some((call) => call.method === "run")).toBe(false);
+  });
+
+  it("uses an archived terminal session result instead of resuming it", async () => {
+    writeWorkflow(
+      "session-archived.ts",
+      `
+      export const name = "session-archived";
+      export async function execute(ctx) {
+        const result = await ctx.runAgentSession("worker", "do not repeat", "s_done");
+        return ctx.done(result.sessionId + ":" + result.lastAssistantText);
+      }
+    `,
+    );
+
+    const { manager, calls } = mockManager({
+      archived: { s_done: "archived result" },
+    });
+    const tool = createWorkflowTool({ manager, workflowDir });
+
+    const result = await tool.execute("tc1", {
+      action: "run",
+      name: "session-archived",
+      task: "test",
+    });
+    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") {
+      expect(parsed.summary).toBe("s_done:archived result");
+    }
+    expect(calls.some((call) => call.method === "result" && call.sessionId === "s_done")).toBe(true);
+    expect(calls.some((call) => call.method === "resumeSession")).toBe(false);
+    expect(calls.some((call) => call.method === "run")).toBe(false);
   });
 
   it("creates a missing durable session with the supplied session id", async () => {
@@ -627,8 +676,8 @@ describe("workflow tool: ctx.runAgentSession", () => {
     if (parsed.type === "done") {
       expect(parsed.summary).toBe("s_task_existing:fresh: start durable task");
     }
-    expect(calls.some(call => call.method === "resumeSession" && call.sessionId === "s_task_existing")).toBe(true);
-    expect(calls.some(call => call.method === "run" && call.sessionId === "s_task_existing")).toBe(true);
+    expect(calls.some((call) => call.method === "resumeSession" && call.sessionId === "s_task_existing")).toBe(true);
+    expect(calls.some((call) => call.method === "run" && call.sessionId === "s_task_existing")).toBe(true);
   });
 
   it("creates a new session when no reusable session is supplied", async () => {
@@ -653,8 +702,8 @@ describe("workflow tool: ctx.runAgentSession", () => {
     if (parsed.type === "done") {
       expect(parsed.summary).toBe("fresh-1:fresh: start task");
     }
-    expect(calls.some(call => call.method === "callAgent" && call.sessionId === "fresh-1")).toBe(true);
-    expect(calls.some(call => call.method === "resumeSession")).toBe(false);
+    expect(calls.some((call) => call.method === "callAgent" && call.sessionId === "fresh-1")).toBe(true);
+    expect(calls.some((call) => call.method === "resumeSession")).toBe(false);
   });
 });
 

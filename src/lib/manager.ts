@@ -877,27 +877,21 @@ export class SubagentManager {
     }
     const meta = this._registry.getSession(sessionId);
     if (!meta) {
-      // Check DB to decide whether this is a dead session (cleaned up or
-      // never existed) vs. a live session that just isn't in the registry.
-      // Dead sessions (not in DB, or terminal in DB) are noise — suppress
-      // the event entirely to avoid 500+ daily session.resume_failed events
-      // for sessions that will never recover (KE-2000 Spec 1).
-      let dbStatus: string | null = null;
-      try {
-        const row = getDb(this._persistDir)
-          .prepare("SELECT status FROM sessions WHERE sessionId = ?")
-          .get(sessionId) as { status: string } | null;
-        dbStatus = row?.status ?? null;
-      } catch { /* best-effort DB lookup */ }
-
-      const isDeadSession = !dbStatus || dbStatus === "done" || dbStatus === "error" || dbStatus === "interrupted";
-      if (isDeadSession || opts?.suppressBenignRaceEvent) {
+      if (opts?.suppressBenignRaceEvent) {
+        let dbStatus: string | null = null;
+        try {
+          const row = getDb(this._persistDir)
+            .prepare("SELECT status FROM sessions WHERE sessionId = ?")
+            .get(sessionId) as { status: string } | null;
+          dbStatus = row?.status ?? null;
+        } catch { /* best-effort DB lookup */ }
         log(
           "debug",
           `[resume] Suppressing resume_failed event for dead/missing session ${sessionId} from ${opts?.source ?? "unknown"}; dbStatus=${dbStatus ?? "missing"}`,
         );
         throw new Error(`Session "${sessionId}" not found`);
       }
+
       const reason = `Session "${sessionId}" not found`;
       this.emitSessionResumeFailed(sessionId, null, reason, "session_not_found", false);
       throw new Error(reason);

@@ -159,10 +159,10 @@ export interface WorkflowContext {
   runAgent(name: string, task: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
 
   /** Run work in a durable agent session.
-   *  If sessionId is provided, resume that exact session and append the new
-   *  task prompt to its transcript. If the session is already active, wait for
-   *  the active run instead of enqueueing duplicate work. If sessionId is
-   *  omitted or cannot be resumed, create a fresh session like runAgent().
+   *  If sessionId is provided and already has a terminal result, return that
+   *  result instead of repeating work. If the session is active, wait for it.
+   *  If it is missing or cannot be resumed, create a fresh session like
+   *  runAgent().
    */
   runAgentSession(name: string, task: string, sessionId?: string, opts?: { timeoutMs?: number }): Promise<TaskResult>;
 

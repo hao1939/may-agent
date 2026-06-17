@@ -12,6 +12,10 @@ import { getDb, upsertSession, updateSessionDb } from "./requests.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 
+/** Maximum event data payload persisted (200KB). Prevents DB bloat from
+ * recursive session tasks or oversized payloads. */
+const MAX_EVENT_DATA = 200_000;
+
 const DURABLE_COMMAND_EVENTS = new Set([
   "input",
   "steer",
@@ -47,6 +51,11 @@ function eventUrgency(event: Record<string, unknown>): string {
 function eventTtlMs(event: Record<string, unknown>): number | null {
   const ttl = isCanonicalEventEnvelope(event) ? event.ttl_ms : eventPayload(event).ttl_ms;
   return typeof ttl === "number" ? ttl : null;
+}
+
+function capEventData(json: string): string {
+  if (json.length <= MAX_EVENT_DATA) return json;
+  return `${json.slice(0, MAX_EVENT_DATA)}...[TRUNCATED: ${json.length} chars]`;
 }
 
 export class DbWriter {
@@ -86,7 +95,7 @@ export class DbWriter {
               event.type,
               eventSource(ev, payload.agent),
               eventOwner(ev, payload.agent),
-              JSON.stringify(payload),
+              capEventData(JSON.stringify(payload)),
               Date.now(),
             ]);
           } catch {
@@ -113,7 +122,7 @@ export class DbWriter {
               event.type,
               eventSource(ev, payload.agent),
               eventOwner(ev, payload.agent),
-              JSON.stringify(payload),
+              capEventData(JSON.stringify(payload)),
               Date.now(),
             ]);
           } catch {
@@ -159,7 +168,7 @@ export class DbWriter {
                   event.type,
                   eventSource(ev),
                   eventOwner(ev),
-                  JSON.stringify(data),
+                  capEventData(JSON.stringify(data)),
                   Date.now(),
                   eventUrgency(ev),
                   eventTtlMs(ev),
@@ -183,7 +192,7 @@ export class DbWriter {
                   event.type,
                   eventSource(ev),
                   eventOwner(ev),
-                  JSON.stringify(data),
+                  capEventData(JSON.stringify(data)),
                   Date.now(),
                   eventUrgency(ev),
                   eventTtlMs(ev),

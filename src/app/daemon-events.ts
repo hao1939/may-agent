@@ -84,7 +84,10 @@ export function attachDaemonEventSubscribers(opts: {
         manager.resumeSession(
           sessionId,
           `[auto-resume] Session was interrupted after partial progress. Continue from where you left off. (attempt ${attempt + 1})`,
-          { source: "runtime:auto-resume" },
+          {
+            source: "runtime:auto-resume",
+            suppressBenignRaceEvent: true,
+          },
         );
         log("info", `[resume] Resumed ${agent} session ${sessionId} (attempt ${attempt + 1})`);
       } catch (err) {
