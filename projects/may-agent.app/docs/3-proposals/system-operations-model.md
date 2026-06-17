@@ -111,12 +111,52 @@ Move to evaluation.app:
 - `coaching-consumer` — evaluation domain work
 - `feedback-echo-sync` — evaluation domain work
 
-**2. Add missing operational metrics**
+**2. Static Checks First**
 
-Add to `metrics-snapshot.ts`:
-- `session.budget-violation-count`: apps with sessions/day exceeding declared
-  budget
-- `session.planner-timeout-rate-6h`: interrupted planner sessions / total
+Before adding runtime metrics, classify each failure mode:
+
+| Failure | Right tool | Why |
+|---------|-----------|-----|
+| Unscoped metric.breach routing | Static app manifest check | Event subscription is declarative — check at load time |
+| Duplicate subscribeToBus lifecycle | Unit test + static ownership rule | Structural bug, not runtime drift |
+| Handler overlap vs budget | Static schedule/budget check | Declared intervals × handlers vs sessionsPerDay |
+| Planner timeout rate | Runtime metric | Recurring runtime behavior, varies with tree size |
+| Daemon heartbeat stale | Runtime metric/watchdog | Only runtime can observe liveness |
+| Regex false escalations | Structured output contract + tests | Fixed by removing the guess; test the contract |
+| Event routing gap | Static manifest check | Every event has a handler, adapter, or terminal declaration |
+| Duplicate task creation | Static dedup test + planner context quality | Information problem, not runtime drift |
+
+Static checks to add (run at `bun run check` / app integrity):
+- Every app event has a route, handler, or explicit external/terminal classification
+- Every handler declares emitted events; emitted events are handled or terminal
+- No duplicate cron lifecycle ownership: creator owns create/load/subscribe/start
+- App schedule budget fits declared sessionsPerDay
+- Metric registry and metrics doc agree on id, owner, priority, threshold
+- Active metric has owner, priority, threshold, source, and closure path
+- No retired/orphaned handler/metric still active in cron.json
+- Task tree schema integrity: parent links, unique IDs, valid states, no orphans
+
+**3. Runtime metrics (small active set)**
+
+Only add metrics for things that are genuinely runtime-variable and not
+catchable by static checks:
+
+| Metric | Priority | Rationale |
+|--------|----------|-----------|
+| `runtime.daemon-heartbeat-stale` | P0 | Only runtime knows if process is alive |
+| `session.budget-violation-count` | P1 | Budget is declared but not enforced; violations accumulate at runtime |
+| `session.planner-timeout-rate-6h` | P1 | Varies with tree size, model response time |
+| `escalation.pending-count` | P1 | Accumulation is a runtime pattern |
+
+Temporary (retire after static coverage proves the fix):
+- `handler.duplicate-dispatch-rate` — validate the cron lifecycle fix, then retire
+
+Do NOT add (either static-checkable or premature):
+- `event.loop-detected-count` — static manifest check covers this
+- `event.unhandled-count` — static manifest check covers this
+- `task.no-progress-duration` — project-steward already surfaces stale tasks
+- `conversation.unclosed-human-reply-count` — not yet a proven failure mode
+- `problem.unknown-result-rate-24h` — structured contract + test covers this
   planner sessions
 - `escalation.pending-count`: unresolved escalations older than 1h
 - `problem.unknown-result-rate-24h`: problem-solver sessions returning
@@ -133,16 +173,22 @@ operational issues (47 sessions burned before anyone noticed).
 Or: add a separate `ops-health-review` schedule at 1h that only checks
 operational metrics, distinct from the 4h design review.
 
-**4. may-agent.app task tree: standing operational tasks**
+**4. may-agent.app task tree: ops-health branch**
 
-Add a durable `ops-health` lane with standing tasks:
-- `session-budget-compliance`: monitor and fix budget violations
-- `escalation-hygiene`: triage and resolve pending escalations
-- `planner-efficiency`: track and improve planner timeout rates
-- `handler-consolidation`: retire redundant handlers
+Add a durable `ops-health` branch. It is not a permanent active lane —
+it is a place for finite review/repair tasks. When a task completes, its
+findings and decisions roll up into the branch context. New tasks are
+created only when a real signal demands investigation or repair.
 
-These are not one-shot tasks — they're ongoing process ownership, like
-scout's `ongoing-research` lane.
+Example tasks (finite, created when signal demands):
+- `add-static-integrity-checks`: implement the 8 static checks listed above
+- `add-daemon-heartbeat-metric`: add runtime.daemon-heartbeat-stale to snapshot
+- `migrate-daily-alert-review`: prove replacement, then disable handler
+- `investigate-planner-timeout-46pct`: one-time analysis of timeout cause
+
+The branch stays in backlog when all child tasks are done and no active
+signal demands new work. It becomes active only when the health packet
+surfaces a problem that needs owner judgment.
 
 ### What This Looks Like
 
@@ -170,22 +216,19 @@ may-agent.app
 
 ### Budget-Safe Review Cadence
 
-The ops-health-review fires hourly as a **deterministic handler** (no LLM).
-It builds a compact health packet from DB queries:
-- open metric alerts by priority
-- session budget violations
-- pending escalation count
-- planner timeout rate
-- duplicate dispatch events
-- daemon heartbeat staleness
+The ops-health-review runs hourly as a **deterministic handler** (no LLM).
+It builds a compact health packet from DB queries and compares against
+thresholds. The handler itself is pure code — no agent session consumed.
 
-May only wakes (LLM session) when the packet has a meaningful signal:
-- any P0 metric breached
-- P1 metric breached for >1h without owner action
-- escalation pending >1h
-- daemon heartbeat stale >5min
+May only wakes (LLM session) when the packet crosses a meaningful threshold:
+- P0 metric breached (immediate)
+- P1 metric breached with no owner action for >1h
+- Escalation pending >1h with no resolution
+- Daemon heartbeat stale >5min
 
-Silent packets (all green) are a no-op — no session consumed.
+All other states are silent. The packet is logged for observability but does
+not trigger a session. Daily ops-digest is the one scheduled LLM wake for
+non-urgent rollup.
 
 ### Metric Priority Classification
 
@@ -218,6 +261,8 @@ For each handler migration, require:
 3. What task/event closes the loop (how does the owner act)
 4. One replay/regression test showing the new path works for the exact
    failure class the handler was designed to catch
+5. The replacement has either a static check or replay test proving the
+   old failure mode is covered — not just "the new handler exists"
 
 Migration order (each step must pass the gate before the next):
 - `daily-alert-review` → replaced by may-agent.app daily-ops-digest schedule
