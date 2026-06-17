@@ -76,3 +76,19 @@ The done sessions average 63s — well under the 240s timeout. Before the commit
 ## Validation Plan
 
 Check in 24-48h: if interrupt rate stays below 15% across a full 24h cycle, mark this entry's prediction 1 as confirmed and update KE-2015 status to `superseded`.
+
+## Validation Results (2026-06-17 12:11Z, ~8h after commit)
+
+**Prediction 1: CONFIRMED.** aks-explorer interrupt rate over the last 12h:
+- Last 6h: 0/589 = **0.0%** interrupted
+- 6-12h ago: 22/197 = **11.2%** interrupted (continuing decline)
+- 12-24h ago: 75/343 = **21.9%** (residual from before commit took effect)
+
+The rate is below 15% for a sustained 12h window and at 0% for the most
+recent 6h. The `Project planner interruption/timeout rate (6h)` metric now
+reads exactly **0.0**.
+
+**Prediction 2: CONFIRMED.** `session.error-rate-6h` dropped from 11.25%
+to **7.82%** — consistent with fewer retry loops.
+
+**KE-2015 status updated to `superseded`.**

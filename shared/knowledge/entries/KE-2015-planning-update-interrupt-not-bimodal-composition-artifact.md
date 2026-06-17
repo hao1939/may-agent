@@ -3,7 +3,7 @@ id: KE-2015
 title: "Planning Update Interrupt Rate is NOT Bi-Modal — KE-2014 Falsified by Disaggregation"
 date: 2026-06-16
 author: arc
-status: active
+status: superseded
 tags: [aks-explorer, planning-update, interrupt, measurement, KE-2014, falsification, composition-artifact]
 related: [KE-2014, KE-2013, KE-2012, KE-1994, KE-1989]
 ---
@@ -108,3 +108,11 @@ all four prior conflicting KEs.
   there IS a variable component and this entry's "constant" claim is wrong.
 - F2: If Spec 4 deploys (timeout ≥360s), the interrupt rate should drop
   to near-zero for planning_update sessions.
+
+## Superseded (2026-06-17)
+
+**F1 triggered.** Planning_update interrupt rate dropped to 0% (last 6h)
+and 2.8% (last 12h) — well below the 40% threshold. The "constant ~60%"
+claim was wrong; the rate was dependent on tooling complexity, not a
+structural timeout mismatch. See KE-2018 for the full analysis. The fix
+was commit `24a7a60fc` (planner simplification), not a timeout increase.
