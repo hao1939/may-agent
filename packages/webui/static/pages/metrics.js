@@ -1,6 +1,6 @@
 // ── Metrics Tab ───────────────────────────────────────────────────────
-const PINNED_METRICS = ['handler.success-rate', 'handler.worst-failure-count', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.blocked-count', 'project.blocked-over-6h', 'project.stale-active-count', 'project.iterations-24h', 'system.real-output-24h'];
-const HEALTH_METRICS = ['handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'system.real-output-24h'];
+const PINNED_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
+const HEALTH_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h', 'handler.success-rate', 'handler.heartbeat-coverage', 'project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
 
 async function loadMetricsTab() {
   try {
@@ -39,6 +39,8 @@ async function loadMetricsTab() {
 
     // ── Health Metrics Section (with larger graphs) ──
     html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">`;
+    html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Runtime Self-Drive</h3>`;
+    html += `<div id="runtime-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:16px"></div>`;
     html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Handler Health</h3>`;
     html += `<div id="handler-metrics-graphs" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:12px;margin-bottom:16px"></div>`;
     html += `<h3 style="margin:0 0 4px;font-size:14px;color:var(--fg)">Project Health</h3>`;
@@ -63,7 +65,7 @@ async function loadMetricsTab() {
     // Mapping is a cheap prefix rule. Anything unmatched falls into 'Other'.
     function axisOf(id) {
       if (id.startsWith('agent.') || id.startsWith('capability.')) return 'Agency';
-      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('message.') || id.startsWith('metric.') || id.startsWith('v2.')) return 'Infrastructure';
+      if (id.startsWith('handler.') || id.startsWith('session.') || id.startsWith('evaluator.') || id.startsWith('message.') || id.startsWith('metric.') || id.startsWith('runtime.') || id.startsWith('escalation.') || id.startsWith('v2.')) return 'Infrastructure';
       if (id.startsWith('project.') || id.startsWith('system.')) return 'Output';
       return 'Other';
     }
@@ -113,13 +115,15 @@ async function loadMetricsTab() {
   } catch (e) { document.getElementById('metrics-by-owner').innerHTML = `<p style="color:var(--red)">Failed: ${e.message}</p>`; }
 }
 
+var RUNTIME_METRICS = ['runtime.daemon-heartbeat-stale', 'runtime.project-app-schedule-orphan-count-1h', 'escalation.pending-count', 'session.planner-timeout-rate-6h'];
 var HANDLER_METRICS = ['handler.completed-count', 'handler.failed-count', 'handler.success-rate', 'handler.heartbeat-coverage', 'handler.p95-duration', 'handler.fires-per-hour'];
-var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h', 'system.real-output-24h'];
+var PROJECT_METRICS = ['project.active-count', 'project.stale-active-count', 'project.iterations-24h'];
 
 async function loadHealthMetricGraphs() {
   var metricsRes = await fetch('/api/metrics');
   var metricsData = await metricsRes.json();
 
+  await renderMetricGroup('runtime-metrics-graphs', RUNTIME_METRICS, metricsData);
   await renderMetricGroup('handler-metrics-graphs', HANDLER_METRICS, metricsData);
   await renderMetricGroup('project-metrics-graphs', PROJECT_METRICS, metricsData);
 }
@@ -140,19 +144,21 @@ async function renderMetricGroup(containerId, metricIds, metricsData) {
       var name = metricInfo ? metricInfo.name : metricId.split('.').pop();
       var unit = metricInfo ? (metricInfo.unit || '') : '';
       var current = metricInfo ? metricInfo.current : null;
+      var alertOp = metricInfo ? metricInfo.alert_op : null;
+      var breaches = current != null && threshold != null && ((alertOp === 'above' || alertOp === '>') ? current > threshold : current < threshold);
 
       var currentStr = current != null ? Number(current).toFixed(2) + unit : '—';
-      var color = current == null ? 'var(--fg2)' : (threshold != null && current >= threshold) ? 'var(--green)' : 'var(--red)';
+      var color = current == null ? 'var(--fg2)' : (threshold == null || !breaches) ? 'var(--green)' : 'var(--red)';
 
       html += '<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;cursor:pointer" onclick="showMetricHistory(\'' + metricId + '\')">';
       html += '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">';
       html += '<span style="font-size:12px;color:var(--fg2)">' + esc(name) + '</span>';
       html += '<span style="font-size:16px;font-weight:700;color:' + color + '">' + currentStr + '</span>';
       html += '</div>';
-      html += renderSparklineWithValues(snaps, threshold, 300, 60);
+      html += renderSparklineWithValues(snaps, threshold, 300, 60, alertOp);
       html += '<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--fg2);opacity:0.7">';
       html += '<span>24h ago</span>';
-      if (threshold != null) html += '<span>threshold: ' + threshold + unit + '</span>';
+      if (threshold != null) html += '<span>' + ((alertOp === 'above' || alertOp === '>') ? 'max: ' : 'min: ') + threshold + unit + '</span>';
       html += '<span>now</span>';
       html += '</div></div>';
     } catch (e) {
