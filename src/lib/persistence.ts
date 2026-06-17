@@ -128,9 +128,89 @@ export function sessionExists(persistDir: string, sessionId: string): boolean {
   return existsSync(sessionDir(persistDir, sessionId));
 }
 
-/** Append a single message as a JSON line to the session's JSONL file. */
+// ── Transcript secret redaction ─────────────────────────────────────────
+// These patterns match secrets that leak into session transcripts via tool
+// output (e.g. `az account get-access-token`). They are applied at the
+// persistence boundary so raw secrets never reach disk.
+
+const TRANSCRIPT_SECRET_PATTERNS: Array<{ pattern: RegExp; replacement: string }> = [
+  // Azure / OAuth JWT tokens (base64-encoded JSON starting with {"typ":"JWT"…})
+  { pattern: /eyJ[A-Za-z0-9_-]{20,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/g, replacement: "[REDACTED-JWT]" },
+  // Generic bearer tokens in Authorization headers
+  { pattern: /(Bearer\s+)[A-Za-z0-9_\-.~+/]{40,}/gi, replacement: "$1[REDACTED-BEARER-TOKEN]" },
+  // Azure access tokens as standalone base64 blobs (accessToken: "…")
+  { pattern: /(accessToken["']?\s*[:=]\s*["']?)([A-Za-z0-9_\-.~+/]{40,})(["']?)/g, replacement: "$1[REDACTED-ACCESS-TOKEN]$3" },
+  // Generic long secrets in key=value contexts (password, secret, token, key assignments)
+  { pattern: /((?:password|secret|token|api[_-]?key)\s*[=:]\s*["']?)([^\s"']{20,})(["']?)/gi, replacement: "$1[REDACTED]$3" },
+];
+
+/**
+ * Redact known secret patterns from a string.
+ * Used on transcript message content before persistence.
+ */
+export function redactTranscriptSecrets(text: string): string {
+  let result = text;
+  for (const { pattern, replacement } of TRANSCRIPT_SECRET_PATTERNS) {
+    pattern.lastIndex = 0;
+    result = result.replace(pattern, replacement);
+  }
+  return result;
+}
+
+/**
+ * Recursively walk every string value in an object/array and apply a
+ * transform function. Mutates in place for efficiency (caller provides clone).
+ */
+function deepRedactStrings(obj: unknown): unknown {
+  if (typeof obj === "string") {
+    return redactTranscriptSecrets(obj);
+  }
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      obj[i] = deepRedactStrings(obj[i]);
+    }
+    return obj;
+  }
+  if (obj !== null && typeof obj === "object") {
+    for (const key of Object.keys(obj)) {
+      (obj as any)[key] = deepRedactStrings((obj as any)[key]);
+    }
+    return obj;
+  }
+  return obj;
+}
+
+/**
+ * Deep-clone an AgentMessage and redact secrets from ALL nested string values
+ * including tool-call arguments, nested payloads, and any other string field.
+ * The original message is never mutated.
+ */
+function sanitizeMessageForTranscript(message: AgentMessage): AgentMessage {
+  // Fast path: if JSON serialization has no secret indicators, skip deep scan.
+  // Must check for ALL indicators that any TRANSCRIPT_SECRET_PATTERNS entry
+  // could match, including JSON-escaped forms (e.g. `token":"` where `"` sits
+  // between keyword and `:`).
+  const serialized = JSON.stringify(message);
+  if (
+    !serialized.includes("eyJ") &&
+    !/bearer/i.test(serialized) &&
+    !serialized.includes("accessToken") &&
+    !/(?:password|secret|token|api[_-]?key)["']?\s*[=:]/i.test(serialized)
+  ) {
+    return message;
+  }
+
+  // Deep clone then recursively redact every string value
+  const clone = JSON.parse(serialized) as AgentMessage;
+  deepRedactStrings(clone);
+  return clone;
+}
+
+/** Append a single message as a JSON line to the session's JSONL file.
+ *  Secrets (JWTs, bearer tokens, access tokens) are redacted before writing. */
 export function appendSessionMessage(persistDir: string, sessionId: string, message: AgentMessage): void {
-  const line = JSON.stringify(message) + "\n";
+  const sanitized = sanitizeMessageForTranscript(message);
+  const line = JSON.stringify(sanitized) + "\n";
   appendFileSync(sessionJsonlPath(persistDir, sessionId), line, "utf-8");
 }
 

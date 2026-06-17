@@ -200,6 +200,22 @@ describe("SubagentManager.resumeStaleSessions()", () => {
     }));
   });
 
+  it("can suppress missing-session event only for known benign resume races", () => {
+    const bus = new EventBus();
+    const events: AgentEvent[] = [];
+    bus.subscribe((event) => events.push(event));
+    const manager = new SubagentManager({ persistDir, bus });
+
+    expect(() =>
+      manager.resumeSession("missing-session", "continue", {
+        source: "runtime:auto-resume",
+        suppressBenignRaceEvent: true,
+      }),
+    ).toThrow(/not found/);
+
+    expect(events.some((event) => event.type === "session.resume_failed")).toBe(false);
+  });
+
   it("uses the injected user message as the visible task when cold-resuming a session", async () => {
     const bus = new EventBus();
     const events: AgentEvent[] = [];

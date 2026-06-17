@@ -196,6 +196,22 @@ describe("commit-guard", () => {
       git(agentsDir, ["checkout", "--", "may/last-session.md"]);
     });
 
+    it("allows finish when only the generated agent evaluation file changed", async () => {
+      const mayDir = join(agentsDir, "may");
+      mkdirSync(mayDir, { recursive: true });
+      writeFileSync(join(mayDir, "last-eval.md"), "old evaluation feedback");
+      git(agentsDir, ["add", "may/last-eval.md"]);
+      git(agentsDir, ["commit", "-m", "add generated eval feedback"]);
+
+      writeFileSync(join(mayDir, "last-eval.md"), "new evaluation feedback");
+
+      const guard = createCommitGuard("may", tmpDir);
+      const result = await guard(makeFinishCtx({ status: "success", summary: "done" }));
+      expect(result).toBeUndefined();
+
+      git(agentsDir, ["checkout", "--", "may/last-eval.md"]);
+    });
+
     it("signals finish when agent has uncommitted changes (new file)", async () => {
       // Create a new file in bob's workspace
       const bobDir = join(agentsDir, "bob", "workspace");
@@ -644,5 +660,15 @@ describe("commit-guard deliverable scoping", () => {
     expect(result?.reason).toContain("git add -f --");
     expect(result?.reason).toContain("'projects/demo/outputs/result.md'");
     expect(result?.reason).toContain("'agents/may/workspace/note.md'");
+  });
+
+  it("ignores generated app-root agent evaluation feedback", async () => {
+    const root = setupAppRepo();
+    writeFileSync(join(root, "agents/may/last-eval.md"), "generated feedback");
+
+    const guard = createCommitGuard("may", root);
+    const result = await guard(finishContext([]) as any);
+
+    expect(result).toBeUndefined();
   });
 });

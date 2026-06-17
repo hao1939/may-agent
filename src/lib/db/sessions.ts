@@ -20,9 +20,19 @@ export interface SessionDbEntry {
   lastActivityAt?: number;
 }
 
+/** Maximum task text stored in the sessions table (200KB).
+ * Prevents runaway workflows from bloating the DB with recursive payloads. */
+const MAX_TASK_LENGTH = 200_000;
+
+function capTask(task: string): string {
+  if (task.length <= MAX_TASK_LENGTH) return task;
+  return `${task.slice(0, MAX_TASK_LENGTH)}\n...[TRUNCATED: original was ${task.length} chars]`;
+}
+
 /** Insert or update a session row without erasing existing lineage fields. */
 export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
   const db = getDb(persistDir);
+  const cappedTask = capTask(entry.task ?? "");
   db.run(
     `INSERT INTO sessions
       (sessionId, agent, task, status, kind, source, parentSessionId, requestId, workflowRunId, projectId, stepLabel, startedAt, endedAt, error, outcome, opCount, lastActivityAt)
@@ -52,7 +62,7 @@ export function upsertSession(persistDir: string, entry: SessionDbEntry): void {
     [
       entry.sessionId,
       entry.agent,
-      entry.task ?? "",
+      cappedTask,
       entry.status,
       entry.kind ?? "job",
       entry.source ?? null,

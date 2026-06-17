@@ -72,6 +72,8 @@ export function triggerString(event: TriggerEvent | null, key: string): string {
 }
 
 export function resultText(result: unknown): string {
+  if (result == null) return "";
+  if (typeof result === "string") return result;
   const typed = result as {
     message?: string;
     summary?: string;

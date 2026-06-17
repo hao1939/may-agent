@@ -244,6 +244,15 @@ export function loadInbox(ctx: WorkflowContext, agent: string): string {
   try {
     const rows = ((loadHeartbeatContext(ctx, agent).inbox ?? []).map(normalizeHeartbeatEvent) as any[]);
     if (!rows.length) return "";
+
+    // Mark consumed inbox events as handled so they don't reappear in future heartbeats.
+    try {
+      const eventIds = rows.map((r: any) => r.id).filter((id: unknown) => typeof id === "number");
+      if (eventIds.length > 0 && typeof ctx.query.markInboxHandled === "function") {
+        ctx.query.markInboxHandled(eventIds, agent);
+      }
+    } catch { /* best-effort: don't break inbox loading if marking fails */ }
+
     // Dedup: collapse notifications with similar content
     const dedupMap = new Map<string, { count: number; newest: any; oldest: any }>();
     for (const r of rows) {

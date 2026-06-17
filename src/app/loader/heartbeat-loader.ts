@@ -66,8 +66,8 @@ export function generateAutoHeartbeats(agentsRoot: string, projectId?: string): 
         workflow: `${agentName}-heartbeat`,
         agent: agentName,
         ...(projectId ? { projectId } : {}),
-        task: `[heartbeat] You are ${agentName}. Read agents/${agentName}/heartbeat.md and work through each section. End with a brief of what you did.`,
-        timeoutMs: 1_800_000,
+        task: `[heartbeat] You are ${agentName}. Read agents/${agentName}/heartbeat.md and work through each section. End with a brief of what you did.\npersistent-task: skip`,
+        timeoutMs: 2_700_000, // 45 min — 1.5× interval to avoid timeout on long-tail sessions
       },
       offsetMs,
       on: ["heartbeat.trigger"],
