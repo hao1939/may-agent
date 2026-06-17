@@ -11,13 +11,28 @@
  * in the generic section near the end of the handler.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  openSync,
+  readFileSync,
+  readSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
 import { basename, join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import type { EventEnvelope, HandlerContext, HandlerModule } from "@may-agent/sdk";
+import type {
+  EventEnvelope,
+  HandlerContext,
+  HandlerModule,
+} from "@may-agent/sdk";
 import type { CronEntry } from "@may-agent/sdk";
-import { listConfiguredAgents, resolveMetricOwner } from "../../../shared/lib/metric-ownership.ts";
+import {
+  listConfiguredAgents,
+  resolveMetricOwner,
+} from "../../../shared/lib/metric-ownership.ts";
 import { validateProjectFormat } from "../../../shared/lib/project-health.ts";
 
 const execAsync = promisify(exec);
@@ -37,8 +52,14 @@ const execAsync = promisify(exec);
 //   health:  { alert: { mode: "consecutive_failures", count: number } }
 
 interface MetricDef {
-  id: string; name: string; owner?: string; type: "gauge" | "counter" | "health" | "derived";
-  target: number; threshold: number; unit: string; alert_op: "<" | ">";
+  id: string;
+  name: string;
+  owner?: string;
+  type: "gauge" | "counter" | "health" | "derived";
+  target: number;
+  threshold: number;
+  unit: string;
+  alert_op: "<" | ">";
   project?: string;
   priority?: "P0" | "P1" | "P2" | "P3";
   config?: Record<string, unknown>;
@@ -46,82 +67,600 @@ interface MetricDef {
 
 const ALL_METRICS: MetricDef[] = [
   // Handler
-  { id: "handler.completed-count", name: "Handler completions (6h)", owner: "may", type: "gauge", target: 50, threshold: 10, unit: "count", alert_op: "<",
-    priority: "P1" },
-  { id: "handler.failed-count", name: "Handler failures (6h)", owner: "may", type: "gauge", target: 0, threshold: 150, unit: "count", alert_op: ">",
-    priority: "P2" },
-  { id: "handler.success-rate", name: "Handler success rate (6h)", owner: "optimizer", type: "gauge", target: 0.95, threshold: 0.80, unit: "ratio", alert_op: "<",
+  {
+    id: "handler.completed-count",
+    name: "Handler completions (6h)",
+    owner: "may",
+    type: "gauge",
+    target: 50,
+    threshold: 10,
+    unit: "count",
+    alert_op: "<",
     priority: "P1",
-    config: { alert: { mode: "sustained", consecutive: 3 } } },
-  { id: "handler.heartbeat-coverage", name: "Heartbeat coverage (agents with sessions in 2h)", owner: "may", type: "gauge", target: 2, threshold: 2, unit: "count", alert_op: "<", priority: "P1" },
-  { id: "agent.heartbeat-dark-count-2h", name: "Scheduled heartbeat agents dark (2h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "agent.config-invalid-count-1h", name: "Agent config load errors (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P0",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "runtime.daemon-heartbeat-stale", name: "Daemon heartbeat stale", owner: "may", type: "health", target: 0, threshold: 0, unit: "boolean", alert_op: ">", priority: "P0",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
+  },
+  {
+    id: "handler.failed-count",
+    name: "Handler failures (6h)",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 150,
+    unit: "count",
+    alert_op: ">",
+    priority: "P2",
+  },
+  {
+    id: "handler.success-rate",
+    name: "Handler success rate (6h)",
+    owner: "optimizer",
+    type: "gauge",
+    target: 0.95,
+    threshold: 0.8,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P1",
+    config: { alert: { mode: "sustained", consecutive: 3 } },
+  },
+  {
+    id: "handler.heartbeat-coverage",
+    name: "Heartbeat coverage (agents with sessions in 2h)",
+    owner: "may",
+    type: "gauge",
+    target: 2,
+    threshold: 2,
+    unit: "count",
+    alert_op: "<",
+    priority: "P1",
+  },
+  {
+    id: "agent.heartbeat-dark-count-2h",
+    name: "Scheduled heartbeat agents dark (2h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "agent.config-invalid-count-1h",
+    name: "Agent config load errors (1h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "runtime.daemon-heartbeat-stale",
+    name: "Daemon heartbeat stale",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "boolean",
+    alert_op: ">",
+    priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "runtime.project-app-schedule-orphan-count-1h",
+    name: "Project-app schedule ticks without follow-up (1h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
   // Sessions
-  { id: "session.error-rate-6h", name: "Session error rate (6h)", owner: "may", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
-  { id: "session.planner-timeout-rate-6h", name: "Project planner interruption/timeout rate (6h)", owner: "may", type: "gauge", target: 0.05, threshold: 0.25, unit: "ratio", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "sustained", consecutive: 2 } } },
-  { id: "session.first-turn-error-count-1h", name: "First-turn provider errors (1h)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "session.provider-error-count-1h", name: "Provider errors at any turn (1h)", owner: "may", type: "health", target: 0, threshold: 25, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "session.empty-assistant-stop-count-1h", name: "Empty assistant stops (1h)", owner: "may", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P2",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "session.failed-triage-rate-3h", name: "Failed session triage rate (3h)", owner: "evaluator", type: "gauge", target: 1.0, threshold: 0.80, unit: "ratio", alert_op: "<", priority: "P1" },
-  { id: "evaluator.aftermath-coverage-rate-3h", name: "Evaluator aftermath liveness (3h)", owner: "evaluator", type: "gauge", target: 0.80, threshold: 0.20, unit: "ratio", alert_op: "<", priority: "P3" },
-  { id: "eval.llm-coverage-lag-h", name: "LLM evaluation lag (hours since last non-heuristic eval)", owner: "evaluator", type: "gauge", target: 1, threshold: 4, unit: "hours", alert_op: ">", priority: "P0" },
-  { id: "eval.llm-evals-24h", name: "LLM-evaluated sessions (24h)", owner: "evaluator", type: "gauge", target: 4, threshold: 1, unit: "count", alert_op: "<", priority: "P2" },
-  { id: "evaluator.low-quality-rate-24h", name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.80, unit: "ratio", alert_op: ">", priority: "P3" },
-  { id: "evaluator.substantive-low-quality-rate-24h", name: "Substantive evaluator quality failures (24h)", owner: "evaluator", type: "gauge", target: 0.10, threshold: 0.30, unit: "ratio", alert_op: ">", priority: "P1" },
-  { id: "evaluator.meaningful-review-rate-24h", name: "Evaluator meaningful review rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "evaluator.triage-closure-rate-24h", name: "Evaluator triage closure rate (24h)", owner: "evaluator", type: "gauge", target: 0.90, threshold: 0.70, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "evaluator.false-good-rate-sample", name: "Reviewed good sessions overturned (24h)", owner: "evaluator", type: "gauge", target: 0.05, threshold: 0.60, unit: "ratio", alert_op: ">", priority: "P2" },
-  { id: "evaluator.success-candidates-24h", name: "Good sessions marked for learning (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
-  { id: "evaluator.success-learnings-24h", name: "Learnings extracted from good sessions (24h)", owner: "evaluator", type: "gauge", target: 1, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
-  { id: "evaluator.stale-running-session-count", name: "Stale running sessions", owner: "evaluator", type: "health", target: 0, threshold: 1, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "scout.knowledge-practice-loaded", name: "Scout knowledge practice loaded", owner: "scout", project: "scout-second-brain-learning", type: "health", target: 1, threshold: 1, unit: "boolean", alert_op: "<", priority: "P2",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "scout.knowledge-preamble-coverage", name: "Scout knowledge preamble coverage", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 0.25, threshold: 0.15, unit: "ratio", alert_op: "<", priority: "P3" },
-  { id: "scout.sourced-artifacts-24h", name: "Scout sourced artifacts (24h)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 2, threshold: 1, unit: "count", alert_op: "<", priority: "P2" },
-  { id: "scout.downstream-reference-files-7d", name: "Scout downstream reference files (7d)", owner: "scout", project: "scout-second-brain-learning", type: "gauge", target: 3, threshold: 1, unit: "count", alert_op: "<", priority: "P3" },
-  { id: "handler.p95-duration", name: "Handler p95 duration (ms)", owner: "optimizer", type: "gauge", target: 120000, threshold: 600000, unit: "ms", alert_op: ">", priority: "P2" },
-  { id: "handler.fires-per-hour", name: "Handler fires per hour", owner: "may", type: "gauge", target: 15, threshold: 8, unit: "count", alert_op: "<", priority: "P1" },
-  { id: "guard.triggered-count-24h", name: "Guard triggers (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 4500, unit: "count", alert_op: ">", priority: "P3" },
-  { id: "guard.warned-count-24h", name: "Guard warnings (24h watch)", owner: "may", type: "gauge", target: 0, threshold: 4500, unit: "count", alert_op: ">", priority: "P3" },
-  { id: "guard.blocked-count-15m", name: "Guard blocks (15m)", owner: "may", type: "health", target: 0, threshold: 15, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "guard.repeat-trigger-count-24h", name: "Repeated guard triggers (24h)", owner: "may", type: "gauge", target: 0, threshold: 5, unit: "count", alert_op: ">", priority: "P2" },
+  {
+    id: "session.error-rate-6h",
+    name: "Session error rate (6h)",
+    owner: "may",
+    type: "gauge",
+    target: 0.1,
+    threshold: 0.3,
+    unit: "ratio",
+    alert_op: ">",
+    priority: "P1",
+  },
+  {
+    id: "session.planner-timeout-rate-6h",
+    name: "Project planner interruption/timeout rate (6h)",
+    owner: "may",
+    type: "gauge",
+    target: 0.05,
+    threshold: 0.25,
+    unit: "ratio",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "sustained", consecutive: 2 } },
+  },
+  {
+    id: "session.first-turn-error-count-1h",
+    name: "First-turn provider errors (1h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 15,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "session.provider-error-count-1h",
+    name: "Provider errors at any turn (1h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 25,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "session.empty-assistant-stop-count-1h",
+    name: "Empty assistant stops (1h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 2,
+    unit: "count",
+    alert_op: ">",
+    priority: "P2",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "session.failed-triage-rate-3h",
+    name: "Failed session triage rate (3h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 1.0,
+    threshold: 0.8,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P1",
+  },
+  {
+    id: "evaluator.aftermath-coverage-rate-3h",
+    name: "Evaluator aftermath liveness (3h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 0.8,
+    threshold: 0.2,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "eval.llm-coverage-lag-h",
+    name: "LLM evaluation lag (hours since last non-heuristic eval)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 1,
+    threshold: 4,
+    unit: "hours",
+    alert_op: ">",
+    priority: "P0",
+  },
+  {
+    id: "eval.llm-evals-24h",
+    name: "LLM-evaluated sessions (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 4,
+    threshold: 1,
+    unit: "count",
+    alert_op: "<",
+    priority: "P2",
+  },
+  {
+    id: "evaluator.low-quality-rate-24h",
+    name: "Broad needs-improvement/low-score evaluated sessions (24h, dashboard only)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 0.1,
+    threshold: 0.8,
+    unit: "ratio",
+    alert_op: ">",
+    priority: "P3",
+  },
+  {
+    id: "evaluator.substantive-low-quality-rate-24h",
+    name: "Substantive evaluator quality failures (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 0.1,
+    threshold: 0.3,
+    unit: "ratio",
+    alert_op: ">",
+    priority: "P1",
+  },
+  {
+    id: "evaluator.meaningful-review-rate-24h",
+    name: "Evaluator meaningful review rate (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 0.9,
+    threshold: 0.7,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P2",
+  },
+  {
+    id: "evaluator.triage-closure-rate-24h",
+    name: "Evaluator triage closure rate (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 0.9,
+    threshold: 0.7,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P2",
+  },
+  {
+    id: "evaluator.false-good-rate-sample",
+    name: "Reviewed good sessions overturned (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 0.05,
+    threshold: 0.6,
+    unit: "ratio",
+    alert_op: ">",
+    priority: "P2",
+  },
+  {
+    id: "evaluator.success-candidates-24h",
+    name: "Good sessions marked for learning (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 1,
+    threshold: 0,
+    unit: "count",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "evaluator.success-learnings-24h",
+    name: "Learnings extracted from good sessions (24h)",
+    owner: "evaluator",
+    type: "gauge",
+    target: 1,
+    threshold: 0,
+    unit: "count",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "evaluator.stale-running-session-count",
+    name: "Stale running sessions",
+    owner: "evaluator",
+    type: "health",
+    target: 0,
+    threshold: 1,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "scout.knowledge-practice-loaded",
+    name: "Scout knowledge practice loaded",
+    owner: "scout",
+    project: "scout-second-brain-learning",
+    type: "health",
+    target: 1,
+    threshold: 1,
+    unit: "boolean",
+    alert_op: "<",
+    priority: "P2",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "scout.knowledge-preamble-coverage",
+    name: "Scout knowledge preamble coverage",
+    owner: "scout",
+    project: "scout-second-brain-learning",
+    type: "gauge",
+    target: 0.25,
+    threshold: 0.15,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "scout.sourced-artifacts-24h",
+    name: "Scout sourced artifacts (24h)",
+    owner: "scout",
+    project: "scout-second-brain-learning",
+    type: "gauge",
+    target: 2,
+    threshold: 1,
+    unit: "count",
+    alert_op: "<",
+    priority: "P2",
+  },
+  {
+    id: "scout.downstream-reference-files-7d",
+    name: "Scout downstream reference files (7d)",
+    owner: "scout",
+    project: "scout-second-brain-learning",
+    type: "gauge",
+    target: 3,
+    threshold: 1,
+    unit: "count",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "handler.p95-duration",
+    name: "Handler p95 duration (ms)",
+    owner: "optimizer",
+    type: "gauge",
+    target: 120000,
+    threshold: 600000,
+    unit: "ms",
+    alert_op: ">",
+    priority: "P2",
+  },
+  {
+    id: "handler.fires-per-hour",
+    name: "Handler fires per hour",
+    owner: "may",
+    type: "gauge",
+    target: 15,
+    threshold: 8,
+    unit: "count",
+    alert_op: "<",
+    priority: "P1",
+  },
+  {
+    id: "guard.triggered-count-24h",
+    name: "Guard triggers (24h watch)",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 4500,
+    unit: "count",
+    alert_op: ">",
+    priority: "P3",
+  },
+  {
+    id: "guard.warned-count-24h",
+    name: "Guard warnings (24h watch)",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 4500,
+    unit: "count",
+    alert_op: ">",
+    priority: "P3",
+  },
+  {
+    id: "guard.blocked-count-15m",
+    name: "Guard blocks (15m)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 15,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "guard.repeat-trigger-count-24h",
+    name: "Repeated guard triggers (24h)",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 5,
+    unit: "count",
+    alert_op: ">",
+    priority: "P2",
+  },
   // Project
-  { id: "project.active-count", name: "Active push projects", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<", priority: "P3" },
-  { id: "project.blocked-count", name: "Blocked projects", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
-  { id: "project.stale-active-count", name: "Stale active projects (no iteration 48h)", owner: "may", type: "gauge", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1" },
-  { id: "project.iterations-24h", name: "Active project iterations (24h)", owner: "may", type: "gauge", target: 0, threshold: 0, unit: "count", alert_op: "<",
-    priority: "P3" },
-  { id: "project.blocked-over-6h", name: "Projects blocked >6h", owner: "may", type: "gauge", target: 0, threshold: 4, unit: "count", alert_op: ">", priority: "P2" },
-  { id: "project.invalid-format-count", name: "Invalid project.md format", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "capability.status-reality-mismatch-count", name: "Status/reality mismatches", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P0",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "capability.zombie-session-count", name: "Zombie sessions (running >30min)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 2, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
-  { id: "message.delivery-failed-count-1h", name: "Message delivery failures (1h)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "escalation.pending-count", name: "Pending escalations", owner: "may", type: "health", target: 0, threshold: 3, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "sustained", consecutive: 2 } } },
+  {
+    id: "project.active-count",
+    name: "Active push projects",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "project.blocked-count",
+    name: "Blocked projects",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 4,
+    unit: "count",
+    alert_op: ">",
+    priority: "P2",
+  },
+  {
+    id: "project.stale-active-count",
+    name: "Stale active projects (no iteration 48h)",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 2,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+  },
+  {
+    id: "project.iterations-24h",
+    name: "Active project iterations (24h)",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: "<",
+    priority: "P3",
+  },
+  {
+    id: "project.blocked-over-6h",
+    name: "Projects blocked >6h",
+    owner: "may",
+    type: "gauge",
+    target: 0,
+    threshold: 4,
+    unit: "count",
+    alert_op: ">",
+    priority: "P2",
+  },
+  {
+    id: "project.invalid-format-count",
+    name: "Invalid project.md format",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "capability.status-reality-mismatch-count",
+    name: "Status/reality mismatches",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 3,
+    unit: "count",
+    alert_op: ">",
+    priority: "P0",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "capability.zombie-session-count",
+    name: "Zombie sessions (running >30min)",
+    owner: "may",
+    project: "v2-spec-coverage-buildout",
+    type: "health",
+    target: 0,
+    threshold: 2,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
+  {
+    id: "message.delivery-failed-count-1h",
+    name: "Message delivery failures (1h)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "escalation.pending-count",
+    name: "Pending escalations",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 3,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "sustained", consecutive: 2 } },
+  },
   // v2 infra metrics (I1-I4)
-  { id: "infra.bus.event-count-1h", name: "Event bus events (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 10, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
-  { id: "infra.bus.subscriber-failed-count-1h", name: "Event bus subscriber failures (1h)", owner: "may", project: "v2-spec-coverage-buildout", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 1 } } },
-  { id: "infra.persist.db-size-mb", name: "DB size (MB)", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1200, threshold: 2000, unit: "MB", alert_op: ">", priority: "P2" },
-  { id: "infra.messages.delivery-rate", name: "Message delivery success rate", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 1.0, threshold: 0.9, unit: "ratio", alert_op: "<", priority: "P2" },
-  { id: "infra.sessions.active-count", name: "Active sessions", owner: "may", project: "v2-spec-coverage-buildout", type: "gauge", target: 5, threshold: 0, unit: "count", alert_op: "<", priority: "P2" },
+  {
+    id: "infra.bus.event-count-1h",
+    name: "Event bus events (1h)",
+    owner: "may",
+    project: "v2-spec-coverage-buildout",
+    type: "gauge",
+    target: 10,
+    threshold: 0,
+    unit: "count",
+    alert_op: "<",
+    priority: "P2",
+  },
+  {
+    id: "infra.bus.subscriber-failed-count-1h",
+    name: "Event bus subscriber failures (1h)",
+    owner: "may",
+    project: "v2-spec-coverage-buildout",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 1 } },
+  },
+  {
+    id: "infra.persist.db-size-mb",
+    name: "DB size (MB)",
+    owner: "may",
+    project: "v2-spec-coverage-buildout",
+    type: "gauge",
+    target: 1200,
+    threshold: 2000,
+    unit: "MB",
+    alert_op: ">",
+    priority: "P2",
+  },
+  {
+    id: "infra.messages.delivery-rate",
+    name: "Message delivery success rate",
+    owner: "may",
+    project: "v2-spec-coverage-buildout",
+    type: "gauge",
+    target: 1.0,
+    threshold: 0.9,
+    unit: "ratio",
+    alert_op: "<",
+    priority: "P2",
+  },
+  {
+    id: "infra.sessions.active-count",
+    name: "Active sessions",
+    owner: "may",
+    project: "v2-spec-coverage-buildout",
+    type: "gauge",
+    target: 5,
+    threshold: 0,
+    unit: "count",
+    alert_op: "<",
+    priority: "P2",
+  },
   // Metric health — structurally-pinned detector (KE-938/KE-939/KE-940)
-  { id: "metric.structurally-pinned-count", name: "Structurally pinned metrics (dv=1/7d)", owner: "may", type: "health", target: 0, threshold: 0, unit: "count", alert_op: ">", priority: "P1",
-    config: { alert: { mode: "consecutive_failures", count: 2 } } },
+  {
+    id: "metric.structurally-pinned-count",
+    name: "Structurally pinned metrics (dv=1/7d)",
+    owner: "may",
+    type: "health",
+    target: 0,
+    threshold: 0,
+    unit: "count",
+    alert_op: ">",
+    priority: "P1",
+    config: { alert: { mode: "consecutive_failures", count: 2 } },
+  },
 ];
 
 const RETIRED_METRIC_IDS = [
@@ -167,10 +706,10 @@ const RETENTION_DAYS = 30;
  * false-positive alerts.  (KE-938 / proposal: Option A guard-metric list)
  */
 const STRUCTURALLY_PINNED_ALLOWLIST = new Set([
-  "capability.zombie-session-count",        // desired steady-state 0; alerts on non-zero
+  "capability.zombie-session-count", // desired steady-state 0; alerts on non-zero
   "capability.status-reality-mismatch-count", // desired 0; multi-signal composite
-  "infra.bus.subscriber-failed-count-1h",   // desired 0; failure counter
-  "infra.messages.delivery-rate",           // desired 1.0; high-reliability gauge
+  "infra.bus.subscriber-failed-count-1h", // desired 0; failure counter
+  "infra.messages.delivery-rate", // desired 1.0; high-reliability gauge
 ]);
 
 function projectSlugFromRef(raw: string | null | undefined): string | null {
@@ -182,12 +721,16 @@ function projectSlugFromRef(raw: string | null | undefined): string | null {
 function projectSlugFromIterationData(data: string | null): string | null {
   if (!data) return null;
   try {
-    const parsed = JSON.parse(data) as { projectId?: unknown; project?: unknown };
-    const raw = typeof parsed.projectId === "string"
-      ? parsed.projectId
-      : typeof parsed.project === "string"
-        ? parsed.project
-        : "";
+    const parsed = JSON.parse(data) as {
+      projectId?: unknown;
+      project?: unknown;
+    };
+    const raw =
+      typeof parsed.projectId === "string"
+        ? parsed.projectId
+        : typeof parsed.project === "string"
+          ? parsed.project
+          : "";
     return projectSlugFromRef(raw);
   } catch {
     return null;
@@ -214,7 +757,10 @@ function countInvalidSharedProjectFormats(projectsRoot: string): number {
   return invalid;
 }
 
-function listEnabledHeartbeatAgents(agentsRoot: string, configuredAgents: Set<string>): string[] {
+function listEnabledHeartbeatAgents(
+  agentsRoot: string,
+  configuredAgents: Set<string>,
+): string[] {
   const cronPath = join(agentsRoot, "may", "cron.json");
   const agents = new Set<string>();
   try {
@@ -227,14 +773,23 @@ function listEnabledHeartbeatAgents(agentsRoot: string, configuredAgents: Set<st
     }>;
     for (const entry of cron) {
       if (entry.enabled === false) continue;
-      const workflowHandler = entry.handler && typeof entry.handler === "object" ? entry.handler : undefined;
-      const isHeartbeat = entry.name === "heartbeat"
-        || entry.name?.startsWith("heartbeat-")
-        || entry.handlerConfig?.workflow?.includes("heartbeat")
-        || entry.handler === "heartbeat"
-        || workflowHandler?.workflow?.includes("heartbeat");
+      const workflowHandler =
+        entry.handler && typeof entry.handler === "object"
+          ? entry.handler
+          : undefined;
+      const isHeartbeat =
+        entry.name === "heartbeat" ||
+        entry.name?.startsWith("heartbeat-") ||
+        entry.handlerConfig?.workflow?.includes("heartbeat") ||
+        entry.handler === "heartbeat" ||
+        workflowHandler?.workflow?.includes("heartbeat");
       if (!isHeartbeat) continue;
-      const agent = (workflowHandler?.agent || entry.handlerConfig?.agent || entry.agent || "").trim();
+      const agent = (
+        workflowHandler?.agent ||
+        entry.handlerConfig?.agent ||
+        entry.agent ||
+        ""
+      ).trim();
       if (agent && configuredAgents.has(agent)) agents.add(agent);
     }
   } catch {
@@ -265,7 +820,12 @@ function walkMarkdownFiles(root: string, maxFiles = 5000): string[] {
       return;
     }
     for (const entry of entries) {
-      if (files.length >= maxFiles || entry === "node_modules" || entry === ".git") continue;
+      if (
+        files.length >= maxFiles ||
+        entry === "node_modules" ||
+        entry === ".git"
+      )
+        continue;
       const path = join(dir, entry);
       try {
         const stat = statSync(path);
@@ -302,7 +862,14 @@ function scoutKnowledgePracticeLoaded(root: string): boolean {
   // Scout agent migrated to projects/scout-knowledge-lib.app/agents/scout/ (ea04018c3)
   // Check both new and legacy paths for resilience
   const paths = [
-    join(root, "projects", "scout-knowledge-lib.app", "agents", "scout", "AGENTS.md"),
+    join(
+      root,
+      "projects",
+      "scout-knowledge-lib.app",
+      "agents",
+      "scout",
+      "AGENTS.md",
+    ),
     join(root, "agents", "scout", "AGENTS.md"),
   ];
   return paths.some((p) =>
@@ -313,16 +880,26 @@ function scoutKnowledgePracticeLoaded(root: string): boolean {
   );
 }
 
-function scoutKnowledgePreambleCoverage(root: string): { value: number; sampleSize: number } {
+function scoutKnowledgePreambleCoverage(root: string): {
+  value: number;
+  sampleSize: number;
+} {
   const files = [
     // Scout knowledge migrated to projects/scout-knowledge-lib/ (ea04018c3)
-    ...walkMarkdownFiles(join(root, "projects", "scout-knowledge-lib", "knowledge")),
+    ...walkMarkdownFiles(
+      join(root, "projects", "scout-knowledge-lib", "knowledge"),
+    ),
     ...walkMarkdownFiles(join(root, "agents", "scout", "knowledge")),
     ...walkMarkdownFiles(join(root, "shared", "knowledge", "entries")),
   ];
   if (files.length === 0) return { value: 1, sampleSize: 0 };
-  const withPreamble = files.filter((file) => fileContainsAny(file, [/<ai_context>/i])).length;
-  return { value: parseFloat((withPreamble / files.length).toFixed(4)), sampleSize: files.length };
+  const withPreamble = files.filter((file) =>
+    fileContainsAny(file, [/<ai_context>/i]),
+  ).length;
+  return {
+    value: parseFloat((withPreamble / files.length).toFixed(4)),
+    sampleSize: files.length,
+  };
 }
 
 function scoutSourcedArtifacts24h(root: string, now: number): number {
@@ -330,7 +907,14 @@ function scoutSourcedArtifacts24h(root: string, now: number): number {
   const roots = [
     // Scout agent/knowledge migrated to project paths (ea04018c3)
     join(root, "projects", "scout-knowledge-lib", "knowledge"),
-    join(root, "projects", "scout-knowledge-lib.app", "agents", "scout", "workspace"),
+    join(
+      root,
+      "projects",
+      "scout-knowledge-lib.app",
+      "agents",
+      "scout",
+      "workspace",
+    ),
     join(root, "agents", "scout", "knowledge"),
     join(root, "agents", "scout", "workspace"),
     join(root, "shared", "knowledge", "entries"),
@@ -340,7 +924,11 @@ function scoutSourcedArtifacts24h(root: string, now: number): number {
     .filter((file) => {
       try {
         if (statSync(file).mtimeMs < cutoff) return false;
-        return fileContainsAny(file, [/^Sources?:/im, /\*\*Sources?:?\*\*:?/i, /https?:\/\//i]);
+        return fileContainsAny(file, [
+          /^Sources?:/im,
+          /\*\*Sources?:?\*\*:?/i,
+          /https?:\/\//i,
+        ]);
       } catch {
         return false;
       }
@@ -359,21 +947,38 @@ function scoutDownstreamReferenceFiles7d(root: string, now: number): number {
     if (file.includes("/scout-knowledge-lib")) return false;
     try {
       if (statSync(file).mtimeMs < cutoff) return false;
-      return fileContainsAny(file, [/agents\/scout\/knowledge/i, /scout-second-brain-learning/i, /\bScout\b/]);
+      return fileContainsAny(file, [
+        /agents\/scout\/knowledge/i,
+        /scout-second-brain-learning/i,
+        /\bScout\b/,
+      ]);
     } catch {
       return false;
     }
   }).length;
 }
 
-function sessionJsonlPath(persistDir: string, sessionId: string): string | null {
+function sessionJsonlPath(
+  persistDir: string,
+  sessionId: string,
+): string | null {
   const active = join(persistDir, "sessions", sessionId, "session.jsonl");
   if (existsSync(active)) return active;
-  const archived = join(persistDir, "sessions", "history", sessionId, "session.jsonl");
+  const archived = join(
+    persistDir,
+    "sessions",
+    "history",
+    sessionId,
+    "session.jsonl",
+  );
   return existsSync(archived) ? archived : null;
 }
 
-function sessionInactiveSince(persistDir: string, sessionId: string, cutoffMs: number): boolean {
+function sessionInactiveSince(
+  persistDir: string,
+  sessionId: string,
+  cutoffMs: number,
+): boolean {
   const path = sessionJsonlPath(persistDir, sessionId);
   if (!path) return true;
   try {
@@ -386,11 +991,18 @@ function sessionInactiveSince(persistDir: string, sessionId: string, cutoffMs: n
 function assistantHasProviderError(msg: any): boolean {
   const stopReason = String(msg?.stopReason ?? "").toLowerCase();
   const errorMessage = String(msg?.errorMessage ?? "").toLowerCase();
-  return stopReason === "error"
-    || /connection error|rate limit|unauthorized|forbidden|unsupported model|unknown model|overloaded|timeout|api/.test(errorMessage);
+  return (
+    stopReason === "error" ||
+    /connection error|rate limit|unauthorized|forbidden|unsupported model|unknown model|overloaded|timeout|api/.test(
+      errorMessage,
+    )
+  );
 }
 
-function hasFirstAssistantProviderError(persistDir: string, sessionId: string): boolean {
+function hasFirstAssistantProviderError(
+  persistDir: string,
+  sessionId: string,
+): boolean {
   const path = sessionJsonlPath(persistDir, sessionId);
   if (!path) return false;
   try {
@@ -413,7 +1025,10 @@ function hasFirstAssistantProviderError(persistDir: string, sessionId: string): 
   return false;
 }
 
-function hasAnyAssistantProviderError(persistDir: string, sessionId: string): boolean {
+function hasAnyAssistantProviderError(
+  persistDir: string,
+  sessionId: string,
+): boolean {
   const path = sessionJsonlPath(persistDir, sessionId);
   if (!path) return false;
   try {
@@ -427,7 +1042,8 @@ function hasAnyAssistantProviderError(persistDir: string, sessionId: string): bo
       } catch {
         continue;
       }
-      if (msg?.role === "assistant" && assistantHasProviderError(msg)) return true;
+      if (msg?.role === "assistant" && assistantHasProviderError(msg))
+        return true;
     }
   } catch {
     return false;
@@ -456,7 +1072,9 @@ function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
         : typeof content === "string"
           ? content.trim().length === 0
           : content == null;
-      return emptyContent && String(msg.stopReason ?? "").toLowerCase() === "stop";
+      return (
+        emptyContent && String(msg.stopReason ?? "").toLowerCase() === "stop"
+      );
     }
   } catch {
     return false;
@@ -464,50 +1082,81 @@ function hasEmptyAssistantStop(persistDir: string, sessionId: string): boolean {
   return false;
 }
 
-export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: CronEntry) => {
+export const create: HandlerModule["create"] = (
+  ctx: HandlerContext,
+  _entry: CronEntry,
+) => {
   return async (_event?: EventEnvelope) => {
     const db = ctx.sdk.getDb();
     const now = Date.now();
 
     // ── Ensure indexes exist (idempotent) ────────────────────────────
 
-    db.run("CREATE INDEX IF NOT EXISTS idx_events_type_timestamp ON events(event_type, timestamp)");
-    db.run("CREATE INDEX IF NOT EXISTS idx_metric_snapshots_measured_at ON metric_snapshots(measured_at)");
+    db.run(
+      "CREATE INDEX IF NOT EXISTS idx_events_type_timestamp ON events(event_type, timestamp)",
+    );
+    db.run(
+      "CREATE INDEX IF NOT EXISTS idx_metric_snapshots_measured_at ON metric_snapshots(measured_at)",
+    );
 
     // ── Helpers ──────────────────────────────────────────────────────
 
     function record(id: string, value: number, sampleSize?: number) {
-      metricService.record(id, value, sampleSize != null ? { sampleSize, measuredAt: now } : { measuredAt: now });
+      metricService.record(
+        id,
+        value,
+        sampleSize != null
+          ? { sampleSize, measuredAt: now }
+          : { measuredAt: now },
+      );
     }
 
     function count(query: string, ...args: any[]): number {
       return (db.prepare(query).get(...args) as any)?.c || 0;
     }
 
-    function terminalSessionsWithoutEndEvent(since: number, limit = 5000): Array<{ sessionId: string; agent: string; status: string; endedAt: number | null }> {
-      const sessions = db.prepare(
-        `SELECT sessionId, agent, status, endedAt
+    function terminalSessionsWithoutEndEvent(
+      since: number,
+      limit = 5000,
+    ): Array<{
+      sessionId: string;
+      agent: string;
+      status: string;
+      endedAt: number | null;
+    }> {
+      const sessions = db
+        .prepare(
+          `SELECT sessionId, agent, status, endedAt
          FROM sessions
          WHERE status IN ('done', 'error', 'interrupted')
            AND startedAt > ?
          ORDER BY startedAt DESC
          LIMIT ?`,
-      ).all(since, limit) as Array<{ sessionId: string; agent: string; status: string; endedAt: number | null }>;
+        )
+        .all(since, limit) as Array<{
+        sessionId: string;
+        agent: string;
+        status: string;
+        endedAt: number | null;
+      }>;
       if (sessions.length === 0) return [];
 
-      const endRows = db.prepare(
-        `SELECT data
+      const endRows = db
+        .prepare(
+          `SELECT data
          FROM events
          WHERE event_type = 'session.end'
            AND timestamp > ?`,
-      ).all(since) as Array<{ data: string | null }>;
+        )
+        .all(since) as Array<{ data: string | null }>;
 
       const ended = new Set<string>();
       for (const row of endRows) {
         if (!row.data) continue;
         try {
           const parsed = JSON.parse(row.data) as { sessionId?: unknown };
-          if (typeof parsed.sessionId === "string" && parsed.sessionId) ended.add(parsed.sessionId);
+          if (typeof parsed.sessionId === "string" && parsed.sessionId)
+            ended.add(parsed.sessionId);
         } catch {
           // Ignore malformed historic event payloads.
         }
@@ -521,12 +1170,14 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
 
     // ── Ensure metric rows exist ─────────────────────────────────────
 
-    metricService.defineMany(ALL_METRICS.map((m) => ({
-      ...m,
-      alertOp: m.alert_op,
-      status: "active",
-      speed: "fast",
-    })));
+    metricService.defineMany(
+      ALL_METRICS.map((m) => ({
+        ...m,
+        alertOp: m.alert_op,
+        status: "active",
+        speed: "fast",
+      })),
+    );
     db.run("UPDATE metrics SET priority = 'P2' WHERE priority IS NULL");
 
     // Historical rows remain queryable, but retired/noncritical metrics should
@@ -546,7 +1197,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND (metric_id IN (${placeholders}) OR metric_id LIKE 'agent.%.low-quality-streak')`,
         [now, ...RETIRED_METRIC_IDS],
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error retiring noncritical metrics: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error retiring noncritical metrics: ${e}`,
+      );
+    }
 
     // ── Measure: Handler (with error isolation) ──────────────────────
 
@@ -559,19 +1215,40 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const sevenMinutesAgo = now - 7 * 60_000;
     const staleRunningCutoff = now - 30 * 60_000;
 
-    let completed = 0, failed = 0;
+    let completed = 0,
+      failed = 0;
 
     try {
-      completed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.completed' AND timestamp > ?", sixH);
-      failed = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.failed' AND timestamp > ?", sixH);
+      completed = count(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.completed' AND timestamp > ?",
+        sixH,
+      );
+      failed = count(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.failed' AND timestamp > ?",
+        sixH,
+      );
       record("handler.completed-count", completed);
       record("handler.failed-count", failed);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring handler counts: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring handler counts: ${e}`,
+      );
+    }
 
     try {
       const total = completed + failed;
-      record("handler.success-rate", total > 0 ? parseFloat((completed / total).toFixed(4)) : 1, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring success-rate: ${e}`); }
+      record(
+        "handler.success-rate",
+        total > 0 ? parseFloat((completed / total).toFixed(4)) : 1,
+        total,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring success-rate: ${e}`,
+      );
+    }
 
     try {
       // Count agents that actually ran a heartbeat SESSION (not just the handler).
@@ -580,12 +1257,22 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         `SELECT COUNT(DISTINCT agent) as c FROM sessions
          WHERE startedAt > ?
            AND (source LIKE 'workflow:%heartbeat%' OR source = 'heartbeat' OR task LIKE '[heartbeat]%'
-                OR task LIKE 'You are %waking up for your heartbeat.%')`, twoH);
+                OR task LIKE 'You are %waking up for your heartbeat.%')`,
+        twoH,
+      );
       record("handler.heartbeat-coverage", coverage);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring heartbeat-coverage: ${e}`,
+      );
+    }
 
     try {
-      const heartbeatAgents = listEnabledHeartbeatAgents(ctx.sdk.paths.agents, configuredAgents);
+      const heartbeatAgents = listEnabledHeartbeatAgents(
+        ctx.sdk.paths.agents,
+        configuredAgents,
+      );
       let dark = 0;
       for (const agent of heartbeatAgents) {
         const recent = count(
@@ -594,56 +1281,180 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
              AND startedAt > ?
              AND (source LIKE 'workflow:%heartbeat%' OR source = 'heartbeat' OR task LIKE '[heartbeat]%'
                   OR task LIKE 'You are %waking up for your heartbeat.%')`,
-          agent, twoH,
+          agent,
+          twoH,
         );
         if (recent === 0) dark++;
       }
       record("agent.heartbeat-dark-count-2h", dark, heartbeatAgents.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring agent.heartbeat-dark-count-2h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring agent.heartbeat-dark-count-2h: ${e}`,
+      );
+    }
 
     try {
-      const row = db.prepare(
-        `SELECT COALESCE(SUM(COALESCE(json_extract(data, '$.count'), 1)), 0) as c
+      const row = db
+        .prepare(
+          `SELECT COALESCE(SUM(COALESCE(json_extract(data, '$.count'), 1)), 0) as c
          FROM events
          WHERE event_type = 'agent.config_invalid'
            AND timestamp > ?`,
-      ).get(oneH) as { c?: number } | undefined;
+        )
+        .get(oneH) as { c?: number } | undefined;
       record("agent.config-invalid-count-1h", Number(row?.c ?? 0));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring agent.config-invalid-count-1h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring agent.config-invalid-count-1h: ${e}`,
+      );
+    }
 
     try {
-      const row = db.prepare(
-        `SELECT MAX(timestamp) as lastHeartbeat
+      const row = db
+        .prepare(
+          `SELECT MAX(timestamp) as lastHeartbeat
          FROM events
          WHERE event_type = 'runtime.daemon.heartbeat'`,
-      ).get() as { lastHeartbeat?: number | null } | undefined;
+        )
+        .get() as { lastHeartbeat?: number | null } | undefined;
       const lastHeartbeat = Number(row?.lastHeartbeat ?? 0);
-      record("runtime.daemon-heartbeat-stale", lastHeartbeat > 0 && now - lastHeartbeat <= 7 * 60_000 ? 0 : 1);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring runtime.daemon-heartbeat-stale: ${e}`); }
+      record(
+        "runtime.daemon-heartbeat-stale",
+        lastHeartbeat > 0 && now - lastHeartbeat <= 7 * 60_000 ? 0 : 1,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring runtime.daemon-heartbeat-stale: ${e}`,
+      );
+    }
+
+    try {
+      const matureCutoff = now - 2 * 60_000;
+      const row = db
+        .prepare(
+          `WITH scheduled AS (
+           SELECT id,
+                  timestamp,
+                  owner,
+                  source,
+                  substr(
+                    substr(source, length('project-app:') + 1),
+                    1,
+                    instr(substr(source, length('project-app:') + 1), ':schedule:') - 1
+                  ) as app_id,
+                  substr(
+                    substr(source, length('project-app:') + 1),
+                    instr(substr(source, length('project-app:') + 1), ':schedule:') + length(':schedule:')
+                  ) as schedule_id,
+                  CASE
+                    WHEN json_valid(data) THEN COALESCE(
+                      json_extract(data, '$.project'),
+                      json_extract(data, '$.projectId')
+                    )
+                    ELSE NULL
+                  END as project
+             FROM events
+            WHERE timestamp > ?
+              AND timestamp < ?
+              AND source LIKE 'project-app:%:schedule:%'
+         )
+         SELECT COUNT(*) as c
+           FROM scheduled s
+          WHERE NOT EXISTS (
+            SELECT 1
+              FROM events follow
+             WHERE follow.timestamp >= s.timestamp
+               AND follow.timestamp <= s.timestamp + 2 * 60 * 1000
+               AND follow.event_type IN (
+                 'handler.started',
+                 'handler.workflow_dispatched',
+                 'project.owner.requested',
+                 'project.ops_health.observed',
+                 'project.ops_digest.created'
+               )
+               AND (
+                 (
+                   follow.event_type = 'handler.started'
+                   AND json_valid(follow.data)
+                   AND json_extract(follow.data, '$.handler') NOT IN (
+                     s.app_id || '-schedule-' || s.schedule_id,
+                     s.app_id || '-' || s.schedule_id
+                   )
+                   AND follow.owner = s.owner
+                 )
+                 OR (
+                   json_valid(follow.data)
+                   AND (
+                     json_extract(follow.data, '$.project') = s.project
+                     OR json_extract(follow.data, '$.projectId') = s.project
+                   )
+                 )
+               )
+          )`,
+        )
+        .get(oneH, matureCutoff) as { c?: number } | undefined;
+      record(
+        "runtime.project-app-schedule-orphan-count-1h",
+        Number(row?.c ?? 0),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring runtime.project-app-schedule-orphan-count-1h: ${e}`,
+      );
+    }
 
     try {
       // Exclude long-running agent session handlers from p95 — heartbeats,
       // eval-poller, and task-execution-workers are agent sessions that run for
       // minutes/hours, not infrastructure reactor latency. Including them makes
       // this metric unactionable for handler health.
-      const durations = (db.prepare(
-        `SELECT json_extract(data, '$.durationMs') as dur FROM events
+      const durations = (
+        db
+          .prepare(
+            `SELECT json_extract(data, '$.durationMs') as dur FROM events
          WHERE event_type = 'handler.completed' AND timestamp > ?
            AND COALESCE(json_extract(data, '$.handler'), '') != 'heartbeat'
            AND COALESCE(json_extract(data, '$.handler'), '') NOT LIKE 'heartbeat-%'
            AND COALESCE(json_extract(data, '$.handler'), '') != 'eval-poller'
            AND COALESCE(json_extract(data, '$.handler'), '') NOT LIKE '%-task-execution-worker'
-         ORDER BY dur ASC`
-      ).all(sixH) as any[]).map(r => r.dur).filter(d => d != null);
+         ORDER BY dur ASC`,
+          )
+          .all(sixH) as any[]
+      )
+        .map((r) => r.dur)
+        .filter((d) => d != null);
       if (durations.length > 0) {
-        const p95 = durations[Math.min(Math.floor(durations.length * 0.95), durations.length - 1)];
+        const p95 =
+          durations[
+            Math.min(Math.floor(durations.length * 0.95), durations.length - 1)
+          ];
         record("handler.p95-duration", p95, durations.length);
       }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring p95-duration: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring p95-duration: ${e}`,
+      );
+    }
 
     try {
-      record("handler.fires-per-hour", count("SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.started' AND timestamp > ?", oneH));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring fires-per-hour: ${e}`); }
+      record(
+        "handler.fires-per-hour",
+        count(
+          "SELECT COUNT(*) as c FROM events WHERE event_type = 'handler.started' AND timestamp > ?",
+          oneH,
+        ),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring fires-per-hour: ${e}`,
+      );
+    }
 
     // ── Measure: Sessions/System output (with error isolation) ───────
 
@@ -651,7 +1462,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       // Only terminal sessions belong in the denominator. Including in-flight
       // `running` sessions makes the rate look healthier while work is still
       // underway and can hide short auth/API failure bursts.
-      const total = count("SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')", sixH);
+      const total = count(
+        "SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('done','error','interrupted')",
+        sixH,
+      );
       const err = count(
         `SELECT COUNT(*) as c
          FROM sessions
@@ -659,8 +1473,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND (status = 'error' OR (status = 'interrupted' AND COALESCE(error, '') != 'Clean start (fresh)'))`,
         sixH,
       );
-      record("session.error-rate-6h", total > 0 ? parseFloat((err / total).toFixed(4)) : 0, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`); }
+      record(
+        "session.error-rate-6h",
+        total > 0 ? parseFloat((err / total).toFixed(4)) : 0,
+        total,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring session.error-rate-6h: ${e}`,
+      );
+    }
 
     try {
       const total = count(
@@ -684,47 +1507,96 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            )`,
         sixH,
       );
-      record("session.planner-timeout-rate-6h", total >= 5 ? parseFloat((timeoutLike / total).toFixed(4)) : 0, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.planner-timeout-rate-6h: ${e}`); }
+      record(
+        "session.planner-timeout-rate-6h",
+        total >= 5 ? parseFloat((timeoutLike / total).toFixed(4)) : 0,
+        total,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring session.planner-timeout-rate-6h: ${e}`,
+      );
+    }
 
     try {
-      const candidates = db.prepare(
-        `SELECT sessionId
+      const candidates = db
+        .prepare(
+          `SELECT sessionId
          FROM sessions
          WHERE startedAt > ?
            AND COALESCE(error, '') != 'Clean start (fresh)'
            AND status IN ('error', 'interrupted')
          ORDER BY startedAt DESC
          LIMIT 200`,
-      ).all(oneH) as Array<{ sessionId: string }>;
+        )
+        .all(oneH) as Array<{ sessionId: string }>;
       const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
-      const firstTurnErrors = candidates.filter((s) => hasFirstAssistantProviderError(persistDir, s.sessionId)).length;
-      const providerErrors = candidates.filter((s) => hasAnyAssistantProviderError(persistDir, s.sessionId)).length;
-      record("session.first-turn-error-count-1h", firstTurnErrors, candidates.length);
-      record("session.provider-error-count-1h", providerErrors, candidates.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring provider-error session metrics: ${e}`); }
+      const firstTurnErrors = candidates.filter((s) =>
+        hasFirstAssistantProviderError(persistDir, s.sessionId),
+      ).length;
+      const providerErrors = candidates.filter((s) =>
+        hasAnyAssistantProviderError(persistDir, s.sessionId),
+      ).length;
+      record(
+        "session.first-turn-error-count-1h",
+        firstTurnErrors,
+        candidates.length,
+      );
+      record(
+        "session.provider-error-count-1h",
+        providerErrors,
+        candidates.length,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring provider-error session metrics: ${e}`,
+      );
+    }
 
     try {
-      const candidates = db.prepare(
-        `SELECT sessionId
+      const candidates = db
+        .prepare(
+          `SELECT sessionId
          FROM sessions
          WHERE startedAt > ?
            AND status IN ('error', 'interrupted')
            AND COALESCE(error, '') != 'Clean start (fresh)'
          ORDER BY startedAt DESC
          LIMIT 300`,
-      ).all(oneH) as Array<{ sessionId: string }>;
+        )
+        .all(oneH) as Array<{ sessionId: string }>;
       const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
-      const emptyStops = candidates.filter((s) => hasEmptyAssistantStop(persistDir, s.sessionId)).length;
-      record("session.empty-assistant-stop-count-1h", emptyStops, candidates.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.empty-assistant-stop-count-1h: ${e}`); }
+      const emptyStops = candidates.filter((s) =>
+        hasEmptyAssistantStop(persistDir, s.sessionId),
+      ).length;
+      record(
+        "session.empty-assistant-stop-count-1h",
+        emptyStops,
+        candidates.length,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring session.empty-assistant-stop-count-1h: ${e}`,
+      );
+    }
 
     try {
       record(
         "message.delivery-failed-count-1h",
-        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'message.delivery_failed' AND timestamp > ?", oneH),
+        count(
+          "SELECT COUNT(*) as c FROM events WHERE event_type = 'message.delivery_failed' AND timestamp > ?",
+          oneH,
+        ),
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring message.delivery-failed-count-1h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring message.delivery-failed-count-1h: ${e}`,
+      );
+    }
 
     try {
       record(
@@ -744,17 +1616,33 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
              )`,
         ),
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring escalation.pending-count: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring escalation.pending-count: ${e}`,
+      );
+    }
 
     try {
       record(
         "infra.bus.subscriber-failed-count-1h",
-        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'subscriber.failed' AND timestamp > ?", oneH),
+        count(
+          "SELECT COUNT(*) as c FROM events WHERE event_type = 'subscriber.failed' AND timestamp > ?",
+          oneH,
+        ),
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.bus.subscriber-failed-count-1h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring infra.bus.subscriber-failed-count-1h: ${e}`,
+      );
+    }
 
     try {
-      const guardTriggered = count("SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ?", twentyFourH);
+      const guardTriggered = count(
+        "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ?",
+        twentyFourH,
+      );
       const guardWarned = count(
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'guard.triggered' AND timestamp > ? AND json_extract(data, '$.demandType') = 'warn'",
         twentyFourH,
@@ -771,7 +1659,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       record("guard.warned-count-24h", guardWarned);
       record("guard.blocked-count-15m", guardBlocked);
       record("guard.repeat-trigger-count-24h", guardRepeated);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring guard trigger metrics: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring guard trigger metrics: ${e}`,
+      );
+    }
 
     try {
       const failed = count(
@@ -783,7 +1676,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
            AND NOT (s.status = 'interrupted' AND s.error IS NULL)`,
-        threeH, sevenMinutesAgo,
+        threeH,
+        sevenMinutesAgo,
       );
       // Any evaluation row — regardless of verdict — means the failure was
       // triaged.  The old filter `IN ('needs_improvement', 'skipped')` excluded
@@ -799,14 +1693,24 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND COALESCE(s.error, '') != 'Clean start (fresh)'
            AND (s.status IN ('error', 'interrupted') OR s.error IS NOT NULL)
            AND NOT (s.status = 'interrupted' AND s.error IS NULL)`,
-        threeH, sevenMinutesAgo,
+        threeH,
+        sevenMinutesAgo,
       );
       // Small failure counts cause this metric to flap around a single recently-ended
       // session before evaluator aftermath catches up. Keep the signal meaningful by
       // treating windows with fewer than 5 failed sessions as neutral while still
       // recording the denominator in sample_size for operator visibility.
-      record("session.failed-triage-rate-3h", failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`); }
+      record(
+        "session.failed-triage-rate-3h",
+        failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1,
+        failed,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring session.failed-triage-rate-3h: ${e}`,
+      );
+    }
 
     try {
       // This is a pipeline liveness/meta signal, not the north-star quality
@@ -819,7 +1723,8 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND s.agent NOT IN ('evaluator', 'judge')
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?`,
-        threeH, sevenMinutesAgo,
+        threeH,
+        sevenMinutesAgo,
       );
       const evaluated = count(
         `SELECT COUNT(DISTINCT s.sessionId) as c
@@ -829,18 +1734,39 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND s.agent NOT IN ('evaluator', 'judge')
            AND COALESCE(s.endedAt, s.startedAt) > ?
            AND COALESCE(s.endedAt, s.startedAt) <= ?`,
-        threeH, sevenMinutesAgo,
+        threeH,
+        sevenMinutesAgo,
       );
-      record("evaluator.aftermath-coverage-rate-3h", eligible > 0 ? parseFloat((evaluated / eligible).toFixed(4)) : 1, eligible);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.aftermath-coverage-rate-3h: ${e}`); }
+      record(
+        "evaluator.aftermath-coverage-rate-3h",
+        eligible > 0 ? parseFloat((evaluated / eligible).toFixed(4)) : 1,
+        eligible,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.aftermath-coverage-rate-3h: ${e}`,
+      );
+    }
 
     try {
-      const lastNonHeuristicEval = (db.prepare(
-        "SELECT MAX(createdAt) as lastCreatedAt FROM evaluations WHERE evaluatedByHeuristic = 0",
-      ).get() as any)?.lastCreatedAt as number | null | undefined;
-      const lagH = lastNonHeuristicEval ? (now - lastNonHeuristicEval) / 3600000 : 9999;
+      const lastNonHeuristicEval = (
+        db
+          .prepare(
+            "SELECT MAX(createdAt) as lastCreatedAt FROM evaluations WHERE evaluatedByHeuristic = 0",
+          )
+          .get() as any
+      )?.lastCreatedAt as number | null | undefined;
+      const lagH = lastNonHeuristicEval
+        ? (now - lastNonHeuristicEval) / 3600000
+        : 9999;
       record("eval.llm-coverage-lag-h", parseFloat(lagH.toFixed(2)));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring eval.llm-coverage-lag-h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring eval.llm-coverage-lag-h: ${e}`,
+      );
+    }
 
     try {
       record(
@@ -854,7 +1780,12 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           twentyFourH,
         ),
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring eval.llm-evals-24h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring eval.llm-evals-24h: ${e}`,
+      );
+    }
 
     try {
       const total = count(
@@ -874,8 +1805,19 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            AND (verdict IN ('needs_improvement', 'low_quality') OR quality < 0.4 OR efficiency < 0.4)`,
         twentyFourH,
       );
-      record("evaluator.low-quality-rate-24h", total > 0 ? parseFloat((needsImprovementOrLowScore / total).toFixed(4)) : 0, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`); }
+      record(
+        "evaluator.low-quality-rate-24h",
+        total > 0
+          ? parseFloat((needsImprovementOrLowScore / total).toFixed(4))
+          : 0,
+        total,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.low-quality-rate-24h: ${e}`,
+      );
+    }
 
     try {
       const total = count(
@@ -902,8 +1844,17 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
            )`,
         twentyFourH,
       );
-      record("evaluator.substantive-low-quality-rate-24h", total > 0 ? parseFloat((substantiveLowQuality / total).toFixed(4)) : 0, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.substantive-low-quality-rate-24h: ${e}`); }
+      record(
+        "evaluator.substantive-low-quality-rate-24h",
+        total > 0 ? parseFloat((substantiveLowQuality / total).toFixed(4)) : 0,
+        total,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.substantive-low-quality-rate-24h: ${e}`,
+      );
+    }
 
     try {
       const routedForReview = count(
@@ -918,8 +1869,23 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.reviewed' AND timestamp > ?",
         twentyFourH,
       );
-      record("evaluator.meaningful-review-rate-24h", routedForReview > 0 ? parseFloat((Math.min(reviewed, routedForReview) / routedForReview).toFixed(4)) : 1, routedForReview);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.meaningful-review-rate-24h: ${e}`); }
+      record(
+        "evaluator.meaningful-review-rate-24h",
+        routedForReview > 0
+          ? parseFloat(
+              (Math.min(reviewed, routedForReview) / routedForReview).toFixed(
+                4,
+              ),
+            )
+          : 1,
+        routedForReview,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.meaningful-review-rate-24h: ${e}`,
+      );
+    }
 
     try {
       const triageRouted = count(
@@ -934,8 +1900,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.triage_closed' AND timestamp > ?",
         twentyFourH,
       );
-      record("evaluator.triage-closure-rate-24h", triageRouted > 0 ? parseFloat((Math.min(triageClosed, triageRouted) / triageRouted).toFixed(4)) : 1, triageRouted);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.triage-closure-rate-24h: ${e}`); }
+      record(
+        "evaluator.triage-closure-rate-24h",
+        triageRouted > 0
+          ? parseFloat(
+              (Math.min(triageClosed, triageRouted) / triageRouted).toFixed(4),
+            )
+          : 1,
+        triageRouted,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.triage-closure-rate-24h: ${e}`,
+      );
+    }
 
     try {
       const reviewedGood = count(
@@ -950,54 +1929,127 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.false_good' AND timestamp > ?",
         twentyFourH,
       );
-      record("evaluator.false-good-rate-sample", reviewedGood > 0 ? parseFloat((falseGood / reviewedGood).toFixed(4)) : 0, reviewedGood);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.false-good-rate-sample: ${e}`); }
+      record(
+        "evaluator.false-good-rate-sample",
+        reviewedGood > 0
+          ? parseFloat((falseGood / reviewedGood).toFixed(4))
+          : 0,
+        reviewedGood,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.false-good-rate-sample: ${e}`,
+      );
+    }
 
     try {
       record(
         "evaluator.success-candidates-24h",
-        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.success_candidate' AND timestamp > ?", twentyFourH),
+        count(
+          "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.success_candidate' AND timestamp > ?",
+          twentyFourH,
+        ),
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.success-candidates-24h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.success-candidates-24h: ${e}`,
+      );
+    }
 
     try {
       record(
         "evaluator.success-learnings-24h",
-        count("SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.learning_created' AND timestamp > ?", twentyFourH),
+        count(
+          "SELECT COUNT(*) as c FROM events WHERE event_type = 'evaluation.learning_created' AND timestamp > ?",
+          twentyFourH,
+        ),
       );
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.success-learnings-24h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.success-learnings-24h: ${e}`,
+      );
+    }
 
     try {
       const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
-      const candidates = db.prepare(
-        `SELECT sessionId
+      const candidates = db
+        .prepare(
+          `SELECT sessionId
          FROM sessions
          WHERE status IN ('running', 'idle')
            AND agent NOT IN ('evaluator', 'judge', 'master')
            AND startedAt < ?
          ORDER BY startedAt ASC
          LIMIT 500`,
-      ).all(staleRunningCutoff) as Array<{ sessionId: string }>;
-      const inactive = candidates.filter((s) => sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff)).length;
-      record("evaluator.stale-running-session-count", inactive, candidates.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`); }
+        )
+        .all(staleRunningCutoff) as Array<{ sessionId: string }>;
+      const inactive = candidates.filter((s) =>
+        sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff),
+      ).length;
+      record(
+        "evaluator.stale-running-session-count",
+        inactive,
+        candidates.length,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring evaluator.stale-running-session-count: ${e}`,
+      );
+    }
 
     try {
-      record("scout.knowledge-practice-loaded", scoutKnowledgePracticeLoaded(ctx.sdk.paths.root) ? 1 : 0);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.knowledge-practice-loaded: ${e}`); }
+      record(
+        "scout.knowledge-practice-loaded",
+        scoutKnowledgePracticeLoaded(ctx.sdk.paths.root) ? 1 : 0,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring scout.knowledge-practice-loaded: ${e}`,
+      );
+    }
 
     try {
       const coverage = scoutKnowledgePreambleCoverage(ctx.sdk.paths.root);
-      record("scout.knowledge-preamble-coverage", coverage.value, coverage.sampleSize);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.knowledge-preamble-coverage: ${e}`); }
+      record(
+        "scout.knowledge-preamble-coverage",
+        coverage.value,
+        coverage.sampleSize,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring scout.knowledge-preamble-coverage: ${e}`,
+      );
+    }
 
     try {
-      record("scout.sourced-artifacts-24h", scoutSourcedArtifacts24h(ctx.sdk.paths.root, now));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.sourced-artifacts-24h: ${e}`); }
+      record(
+        "scout.sourced-artifacts-24h",
+        scoutSourcedArtifacts24h(ctx.sdk.paths.root, now),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring scout.sourced-artifacts-24h: ${e}`,
+      );
+    }
 
     try {
-      record("scout.downstream-reference-files-7d", scoutDownstreamReferenceFiles7d(ctx.sdk.paths.root, now));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring scout.downstream-reference-files-7d: ${e}`); }
+      record(
+        "scout.downstream-reference-files-7d",
+        scoutDownstreamReferenceFiles7d(ctx.sdk.paths.root, now),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring scout.downstream-reference-files-7d: ${e}`,
+      );
+    }
 
     // ── Measure: Project (with error isolation) ──────────────────────
 
@@ -1005,12 +2057,28 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     const sevenD = now - 7 * 86400000;
 
     try {
-      record("project.active-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'active'"));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring active-count: ${e}`); }
+      record(
+        "project.active-count",
+        count("SELECT COUNT(*) as c FROM projects WHERE status = 'active'"),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring active-count: ${e}`,
+      );
+    }
 
     try {
-      record("project.blocked-count", count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked'"));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-count: ${e}`); }
+      record(
+        "project.blocked-count",
+        count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked'"),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring blocked-count: ${e}`,
+      );
+    }
 
     // Stale: active projects with no activity event in 48h (single query, no N+1)
     // v3 project apps emit project.owner.requested / project.reviewed / project.tick
@@ -1029,52 +2097,100 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
                     OR e.source LIKE '%' || p.id || '%'
                     OR e.data LIKE '%' || REPLACE(p.id, '.app', '') || '%'
                     OR e.source LIKE '%' || REPLACE(p.id, '.app', '') || '%')
-           )`, fortyEightH);
+           )`,
+        fortyEightH,
+      );
       record("project.stale-active-count", stale);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring stale-active-count: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring stale-active-count: ${e}`,
+      );
+    }
 
     try {
-      const activeProjectSlugs = new Set((db.prepare(
-        "SELECT id, name, path FROM projects WHERE status = 'active'",
-      ).all() as Array<{ id: string; name: string; path: string }>).flatMap((p) => [
-        p.id,
-        p.name,
-        projectSlugFromRef(p.path),
-      ]).filter((slug): slug is string => Boolean(slug)));
-      const iterationRows = db.prepare(
-        "SELECT data FROM events WHERE event_type = 'project.iteration' AND timestamp > ?",
-      ).all(twentyFourH) as Array<{ data: string | null }>;
+      const activeProjectSlugs = new Set(
+        (
+          db
+            .prepare(
+              "SELECT id, name, path FROM projects WHERE status = 'active'",
+            )
+            .all() as Array<{ id: string; name: string; path: string }>
+        )
+          .flatMap((p) => [p.id, p.name, projectSlugFromRef(p.path)])
+          .filter((slug): slug is string => Boolean(slug)),
+      );
+      const iterationRows = db
+        .prepare(
+          "SELECT data FROM events WHERE event_type = 'project.iteration' AND timestamp > ?",
+        )
+        .all(twentyFourH) as Array<{ data: string | null }>;
       const activeIterations = iterationRows.filter((row) => {
         const slug = projectSlugFromIterationData(row.data);
         return slug != null && activeProjectSlugs.has(slug);
       }).length;
       record("project.iterations-24h", activeIterations, iterationRows.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring iterations-24h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring iterations-24h: ${e}`,
+      );
+    }
 
     try {
-      record("project.blocked-over-6h", count("SELECT COUNT(*) as c FROM projects WHERE status = 'blocked' AND updated_at < ?", now - 6 * 3600000));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`); }
+      record(
+        "project.blocked-over-6h",
+        count(
+          "SELECT COUNT(*) as c FROM projects WHERE status = 'blocked' AND updated_at < ?",
+          now - 6 * 3600000,
+        ),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring blocked-over-6h: ${e}`,
+      );
+    }
 
     try {
-      record("project.invalid-format-count", countInvalidSharedProjectFormats(ctx.sdk.paths.projects ?? join(ctx.sdk.paths.root, "projects")));
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring invalid-format-count: ${e}`); }
+      record(
+        "project.invalid-format-count",
+        countInvalidSharedProjectFormats(
+          ctx.sdk.paths.projects ?? join(ctx.sdk.paths.root, "projects"),
+        ),
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring invalid-format-count: ${e}`,
+      );
+    }
 
     // ── Measure: status honesty ─────────────────────────────────────
 
     // C7: Zombie session count (running >30min without recent transcript activity)
     try {
       const persistDir = ctx.sdk.paths.persist ?? ctx.sdk.paths.root;
-      const candidates = db.prepare(
-        `SELECT sessionId
+      const candidates = db
+        .prepare(
+          `SELECT sessionId
          FROM sessions
          WHERE status IN ('running', 'idle')
            AND startedAt < ?
          ORDER BY startedAt ASC
          LIMIT 500`,
-      ).all(staleRunningCutoff) as Array<{ sessionId: string }>;
-      const zombies = candidates.filter((s) => sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff)).length;
+        )
+        .all(staleRunningCutoff) as Array<{ sessionId: string }>;
+      const zombies = candidates.filter((s) =>
+        sessionInactiveSince(persistDir, s.sessionId, staleRunningCutoff),
+      ).length;
       record("capability.zombie-session-count", zombies, candidates.length);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring zombie-session-count: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring zombie-session-count: ${e}`,
+      );
+    }
 
     try {
       const staleActiveProjects = count(
@@ -1082,10 +2198,15 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          WHERE p.status = 'active'
            AND NOT EXISTS (
              SELECT 1 FROM events e
-             WHERE e.event_type = 'project.iteration'
+             WHERE e.event_type IN ('project.iteration', 'project.owner.requested', 'project.reviewed', 'project.tick')
                AND e.timestamp > ?
-               AND e.data LIKE '%' || p.id || '%'
-           )`, sevenD);
+               AND (e.data LIKE '%' || p.id || '%'
+                    OR e.source LIKE '%' || p.id || '%'
+                    OR e.data LIKE '%' || REPLACE(p.id, '.app', '') || '%'
+                    OR e.source LIKE '%' || REPLACE(p.id, '.app', '') || '%')
+           )`,
+        sevenD,
+      );
 
       const staleActiveMetrics = count(
         `SELECT COUNT(*) as c FROM metrics m
@@ -1095,13 +2216,21 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
              SELECT 1 FROM metric_snapshots s
              WHERE s.metric_id = m.id
                AND s.measured_at > ?
-           )`, now, now - 2 * 3600000);  // Exclude just-created metrics; 2h window for snapshot staleness
+           )`,
+        now,
+        now - 2 * 3600000,
+      ); // Exclude just-created metrics; 2h window for snapshot staleness
 
-      let missingEndSessions = terminalSessionsWithoutEndEvent(now - 24 * 3600000);
+      let missingEndSessions = terminalSessionsWithoutEndEvent(
+        now - 24 * 3600000,
+      );
       let terminalSessionsWithoutEnd = missingEndSessions.length;
 
       // Only check agents that have an enabled heartbeat cron job.
-      const heartbeatAgents = listEnabledHeartbeatAgents(ctx.sdk.paths.agents, configuredAgents);
+      const heartbeatAgents = listEnabledHeartbeatAgents(
+        ctx.sdk.paths.agents,
+        configuredAgents,
+      );
 
       let agentsWithoutHeartbeat = 0;
       for (const agent of heartbeatAgents) {
@@ -1112,7 +2241,10 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
              AND (json_extract(data, '$.agent') = ? OR json_extract(data, '$.handler') LIKE ?)
              AND json_extract(data, '$.handler') LIKE 'heartbeat%'
              AND timestamp > ?`,
-          agent, `heartbeat-${agent}%`, now - 4 * 3600000);
+          agent,
+          `heartbeat-${agent}%`,
+          now - 4 * 3600000,
+        );
         if (recentHeartbeat === 0) agentsWithoutHeartbeat++;
       }
 
@@ -1120,26 +2252,68 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
       if (terminalSessionsWithoutEnd > 0) {
         try {
           const orphaned = missingEndSessions.slice(0, 50);
-          const insert = db.prepare("INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)");
+          const insert = db.prepare(
+            "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
+          );
           for (const s of orphaned) {
-            insert.run("session.end", JSON.stringify({ sessionId: s.sessionId, agent: s.agent, status: s.status, reconciled: true }), s.endedAt || now);
+            insert.run(
+              "session.end",
+              JSON.stringify({
+                sessionId: s.sessionId,
+                agent: s.agent,
+                status: s.status,
+                reconciled: true,
+              }),
+              s.endedAt || now,
+            );
           }
-          if (orphaned.length > 0) ctx.sdk.log("info", `[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`);
-          missingEndSessions = terminalSessionsWithoutEndEvent(now - 24 * 3600000);
+          if (orphaned.length > 0)
+            ctx.sdk.log(
+              "info",
+              `[metrics-snapshot] Reconciled ${orphaned.length} orphaned session.end events`,
+            );
+          missingEndSessions = terminalSessionsWithoutEndEvent(
+            now - 24 * 3600000,
+          );
           terminalSessionsWithoutEnd = missingEndSessions.length;
-        } catch (reconErr) { /* best-effort reconciliation */ }
+        } catch (reconErr) {
+          /* best-effort reconciliation */
+        }
       }
 
-      const mismatchCount = staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd + agentsWithoutHeartbeat;
-      record("capability.status-reality-mismatch-count", mismatchCount,
-        heartbeatAgents.length + staleActiveProjects + staleActiveMetrics + terminalSessionsWithoutEnd);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring status-reality mismatch: ${e}`); }
+      const mismatchCount =
+        staleActiveProjects +
+        staleActiveMetrics +
+        terminalSessionsWithoutEnd +
+        agentsWithoutHeartbeat;
+      record(
+        "capability.status-reality-mismatch-count",
+        mismatchCount,
+        heartbeatAgents.length +
+          staleActiveProjects +
+          staleActiveMetrics +
+          terminalSessionsWithoutEnd,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring status-reality mismatch: ${e}`,
+      );
+    }
 
     // I1: infra.bus.event-count-1h — events in the last hour
     try {
-      const eventCount1h = count("SELECT COUNT(*) as c FROM events WHERE timestamp > ?", now - 3600000);
+      const eventCount1h = count(
+        "SELECT COUNT(*) as c FROM events WHERE timestamp > ?",
+        now - 3600000,
+      );
       record("infra.bus.event-count-1h", eventCount1h);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.bus.event-count-1h: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring infra.bus.event-count-1h: ${e}`,
+      );
+    }
 
     // I2: infra.persist.db-size-mb — DB file size (includes WAL + SHM per KE-2016)
     try {
@@ -1153,23 +2327,49 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         const sizeMb = parseFloat((totalBytes / (1024 * 1024)).toFixed(2));
         record("infra.persist.db-size-mb", sizeMb);
       }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.persist.db-size-mb: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring infra.persist.db-size-mb: ${e}`,
+      );
+    }
 
     // I3: infra.messages.delivery-rate — ratio of delivered messages
     try {
-      const totalMsgs = count("SELECT COUNT(*) as c FROM notification_messages WHERE sent_at > ?", now - 3600000);
+      const totalMsgs = count(
+        "SELECT COUNT(*) as c FROM notification_messages WHERE sent_at > ?",
+        now - 3600000,
+      );
       // All messages in notification_messages are delivered (they have sent_at), so rate is 1.0 if any exist
-      const failedMsgs = count("SELECT COUNT(*) as c FROM notification_messages WHERE sent_at IS NULL");
+      const failedMsgs = count(
+        "SELECT COUNT(*) as c FROM notification_messages WHERE sent_at IS NULL",
+      );
       const delivered = totalMsgs;
       const total = totalMsgs + failedMsgs;
-      record("infra.messages.delivery-rate", total > 0 ? parseFloat((delivered / total).toFixed(4)) : 1.0, total);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.messages.delivery-rate: ${e}`); }
+      record(
+        "infra.messages.delivery-rate",
+        total > 0 ? parseFloat((delivered / total).toFixed(4)) : 1.0,
+        total,
+      );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring infra.messages.delivery-rate: ${e}`,
+      );
+    }
 
     // I4: infra.sessions.active-count — currently running sessions
     try {
-      const activeSessions = count("SELECT COUNT(*) as c FROM sessions WHERE status = 'running'");
+      const activeSessions = count(
+        "SELECT COUNT(*) as c FROM sessions WHERE status = 'running'",
+      );
       record("infra.sessions.active-count", activeSessions);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring infra.sessions.active-count: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring infra.sessions.active-count: ${e}`,
+      );
+    }
 
     // ── Structurally-pinned metric detector (KE-938/KE-939/KE-940) ──
     // Counts active metrics (v2.*/capability.*/infra.*) that have only 1
@@ -1177,8 +2377,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
     // metrics on the guard-metric allow-list (STRUCTURALLY_PINNED_ALLOWLIST).
     try {
       const sevenDays = now - 7 * 86400000;
-      const pinnedRows = db.prepare(
-        `SELECT m.id
+      const pinnedRows = db
+        .prepare(
+          `SELECT m.id
          FROM metrics m
          LEFT JOIN metric_snapshots s
            ON s.metric_id = m.id
@@ -1186,20 +2387,37 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
          WHERE m.status = 'active'
            AND (m.id LIKE 'v2.%' OR m.id LIKE 'capability.%' OR m.id LIKE 'infra.%')
          GROUP BY m.id
-         HAVING COUNT(DISTINCT s.value) = 1 AND COUNT(s.value) >= 24`
-      ).all(sevenDays) as Array<{ id: string }>;
-      const pinned = pinnedRows.filter(r => !STRUCTURALLY_PINNED_ALLOWLIST.has(r.id));
-      record("metric.structurally-pinned-count", pinned.length, pinnedRows.length);
+         HAVING COUNT(DISTINCT s.value) = 1 AND COUNT(s.value) >= 24`,
+        )
+        .all(sevenDays) as Array<{ id: string }>;
+      const pinned = pinnedRows.filter(
+        (r) => !STRUCTURALLY_PINNED_ALLOWLIST.has(r.id),
+      );
+      record(
+        "metric.structurally-pinned-count",
+        pinned.length,
+        pinnedRows.length,
+      );
       if (pinned.length > 0) {
-        ctx.sdk.log("info", `[metrics-snapshot] Structurally pinned metrics: ${pinned.map(r => r.id).join(", ")}`);
+        ctx.sdk.log(
+          "info",
+          `[metrics-snapshot] Structurally pinned metrics: ${pinned.map((r) => r.id).join(", ")}`,
+        );
       }
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error measuring metric.structurally-pinned-count: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error measuring metric.structurally-pinned-count: ${e}`,
+      );
+    }
 
     // ── Generic metrics (source_query / source_command) ──────────────
 
-    const measurable = db.prepare(
-      "SELECT id, source_query, source_command FROM metrics WHERE status = 'active' AND (source_query IS NOT NULL OR source_command IS NOT NULL)"
-    ).all() as any[];
+    const measurable = db
+      .prepare(
+        "SELECT id, source_query, source_command FROM metrics WHERE status = 'active' AND (source_query IS NOT NULL OR source_command IS NOT NULL)",
+      )
+      .all() as any[];
 
     let measured = 0;
     for (const m of measurable) {
@@ -1208,7 +2426,9 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
         if (m.source_query) {
           const row = db.prepare(m.source_query).get() as any;
           if (row) {
-            const vals = Object.values(row).filter(v => typeof v === "number");
+            const vals = Object.values(row).filter(
+              (v) => typeof v === "number",
+            );
             if (vals.length > 0) value = vals[0] as number;
           }
         } else if (m.source_command) {
@@ -1221,25 +2441,50 @@ export const create: HandlerModule["create"] = (ctx: HandlerContext, _entry: Cro
           const parsed = parseFloat(output);
           if (!isNaN(parsed)) value = parsed;
         }
-        if (value !== null) { record(m.id, value); measured++; }
-      } catch { /* skip individual metric errors */ }
+        if (value !== null) {
+          record(m.id, value);
+          measured++;
+        }
+      } catch {
+        /* skip individual metric errors */
+      }
     }
 
     // ── Alert lifecycle (type-aware: open on breach, resolve on recovery) ───────
 
     try {
       metricService.evaluate();
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error during alert lifecycle: ${e}`); }
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error during alert lifecycle: ${e}`,
+      );
+    }
 
     // ── Snapshot retention cleanup (keep last 30 days) ───────────────
 
     try {
       const cutoff = now - RETENTION_DAYS * 86400000;
-      const result = db.run("DELETE FROM metric_snapshots WHERE measured_at < ?", [cutoff]);
+      const result = db.run(
+        "DELETE FROM metric_snapshots WHERE measured_at < ?",
+        [cutoff],
+      );
       const deleted = (result as any)?.changes ?? 0;
-      if (deleted > 0) ctx.sdk.log("info", `[metrics-snapshot] Cleaned ${deleted} old snapshots (>${RETENTION_DAYS}d)`);
-    } catch (e) { ctx.sdk.log("info", `[metrics-snapshot] Error during snapshot cleanup: ${e}`); }
+      if (deleted > 0)
+        ctx.sdk.log(
+          "info",
+          `[metrics-snapshot] Cleaned ${deleted} old snapshots (>${RETENTION_DAYS}d)`,
+        );
+    } catch (e) {
+      ctx.sdk.log(
+        "info",
+        `[metrics-snapshot] Error during snapshot cleanup: ${e}`,
+      );
+    }
 
-    ctx.sdk.log("info", `[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`);
+    ctx.sdk.log(
+      "info",
+      `[metrics-snapshot] ${ALL_METRICS.length} built-in metrics recorded, ${measured}/${measurable.length} source-defined`,
+    );
   };
 };

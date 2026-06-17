@@ -8,6 +8,7 @@ caught or recovered from autonomously. The monitoring infrastructure exists
 **connecting signals to actions** and **preventing accumulation**.
 
 Problems we fixed manually:
+
 1. Evaluator created 300+ standalone projects from unscoped metric.breach
 2. May woke repeatedly from redundant legacy handler overlap
 3. Scout heartbeat double-dispatch from subscribeToBus called twice
@@ -57,6 +58,7 @@ state and no clear owner.
 
 `metrics-snapshot` fires every 5min and measures everything. `session-recovery`
 runs every 5min. But:
+
 - Duplicate dispatch had no static lifecycle check
 - Planner timeout rate has no metric (it's an interrupted session — same bucket
   as everything else)
@@ -106,12 +108,14 @@ Observation is always safe and should be always on. Acting is gated by owner,
 urgency, confidence, and reversibility.
 
 Observers:
+
 - run deterministic checks, metrics, and scans
 - collect enough context for an owner to understand the signal
 - emit events, findings, packets, and evidence
 - may run frequently because they do not mutate project strategy
 
 Actors:
+
 - are the responsible owner app, owner workflow, or explicitly approved
   deterministic repair
 - decide whether a signal is noise, a real problem, an accepted exception, or a
@@ -128,6 +132,7 @@ expected closure is clear.
 **1. Consolidate overlapping handlers**
 
 Disable only after the migration gate is proven:
+
 - `daily-alert-review` → replaced by `may-agent.app` `daily-ops-digest`
   schedule. The digest writes a runtime report, notifies the human with
   context, emits `project.ops_digest.created`, and wakes May when open/noisy
@@ -139,10 +144,12 @@ Disable only after the migration gate is proven:
   owner review, but keep enabled until semantic fallback replays prove no loss.
 
 Keep:
+
 - `metric-alert-reactor` as the generic P0 fallback
 - `project-steward` as the read-only scanner
 
 Move to evaluation.app:
+
 - `coaching-consumer` — evaluation domain work
 - `feedback-echo-sync` — evaluation domain work
 
@@ -150,18 +157,19 @@ Move to evaluation.app:
 
 Before adding runtime metrics, classify each failure mode:
 
-| Failure | Right tool | Why |
-|---------|-----------|-----|
-| Unscoped metric.breach routing | Static app manifest check | Event subscription is declarative — check at load time |
-| Duplicate subscribeToBus lifecycle | Unit test + static ownership rule | Structural bug, not runtime drift |
-| Handler overlap | Static schedule/ownership check | Declared handlers should have one clear owner and purpose |
-| Planner timeout rate | Runtime metric | Recurring runtime behavior, varies with tree size |
-| Daemon heartbeat stale | Runtime metric/watchdog | Only runtime can observe liveness |
-| Regex false escalations | Structured output contract + tests | Fixed by removing the guess; test the contract |
-| Event routing gap | Static manifest check | Every event has a handler, adapter, or terminal declaration |
-| Duplicate task creation | Static dedup test + planner context quality | Information problem, not runtime drift |
+| Failure                            | Right tool                                  | Why                                                         |
+| ---------------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
+| Unscoped metric.breach routing     | Static app manifest check                   | Event subscription is declarative — check at load time      |
+| Duplicate subscribeToBus lifecycle | Unit test + static ownership rule           | Structural bug, not runtime drift                           |
+| Handler overlap                    | Static schedule/ownership check             | Declared handlers should have one clear owner and purpose   |
+| Planner timeout rate               | Runtime metric                              | Recurring runtime behavior, varies with tree size           |
+| Daemon heartbeat stale             | Runtime metric/watchdog                     | Only runtime can observe liveness                           |
+| Regex false escalations            | Structured output contract + tests          | Fixed by removing the guess; test the contract              |
+| Event routing gap                  | Static manifest check                       | Every event has a handler, adapter, or terminal declaration |
+| Duplicate task creation            | Static dedup test + planner context quality | Information problem, not runtime drift                      |
 
 Static checks to add (run at `bun run check` / app integrity):
+
 - Every app event has a route, handler, or explicit external/terminal classification
 - Every handler declares emitted events; emitted events are handled or terminal
 - No duplicate cron lifecycle ownership: creator owns create/load/subscribe/start
@@ -185,16 +193,19 @@ Use two layers:
 
 Active metrics should stay small and proactive:
 
-| Metric | Priority | Rationale |
-|--------|----------|-----------|
-| `runtime.daemon-heartbeat-stale` | P0 | Only runtime knows if process is alive |
-| `session.planner-timeout-rate-6h` | P1 | Varies with tree size, model response time |
-| `escalation.pending-count` | P1 | Accumulation is a runtime pattern |
+| Metric                                         | Priority | Rationale                                                                                 |
+| ---------------------------------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `runtime.daemon-heartbeat-stale`               | P0       | Only runtime knows if process is alive                                                    |
+| `runtime.project-app-schedule-orphan-count-1h` | P1       | Only runtime can prove scheduled project-app events are producing owner/workflow progress |
+| `session.planner-timeout-rate-6h`              | P1       | Varies with tree size, model response time                                                |
+| `escalation.pending-count`                     | P1       | Accumulation is a runtime pattern                                                         |
 
 Temporary (retire after static coverage proves the fix):
+
 - `handler.duplicate-dispatch-rate` — validate the cron lifecycle fix, then retire
 
 Ops health packet observations may include:
+
 - recent `handler.failed`, `subscriber.failed`, and `message.delivery_failed`
   events
 - unhandled or unknown event types observed at runtime
@@ -209,6 +220,7 @@ promote it to an active metric with owner, priority, threshold, source, closure
 path, and retirement condition when appropriate.
 
 Do not add these as permanent metrics yet:
+
 - `event.loop-detected-count` — static manifest check covers declared loops;
   runtime packet can still surface unexpected loop symptoms
 - `event.unhandled-count` — static manifest check covers declared app events;
@@ -233,6 +245,7 @@ findings and decisions roll up into the branch context. New tasks are
 created only when a real signal demands investigation or repair.
 
 Example tasks (finite, created when signal demands):
+
 - `add-static-integrity-checks`: implement the static checks listed above
 - `add-daemon-heartbeat-metric`: add runtime.daemon-heartbeat-stale to snapshot
 - `migrate-daily-alert-review`: prove replacement, then disable handler
@@ -277,6 +290,7 @@ state, and static/integrity check summaries. The handler itself is pure code —
 no agent session consumed.
 
 May only wakes (LLM session) when the packet crosses a meaningful threshold:
+
 - P0 metric breached (immediate)
 - P1 metric breached with no owner action for >1h
 - Escalation pending >1h with no resolution
@@ -292,17 +306,18 @@ active metrics, accepted exceptions, or finite ops-health tasks.
 
 Each active operational metric has an explicit priority:
 
-| Metric | Priority | Action |
-|--------|----------|--------|
-| `runtime.daemon-heartbeat-stale` | P0 | Immediate human escalation |
-| `session.planner-timeout-rate-6h` | P1 | Owner review within 1h |
-| `escalation.pending-count` | P1 | Owner review within 1h |
+| Metric                                         | Priority | Action                                                         |
+| ---------------------------------------------- | -------- | -------------------------------------------------------------- |
+| `runtime.daemon-heartbeat-stale`               | P0       | Immediate human escalation                                     |
+| `runtime.project-app-schedule-orphan-count-1h` | P1       | Owner review within 1h; confirms project apps are self-driving |
+| `session.planner-timeout-rate-6h`              | P1       | Owner review within 1h                                         |
+| `escalation.pending-count`                     | P1       | Owner review within 1h                                         |
 
 Temporary metric while the cron lifecycle fix is being validated:
 
-| Metric | Priority | Action |
-|--------|----------|--------|
-| `handler.duplicate-dispatch-rate` | P1 | Owner review if it repeats after the static/unit fix |
+| Metric                            | Priority | Action                                               |
+| --------------------------------- | -------- | ---------------------------------------------------- |
+| `handler.duplicate-dispatch-rate` | P1       | Owner review if it repeats after the static/unit fix |
 
 P0 = immediate owner wake + possible human escalation.
 P1 = owner review soon (next health packet with signal).
@@ -322,6 +337,7 @@ For each handler migration, require:
    old failure mode is covered — not just "the new handler exists"
 
 Migration order (each step must pass the gate before the next):
+
 - `daily-alert-review` → replaced by may-agent.app daily-ops-digest schedule
   and disabled in May cron after replay proof
 - `closed-loop-steward` → replaced by ops-health-review + metric-alert-reactor
@@ -334,6 +350,7 @@ Migration order (each step must pass the gate before the next):
 Problem-solver outcomes should be structured workflow results, not text
 matching. After the problem-solver fix, every problem-solver workflow must emit
 one explicit result event:
+
 - `project.problem.resolved` → counted as resolved
 - `project.problem.escalated` → counted as escalated
 - `project.problem.unknown` → counted as unknown

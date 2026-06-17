@@ -31,12 +31,19 @@ describe("metrics-snapshot session health metrics", () => {
     return testRuntime(root).db;
   }
 
-  function sdk(root: string, _db: unknown, emit: (event: any) => void = () => {}) {
+  function sdk(
+    root: string,
+    _db: unknown,
+    emit: (event: any) => void = () => {},
+  ) {
     return testRuntime(root, emit).sdk;
   }
 
   it("measures failure triage as an outcome metric and aftermath coverage as liveness", async () => {
-    const root = join(tmpdir(), `metrics-session-health-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-session-health-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -48,11 +55,27 @@ describe("metrics-snapshot session health metrics", () => {
 
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["s_failed_triaged", "arc", "task", "interrupted", ended - 60_000, ended, "boom"],
+      [
+        "s_failed_triaged",
+        "arc",
+        "task",
+        "interrupted",
+        ended - 60_000,
+        ended,
+        "boom",
+      ],
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["s_failed_untriaged", "dev", "task", "error", ended - 50_000, ended, "boom"],
+      [
+        "s_failed_untriaged",
+        "dev",
+        "task",
+        "error",
+        ended - 50_000,
+        ended,
+        "boom",
+      ],
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)",
@@ -60,11 +83,27 @@ describe("metrics-snapshot session health metrics", () => {
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["s_old_failed", "arc", "task", "error", now - 4 * 3600_000, now - 4 * 3600_000 + 60_000, "old"],
+      [
+        "s_old_failed",
+        "arc",
+        "task",
+        "error",
+        now - 4 * 3600_000,
+        now - 4 * 3600_000 + 60_000,
+        "old",
+      ],
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      ["s_self", "evaluator", "task", "interrupted", ended - 30_000, ended, "self"],
+      [
+        "s_self",
+        "evaluator",
+        "task",
+        "interrupted",
+        ended - 30_000,
+        ended,
+        "self",
+      ],
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)",
@@ -94,13 +133,21 @@ describe("metrics-snapshot session health metrics", () => {
     );
 
     const emitted: any[] = [];
-    const handler = create({
-      sdk: sdk(root, db, (event: any) => emitted.push(event)),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db, (event: any) => emitted.push(event)),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = (id: string) => db.prepare("SELECT current, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
+    const metric = (id: string) =>
+      db
+        .prepare(
+          "SELECT current, target, threshold, priority FROM metrics WHERE id = ?",
+        )
+        .get(id) as any;
 
     expect(metric("session.failed-triage-rate-3h")).toMatchObject({
       current: 1,
@@ -109,7 +156,10 @@ describe("metrics-snapshot session health metrics", () => {
       priority: "P1",
     });
     expect(
-      db.prepare("SELECT sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1")
+      db
+        .prepare(
+          "SELECT sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1",
+        )
         .get("session.failed-triage-rate-3h"),
     ).toMatchObject({ sample_size: 2 });
     expect(metric("evaluator.aftermath-coverage-rate-3h")).toMatchObject({
@@ -139,7 +189,10 @@ describe("metrics-snapshot session health metrics", () => {
   });
 
   it("measures evaluator review and learning routing from events", async () => {
-    const root = join(tmpdir(), `metrics-evaluator-events-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-evaluator-events-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -149,57 +202,138 @@ describe("metrics-snapshot session health metrics", () => {
     const now = Date.now();
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.routed", JSON.stringify({ sessionId: "s_triage", lane: "needs_triage" }), now - 60_000],
+      [
+        "evaluation.routed",
+        JSON.stringify({ sessionId: "s_triage", lane: "needs_triage" }),
+        now - 60_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.routed", JSON.stringify({ sessionId: "s_success", lane: "success_candidate" }), now - 50_000],
+      [
+        "evaluation.routed",
+        JSON.stringify({ sessionId: "s_success", lane: "success_candidate" }),
+        now - 50_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.routed", JSON.stringify({ sessionId: "s_routine", lane: "routine_ok" }), now - 40_000],
+      [
+        "evaluation.routed",
+        JSON.stringify({ sessionId: "s_routine", lane: "routine_ok" }),
+        now - 40_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.reviewed", JSON.stringify({ sessionId: "s_triage", lane: "needs_triage" }), now - 30_000],
+      [
+        "evaluation.reviewed",
+        JSON.stringify({ sessionId: "s_triage", lane: "needs_triage" }),
+        now - 30_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.reviewed", JSON.stringify({ sessionId: "s_success", lane: "success_candidate", verdict: "good", reviewedVerdict: "needs_improvement" }), now - 25_000],
+      [
+        "evaluation.reviewed",
+        JSON.stringify({
+          sessionId: "s_success",
+          lane: "success_candidate",
+          verdict: "good",
+          reviewedVerdict: "needs_improvement",
+        }),
+        now - 25_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.false_good", JSON.stringify({ sessionId: "s_success", heuristicVerdict: "good", reviewedVerdict: "needs_improvement" }), now - 24_000],
+      [
+        "evaluation.false_good",
+        JSON.stringify({
+          sessionId: "s_success",
+          heuristicVerdict: "good",
+          reviewedVerdict: "needs_improvement",
+        }),
+        now - 24_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.triage_closed", JSON.stringify({ sessionId: "s_triage" }), now - 20_000],
+      [
+        "evaluation.triage_closed",
+        JSON.stringify({ sessionId: "s_triage" }),
+        now - 20_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.success_candidate", JSON.stringify({ sessionId: "s_success" }), now - 10_000],
+      [
+        "evaluation.success_candidate",
+        JSON.stringify({ sessionId: "s_success" }),
+        now - 10_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["evaluation.learning_created", JSON.stringify({ sessionId: "s_success" }), now - 5_000],
+      [
+        "evaluation.learning_created",
+        JSON.stringify({ sessionId: "s_success" }),
+        now - 5_000,
+      ],
     );
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = (id: string) => db.prepare("SELECT current, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
-    expect(metric("evaluator.meaningful-review-rate-24h")).toMatchObject({ current: 1, target: 0.9, threshold: 0.7, priority: "P2" });
-    expect(metric("evaluator.triage-closure-rate-24h")).toMatchObject({ current: 1, target: 0.9, threshold: 0.7, priority: "P2" });
-    expect(metric("evaluator.false-good-rate-sample")).toMatchObject({ current: 1, target: 0.05, threshold: 0.6, priority: "P2" });
-    expect(metric("evaluator.success-candidates-24h")).toMatchObject({ current: 1, target: 1, threshold: 0, priority: "P3" });
-    expect(metric("evaluator.success-learnings-24h")).toMatchObject({ current: 1, target: 1, threshold: 0, priority: "P3" });
+    const metric = (id: string) =>
+      db
+        .prepare(
+          "SELECT current, target, threshold, priority FROM metrics WHERE id = ?",
+        )
+        .get(id) as any;
+    expect(metric("evaluator.meaningful-review-rate-24h")).toMatchObject({
+      current: 1,
+      target: 0.9,
+      threshold: 0.7,
+      priority: "P2",
+    });
+    expect(metric("evaluator.triage-closure-rate-24h")).toMatchObject({
+      current: 1,
+      target: 0.9,
+      threshold: 0.7,
+      priority: "P2",
+    });
+    expect(metric("evaluator.false-good-rate-sample")).toMatchObject({
+      current: 1,
+      target: 0.05,
+      threshold: 0.6,
+      priority: "P2",
+    });
+    expect(metric("evaluator.success-candidates-24h")).toMatchObject({
+      current: 1,
+      target: 1,
+      threshold: 0,
+      priority: "P3",
+    });
+    expect(metric("evaluator.success-learnings-24h")).toMatchObject({
+      current: 1,
+      target: 1,
+      threshold: 0,
+      priority: "P3",
+    });
   });
 
   it("keeps rolling-window count metrics as gauges without stale rate config", async () => {
-    const root = join(tmpdir(), `metrics-window-count-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-window-count-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -228,13 +362,20 @@ describe("metrics-snapshot session health metrics", () => {
     );
 
     const emitted: any[] = [];
-    const handler = create({
-      sdk: sdk(root, db, (event: any) => emitted.push(event)),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db, (event: any) => emitted.push(event)),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = db.prepare("SELECT type, target, threshold, config FROM metrics WHERE id = ?").get("project.iterations-24h") as any;
+    const metric = db
+      .prepare(
+        "SELECT type, target, threshold, config FROM metrics WHERE id = ?",
+      )
+      .get("project.iterations-24h") as any;
     expect(metric).toMatchObject({
       type: "gauge",
       target: 0,
@@ -244,39 +385,87 @@ describe("metrics-snapshot session health metrics", () => {
   });
 
   it("keeps Scout project watch metrics active and measured", async () => {
-    const root = join(tmpdir(), `metrics-scout-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-scout-watch-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents", "scout", "knowledge"), { recursive: true });
-    mkdirSync(join(root, "agents", "scout", "workspace", "digest"), { recursive: true });
-    mkdirSync(join(root, "shared", "knowledge", "entries"), { recursive: true });
+    mkdirSync(join(root, "agents", "scout", "workspace", "digest"), {
+      recursive: true,
+    });
+    mkdirSync(join(root, "shared", "knowledge", "entries"), {
+      recursive: true,
+    });
     mkdirSync(join(root, "projects", "platform"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
     writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
-    writeFileSync(join(root, "agents", "scout", "AGENTS.md"), [
-      "Search existing knowledge before creating a new file.",
-      "Update existing notes in place when the topic already exists.",
-      "Every KE needs <ai_context> metadata.",
-    ].join("\n"));
-    writeFileSync(join(root, "agents", "scout", "knowledge", "note-a.md"), "<ai_context>\nsummary: sourced\n</ai_context>\n\nSource: https://example.com/a\n");
-    writeFileSync(join(root, "agents", "scout", "knowledge", "note-b.md"), "Source: https://example.com/b\n");
-    writeFileSync(join(root, "shared", "knowledge", "entries", "KE-1-demo.md"), "<ai_context>\nsummary: demo\n</ai_context>\n");
-    writeFileSync(join(root, "agents", "scout", "workspace", "digest", "today.md"), "**Source**: https://example.com/digest\n");
-    writeFileSync(join(root, "projects", "platform", "project.md"), "Scout learning reference: scout-second-brain-learning\n");
+    writeFileSync(
+      join(root, "agents", "scout", "AGENTS.md"),
+      [
+        "Search existing knowledge before creating a new file.",
+        "Update existing notes in place when the topic already exists.",
+        "Every KE needs <ai_context> metadata.",
+      ].join("\n"),
+    );
+    writeFileSync(
+      join(root, "agents", "scout", "knowledge", "note-a.md"),
+      "<ai_context>\nsummary: sourced\n</ai_context>\n\nSource: https://example.com/a\n",
+    );
+    writeFileSync(
+      join(root, "agents", "scout", "knowledge", "note-b.md"),
+      "Source: https://example.com/b\n",
+    );
+    writeFileSync(
+      join(root, "shared", "knowledge", "entries", "KE-1-demo.md"),
+      "<ai_context>\nsummary: demo\n</ai_context>\n",
+    );
+    writeFileSync(
+      join(root, "agents", "scout", "workspace", "digest", "today.md"),
+      "**Source**: https://example.com/digest\n",
+    );
+    writeFileSync(
+      join(root, "projects", "platform", "project.md"),
+      "Scout learning reference: scout-second-brain-learning\n",
+    );
 
     const db = getDb(root);
     const now = Date.now();
     db.run(
       "INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, priority, status, project, alert_op, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      ["scout.knowledge-practice-loaded", "old", "scout", "health", 0, 1, 1, "boolean", "P2", "disabled", "scout-second-brain-learning", "<", now - 24 * 3600_000, now - 24 * 3600_000],
+      [
+        "scout.knowledge-practice-loaded",
+        "old",
+        "scout",
+        "health",
+        0,
+        1,
+        1,
+        "boolean",
+        "P2",
+        "disabled",
+        "scout-second-brain-learning",
+        "<",
+        now - 24 * 3600_000,
+        now - 24 * 3600_000,
+      ],
     );
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = (id: string) => db.prepare("SELECT current, owner, status, project, target, threshold FROM metrics WHERE id = ?").get(id) as any;
+    const metric = (id: string) =>
+      db
+        .prepare(
+          "SELECT current, owner, status, project, target, threshold FROM metrics WHERE id = ?",
+        )
+        .get(id) as any;
     expect(metric("scout.knowledge-practice-loaded")).toMatchObject({
       current: 1,
       owner: "scout",
@@ -291,12 +480,19 @@ describe("metrics-snapshot session health metrics", () => {
       status: "active",
       project: "scout-second-brain-learning",
     });
-    expect(metric("scout.sourced-artifacts-24h").current).toBeGreaterThanOrEqual(2);
-    expect(metric("scout.downstream-reference-files-7d").current).toBeGreaterThanOrEqual(1);
+    expect(
+      metric("scout.sourced-artifacts-24h").current,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      metric("scout.downstream-reference-files-7d").current,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("does not count terminal no-recovery finish-block digests as unresolved dirty exits", async () => {
-    const root = join(tmpdir(), `metrics-finish-blocked-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-finish-blocked-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -304,7 +500,10 @@ describe("metrics-snapshot session health metrics", () => {
 
     const db = getDb(root);
     const now = Date.now();
-    const issueJson = JSON.stringify(["terminal status: interrupted", "finish blocked by uncommitted changes"]);
+    const issueJson = JSON.stringify([
+      "terminal status: interrupted",
+      "finish blocked by uncommitted changes",
+    ]);
 
     const insertSession = db.prepare(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, outcome) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -322,8 +521,26 @@ describe("metrics-snapshot session health metrics", () => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     );
 
-    insertSession.run("s_no_recovery", "may", "steward", "interrupted", now - 20_000, now - 10_000, "interrupted");
-    insertEval.run("s_no_recovery", "may", 0.2, 0.5, 0, 1, "needs_improvement", issueJson, now - 9_000);
+    insertSession.run(
+      "s_no_recovery",
+      "may",
+      "steward",
+      "interrupted",
+      now - 20_000,
+      now - 10_000,
+      "interrupted",
+    );
+    insertEval.run(
+      "s_no_recovery",
+      "may",
+      0.2,
+      0.5,
+      0,
+      1,
+      "needs_improvement",
+      issueJson,
+      now - 9_000,
+    );
     insertDigest.run(
       "s_no_recovery",
       "may",
@@ -337,11 +554,47 @@ describe("metrics-snapshot session health metrics", () => {
       now - 8_000,
     );
 
-    insertSession.run("s_unresolved", "dev", "work", "interrupted", now - 18_000, now - 7_000, "interrupted");
-    insertEval.run("s_unresolved", "dev", 0.2, 0.5, 0, 1, "needs_improvement", issueJson, now - 6_000);
+    insertSession.run(
+      "s_unresolved",
+      "dev",
+      "work",
+      "interrupted",
+      now - 18_000,
+      now - 7_000,
+      "interrupted",
+    );
+    insertEval.run(
+      "s_unresolved",
+      "dev",
+      0.2,
+      0.5,
+      0,
+      1,
+      "needs_improvement",
+      issueJson,
+      now - 6_000,
+    );
 
-    insertSession.run("s_repaired", "scout", "work", "done", now - 16_000, now - 5_000, "done");
-    insertEval.run("s_repaired", "scout", 0.75, 0.8, 2, 0, "good", issueJson, now - 4_000);
+    insertSession.run(
+      "s_repaired",
+      "scout",
+      "work",
+      "done",
+      now - 16_000,
+      now - 5_000,
+      "done",
+    );
+    insertEval.run(
+      "s_repaired",
+      "scout",
+      0.75,
+      0.8,
+      2,
+      0,
+      "good",
+      issueJson,
+      now - 4_000,
+    );
     insertDigest.run(
       "s_repaired",
       "scout",
@@ -422,19 +675,30 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       ],
     );
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = (id: string) => db.prepare("SELECT current FROM metrics WHERE id = ?").get(id) as any;
-    expect(metric("session.finish-blocked-uncommitted-count-24h").current).toBe(3);
-    expect(metric("session.finish-blocked-unresolved-count-24h").current).toBe(1);
+    const metric = (id: string) =>
+      db.prepare("SELECT current FROM metrics WHERE id = ?").get(id) as any;
+    expect(metric("session.finish-blocked-uncommitted-count-24h").current).toBe(
+      3,
+    );
+    expect(metric("session.finish-blocked-unresolved-count-24h").current).toBe(
+      1,
+    );
   });
 
   it("counts only active project iteration events", async () => {
-    const root = join(tmpdir(), `metrics-project-iterations-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-project-iterations-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -444,73 +708,157 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     const now = Date.now();
     db.run(
       "INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-      ["active-work", "projects/active-work", "active-work", "may", "active", now],
+      [
+        "active-work",
+        "projects/active-work",
+        "active-work",
+        "may",
+        "active",
+        now,
+      ],
     );
     db.run(
       "INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-      ["closed-work", "projects/closed-work", "closed-work", "may", "closed", now],
+      [
+        "closed-work",
+        "projects/closed-work",
+        "closed-work",
+        "may",
+        "closed",
+        now,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["project.iteration", JSON.stringify({ projectId: "may/active-work" }), now - 60_000],
+      [
+        "project.iteration",
+        JSON.stringify({ projectId: "may/active-work" }),
+        now - 60_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["project.iteration", JSON.stringify({ project: "/app/projects/active-work", iteration: 2 }), now - 50_000],
+      [
+        "project.iteration",
+        JSON.stringify({ project: "/app/projects/active-work", iteration: 2 }),
+        now - 50_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["project.iteration", JSON.stringify({ projectId: "may/closed-work" }), now - 40_000],
+      [
+        "project.iteration",
+        JSON.stringify({ projectId: "may/closed-work" }),
+        now - 40_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, data, timestamp) VALUES (?, ?, ?)",
-      ["project.iteration", JSON.stringify({ projectId: "unknown/missing-work" }), now - 30_000],
+      [
+        "project.iteration",
+        JSON.stringify({ projectId: "unknown/missing-work" }),
+        now - 30_000,
+      ],
     );
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = db.prepare("SELECT current FROM metrics WHERE id = ?").get("project.iterations-24h") as any;
-    const snapshot = db.prepare("SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1").get("project.iterations-24h") as any;
+    const metric = db
+      .prepare("SELECT current FROM metrics WHERE id = ?")
+      .get("project.iterations-24h") as any;
+    const snapshot = db
+      .prepare(
+        "SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC LIMIT 1",
+      )
+      .get("project.iterations-24h") as any;
     expect(metric.current).toBe(2);
     expect(snapshot).toMatchObject({ value: 2, sample_size: 4 });
   });
 
   it("measures critical runtime signals with explicit owners", async () => {
-    const root = join(tmpdir(), `metrics-critical-signals-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-critical-signals-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents", "may"), { recursive: true });
     mkdirSync(join(root, "agents", "scout"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
     writeFileSync(join(root, "src/lib/manager.ts"), "export {}\n");
-    writeFileSync(join(root, "agents", "may", "agent.json"), JSON.stringify({
-      name: "may",
-      description: "system owner",
-      domain: "system",
-      model: "test",
-      tools: [],
-    }));
-    writeFileSync(join(root, "agents", "scout", "agent.json"), JSON.stringify({
-      name: "scout",
-      description: "research",
-      domain: "research",
-      model: "test",
-      tools: [],
-    }));
-    writeFileSync(join(root, "agents", "may", "cron.json"), JSON.stringify([
-      { name: "heartbeat", enabled: true, handler: { agent: "may", workflow: "may-heartbeat", task: "[heartbeat]" } },
-      { name: "heartbeat-scout", enabled: true, handler: { agent: "scout", workflow: "scout-heartbeat", task: "[heartbeat]" } },
-      { name: "heartbeat-disabled", enabled: false, handler: { agent: "disabled", workflow: "disabled-heartbeat", task: "[heartbeat]" } },
-    ]));
+    writeFileSync(
+      join(root, "agents", "may", "agent.json"),
+      JSON.stringify({
+        name: "may",
+        description: "system owner",
+        domain: "system",
+        model: "test",
+        tools: [],
+      }),
+    );
+    writeFileSync(
+      join(root, "agents", "scout", "agent.json"),
+      JSON.stringify({
+        name: "scout",
+        description: "research",
+        domain: "research",
+        model: "test",
+        tools: [],
+      }),
+    );
+    writeFileSync(
+      join(root, "agents", "may", "cron.json"),
+      JSON.stringify([
+        {
+          name: "heartbeat",
+          enabled: true,
+          handler: {
+            agent: "may",
+            workflow: "may-heartbeat",
+            task: "[heartbeat]",
+          },
+        },
+        {
+          name: "heartbeat-scout",
+          enabled: true,
+          handler: {
+            agent: "scout",
+            workflow: "scout-heartbeat",
+            task: "[heartbeat]",
+          },
+        },
+        {
+          name: "heartbeat-disabled",
+          enabled: false,
+          handler: {
+            agent: "disabled",
+            workflow: "disabled-heartbeat",
+            task: "[heartbeat]",
+          },
+        },
+      ]),
+    );
 
     const db = getDb(root);
     const now = Date.now();
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, source, startedAt, endedAt, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["hb_may", "may", "[heartbeat] May", "done", "workflow:may-heartbeat", now - 20 * 60_000, now - 19 * 60_000, 2],
+      [
+        "hb_may",
+        "may",
+        "[heartbeat] May",
+        "done",
+        "workflow:may-heartbeat",
+        now - 20 * 60_000,
+        now - 19 * 60_000,
+        2,
+      ],
     );
     for (let i = 0; i < 4; i++) {
       db.run(
@@ -542,96 +890,391 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["s_zero_op", "arc", "call model", "error", now - 10 * 60_000, now - 9 * 60_000, "Connection error", 0],
+      [
+        "s_zero_op",
+        "arc",
+        "call model",
+        "error",
+        now - 10 * 60_000,
+        now - 9 * 60_000,
+        "Connection error",
+        0,
+      ],
     );
-    mkdirSync(join(root, "sessions", "history", "s_zero_op"), { recursive: true });
+    mkdirSync(join(root, "sessions", "history", "s_zero_op"), {
+      recursive: true,
+    });
     writeFileSync(
       join(root, "sessions", "history", "s_zero_op", "session.jsonl"),
       [
-        JSON.stringify({ role: "user", content: [{ type: "text", text: "call model" }] }),
-        JSON.stringify({ role: "assistant", content: [], stopReason: "error", errorMessage: "Connection error." }),
+        JSON.stringify({
+          role: "user",
+          content: [{ type: "text", text: "call model" }],
+        }),
+        JSON.stringify({
+          role: "assistant",
+          content: [],
+          stopReason: "error",
+          errorMessage: "Connection error.",
+        }),
       ].join("\n") + "\n",
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["s_tool_error", "arc", "after tools", "error", now - 8 * 60_000, now - 7 * 60_000, "tool failed", 2],
+      [
+        "s_tool_error",
+        "arc",
+        "after tools",
+        "error",
+        now - 8 * 60_000,
+        now - 7 * 60_000,
+        "tool failed",
+        2,
+      ],
     );
     db.run(
       "INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt, error, opCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      ["s_empty_stop", "evaluator", "review", "error", now - 6 * 60_000, now - 5 * 60_000, null, 0],
+      [
+        "s_empty_stop",
+        "evaluator",
+        "review",
+        "error",
+        now - 6 * 60_000,
+        now - 5 * 60_000,
+        null,
+        0,
+      ],
     );
-    mkdirSync(join(root, "sessions", "history", "s_empty_stop"), { recursive: true });
+    mkdirSync(join(root, "sessions", "history", "s_empty_stop"), {
+      recursive: true,
+    });
     writeFileSync(
       join(root, "sessions", "history", "s_empty_stop", "session.jsonl"),
       [
-        JSON.stringify({ role: "user", content: [{ type: "text", text: "review" }] }),
+        JSON.stringify({
+          role: "user",
+          content: [{ type: "text", text: "review" }],
+        }),
         JSON.stringify({ role: "assistant", content: [], stopReason: "stop" }),
       ].join("\n") + "\n",
     );
     db.run(
       "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
-      ["agent.config_invalid", "may", JSON.stringify({ count: 2, message: "Unknown model" }), now - 5 * 60_000],
+      [
+        "agent.config_invalid",
+        "may",
+        JSON.stringify({ count: 2, message: "Unknown model" }),
+        now - 5 * 60_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["runtime.daemon.heartbeat", "daemon", "agent:may", JSON.stringify({ pid: 123, interfaceAgent: "may", socketEnabled: true }), now - 60_000],
-    );
-    db.run(
-      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
-      ["message.delivery_failed", "may", JSON.stringify({ from: "evaluator", to: "functions.message", reason: "invalid target" }), now - 4 * 60_000],
-    );
-    db.run(
-      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
-      ["escalation.created", "agent:may", JSON.stringify({ escalationId: "esc_open_1", sourceAgent: "arc", reason: "open", requestedAction: "review" }), now - 4 * 60_000],
-    );
-    db.run(
-      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
-      ["escalation.created", "agent:may", JSON.stringify({ escalationId: "esc_open_2", sourceAgent: "arc", reason: "open", requestedAction: "review" }), now - 3 * 60_000],
-    );
-    db.run(
-      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
-      ["escalation.created", "agent:may", JSON.stringify({ escalationId: "esc_closed", sourceAgent: "arc", reason: "closed", requestedAction: "review" }), now - 3 * 60_000],
-    );
-    db.run(
-      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
-      ["escalation.resolved", "agent:may", JSON.stringify({ escalationId: "esc_closed", outcome: "fixed", summary: "closed" }), now - 2 * 60_000],
+      [
+        "runtime.daemon.heartbeat",
+        "daemon",
+        "agent:may",
+        JSON.stringify({
+          pid: 123,
+          interfaceAgent: "may",
+          socketEnabled: true,
+        }),
+        now - 60_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["guard.triggered", "workflow", "may", JSON.stringify({ guard: "verify-after-write", demandType: "warn", action: "warned" }), now - 3 * 60_000],
+      [
+        "project.ops_health.tick",
+        "project-app:may-agent:schedule:ops-health-review",
+        "agent:may",
+        JSON.stringify({ project: "may-agent", lane: "ops-health-review" }),
+        now - 10 * 60_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["guard.triggered", "workflow", "may", JSON.stringify({ guard: "verify-after-write", demandType: "block", action: "blocked" }), now - 2 * 60_000],
+      [
+        "handler.started",
+        "cron",
+        "agent:may",
+        JSON.stringify({
+          handler: "may-agent-schedule-ops-health-review",
+          agent: "may",
+        }),
+        now - 10 * 60_000 + 1_000,
+      ],
     );
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["guard.triggered", "workflow", "may", JSON.stringify({ guard: "verify-after-write", demandType: "run_step", action: "skipped_duplicate" }), now - 1 * 60_000],
+      [
+        "project.ops_digest.tick",
+        "project-app:may-agent:schedule:daily-ops-digest",
+        "agent:may",
+        JSON.stringify({ project: "may-agent", lane: "daily-ops-digest" }),
+        now - 8 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "handler.workflow_dispatched",
+        "agent:may",
+        "agent:may",
+        JSON.stringify({
+          handler: "may-agent-daily-ops-digest",
+          workflow: "daily-ops-digest",
+          projectId: "may-agent",
+          status: "done",
+        }),
+        now - 8 * 60_000 + 30_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "evaluation.tick",
+        "project-app:evaluation:schedule:evaluation-pipeline-review",
+        "agent:evaluator",
+        JSON.stringify({ project: "evaluation", lane: "pipeline-health" }),
+        now - 7 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "handler.started",
+        "cron",
+        "agent:evaluator",
+        JSON.stringify({ handler: "evaluation-heartbeat", agent: "evaluator" }),
+        now - 7 * 60_000 + 1_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      [
+        "message.delivery_failed",
+        "may",
+        JSON.stringify({
+          from: "evaluator",
+          to: "functions.message",
+          reason: "invalid target",
+        }),
+        now - 4 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        JSON.stringify({
+          escalationId: "esc_open_1",
+          sourceAgent: "arc",
+          reason: "open",
+          requestedAction: "review",
+        }),
+        now - 4 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        JSON.stringify({
+          escalationId: "esc_open_2",
+          sourceAgent: "arc",
+          reason: "open",
+          requestedAction: "review",
+        }),
+        now - 3 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        JSON.stringify({
+          escalationId: "esc_closed",
+          sourceAgent: "arc",
+          reason: "closed",
+          requestedAction: "review",
+        }),
+        now - 3 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, owner, data, timestamp) VALUES (?, ?, ?, ?)",
+      [
+        "escalation.resolved",
+        "agent:may",
+        JSON.stringify({
+          escalationId: "esc_closed",
+          outcome: "fixed",
+          summary: "closed",
+        }),
+        now - 2 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "guard.triggered",
+        "workflow",
+        "may",
+        JSON.stringify({
+          guard: "verify-after-write",
+          demandType: "warn",
+          action: "warned",
+        }),
+        now - 3 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "guard.triggered",
+        "workflow",
+        "may",
+        JSON.stringify({
+          guard: "verify-after-write",
+          demandType: "block",
+          action: "blocked",
+        }),
+        now - 2 * 60_000,
+      ],
+    );
+    db.run(
+      "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "guard.triggered",
+        "workflow",
+        "may",
+        JSON.stringify({
+          guard: "verify-after-write",
+          demandType: "run_step",
+          action: "skipped_duplicate",
+        }),
+        now - 1 * 60_000,
+      ],
     );
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const metric = (id: string) => db.prepare("SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?").get(id) as any;
-    expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("agent.config-invalid-count-1h")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("runtime.daemon-heartbeat-stale")).toMatchObject({ current: 0, owner: "may", target: 0, threshold: 0, priority: "P0" });
-    expect(metric("session.planner-timeout-rate-6h")).toMatchObject({ current: 0.2, owner: "may", target: 0.05, threshold: 0.25, priority: "P1" });
-    expect(metric("session.first-turn-error-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
-    expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 2, priority: "P2" });
-    expect(metric("message.delivery-failed-count-1h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 0, priority: "P1" });
-    expect(metric("escalation.pending-count")).toMatchObject({ current: 2, owner: "may", target: 0, threshold: 3, priority: "P1" });
-    expect(metric("guard.triggered-count-24h")).toMatchObject({ current: 3, owner: "may", target: 0, threshold: 4500, priority: "P3" });
-    expect(metric("guard.warned-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 4500, priority: "P3" });
-    expect(metric("guard.blocked-count-15m")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 15, priority: "P1" });
-    expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({ current: 1, owner: "may", target: 0, threshold: 5, priority: "P2" });
+    const metric = (id: string) =>
+      db
+        .prepare(
+          "SELECT current, owner, target, threshold, priority FROM metrics WHERE id = ?",
+        )
+        .get(id) as any;
+    expect(metric("agent.heartbeat-dark-count-2h")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 0,
+      priority: "P0",
+    });
+    expect(metric("agent.config-invalid-count-1h")).toMatchObject({
+      current: 2,
+      owner: "may",
+      target: 0,
+      threshold: 0,
+      priority: "P0",
+    });
+    expect(metric("runtime.daemon-heartbeat-stale")).toMatchObject({
+      current: 0,
+      owner: "may",
+      target: 0,
+      threshold: 0,
+      priority: "P0",
+    });
+    expect(
+      metric("runtime.project-app-schedule-orphan-count-1h"),
+    ).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 0,
+      priority: "P1",
+    });
+    expect(metric("session.planner-timeout-rate-6h")).toMatchObject({
+      current: 0.2,
+      owner: "may",
+      target: 0.05,
+      threshold: 0.25,
+      priority: "P1",
+    });
+    expect(metric("session.first-turn-error-count-1h")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 15,
+      priority: "P1",
+    });
+    expect(metric("session.empty-assistant-stop-count-1h")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 2,
+      priority: "P2",
+    });
+    expect(metric("message.delivery-failed-count-1h")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 0,
+      priority: "P1",
+    });
+    expect(metric("escalation.pending-count")).toMatchObject({
+      current: 2,
+      owner: "may",
+      target: 0,
+      threshold: 3,
+      priority: "P1",
+    });
+    expect(metric("guard.triggered-count-24h")).toMatchObject({
+      current: 3,
+      owner: "may",
+      target: 0,
+      threshold: 4500,
+      priority: "P3",
+    });
+    expect(metric("guard.warned-count-24h")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 4500,
+      priority: "P3",
+    });
+    expect(metric("guard.blocked-count-15m")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 15,
+      priority: "P1",
+    });
+    expect(metric("guard.repeat-trigger-count-24h")).toMatchObject({
+      current: 1,
+      owner: "may",
+      target: 0,
+      threshold: 5,
+      priority: "P2",
+    });
   });
 
   it("retires noncritical metrics and resolves their open alerts", async () => {
-    const root = join(tmpdir(), `metrics-retired-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-retired-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -646,7 +1289,21 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     ]) {
       db.run(
         "INSERT INTO metrics (id, name, owner, type, current, target, threshold, unit, status, speed, alert_op, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [metricId, metricId, "may", "gauge", 0, 1, 0.5, "ratio", "active", "fast", "<", now - 60_000, now - 60_000],
+        [
+          metricId,
+          metricId,
+          "may",
+          "gauge",
+          0,
+          1,
+          0.5,
+          "ratio",
+          "active",
+          "fast",
+          "<",
+          now - 60_000,
+          now - 60_000,
+        ],
       );
       db.run(
         "INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)",
@@ -654,25 +1311,35 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
       );
     }
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
-    const retired = db.prepare(
-      "SELECT COUNT(*) as c FROM metrics WHERE status = 'retired' AND id IN ('v2.spec-coverage-rate', 'capability.self-directed-iteration-rate-24h', 'agent.dev.low-quality-streak')",
-    ).get() as any;
-    const openRetiredAlerts = db.prepare(
-      "SELECT COUNT(*) as c FROM metric_alerts WHERE resolved_at IS NULL AND metric_id IN ('v2.spec-coverage-rate', 'capability.self-directed-iteration-rate-24h', 'agent.dev.low-quality-streak')",
-    ).get() as any;
+    const retired = db
+      .prepare(
+        "SELECT COUNT(*) as c FROM metrics WHERE status = 'retired' AND id IN ('v2.spec-coverage-rate', 'capability.self-directed-iteration-rate-24h', 'agent.dev.low-quality-streak')",
+      )
+      .get() as any;
+    const openRetiredAlerts = db
+      .prepare(
+        "SELECT COUNT(*) as c FROM metric_alerts WHERE resolved_at IS NULL AND metric_id IN ('v2.spec-coverage-rate', 'capability.self-directed-iteration-rate-24h', 'agent.dev.low-quality-streak')",
+      )
+      .get() as any;
 
     expect(retired.c).toBe(3);
     expect(openRetiredAlerts.c).toBe(0);
   });
 
   it("measures event bus subscriber failures as a health signal", async () => {
-    const root = join(tmpdir(), `metrics-subscriber-failure-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const root = join(
+      tmpdir(),
+      `metrics-subscriber-failure-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     tempDirs.push(root);
     mkdirSync(join(root, "agents"), { recursive: true });
     mkdirSync(join(root, "src/lib"), { recursive: true });
@@ -682,17 +1349,32 @@ WHERE e.createdAt >= (unixepoch('now') * 1000 - 86400000)
     const now = Date.now();
     db.run(
       "INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)",
-      ["subscriber.failed", "event-bus", "may", JSON.stringify({ originalEventType: "metric.breach", subscriberPriority: "normal" }), now - 60_000],
+      [
+        "subscriber.failed",
+        "event-bus",
+        "may",
+        JSON.stringify({
+          originalEventType: "metric.breach",
+          subscriberPriority: "normal",
+        }),
+        now - 60_000,
+      ],
     );
 
-    const handler = create({
-      sdk: sdk(root, db),
-    } as any, {} as any);
+    const handler = create(
+      {
+        sdk: sdk(root, db),
+      } as any,
+      {} as any,
+    );
 
     await handler({ type: "trigger.metrics-snapshot" } as any);
 
     expect(
-      db.prepare("SELECT current, target, threshold, priority, type FROM metrics WHERE id = ?")
+      db
+        .prepare(
+          "SELECT current, target, threshold, priority, type FROM metrics WHERE id = ?",
+        )
         .get("infra.bus.subscriber-failed-count-1h"),
     ).toMatchObject({
       current: 1,

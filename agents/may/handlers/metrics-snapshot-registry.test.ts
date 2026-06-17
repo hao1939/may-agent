@@ -6,6 +6,18 @@ function metricsSnapshotSource(): string {
   return readFileSync(resolve(__dirname, "./metrics-snapshot.ts"), "utf8");
 }
 
+function sourceBlock(
+  source: string,
+  startMarker: string,
+  endMarker: string,
+): string {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
 describe("metrics-snapshot registry and queries", () => {
   it("keeps the stale trace-completeness metric retired", () => {
     const source = metricsSnapshotSource();
@@ -22,7 +34,9 @@ describe("metrics-snapshot registry and queries", () => {
       source.indexOf("const ALL_METRICS"),
       source.indexOf("const RETIRED_METRIC_IDS"),
     );
-    const retiredRegistry = source.slice(source.indexOf("const RETIRED_METRIC_IDS"));
+    const retiredRegistry = source.slice(
+      source.indexOf("const RETIRED_METRIC_IDS"),
+    );
 
     expect(activeRegistry).not.toContain('id: "v2.spec-coverage-rate"');
     expect(retiredRegistry).toContain('"v2.spec-coverage-rate"');
@@ -43,7 +57,9 @@ describe("metrics-snapshot registry and queries", () => {
     const source = metricsSnapshotSource();
 
     expect(source).toContain("status = 'error'");
-    expect(source).toContain("status = 'interrupted' AND COALESCE(error, '') != 'Clean start (fresh)'");
+    expect(source).toContain(
+      "status = 'interrupted' AND COALESCE(error, '') != 'Clean start (fresh)'",
+    );
     expect(source).not.toContain(
       "SELECT COUNT(*) as c FROM sessions WHERE startedAt > ? AND status IN ('error','interrupted')",
     );
@@ -51,31 +67,47 @@ describe("metrics-snapshot registry and queries", () => {
 
   it("excludes Clean start (fresh) interruptions from session.failed-triage-rate-3h denominator and numerator", () => {
     const source = metricsSnapshotSource();
-    const failedTriageBlock = source.slice(
-      source.indexOf('record("session.failed-triage-rate-3h"') - 1500,
-      source.indexOf('record("session.failed-triage-rate-3h"') + 200,
+    const failedTriageBlock = sourceBlock(
+      source,
+      "const failed = count(",
+      "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
     );
 
-    expect(failedTriageBlock.match(/COALESCE\(s\.error, ''\) != 'Clean start \(fresh\)'/g)).toHaveLength(2);
+    expect(
+      failedTriageBlock.match(
+        /COALESCE\(s\.error, ''\) != 'Clean start \(fresh\)'/g,
+      ),
+    ).toHaveLength(2);
     expect(failedTriageBlock).toContain("COUNT(*) as c");
     expect(failedTriageBlock).toContain("COUNT(DISTINCT s.sessionId) as c");
   });
 
   it("counts any evaluated session as triaged for session.failed-triage-rate-3h (no verdict filter)", () => {
     const source = metricsSnapshotSource();
-    const triageBlock = source.slice(
-      source.indexOf('record("session.failed-triage-rate-3h"') - 1500,
-      source.indexOf('record("session.failed-triage-rate-3h"') + 200,
+    const triageBlock = sourceBlock(
+      source,
+      "const failed = count(",
+      "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
     );
     // The numerator JOIN guarantees an evaluation row exists — that alone means triaged.
     // There must be NO verdict filter that would exclude acceptable/good sessions.
     expect(triageBlock).not.toContain("e.verdict IN");
-    expect(triageBlock).toContain("JOIN evaluations e ON e.sessionId = s.sessionId");
+    expect(triageBlock).toContain(
+      "JOIN evaluations e ON e.sessionId = s.sessionId",
+    );
   });
 
   it("suppresses session.failed-triage-rate-3h breaches when fewer than 5 failed sessions are in-window", () => {
     const source = metricsSnapshotSource();
+    const failedTriageBlock = sourceBlock(
+      source,
+      "const failed = count(",
+      "[metrics-snapshot] Error measuring session.failed-triage-rate-3h",
+    );
 
-    expect(source).toContain('record("session.failed-triage-rate-3h", failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1, failed);');
+    expect(failedTriageBlock).toContain('"session.failed-triage-rate-3h"');
+    expect(failedTriageBlock).toContain(
+      "failed >= 5 ? parseFloat((triaged / failed).toFixed(4)) : 1",
+    );
   });
 });
