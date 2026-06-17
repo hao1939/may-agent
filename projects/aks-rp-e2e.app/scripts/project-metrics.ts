@@ -204,7 +204,14 @@ function taskCounts() {
     blocked: frontier?.blocked.length ?? byStatus.get("blocked") ?? 0,
     done: byStatus.get("done") ?? 0,
     completed24h,
-    projectClosed: tree.project_lifecycle === "closed",
+    projectClosed:
+      tree.project_lifecycle === "closed" ||
+      tree.project_lifecycle === "review" ||
+      // Suppress capacity/starvation alerts when project root is accepted/reviewed
+      (tree.tasks?.project != null &&
+        ["review", "done", "accepted"].includes(
+          tree.tasks.project.state ?? tree.tasks.project.status ?? "",
+        )),
   };
 }
 
