@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Fixed stale-active metric (Alert 1914): query only checked legacy project.iteration events, missing v3 project-app activity (project.owner.requested/reviewed/tick). Fix broadens the query and accounts for .app suffix mismatch in event sources. Stale count drops from 4→1 (only evaluator-quality-gap-calibration remains stale, which is correctly flagged as needing evaluator owner judgment). Alert 1901 (error-rate-6h=0.29) now below threshold, will auto-resolve. Alerts 1910-1912 are evaluator-quality-gap-calibration health findings — evaluator owns that project. 8 backlog tasks remain."
+    "summary": "Fixed heartbeat-scout FM-3.4 false-positive (handler.failed id 1494500): inner session prompt from scout-heartbeat.ts contained inbox lines with 'project:' paths triggering the guard. Added 'persistent-task: skip' to the workflow's prompt template. Bundle rebuilt, daemon restarted. Alerts 1915 (daemon-heartbeat-stale) and 1901 (error-rate-6h) both auto-resolved. Remaining 3 alerts (1910-1912) are evaluator-quality-gap-calibration findings — correctly deferred and evaluator-owned. 6 backlog tasks remain."
   },
-  "updatedAt": "2026-06-17T08:42:00.000Z"
+  "updatedAt": "2026-06-17T09:38:00.000Z"
 }

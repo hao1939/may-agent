@@ -43,6 +43,7 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
   const inbox = loadInbox(ctx, agent);
 
   const prompt = `You are **scout** in creative heartbeat mode.
+persistent-task: skip
 
 Your cron tasks handle routine discovery (fetching arXiv, HN, XHS, GitHub).
 This session is for **creative, autonomous work** — things nobody asked you to do:
