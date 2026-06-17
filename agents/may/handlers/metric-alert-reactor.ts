@@ -32,6 +32,7 @@ import { tryAutoHandle } from "./metric-auto-handlers.ts";
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 const DIRECT_TRIAGE_AFTER_MS = 10 * 60 * 1000;
 const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
+const P1_WAITING_RETRIAGE_COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2h — when owner judged waiting_with_evidence, external factors control resolution; avoid re-triage churn
 const ERROR_SESSION_COOLDOWN_MS = 15 * 60 * 1000; // 15min cooldown after error sessions to prevent amplification loops
 
 function parseJsonObject(
@@ -365,12 +366,17 @@ async function processAlertEvent(
           );
           return;
         }
-        if (Date.now() - judgedEvent.timestamp < P1_RETRIAGE_COOLDOWN_MS) {
+        const judgmentOp = stringOrNull(judgmentData.operation);
+        const effectiveCooldown = judgmentOp === "waiting_with_evidence"
+          ? P1_WAITING_RETRIAGE_COOLDOWN_MS
+          : P1_RETRIAGE_COOLDOWN_MS;
+        const judgmentAge = Date.now() - judgedEvent.timestamp;
+        if (judgmentAge < effectiveCooldown) {
           emitSkip(
             ctx,
             metricId,
-            `${priority} ${metricId} judged (event ${judgedEvent.id}); validation cooldown active.`,
-            { judgedEventId: judgedEvent.id },
+            `${priority} ${metricId} judged (event ${judgedEvent.id}, op=${judgmentOp ?? "unknown"}); validation cooldown active (${Math.round(judgmentAge / 60000)}m / ${Math.round(effectiveCooldown / 60000)}m).`,
+            { judgedEventId: judgedEvent.id, judgmentOp, cooldownMs: effectiveCooldown },
           );
           return;
         }
