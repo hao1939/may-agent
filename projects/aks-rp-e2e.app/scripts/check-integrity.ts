@@ -569,6 +569,9 @@ function validateTaskTree(
   const tasks = tree.tasks ?? {};
   const taskIds = new Set(Object.keys(tasks));
   if (taskIds.size === 0) fail("tasks/tree.json has no tasks");
+  if (!tree.root_task_id) fail("tasks/tree.json missing root_task_id");
+  else if (!tasks[tree.root_task_id])
+    fail(`root_task_id ${tree.root_task_id} is missing from tasks`);
 
   for (const [taskId, task] of Object.entries(tasks)) {
     if (task.id && task.id !== taskId)
@@ -581,6 +584,11 @@ function validateTaskTree(
     for (const childId of task.children ?? []) {
       if (!taskIds.has(childId))
         fail(`task ${taskId} references missing child ${childId}`);
+      else if (tasks[childId]?.parent_id !== taskId) {
+        fail(
+          `task ${taskId} lists child ${childId}, but child parent_id is ${tasks[childId]?.parent_id ?? "missing"}`,
+        );
+      }
     }
     if ("gates" in task)
       fail(
@@ -608,6 +616,28 @@ function validateTaskTree(
     }
   }
 
+  for (const [taskId, task] of Object.entries(tasks)) {
+    if (taskId === tree.root_task_id) {
+      if (task.parent_id)
+        fail(`root task ${taskId} must not have parent_id ${task.parent_id}`);
+      continue;
+    }
+    if (!task.parent_id) {
+      fail(`task ${taskId} is missing parent_id`);
+      continue;
+    }
+    const parent = tasks[task.parent_id];
+    if (!parent) {
+      fail(`task ${taskId} has missing parent_id ${task.parent_id}`);
+      continue;
+    }
+    if (!(parent.children ?? []).includes(taskId)) {
+      fail(
+        `task ${taskId} parent ${task.parent_id} does not include it in children[]`,
+      );
+    }
+  }
+
   for (const activeId of tree.active_task_ids ?? []) {
     if (!taskIds.has(activeId))
       fail(`active_task_ids references missing task ${activeId}`);
@@ -624,10 +654,17 @@ function validateTaskTree(
     );
   });
   if (roots.length === 0) fail("tasks/tree.json has no root task");
-  if (roots.length > 3)
-    warn(
-      `tasks/tree.json has ${roots.length} roots; review whether the tree is still human-readable`,
+  if (roots.length !== 1) {
+    fail(
+      `tasks/tree.json must have exactly one root, found ${roots
+        .map((task) => task.id ?? "(missing)")
+        .join(", ")}`,
     );
+  } else if (roots[0].id !== tree.root_task_id) {
+    fail(
+      `tasks/tree.json root by children (${roots[0].id}) must match root_task_id ${tree.root_task_id}`,
+    );
+  }
 
   function isLeaf(task: TaskNode): boolean {
     return (task.children ?? []).length === 0;

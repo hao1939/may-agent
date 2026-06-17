@@ -202,7 +202,10 @@ async function routeAksRpE2eEvent(
   event: Record<string, unknown>,
 ): Promise<unknown> {
   if (event.type === "project.comment.created") {
-    return ctx.emit(projectOwnerEvent("project-comment", eventDetails(event)));
+    return ctx.emit({
+      ...projectOwnerEvent("human-steering", eventDetails(event)),
+      urgency: "high",
+    });
   }
 
   if (event.type === "project.tick" && event.lane === "learning") {

@@ -97,6 +97,11 @@ function compactHumanSteering(event: RuntimeEventRow): Record<string, unknown> {
     source: event.source,
     urgency: event.urgency,
     action: data.action ?? params.action,
+    reason: data.reason,
+    instruction:
+      typeof params.instruction === "string"
+        ? params.instruction.slice(0, 2400)
+        : undefined,
     task_id: params.task_id ?? params.taskId,
     comment:
       typeof params.comment === "string"
@@ -105,6 +110,7 @@ function compactHumanSteering(event: RuntimeEventRow): Record<string, unknown> {
     expected_parent: params.expected_parent,
     expected_live_root_child: params.expected_live_root_child,
     required_planner_decision: params.required_planner_decision,
+    review_findings: params.reviewFindings ?? params.review_findings,
     context,
   };
 }
@@ -127,7 +133,8 @@ function recentHumanSteering(ctx: WorkflowContext): Record<string, unknown>[] {
         const data = parseEventData(row.data);
         return (
           data.project === "aks-rp-e2e" &&
-          data.reason === "human-steering" &&
+          (data.reason === "human-steering" ||
+            data.reason === "project-comment") &&
           (row.urgency === "high" || row.urgency === "immediate")
         );
       });

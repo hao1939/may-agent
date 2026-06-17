@@ -59,10 +59,23 @@ async function makeWorkspace() {
           project: {
             id: "project",
             state: "backlog",
-            children: ["knowledge-model-gap-reconciliation"],
+            children: [
+              "knowledge-model-gap-reconciliation",
+              "spec-runner-and-replays",
+            ],
             goal: "project",
             outputs: ["tasks/tree.json"],
             acceptance: ["done"],
+          },
+          "spec-runner-and-replays": {
+            id: "spec-runner-and-replays",
+            parent_id: "project",
+            state: "backlog",
+            kind: "durable_lane",
+            children: [],
+            goal: "execute specs and replays",
+            outputs: ["runs/executions/"],
+            acceptance: ["runner work represented as child tasks"],
           },
           "knowledge-model-gap-reconciliation": {
             id: "knowledge-model-gap-reconciliation",

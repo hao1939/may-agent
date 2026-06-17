@@ -5,8 +5,10 @@ import { join } from "node:path";
 import {
   compactDoneLeaves,
   completeTask,
+  createTask,
   markTaskDone,
   repairTaskTreeRollups,
+  seedModelGapBacklog,
   taskTreeConfig,
 } from "./lib/task-tree-tools.ts";
 
@@ -28,6 +30,109 @@ function config(projectDir: string) {
 }
 
 describe("task tree tools", () => {
+  test("allows owner-decided ordinary task creation directly under root", async () => {
+    const projectDir = await makeProject();
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const task = createTask(config(projectDir), {
+      id: "dated-frontier-20260615",
+      parentId: "project",
+      goal: "owner-decided root work",
+      outputs: ["evidence/archive/root-work.md"],
+      acceptance: ["done"],
+    });
+
+    expect(task.parent_id).toBe("project");
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks.project.children).toEqual(["dated-frontier-20260615"]);
+  });
+
+  test("model gap seeding does not fall back to root when parents are missing", async () => {
+    const projectDir = await makeProject();
+    await mkdir(join(projectDir, "model", "knowledge-map"), {
+      recursive: true,
+    });
+    await mkdir(join(projectDir, "specs"), { recursive: true });
+    await mkdir(join(projectDir, "replays"), { recursive: true });
+    await writeFile(
+      join(projectDir, "model", "knowledge-map", "model.json"),
+      `${JSON.stringify({
+        featurePaths: [
+          {
+            id: "path.feature-a.create",
+            featureId: "feature-a",
+            status: "unknown",
+          },
+        ],
+      })}\n`,
+      "utf8",
+    );
+    await writeFile(
+      join(projectDir, "tasks", "tree.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          project: "aks-rp-e2e",
+          project_lifecycle: "active",
+          root_task_id: "project",
+          active_task_id: null,
+          active_task_ids: [],
+          tasks: {
+            project: {
+              id: "project",
+              state: "backlog",
+              children: [],
+              goal: "project",
+              outputs: ["tasks/tree.json"],
+              acceptance: ["done"],
+            },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const result = seedModelGapBacklog(config(projectDir), { limit: 1 });
+
+    expect(result.created).toEqual([]);
+    expect(result.skipped).toEqual([
+      { pathId: "path.feature-a.create", reason: "no-parent-task" },
+    ]);
+    const tree = JSON.parse(
+      await readFile(join(projectDir, "tasks", "tree.json"), "utf8"),
+    );
+    expect(tree.tasks.project.children).toEqual([]);
+  });
+
   test("repairs parent rollups and lifecycle from active leaves", async () => {
     const projectDir = await makeProject();
     await writeFile(

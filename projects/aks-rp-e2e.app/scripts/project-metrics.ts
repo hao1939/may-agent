@@ -425,10 +425,13 @@ function valueFor(metricId: string): number {
     "aks-rp-e2e.task.completed-24h": () => tasks.completed24h,
     "aks-rp-e2e.task.no-work-with-gaps": () =>
       !tasks.projectClosed &&
-      tasks.runnable === 0 && tasks.active === 0 && openGaps > 0 ? 1 : 0,
+      tasks.runnable === 0 &&
+      tasks.active === 0 &&
+      openGaps > 0
+        ? 1
+        : 0,
     "aks-rp-e2e.task.ready-starvation-with-gaps": () =>
-      !tasks.projectClosed &&
-      tasks.runnable === 0 && openGaps > 0 ? 1 : 0,
+      !tasks.projectClosed && tasks.runnable === 0 && openGaps > 0 ? 1 : 0,
     "aks-rp-e2e.task.capacity-underfilled-with-gaps": () =>
       !tasks.projectClosed &&
       tasks.runnable + tasks.active < Math.max(1, desiredParallelism) &&
@@ -452,7 +455,10 @@ function valueFor(metricId: string): number {
     "aks-rp-e2e.spec.draft-count": () => specs.draft,
     "aks-rp-e2e.spec.unverified-without-work": () =>
       !tasks.projectClosed &&
-      specs.unverified > 0 && !hasOpenSpecVerificationWork(tasks) ? 1 : 0,
+      specs.unverified > 0 &&
+      !hasOpenSpecVerificationWork(tasks)
+        ? 1
+        : 0,
     "aks-rp-e2e.replay.script-count": () => countReplays(),
     "aks-rp-e2e.run.live-started-24h": () => live.length,
     "aks-rp-e2e.run.live-succeeded-24h": () =>
@@ -467,7 +473,11 @@ function valueFor(metricId: string): number {
       ).length,
     "aks-rp-e2e.run.live-idle-with-runnable-work": () =>
       !tasks.projectClosed &&
-      countReplays() > 0 && specs.unverified > 0 && live.length === 0 ? 1 : 0,
+      countReplays() > 0 &&
+      specs.unverified > 0 &&
+      live.length === 0
+        ? 1
+        : 0,
     "aks-rp-e2e.artifact.duplicate-group-count": () => duplicateArtifactCount(),
   };
 

@@ -106,6 +106,12 @@ folder does not keep a parallel task event log.
 - The active root lanes are durable responsibilities:
   `feature-knowledge-and-specs`, `spec-runner-and-replays`,
   `evidence-feedback-and-model-update`, and `user-review-workspace`.
+- Root-lane shape is owner judgment, not a hard tool decision. New ordinary
+  work should usually be created under one of those durable lanes, but the
+  project owner may intentionally add another root child when it represents
+  real project structure. The task-tree tools enforce schema, links, layout, and
+  derived projections; they do not decide whether task content belongs under a
+  specific branch.
 - A mid-term focus plan is a visible strategy branch, not a workflow-control
   branch. Use `kind: "focus_plan"` to show the current 12-24h direction, its
   success criteria, approval state, and latest progress review. The focus

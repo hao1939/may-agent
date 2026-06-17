@@ -25,39 +25,35 @@
     "Continuously reconcile Go e2ev3 source coverage, including suite-condition variants, and tidy feature/spec/model structure so the knowledge base stays canonical."
   ],
   "currentState": {
-    "summary": "Broadened execution. 361 paths (327 pass, 90.6%). 5 active (net-integration LB custom-IP, private-cluster BYO-subnet + CNI-overlay, storage-csi UltraSSD, VMs-managedsystem combined). 2 runnable (JWT upgrade-survival, private-cluster BYO-DNS). 262 done / 272 total.",
+    "summary": "Active coverage-closure work. The project is not complete: the model has 404 features, 471 paths, 402 scenarios, and remaining fail/blocked/draft/unknown paths. The previous closure/ceiling summary was stale. Current priority is a full Go e2ev3 scenario inventory and coverage matrix so every source scenario is mapped to feature/path/spec/replay/plan/evidence or explicitly classified.",
     "activeTaskId": null,
     "metrics": {
-      "features": 401,
-      "featuresPass": 305,
-      "paths": 361,
-      "pathsPass": 327,
-      "passRatePaths": "90.6%",
-      "passRateFeatures": "76.1%",
-      "tasksCompleted": 262,
-      "tasksActive": 5,
-      "tasksRunnable": 2,
-      "tasksTotal": 272,
-      "uncommittedChanges": 54,
-      "lastCommit": "b4b7c25"
+      "features": 404,
+      "featuresPass": 340,
+      "paths": 471,
+      "pathsPass": 411,
+      "passRatePaths": "87.3%",
+      "passRateFeatures": "84.2%",
+      "tasksCompleted": 996,
+      "tasksActive": 0,
+      "tasksInReview": 0,
+      "tasksTotal": 1023,
+      "uncommittedChanges": 500,
+      "lastCommit": "539dd88"
     }
   },
   "currentFocus": {
-    "summary": "3 active tasks at late-stage frontier. CCP security-patch azurelinux (attempt 9) + ubuntu2404 (attempt 15) — persistent source-spec exploration. Private-cluster CNI overlay staging. VM autoscale resolved via existing evidence.",
-    "nextAction": "Let 3 active finish. Accept VM autoscale review. CCP security-patch attempts are high — may need terminal classification if source-spec frontier is exhausted.",
-    "activeTaskIds": [
-      "ccp-security-patch-ubuntu2404-source-spec-frontier-20260615-14",
-      "ccp-vpa-os-arch-variants-staging-frontier-20260615-9",
-      "traffic-api-proxy-access-control-fix-staging-20260615"
-    ],
-    "focusPlanId": "focus-plan-quality-hardening",
+    "summary": "P0 focus reopened: close total Go e2ev3 coverage, not only the VM REST positive slice. A standing coverage-closure branch now requires refreshed source inventory, source-to-model/spec/evidence reconciliation, VM boundary-negative live execution, and source-family expansion backlog.",
+    "nextAction": "Assign and execute go-e2ev3-total-scenario-inventory-refresh-20260617 and vm-agentpool-boundary-negative-live-20260617, then use the coverage matrix to create grouped follow-up leaves for every uncovered or unverified scenario family.",
+    "activeTaskIds": [],
+    "focusPlanId": "go-e2ev3-total-coverage-closure-20260617",
     "focusPlanStatus": "active",
     "priorFocusPlanId": "focus-plan-20260614-combined-source-hygiene",
     "priorFocusResult": "completed",
     "focusReview": {
-      "reviewedAt": "2026-06-15T06:55:00.000Z",
-      "result": "on_track",
-      "note": "Broadened to new feature areas: net-integration LB, private-cluster BYO-subnet/CNI-overlay, storage-csi UltraSSD, VMs-managedsystem. 327/361 pass (90.6%). 5 active + 2 runnable. 262/272 done. CCP security-patch tasks closed. Pipeline executing draft specs across diverse feature families."
+      "reviewedAt": "2026-06-17T02:47:00.000Z",
+      "result": "off_track",
+      "note": "The project had stopped because stale closure state treated a local VM REST slice and prior ceiling numbers as project completion. That was wrong: source coverage and model gaps remain. Reopened with P0 total coverage closure tasks."
     }
   },
   "focusPlan": {
@@ -74,5 +70,5 @@
     "tasks/README.md",
     "tasks/tree.json"
   ],
-  "updatedAt": "2026-06-15T06:55:00.000Z"
+  "updatedAt": "2026-06-17T02:47:00.000Z"
 }
