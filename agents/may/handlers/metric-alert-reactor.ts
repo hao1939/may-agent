@@ -32,6 +32,7 @@ import { tryAutoHandle } from "./metric-auto-handlers.ts";
 const DEDUP_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h — shorter window so repeated alerts get reacted to faster
 const DIRECT_TRIAGE_AFTER_MS = 10 * 60 * 1000;
 const P1_RETRIAGE_COOLDOWN_MS = 15 * 60 * 1000;
+const ERROR_SESSION_COOLDOWN_MS = 15 * 60 * 1000; // 15min cooldown after error sessions to prevent amplification loops
 
 function parseJsonObject(
   raw: string | null | undefined,
@@ -424,6 +425,19 @@ async function processAlertEvent(
         );
         return;
       }
+      // Cooldown after errored/escalated triage runs to prevent amplification
+      if (recentTriageRun.status === "error" || recentTriageRun.status === "escalated") {
+        const runAge = Date.now() - recentTriageRun.startedAt;
+        if (runAge < ERROR_SESSION_COOLDOWN_MS) {
+          emitSkip(
+            ctx,
+            metricId,
+            `Skipping ${metricId} — recent triage run ${recentTriageRun.runId} ${recentTriageRun.status} ${Math.round(runAge / 60000)}m ago; cooldown ${Math.round(ERROR_SESSION_COOLDOWN_MS / 60000)}m`,
+            { workflowRunId: recentTriageRun.runId, runAgeMs: runAge },
+          );
+          return;
+        }
+      }
     }
 
     // Dedup: suppress only active metric handling or completed handling that
@@ -460,6 +474,22 @@ async function processAlertEvent(
           },
         );
         return;
+      }
+      // Cooldown after error sessions to prevent amplification loops:
+      // During provider outages, triage sessions error immediately (opCount=0),
+      // which inflates session.error-rate-6h, which triggers more triage.
+      // Wait ERROR_SESSION_COOLDOWN_MS before retrying after an error.
+      if (recentSession.status === "error") {
+        const errorAge = Date.now() - recentSession.startedAt;
+        if (errorAge < ERROR_SESSION_COOLDOWN_MS) {
+          emitSkip(
+            ctx,
+            metricId,
+            `Skipping ${metricId} — recent triage session ${recentSession.sessionId} errored ${Math.round(errorAge / 60000)}m ago; cooldown ${Math.round(ERROR_SESSION_COOLDOWN_MS / 60000)}m`,
+            { owner, sessionId: recentSession.sessionId, errorAgeMs: errorAge },
+          );
+          return;
+        }
       }
       ctx.sdk.log(
         "info",

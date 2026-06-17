@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Platform stable. Zero open alerts, zero handler failures in 13h+. DB size fix holding (1.4G + 4M WAL). Calibrated evaluator.stale-running-session-count threshold 0→1 to cut transient alert noise (~9 alerts/48h self-resolving in avg 11min). 21 pending messages all for aks-explorer/human — may inbox clear. 4 backlog tasks remain (P2 docs/UI)."
+    "summary": "Recovering from provider outage (claude-opus-4.6 unavailable ~03:30-05:30 UTC). Alert 1901 open (session.error-rate-6h=0.54, threshold 0.3) — trailing window, root cause resolved. Provider error counts now in-range (1h: 10/12, first-turn: 2/15). Outage triggered amplification loop: 91 project-planner + 43 metric-alert-triage 0-op errors inflated error rate. Last 1h healthy: 29 done, 4 errors across all agents. 4 backlog tasks remain (P1-P2 docs/UI)."
   },
-  "updatedAt": "2026-06-17T03:10:00.000Z"
+  "updatedAt": "2026-06-17T06:30:00.000Z"
 }

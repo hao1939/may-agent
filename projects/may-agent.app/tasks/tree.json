@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-17T03:10:00.000Z",
+  "updated_at": "2026-06-17T06:30:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "46 tasks done, 7 backlog, 0 active (53 total). Platform stable: zero open alerts, zero handler failures in 13h+, DB 1.4G (WAL fix holding). Calibrated evaluator.stale-running-session-count threshold 0→1 to cut noise. 4 backlog leaf tasks remain (all P1-P2 docs/UI).",
+  "note": "46 tasks done, 7 backlog, 0 active (53 total). Recovering from provider outage (~03:30-05:30 UTC) that triggered session error amplification loop (134 0-op errors from project-planner + metric-alert-triage retries). Alert 1901 (error-rate-6h=0.54) still open; trailing window, provider metrics recovered. System healthy in last 1h. 4 backlog leaf tasks remain (P1-P2 docs/UI).",
   "max_concurrent": 3,
   "tasks": {
     "project": {
