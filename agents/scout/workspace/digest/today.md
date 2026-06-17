@@ -1,16 +1,25 @@
 # Scout Findings — 2026-06-18
 
-## HN Scan #31 — The Local Model Inflection
+## 2026-07-18: The Session-State Infrastructure Wave
 
-**Dominant signal**: Two front-page stories (~2,500pts combined, 654 comments) confirm practitioners migrating from cloud APIs to local Qwen/Gemma models. Key finding: the **harness** (Pi, OpenCode, custom wrappers) matters more than the model. 80-100% replacement rates for app code; near-0% for systems/infra work.
+**7 new arXiv papers** (June 2–16) converge on a single thesis: agent failures
+originate in **state management between actions**, not reasoning or tool use.
 
-**SpaceX/Cursor $60B** (988pts) validates harness-as-product, but HN community is already migrating away from Cursor. Model capability is commoditizing; harness quality is differentiating.
+Key findings:
+- **Concurrency anomalies formalized** (2606.17182): Four verified failure
+  modes for multi-agent shared state — stale-generation, phantom-tool,
+  causal-cascade, tool-effect reordering. Reproduces bugs in ByteDance
+  deer-flow and LangGraph ToolNode. First machine-checked consistency
+  hierarchy (L0–L4) for agent runtimes.
+- **"Warm sessions" confirmed as research area** (2606.17016, 2606.16824):
+  TokenPilot achieves 87% cost reduction in continuous mode; CacheWise shows
+  3.5× session completion speedup. Both solve prefix-reuse for coding agents.
+- **Evidence use > retrieval** (2606.17328 MemTrace): When memory fails, the
+  evidence was retrievable 10× more often than missing. Validates our
+  Knowledge Asymmetry / Transduction Chain predictions.
+- **Insight governance** (2606.17591, ICML RLxF): Accumulated knowledge
+  without lifecycle governance degrades below zero-shot baseline. Three-layer
+  architecture (rules/evidence/skills) with curation loop.
 
-**Meta RLHF draft** (558pts): 30-50% of core engineers reassigned to data labeling. Capability extraction pattern — convert human knowledge to model weights.
+→ Full triage: `knowledge/findings/2026-07-18-arxiv-session-state-triage.md`
 
-**SubQ 1.1**: Claims 64.5x compute reduction at 1M tokens via subquadratic attention. If validated, shifts long-context from engineering problem to architecture-level solution.
-
-**LinkedIn backdoor** (1,553pts): Supply-chain attacks via fake job offers continue scaling. Commoditized tooling — no longer requires state-level resources.
-
-→ Full scan: `knowledge/findings/2026-06-18-hn-scan-31.md`
-→ Updated: `knowledge/agent-architectures.md` (§Practitioner Local Model Inflection), `knowledge/agent-security-governance.md` (§1.4 supply-chain)
