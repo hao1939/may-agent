@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Recovering from provider outage (claude-opus-4.6 unavailable ~03:30-05:30 UTC). Alert 1901 open (session.error-rate-6h=0.54, threshold 0.3) — trailing window, root cause resolved. Provider error counts now in-range (1h: 10/12, first-turn: 2/15). Outage triggered amplification loop: 91 project-planner + 43 metric-alert-triage 0-op errors inflated error rate. Last 1h healthy: 29 done, 4 errors across all agents. 4 backlog tasks remain (P1-P2 docs/UI)."
+    "summary": "Post-outage recovery continuing. Alert 1901 (error-rate-6h) decaying: 0.57→0.54→0.52 as 161 zero-op amplification errors age out of the 6h window. Concurrent triage session actively judging alert 1901. 2h error rate healthy at 6.6% (10/152). No active platform tasks; 7 backlog tasks (4 runnable P1-P2 docs/UI). 41 stale noise messages from outage amplification will expire via 24h lifecycle. AKS lock-timeout transient, lock file already cleared."
   },
-  "updatedAt": "2026-06-17T06:30:00.000Z"
+  "updatedAt": "2026-06-17T06:40:00.000Z"
 }
