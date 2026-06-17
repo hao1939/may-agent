@@ -580,14 +580,15 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "health",
     target: 0,
-    threshold: 6,
+    threshold: 10,
     unit: "count",
     alert_op: ">",
     priority: "P2",
     config: { alert: { mode: "sustained", consecutive: 2 } },
     // Calibrated 2026-06-17: escalation resolution lifecycle (Slice 3) is
     // unbuilt, so pending count grows with each blocked-finish escalation.
-    // Raised threshold 3→6 and downgraded P1→P2 until resolution path exists.
+    // Raised threshold 3→6→10 and downgraded P1→P2 until resolution path exists.
+    // Daily accumulation rate is ~2-3/work-period; 10 gives 1-day headroom.
     // Review condition: revert to threshold=3, P1 when Slice 3 ships.
   },
   // v2 infra metrics (I1-I4)
