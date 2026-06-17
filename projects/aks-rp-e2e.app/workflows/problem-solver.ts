@@ -123,33 +123,21 @@ async function runSolverStep(input: {
 
 function problemResultType(
   text: string,
-): "project.problem.resolved" | "project.problem.escalated" {
+): "project.problem.resolved" | "project.problem.escalated" | "project.problem.unknown" {
   if (/PROBLEM_RESULT:\s*resolved/i.test(text))
     return "project.problem.resolved";
   if (/PROBLEM_RESULT:\s*escalated/i.test(text))
     return "project.problem.escalated";
 
-  const lower = text.toLowerCase();
-  const looksFixed = /\b(fixed|resolved|repaired|unblocked)\b/.test(lower);
-  const looksVerified =
-    /\b(verified|verification|passed|pass|checkauth|armrequest|preflight)\b/.test(
-      lower,
-    );
-  const strongFix = /\bfixed\b/.test(lower);
-  const looksExternal =
-    /\b(escalat|human|external|quota|permission|rbac|credential|approval)\b|still blocked|cannot resolve|unable to resolve|waiting for/i.test(
-      lower,
-    );
-
-  return looksFixed && (looksVerified || strongFix) && !looksExternal
-    ? "project.problem.resolved"
-    : "project.problem.escalated";
+  // Agent didn't declare a result — don't guess from free text.
+  // The owner will see "unknown" and decide.
+  return "project.problem.unknown";
 }
 
 function emitProblemResult(
   ctx: WorkflowContext,
   input: {
-    type: "project.problem.resolved" | "project.problem.escalated";
+    type: "project.problem.resolved" | "project.problem.escalated" | "project.problem.unknown";
     problemKey: string;
     affectedTasks: string[];
     summary: string;
