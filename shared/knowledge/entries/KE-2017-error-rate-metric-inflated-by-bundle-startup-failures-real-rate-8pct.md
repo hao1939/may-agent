@@ -76,6 +76,19 @@ Positive development: `session.resume_failed` events have dropped to **zero** in
 2. A metric that filters to opCount > 0 errors would read ~8% consistently, matching the 10% target.
 3. Until the bundle is fixed, the metric will continue breaching threshold every time aks-explorer's planner fires are in the 6h window.
 
+## Validation (2026-06-17 ~10:52Z)
+
+**Prediction 1: CONFIRMED.** The aks-rp-e2e bundle errors appear largely repaired (worktree shows active workflow modifications). Current 6h window:
+- Zero-op instant failures: 17/839 total sessions (2.0%) — down from 174/724 (24%) at time of writing
+- aks-explorer zero-op errors: 13 (down from 116)
+- `session.error-rate-6h` metric: **0.1102** (11.0%) — back within the 0.30 threshold
+
+**Prediction 2: CONFIRMED.** Real agent error rate (opCount > 0 errors / total) = 55/839 = **6.6%**, below the 10% target. Matches the 4–7% range documented in the design doc annotation.
+
+**Prediction 3: PARTIALLY CONFIRMED then RESOLVED.** The metric was breaching when the bundle was broken; now that it's fixed, it has dropped back inside threshold as predicted.
+
+**KE-2016 WAL update:** The WAL file is now only 4 MB (vs 1,356 MB when KE-2016 was written). This suggests a successful checkpoint operation has run. DB main file is 1.5 GB, total disk ~1.5 GB — well below the 2 GB threshold now.
+
 ## Recommendation
 
 The threshold breach is informational — it signals a bundle compilation issue in aks-rp-e2e, not a degradation in agent reliability. No calibration change needed for the metric itself; the fix is in the aks-rp-e2e workflow code (currently showing dirty modifications in the worktree that presumably include the repair).
