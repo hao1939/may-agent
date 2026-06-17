@@ -451,6 +451,28 @@ The front page should answer whether important project apps are advancing. A
 recent timestamp is not enough if the task tree is empty, all leaves are
 blocked, or the domain model is not improving.
 
+### Runtime Self-Drive on Live
+
+The `/` live page must also answer whether the platform can keep project apps
+moving without manual refreshes. Core vitals should pin the small active runtime
+metric set before broader output metrics:
+
+- `runtime.daemon-heartbeat-stale`
+- `runtime.project-app-schedule-orphan-count-1h`
+- `session.planner-timeout-rate-6h`
+- `escalation.pending-count`
+
+These are not a separate dashboard concept. They are the first health strip
+because they tell the operator whether scheduled project-app events are turning
+into owner/workflow progress and whether human-facing escalations are
+accumulating.
+
+The `/metrics` page should show the same signals as a trend group named
+`Runtime Self-Drive`. Runtime and escalation metrics belong to the
+Infrastructure axis. Graph colors must respect metric direction:
+`alert_op: above` means lower/equal is healthy, while `alert_op: below` means
+higher/equal is healthy.
+
 ### Session Task Context
 
 `/sessions/:sessionId` should show task context when a session was spawned for a
