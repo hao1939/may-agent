@@ -65,6 +65,19 @@ Neither MCP nor A2A covers:
   in the clear — capability-labeled endpoints let an observer infer pending
   workflows. GT-MCP proposes game-theoretic transport selection. (arXiv,
   June 2026)
+- **P2P transport layer**: Both A2A and MCP assume HTTP-based communication
+  (agent cards at URLs, JSON-RPC over HTTP/SSE). An emerging alternative is
+  P2P transport using cryptographic key identity instead of URLs. Iroh
+  (iroh.computer, Rust, 848pts on HN June 2026) provides "Tailscale at the
+  application layer" — agents identified by key, not address. ramoz (eqtylab)
+  explicitly argues A2A should be built on P2P: "Every agent should be
+  reachable to each other without hosting itself as an http server." Two
+  prototypes exist: agentbeam (github.com/eqtylab/agentbeam) and real-a2a
+  (github.com/eqtylab/real-a2a). P2P transport would enable: identity without
+  registry, NAT traversal for home-hosted agents, and transport agnosticism
+  (BLE, LoRa, relay). This connects to the sovereignty cascade — local
+  model + local agent + P2P communication = fully decentralized agent system.
+  (HN, June 2026 — see findings/2026-06-15-hn-scan-8.md)
 
 ## MCP Ecosystem (June 2026)
 

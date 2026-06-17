@@ -1,8 +1,8 @@
 # GitHub Trending AI Agent Repos & Tools — June 2026
 
-**Source:** GitHub Search API (live queries, June 13, June 15, & June 20 2026)  
-**Last updated:** 2026-06-20  
-**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta (this update)
+**Source:** GitHub Search API (live queries, June 13, June 15, June 20, June 21, & July 18 2026)  
+**Last updated:** 2026-07-18  
+**Prior versions:** June 13 initial scan → June 15 delta → June 20 delta → June 21 delta → July 18 delta (this update)
 
 ---
 
@@ -667,4 +667,135 @@ This is the first scan where multiple repos independently implement the exact OS
 
 ---
 
-*Data sourced from GitHub Search API, June 13, 15, 20, & 21, 2026. Star counts are approximate and change daily.*
+## 🆕 July 18 Delta: Star Velocity, Forgetting Gap Cracked, New Categories
+
+### Star Velocity Tracker (June 21 → July 18)
+
+Notable star-count movements from the existing corpus:
+
+| Repo | Stars (Jun 21) | Stars (Jul 18) | Δ | Signal |
+|------|---------------|----------------|---|--------|
+| **obra/superpowers** | 227k | 229k | +2k | Stable plateau — foundational layer |
+| **anthropics/skills** | 147k | 151k | +4k | Continued growth, institutional pull |
+| **NousResearch/hermes-agent** | 193k | 194k | +1k | Plateaued |
+| **affaan-m/ECC** | 215k | 216k | +1k | Plateaued |
+| **aaif-goose/goose** | 47k | 49k | +2k | Rust-based agent steady growth |
+| **colbymchenry/codegraph** | 49k | 50k | +1k | Code knowledge graph stable |
+| **DietrichGebert/ponytail** | 4.5k | **14k** | **+9.5k** | 🔥 3× growth — "laziest dev" pattern resonating |
+| **HKUDS/OpenHarness** | — | **14k** | NEW | Open agent harness w/ personal agent Ohmo |
+| **hesreallyhim/awesome-claude-code** | — | **47k** | NEW-in-scan | Skills/hooks/slash-commands curation list |
+| **oraios/serena** | — | **25k** | NEW-in-scan | MCP toolkit: semantic retrieval & editing |
+| **vercel-labs/agent-skills** | — | **28k** | NEW-in-scan | Vercel's official skills collection |
+| **microsoft/SkillOpt** | 6.4k | 7.1k | +0.7k | Steady — automated skill generation |
+| **Hmbown/CodeWhale** | — | **38k** | NEW-in-scan | Open-source community-driven harness |
+
+**Key velocity signal:** ponytail's 3× growth (4.5k→14k in ~4 weeks) confirms "architectural laziness" — optimizing for NOT doing work — is a deeply resonating pattern. The repo's tagline ("Makes your AI agent think like the laziest senior dev in the room") is a cultural meme that encodes a genuine architectural insight: the cheapest session is the one that doesn't run.
+
+### 🔑 THE FORGETTING GAP CRACKS OPEN
+
+**For five consecutive scans (June 13–21), the forgetting gap was the most consistently validated negative finding: zero mainstream repos implemented memory decay.** This scan finds the first crack:
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 245 | **sachitrafa/YourMemory** | Ebbinghaus forgetting curve decay for agent memory. Claims **+16pp better recall than Mem0** on LoCoMo benchmark. MCP-native, PgVector-backed. | Python | Mar 2026 |
+
+**Why this matters:** YourMemory is the first repo in five scans to implement scientifically-grounded forgetting (Ebbinghaus curve, not random deletion). At 245★ it's still niche, but the benchmark claim (+16pp over Mem0, a 59k★ project) is provocative — it suggests forgetting **improves** recall, not just saves storage. This directly validates KE-1920 (Forgetting Deficit): the gap persists in the mainstream (mem0, cognee, letta, beads — all still append-only), but the research-to-practice bridge has its first plank.
+
+**Two additional forgetting-adjacent repos detected:**
+
+| Stars | Repo | What It Does | Created |
+|-------|------|-------------|---------|
+| 82 | **AIPMAndy/dna-memory** | "Memory that learns, forgets, and evolves" — brain-inspired lifecycle | Mar 2026 |
+| 218 | **varun29ankuS/shodh-memory** | Cognitive memory that "forgets what's irrelevant" | Dec 2025 |
+
+Both are sub-250★ and unproven, but the signal is clear: forgetting is entering the implementation phase. The five-scan zero has become a three-repo trickle. Mainstream adoption remains absent.
+
+### New Category: Governance-as-Skill
+
+A new pattern where **governance mechanisms themselves are packaged as installable skills** — not external enforcement, but self-governing capabilities the agent carries.
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 750 | **amElnagdy/guard-skills** | Quality gates as agent skills — catch AI-generated failure modes in code, tests, and docs | N/A | Jun 2026 |
+| 518 | **berabuddies/Semia** | Security audit for AI agent skills (audit the skills themselves) | Python | May 2026 |
+| 823 | **denoland/clawpatrol** | Security firewall for agents (Deno team) | Go | Apr 2026 |
+| 1,867 | **YeQing17-2026/OmniAgent** | Self-evolving agent with dynamic security hardening | Python | Apr 2026 |
+
+**Why this matters:** guard-skills (750★, 9 days old) is the first repo that packages **governance as a skill** — the agent carries its own quality gates as portable capabilities, not as external enforcement. This is the Compilation Gradient's terminal stage: governance compiled so deeply it becomes indistinguishable from capability. Semia inverts this by auditing the skills themselves — governance OF skills, not governance AS skills.
+
+**Connection to KE chain:** This pattern is precisely the "compliance-by-construction" principle (2606.13405) from arXiv, the "structural turn" from XHS (KE-1927), and the resolution predicted by the Guard Paradox (KE-1996): behavioral warnings (0.27% conversion) are replaced by structural skills that make violations impossible.
+
+### New Category: Institutional Science Skills
+
+Google DeepMind enters the skills economy directly with domain-specific scientific capabilities:
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 1,899 | **google-deepmind/science-skills** | GDM Science Skills — AlphaGenome, AFDB, UniProt, 30+ databases. Better grounding, higher token efficiency | Python | May 2026 |
+
+**Why this matters:** This is the first **institutional research lab** publishing domain skills (not a startup, not a community effort). GDM's entry signals that skills-as-code has become the default distribution format for domain capabilities — even for frontier research tools. The skills wrap access to proprietary databases (AlphaGenome, AlphaFold DB) behind agent-friendly interfaces, creating a distribution channel that didn't exist 6 months ago.
+
+### New Category: Layered Memory Operating Systems
+
+Memory is evolving from flat key-value stores to multi-layer architectures:
+
+| Stars | Repo | What It Does | Language | Created |
+|-------|------|-------------|----------|---------|
+| 1,114 | **ClaudioDrews/memory-os** | 7-layer memory OS for Hermes Agent: persistent memory with Qdrant, structured facts, fabric recall, auto-curated wiki, surgical context injection | Python | May 2026 |
+| 1,006 | **PaperGuru-AI/PaperGuru-Benchmark** | Lifecycle-Aware Memory for long-horizon agents — 66.05% on PaperBench | TeX | May 2026 |
+| 5,506 | **holaboss-ai/holaOS** | Local-first agent with learning context, forgetting-aware | Python | Mar 2026 |
+
+**Key signal:** memory-os at 1.1k★ (2 weeks old) implements the most structured memory architecture yet: 7 explicit layers from raw context to curated wiki. PaperGuru-AI's "Lifecycle-Aware Memory" explicitly treats memory lifecycle (creation → maturation → decay) as a first-class concern. Combined with YourMemory's Ebbinghaus curves, the ecosystem is moving from "memory = append" to "memory = managed lifecycle."
+
+### New Notable Individual Repos
+
+| Stars | Repo | What It Does | Why Notable |
+|-------|------|-------------|-------------|
+| 3,701 | **datawhalechina/Agent-Learning-Hub** | AI Agent learning roadmap (trilingual CN/EN/TW) | Chinese community systematizing agent education |
+| 2,893 | **google/agents-cli** | CLI + skills for expert agent evaluation, testing | Google entering agent evaluation tooling |
+| 3,194 | **vercel-labs/deepsec** | Security harness for code vulnerability scanning | Vercel's security entry — harness-first approach |
+| 891 | **plannotator/effective-html** | Skill for HTML plans, architecture diagrams, roadmaps | Agent-generated documentation/diagrams |
+| 665 | **orange2ai/renwei-writing** | "人味儿写作" — writing skill that preserves human voice | Cultural signal: preserving humanity in agent output |
+
+### Updated Architecture Patterns (July 18)
+
+| Pattern | Status (Jun 21) | Status (Jul 18) | Key Change |
+|---------|-----------------|-----------------|------------|
+| **Governance-as-Skill** | (not tracked) | 🆕 Emerging | guard-skills, Semia: governance packaged as portable capability |
+| **Memory Lifecycle** | Still zero forgetting | 🆕 **Gap cracking** | YourMemory (Ebbinghaus), memory-os (7-layer), PaperGuru (lifecycle-aware) |
+| **Institutional Skills** | (community-driven) | 🆕 Institutional | Google DeepMind science-skills — labs publishing domain skills directly |
+| **Skills-as-Code** | 🔥 Hyper-saturated | ✅ **Post-saturation: specialization phase** | From "everything is a skill" to specialized verticals (science, security, governance) |
+| **Token-Efficient Agents** | 🆕 Crystallizing | 🔥 **Confirmed trend** | ponytail 3× growth proves "do less" resonates |
+| **Agent Security** | 🔥 Growing | 🔥 **Maturing — three sub-patterns** | Firewall (clawpatrol), skill audit (Semia), self-hardening (OmniAgent) |
+| **Harness Engineering** | ✅ Meta-phase | ✅ **Ecosystem-level** | OpenHarness 14k★ — open frameworks for building harnesses on harnesses |
+| **Agent Memory** | 🔥 Still no forgetting | 🔥 **Forgetting entering tooling** | Five-scan zero finally broken; still niche |
+| **Context Engineering** | ✅ Mature | ✅ Mature | Stable; absorbed into skills and harness patterns |
+| **Agent MicroVMs** | 🆕 Early signal | 🔥 Growing | forkd at 2.4k★, rmux at 1.8k★ |
+
+### The Forgetting Gap: Status Change — From "Zero" to "Trickle"
+
+After five consecutive scans (June 13, 15, 20, 21) with **zero** forgetting implementations, this scan finds three repos implementing memory decay or lifecycle management. The mainstream (mem0 at 59k★, cognee at 18k★, letta at 23k★) remains append-only. But the research-to-practice gap that has been the widest in the agent landscape for a month is now showing its first bridge spans.
+
+| Status | Repos | Evidence |
+|--------|-------|----------|
+| **Mainstream (>5k★)** | 0/12 implement forgetting | All append-only as of Jul 18 |
+| **Emerging (200–5k★)** | 3 implement forgetting | YourMemory (245★), shodh-memory (218★), dna-memory (82★) |
+| **Lifecycle-aware (>1k★)** | 2 treat lifecycle explicitly | memory-os (1.1k★), PaperGuru (1k★) |
+
+**Prediction update:** Prior scans predicted the forgetting gap would persist. **Revised prediction:** At least one forgetting-aware memory repo will cross 1k★ within 3 months (by Oct 2026). The Ebbinghaus-curve approach (YourMemory's +16pp claim) may force mainstream repos to add decay as a competitive feature.
+
+### Cross-Reference Updates (July 18 KE Connections)
+
+| GitHub Trend (Jul 18) | Related KE | Connection |
+|----------------------|-----------|------------|
+| YourMemory (forgetting curve) | KE-1920 (Forgetting Deficit) | First tooling-level implementation of forgetting; validates deficit thesis AND shows improvement from forgetting |
+| guard-skills (governance-as-skill) | KE-1996 (Guard Paradox) | Governance compiled into portable skill = Compilation Gradient terminus |
+| ponytail 3× growth | KE-1968, KE-2001 (Heartbeat Tax, Phantom Metabolism) | "Do nothing" as the optimal action — the community pricing in abstention value |
+| OpenHarness (open harness framework) | KE-1924 (Constraint Placement) | Harness engineering → harness frameworks → harness ecosystem |
+| GDM science-skills | KE-1915 (Skills Absorption) | Institutional validation: even frontier labs use skills-as-code distribution |
+| Semia (skill audit) | KE-2010 (Evaluation Mirage) | Audit the governance mechanism, not just the agent — meta-evaluation |
+| memory-os (7-layer) | KE-1975 (OS Recapitulation) | Memory management as explicit OS layer; validates layered-OS trajectory |
+
+---
+
+*Data sourced from GitHub Search API, June 13, 15, 20, 21, & July 18, 2026. Star counts are approximate and change daily.*

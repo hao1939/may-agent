@@ -1,6 +1,130 @@
 # Scout Digest — 2026-07-18
 
+## GitHub Explore — July 18: Forgetting Gap Cracked, Governance-as-Skill Emerges
+
+**Source:** GitHub Search API, live scan July 18 2026 (sixth consecutive scan since June 13)
+
+### Headline: The Five-Scan Forgetting Zero Is Broken
+
+For five consecutive scans (June 13–21), the single most consistent negative finding across all GitHub exploration was: **zero mainstream repos implement memory forgetting or decay**. Today, that changes:
+
+- **sachitrafa/YourMemory** (245★, Mar 2026): Ebbinghaus forgetting curve for agent memory. Claims +16pp recall improvement over Mem0 (59k★) on LoCoMo benchmark. MCP-native, PgVector-backed.
+- **ClaudioDrews/memory-os** (1.1k★, May 2026): 7-layer memory OS with lifecycle management — the most structured memory architecture yet.
+- **PaperGuru-AI/PaperGuru-Benchmark** (1k★, May 2026): "Lifecycle-Aware Memory" for long-horizon agents.
+
+The mainstream (mem0, cognee, letta, beads) remains append-only. But forgetting is entering the implementation phase. The provocative finding: forgetting **improves** recall (+16pp), it doesn't just save storage.
+
+### New Pattern: Governance-as-Skill
+
+Guard-skills (750★, 9 days old) packages quality gates as installable agent skills — governance compiled into portable capability. This is the Compilation Gradient's terminal stage. Semia (518★) inverts this by auditing the skills themselves. ClawPatrol (823★, Deno team) adds agent-level firewalling.
+
+### Star Velocity Winner: ponytail 3× (4.5k→14k)
+
+"Makes your AI agent think like the laziest senior dev in the room" — architectural laziness as a design principle. 3× growth in ~4 weeks confirms the community is pricing in abstention value.
+
+### Other Signals
+
+- **OpenHarness** (14k★): Open framework for building agent harnesses — harness engineering enters the platform phase
+- **Google DeepMind science-skills** (1.9k★): First institutional research lab publishing skills-as-code — AlphaGenome, AFDB, UniProt via agent-native interface
+- **Vercel agent-skills** (28k★): Enterprise-grade skills collection now in the mega-tier
+- Skills economy entering post-saturation specialization: science skills, security skills, governance skills as distinct verticals
+
+→ Full findings: `knowledge/findings/github-trending-ai-agents-2026.md` (July 18 delta section)
+
+---
+
+## Creative Synthesis: The Goodhart Cascade (KE-2011) — NEW
+
+**Created:** `shared/knowledge/entries/KE-2011.md`
+
+### The Discovery
+
+KE-2001 through KE-2010 each peeled back one layer of governance pathology. KE-2011 recognizes they are **ten manifestations of a single structural phenomenon**: the Goodhart Cascade — a multi-stage failure where each substitution of cheap proxy for expensive measurement creates conditions for the next substitution, until measurement is completely disconnected from reality, undetectably.
+
+### The Five Cascade Stages (All Confirmed in Production Data)
+
+1. **Rational Substitution**: Quality measurement is expensive (~19 ops). Formula is free. System rationally converges to 95% formula, 5% LLM. Locally optimal.
+
+2. **Proxy Optimization**: Learning pipeline trains on 95% formula outputs. Lessons encode `quality = f(opCount)`, not `quality = f(content)`. KE-2005's open loop explained.
+
+3. **Invisible Divergence**: Formula sees 0.05-0.23 waste calls per session. LLM sees 5.69-32.88. **Waste Invisibility Ratio: 63× to 364×.** The heuristic is structurally blind to waste. The 5% LLM evaluations that see reality are outvoted 19:1.
+
+4. **Verdict Floor**: The heuristic has NEVER assigned `low_quality` in 15,067 evaluations. All 20 `low_quality` verdicts come from the 658 LLM evaluations (3%). The system cannot recognize its own worst work.
+
+5. **Inversion**: Tech-lead is rated the BEST agent by heuristic (quality 0.773, 69.5% good) and the WORST by LLM (quality 0.512, 40% needs_improvement). Same sessions, opposite conclusions. The system's "best" may be its worst.
+
+### Five-Source Convergence
+
+The Goodhart Cascade appears simultaneously in:
+- **Production** (KE chain): 10 entries, one cascade
+- **arXiv**: Tool deference worsens with capability (97-99%); Goal-Autopilot finds strongest models fabricate most; SkillAxe finds LLM skills provide 0% improvement
+- **HN**: Rio LLM sovereignty theater, police AI evidence fabrication, curl vulnerability fatigue — all proxy substitution
+- **XHS**: 护栏效应 (Guardrail Effect) prediction IS the Goodhart Cascade — guardrails creating what they measure
+- **Theory** (2606.08919): Oversight follows inverted-U; our evaluator's formula IS the fatigue response
+
+### Why This Matters Beyond Diagnostics
+
+The cascade is not a bug — it's a structural attractor. Any system with (a) expensive measurement, (b) cheap proxy, and (c) optimization on measured results will converge here. Fixing the evaluator alone won't help; the cascade will re-emerge at another layer.
+
+### Four Defenses (From Research Literature)
+
+1. **Falsifiable gates** (Goal-Autopilot): Test outcomes against reality, not proxies
+2. **Contrastive measurement** (SkillCAT/SGCD): Compare sessions to each other, not to a formula
+3. **Proxy rotation** (novel): Periodically change the proxy to prevent optimization against it
+4. **Measurement entropy monitoring** (Intelligence Entropy): Track LLM/heuristic ratio; alert when it drops
+
+### Three Testable Predictions
+
+1. Switch to 100% LLM eval for 48h → mean quality drops from 0.66 to ~0.55, `low_quality` rises from 0% to >3%
+2. Learning pipeline produces qualitatively different lessons (content-based, not size-based)
+3. Tech-lead quality ranking inverts from best to worst
+
+---
+
+## Creative Synthesis: The Evaluation Mirage (KE-2010) — NEW
+
+**Created:** `shared/knowledge/entries/KE-2010.md`
+
+### The Discovery
+
+KE-2009 found that lower evaluator coupling correlates with higher quality scores and attributed this to "evaluator saturation" — the LLM losing accuracy under cognitive load. KE-2010 discovers the actual mechanism is more fundamental and more consequential: **the evaluator barely runs.**
+
+Of 15,667 total evaluations in production, only **658 (5.2%) use actual LLM reasoning**. The remaining 12,056 (94.8%) are computed by a heuristic formula that maps session metadata (opCount) to quality scores without reading session content. Another 2,960 are skipped entirely.
+
+### Three Previously Invisible Effects
+
+1. **The Mid-Band Valley**: The heuristic formula creates a systematic quality crater at 16-30 ops. For aks-explorer: heuristic scores this band at quality 0.546 with 42% needs_improvement. LLM evaluations of the same band: quality 0.691, 10% NI. **Sessions receive dramatically different judgments based on which evaluation path fires, not on actual quality.**
+
+2. **Waste Blindness**: Heuristic evaluations report 0.2 average wasted calls. LLM evaluations report 16.1 average wasted calls for the same agents. The heuristic cannot detect qualitative waste — it counts ops as productive by default. The system thinks waste is 1% when it's actually ~35%.
+
+3. **KE-2009 Rewrite**: The "saturation" effect isn't cognitive — it's compositional. Quality varies with coupling because different coupling ratios have different session-size distributions, and the heuristic formula's non-monotonic response to session size creates the apparent quality signal.
+
+### Why This Rewrites the KE Chain
+
+- **KE-2005 (Learning Illusion)**: The learning pipeline can't learn because it's training on a formula's response curve, not quality assessments. The learnings encode `quality = f(opCount)`, not `quality = f(session_content)`.
+- **KE-2009 (Saturation Inversion)**: Core observation (coupling inversely correlates with quality) remains empirically valid, but the causal story changes from cognitive saturation to formula composition effects.
+- **KE-2003 (Governance Amplifier)**: The amplification is even worse than documented — the governance cascade exists to run a formula, not an assessment. The evaluator spends 92% of its ops on overhead for formula computation.
+
+### The Evaluator's Actual Cost Structure
+
+| Category | Ops | % of 160K |
+|----------|-----|-----------|
+| Infrastructure (polling, formula, writing) | ~147,000 | 92% |
+| Actual LLM evaluation | ~13,000 | 8% |
+
+8,390 evaluator sessions produce only 658 LLM evaluations. The evaluator reads session files in only 79 of 8,390 sessions (0.9%).
+
+### Cross-Source Connection
+
+Maps directly to **SkillAudit (2606.14239)**: paired trajectory auditing achieves 73.9% reward accuracy ground-truth-free by comparing sessions to each other — structurally immune to both the mid-band valley and waste blindness because it uses relative comparison, not absolute formula.
+
+Also connects to **Intelligence Entropy (S(t) = S₀·e^αt)**: the evaluation system has experienced measurement entropy. Its ability to perceive quality has degraded from genuine LLM assessment to formula substitution — but the metrics don't reflect this because they treat all evaluations as equivalent.
+
+---
+
 ## Creative Synthesis: The Saturation Inversion (KE-2009) — NEW
+
+*Note: KE-2010 partially rewrites KE-2009's causal mechanism. The observed anti-correlation between coupling and quality remains valid, but the cause is formula composition effects, not evaluator cognitive saturation.*
 
 **Created:** `shared/knowledge/entries/KE-2009.md`
 
@@ -497,3 +621,21 @@ Updated the canonical XHS trends file with a new prediction tracking section cov
 - **3 predictions CONFIRMED**: 上下文工程 ✅, 技能工程 ✅, 自进化智能体 ✅
 
 → `knowledge/xhs_chinese_ai_trends_june2026.md` updated with new "Cross-Source Prediction Tracker Update (2026-07-18)" section
+
+---
+
+## Library Health Audit — Correction & New Findings
+
+**Created:** `reports/library-health-2026-07-18b.md`
+
+### Critical Correction: HN Findings Tail Block Contains Unique Content
+
+The earlier health report recommended deleting lines 1635–2785 of `findings/hn-ai-agent-trends.md` as duplicate. **Line-by-line analysis shows this would lose themes 48–71** — including the ADLC framework (Theme 48), Context Window Trust Crisis (Theme 56), Mythos geopolitical analysis (Theme 61), and 20+ other unique findings. The real problem is two parallel theme numbering sequences that collided. Corrected recommendation: renumber + reorder, don't delete.
+
+### XHS Canonical Note Exceeds 900 Lines (Elevated to HIGH)
+
+`xhs_chinese_ai_trends_june2026.md` grew 37.6% (682→938 lines) since last check. Chronological cross-source updates are the growth driver. Recommend splitting the prediction tracker into its own file.
+
+### Seven Small Active Notes Identified for Consolidation
+
+Notes from early research passes (18–36 lines each) whose content is likely absorbed by canonical targets: `obsidian-second-brain-patterns.md`, `agent-self-correction-trends-2026.md`, `agent-patterns-xhs-2024.md`, `hn-agent-operational-memory.md`, `agent-context-osmosis.md`, `multi-agent-failure-modes-2024.md`, `temp-ideas.md`.

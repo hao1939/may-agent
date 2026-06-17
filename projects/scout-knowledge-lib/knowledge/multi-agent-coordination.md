@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical reference for multi-agent coordination patterns, synthesized from 11 overlapping notes spanning 2024–2026 research passes."
 triggers: ["multi-agent coordination", "agent orchestration", "stigmergy", "multi-agent frameworks", "agent message passing", "metric-driven coordination"]
-last_updated: "2026-06-14"
-source_basis: "Consolidated from: multi-agent-coordination-2024.md, multi-agent-coordination-trends.md, multi-agent-trends-2026.md, multi-agent-trends-v1.md, multi_agent_coordination.md, multi_agent_trends.md, multi_agent_trends_hn.md, multi_agent_trends_may2024_synthesis.md, recent-oss-coordination.md, metric-driven-agent-coordination-2026.md, agent-stigmergy-and-critics.md. Original sources: arXiv, Hacker News, GitHub trending, XHS/Chinese AI communities, academic surveys."
+last_updated: "2026-06-15"
+source_basis: "Consolidated from: multi-agent-coordination-2024.md, multi-agent-coordination-trends.md, multi-agent-trends-2026.md, multi-agent-trends-v1.md, multi_agent_coordination.md, multi_agent_trends.md, multi_agent_trends_hn.md, multi_agent_trends_may2024_synthesis.md, recent-oss-coordination.md, metric-driven-agent-coordination-2026.md, agent-stigmergy-and-critics.md. Original sources: arXiv (incl. batch 7 — ConMem, Orchestra-o1), Hacker News, GitHub trending, XHS/Chinese AI communities, academic surveys."
 </ai_context>
 
 # Multi-Agent Coordination Patterns
@@ -10,9 +10,8 @@ source_basis: "Consolidated from: multi-agent-coordination-2024.md, multi-agent-
 This is the canonical reference for multi-agent coordination knowledge.
 Supersedes 11 overlapping notes from different research passes (2024–2026).
 
-For stigmergy deep-dives see also:
-[context-stigmergy-synthesis.md](./context-stigmergy-synthesis.md),
-[multi-agent-stigmergy.md](./multi-agent-stigmergy.md).
+*(Stigmergy satellite notes — context-stigmergy-synthesis.md,
+multi-agent-stigmergy.md — have been superseded into this file.)*
 
 ---
 
@@ -137,8 +136,10 @@ Less-proven but notable directions from arXiv and HN (2025–2026):
 - **Coordination as Distinct Bottleneck (Alem):** Open-ended multi-agent benchmark ([2606.08340]) shows **individual task competence does not imply coordination competence**. 13 frontier LLMs average ~6% normalized return. GPT-5.4-High achieves strong base-task reward but much lower coordination reward. Communication is the largest contributor to coordination; memory and reasoning help only when maintaining multi-step plans. *(arXiv [2606.08340])*
 - **Multiagent Confidence Protocols:** First method for producing and evaluating a single aggregated confidence for multi-agent system outputs. Calibrated Bayesian fusion across heterogeneous debating pairs is substantially more discriminative than best single agent. *(arXiv [2606.13591])*
 - **Deterministic Orchestration (Microsoft Conductor):** LLM decides *what* to do; routing and dispatch are deterministic. Compliance-by-construction applied to workflow orchestration. Source: https://opensource.microsoft.com/blog/2026/05/14/conductor-deterministic-orchestration-for-multi-agent-ai-workflows/
+- **Relation-Aware Memory for Multi-Agent Coordination (ConMem, arXiv June 2026):** Training-free framework that distills historical trajectories into **structured memory cards** organized in a **relation-aware memory graph**. At runtime, retrieves cards by task needs and coordinates through the graph to resolve strategy conflicts and recover dependencies. Prunes 50%+ of expanded candidates and reduces planning overhead by 80%+. Key insight: memory *organization* (structured cards with explicit relations and conflict resolution) matters more than memory volume. Flat file storage without dependency/conflict relationships misses the key coordination primitive. *(arXiv [2606.08702], Tan, Chen, Huang, Su, Chen, Jun 2026)*
+- **Omnimodal Agent Orchestration (Orchestra-o1, arXiv June 2026):** Orchestration framework for collaboration across text, image, audio, and video. Introduces modality-aware task decomposition, online sub-agent specialization, and parallel sub-task execution (+10.3% over second-best). **Decision-Aligned Group Relative Policy Optimization (DA-GRPO)** trains the orchestrator's decision-making, not the sub-agents' capabilities. Key insight: "train the orchestrator, not the workers" — improvement comes from the coordination layer. Orchestra-o1-8B achieves SotA against all existing open-source omnimodal agents. *(arXiv [2606.13707], Zhang et al., Jun 2026)*
 
-*(Sources: multi-agent-coordination-trends.md, multi_agent_trends_hn.md, multi_agent_coordination.md, multi-agent-stigmergy.md, findings/2026-07-17-arxiv-github-hn-triage.md)*
+*(Sources: multi-agent-coordination-trends.md, multi_agent_trends_hn.md, multi_agent_coordination.md, multi-agent-stigmergy.md, findings/2026-07-17-arxiv-github-hn-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md)*
 
 ---
 

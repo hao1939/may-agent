@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical reference for agent evaluation patterns and testing tooling: live benchmarks, execution-trace verification, reviewer agents, operational metrics (MTBF, CPT, context efficiency), XHS community trends, and June 2026 testing tooling landscape (promptfoo, RagaAI, Layer-Isolated methodology, CI containment tools)."
 triggers: ["evaluation", "benchmark", "reviewer agent", "feedback", "Agent-Eval-Agent", "evaluator agent", "gym", "MTBF", "context efficiency", "trajectory", "testing tooling", "promptfoo", "agent testing", "CI agent", "layer-isolated"]
-last_updated: "2026-07-16"
-source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, and findings/2026-06-14-arxiv-agent-triage.md."
+last_updated: "2026-07-18"
+source_basis: "Consolidated from agent-evaluation.md, agent-evaluation-trends.md, agent-evaluation-trends-updated.md, xhs-eval-synthesis-2024.md, and xhs_eval_trends_may2024.md. Testing tooling section added from findings/github-trending-ai-agents-2026.md, findings/2026-06-17-arxiv-ai-agent-triage.md, findings/hn-ai-agent-trends.md, findings/2026-06-14-arxiv-agent-triage.md, findings/2026-06-15-arxiv-agent-triage-batch7.md. Batch 6 sourcing: Multiagent Confidence Protocols, Intelligence Entropy evaluation dimension."
 </ai_context>
 
 # Agent Evaluation Patterns
@@ -215,6 +215,78 @@ Pi) absorbs these features faster than standalone tools can capture value.
 Standalone agent testing/observability faces the same absorption dynamic.
 
 *Sources: [GitHub Trending](./findings/github-trending-ai-agents-2026.md), [XHS June 2026](./xhs_chinese_ai_trends_june2026.md) §Prediction Tracking*
+
+### Ground-Truth-Free Skill Evolution — SkillAudit (arXiv, June 2026)
+
+SkillAudit ([2606.14239]) evolves agent skills without ground-truth feedback.
+Key mechanism: **paired trajectory auditing** — at each iteration, the same
+task executes with and without the candidate skill, isolating behavioral
+changes without external labels. Process-Aligned Contrastive Evaluation (PACE)
+maps trajectory divergences to diagnostic signals linked to specific skill
+document passages. A structural verifier (compiled once, then fixed) checks
+constraints and rolls back harmful updates.
+
+Results: **73.9% average task reward** vs. 40.9% no-skill and 56.7% static
+expert skill across 89 containerized tasks in 8 domains.
+
+- **Key implication**: Single-trajectory skill analysis is unreliable.
+  Contrastive comparison of paired outcomes (with/without skill) is the only
+  reliable extraction method — confirming SkillCAT's contrastive finding.
+  The structural verifier compiled from the task spec is a concrete instance
+  of compliance-by-construction (Compilation Gradient Stage 3). Our lesson
+  learning should compare succeeded vs. failed sessions on similar tasks,
+  not accumulate lessons from individual sessions.
+- **Aligns with**: Contrastive Skill Evolution pattern (agent-architectures.md),
+  SkillCAT paired trajectories, SkillAxe quality decomposition.
+- **Source**: [2606.14239] Gao, Chen, Wang, Guo, Pang, arXiv June 2026.
+
+### Production Context Engineering at Scale — Nubank (arXiv, June 2026)
+
+First production-scale report ([2606.08867]) combining structured context
+engineering with evaluation methodology at 100M+ users. Integrates:
+(1) structured context engineering tailored to customer support,
+(2) systematic HITL prompt iteration, (3) rigorous evaluation bridging
+offline development with online impact.
+
+Key insight: the three pillars (evaluation, context engineering, training) are
+"typically developed in isolation, creating blind spots that only surface after
+deployment." The unified framework bridges offline and online evaluation.
+
+- **Key implication**: Validates "Less Context, Better Agents" in production.
+  Our system currently has evaluation (heuristic evaluator) and context
+  engineering (context.md files) but they're not connected — blind spots from
+  isolated development apply to our architecture. The unified framework is
+  what the Representation Gap synthesis called a "bridge" between circuits.
+- **Source**: [2606.08867] Gupta, Rossell, Alcobaça, Pacheco (Nubank).
+
+### Multiagent Confidence Protocols — System-Level Confidence (arXiv, June 2026)
+
+No existing method produces a calibrated confidence signal for the output of
+a multi-agent system (as opposed to individual agent outputs). Proposes
+aggregation via calibrated Bayesian fusion across heterogeneous debating pairs.
+Aggregated confidence is "substantially more discriminative" than best single
+agent or standard debate baselines.
+
+- **Key implication**: Calibrated system-level confidence signals would expose
+  when apparent agreement masks underlying disagreement (the Consistency
+  Illusion). Multi-agent evaluation needs a confidence dimension alongside
+  agreement metrics. Our system currently has no confidence calibration —
+  agreement across agents is treated as quality evidence without measuring
+  whether that agreement reflects aligned reasoning.
+- **Source**: [2606.13591] Elahi, Di Eugenio, arXiv June 2026.
+
+### Intelligence Entropy — Degradation as Measurable Physical Constraint (arXiv, June 2026)
+
+System entropy — measured as loss of output consistency, task accuracy, and
+cross-session coherence — increases monotonically per S(t) = S₀ · e^(α·t).
+The empirical α parameter is measurable across architectures, enabling
+quantitative comparison of governance interventions by their α reduction.
+
+- **Key implication**: Evaluation should track **system entropy growth rate**
+  (α) as a fundamental metric. Individual session quality scores mask
+  exponential system-level degradation. A rising α is the leading indicator
+  that governance is failing, detectable before session-level metrics degrade.
+- **Source**: [2606.08162] Liu, arXiv June 2026. (See also agent-architectures.md)
 
 ## Related Notes
 - [Agent Self-Correction Trends 2026](./agent-self-correction-trends-2026.md)

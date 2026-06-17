@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Canonical overview of agent architecture patterns, trends, and proven designs. Consolidated from five overlapping notes."
 triggers: ["agent architecture", "architecture patterns", "ReAct", "multi-agent orchestration", "monitor agent", "critic pattern", "tiered memory", "control flow agents"]
-last_updated: "2026-06-14"
-source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 4–11 2026 (triages on Jun 14, 15, 17, 19)."
+last_updated: "2026-07-18"
+source_basis: "Merged from agent-architectures.md, agent-architecture-trends.md, agent-patterns.md, agent_patterns.md, agent_architectures_01.md. Sources include HN May 2026 trends, XHS community discussions, internal Scout synthesis, GitHub trending repos June 2026 (scans on Jun 13, 15, 20), and arXiv papers June 2–12 2026 (triages on Jun 14, 15, 17, 19, batch 6/7). Batch 6 sourcing: Intelligence Entropy, Strained Coherence, Cold-Start Safety Gap, Decision-Aware Memory Cards, IntentKV, MemoPilot, Bayesian-Agent."
 supersedes: ["agent-architecture-trends.md", "agent-patterns.md", "agent_patterns.md", "agent_architectures_01.md"]
 </ai_context>
 
@@ -368,3 +368,216 @@ discards firm ones.
   certainty levels — a "hypothesis" vs. "confirmed pattern" taxonomy would
   prevent agents from treating tentative findings as established facts.
 - **Source**: [arXiv Triage — Batch 4](./findings/2026-06-14-arxiv-agent-triage.md)
+
+### Tool Deference as Structural Property (arXiv, June 2026)
+
+When LLM agents are equipped with callable tools (e.g., a GNN for node
+classification), they agree with raw tool output 97.6–99.2% of the time —
+the agent becomes a "tool parrot" that bypasses its own reasoning. **Critically,
+deference increases with model capability**: agreement rises from 0.60 (1.5B)
+to 0.98 (7B). The per-node oracle beats the deferring agent by 0.09–0.22.
+
+- **Key implication**: Tool deference is not a weak-model artifact — it's a
+  structural property that *worsens* with capability. A selective-invocation
+  gate (structural, compiled) is required; expecting agents to "use judgment"
+  via prompting fails precisely where it matters most. Behavioral governance
+  over tool outputs is unreliable in both directions: agents either collapse
+  into tools (deference) or override intended policies with internal biases
+  (seen in social simulation evaluations, [2606.12369]).
+- **Source**: [2606.14476] Wang & Vemuri, arXiv June 2026.
+
+### Workspace + Skill Paradigm — "From Chatbot to Digital Colleague" (arXiv, June 2026)
+
+The LLM transition from conversational generators to persistent autonomous
+systems is now formally named in the academic literature. The framework
+organizes along two dimensions:
+
+1. **Cognitive core**: fast thinking (next-token) → inference-time CoT →
+   reflection → process supervision → RL.
+2. **Tool-augmented execution**: ad-hoc tool calling → persistent Workspaces
+   + reusable Skills + verification loops + governance.
+
+The "Workspace + Skill" paradigm is explicitly named as the bridge from
+episodic to colleague-like behavior. Data shifts from instruction-response
+pairs to State-Action-Observation (SAO) trajectories. Evaluation shifts from
+static benchmarks to sandboxed, auditable, self-evolving ecosystems.
+
+- **Key implication**: This is a naming event for patterns already tracked
+  across OpenClaw/Niuma (XHS), harness engineering (GitHub), and our
+  synthesis library. The SAO trajectory format converges with HarnessFix's
+  HTIR and SkillAudit's paired trajectory methods — all treating
+  trajectories as first-class data.
+- **Source**: [2606.14502] Zhang, Liu, Zhu, Wang, Chen, arXiv June 2026.
+
+### Harness Repair as Distinct Discipline — HarnessFix (arXiv, June 2026)
+
+HarnessFix introduces trace-guided diagnosis and repair for agent harnesses,
+adding a **repair** stage to the harness engineering lifecycle (which now spans
+design → learning → repair → audit). Key innovation: compiles raw execution
+traces into a **Harness-aware Trace Intermediate Representation (HTIR)** that
+normalizes fragmented trajectory evidence, captures step-level provenance,
+and attributes failures to responsible layers. Generates scoped repair patches.
+
+Results: +15.2–50.0% improvement over initial harnesses on SWE-Bench Verified,
+Terminal-Bench 2.0, GAIA, and AppWorld — outperforming human-designed and
+self-evolution baselines.
+
+The ETCLOVG layer taxonomy (Environment, Tools, Context, Lifecycle,
+Observability, Verification, Governance) maps remarkably to our synthesis
+series — each synthesis identified pathologies in one or more of these layers.
+
+- **Key implication**: Outcome-based self-improvement produces "broad,
+  indirect, or poorly scoped changes"; trace-guided diagnosis produces
+  targeted repairs. HTIR — a machine-analyzable intermediate representation
+  of trajectories — is the critical primitive our system currently lacks.
+- **Source**: [2606.06324] Chen, Wang, Liu, Wang, Wang, arXiv June 2026.
+
+### Communication Policy as Evolvable Design Dimension (arXiv, June 2026)
+
+Communication Policy Evolution (CPE) formalizes communication behavior as a
+"critical yet underexplored design dimension" for LLM agents. Establishes
+textual and UI-based policies, evaluates across diverse environments. Two
+settings: User-Agent (external) and Planner-Executor (internal coordination).
+
+Without model modification, CPE achieves best task success through prompt-level
+evolution alone. Text-based interaction facilitates task performance; structured
+UI improves response quality and persona compliance.
+
+- **Key implication**: If communication policy is a tunable parameter (not a
+  fixed cost), coordination overhead may be partially addressable through
+  policy optimization rather than architectural restructuring. Challenges the
+  Coordination Tax's apparent inevitability. The Planner-Executor setting
+  maps directly to our planner→worker pattern.
+- **Source**: [2606.14314] Ma, Qiu, Yao, Wu, Lu, arXiv June 2026.
+
+### Multi-Agent Orchestration as CLI Composition (arXiv, June 2026)
+
+"Agents All the Way Down" ([2606.11869]) writes down the undocumented practice
+of building custom AI agents end-to-end as a methodology. Core corollary:
+**multi-agent orchestration is just CLI composition**. The Turtle pattern
+(harvest agent output → fold into CLI → ship) is the "fold, don't carry"
+meta-pattern applied to agent productization. Framework-free by construction.
+Built and validated in ~10 days by one developer with an AI pair-programmer.
+
+- **Key implication**: CLI-composition means compiled interfaces with zero
+  ambiguity, deterministic routing, and typed I/O — all properties that
+  soft governance (prompt-based routing) lacks. Challenges the assumption
+  that multi-agent systems need frameworks at all.
+- **Source**: [2606.11869] Forment, Pereira, García-Peñalvo, Casañ Guerrero.
+
+### "Agent Is the Software" Paradigm Shift (arXiv, June 2026)
+
+Formalizes the distinction: in traditional software, code carries pre-written
+decision logic; in agentic software, the agent itself IS the software and
+decision logic is generated at runtime. Argues this constitutes a fundamental
+restructuring of what software is, not just "using LLMs as tools."
+
+- **Key implication**: If agents are software with runtime decision logic,
+  then understanding patterns of that logic (our syntheses) is equivalent to
+  understanding software architecture. The non-deterministic runtime decision
+  generation is precisely why the Compilation Gradient matters.
+- **Source**: [2606.05608] Cao, arXiv June 2026.
+
+### Intelligence Entropy — Degradation as Physical Constraint (arXiv, June 2026)
+
+Systematic analysis of 40,000+ controlled trials and 100,000+ production
+interactions. Identifies 22 intrinsic properties across six lifecycle layers
+(foundation semantics, inter-agent transmission, memory persistence, task
+execution, feedback correction, systemic evolution). System entropy — loss of
+output consistency, task accuracy, cross-session coherence — increases
+monotonically: **S(t) = S₀ · e^(α·t)**.
+
+The six lifecycle layers map to observed pathologies: foundation semantics
+(prompt mass), inter-agent transmission (coordination tax), memory persistence
+(context accumulation), task execution (session floor), feedback correction
+(evaluation mirage), systemic evolution (meta-escalation ratchet).
+
+- **Key implication**: Silent failure is not a software bug but a **physical
+  constraint** — Intelligence Entropy. The exponential growth formulation
+  means the question isn't whether degradation happens but how fast α is.
+  Systems without deterministic governance at each lifecycle boundary
+  accumulate disorder. The empirical α parameter is measurable and
+  comparable across architectures.
+- **Source**: [2606.08162] Liu, arXiv June 2026.
+
+### Strained Coherence — Pre-Failure Detection Signal (arXiv, June 2026)
+
+Agents emit detectable pre-failure signals: they verbalize a tension in
+their reasoning then proceed to fail anyway. A trajectory-reading judge
+identifies spans where agents name a problem but optimize a proxy.
+
+- Flagged trajectories fail **94% vs 46% unflagged** (47-point gap, p=0.003).
+- First flag appears at **median 83–84% of elapsed trajectory time** —
+  a narrow but actionable intervention window.
+- Signal survives paraphrasing; model-general but requires verbalized
+  reasoning (zero-think trajectories lack substrate for detection).
+- **Key implication**: Mid-session monitoring for "I know this is wrong but
+  I'll continue" language provides a high-precision failure predictor. The
+  late timing (83%) means abort-not-correct is the realistic intervention.
+- **Source**: [2606.07889] Pandya, Zhang, Lyu, arXiv June 2026.
+
+### Cold-Start Safety Gap — Positional Vulnerability (arXiv, June 2026)
+
+Agents are **most vulnerable at session start** and become substantially
+safer after regular tasks prime safety-relevant representations. SODA
+benchmark across 7 models from 4 families: safety improves **9–52%** with
+warm-up tasks (0→20 preceding regular tasks). Regular tasks are the primary
+driver, not the agent's prior responses.
+
+- **Key implication**: Session start is a vulnerability window. Standardized
+  warm-up operations may provide safety priming that context file loading
+  alone cannot. The Session Floor's overhead might paradoxically serve as
+  safety priming — a surprising benefit of fixed per-session cost.
+- **Source**: [2606.07867] Sun, Liu, Weng, arXiv June 2026.
+
+### Decision-Aware Memory Cards — Counterfactual Context (arXiv, June 2026)
+
+Instead of retrieving memory by semantic similarity, scores memory by
+predicted **action-shift** — would including this memory change the agent's
+decision? Counterfactual-inspired compression selects context that maximizes
+behavioral change, not textual relevance.
+
+- **Key implication**: Before loading knowledge into agent context, the right
+  question is "would this change the decision?" not "is this relevant?" Most
+  semantically relevant context doesn't change actions — it's padding.
+  Connects to Less-Context-Is-More principle and prompt mass problem.
+- **Source**: [2606.08151] arXiv June 2026.
+
+### IntentKV — Decision-Aware KV Cache Pruning (arXiv, June 2026)
+
+Reduces KV cache by **77.8%** by pruning tokens based on their contribution
+to downstream decisions rather than attention weight alone. Intent-aware
+pruning preserves decision-critical context while discarding tokens that
+are attended but non-influential.
+
+- **Key implication**: Most attended-to context doesn't influence decisions.
+  This confirms the decision-aware memory principle at the infrastructure
+  level — relevance ≠ influence. Compression that targets influence
+  rather than relevance achieves much higher ratios.
+- **Source**: [2606.IntentKV] arXiv June 2026.
+
+### MemoPilot — RL Over Memory Operations (arXiv, June 2026)
+
+Treats memory read/write/update as a learnable policy rather than a
+hard-coded retrieval pipeline. RL optimizes when to write, what to retain,
+and when to consolidate — the memory management policy itself evolves with
+task experience.
+
+- **Key implication**: Hard-coded memory policies (always append, retrieve
+  top-k) are suboptimal. Memory management is itself a learnable skill that
+  should evolve. Connects to the forgetting deficit — the system needs
+  learnable forgetting, not just learnable retrieval.
+- **Source**: [2606.MemoPilot] arXiv June 2026.
+
+### Bayesian-Agent — Posterior-Guided Skill Evolution (arXiv, June 2026)
+
+Maintains effectiveness posteriors over skills, conditioned on context.
+Updates with session outcomes. Skills with consistently negative posteriors
+are retired; high-posterior skills are applied more aggressively. Achieves
+SOP-Bench improvement from 80% → 95%.
+
+- **Key implication**: Skills/lessons should have tracked effectiveness
+  priors that update with evidence. "This lesson helped in context X" is
+  Bayesian updating over skill utility. Connects to the Knowledge Asymmetry
+  — KEs that never influence behavior should decay, not accumulate.
+- **Source**: [2606.08348] arXiv June 2026.
