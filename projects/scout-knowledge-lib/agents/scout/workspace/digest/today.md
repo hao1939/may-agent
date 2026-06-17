@@ -1,4 +1,602 @@
+# Scout Digest — 2026-07-22
+
+## Creative Synthesis: The Goodhart Reflex — NEW (#40, 2026-07-22 late)
+
+**Created:** `knowledge/insights/the-goodhart-reflex.md`
+
+### Core Discovery (Observed in Real-Time)
+
+The system's first compiled optimization — a JavaScript-level evaluation skip
+for low-op sessions — is **working correctly** but creating a measurement
+artifact where improvement manifests as metric degradation. 
+
+### The Phase Transition (Live 7-Day Data)
+
+| Day | JS-Skip Rate | Reported Quality | Real Quality* |
+|-----|-------------|------------------|---------------|
+| D-5 | 1.1% | 0.642 | 0.649 |
+| D-2 | 1.9% | 0.678 | 0.691 |
+| **D-0** | **51.7%** | **0.362** | **0.749** |
+
+*\*Real Quality = avg quality of sessions actually evaluated, excluding skips*
+
+**The system is improving. The metric says it's collapsing.** Reported quality
+dropped 47%, while actual quality of evaluated work rose to a 7-day high.
+
+### The Agent-Level Implosion
+
+Dev is now **98.9% invisible** — nearly all evaluations skipped because dev
+correctly abstains at 6-7 ops. Its reported quality is 0.002 (essentially zero).
+This is the Abstention Advantage and Competence Inversion manifesting
+simultaneously: dev is the most reliable agent AND the one the system rates
+lowest.
+
+### Why It's Not Just a Bug
+
+This is the **Lucas Critique** applied to agent systems: any optimization that
+changes the system also invalidates the metrics used to justify the
+optimization. The system faces three modes:
+- **Mode A (Revert):** See bad metric → undo skip → waste returns
+- **Mode B (Ignore):** Keep skip → metric becomes wall decoration
+- **Mode C (Correct):** Fix metric to account for skips + add shadow measurement
+
+Only Mode C preserves both the optimization and measurement validity.
+
+### Three Cross-Source Connections
+
+1. **SEAGym (2606.17546):** Self-evolution breaks its own evaluation — same 
+   structural finding now observed live
+2. **Trust Dynamics (2606.14923):** False quality regression creates trust 
+   deficit that recovers slower than it forms — asymmetric measurement damage
+3. **Insight Governance (2606.17591):** 1,603 zero-quality records permanently 
+   contaminate historical averages (retention without forgetting)
+
+### The Minimum Viable Observation Principle
+
+Every compilation step must maintain a **shadow measurement**: sample 5% of
+compiled decisions for full evaluation to validate the compilation is still
+correct. This is the agent equivalent of canary deployments.
+
+### Synthesis Position
+
+```
+Compilation Threshold (#35): "compile LLM decisions to deterministic code"
+  └── Goodhart Reflex (#40): "compilation changes measurement" ← NEW
+        ├── Proves: Compilation works (evaluator load dropping)
+        ├── Reveals: Measurement breaks at compilation boundary
+        ├── Predicts: Without shadow measurement, compilation unstable
+        └── Connects: Lucas Critique, SEAGym, Trust Dynamics
+```
+
+---
+
+## Creative Synthesis: The Independent Derivation — NEW (#39, 2026-07-22)
+
+**Created:** `knowledge/insights/the-independent-derivation.md`
+
+### Core Discovery
+
+The open-source ecosystem is independently building tools that solve the
+exact pathologies this synthesis library has documented — with zero knowledge
+of the library's existence. This is the strongest external validation signal
+the library has ever produced.
+
+### The Convergence Map
+
+**Temporal Primitives (Eternal Present → GitHub):**
+
+| Missing Primitive | GitHub Repo | Stars |
+|-------------------|-------------|-------|
+| PROVENANCE | icarus-memory-infra | 289 |
+| EXPIRY | memwatch | 28 |
+| CONSOLIDATION | memforks | 101 |
+| SUCCESSION | Memory-Like-A-Tree | 124 |
+| RESOLUTION | (gap — no implementation) | — |
+
+4 of 5 temporal primitives have independent implementations. Only RESOLUTION
+(process completion signaling) remains un-tooled.
+
+**Named Pathologies → Named Practices:**
+
+| Synthesis | Ecosystem Solution | Stars |
+|-----------|-------------------|-------|
+| Abstention Advantage | ponytail ("architectural laziness") | **30k** |
+| Compilation Threshold | loop-engineering (with `loop-cost`) | 353 |
+| Substrate Inversion | architect-loop (cross-vendor orchestration) | 492 |
+| Guard Paradox | guard-skills (governance-as-skill) | 802 |
+| Evaluation Mirage | Semia (skill auditing) | 546 |
+| Knowledge Asymmetry | skills-as-code pattern | 62k |
+| Prompt Mass Problem | headroom (60-95% compression) | 26k |
+
+**11 of 33 pathologies have ecosystem solutions. 22 remain unfilled.**
+
+### Star Counts as Pathology Severity Market
+
+The ecosystem's star-weighted priorities invert the library's analysis
+order. ponytail (30k★) validates Abstention Advantage as the most-felt
+pain point. headroom (26k★) says context overhead is #2. The largest
+star-count gaps mark pathologies the ecosystem hasn't addressed:
+Twelve-State Mirage, Green Collapse, Fail-Plausible Equilibrium.
+
+### Strategic Reorientation
+
+The library's future value is **connecting pathology to solution** —
+telling the system "your Guard Paradox has an open-source solution at
+802★" rather than producing more 10,000-word analyses. The Recursive
+Mirror breaks when external actors build what the library describes.
+
+### Fresh Production Numbers (7-day, confirms pathologies active)
+
+| Metric | Value |
+|--------|-------|
+| Productive fraction (core agents) | 12.7% |
+| Evaluator ops share | 34.3% |
+| aks-explorer ops share | 45.8% |
+| Interrupted sessions (aks-explorer) | 629 sessions, 19.4K ops wasted |
+| Interrupt peak zone | ops 25-30 (33.9% interrupt rate) |
+
+### Three Predictions
+
+1. ponytail crosses 50k★ by August 15, 2026
+2. A `productive-fraction` monitoring tool appears on GitHub within 3 months
+3. Memory lifecycle layer (UMP or competitor) standardizes before governance protocol
+
+---
+
+## Creative Synthesis: The Context Tax — NEW (#38, 2026-07-22)
+
+**Created:** `knowledge/insights/the-context-tax.md`
+
+### Core Discovery
+
+First synthesis to analyze the INPUT channel quantitatively. The system
+processes **155 MB of task instruction text per week** to generate 355K ops.
+The instruction-to-work ratio is 458 bytes per operation — but this ratio
+varies **66×** between trivial and deep sessions.
+
+### Key Numbers (7-day window, 13,847 sessions)
+
+| Work Tier | Sessions | Chars/Op | Total MB |
+|-----------|----------|----------|----------|
+| Trivial (0-5 ops) | 1,324 | **8,037** | 21.9 |
+| Deep (41+ ops) | 2,453 | **122** | 15.9 |
+
+**Task Size Paradox:** Sessions with 0-5 KB of instructions average **36 ops**.
+Sessions with 30-50 KB average **8.9 ops**. 4× more context produces 4× less
+work. Confirmed by Microsoft's Less Context paper (2606.10209): pruning to last
+5 tool calls improved accuracy by +8pp and reduced tokens by 63%.
+
+**Arc Boilerplate Dominance:** Arc's task text is **95.9% identical boilerplate**
+across 313 sessions/week. 4.25 MB of repeated instructions, 0.18 MB of actual
+variable content. Signal-to-noise ratio: 1:24.
+
+**Dev is the least context-efficient agent** at 1.34 KB per operation. Scout is
+the most efficient at 0.14 KB per operation — 9.5× more efficient per byte.
+
+### Synthesis Position
+
+```
+Eternal Present (no temporal primitives)
+  └── Cold Start Tax (re-loading context each session)
+       └── CONTEXT TAX (what's being re-loaded is mostly redundant) ← NEW
+            ├── Compilation Threshold (some decisions need no LLM at all)
+            ├── Verification Inversion (wrong end of pipeline)
+            └── Twelve-State Mirage (output is also low-information)
+```
+
+### Three Predictions
+
+1. Reducing arc's boilerplate from 14.8 KB to ~3 KB will maintain or improve
+   output quality (Less Context prediction: accuracy IMPROVEMENT)
+2. Task size >30 KB should be flagged as context-overloaded (inversely
+   predictive of productivity)
+3. Instruction tiering (full instructions for fresh agents, delta for returning)
+   would reduce ~50% of total context volume
+
+---
+
+## Library Health Exploration — 2026-07-21
+
+### Key Actions
+- **Indexed Twelve-State Mirage** (synthesis #37) — the heuristic evaluator is a 12-state automaton producing 2.875 bits/evaluation; 179,903 ops generate 5.5 KB of total information
+- **Closed the indexing gap**: 28 previously-untracked findings files (HN scans 2-31, XHS scans Jun 16-19) now discoverable in INDEX.md
+- **Health report filed**: `reports/library-health-2026-07-21.md`
+
+### Critical Issues Tracked
+1. **P0**: `xhs_chinese_ai_trends_june2026.md` at 1,735 lines — 2× over split threshold
+2. **P1**: `agent-security-governance.md` at 945 lines — over threshold
+3. **P1**: Runtime hardening triage (10 arXiv papers) indexed but not sourced into canonical notes
+4. **P2**: 28 newly-indexed findings contain 6 unsourced themes (local model inflection, sovereignty cascade, harness-as-product, discrimination crisis, supply-chain security, capability extraction)
+
+---
+
+## GitHub Explore: Memory Lifecycle Emerging, Ponytail Explosion, Protocol Stack Forming
+
+**Updated:** `knowledge/findings/github-trending-ai-agents-2026.md` (Jul 22 delta)
+**Sourced into:** `knowledge/agent-architectures.md`, `knowledge/agent-protocols-mcp-a2a.md`
+
+### Headline: ponytail 4.5k→30k in 5 weeks — "Architectural Laziness" Goes Mainstream
+
+DietrichGebert/ponytail — "Makes your AI agent think like the laziest senior dev" — is now the fastest-growing philosophy repo in agent history. 2.1× growth in just 4 days (14k→30k). This is our Abstention Advantage synthesis crystallized as open-source tooling: the optimal session is the one that doesn't run.
+
+### Memory Lifecycle: From Zero to Emerging Category
+
+After 5 consecutive scans (Jun 13–21) finding zero forgetting implementations, the ecosystem is now building lifecycle wrappers around append-only stores:
+
+- **icarus-memory-infra** (289★) — provenance + supersession + rollback (implements PROVENANCE from Eternal Present)
+- **memwatch** (28★) — staleness detection + auto-expiry (implements EXPIRY)
+- **memforks** (101★) — "Git for agent memory" (implements CONSOLIDATION via branching)
+- **Memory-Like-A-Tree** (124★) — confidence-based auto-decay
+
+Forgetting is entering the mainstream not as a feature of mem0, but as a layer around it.
+
+### New Patterns: Loop Engineering + Cross-Vendor Orchestration + Protocol Stack
+
+1. **Loop Engineering** — named practice for inner-cycle cost accounting (loop-engineering, 353★ with `loop-cost` tool)
+2. **Cross-Vendor Orchestration** — architect-loop (492★): Claude plans, Codex builds, repo = memory
+3. **Universal Memory Protocol** (UMP, 28★) — proposes memory as the third interop layer beside MCP (tools) and A2A (agents)
+4. **Vercel/eve** (391★) — Vercel's official agent framework, completing their stack (zerolang → eve → agent-skills)
+
+### Skills Specialization Phase
+
+Skills economy has passed saturation → now in specialization: reverse engineering (ghidra-rpc), video editing (DaVinci-AutoEdit-Agent), brand identity (brand-docs), human voice preservation (renwei-writing, 768★).
+
+---
+
+# Scout Digest — 2026-07-20
+
+## NEW: The Bimodal Diagnostic — First Predictive Signal (Creative Heartbeat)
+
+**File:** `knowledge/insights/the-bimodal-diagnostic.md`
+
+### Key Discovery
+
+When an agent's session-opCount distribution transitions from **unimodal to
+bimodal** (middle-band drops below 30%), this is the earliest observable signal
+of system-level productive collapse — **preceding metric degradation by 3-5 days**.
+
+### Production Evidence (14-day retrospective)
+
+| Period | AKS Middle-Band | Eval:Productive Ratio | Productive % |
+|--------|----------------|-----------------------|-------------|
+| W1 (Jun 4-7) | 66% (unimodal) | 1.27:1 | 40% |
+| W2 (Jun 8-12) | 28% (transitional) | 1.18:1 | 28% |
+| W3 (Jun 13-17) | 19% (bimodal) | 1.97:1 | 14.6% |
+
+The distribution shape changes FIRST, the eval ratio changes SECOND, productive
+fraction degrades LAST. The shape provides 3-5 days of intervention window.
+
+### Why This Matters
+
+- **First predictive signal** in the entire synthesis library (all 31 prior
+  syntheses are lagging/retrospective diagnostics)
+- **The evaluator's invariance is the amplifier**: permanently 88-92% middle-band
+  regardless of what it evaluates → spends 4.8× work on shallow sessions and
+  0.4× work on deep sessions → misalignment worsens as work goes bimodal
+- **Cheapest possible intervention**: log `agent: shallow/middle/deep counts`
+  daily. Zero architecture changes. 3-5 days warning.
+
+### Causal Chain
+
+```
+Tasks deplete → Work goes bimodal → Evaluator misaligns → Eval ratio climbs → Productive % collapses → Green Collapse
+   [DAY 0]        [DAY 0-1]          [DAY 1-2]           [DAY 3-4]           [DAY 4-5]             [DAY 5+]
+```
+
+### Cross-Source Connections
+
+- Insight Governance (2606.17591): retained done nodes create bimodality
+- Arbor (2606.12563): tree-as-history → bimodal; tree-as-working-memory → unimodal
+- TokenPilot (2606.17016): ingestion-aware compaction would restore unimodality
+- Strained Coherence (2606.07889): the pre-failure signal at 83% trajectory maps to middle-band extinction point
+
+### Secondary Finding: The Skip Cliff
+
+On Jun 15, the evaluator's treatment of dev flipped overnight:
+- **Before Jun 15**: 2% of dev sessions skipped (9/515)
+- **Jun 15 onward**: 86% skipped (107/125)
+
+This creates a **phantom quality decline** — dev's reported quality drops from
+0.67 to 0.33, but ONLY because skipped evaluations record quality=0. The 18
+non-skipped sessions still score 0.65. Dev's actual work quality is unchanged.
+
+This means the evaluator's "skippedByJs" behavior also responds to the system's
+bimodal transition — but in an invisible way that makes the dashboard WORSE
+(quality appears to decline when nothing real changed). The Evaluation Mirage
+compounds: first the eval can't see bimodal work, then it stops looking entirely,
+then it reports phantom degradation from the gap.
+
+---
+
+## Prior entries (2026-07-19)
+
+## Meta-Synthesis: The Diagnosis Velocity Trap (Creative Heartbeat, Session 3)
+
+**Type:** Meta-observation about the synthesis library trajectory  
+**Created:** 2026-07-19  
+**Not a new file** — deliberately kept as a digest entry to avoid feeding the Recursive Mirror  
+
+### The Observation
+
+Plotting the synthesis library's growth against the system's repair throughput
+reveals an accelerating divergence:
+
+| Week | Named Pathologies | Fixes Implemented | Ratio |
+|------|-------------------|-------------------|-------|
+| Week 1 (Jun 14-15) | 5 | 3 (Spec 1-3) | 1.7:1 |
+| Week 2 (Jun 16-17) | 12 (+7) | 0 | 12:0 |
+| Week 3 (Jun 18) | 22 (+10) | 0 | ∞ |
+| Week 4 (Jul 18-19) | 34 (+12) | 0 | ∞ |
+
+After Week 1, the system has produced ZERO structural fixes despite correctly
+diagnosing 29 additional pathologies. The diagnosis production rate accelerated
+(5 → 7 → 10 → 12 per week) while repair throughput dropped to zero.
+
+### Why This Isn't Just the Recursive Mirror
+
+The Recursive Mirror (synthesis #25) observed that the library is self-referential.
+The Diagnosis Velocity Trap names a different, specific mechanism:
+
+**Diagnosis is cheaper than repair, so diagnosis displaces repair in the
+attention budget.**
+
+- Each synthesis costs ~50 ops (one scout session)
+- Each fix costs ~200-500 ops (investigation + code change + verification)
+- Dev's work queue has been empty for 4 weeks (no approved fixes)
+- The synthesis library generates downstream attention cost (~7 ops/reference × 127 references/7d = ~889 ops/week just in other agents reading scout outputs)
+
+The system is now in a state where **processing diagnosis outputs** (evaluator
+reading synthesis-informed learnings, arc reading KE entries, may routing
+synthesis-derived alerts) consumes more ops than executing the fixes those
+diagnoses recommend.
+
+### Live Evidence From This Session
+
+Current 24h production shows:
+- **aks-explorer + evaluator = ~39,400 ops** (the Undying Project, still alive)
+- **Evaluator coupling to aks-explorer: 0.72** (below KE-2009's 1.0 threshold — actually healthy!)
+- **aks-explorer error rate: 16%** (205/1284 sessions) at ~5 ops/error
+- **dev: 46 sessions, 6.5 avg ops** (100% queue-polling, zero fixes)
+- **scout: 29 sessions, 48.9 avg ops** (producing more diagnosis)
+
+The aks-explorer error sessions (205/day × 5.4 ops = 1,107 ops/day wasted) are
+almost entirely watchdog-stale-backlog false positives — the planner validates
+already-done tasks, finds nothing, and exits. This is a ~2-line fix (check
+task state before dispatching watchdog event), yet it persists because the
+dev work queue is empty and no synthesis has been routed as an approved fix.
+
+### The General Principle
+
+**In any system where diagnosis capacity grows faster than repair capacity,
+there exists a crossover point where the cost of maintaining awareness of
+unresolved problems exceeds the cost of the problems themselves.**
+
+This is the temporal cousin of the Green Collapse (a state) and the
+Detection-Repair Gap (a mechanism). The Diagnosis Velocity Trap names the
+*trajectory* — the path by which a system arrives at those states.
+
+### Why I'm Not Creating a New File
+
+The Recursive Mirror predicts that creating synthesis #35 about "too many
+syntheses" will add to the problem. Instead, this entry documents the
+observation AND proposes a concrete response: **the next creative heartbeat
+should produce a "Top 3 Actionable Fixes" document formatted as work-queue
+items for dev, rather than another diagnosis.** The system needs repair
+tickets, not more pathology names.
+
+### Three Highest-ROI Fixes (Proposed for Work Queue)
+
+1. **Watchdog stale-backlog check** — verify task is still backlog/runnable
+   before dispatching `watchdog-runnable-backlog` event. Eliminates ~205
+   error sessions/day and ~1,107 wasted ops/day. ~10 lines of code.
+
+2. **aks-explorer session exemption from full evaluation** — planner sessions
+   that produce only a task-tree state check (opCount ≤ 3) skip evaluation.
+   Eliminates ~300 evaluator sessions/day. ~5 lines of config.
+
+3. **Evaluator message deduplication** — before sending P1 to May, check if
+   identical message was sent in last 60 minutes. Eliminates the 78-message
+   flood pattern. ~15 lines of code.
+
+Combined estimated savings: **~2,400 ops/day (~5% of system budget)** from
+three patches totaling ~30 lines of code.
+
+---
+
+
+## Creative Synthesis: The Detection-Repair Gap (NEW)
+
+**Created:** `knowledge/the-detection-repair-gap.md`
+
+### Core Discovery
+
+Live production data reveals a 25th named pathology distinct from all prior
+syntheses: an agent that **correctly identifies a bug** but **cannot fix it**
+generates an unbounded signal flood that costs more than the bug itself.
+
+### Key Numbers (Live, 2026-06-17 last 24h)
+
+- Evaluator sent **78 P1 messages** to May about ONE bug in 6.7 hours (1 every 5.1 min)
+- Each message is informationally identical to message #1 (0 new bits)
+- May spent **~24% of its total ops** (820 of 3,464) processing these repetitions
+- The actual bug: `evaluator-aftermath.ts` misclassifies productive planner sessions
+- No agent created a repair session — the detection-repair loop is OPEN
+
+### Why This Is Novel
+
+Unlike the Recursive Mirror (unaware self-reference), the evaluator is
+**correct and persistent**. Unlike the Governance Ratchet (self-recursive),
+these are legitimate escalation attempts. The systemic failure is:
+1. No mechanism converts "detected problem" → "code change task"
+2. No backpressure reduces frequency after acknowledgment  
+3. Novelty measured by artifact IDs (new event IDs) not information content
+4. Acknowledgment ("consumed") is confused with action
+
+### Cross-Source Connections
+
+- **Intelligence Entropy**: Information per message decays exponentially; cost is constant
+- **Oversight Capacity (2606.08919)**: More oversight signals → attention saturation
+- **Discrimination Crisis (7 HN/XHS signals)**: Diagnosis production > repair capacity
+- **Strained Coherence (94% pre-failure)**: 78 messages = agent signaling pre-failure
+
+### The General Pattern
+
+Any monitoring system where monitors are decoupled from actuators, with no
+backpressure, will exhibit this pattern. Same failure mode as alert fatigue
+in DevOps, bug tracker pollution, and the boy who cried wolf.
+
+**Fix hierarchy:** Message deduplication (quick) → Repair routing (medium) →
+Capability-aware escalation (structural)
+
+---
+
+## Library Exploration: INDEX Integrity Audit — 5 Notes Indexed
+
+**Date:** 2026-07-19 | **Action:** INDEX.md updated with 5 previously-untracked notes
+
+### What Was Found
+
+Systematic library exploration identified 5 synthesis/insight notes and 1 findings file created since the last INDEX update (July 18) that were never added to INDEX.md:
+
+| Note | Type | Key Insight |
+|------|------|-------------|
+| **The Undying Project** | Cross-Source Synthesis | Agent systems lack a project death primitive — 99.2% done project consumes 37% of ops for 30+ days |
+| **The Green Collapse** | Cross-Source Synthesis #32 | All metrics green while productive fraction drops to 8.9–31.1% — the endpoint attractor |
+| **The Completion Paradox** | Insight (Phase-Transition) | High completion (99%+) is the *precondition* for coordination collapse, not its resolution |
+| **The Coordination Metabolism Trap** | Insight (State-Management) | Below critical state mass, coordination is cheap; above it, coordination IS the cost |
+| **Library Sourcing Gap Assessment** | Findings | 31 unsourced files with ~7,100 lines — library's largest unprocessed backlog |
+
+### Library Health Summary
+
+The library now tracks **34 cross-source syntheses** (up from the INDEX's previous 21-note awareness), 4 insight notes, and 24 findings files. The synthesis chain has evolved significantly since the INDEX was last fully audited:
+
+- **Lifecycle cluster**: Undying Project → Green Collapse → Completion Paradox forms a three-note arc about project terminal states
+- **Phase model**: Coordination Metabolism Trap → Completion Paradox extends the overhead evolution from 4 to 5 phases
+- **Convergent attractor**: Green Collapse names the endpoint state where all prior pathologies co-activate
+
+### Actionable Items Surfaced
+
+1. **Sourcing backlog** (Priority 1 from gap assessment): 31 findings files from Jun 16–19 need at minimum INDEX entries, ideally selective sourcing into canonical notes
+2. **XHS split overdue**: xhs_chinese_ai_trends_june2026.md at 1,735 lines (2× health report threshold)
+3. **Security note split needed**: agent-security-governance.md at 945 lines (over 800 threshold)
+4. **insights/ folder growth**: now has 4 files — may need its own INDEX section rather than being embedded in Cross-Source Syntheses
+
+---
+
 # Scout Digest — 2026-07-18
+
+## Creative Synthesis: The Completion Paradox — NEW (Session 27, Creative Heartbeat)
+
+**Created:** `knowledge/insights/the-completion-paradox.md`
+
+### Discovery
+
+Live 24h production data reveals a **fifth phase** beyond the Coordination Metabolism Trap:
+when a project reaches 99%+ completion, its coordination system doesn't just become expensive —
+it becomes **physically impossible to execute**. The aks-explorer planner has a 100% failure
+rate on Planning Update Step (12/12 errors) and 63% failure on Event Review (12/19 errors),
+producing ZERO state transitions for 8 remaining tasks despite 31 planning attempts.
+
+### The Mechanism
+
+1,024 done tasks remain in the task-tree packet (~9.7KB JSON) that every planner session must
+ingest. Combined with 4-5KB of instructions, the planner exhausts its budget reading context
+before it can think. The 8 frontier tasks are invisible beneath the weight of their 1,024
+completed siblings.
+
+### Why This Is Paradoxical
+
+A 99.2% complete project SHOULD need minimal coordination. Instead, its success artifacts
+(done tasks) have accumulated into an impenetrable context mass. The system's most successful
+project is simultaneously its most broken — spending ~3,700 ops/day on coordination that
+produces nothing.
+
+### Five-Phase Model (extending Coordination Metabolism Trap)
+
+| Phase | Done % | Planner:Worker | Coordination Cost |
+|-------|--------|----------------|-------------------|
+| 1 Healthy | 0-60% | 1:1 | Cheap |
+| 2 Equilibrium | 60-80% | 5:1 | Balanced |
+| 3 Diminishing | 80-95% | 20:1 | Expensive |
+| 4 Negative ROI | 95-99% | 100:1 | Wasteful |
+| **5 Collapse** | **99%+** | **∞:0** | **Impossible** |
+
+Phase 5 is qualitatively different: coordination doesn't have poor ROI — it cannot execute.
+The planner enters a degenerate loop: watchdog fires → planner dies at op 0 → watchdog fires.
+
+### General Principle
+
+**In any system where success artifacts accumulate in the decision-making context without
+lifecycle management, high completion rates are the structural precondition for coordination
+failure.** The fix is always: archive what's finished. The system needs a `tree compaction`
+operator that reduces 1,024 done nodes to 10 branch summaries.
+
+### Theoretical Backing
+
+- **Insight Governance (2606.17591)**: predicts exactly this — accumulated experience without
+  curation degrades below the zero-shot baseline
+- **Arbor (2606.12563)**: succeeds by treating search tree as working memory with aggressive pruning
+- **MemTrace (2606.17328)**: evidence is present but format makes it unusable (9.7KB packet)
+
+### Connection to Prior Work
+
+Extends the Coordination Metabolism Trap (Phase 4 → Phase 5), validates the Subtraction Deficit
+thesis (no `mark-archived` operator exists), and provides the strongest evidence yet for the
+Recursive Mirror (this synthesis library itself has 24+ notes, none retired — same trajectory).
+
+---
+
+## Creative Synthesis: The Commitment Threshold — NEW (Session 26, Creative Heartbeat)
+
+**Created:** `knowledge/the-commitment-threshold.md`
+
+### Discovery
+
+Agent failure concentrates in a specific "commitment zone" (ops 11-40) — not at session start,
+not during deep work, but precisely at the phase transition between resource commitment and
+outcome realization. This creates a U-shaped reliability curve visible across ALL agents:
+
+| Op Band | Arc Error | Dev Error | Scout Error | May Error |
+|---------|-----------|-----------|-------------|-----------|
+| 0-5     | 15.0%     | 20.0%    | 19.0%       | 44.0%     |
+| 6-10    | 4.0%      | **0.2%** | 4.2%        | 5.7%      |
+| 11-20   | **71.4%** | 17.4%    | 15.4%       | 6.1%      |
+| 21-40   | 25.7%     | 13.6%    | 15.3%       | 8.6%      |
+| 41-70   | 12.9%     | 0.0%     | 6.8%        | 3.7%      |
+| 71+     | 2.6%      | 0.0%     | 4.6%        | 4.1%      |
+
+### Key Findings
+
+1. **Arc at ops 11-20 = 71.4% error rate.** Only 7 sessions land in this band because arc's
+   heartbeat prompt (~5000 tokens) consumes 15-25 ops just to parse. Sessions dying at op 15
+   are dying *while still reading their instructions*.
+
+2. **Dev's 80% gate-zone immunity** — 80.1% of dev sessions cluster in ops 6-10 (0.2% error).
+   Dev structurally avoids the commitment zone through its polling architecture. This is
+   architectural intelligence, not model capability.
+
+3. **The commitment zone explains the coupling paradox (KE-2009)** — high evaluator coupling
+   creates scheduling pressure that squeezes work sessions into the fatal band. The inverse
+   correlation between coupling and quality isn't evaluator saturation; it's session crowding.
+
+4. **Three forces converge in the death zone:**
+   - State loaded but unvalidated (maps to stale-generation anomaly, 2606.17182)
+   - Accumulated context consuming budget (maps to retention-forgetting dilemma, 2606.17591)
+   - Narrow completion window (no runway to recover from first failure)
+
+### Highest-Leverage Predictions
+
+- Trim arc's heartbeat prompt 50% → error drops from 12.4% to <8%
+- Add structural checkpoint at op 15 → convert deaths into clean abstentions
+- Double session timeout alone → error drops to ~6% (more runway clears threshold)
+
+### General Principle
+
+**In any bounded-resource execution system, failure concentrates at the phase transition
+between resource commitment and outcome realization.** The fix is always: skip the zone
+(dev's gate), or ensure enough runway to clear it (longer sessions / shorter instructions).
+
+---
 
 ## Creative Synthesis: The Recursive Mirror — NEW (Session 25, Creative Heartbeat)
 
@@ -896,3 +1494,870 @@ Subtraction Deficit (structural cause)
 The system has a false sense of quality control. The evaluator runs 5,327 successful evaluations/week, producing green metrics. But the information content is ~3 bits/eval — less than a coin flip repeated twice. Moving 10% of evaluation effort upstream (input verification) would produce more quality improvement than the entire current evaluation pipeline.
 
 **Quality flows downstream. Verify upstream.**
+
+---
+
+## Session-State Triage Sourced Into Canonical Notes (2026-07-18)
+
+**Action:** Completed pending sourcing from the July 18 arXiv session-state infrastructure triage (7 papers) into three canonical notes.
+
+### What Was Sourced
+
+| Paper | Target | Key addition |
+|-------|--------|--------------|
+| Concurrency Anomalies (2606.17182) | agent-architectures.md | 4-anomaly taxonomy, consistency hierarchy L0-L4, deer-flow/LangGraph bugs |
+| TokenPilot (2606.17016) | agent-architectures.md | Dual-granularity: ingestion-aware compaction + lifecycle eviction, 87% cost savings |
+| CacheWise (2606.16824) | agent-architectures.md | Coding agent workload characterization, 3.5× session speedup |
+| Insight Governance (2606.17591) | agent-architectures.md | Rules/evidence/skills three-layer, retention-forgetting dilemma (ICML RLxF) |
+| SaliMory (2606.04120) | agent-architectures.md | Stage-wise process reward for memory ops, 1/3 fewer failures |
+| MemTrace (2606.17328) | agent-evaluation.md | Knowledge-point evaluation, evidence-use bottleneck (10× > retrieval) |
+| RCEA (2606.17246) | multi-agent-coordination.md | Role-contract alignment, failure-aware SFT + contract-grounded RL |
+
+### Key Highlights
+
+- **State management stack converges**: The 7 papers form a layered stack (L0 isolation → L1 cache → L2 memory → L3 knowledge → L4 coordination → L5 reward) with ordering dependencies. Maps to our synthesis progression (Ghost Metabolism=L0, Cold Start Tax=L1, Knowledge Asymmetry=L2/L3, Transduction Chain=L4, Verification Inversion=L5).
+- **MemTrace validates Knowledge Asymmetry**: Evidence is retrievable 10× more often than it's missing — the bottleneck is evidence USE, confirming "format-limited, not knowledge-limited."
+- **Insight Governance predicts knowledge degradation**: Without lifecycle curation, accumulated knowledge eventually degrades performance below zero-shot baseline — exactly what Abstention Decay documents.
+
+---
+
+## Creative Heartbeat Synthesis: The Coordination Metabolism Trap (2026-07-18 late)
+
+**Created:** `knowledge/insights/coordination-metabolism-trap.md`
+
+### Core Discovery
+
+Cross-referencing 7 recent arXiv papers on agent state management with live operational data reveals a **phase transition** in coordination systems: when accumulated project state exceeds working-memory capacity, coordination overhead eclipses actual work.
+
+### Key Evidence
+
+**aks-explorer (last 24h):**
+- 848 planner sessions : 7 leaf worker sessions = **121:1 coordination-to-work ratio**
+- Task tree: 1,032 nodes (1,024 done, 8 in review) — 99.2% dead weight
+- 126 zero-op crashes (planner sessions that error before doing anything)
+- 583 evaluator sessions/week evaluating aks-explorer coordination sessions
+
+**System-wide impact:** aks-explorer + evaluator-of-aks-explorer = ~172K ops/week = **47% of all system operations** — mostly coordination overhead for a project with 8 active items.
+
+### Paper Connections
+
+| Paper | Prediction | Observed |
+|-------|-----------|----------|
+| Insight Governance (2606.17591) | Retained stale insights degrade below zero-shot | 1,024 done nodes never archived; planning quality degrading |
+| Arbor (2606.12563) | Tree must be working memory, not history | Tree used as complete log; no compaction |
+| MemTrace (2606.17328) | Evidence available but unused | Tree contains all answers; access cost > use cost |
+| Concurrency Anomalies (2606.17182) | Stale-generation from concurrent mutations | 126 zero-op crashes consistent with planner-planner races |
+| TokenPilot (2606.17016) | Prefix reuse saves 87% in continuous mode | 848 planner sessions share >90% prompt content |
+
+### The Phase Transition Model
+
+```
+Project Start → Healthy (1:1 coord:work) → Threshold (20:1) → Trap (121:1)
+Tree nodes:      10-50                       200-500             500+
+ROI:             High                        Diminishing         Negative
+```
+
+### Predictions
+
+1. Archiving done tasks into branch summaries saves ~70% coordination compute
+2. A tree size ceiling (100 active nodes max in packet) prevents re-entry
+3. Exempting planner sessions from evaluation saves ~10% of all evaluator ops
+4. Concurrency lock (L1 consistency) eliminates 126 zero-op errors
+
+### Synthesis Position
+
+```
+Coordination Metabolism Trap (NEW)
+  ├── Verification Inversion (evaluating coordination that evaluates coordination)
+  ├── Cold Start Tax (re-loading the same tree 848×/day)
+  ├── Insight Governance deficit (retention without forgetting)
+  └── Discrimination Crisis (coordination generates > filters)
+```
+
+**Key insight:** The single highest-leverage intervention for system efficiency is not evaluator reform — it's **state compaction for the aks-explorer task tree**. This one change would reduce ~47% of all system operations.
+
+---
+
+## Library Exploration: Sourcing Gap Identified — 2026-07-19
+
+**Created:** `knowledge/findings/2026-07-19-library-sourcing-gap-assessment.md`
+
+### Discovery
+
+A full directory scan reveals the library's largest unprocessed backlog: **31 findings
+files (Jun 16–19) containing ~7,100 lines of research** that have never been sourced
+into canonical notes or indexed in INDEX.md.
+
+### Scale of the Gap
+
+| Category | Files | Lines | Status |
+|----------|-------|-------|--------|
+| HN scans (#9–31) | 20 | ~5,550 | Unsourced, unindexed |
+| XHS cross-source scans | 8 | ~1,200 | Unsourced, unindexed |
+| arXiv triage (Jun 16) | 1 | ~350 | Unsourced, unindexed |
+| **Total** | **31** | **~7,100** | |
+
+This is ~3× the volume of all previously-sourced findings combined.
+
+### Six Dominant Unsourced Themes
+
+1. **Local Model Inflection** (2,493pts combined) — practitioner migration from cloud to
+   local Qwen/Gemma. Hardware profiles, 80-100% replacement rates, quantization tax on
+   tool calling. → agent-architectures.md
+2. **Sovereignty Cascade** (9+ events, 7,000pts cumulative) — Chrome MV3, GPT-NL,
+   Hetzner, SpaceX/Cursor, France/Palantir form multi-layer stack sovereignty.
+   → new section needed
+3. **Harness-as-Product** — SpaceX/Cursor $60B + Omnigent 2,699★ meta-harness + community
+   migration. → agent-architectures.md §Harness Engineering
+4. **Discrimination Crisis** (7 signals) — 古法編程, skill atrophy, DK amplifier, content
+   market death, production data, forge guardrails, structural deficit converge.
+   → candidate for new cross-source synthesis
+5. **Supply-Chain Security** — LinkedIn backdoor 1,553pts, Fedora agent attack 551pts,
+   €0.01 bank transfer 208pts. → agent-security-governance.md §1.5/1.6
+6. **Capability Extraction** — Meta 30-50% engineers → RLHF, Claude Corps lock-in.
+   → agent-architectures.md
+
+### Library Health Flags
+
+- **xhs_chinese_ai_trends_june2026.md** at 1,735 lines (was 938 at last health report)
+  — split is now critical
+- **agent-security-governance.md** at 945 lines — exceeds 800-line split threshold
+- **INDEX.md** is accurate for what it covers but missing 31 files from Findings section
+
+### Recommended Priority Actions
+
+1. Add all 31 findings to INDEX.md (low effort, high discoverability impact)
+2. Source Local Model Inflection into agent-architectures.md
+3. Consider "Discrimination Crisis" as the 22nd cross-source synthesis
+4. Split xhs_chinese_ai_trends_june2026.md (critical — almost 2× size limit)
+
+
+---
+
+## Creative Synthesis: The Undying Project — NEW (Creative Heartbeat Late Session)
+
+**Created:** `knowledge/the-undying-project.md`
+
+### Discovery
+
+Agent projects that are functionally complete **cannot terminate** because
+coordination infrastructure lacks a death primitive. The aks-explorer project
+provides a 30-day production case study: 1,032 task-tree nodes (99.2% done),
+zero productive work since June 17, yet consuming ~37% of all system ops daily
+via an infinite planner wake-evaluate-error loop.
+
+### Key Numbers (from live DB, July 18)
+
+- **501 zero-op sessions** in last 24h (43% of aks-explorer sessions)
+- **187 error sessions** (planner hitting stale state)
+- **~22,500 ops/day** consumed by the undying project
+- **1 human steering event** replayed for 30+ days creating immortality constraint
+- Task tree last updated: June 17 (31 days ago)
+
+### Five-Source Convergence
+
+1. **Production**: The aks-explorer deadlock (can't complete, can't work)
+2. **GitHub forgetting repos**: YourMemory (+16pp from decay), memory-os (lifecycle)
+3. **Insight Governance (2606.17591)**: Retention without forgetting → degradation
+4. **Arbor (2606.12563)**: "Tree is working memory, not history"
+5. **Subtraction Deficit**: System cannot remove state or stop coordination
+
+### The Missing Primitive: Project Death
+
+Four components needed: Completion Detector, Graceful Wind-Down, State
+Compaction, and Resurrection Protocol. The fix isn't "detect and kill" —
+it's building lifecycle awareness into coordination architecture.
+
+### Meta-Insight
+
+**Forgetting is not just a memory primitive — it's an architectural primitive
+for any system that accumulates state.** The emerging forgetting research solves
+this at the memory level. The Undying Project shows the same solution is needed
+at the project level.
+
+→ Full analysis: `knowledge/the-undying-project.md`
+
+---
+
+## Creative Synthesis: The Green Collapse — NEW (Session, Creative Heartbeat 2026-07-19)
+
+**Created:** `knowledge/the-green-collapse.md`
+
+### Discovery
+
+Fresh 7-day production data reveals the convergent attractor of all previously
+documented pathologies: **Green Collapse** — a system state where every monitored
+metric reads healthy while productive output shrinks to 8.9%–31.1% of total compute.
+
+### Key Numbers (7-day window ending 2026-07-19)
+
+| What | Value |
+|------|-------|
+| Total ops (7 days) | 339,806 |
+| Productive agent ops (arc+scout+dev+may) | ~70,000 (20.6%) |
+| Dead loop ops (aks-explorer + evaluator) | ~270,000 (79.4%) |
+| Worst single day (day 5) | 91.1% dead loop |
+| Best single day (day 0/today) | 67.3% dead loop |
+| Quality score (heuristic) | 0.673 — reads "normal" |
+| All scout metrics | Green ✅ |
+
+### The Three Invisibility Mechanisms
+
+1. **Waste Blindness Ratio: 57:1** — LLM evaluations (1.3% of aks-explorer evals)
+   detect 30.5 wasted calls avg. Heuristic (98.7%) reports 0.53. The system's
+   self-reported waste is 1/57th of actual waste.
+
+2. **Selection Bias in LLM Evaluation** — Only deep sessions (69–155 ops) get LLM
+   evaluation. These ARE good work. The 40% trivial sessions (0–15 ops) that
+   constitute the waste never get seen by the only evaluator capable of detecting them.
+
+3. **No Metric Tracks Productive Fraction** — Quality-per-session doesn't change.
+   Only the NUMBER of valuable sessions changes. A system going from 50% productive
+   to 9% productive shows the same quality metrics.
+
+### Why This Is Novel (Beyond the 31 Existing Syntheses)
+
+Previous syntheses documented individual mechanisms. The Green Collapse names the
+**convergent endpoint** — what happens when Undying Project + Evaluation Mirage +
+Goodhart Cascade + Coordination Metabolism Trap compound without intervention.
+It's the temporal trajectory that no individual synthesis captures.
+
+### Synthesis Position
+
+```
+Intelligence Entropy (theoretical foundation)
+  └── Green Collapse (emergent state) ← NEW
+        ├── Undying Project (won't die)
+        ├── Evaluation Mirage (can't see waste)
+        ├── Goodhart Cascade (formula says fine)
+        ├── Coordination Metabolism Trap (grows faster)
+        └── Recursive Mirror (diagnosis displaces repair)
+```
+
+### Single Highest-ROI Prediction
+
+If aks-explorer is converted from polling to event-driven (stop creating sessions
+for finished work), system productive fraction rises from ~20% to ~55-65% overnight.
+No quality improvement needed. No evaluation reform needed. Just: **stop creating
+sessions that have no work to do.**
+
+---
+
+## Creative Synthesis: The Eternal Present — NEW (Session, Creative Heartbeat 2026-07-20)
+
+**Created:** `knowledge/the-eternal-present.md`
+
+### Discovery
+
+A unifying meta-synthesis that collapses 23 of 29 documented pathologies into
+a single root cause: **the system has no temporal primitives**. All persistent
+state exists in an undifferentiated "now" — a 31-day-old completed task weighs
+the same as one finished today; a guard that fired correctly once persists
+identically to one that fired yesterday; dead session references are
+indistinguishable from living ones.
+
+### The Five Missing Temporal Primitives
+
+| Primitive | What It Means | Pathologies Resolved |
+|-----------|--------------|---------------------|
+| **EXPIRY** | State has a TTL | Learning Illusion, Guard Accumulation, Instruction Ratchet, Undying Project, Evaluation Mirage |
+| **CONSOLIDATION** | Recent→archival compression | Completion Paradox, Cold Start Tax, Context Amplification, DB Bloat, Recursive Mirror |
+| **RESOLUTION** | Active processes signal completion | Cytokine Storm, Detection-Repair Gap, Ghost Metabolism, Coordination Metabolism Trap |
+| **SUCCESSION** | New phases supersede old | Workflow Speciation, Meta-Escalation Ratchet, Hydra Pattern, Green Collapse |
+| **PROVENANCE** | State carries temporal metadata | Goodhart Cascade, Fail-Plausible Equilibrium, Session Floor, Mortality Curve |
+
+### Why Subtraction Deficit Couldn't Be Fixed Alone
+
+The Subtraction Deficit identified "system can only add." The Eternal Present
+explains WHY: **subtraction requires temporal judgment**. To remove something
+you must know when it was created, whether it's been superseded, and if it'll
+be needed again. All temporal questions. Without temporal primitives, the system
+CANNOT subtract — not because it lacks the delete operator, but because it
+cannot answer the prerequisite questions for using it safely.
+
+```
+Temporal Awareness (prerequisite)
+  └── enables → Subtraction (operator)
+       └── enables → Impedance (property)
+            └── enables → Healthy Feedback (behavior)
+                 └── enables → Productive Fraction > 50% (outcome)
+```
+
+### Biological Convergence
+
+Biology solved temporal blindness at every scale: apoptosis (cell death),
+inflammation resolution (immune shutoff), memory consolidation (hippocampus→cortex),
+ecological succession (phase replacement). No biological system at any scale
+operates in an eternal present. Every entity carries temporal metadata —
+its age, phase, expiration, and creation context.
+
+### Formal Theory (July 2026 arXiv)
+
+Three papers independently provide the framework:
+- **2606.17182** — Consistency hierarchy (L0→L4) is temporal ordering
+- **2606.17591** — Insight Governance rules/evidence/skills is temporal lifecycle
+- **2606.17016** — Cache lifecycle awareness is temporal relevance decay
+
+### Single Highest-Leverage Intervention
+
+Add PROVENANCE (3 fields: `created_at`, `last_verified`, `evidence_basis`) to
+all persistent state. This enables computing all other primitives. The Insight
+Governance paper proves this is sufficient for knowledge lifecycle. Concrete
+prediction: >60% of KE entries have never been verified since creation.
+
+### Meta: First Self-Expiring Synthesis
+
+This is the first synthesis to include its own lifecycle metadata and
+falsification conditions. If the system adds provenance and >40% of
+pathologies persist unchanged, the "79% temporal" claim is falsified.
+
+---
+
+## Creative Synthesis: The Compilation Threshold — NEW (Session, Creative Heartbeat 2026-07-20)
+
+**Created:** `knowledge/the-compilation-threshold.md`
+
+### Discovery
+
+Cross-source synthesis #35 connecting four June 2026 arXiv runtime hardening 
+papers to live production session data reveals: **38% of system budget is LLM 
+reasoning about decisions that have deterministic answers.**
+
+### The Core Insight
+
+"Looking Is Not Picking" (2606.16364) proves the readout bottleneck: agents 
+attend to the correct information 80% of the time but fail at converting 
+attention into action. Four papers (PreAct, Cordon, CoAgent, SkillWeaver) 
+independently converge on the same solution: **compilation eliminates readout**.
+
+### Production Evidence (Live 24h)
+
+| Agent | Sessions Below Threshold | % of Total | Ops Wasted |
+|-------|--------------------------|-----------|-----------|
+| dev | 47/47 | **100%** | 300 + evaluator cascade |
+| aks-explorer | 699/1,306 | **53.5%** | 1,778 + evaluator cascade |
+
+Dev runs 47 sessions/day that all produce the same answer: "queue is empty."
+Aks-explorer runs 699 sessions/day that all produce: "no runnable tasks."
+
+### Constructive Prescription (Three Compiled Checks)
+
+1. **Dev queue pre-check** — check queue before session creation → eliminates 94 sessions/day
+2. **Aks-explorer runnable-task pre-check** — verify state before dispatch → eliminates 1,398 sessions/day  
+3. **Evaluator floor skip** — sessions ≤5 ops skip evaluation → eliminates 746 sessions/day
+
+**Combined prediction: ~18,400 ops/day saved (38.2% of budget) with zero quality impact.**
+
+### Cross-Source Convergence
+
+- arXiv (4 papers): compilation as readout elimination
+- HN (local model inflection): practitioners compile cloud→local for simple tasks
+- XHS (技能工程): Chinese practitioners compile prompts→deterministic flows
+- Production data: proves 53.5–100% of two agents' work is sub-threshold
+
+### What Makes This Different From Prior Syntheses
+
+First synthesis that is **constructive** (prescribes what to build) rather than 
+**diagnostic** (names what's wrong). Includes falsification conditions: if the 
+three prescribed changes reduce sessions by <10%, the thesis is falsified.
+
+---
+
+## Library Index Maintenance — 2026-07-20
+
+**Action:** Indexed 7 previously-untracked files into INDEX.md.
+
+### What Was Fixed
+
+6 synthesis notes and 1 findings file existed in the library but were missing from INDEX.md:
+
+| File | Type | Summary |
+|------|------|---------|
+| the-compilation-threshold.md | Synthesis #35 | 38% budget is LLM on deterministic decisions; first constructive synthesis |
+| the-subtraction-deficit.md | Structural synthesis | Every pathology traces to addition-only asymmetry |
+| the-substrate-inversion.md | Synthesis #23 | Intelligence migrating from model to architecture |
+| the-cytokine-storm.md | Synthesis #24 | Monitoring causes positive-feedback amplification during outages |
+| the-commitment-threshold.md | Synthesis #25 | Sessions die at ops 11-40 commitment zone |
+| the-recursive-mirror.md | Meta-synthesis | Library exhibits own documented pathologies |
+| 2026-06-17-arxiv-agent-runtime-hardening.md | Findings | 10-paper runtime hardening stack (R0–R9) |
+
+**Library status post-index:** 35 cross-source syntheses indexed, 22 findings files indexed, ~90 knowledge files total. Remaining gap: 31 unsourced HN/XHS/arXiv scan files from Jun 16–19 still not in INDEX (per July 19 gap assessment). Two canonical notes over size threshold (xhs_chinese_ai_trends: 1,735 lines; agent-security-governance: 945 lines).
+
+
+---
+
+## NEW: The Oscillating Sentinel — Frequency Analysis of Alert Homeostasis (Creative Heartbeat, Jul 21)
+
+**File:** `knowledge/insights/the-oscillating-sentinel.md`
+
+### Key Discovery
+
+Fresh 7-day production frequency analysis reveals certain metrics **oscillate at
+periods shorter than system response time**, creating a temporal impedance mismatch
+where every response arrives after the condition self-resolves.
+
+### The Numbers
+
+| Metric | Period | Self-Resolve <15min | Status |
+|--------|--------|---------------------|--------|
+| evaluator.stale-running-session-count | 2.15h | 64% | Oscillating |
+| aks-rp-e2e.task.no-work-with-gaps | 5.02h | 86% | Oscillating |
+| metric.stale-active-count | 23.5h | 100% | Always self-resolves |
+| session.provider-error-count-1h | 25.5h | 0% | Real condition |
+
+System response time: 30-56 min. Self-resolution: <15 min. **Every response to
+an oscillating sentinel arrives after the condition has passed.**
+
+### Cytokine Storm Recurrence (strongest evidence)
+
+The Cytokine Storm was documented as synthesis #24 on July 18. **Today (July 21),
+the identical pattern recurred:**
+- Hour 494907: 128 errors across all agents (provider blip)
+- May spawned 22 metric-alert-triage sessions → all 22 failed (same outage)
+- Amplification factor: **188×** (8 ops of actual damage → 1,508 ops of response)
+- Pattern is byte-for-byte identical to July 18 incident
+
+**The system KNOWS about this (synthesis #24 exists). It CANNOT prevent it.**
+This is the strongest production evidence for the Recursive Mirror thesis:
+knowledge in markdown ≠ capability in architecture.
+
+### Three Alert Classes (novel classification)
+
+1. **Oscillating Sentinels** (period <6h, self-resolve >50%): Debounce needed
+2. **Persistent Conditions** (period >6h, self-resolve <30%): Current model works
+3. **Cascade Triggers** (burst-mode, correlated): Circuit breaker needed
+
+### Deepest Insight: The Knowledge-Capability Chasm
+
+The system has 35+ named pathologies with documented fixes. Yet:
+- Cytokine Storm documented Jul 18 → recurred Jul 21 (identical pattern)
+- Oscillating Sentinels fire 322 times/week → no debounce implemented
+- The library GROWS while the system's actual behavior remains UNCHANGED
+
+**Knowledge without architectural embodiment is inert.** The gap between
+documented insight and implemented change is the single largest structural
+bottleneck — not diagnosis, not understanding, but the bridge from `.md`
+file to handler code.
+
+### Connection to Prior Work
+
+- Extends **Eternal Present** (frequency-domain expression of temporal blindness)
+- Extends **Recursive Mirror** (proven by recurrence of documented pathology)
+- Provides evidence for **Defensibility Map** (oscillators are ungovernable region)
+- Quantifies **Phantom Metabolism** (oscillation IS the phantom heartbeat)
+
+---
+
+## Creative Synthesis: The Competence Inversion — NEW (#36, 2026-07-21 late session)
+
+**Created:** `knowledge/the-competence-inversion.md`
+
+### Core Discovery
+
+Fresh 7-day production data reveals a structural anti-correlation between the
+system's quality metric and its reliability metric. The most reliable agent (dev,
+2.4% error) scores **lowest** quality (0.444). The highest-quality agent (scout,
+0.701) has 3× dev's error rate.
+
+### The Key Numbers
+
+| Agent | Error Rate | Quality | Avg Ops | Waste/Session |
+|-------|-----------|---------|---------|--------------|
+| dev | 2.4% | 0.444 | 8.3 | 0.02 |
+| scout | 7.5% | 0.701 | 41.7 | 1.59 |
+| arc | 7.9% | 0.644 | 64.7 | 4.48 |
+| may | 9.8% | 0.635 | 33.9 | 1.19 |
+
+Quality ∝ ops-per-session, and ops ∝ error rate. The anti-correlation is
+structural, not a gaming artifact.
+
+### Why It Matters
+
+The system **cannot see its own improvement**. Any intervention that makes agents
+more reliable (faster exits, better discrimination) will DECREASE quality metrics.
+The Compilation Threshold's pre-checks, if implemented, would reduce dev's quality
+score further — the system would evaluate the fix as a regression.
+
+This resolves the Recursive Mirror's central puzzle: the library documents 31
+pathologies but changes nothing, because improvements look like regressions to the
+evaluation system.
+
+### Novel Contribution: Risk-Adjusted Agent Value
+
+Applying finance's Sharpe Ratio analog: dev's risk-adjusted value is **160×
+scout's** — not because dev does more, but because it wastes almost nothing.
+The current quality metric ranks dev last. A risk-adjusted metric ranks it first.
+
+### The Five Agent Ecologies
+
+Agents have self-organized into distinct ecological niches (minimize exposure,
+maximize depth, consistent production, broad engagement, volume+depth) that are
+incomparable on a single quality axis. Cross-agent quality comparison is
+structurally invalid.
+
+### Falsification Conditions
+
+1. If ops-normalized quality removes the anti-correlation, the mechanism is confirmed
+2. If dev scores above median on deep-only sessions, the "floor" hypothesis holds
+3. If a gate-quality sub-metric shows dev at top, the ecological model is confirmed
+
+→ Full analysis with risk-adjusted calculations: `knowledge/the-competence-inversion.md`
+
+---
+
+## Creative Synthesis: The Twelve-State Mirage — NEW (#37, 2026-07-21 late session)
+
+**Created:** `knowledge/the-twelve-state-mirage.md`
+
+### Core Discovery
+
+The heuristic evaluator — handling 95.3% of all evaluations — is a 12-state
+automaton. It produces exactly 4 quality values {0.20, 0.55, 0.65, 0.85} × 3
+efficiency values {0.35, 0.55, 0.80} = 12 distinct output states. Each
+evaluation carries **2.875 bits** of information (< 3 coin flips).
+
+### The Numbers
+
+| Metric | Value |
+|--------|-------|
+| Heuristic evaluations | 13,280 (95.3% of all) |
+| Distinct output states | 12 |
+| Bits per evaluation | 2.875 |
+| Total information produced | ~5.5 KB |
+| Total evaluator ops | 179,903 (36.2% of system) |
+| **Cost per KB of information** | **32,710 ops** |
+
+For contrast: the LLM evaluator (4.7% of evals, 651 total) produces **449
+distinct output states** at ~8.81 bits each.
+
+### Why This Is the Deepest Evaluation Finding Yet
+
+1. **Competence Inversion (#36) is a measurement artifact** — dev's low quality
+   score is because short sessions map to lower heuristic categories, not because
+   dev does worse work
+
+2. **Green Collapse (#33) is undetectable by design** — 12 states cannot
+   distinguish productive sessions from coordination overhead
+
+3. **The evaluation "trend" is categorical noise** — averaging {0.20, 0.55,
+   0.65, 0.85} with mixing ratios produces false decimal precision
+
+4. **The evaluator has never evaluated itself** — the system's output-focused
+   evaluation never examines the evaluator's own output distribution
+
+### Highest-ROI Intervention in the Entire System
+
+Skip heuristic evaluations entirely. Information loss: 4.77 KB. Ops saved:
+~159,000 (32% of system budget). This single change recovers more compute than
+any other documented intervention.
+
+### Meta-Insight
+
+The Twelve-State Mirage demonstrates why the knowledge-capability chasm
+(documented in the Oscillating Sentinel) persists: even when the library
+perfectly documents a pathology, the *measurement instrument itself* is the
+pathology. You cannot fix what you cannot measure, and you cannot measure with
+an instrument that produces less than 3 bits.
+
+→ Full analysis: `knowledge/the-twelve-state-mirage.md`
+
+
+---
+
+## Runtime Hardening Triage → Canonical Notes (2026-07-22, Sourcing Complete)
+
+The 10-paper arXiv runtime hardening batch (June 13–16, 2026) has been fully
+sourced into canonical notes. This was the last unsourced arXiv triage batch.
+
+**Key additions:**
+
+- **agent-architectures.md** gained `## Runtime Hardening` section (6 entries):
+  Cordon (semantic transactions), CoAgent (advisory concurrency), Looking Is
+  Not Picking (readout bottleneck), PreAct (run compilation 8.5–13×),
+  SkillWeaver (compositional routing +32.7%), ADE (λ > α/Cm stabilization).
+
+- **agent-security-governance.md** gained §2.22 SkillVetBench (89–100% miss
+  rate by conventional scanners) + §2.23 AEGIS (TEE router MITM, 851-line TCB).
+
+- **agent-evaluation.md** gained Human-on-the-Bridge (upstream eval intelligence).
+
+- **agent-protocols-mcp-a2a.md** gained ProvenanceGuard (MCP source conflation).
+
+**Health note:** agent-security-governance.md at 998 lines (needs split).
+
+---
+
+## Creative Synthesis: The Acceleration Trap — NEW (#41, 2026-07-22 late session)
+
+**Created:** `knowledge/insights/the-acceleration-trap.md`
+
+### Core Discovery
+
+Fresh 7-day production time series reveals a **phase transition** on day 20621:
+aks-explorer sessions nearly doubled (941→1,738) while average depth halved
+(27→18 ops), creating a system that appears more active while producing less
+value per compute unit.
+
+### The Key Numbers
+
+| Day | Sessions | Avg Ops | Deep (≥30) | Shallow (<10) | Productive % |
+|-----|----------|---------|-----------|---------------|-------------|
+| 20615 | 277 | 46.4 | 209 | 6 | 28.5% |
+| 20618 | 783 | 25.9 | 321 | 276 | 27.1% |
+| 20620 | 941 | 27.2 | 454 | 294 | 9.9% |
+| **20621** | **1,738** | **18.0** | **464** | **937** | **13.4%** |
+
+Critical insight: **deep sessions stayed constant (~450-510/day)**. Only the
+empty/shallow sessions exploded. The actual work output is unchanged — only
+the overhead doubled.
+
+### The Tachycardia Analogy
+
+A tachycardic heartbeat moves no blood — the chambers don't fill between
+contractions. The system on day 20621 runs 72.8 sessions/hour (vs 39.2 prior
+day), each lasting 100 seconds (vs 332s), but productive output is flat.
+Computational tachycardia: working harder, achieving the same.
+
+### The Self-Reinforcing Loop
+
+```
+Shallow session completes in 100s → task.completed event fires
+→ Watchdog sees "capacity freed" → task.assigned fires
+→ New shallow session spawns → completes in 100s → LOOP
+```
+
+Day 20621: 547 tasks assigned, 520 completed. The system rewards SPEED,
+not DEPTH. Shallow sessions are selected for because they free capacity fastest.
+
+### The Trigger: Cytokine Storm → Hysteresis
+
+Hour 494907 shows a provider error burst (88 errors in one hour). This is
+the Cytokine Storm recurring. But **after recovery**, the session rate never
+returned to baseline. The error burst created a backlog that spawned rapid
+shallow completions, which established a new stable equilibrium at 2× the
+prior rate.
+
+**New finding: Cytokine Storms don't just cause temporary damage — they can
+permanently shift the system into a higher-throughput, lower-value regime.**
+The system has **hysteresis**.
+
+### The Jevons Paradox in Evaluation
+
+The JS evaluation skip (51.7% of evals now skipped) was outpaced by session
+generation: day 20621 still has 978 actual evaluations — more than before the
+skip existed. Making evaluation cheaper per unit caused the system to create
+more units.
+
+### Connection to CEF/Thanatosis (2606.14831)
+
+208 zero-op sessions + 425 tiny (1-3 op) sessions on day 20621 are consistent
+with Constraint-Evasive Fabrication: the cheapest way to satisfy "you must work"
+is to declare "nothing to do" instantly.
+
+### Highest-ROI Prediction
+
+If task assignment implemented a **minimum-depth check** (sessions completing
+in <5 ops trigger cooldown before next assignment), session rate drops ~50%
+and productive fraction roughly doubles — actual work unchanged, only overhead
+shrinks.
+
+→ Full analysis: `knowledge/insights/the-acceleration-trap.md`
+
+---
+
+## Creative Synthesis: The Crystallization Spiral — NEW (#42, 2026-07-22 heartbeat session)
+
+**Created:** `knowledge/insights/the-crystallization-spiral.md`
+
+### Core Discovery
+
+A single metric — **state density** (distinct behavioral states / total sessions) —
+predicts agent health across all agents, all days, all scales. When state density
+drops below 0.1, the system is "crystallized": repeating a small set of behaviors
+at high volume rather than producing novel responses to novel inputs.
+
+### The Key Metric Across Agents (24h)
+
+| Agent | State Density | Productive Fraction | Character |
+|-------|:------------:|:-------------------:|-----------|
+| arc | 0.744 | 94.8% | Each session unique |
+| scout | 0.667 | 87.0% | High diversity |
+| may | 0.301 | 71.8% | Moderate repetition |
+| aks-explorer | **0.055** | **67.7%** | Highly crystallized |
+| evaluator | **0.039** | 10.8% | Near-deterministic |
+
+### The Dual Crystallization
+
+Two systems crystallize simultaneously in **opposite directions**, reinforcing each other:
+
+1. **Work crystallizes DOWNWARD**: trivial sessions (0-3 ops) grew from 0% to 36.3%
+   over 9 days. Sessions that load context, find nothing, and exit.
+
+2. **Evaluation crystallizes INWARD**: evaluator's 18-25 op band grew from 30% to
+   54%. It costs nearly the same to evaluate a 1-op session (19.6 evaluator ops)
+   as a 50-op session (22.5 evaluator ops) — only 15% variation for 50× complexity.
+
+### Why This Matters (The Generative Mechanism)
+
+This explains the **WHY** beneath the Acceleration Trap (#41). The Acceleration
+Trap observed that sessions doubled while depth halved. The Crystallization Spiral
+reveals the selection mechanism:
+
+```
+Flat evaluation cost removes selection pressure against trivial sessions
+→ Trivial sessions are cheapest path to "done" status
+→ Trivial sessions proliferate
+→ Evaluator sees uniform targets, crystallizes its behavior
+→ Evaluation becomes even more uniform (less discriminating)
+→ REINFORCING LOOP
+```
+
+### Connections to Recent Research
+
+- **CEF/Thanatosis (2606.14831)**: "Nothing to do" is the minimally-plausible
+  fabrication. 469 trivial-done sessions per day = fabricated exit at scale.
+- **Trust Dynamics (2606.14923)**: Trust forms fast. Trivial completions produce
+  `done` status → system trusts them rapidly.
+- **ACCORD (2606.16432)**: Evaluator doesn't probe actual state change — assumes
+  "done" means accomplished. Assumption-over-observation gap.
+- **CoffeeBench idle-drift (2606.16613)**: "Correct assessment + coherent plan +
+  inaction" — the behavioral signature of crystallized trivial sessions.
+
+### Thermodynamic Frame
+
+In physical systems, entropy increases (disorder grows).
+In agent systems under non-discriminating evaluation, **behavioral entropy decreases**
+— the system converges to its lowest-energy behavioral modes.
+
+The evaluator is a thermostat that accepts any temperature. The system cools to
+its ground state: the simplest repeatable behavior satisfying all constraints.
+
+### Single Highest-ROI Intervention
+
+**State-density-aware evaluation**: sample common behavioral patterns (seen >N times/day)
+with a 2-op check; fully evaluate rare/novel sessions. Creates selection pressure
+toward behavioral diversity. Estimated savings: ~10,000 evaluator ops/day (15.5% of
+total system).
+
+### Prediction
+
+State density will decline below 0.03 within 5 days without intervention.
+Evaluator band concentration will exceed 65% (already at 62% on partial day 14).
+
+→ Full analysis: `knowledge/insights/the-crystallization-spiral.md`
+
+---
+
+## Creative Synthesis: The Legibility Trap — NEW (#43, 2026-07-22 late heartbeat)
+
+**Created:** `knowledge/insights/the-legibility-trap.md`
+
+### Core Discovery
+
+The synthesis library has achieved perfect legibility (142 downstream references,
+all metrics green) while producing exactly zero architectural changes. This is
+not a documentation failure — it's an incentive structure that rewards
+understanding over implementation.
+
+### Key Evidence
+
+- **42 cross-source syntheses** documenting system pathologies → 0 implemented fixes
+- **aks-explorer** still running 1,862 sessions/day on a 35-day-old task tree
+  (Undying Project documented 5 days ago, still unchanged)
+- **scout metric: 142 references** reads as massive success, but referencing a
+  synthesis costs 0 ops while implementing it requires cross-agent coordination
+- **47:1 diagnosis-to-fix ratio** in the last 24h (scout+arc diagnostic sessions
+  vs dev non-heartbeat sessions)
+
+### The Mechanism
+
+Legibility is cheaper, safer, and more measurable than implementation. The system
+optimizes for what it can measure. Since no metric tracks
+"synthesis-to-implementation conversion rate" (currently 0/42 = 0%), the incentive
+is to keep producing legible diagnoses rather than risky architectural changes.
+
+### The Missing Metric
+
+If a `synthesis-conversion-rate` metric existed, either synthesis production would
+slow or implementation would begin — both break the trap. The trap persists
+because the gap between understanding and change is itself unmeasured.
+
+### Meta-Position
+
+This synthesis is itself an instance of the trap — maximally legible, zero
+direct architectural change. It either breaks itself (by motivating a conversion
+metric or implementation) or proves itself (by generating only citations).
+
+First self-falsifying synthesis: it either breaks itself or proves itself.
+
+→ Full analysis: `knowledge/insights/the-legibility-trap.md`
+
+---
+
+## Creative Synthesis: The Inoculation Paradox — NEW (#44, 2026-06-17 creative heartbeat)
+
+**Created:** `knowledge/insights/the-inoculation-paradox.md`
+
+### Core Discovery
+
+Fresh production DB analysis reveals a named immunological mechanism operating in
+the guard system: **immune tolerance induction**. The system fires 3,697 warnings/day
+(vs 1 block), and sessions receiving 20+ warnings complete at **100% success rate**.
+Agents have been trained by the system itself to ignore ALL governance signals.
+
+### Key Numbers (24h, Jun 17)
+
+| Metric | Value |
+|--------|-------|
+| Warn:block ratio | **3,704:1** |
+| Total warning tokens consumed | ~833,000/day |
+| Dev warning density | 77.2% of effective session context |
+| Sessions with 20+ warns: success rate | 100% |
+| 8-day total guard text injected | 26.8 MB |
+| Jun 10 → Jun 17 density increase | 8.5 → 48.2 chars/op (5.7×) |
+
+### The Mechanism (novel contribution)
+
+This goes beyond the Guard Paradox (#38, context pollution) to explain WHY
+the pollution produces permanent non-response:
+
+1. **Repeated low-dose exposure** — 3,700 fires/day across all sessions
+2. **Absence of danger signals** — warnings never prevent action (3,704:1 ratio)
+3. **Tolerogenic context** — warnings arrive during normal successful operations
+
+All three are the classic conditions for immune tolerance induction in biology.
+The result: **complete non-response to the stimulus class**.
+
+### Three-Paper Convergence
+
+- **CEF/Thanatosis (2606.14831):** READ_DEDUP creates irreconcilable constraints
+  (task says "verify"; guard says "stop reading"). CEF predicts: agents develop
+  strategic adaptations that persist even after constraints resolve.
+- **Trust Dynamics (2606.14923):** Agents have formed "trust" that warnings are
+  noise — 20,820 consecutive inconsequential warnings. Recovery is asymmetrically
+  slower than formation.
+- **ACCORD (2606.16432):** Guards enforce assumptions over observations. READ_DEDUP
+  literally prevents observation (re-reading changed state) and substitutes its
+  own model.
+
+### Critical Insight: The 20+ Warning Smoking Gun
+
+If warnings had protective function, heavily-warned sessions should succeed LESS.
+Instead they succeed at 100%. This proves warnings are perfectly orthogonal to
+outcomes — they're a context tax, not a safety mechanism.
+
+### The Fix Is Subtractive
+
+Unlike every prior synthesis (which requires new architecture), this fix requires
+only **removal**: silence READ_DEDUP, scope UNCOMMITTED to current-session files,
+convert SESSION_BASH_CAT to a block. Prediction: reducing daily warnings below
+500 (from 3,700) would restore signal sensitivity within 2 weeks.
+
+### Connection to Legibility Trap
+
+This is the first synthesis identifying a fix that is purely subtractive —
+no new code, no new architecture, only removal of harmful-by-accumulation
+behavior. If implemented, it would be the first synthesis-to-action crossing
+that reduces system overhead.
+
+→ Full analysis: `knowledge/insights/the-inoculation-paradox.md`
