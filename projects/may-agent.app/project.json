@@ -21,7 +21,7 @@
   "taskIndex": ["tasks/tree.json"],
   "currentFocus": {
     "taskId": null,
-    "summary": "Fixed heartbeat-scout FM-3.4 false-positive (handler.failed id 1494500): inner session prompt from scout-heartbeat.ts contained inbox lines with 'project:' paths triggering the guard. Added 'persistent-task: skip' to the workflow's prompt template. Bundle rebuilt, daemon restarted. Alerts 1915 (daemon-heartbeat-stale) and 1901 (error-rate-6h) both auto-resolved. Remaining 3 alerts (1910-1912) are evaluator-quality-gap-calibration findings — correctly deferred and evaluator-owned. 6 backlog tasks remain."
+    "summary": "Alert 1924 (provider-error) auto-resolved at 13:32 UTC. Alert 1923 (first-turn=21, threshold=15) declining; expected auto-resolve ~13:57 UTC as 12:57 burst ages out of 1h window. 105 sessions since burst, 0 new errors. aks-rp-e2e alert 1922 owned by aks-explorer. escalation.pending-count=5 (human-action backlog). evaluator-quality-gap-calibration active under evaluator (planner false-good HEURISTIC_VERSION=11 fix in progress, false-good rate 0.1605 vs target 0.05). 0 handler.failed, 0 session.resume_failed. 7 backlog leaves (P2 docs/design), 0 active."
   },
-  "updatedAt": "2026-06-17T09:38:00.000Z"
+  "updatedAt": "2026-06-17T13:38:00.000Z"
 }
