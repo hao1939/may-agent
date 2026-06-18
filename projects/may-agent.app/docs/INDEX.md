@@ -31,7 +31,7 @@ System architecture and subsystem designs.
 |-----|------|
 | [architecture.md](2a-design/architecture.md) | System architecture: event bus, metrics, agents, workflows, storage |
 | [sdk.md](2a-design/sdk.md) | AgentSDK + WorkflowSDK: the canonical capability surface |
-| [events.md](2a-design/events.md) | Event-native architecture: immutable events, inbox, event types |
+| [events.md](2a-design/events.md) | Event-native architecture: delivery, inbox, event types |
 | [sessions.md](2a-design/sessions.md) | Session model: lifecycle, state machine, parent links, persistence |
 | [session-eval-trail.md](2a-design/session-eval-trail.md) | Session evaluation trail: summary projection plus append-only line evidence beside raw session logs |
 | [practice-learning-loop.md](2a-design/practice-learning-loop.md) | Practice learning loop: sessions become eval trails, human feedback, evolution candidates, and project changes |
@@ -71,6 +71,8 @@ How-to guides derived from principles and implementation.
 | [handler-authoring.md](2b-manual/handler-authoring.md) | End-to-end handler writing guide |
 | [workflow-authoring.md](2b-manual/workflow-authoring.md) | How to write and invoke workflows |
 | [metric-alerts.md](2b-manual/metric-alerts.md) | How agents triage, fix, downgrade, resolve, or escalate alerts |
+| [event-runtime-audit.md](2b-manual/event-runtime-audit.md) | How to compare live event emitters, consumers, delivery, and pair health against the design |
+| [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) | How to inspect live guard volume, repeat signals, and threshold quality |
 | [agent-convention.md](2b-manual/agent-convention.md) | Directory layout, convention files, agent.json |
 
 ## Tier 3 — Proposals & History
@@ -102,7 +104,7 @@ preserved in
 
 | Need | Read |
 |------|------|
-| Operate or debug a running instance | [user-guide.md](2b-manual/user-guide.md), [metrics.md](2a-design/metrics.md), [runtime.md](2a-design/runtime.md) |
+| Operate or debug a running instance | [user-guide.md](2b-manual/user-guide.md), [metrics.md](2a-design/metrics.md), [event-runtime-audit.md](2b-manual/event-runtime-audit.md), [guard-runtime-audit.md](2b-manual/guard-runtime-audit.md), [runtime.md](2a-design/runtime.md) |
 | Handle an alert | [metric-alerts.md](2b-manual/metric-alerts.md), [metrics.md](2a-design/metrics.md), [events.md](2a-design/events.md) |
 | Write behavior | [work-model.md](1-principles/work-model.md), [workflow-authoring.md](2b-manual/workflow-authoring.md), [handler-authoring.md](2b-manual/handler-authoring.md) |
 | Change infra boundaries | [architecture.md](2a-design/architecture.md), [system-boundary.md](2a-design/system-boundary.md) |

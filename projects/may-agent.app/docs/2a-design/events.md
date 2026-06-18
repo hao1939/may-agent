@@ -3,10 +3,16 @@
 ## Core Principle
 
 ```
-Event = something that happened at a point in time
+Event = a durable signal that something can react to
 ```
 
-Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table serves as the audit trail for the **retention window** (currently 7 days — see Data Retention below), though its current mutable columns (`status`, `handled_by`, `result`, `reason`, `retry_count`) predate the delivery-acceptance model and should not be treated as reliable acceptance state.
+Events are the primary wake-up and communication mechanism. Durable state still
+lives in tables/files when that is the clearer owner of truth. The events table
+serves as the audit trail for the **retention window** (currently 7 days — see
+Data Retention below), though its current mutable columns (`status`,
+`handled_by`, `result`, `reason`, `retry_count`) predate the
+delivery-acceptance model and should not be treated as reliable acceptance
+state.
 
 > **Not append-only.** The `db-retention` handler (daily cron) deletes events
 > older than 7 days. As of 2026-06-10, ~1M historical events have been pruned;
@@ -84,7 +90,7 @@ Persistent row mapping:
 | *(infra only)* | `delivery_status` | `pending`, `accepted`, or `unhandled`; delivery bookkeeping |
 | *(infra only)* | `accepted_by` | Responsible consumer that accepted delivery |
 | *(infra only)* | `accepted_at` | Acceptance timestamp |
-| *(infra only)* | `delivery_route` | `direct`, `owner_inbox`, or `noop` |
+| *(infra only)* | `delivery_route` | `direct`, `owner_inbox`, or `noop` for legacy baselines only |
 | *(infra only)* | `delivery_note` | Optional delivery detail |
 | *(legacy infra)* | `status` | Legacy inbox/expiry column; do not use for delivery acceptance |
 | *(legacy infra)* | `handled_by` | Legacy inbox/manual consumer marker; not equivalent to delivery acceptance |
@@ -107,7 +113,7 @@ CREATE TABLE events (
   delivery_status    TEXT DEFAULT 'pending', -- pending | accepted | unhandled
   accepted_by        TEXT,
   accepted_at        INTEGER,
-  delivery_route     TEXT,                   -- direct | owner_inbox | noop
+  delivery_route     TEXT,                   -- direct | owner_inbox | noop (legacy baseline only)
   delivery_note      TEXT,
   -- legacy columns retained during migration:
   status       TEXT DEFAULT 'pending',
@@ -460,7 +466,10 @@ targets.
 }
 ```
 
-`learning.feedback` is emitted by the evaluator for actionable session findings. It is owner-targeted inbox input, not the canonical evaluation record. The canonical record remains the sibling `session.eval.jsonl` trail beside the raw `session.jsonl`.
+`learning.feedback` is emitted by the evaluator for session findings that need
+owner follow-up. It is owner-targeted inbox input, not the canonical evaluation
+record. The canonical record remains the sibling `session.eval.jsonl` trail
+beside the raw `session.jsonl`.
 
 Routing rule: set event `owner` to the responsible owner, either
 `agent:<name>` or `human:<role>`. For human-owned findings, runtime delivers the
@@ -513,11 +522,10 @@ allowing adapter-local evidence events when needed.
 
 For task-driven projects, the **live** task lifecycle events are
 `project.task.assigned` (planner assigns task to worker) and
-`project.task.completed` (task engine records completion). These have
-1,293 and 2,822 rows respectively as of 2026-06-15 and are the events to
-teach in handler and SDK examples. The older `project.task.dispatched` and
-`project.task.finished` pair (legacy project handler) has only 2 rows each
-and is effectively dead — do not use them as the canonical example.
+`project.task.completed` (task engine records completion). Teach these in
+handler and SDK examples. The older `project.task.dispatched` and
+`project.task.finished` pair belongs to the legacy project handler; do not use
+it as the canonical example.
 `project.iteration` remains a project-owner loop signal used by current
 health metrics and historical rows; do not use it as the general task
 lifecycle example.
@@ -535,15 +543,16 @@ owner-review items.
 ```text
 event emitted
 → direct handler accepts it
-  OR owner_inbox accepts it as fallback
-→ owner heartbeat/review later reacts by emitting a normal follow-up event
+  OR owner_inbox accepts owner-addressed inbox work
+  OR default owner route accepts other owned fallback
+→ owner heartbeat/review can later react by emitting a normal follow-up event
 ```
 
 The states are intentionally separate:
 
 ```text
 delivery_status = did a responsible route accept the event?
-delivery_route  = how was it accepted? direct | owner_inbox | noop
+delivery_route  = how was it accepted? direct | owner_inbox | noop (legacy baseline only)
 pair/work state = did the expected follow-up event arrive?
 ```
 
@@ -719,224 +728,17 @@ path: validate at the edge, persist via the bus, and let subscribers react.
 - Event payload examples should use the envelope shape above, not flattened
   domain fields.
 
-## Operational Status (appendix, refreshed 2026-06-13)
+## Runtime Audit
 
-This section reflects what the runtime actually emits and consumes, so readers do
-not mistake the taxonomy above for a live wiring diagram. Keep this table in sync
-when the wiring changes; the taxonomy is aspirational when it disagrees with this
-table.
+This design names the stable event model. It is not the live wiring report.
+Runtime row counts, dormant emitters, malformed event rows, and handler
+subscription coverage age quickly because the event table keeps only the
+retention window.
 
-### Emitter Reality
-
-Query `SELECT event_type, COUNT(*) FROM events GROUP BY event_type` for current numbers.
-Row counts below are **surviving rows** (7-day retention applies to `events` table — see Data Retention section). Snapshot refreshed 2026-06-18.
-
-**Handler lifecycle**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `handler.started` | cron runner on every handler invocation | ✅ live (32.5k rows) |
-| `handler.completed` | cron runner at handler success | ✅ live (32.4k rows) |
-| `handler.failed` | cron runner at handler throw | ✅ live (236 rows); `aks-rp-e2e-task-execution-worker` accounts for 189 of 236; remaining failures spread across `scout-explore-xhs` (17), `metrics-snapshot` (5), `metric-alert-reactor` (5), `aks-rp-e2e-project-planner` (4), `aks-rp-e2e-ready-task-picker` (3), `aks-rp-e2e-project-watchdog` (3), and others |
-| `handler.skipped` | cron runner when handler is skipped (debounce, no-op) | ✅ live (9.2k rows) |
-| `handler.workflow_dispatched` | cron runner when handler dispatches a workflow session | ✅ live (15.9k rows) |
-| `handler.routed` | handler routing infrastructure | ✅ live (46 rows) |
-
-**Session lifecycle**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `session.start` | runtime session lifecycle | ✅ live (8.3k rows) |
-| `session.end` | runtime session lifecycle | ✅ live (8.2k rows) |
-| `session.completed` | session lifecycle translator after `session.end`; carries `outcome ∈ {done,error,interrupted}` | ✅ canonical subscriber-facing terminal event (4.3k rows) |
-| `session.receipt` | runtime on session completion receipt | ✅ live (6.7k rows) |
-| `session.cancel.requested` | cancel intent from CLI/UI; currently also accepted as a flat socket command | ✅ live (248 rows) |
-| `session.resume_failed` | session-recovery when a resume target session is not found or cannot be resumed | ⚠️ dormant (2,333 rows aging out; last event 2026-06-15 04:53Z, rate 0/hr for 3+ days). Originally rebounded after Spec-3 collapse (14–48/hr Jun 14–15) then stopped permanently. Fix: dedup_key (KE-1837, ORDER-010 src/ change required); KE-1962: no handler subscriber |
-| `session.watchdog.cancelled` | watchdog cancellation of stale sessions | ⚠️ rare (10 rows) |
-
-**Human control intents**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `chat.start.requested` | canonical human-surface chat create-or-bind intent | ✅ live (14 rows) |
-| `session.steer.requested` | canonical human-surface session steering intent | ✅ live (10 rows) |
-| `session.cancel.requested` | canonical human-surface session cancel intent | ✅ live (248 rows); see session lifecycle above |
-| `session.cancel_all.requested` | canonical broad cancel intent | ❌ intended; 0 rows in DB |
-| `runtime.reload.requested` | canonical runtime reload intent | ✅ live (21 rows) |
-| `runtime.restart.requested` | canonical runtime restart intent | ✅ live (1 row) |
-| `runtime.shutdown.requested` | canonical runtime shutdown intent | ❌ intended; 0 rows in DB |
-
-**Project lifecycle — owner loop**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `project.iteration` | `agents/may/handlers/project.ts` when launching a project owner loop | ⚠️ live owner-loop signal; not the task lifecycle event (301 rows) |
-| `project.owner.dispatched` | project handler when dispatching an owner session | ✅ live (301 rows) |
-| `project.owner.finished` | project handler when owner session finishes | ✅ live (298 rows) |
-| `project.owner.incomplete` | project handler when owner session finishes without completing | ✅ live (12 rows) |
-| `project.execution.requested` | project handler or explicit UI workflow wake requesting iteration/execution | ✅ live (1.2k rows) |
-| `project.nudge` | project handler nudging stale/idle projects | ✅ live (39 rows) |
-| `project.audit.suggested` | project health check suggesting an audit | ✅ live (37 rows) |
-| `project.comment.created` | project comment system | ✅ live (2 rows) |
-| `project.action.requested` | HTTP/UI event ingress for project UI requests that the project app should interpret | ✅ accepted |
-| `project.status_changed` | no emitter exists | ❌ aspirational |
-| `project.execution.watchdog` | manual/operator recovery for stale zero-op sessions | ⚠️ rare (1 row); not wired to a handler |
-
-**Project lifecycle — owner & watchdog**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `project.owner.requested` | project-apps and agent sessions when requesting owner review (e.g. after task completion, human steering, metric signal) | ✅ canonical V3 event |
-| `project.planning.requested` | legacy compatibility alias for owner review | ⚠️ legacy; accepted during migration |
-| `project.watchdog.tick` | project execution watchdog schedule (cron-fired, checks for stale sessions) | ✅ live (~690 rows, ~276/24h, ~12/hour); single project `aks-rp-e2e`, 5-min interval cron |
-| `project.tick` | project-app scheduled tick (e.g. `lane: "learning"`, `lane: "replan-review"`); emitted by `app.ts` in project apps such as `aks-rp-e2e.app` and `may-agent.app` | ✅ live (19 rows); from `project-app:aks-rp-e2e:schedule:regular-learning` |
-| `project.problem.requested` | project-app problem-solver trigger when tasks fail with a common root cause | ✅ live (~195 rows); owner `agent:may` routes to problem-solver workflow |
-| `project.problem.escalated` | project-app problem-solver when a fix is found and applied | ✅ live (~170 rows) |
-
-**Project lifecycle — task-driven**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `project.task.dispatched` | project handler when dispatching a task item to its assignee | ✅ live (20 rows) |
-| `project.task.finished` | project handler when the task session resolves or throws | ✅ live (20 rows) |
-| `project.task.execution.requested` | project task engine requesting task execution | ✅ live (2.5k rows) |
-| `project.tasks.ready` | project task engine when tasks become ready | ✅ live (1.4k rows) |
-| `project.task.completed` | project task engine when a task completes | ✅ live (2.2k rows) |
-| `project.task.assigned` | project-planner when assigning a task to a worker agent | ✅ live (268 rows); from `agent:aks-explorer` project-planner sessions |
-
-**Project health**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `project.health.checked` | project health checker on every check cycle | ⛔ emission removed (commit 73d989fdb, 2026-06-10); all rows purged by 7-day retention (0 rows as of 2026-06-18) |
-| `project.health.finding` | project health checker on detected issues | ✅ live (178 rows) |
-
-**Task lifecycle (generic)**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `task.started` | task execution engine | ✅ live (3.4k rows) |
-| `task.claimed` | task execution engine when agent claims a task | ✅ live (1.3k rows) |
-| `task.verified` | task execution engine when task passes verification | ✅ live (333 rows) |
-| `task.promoted` | task execution engine when task is promoted | ✅ live (82 rows) |
-| `task.rejected` | task execution engine when task is rejected | ✅ live (979 rows) |
-| `task.requeued` | task execution engine when task is requeued for retry | ✅ live (276 rows) |
-| `task.blocked` | task execution engine when task is blocked | ✅ live (16 rows) |
-| `task.deferred` | task execution engine when a task is deferred (e.g. waiting for dependency gate) | ⚠️ rare (1 row); from `agent:aks-explorer` |
-
-**Evaluation lifecycle**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `evaluation.routed` | evaluator aftermath when routing a session for review | ✅ live (3.7k rows) |
-| `evaluation.reviewed` | evaluator aftermath after reviewing a session | ✅ live (3.1k rows) |
-| `evaluation.triage_closed` | evaluator aftermath when triage is closed | ✅ live (2.1k rows) |
-| `evaluation.learning_created` | evaluator aftermath when a learning is extracted | ✅ live (1.4k rows) |
-| `evaluation.success_candidate` | evaluator aftermath marking a session as good | ✅ live (1.1k rows) |
-| `evaluation.deep_dispatched` | evaluator dispatching an LLM-based deep eval | ✅ live (177 rows) |
-| `evaluation.deep_recorded` | evaluator recording a deep eval result | ✅ live (190 rows) |
-| `evaluation.false_good` | evaluator overturning a previously-good session | ✅ live (109 rows) |
-| `evaluation.skipped` | evaluator skipping a session (not worth evaluating) | ✅ live (41 rows) |
-
-**Metrics**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `metric.breach` | `metrics-snapshot.ts` when `breached && !openAlert` | ✅ live (307 rows) |
-| `metric.recovered` | `metrics-snapshot.ts` when metric recovers from breach | ✅ live (308 rows) |
-| `metric.alert_judged` | metric-alert-triage workflow after agent judges an alert | ✅ live (152 rows) |
-| `metric.stalled` | `metrics-snapshot.ts` on `stall_after_ms` window | ❌ 0 rows in events table; emitter may have been removed or is dormant |
-
-**Agent communication**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `message.created` | message-bus emitter on agent-to-agent message create | ✅ live (1.6k rows) |
-| `message.delivery_failed` | message delivery when target is unreachable | ❌ 0 rows in DB |
-| `agent.decision` | agent sessions recording decisions | ✅ live (1.4k rows) |
-| `agent.config_invalid` | config loader on agent config validation failure | ❌ 0 rows in DB |
-
-**Escalation lifecycle**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `escalation.created` | `sdk.escalate`; blocked/failure session boundary promotion | ✅ live (46 rows) |
-| `escalation.routed` | escalation router emits after routing to owner | ✅ live (46 rows) |
-| `escalation.resolved` | owner sessions/handlers may emit it when they have a disposition | ❌ **no emitter exists** — 0 rows in events table; escalation lifecycle handler not implemented (KE-1242) |
-
-**Heartbeat lifecycle**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `heartbeat.step_started` | heartbeat workflow on each step | ✅ live (1.4k rows) |
-| `heartbeat.diagnostics_started` | heartbeat diagnostics phase start | ✅ live (149 rows) |
-| `heartbeat.diagnostics_completed` | heartbeat diagnostics phase end | ✅ live (149 rows) |
-| `heartbeat.skipped` | heartbeat skipped (agent busy, debounce) | ✅ live (21 rows) |
-
-**Session recovery**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `session.recovery_failed` | session-recovery handler (`agent:may`) when a task's original session or task record is missing | ⚠️ rare (7 rows); distinct from `session.resume_failed` (which fires when a resume target sessionId is not found) |
-
-**Learning and feedback**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `learning.feedback` | `evaluator-aftermath` when an owner finding should notify now | ✅ wired for actionable evaluator findings (208 rows) |
-
-**Context and infrastructure**
-
-| Event type | Emitted by | Status |
-|---|---|---|
-| `context.read` | context system when reading agent context | ✅ live (3.6k rows); ⛔ evaluator-aftermath emission removed (commit 73d989fdb, 2026-06-10) |
-| `steer` | session steering from CLI/UI | ✅ live (4 rows) |
-| `trigger.project` | manual project trigger from operator | ✅ live (2 rows) |
-| `restart` | daemon restart signal | ✅ live (5 rows) |
-| `reload` | daemon reload signal | ✅ live (1 row) |
-| `codex.probe` | codex integration probe (external tooling handshake) | ⚠️ rare (1 row); ephemeral diagnostic |
-| `cancel` | legacy cancel signal from session watchdog / operator | ⚠️ legacy (10 rows, no `source`); superseded by `session.cancel.requested` |
-
-### Data Quality: Malformed event_type rows
-
-As of 2026-06-15, 11 events have an entire JSON blob stored in `event_type`
-instead of a plain dot-separated string (e.g.
-`{"type":"project.execution.requested","project":"aks-rp-e2e",...}`). These
-were injected via codex/operator and bypass the normal emit path. They are not
-harmful but will not match any handler's `on:` filter. Two temporal clusters:
-7 events from ~5.3 days ago, 4 events from ~0.3 days ago (KE-1991). Query:
-`SELECT * FROM events WHERE LENGTH(event_type) > 100`.
-
-Note: `session.completed` is translated from `session.end` in daemon event
-subscribers. `session.failed` is not a live runtime event. `project.status_changed`
-still has no emitter. `session.resume_failed` is dormant — last event 2026-06-15 04:53Z, rate 0/hr for 3+ days (2,333 rows aging out via retention).
-Split shifted: ~50% task, ~41% planner, ~8% problem (was planner-dominated until Jun 14).
-
-### Consumer Reality
-
-Query for live numbers:
-```sql
-SELECT handler_name, COUNT(*) FROM handler_runs WHERE started_at > unixepoch() * 1000 - 86400000 * 7 GROUP BY handler_name;
-```
-
-| Handler | Subscribes to | Status notes |
-|---|---|---|
-| `session-recovery` | target: `session.completed` where `outcome` is `error` or `interrupted` | Converge on `session.completed` for real-time recovery, with the 5-min timer fallback scanning missed terminal errors. |
-| `evaluator-aftermath` | `session.completed` | ✅ wired; `session-aftermath-scan` remains the 7-minute fallback |
-| `escalation` | `escalation.created` | ✅ routes to owner via message; emits `escalation.routed` |
-| `escalation-lifecycle` | `escalation.resolved`, `escalation.dismissed` | ❌ **no handler exists** — no `.ts` file implements this; `escalation.resolved` has 0 rows in events table (KE-1242) |
-| `metric-alert-reactor` | `metric.breach` | ✅ wired; timer fallback also scans unresolved alerts |
-| (no handler) | `metric.stalled` | ❌ **no handler exists** — KE-781 |
-| `context-learn` | `context-learn` | ❌ replaced by timer-driven `context-learn-poller` |
-
-### When Extending This Design
-
-Before adding a new `on:`-only handler:
-1. Confirm the source event is emitted (query `events` table for ≥1 row in the last 7 days).
-2. Add a timer-driven fallback only when the workflow needs delayed/backfill behavior.
-
-Before adding a new event type to the `SystemEvent` union:
-1. Identify the emitter site in code, not just in this spec. A type added here without an emitter is the failure mode that produced `project.status_changed` above.
+Use [event-runtime-audit.md](../2b-manual/event-runtime-audit.md) to compare
+the current runtime against this design. If that audit finds a design mismatch,
+update the design or implementation directly; do not add dated row-count tables
+to this file.
 
 ## Data Retention
 
@@ -995,7 +797,7 @@ Approved 2026-06-04 via `shared/work-queue.md`; proposal at
 - KE-455 — every event-only handler has fired zero times
 - KE-468 — `project.iteration` has two incompatible payload shapes
 
-## Proposal: Event Delivery and Completion Tracking (2026-06-18)
+## Event Delivery and Completion Tracking
 
 ### Event Rule
 
@@ -1021,7 +823,8 @@ a log/state update instead of an event.
 ```
 event emitted → bus delivers to subscribers
              → one or more subscribers accept responsibility → accepted
-             → no subscriber accepts responsibility → unhandled → owner
+             → no specialized subscriber accepts, event has owner → default owner route accepts
+             → no subscriber and no owner → unhandled → ops health surfaces it
 ```
 
 ### Two Things Infra Tracks
@@ -1070,7 +873,7 @@ event:
 delivery_status TEXT DEFAULT 'pending', -- pending | accepted | unhandled
 accepted_by     TEXT,                   -- cron:..., app:..., runtime:...
 accepted_at     INTEGER,
-delivery_route  TEXT,                   -- direct | owner_inbox | noop
+delivery_route  TEXT,                   -- direct | owner_inbox | noop (legacy baseline only)
 delivery_note   TEXT
 ```
 
@@ -1112,20 +915,18 @@ at least one responsible consumer accepted the event.
 Only a subscriber that is taking responsibility for the event should report
 acceptance:
 the matching project-app handler, the targeted runtime/session handler, the
-event-pair tracker for lifecycle-shaped events, the owner inbox/default-owner
-handler for addressed owner work, or an explicit no-op handler. Broad
-subscribers such as DbWriter, UI tailing, logging, and passive metrics readers
-must not report acceptance, because that would hide routing gaps.
+event-pair tracker for lifecycle-shaped events, the owner inbox route for
+addressed owner work, or the default owner route for any other owned event.
+Broad subscribers such as DbWriter, UI tailing, logging, and passive metrics
+readers must not report acceptance, because that would hide routing gaps.
 
-Some events are optional hooks: they are emitted so a handler can react, but
-the absence of a handler is not itself a failure. Examples include daemon
-heartbeats, routing/skip facts such as `metric.feedback.routed`, guard facts,
-session receipts, and evaluation audit facts such as
-`evaluation.deep_recorded`. If no targeted consumer claims one of these, the
-runtime optional hook consumer accepts it with
-`delivery_route='noop'`. This is different from a passive logger accepting
-everything: the noop set is explicit and should stay small. If an event
-represents required work, do not put it in the optional hook set.
+The default owner route avoids maintaining event-specific ignore lists. If an
+event has an owner and no specialized handler claims it, delivery falls back to
+`accepted_by='default-owner:<owner>'` and `delivery_route='direct'`. This keeps
+the bus simple: every owned event has an accountable owner, and owner review can
+decide whether to ignore, record, replan, or act. Delivery fallback does not mean
+a workflow already completed. If no owner or component can ever react, it should
+be a log/state update instead of an event.
 
 Owner inbox acceptance is a real delivery acceptance, but it is not the same as
 owner reaction. It means "this event has been routed to the owner's pull queue."
@@ -1255,10 +1056,10 @@ Delivery health is a normal runtime read model:
   event within its TTL.
 - `delivery_status='pending'` with an expired TTL means the row is overdue but
   has not yet been swept.
-- `delivery_route='noop'` means a runtime component explicitly accepted that no
-  further reaction is required. This is also used once during migration to
-  baseline events that predate delivery tracking, so old audit rows do not turn
-  into fake delivery failures.
+- `accepted_by='default-owner:<owner>'` means no specialized handler claimed
+  the event, so delivery fell back to the accountable owner route.
+- `delivery_route='noop'` is retained for legacy baselines where old audit rows
+  predate delivery tracking and should not become fake delivery failures.
 - `event_pair_runs.status='orphan'` means an expected closing event did not
   arrive before the timeout.
 - `event_pair_runs.status='open'` with `expected_close_at < now` means the pair
@@ -1271,10 +1072,10 @@ project owner only when there is an actual delivery or pair failure.
 
 ### What This Gives Us
 
-- **Unhandled event detection**: new event type with no subscriber →
-  infra knows within one TTL window.
-- **Routing gap detection**: app filter too narrow → event unhandled →
-  visible.
+- **Unhandled event detection**: new event type with no subscriber and no owner
+  route → infra knows within one TTL window.
+- **Routing gap detection**: app filter too narrow → event falls back to
+  `default-owner:<owner>` → visible.
 - **Orphan detection**: opening event without closing event → stuck work
   → visible. Generalizes what `session-recovery` already does.
 - **No per-event-type delivery logic**: infra treats all acceptance reports the
@@ -1287,11 +1088,13 @@ project owner only when there is an actual delivery or pair failure.
 1. Let bus subscribers optionally return a delivery result such as
    `{ accepted: true, by: string }`
 2. DbWriter stores every event for recovery/audit and never reports acceptance
-3. Define the responsible consumer for each event type or route pattern
+3. Define direct consumers for event types or route patterns that need them;
+   owned events can always fall back to the default owner route
 4. Cron handler dispatcher accepts events it dispatches to a matching handler
 5. App event router accepts events it routes to a matching project app
-6. Owner/default-owner inbox accepts owner-addressed events that no target
-   handler owns by setting `delivery_route='owner_inbox'`
+6. Owner inbox accepts owner-addressed requests/messages that no target handler
+   owns by setting `delivery_route='owner_inbox'`; the default owner route
+   accepts any remaining owned event with `delivery_route='direct'`
 7. Delivery acceptance updates the original event row; it does not append an
    accepted event
 8. Heartbeat/review emits follow-up events such as `message.consumed`,
@@ -1300,8 +1103,8 @@ project owner only when there is an actual delivery or pair failure.
    queries also report overdue pending events that have not been swept yet
 10. Pair tracker accepts lifecycle-shaped events and opens/closes
     `event_pair_runs` from naming/key conventions
-11. Runtime optional-hook consumer accepts known optional/audit hooks as
-    `delivery_route='noop'` if no required consumer claimed them
+11. Default owner route accepts any remaining owned event as
+    `delivery_route='direct'`
 12. Write-time sweep marks orphan openings; health queries also report overdue
     open pairs that have not been swept yet
 13. Ops health packet includes unhandled count + owner-inbox orphan count +
@@ -1323,9 +1126,9 @@ inbox draining. That should converge to delivery fields plus follow-up events:
 Migration can be compatibility-first:
 
 1. Add the new columns and write them for new rows.
-2. Mark pre-delivery-tracking rows as `delivery_status='accepted'`,
-   `delivery_route='noop'`, `accepted_by='legacy:event-store'` using a one-time
-   migration marker.
+2. Mark pre-delivery-tracking rows as `delivery_status='accepted'` using
+   compatibility migration markers: old rows use `accepted_by='legacy:event-store'`;
+   unclaimed owned rows use `accepted_by='default-owner:<owner>'`.
 3. Keep reading legacy `status` as a fallback while backfilling.
 4. Replace `markInboxHandled()` call sites with `reviewInboxEvents()`.
 5. Update heartbeat/review queries to prefer `delivery_route='owner_inbox'` and

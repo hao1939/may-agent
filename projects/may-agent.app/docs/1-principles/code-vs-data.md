@@ -49,18 +49,21 @@ When the environment changes:
 - **Blocking guard**: find the regex, edit code, rebuild image, redeploy pod — and you won't know it's broken until an agent gets incorrectly blocked
 - **context.md**: edit one line, takes effect next session
 
-Guards are still valuable as detectors. Prefer `observe` or `warn` when the
-signal is useful but not reliable enough to stop work. A guard event can reveal
-agent weakness, missing context, misleading prompt text, or workflow design
-gaps without interrupting productive work.
+Guards are still valuable as detectors, but they should not be the first tool
+for uncertain behavior. Prefer metrics or evaluator review first. Promote to an
+`observe` or `warn` guard only after the signal is repeated, useful, and needs
+near-action visibility. A guard event can reveal agent weakness, missing
+context, misleading prompt text, or workflow design gaps without interrupting
+productive work.
 
 ## The Test
 
 Before adding any blocking guard, ask:
 1. Will this regex produce false positives when the environment changes?
-2. Could an observe/warn guard collect the signal first?
+2. Could a metric or evaluator review collect the signal first?
 3. Could a context.md fact or workflow step achieve the same result?
-4. Is there a gym scenario proving the blocking guard works better?
+4. Has an observe/warn guard already proven the detector is reliable?
+5. Is there a gym scenario proving the blocking guard works better?
 
-If you can't answer "no, no, no, yes" — do not block. Use context.md,
-workflow structure, or an observe/warn guard.
+If you can't answer "no, no, no, yes, yes" — do not block. Use metrics,
+evaluator review, context.md, workflow structure, or an observe/warn guard.

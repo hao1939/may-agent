@@ -25,8 +25,10 @@ Docs follow a hierarchy of truth. Higher tiers govern lower tiers — conflicts 
 
 1. [manual/user-guide.md](2b-manual/user-guide.md) — CLI, Docker, socket, and chat commands
 2. [design/metrics.md](2a-design/metrics.md) — what the live metrics mean
-3. [manual/metric-alerts.md](2b-manual/metric-alerts.md) — how alerts should be handled
-4. [design/runtime.md](2a-design/runtime.md) — runtime internals when something is broken
+3. [manual/event-runtime-audit.md](2b-manual/event-runtime-audit.md) — compare live event emitters, consumers, delivery, and pair health against the design
+4. [manual/guard-runtime-audit.md](2b-manual/guard-runtime-audit.md) — inspect guard volume, repeat signals, and threshold quality
+5. [manual/metric-alerts.md](2b-manual/metric-alerts.md) — how alerts should be handled
+6. [design/runtime.md](2a-design/runtime.md) — runtime internals when something is broken
 
 ### I want to build or fix agent behavior
 

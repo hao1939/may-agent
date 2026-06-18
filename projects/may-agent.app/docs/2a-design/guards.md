@@ -1,37 +1,60 @@
 # Guards As Signals
 
-**Status**: Guard trigger event emission and first metrics slice implemented.
-
 Guards are detection signals first. Blocking is only one intervention mode.
 
 Default meaning:
 
-```
+```text
 mechanical detector fired -> emit unreviewed signal -> optional intervention -> later review
 ```
 
 Not:
 
-```
+```text
 regex matched -> proof the agent was wrong -> hard block
 ```
 
-Every guard trigger should be observable. The important event is that the
+Every guard trigger should be observable. The important fact is that the
 system detected a possible weakness, risk, missing context, misleading workflow
 prompt, tool-surface confusion, or near-miss. A guard trigger is not solid
 evidence by itself. It may be a true positive, false positive, noisy detector,
 useful intervention, or harmful interruption.
 
-Guard output therefore enters the learning system as an unreviewed signal. The
-evaluator or owner must compare the guard event with the raw session log, tool
+Guard output enters the learning system as an unreviewed signal. The evaluator
+or owner must compare the guard event with the raw session log, tool
 request/output, project context, and final result before assigning blame or
 changing behavior.
+
+## Default Path
+
+Default to metrics or evaluator review before adding a guard.
+
+Use this progression unless the risk is high-impact and must be prevented
+immediately:
+
+```text
+observe through metric/eval -> confirm repeated pattern -> improve workflow/tool/context -> add guard only if enforcement or near-action warning is still needed
+```
+
+A guard is justified when at least one condition holds:
+
+- The mistake is high impact and should be prevented at the action boundary.
+- The detector is precise, cheap, and has low false-positive risk.
+- The signal will be reviewed and used to fix workflow, tooling, or context.
+- Repeated incidents show the issue is systemic and softer feedback did not
+  close it.
+
+If the team hesitates, do not add a guard yet. Add a metric, evaluator check,
+or review task first. Promote to an `observe` or `warn` guard only after the
+signal proves useful. Promote to `block` only after the detector has strong
+evidence and the cost of letting the action through is higher than the cost of
+a false positive.
 
 ## Modes
 
 | Mode | Behavior | Use when |
 |---|---|---|
-| `observe` | Emit a guard event only. Do not interrupt the agent. | New guard, uncertain detector, behavior research, false-positive risk. |
+| `observe` | Emit a guard event only. Do not interrupt the agent. | Proven metric/eval signal that needs near-action visibility but should not affect work. |
 | `warn` | Emit event and inject warning/context into the current session or next workflow step. | Likely issue but agent may self-correct. |
 | `repair` | Emit event and inject/run a recovery step. | Mechanically recoverable issue such as missing verification. |
 | `block` | Stop the action/session/workflow and emit event. | High-confidence, high-impact risk. |
@@ -49,7 +72,7 @@ observability without each guard author wiring custom logging.
 
 Default path:
 
-```
+```text
 guard fires
   -> emit guard.triggered
   -> default guard handler records metrics/projection
@@ -58,7 +81,7 @@ guard fires
 ```
 
 The guard runtime detects and intervenes. The default handler observes and
-measures. Agents/evaluator judge and improve the system.
+measures. Agents, evaluator, and owners judge and improve the system.
 
 ## Standard Event
 
@@ -68,7 +91,7 @@ type GuardTriggeredEvent = {
   guard: string;
   demandType: "warn" | "block" | "run_step";
   action: "warned" | "blocked" | "injected" | "skipped_duplicate" | "skipped_invalid" | "skipped_limit";
-  source: "workflow";
+  source: "workflow" | "tool";
   owner: string;
   sessionId?: string;
   workflowRunId?: string;
@@ -84,441 +107,60 @@ type GuardTriggeredEvent = {
 
 Target invariant: every guard trigger emits `guard.triggered`.
 
-## Two-Tier Guard Architecture
+## Architecture
 
-Guards operate at two levels, both emitting `guard.triggered` events:
+Guards operate at two levels, both emitting `guard.triggered` events.
 
-### Tier 1: Workflow Guards (`shared/guards/*.ts`)
+### Workflow Guards
 
-Loaded by `shared/guards/loader.ts`. Fire on workflow step transitions
-(`step_done`, `step_started`, etc.). Each guard exports
-`guard: WorkflowGuard` with a `handle()` method. Returns demands
-(`warn`, `block`, `run_step`). Events use `source: "workflow"` and the
-guard's own name in the `guard` field.
+Workflow guards live under `shared/guards/*.ts` and are loaded by
+`shared/guards/loader.ts`. They fire on workflow step transitions such as
+`step_done` or `step_started`.
 
-Active workflow guards (as of 2026-06-06):
-`auto-test`, `build-check`, `cost-limit`, `finish-guard`,
-`hallucinated-path`, `knowledge-entry-overwrite`, `milestone-quality`,
-`no-secret-leak`, `rbe-primer`, `read-before-edit`, `vae-primer`.
-(`verify-after-write` is disabled.)
+Each guard exports `guard: WorkflowGuard` with a `handle()` method. The guard
+returns demands such as `warn`, `block`, or `run_step`. Events use
+`source: "workflow"` and the guard's own name in the `guard` field.
 
-### Tier 2: Tool-Level Guards (`projects/may-agent/src/lib/tools/*.ts`)
+Workflow guards are best for process-level expectations: read before edit,
+verify after write, build after code changes, milestone quality, secret
+leakage, or hallucinated paths in workflow evidence.
 
-Composed by `compose-guards.ts` and wired into the `beforeToolCall` hook
-in `manager.ts`. Fire on **every tool invocation**, not workflow
-transitions. Events use `source: "tool"` and `guard: "beforeToolCall"`
-(not the individual guard name — the specific guard is identifiable only
-from the `reason` field text).
+### Tool-Level Guards
 
-Active tool-level guards (as of 2026-06-05, from `manager.ts buildGuards()`):
-- **empty-args-guard**: Catches empty/missing argument objects.
-- **tool-schema-guard**: Catches common tool parameter misuse patterns
-  (e.g., C1.1 Edit-Without-Read, C7.1 Hallucinated Path).
-- **path-hallucination-guard**: Detects references to non-existent paths
-  in bash commands. Fires `PATH_HALLUCINATION` signals.
-- **completeness-guard**: Agent-specific completeness checks.
-- **finish-guard**: Validates evidence in `finish(success)` calls.
-- **commit-guard**: Warns/blocks at `finish()` when agent has uncommitted
-  changes or is about to commit files outside its lane. Fires
-  `uncommitted files` and `finish() uncommitted` signals.
-- **read-dedup-guard**: Warns/blocks when an agent reads the same file
-  repeatedly within a session. Fires `READ_DEDUP` signals.
-- **session-read-guard**: Warns against reading raw `session.jsonl` files
-  (30–300KB). Fires `SESSION_READ`, `SESSION_BASH_CAT`, `SESSION_BASH_GREP`
-  signals depending on the access method.
-- **scrape-dedup-guard**: Deduplicates repeated web scraping of the same URL.
+Tool-level guards live under `projects/may-agent/src/lib/tools/*.ts`. They are
+composed by `compose-guards.ts` and wired into the `beforeToolCall` hook in
+`manager.ts`.
 
-**Not in `beforeToolCall` but active via tool internals:**
-- **cross-edit-guard**: Prevents agents from modifying other agents'
-  protected files. Wired directly into `edit.ts` and `write.ts` tool
-  implementations (not via `composeGuards`).
+They fire on tool invocation, not workflow transitions. Use tool guards for
+mechanical checks near the action boundary: empty arguments, schema misuse,
+path hallucination, protected-file edits, session-log reads, repetitive reads,
+and finish/commit evidence checks.
 
-**Defined but not wired in:**
-- **verification-depth-guard**: Validates meaningful post-write
-  verification in `finish(success)` sessions. File exists but
-  `createVerificationDepthGuard()` is not called from `buildGuards()`.
+Tool-level guard events should identify the specific guard as structured data.
+If many guards emit only `guard: "beforeToolCall"` and hide the real detector in
+free-form `reason`, downstream metrics and review must parse text, which is a
+schema smell to fix.
 
-**Volume note:** Tool-level guards generate the majority of guard events
-because they fire per tool call. Guard noise composition shifts over
-time — see KE-1252 (alert fatigue), KE-1362 (monoculture pattern),
-KE-1564 (composition shift), KE-1567 (uncommitted-files rebound,
-falsified KE-1564).
+## Runtime Audit
 
-### Composition history (2026-06-06 through 2026-06-10)
+Guard composition is operational data, not design state. It changes with active
+agents, throughput, and project mix. A healthy audit looks for patterns rather
+than preserving dated row-count snapshots in this design doc.
 
-Guard composition oscillates between monoculture (one signal >95%) and
-diversity (5+ active signals) depending on which agents are active.
-Neither KE-1362 (monoculture) nor its falsification (KE-1626) is
-durably correct — the system switches between regimes. Volume has
-ranged from ~1,150 to ~2,030/day across snapshots taken 2026-06-06
-through 2026-06-10.
+Use [guard-runtime-audit.md](../2b-manual/guard-runtime-audit.md) to inspect
+current guard volume, composition, repeated per-session signals, and threshold
+quality.
 
-**Threshold calibration history:**
-- **2026-06-10:** Raised from 2,000 to 2,500 by may (commit 483ca44d8).
-  Rationale: ~91% of guard triggers are ambient uncommitted-files warnings,
-  structural noise floor ~1,800/day.
-- **2026-06-14:** Raised from 3,500 to **4,500** (commit ac70bb0ab).
-  Rationale: structural noise floor rose to ~3,100–3,300/day with session
-  volume growth (~1,800 sessions/day). 95.8% of triggers are ambient
-  uncommitted-files warnings (commit-guard). Guard SNR remains inverted:
-  ~136 real signals/day vs ~3,100+ ambient noise.
-- **2026-06-15:** Threshold 4,500 **breached** at ~4,512 triggers/day,
-  <24h after the raise. 5th breach confirms KE-1998 F1: static thresholds
-  cannot track the growing noise floor. Headroom life: 4d→3d→1d→<1d.
-  Further threshold raises are no longer viable. Root-cause fix required
-  (see KE-1999, KE-2000 Repair Spec #3).
+Stable lessons from prior incidents:
 
-Key structural observations from the full snapshot history:
-- Combined commit-guard (uncommitted-files + finish()-uncommitted) is
-  the largest category at 44–54% when diverse.
-- SESSION_BASH_CAT is 100% evaluator — the sole agent catting
-  session.jsonl files. It can dominate during evaluator-heavy windows.
-- READ_DEDUP source has shifted: evaluator (re-reading periodic-tasks,
-  project files) and aks-explorer (re-reading project.md) trade off.
-- PATH_HALLUCINATION is primarily aks-explorer (`/home/` and `/root/` paths).
-- Monoculture episodes (e.g., SESSION_BASH_CAT at 98.7%)
-  last <16h before reverting to diverse baseline.
-
-**Latest snapshot 2026-06-13 ~16:30Z** (24h window, ~3,200 total):
-
-| Signal | Count | Share |
-|--------|------:|------:|
-| commit-ambient (uncommitted files) | 991 | 31.0% |
-| commit-finish (finish() uncommitted) | 823 | 25.7% |
-| SESSION_BASH_CAT | 383 | 12.0% |
-| SESSION_READ | 287 | 9.0% |
-| READ_DEDUP | 285 | 8.9% |
-| Edit-Without-Read (C1.1 + workflow) | 100 | 3.1% |
-| SESSION_BASH_GREP | 39 | 1.2% |
-| PATH_HALLUCINATION | 6 | 0.2% |
-
-Total: ~3,200/day (threshold breach continues, **structural floor > threshold**).
-
-Stable vs prior snapshot (2026-06-13 ~14:30Z):
-- **Guard count flat** (~3,260 → ~3,200, within noise). Structural
-  breach persists across eight+ consecutive snapshots.
-- **Composition stable**: commit-guard combined ~57%, session-read-guard
-  combined ~22%, READ_DEDUP ~9%. No monoculture regime.
-- **Per-agent**: aks-explorer 45%, evaluator 43%, arc 6%, scout 3%,
-  may 2%, dev 2%. Distribution unchanged.
-- **Notable**: READ_DEDUP dropped from ~18% to ~9% since prior snapshot.
-  PATH_HALLUCINATION also dropped (46 → 6), suggesting aks-explorer's
-  `/home/` path usage may have been addressed.
-- The breach remains structural — ~57% is ambient commit-guard noise from
-  shared-worktree concurrency and cannot decrease without guard or threshold
-  calibration. (**Resolved**: threshold raised to 3,500; see calibration
-  history above.)
-
-**Snapshot 2026-06-14 ~22:00Z** (24h window, 3,234 total):
-
-| Signal | Count | Share |
-|--------|------:|------:|
-| commit-ambient (uncommitted files) | 922 | 28.5% |
-| commit-finish (finish() uncommitted) | 942 | 29.1% |
-| SESSION_BASH_CAT | 381 | 11.8% |
-| SESSION_READ | 262 | 8.1% |
-| READ_DEDUP | 498 | 15.4% |
-| PATH_HALLUCINATION (tool-level) | 61 | 1.9% |
-| SESSION_BASH_GREP | 44 | 1.4% |
-
-Tier 1 guards: read-before-edit 82, finish-guard 30 (blocked), hallucinated-path 10.
-
-Per-agent: evaluator 1,318 (40.8%), aks-explorer 1,292 (40.0%),
-scout 231 (7.1%), may 172 (5.3%), arc 166 (5.1%), dev 45 (1.4%),
-tech-lead 6 (0.2%).
-
-vs prior: Composition shifted — commit-guard combined dropped from 57%
-to 57.6% (flat), but READ_DEDUP surged from 9% to 15.4%. PATH_HALLUCINATION
-rebounded from 6 to 61 (all aks-explorer `/home/hayua` paths), falsifying
-the "may have been addressed" note above. Finish-guard (Tier 1) grew
-from 8 to 30 — all may sessions, all resolved. Total count stable at ~3,200.
-Structural breach continues. (**Update 2026-06-14**: Threshold was raised
-to 3,500 in metrics-snapshot.ts, resolving the breach. Current ~3,200/day
-sits comfortably below the new threshold.)
-
-**Snapshot 2026-06-15 ~05:30Z** (6h window, 1,402 total; 24h ~4,385):
-
-Monoculture regime: 98.1% of triggers are `beforeToolCall` commit-guard
-"uncommitted files exist" warnings. 100% of these fire on files the
-guard itself identifies as "not matching this session's deliverables."
-
-| Signal | 6h Count | Share |
-|--------|-------:|------:|
-| commit-guard (tool.finish) | 952 | 67.9% |
-| commit-guard (tool.bash) | 230 | 16.4% |
-| commit-guard (tool.read) | 193 | 13.8% |
-| read-before-edit (tier 1) | 26 | 1.9% |
-| hallucinated-path (tier 1) | 1 | 0.1% |
-
-Rate: 232 triggers/hour. Threshold 4,500 breaching <1 day after the
-3,500→4,500 raise (commit ac70bb0ab). **KE-1998 F1 confirmed**: static
-thresholds cannot track the noise floor growth. Threshold calibration
-history shows decreasing headroom life: 4d → 3d → 1d → <1d.
-
-Root-cause fix required: scope commit-guard to session-relevant files
-only (the "Alternative (deferred)" from the 2026-06-15 threshold
-proposal). See KE-1999.
-
-**Snapshot 2026-06-15 ~05:40Z** (6h window, 1,453 total; 24h 4,512):
-
-**Threshold breached.** `guard.triggered-count-24h` = 4,512 (threshold
-4,500). KE-1999 F1 confirmed: the 5th ratchet lasted <24h. All
-`beforeToolCall` triggers (1,418/1,453, 97.6%) are the same commit-guard
-ambient warning about unrelated dirty files.
-
-| Signal | 6h Count | Share |
-|--------|-------:|------:|
-| commit-guard (tool.finish) | 979 | 67.4% |
-| commit-guard (tool.bash) | 229 | 15.8% |
-| commit-guard (tool.read) | 210 | 14.5% |
-| read-before-edit (tier 1) | 34 | 2.3% |
-| hallucinated-path (tier 1) | 1 | 0.1% |
-
-Per-agent (6h): evaluator 921 (63.4%), aks-explorer 347 (23.9%),
-may 92 (6.3%), scout 55 (3.8%), arc 26 (1.8%), dev 12 (0.8%).
-
-**Status**: Static threshold calibration is exhausted. Raising to 5000+
-would buy <24h based on the accelerating pattern. The root-cause fix
-(scope commit-guard to session-relevant files) is the only viable path.
-See KE-1999, KE-2000 Repair Spec #3. The guard already identifies the
-files as "not matching this session's deliverables" — the fix is to
-suppress the event emission for that case, not just the agent-facing
-warning.
-
-**Snapshot 2026-06-15 ~07:42Z** (40min post-restart window, 19 total):
-
-**Spec 3 fix LIVE.** Runtime restarted at 07:03Z with rebuilt bundle
-(07:01Z, commit 48cfe5a8). `commit-guard.ts` now returns `undefined`
-when no session-owned files are dirty, eliminating the ambient warning
-event. Rate dropped from **~225/hr → ~60/hr** (73% reduction). Zero
-ambient commit-guard "none match this session" triggers post-restart.
-
-| Signal | Count | Share |
-|--------|------:|------:|
-| finish() uncommitted (session-owned) | 7 | 37% |
-| SESSION_BASH_GREP | 5 | 26% |
-| SESSION_BASH_CAT | 3 | 16% |
-| READ_DEDUP | 2 | 11% |
-| SESSION_READ | 1 | 5% |
-
-Remaining triggers are 100% legitimate behavioral signals. Guard SNR
-inverted from ~2% signal to ~100% signal. Projected 24h total: ~1,440
-(threshold 4,500, headroom 3×). Rolling metric will clear pre-fix
-data by ~01:00Z Jun 16. See KE-2003.
-
-**Snapshot 2026-06-15 ~15:40Z** (T+8.5h steady-state confirmation):
-
-Guard noise fix **confirmed stable.** 24h rolling metric dropped
-below threshold (~4,000, threshold 4,500 — cleared ~7h earlier than
-projected). Last 2h: 156 triggers at ~78/hr, **100% legitimate
-behavioral signals.** Zero ambient commit-guard noise since fix.
-
-| Signal | 2h Count | Share |
-|--------|-------:|------:|
-| SESSION_BASH_CAT | 137 | 87.8% |
-| read-before-edit (C1.1) | 8 | 5.1% |
-| Other (finish-guard, misc) | 11 | 7.1% |
-
-Per-agent (2h): evaluator ~83%, aks-explorer ~12%, other ~5%.
-Composition: SESSION_BASH_CAT dominance (evaluator catting session
-JSONL) is the new largest signal — a legitimate behavioral pattern,
-not noise. Ghost metabolism (session.resume_failed): 0 in last 11h,
-263 in prior 24h (all pre-05:00Z). Confirmed structurally resolved.
-
-**Snapshot 2026-06-16 ~14:30Z** (T+31h steady-state, full 24h):
-
-Spec 3 fix **durably stable** — 31h post-restart, zero ambient commit-guard
-"none match" noise. Guard total dropped from ~3,200/day (pre-fix) to
-~1,992/day (post-fix, first full 24h). Rate: ~83/hr.
-
-| Signal | 24h Count | Share |
-|--------|-------:|------:|
-| finish() uncommitted (session-owned) | 817 | 41.0% |
-| SESSION_BASH_CAT | 498 | 25.0% |
-| READ_DEDUP | 307 | 15.4% |
-| SESSION_READ | 190 | 9.5% |
-| SESSION_BASH_GREP | 59 | 3.0% |
-| PATH_HALLUCINATION | 33 | 1.7% |
-| finish(success) guard | 9 | 0.5% |
-| read-before-edit (Tier 1) | 82 | — |
-| hallucinated-path (Tier 1) | 1 | — |
-
-Composition shift from T+8.5h: SESSION_BASH_CAT dropped from 88% to 25%
-(evaluator load diluted by other agents). finish() uncommitted is now
-the dominant signal — all session-relevant (not ambient noise). Diverse
-baseline restored: no single signal >50%. PATH_HALLUCINATION (33/day)
-is almost entirely aks-explorer `/home/` paths.
-
-**Status: STABLE.** Guard noise (Face 1 of KE-1998) and ghost
-metabolism (Face 3) are structurally resolved. The remaining waste
-source is planning_update timeout (Face 2 — see KE-2006, Spec 4
-proposal filed). Guard threshold 4,500 has 2.3× headroom at current
-~1,992/day steady-state rate. Headroom is conservative; no further
-threshold calibration needed.
-
-**Snapshot 2026-06-18 ~01:00Z** (24h window, ~4335 total):
-
-**Approaching breach again.** `guard.triggered-count-24h` = 4335
-(threshold 4500, 96.3%). This is NOT a Spec 3 regression — commit-guard
-ambient noise remains zero. The new dominant driver is **READ_DEDUP**
-from aks-explorer sessions that re-read model files 20-50+ times.
-
-| Signal | 24h Count | Sessions | Avg/Session |
-|--------|-------:|--------:|-----------:|
-| READ_DEDUP (combined variants) | 1673 | 382 | 4.4 |
-| finish() uncommitted (session-owned) | 799 | 690 | 1.2 |
-| SESSION_BASH_CAT | 706 | 667 | 1.1 |
-| finish(success) guard | 348 | 337 | 1.0 |
-| SESSION_BASH_GREP | 222 | 165 | 1.3 |
-| SESSION_READ | 195 | 115 | 1.7 |
-| PATH_HALLUCINATION | 64 | — | — |
-| read-before-edit (Tier 1) | 22 | — | — |
-| hallucinated-path (Tier 1) | 23 | — | — |
-
-Key structural shift: READ_DEDUP generates 7.9 events per offending
-session (worst: 68 triggers from a single session). The metric now
-scales with (aks-explorer throughput × per-session model-read intensity),
-not with anomalous conditions.
-
-**Root cause**: aks-explorer throughput doubled (from ~1992 to ~2298
-sessions/24h) after the planner fix (KE-2018), and task sessions read
-model.json repetitively. Spec 3 commit-guard noise is zero; all current
-triggers are legitimate behavioral signals, but the volume per condition
-is disproportionate.
-
-**Structural fix**: Per-session event dedup (proposal filed 2026-06-18).
-Without it, a 6th threshold calibration is needed within hours.
-See KE-2021.
-
-**Snapshot 2026-06-18 ~02:00Z** (24h window, 4589 total, **threshold breached**):
-
-| Signal | 24h Count | 6h Count | 6h Share |
-|--------|-------:|-------:|------:|
-| READ_DEDUP (combined) | 2098 | 657 | 47% |
-| FINISH_UNCOMMITTED | 826 | 176 | 13% |
-| SESSION_BASH_CAT | 735 | 231 | 16% |
-| GHOST_DELIVERABLE | 377 | 165 | 12% |
-| SESSION_BASH_GREP | 235 | 80 | 6% |
-| SESSION_READ | 205 | 65 | 5% |
-| OTHER | 113 | 36 | 3% |
-
-Per-agent (1h): aks-explorer 97 done, evaluator 61 done, may 11, scout 5.
-aks-explorer at 106 sessions/hour (growing from ~128/hr avg in KE-2021).
-
-**New pattern**: GHOST_DELIVERABLE is 91.5% planner sessions (345/377,
-see KE-2022). 330 unique planner sessions out of 1524 (21.7%) claim
-2-3 evidence files they didn't write. Unlike READ_DEDUP, per-session
-dedup won't help — each session triggers ~1 event. Needs planner
-workflow or prompt fix.
-
-Combined projected reduction from filed fixes:
-- READ_DEDUP dedup: ~1716 events/day
-- Planner ghost deliverable fix: ~345 events/day
-- **Post-fix projected total: ~2495/day** (threshold 4500, 44% headroom)
-
-Both guard alerts (triggered + warned) resolved by 6th calibration
-(4500→5500, commit 3de3d78e2, 2026-06-18 ~02:01Z by may).
-DB at 1843 MB (92.2% of 2000 threshold).
-2 proposals pending ORDER-010 approval: per-session dedup (structural),
-DB threshold 2000→2500.
-
-**Snapshot 2026-06-18 ~02:30Z** (24h window, 4673 total, threshold 5500 = 85%):
-
-| Signal | 24h Count | 6h Count | 6h Share |
-|--------|-------:|-------:|------:|
-| READ_DEDUP (combined) | 2153 | 618 | 45% |
-| FINISH_UNCOMMITTED | 845 | 182 | 13% |
-| SESSION_BASH_CAT | 756 | 227 | 17% |
-| GHOST_DELIVERABLE | 397 | 167 | 12% |
-| SESSION_BASH_GREP | 242 | 77 | 6% |
-| SESSION_READ | 211 | 67 | 5% |
-| EDIT_WITHOUT_READ | 24 | 5 | 0% |
-| OTHER | 90 | 29 | 2% |
-
-Throughput: 4321 sessions/day (aks-explorer 2487, evaluator 1424,
-may 221, scout 60, dev 47, arc 43). Guard rate ~195/hr. Headroom
-to 5500: 827 triggers (15%), ~4h at current rate of ingress minus
-rolling-off window.
-
-**Threshold calibration history (updated):**
-```
-d950cdf52  → 1500
-9da357108  1500 → 2000
-483ca44d8  2000 → 2500
-d5a0dfbb6  2500 → 3500
-ac70bb0ab  3500 → 4500
-3de3d78e2  4500 → 5500  (2026-06-18, 6th calibration)
-```
-
-**Structural fix status**: Per-session dedup proposal filed but not
-approved. Ghost deliverable fix (KE-2022) needs planner workflow
-change. Combined projected reduction if both land: ~2061 events/day,
-bringing total to ~2657/day (52% headroom at 5500).
-
-**Snapshot 2026-06-18 ~05:10Z** (6h window, 1279 total; 24h ~5072, threshold 5500 = 92.2%):
-
-| Signal | 6h Count | 6h Share |
-|--------|-------:|------:|
-| READ_DEDUP | 361 | 28.2% |
-| OTHER (misc) | 236 | 18.5% |
-| SESSION_BASH_CAT | 205 | 16.0% |
-| FINISH_UNCOMMITTED | 180 | 14.1% |
-| GHOST_DELIVERABLE | 169 | 13.2% |
-| SESSION_READ | 62 | 4.8% |
-| SESSION_BASH_GREP | 61 | 4.8% |
-| EDIT_WITHOUT_READ | 5 | 0.4% |
-
-**All 1279 events are `action=warned`, zero blocks.** Tier 1 guards: 5 read-before-edit, 1 knowledge-entry-overwrite.
-Throughput: ~4500 sessions/day. Guard rate ~213/hr. Headroom to 5500: 428 (7.8%).
-
-**Notable shift from ~02:30Z snapshot**: GHOST_DELIVERABLE maintained at ~169/6h (~677/day projected), consistent with KE-2022 finding that 21.7% of planner sessions claim unwritten deliverables. Per-session dedup would NOT help this signal (each session triggers ~1 event). The GHOST_DELIVERABLE pattern is the new structural floor after READ_DEDUP dedup would land.
-
-**Convergence note**: Both DB (1918/2000, 95.9%) and guard triggers (5072/5500, 92.2%) are converging toward their thresholds simultaneously, driven by the same root cause: aks-explorer throughput at ~2568 sessions/day. DB breach timeline: ~3h. Guard breach timeline: ~2h at current rate unless rolling-window outflow increases. See KE-2024.
-
-**Snapshot 2026-06-18 ~05:00Z** (24h window, ~4974 total, threshold 5500 = 90.4%):
-
-| Signal | 24h Count | 6h Count | 6h Share |
-|--------|-------:|-------:|------:|
-| READ_DEDUP (combined) | 2294 | 608 | 47% |
-| FINISH_UNCOMMITTED | 867 | 174 | 13% |
-| SESSION_BASH_CAT | 801 | 218 | 17% |
-| FINISH_SUCCESS_GUARD | 446 | 179 | 14% |
-| SESSION_BASH_GREP | 255 | 59 | 5% |
-| SESSION_READ | 217 | 63 | 5% |
-| PATH_HALLUCINATION | 72 | 0 | 0% |
-| EDIT_WITHOUT_READ | 20 | 5 | 0% |
-
-Throughput: ~4413 sessions/day (aks-explorer 2568, evaluator 1484,
-may 209, scout 62, dev 47, arc 43). Guard rate ~207/hr (6h avg).
-Headroom to 5500: 526 triggers (9.6%).
-
-Trend: 12h ago metric was at ~2700; now ~4974. Rolling 24h window is
-ingesting the post-calibration "catch-up" period (the 6th calibration
-at ~02:01Z cleared the alert; the 24h window now includes a full day
-of higher-throughput activity). Rate is ~207/hr but the outgoing window
-is also shedding the low-activity period from yesterday. Expect the
-metric to plateau near ~5000 as the rolling window stabilizes.
-
-Worst single sessions (6h): 68, 49, 40, 29, 23 triggers — all
-aks-explorer task sessions re-reading model.json files. Top offender
-generates 68 READ_DEDUP events from a single session.
-
-**All pending proposals remain unapproved (ORDER-010 requires human merge):**
-1. Per-session dedup (structural fix, would eliminate ~1700 triggers/day)
-2. Guard threshold 5500→6000 (stopgap, proposed but superseded by dedup)
-3. DB threshold 2000→2500 MB (P1, breach in ~26h at 4.3 MB/h)
-
-### Known issue: guard name conflation
-
-Tool-level guards all emit `guard: "beforeToolCall"` instead of their
-specific name. To distinguish them, query the `reason` field:
-```sql
--- Find session-read-guard triggers specifically
-SELECT COUNT(*) FROM events
-WHERE event_type = 'guard.triggered'
-  AND json_extract(data, '$.guard') = 'beforeToolCall'
-  AND json_extract(data, '$.reason') LIKE 'SESSION_READ%';
-```
+- Guard metrics must distinguish detector volume from reviewed correctness.
+- Threshold increases are temporary relief when the signal has a structural
+  noise floor; repeated breaches should produce a root-cause task.
+- Per-session dedup is appropriate when one condition emits many repeated guard
+  events from the same session.
+- Dedup does not help one-event-per-session patterns; those need workflow,
+  prompt, or tool-surface fixes.
+- Tool-level guard names should be specific enough for metrics.
 
 ## Ownership
 
@@ -528,23 +170,25 @@ Default owner resolution:
 2. project owner,
 3. triggering agent,
 4. guard id prefix if it matches an agent,
-5. `may` fallback.
+5. May fallback.
+
+The owner is accountable for judgment, not automatically at fault.
 
 ## Review Outcome
 
 When a guard signal is reviewed, record the judgment in the session eval trail
-or a guard review artifact. Keep the raw guard event linked. Useful outcomes:
+or a guard review artifact. Keep the raw guard event linked.
 
 | Outcome | Meaning | Learning action |
 |---|---|---|
-| `true_positive` | The guard caught a real issue or near-miss. | Route normal owner finding if actionable. |
+| `true_positive` | The guard caught a real issue or near-miss. | Route normal owner finding if follow-up is needed. |
 | `false_positive` | The guard fired on valid behavior. | Route to the guard/workflow owner to calibrate. |
 | `noisy` | The signal is too weak or repetitive to act on directly. | Keep aggregate metric; avoid owner spam. |
 | `useful_intervention` | The guard helped the agent recover. | Consider moving the lesson into workflow/context. |
 | `harmful_intervention` | The guard blocked or distracted useful work. | Downgrade mode, narrow detector, or retire. |
 | `unknown` | Not enough context to judge. | Preserve evidence; do not train from it yet. |
 
-Only reviewed, actionable guard outcomes should become `learning.feedback`. Raw
+Only reviewed guard outcomes should become `learning.feedback`. Raw
 `guard.triggered` rows and raw guard metrics can request review, but they
 should not directly train agents or accuse owners.
 
@@ -555,14 +199,14 @@ Start small:
 - `guard.triggered-count-24h`
 - `guard.warned-count-24h`
 - `guard.blocked-count-15m`
-- `guard.repeat-trigger-count-24h` — **⚠ non-functional** (reads 0).
-  Wired to `action='skipped_duplicate'`, an action value the guard
-  runtime never emits. The actual repeat-trigger signal (N≥3
-  `guard.triggered` events sharing the same `sessionId` in 24h) is
-  invisible to this metric. See KE-1246 for root cause and proposed fix.
+- `guard.repeat-trigger-count-24h`
 
 Later metrics can be added only when necessary, for example
 `guard.recovered-after-warning-rate` or `guard.false-positive-rate`.
+
+When a metric is noisy or repeatedly breaches, review the current runtime
+composition with [guard-runtime-audit.md](../2b-manual/guard-runtime-audit.md)
+before changing thresholds.
 
 ## Review Questions
 

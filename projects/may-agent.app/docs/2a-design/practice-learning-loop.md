@@ -148,7 +148,8 @@ Promotion should depend on evidence strength and blast radius.
 | One useful observation | Eval row or evolution candidate. |
 | Repeated judgment pattern | Agent/project context or skill. |
 | Repeated process pattern | Workflow step or workflow template. |
-| Repeated mechanical risk with low false-positive risk | Observe/warn guard first; block only after validation. |
+| Suspected mechanical risk | Metric or evaluator review first. |
+| Repeated mechanical risk with low false-positive risk | Observe/warn guard after review; block only after validation. |
 | Missing capability surface | SDK/tool/API design and tests. |
 | Ongoing health signal | Metric, event, or project dashboard item. |
 
