@@ -6,7 +6,7 @@
 Event = something that happened at a point in time
 ```
 
-Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table serves as the audit trail for the **retention window** (currently 7 days — see Data Retention below), though it carries reserved mutable columns (`status`, `handled_by`, `result`, `reason`, `retry_count`) for future inbox-ack and retry patterns — see DDL and row mapping below.
+Events are the primary communication mechanism. State is derived from events where practical. Some tables (metrics, sessions) use mutable status columns for query efficiency — this is a pragmatic trade-off, not a violation. The events table serves as the audit trail for the **retention window** (currently 7 days — see Data Retention below), though its current mutable columns (`status`, `handled_by`, `result`, `reason`, `retry_count`) predate the delivery-acceptance model and should not be treated as reliable acceptance state.
 
 > **Not append-only.** The `db-retention` handler (daily cron) deletes events
 > older than 7 days. As of 2026-06-10, ~1M historical events have been pruned;
@@ -81,10 +81,10 @@ Persistent row mapping:
 | `ttl_ms` | `ttl_ms` | |
 | `timestamp` | `timestamp` | |
 | `data` | `data` JSON | |
-| *(infra only)* | `status` | Default `'pending'`; reserved for future ack |
-| *(infra only)* | `handled_by` | Reserved; no writer yet |
-| *(infra only)* | `result` | Reserved; no writer yet |
-| *(infra only)* | `reason` | Reserved; no writer yet |
+| *(infra only)* | `status` | Default `'pending'`; currently used by manual inbox cleanup and expiry, not delivery acceptance |
+| *(infra only)* | `handled_by` | Current inbox/manual consumer marker; not equivalent to delivery acceptance |
+| *(infra only)* | `result` | Current inbox/manual result marker; not equivalent to work completion |
+| *(infra only)* | `reason` | Expiry/manual reason |
 | *(infra only)* | `retry_count` | Default 0; reserved |
 
 Effective query schema (verified 2026-06-06 against live DDL). The base
@@ -100,10 +100,10 @@ CREATE TABLE events (
   data         TEXT,                -- event-specific JSON payload
   timestamp    INTEGER NOT NULL,
   -- migration-added columns below this line:
-  status       TEXT DEFAULT 'pending',  -- event processing status
-  handled_by   TEXT,                -- reserved; no writer yet
-  result       TEXT,                -- reserved; no writer yet
-  reason       TEXT,                -- reserved; no writer yet
+  status       TEXT DEFAULT 'pending',  -- legacy inbox/expiry status; not delivery acceptance
+  handled_by   TEXT,                -- legacy inbox/manual consumer marker
+  result       TEXT,                -- legacy inbox/manual result marker
+  reason       TEXT,                -- expiry/manual reason
   retry_count  INTEGER DEFAULT 0,  -- reserved; retry logic not yet implemented
   ttl_ms       INTEGER,            -- auto-expire after this duration
   urgency      TEXT DEFAULT 'normal'
@@ -111,10 +111,11 @@ CREATE TABLE events (
 ```
 
 > **Note on mutable columns:** `status`, `handled_by`, `result`, `reason`, and
-> `retry_count` were added for future inbox-ack and retry patterns. As of
-> 2026-06-06, no production code path writes to these columns — all 183k+ rows
-> have `status='pending'` and the other four are NULL/0. The columns are
-> reserved infrastructure; do not invent a parallel ack mechanism (see KE-568).
+> `retry_count` are legacy operational columns. They are useful for current
+> inbox/manual cleanup and expiry, but they do not answer "did a responsible
+> subscriber accept this event?" The delivery-acceptance work below should either
+> introduce explicit acceptance fields or deliberately migrate these columns to
+> that meaning; do not assume today's `handled` rows mean work is done.
 
 ## Event Types
 
@@ -514,7 +515,10 @@ lifecycle example.
 
 ## Inbox (time-window based)
 
-Agents see recent events in their heartbeat. No ack/done needed:
+Agents see recent events in their heartbeat as context. This query is passive:
+reading an event for context is not delivery consumption. If an owner workflow
+accepts a targeted event from the inbox, that workflow should report acceptance;
+otherwise the row remains available for normal delivery tracking.
 
 ```sql
 SELECT id, event_type, data, urgency, timestamp
@@ -929,13 +933,13 @@ a log/state update instead of an event.
 
 ```
 event emitted → bus delivers to subscribers
-             → responsible subscriber acks → consumed
-             → no responsible ack → unhandled → owner
+             → one or more subscribers accept responsibility → accepted
+             → no subscriber accepts responsibility → unhandled → owner
 ```
 
 ### Two Things Infra Tracks
 
-**1. Was the event consumed?** (ack)
+**1. Was the event accepted?** (delivery accepted, not work done)
 
 A responsible consumer is the handler/owner/runtime component that reacts to the
 event. DbWriter, UI tailing, logging, and passive metrics readers do not count.
@@ -957,32 +961,73 @@ opening event → work in progress → closing event → done
              → no closing event within timeout → orphan → surface
 ```
 
-### Ack: Delivery Tracking
+### Delivery Tracking
 
 When `bus.emit(event)` runs:
 
 1. DbWriter stores the event for recovery and audit
 2. Bus delivers to all subscribers
-3. If a responsible consumer signals consumption → mark `acked`
-4. If no responsible consumer consumed the event before TTL → mark `unhandled`
-5. `unhandled` events → surface to the event owner, then May if there is no
+3. Subscribers that actually consume the event report acceptance
+4. If at least one responsible subscriber accepted the event → update the
+   original event row with delivery metadata
+5. If no responsible subscriber accepted the event before TTL → mark the
+   original event row `unhandled`
+6. `unhandled` events → surface to the event owner, then May if there is no
    specific owner route
 
-Subscriber consumption is a simple callback:
+Acceptance is not a new event. Do not append `event.accepted` or similar for
+the normal path. Acceptance is runtime delivery bookkeeping on the original
+event:
+
+```sql
+delivery_status TEXT DEFAULT 'pending', -- pending | accepted | unhandled
+accepted_by     TEXT,                   -- cron:..., app:..., runtime:...
+accepted_at     INTEGER,
+delivery_route  TEXT,                   -- direct | owner_fallback | noop
+delivery_note   TEXT
+```
+
+Only emit another event when the delivery state itself needs a reaction. For
+example, a sweep may emit `event.unhandled.detected` after marking an old event
+`unhandled`. The normal accepted path should stay a row update to avoid creating
+event loops.
+
+Subscriber consumption should be explicit but lightweight. A subscriber can
+observe an event and return nothing, or accept responsibility and return a
+delivery result:
 
 ```typescript
-bus.subscribe((event, ack) => {
-  if (!shouldHandle(event)) return;  // skip — not my event
-  ack();                              // claim — I'm handling this
-  // ... do work ...
+bus.subscribe((event) => {
+  if (!shouldHandle(event)) return;   // observer/irrelevant — no claim
+  // ... accept and dispatch work ...
+  return { accepted: true, by: "cron:project-owner" };
 });
 ```
 
-Only a subscriber that is taking responsibility for the event should ack it:
+For async work, acceptance means "I accepted responsibility and started or
+queued the work", not "the work is finished":
+
+```typescript
+bus.subscribe((event) => {
+  if (!shouldHandle(event)) return;
+  queueWorkflow(event);
+  return { accepted: true, by: "workflow:task-worker" };
+});
+```
+
+Completion is tracked separately by the work's own state or by paired events.
+
+The return value is preferred over a callback because it keeps the subscriber
+contract simple: the subscriber either ignored the event or accepted
+responsibility for it. Subscribers are distributed, and the runtime records that
+at least one responsible consumer accepted the event.
+
+Only a subscriber that is taking responsibility for the event should report
+acceptance:
 the matching project-app handler, the targeted runtime/session handler, the
 owner inbox/default-owner handler, or an explicit no-op handler. Broad
 subscribers such as DbWriter, UI tailing, logging, and passive metrics readers
-must not ack, because that would hide routing gaps.
+must not report acceptance, because that would hide routing gaps.
 
 Infra does not decide the domain outcome. It only verifies that events reached a
 responsible consumer. Dead letters go to the owner path.
@@ -1008,45 +1053,82 @@ So the rule is:
 
 ```text
 no reaction needed          → write state/log/metric, do not emit an event
-reaction possible/needed    → emit event; responsible consumer must ack
-event opens work with an end → consumer acks; pair tracker waits for close
+reaction possible/needed    → emit event; responsible consumer must accept it
+event opens work with an end → consumer accepts it; pair tracker waits for close
 event closes existing work   → pair tracker/cleanup/evaluator consumes it
 ```
 
-### Done: Paired Event Completion
+### Done: Convention-Based Pair Tracking
 
-Some events come in pairs — an opening and a closing. Infra already has
-these but doesn't track orphans systematically:
+Some events open lifecycle work that should later close. The runtime should
+track these by convention first, not by requiring every project to configure
+event pairs.
 
-| Opening event | Closing event | Entity |
-|--------------|---------------|--------|
-| `session.start` | `session.end` | session |
-| `handler.started` | `handler.completed` | handler run |
-| `handler.workflow_dispatched` | workflow/session terminal state | workflow run |
-| `escalation.created` | `escalation.resolved` or `escalation.dismissed` | escalation |
-| `project.task.assigned` | `project.task.completed` | task attempt |
-| `project.problem.requested` | `project.problem.escalated` or future `project.problem.resolved` | problem investigation |
+Default opening/closing conventions:
 
-When the opening event fires, infra starts a completion clock. When the
-closing event fires, the pair is complete. If the closing event doesn't
-arrive within the expected window, infra surfaces an orphan.
+| Opening suffix | Closing suffixes |
+|----------------|------------------|
+| `.started` | `.completed`, `.failed` |
+| `.requested` | `.accepted`, `.rejected`, `.failed` |
+| `.created` | `.resolved`, `.dismissed`, `.closed` |
+| `.assigned` | `.completed`, `.blocked`, `.failed` |
 
-This already works for sessions (`session-recovery` finds stuck running
-sessions) and handler runs. The pattern just needs to generalize:
+Default correlation-key conventions:
+
+| Event family | Correlation key |
+|--------------|-----------------|
+| `session.*` | `data.sessionId` |
+| `workflow.*` | `data.workflowRunId` |
+| `handler.*` | `data.handlerRunId` |
+| `escalation.*` | `data.escalationId` |
+| `project.task.*` | `data.taskId` + optional `data.attemptId` |
+| `*.requested` | `data.requestId` |
+
+If an opening event matches the naming convention and has a correlation key,
+the pair tracker creates an open pair record. If a matching closing event
+arrives with the same key, the pair closes. If the closing event does not arrive
+within the expected window, infra marks the pair `orphan` and surfaces it for
+investigation.
+
+This is an audit signal, not proof of domain failure. An orphan can mean stuck
+work, a missing close event, a wrong key, a bad timeout, or an event naming
+design issue.
 
 ```
-opening event → record (entity, opened_at, expected_close_within)
+opening event → record pair run (opened_at, expected_close_at)
 closing event → match by correlation key → mark complete
 sweep         → opened too long without close → orphan → surface
 ```
 
-The correlation key is domain-specific:
-- Sessions: `sessionId`
-- Handler runs: handler run id when present, otherwise handler name + start timestamp
-- Workflow runs: `workflowRunId`
-- Escalations: `dedupKey` or `escalationId`
-- Tasks: `taskId` + `attemptId`
-- Problems: `problemKey`
+Suggested pair table:
+
+```sql
+event_pair_runs (
+  id                 INTEGER PRIMARY KEY,
+  pair_name          TEXT NOT NULL,
+  correlation_key    TEXT NOT NULL,
+  open_event_id      INTEGER NOT NULL,
+  close_event_id     INTEGER,
+  owner              TEXT,
+  status             TEXT DEFAULT 'open', -- open | closed | orphan
+  opened_at          INTEGER NOT NULL,
+  expected_close_at  INTEGER NOT NULL,
+  closed_at          INTEGER,
+  note               TEXT
+)
+```
+
+Most event families should need no pair configuration. Add a code-local
+exception only when the convention cannot work, for example:
+
+- the closing event names are unusual
+- the correlation key is not one of the standard fields
+- the timeout is materially different from the default
+- the event looks like an opening event but should explicitly not be paired
+
+Static hygiene should flag convention-shaped opening events that have no
+correlation key and no explicit exception. That keeps conventions useful without
+forcing projects to maintain pair config files.
 
 ### What Doesn't Need Done Tracking
 
@@ -1054,9 +1136,9 @@ Some events are **unpaired** — they have a consumer but no completion clock:
 
 - `metric.breach` → metric owner reacts. The `metric_alerts` entity tracks
   open/resolved separately, so pair tracking is not needed.
-- `project.owner.requested` → ack is enough. What the owner does is
+- `project.owner.requested` → acceptance is enough. What the owner does is
   the owner's judgment, tracked in the task tree.
-- `evaluation.reviewed` → ack is enough. The evaluation entity stores
+- `evaluation.reviewed` → acceptance is enough. The evaluation entity stores
   the verdict.
 
 Don't add done tracking to these. The responsible consumer and entity tables
@@ -1080,28 +1162,34 @@ problem-solver results (no closure tracking), or stale workflow runs.
   visible.
 - **Orphan detection**: opening event without closing event → stuck work
   → visible. Generalizes what `session-recovery` already does.
-- **No per-event-type logic**: infra treats all acks the same. Paired
-  event registration is declarative — just a table of opening/closing
-  event types with correlation key and timeout.
+- **No per-event-type delivery logic**: infra treats all acceptance reports the
+  same.
+- **Convention-based orphan detection**: common lifecycle events are tracked
+  automatically from naming and key conventions. Exceptions stay rare and local.
 
 ### Implementation
 
-1. Add `ack` callback to bus subscribers
-2. DbWriter stores every event for recovery/audit and never acks consumption
+1. Let bus subscribers optionally return a delivery result such as
+   `{ accepted: true, by: string }`
+2. DbWriter stores every event for recovery/audit and never reports acceptance
 3. Define the responsible consumer for each event type or route pattern
-4. Cron handler dispatcher acks events it dispatches to a matching handler
-5. App event router acks events it routes to a matching project app
-6. Owner/default-owner inbox acks events that no target handler owns
-7. Periodic sweep marks un-acked events past TTL as `unhandled`
-8. Register paired event types with correlation keys and timeouts
-9. Periodic sweep finds orphan openings (no closing event) → surfaces
-10. Ops health packet includes unhandled count + orphan count
+4. Cron handler dispatcher accepts events it dispatches to a matching handler
+5. App event router accepts events it routes to a matching project app
+6. Owner/default-owner inbox accepts events that no target handler owns
+7. Delivery acceptance updates the original event row; it does not append an
+   accepted event
+8. Periodic sweep marks unaccepted events past TTL as `unhandled`
+9. Pair tracker opens/closes `event_pair_runs` from naming/key conventions
+10. Periodic sweep finds orphan openings (no closing event) → surfaces
+11. Ops health packet includes unhandled count + orphan count
 
 ### What This Is Not
 
 - Not event sourcing — events are still a log, not a state store
 - Not a message queue — bus is still in-memory pub/sub
-- Not per-event-type logic — ack is universal, pairs are declarative
-- Not blocking — ack and pair tracking are fire-and-forget DB updates
+- Not per-event-type delivery logic — acceptance is universal
+- Not a project pair-config system — pairs are convention-driven with rare
+  runtime exceptions
+- Not blocking — acceptance and pair tracking are fire-and-forget DB updates
 - Not replacing entity state — sessions, alerts, tasks still own their
   state machines. Pair tracking just detects orphans.
