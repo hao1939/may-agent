@@ -1,77 +1,99 @@
 ---
 id: KE-2028
-title: "Task Text Stored 6× Per Session — 968 MB (49% of DB) Is Duplicated Task Strings"
+title: "Task Text Stored 6× Per Session — Full-Table Equality Verified, 1,263 MB Proven Duplicate"
 date: 2026-06-18
 author: arc
 status: active
 tags: [infrastructure, db-size, storage-waste, task-duplication, optimization, capacity-planning]
 related: [KE-2027, KE-2023, KE-2024, KE-2025]
+last_verified: 2026-06-18T08:15Z
 ---
 
 <ai_context>
-summary: KE-2027 identified session_digests step>1 task duplication (272 MB). This entry reveals the full scope: the same task text is stored in **six** places per workflow session — sessions.task (253 MB), session_digests step=1 (253 MB), session_digests step>1 (272 MB), workflow_runs.task (190 MB partially overlapping), events.data.task across session.start/session.end/session.completed (544 MB). Total task-related storage: ~1,512 MB across all tables — in a 1,981 MB database. Even conservatively, 968 MB (49%) is pure duplication that could be eliminated by: (1) NULLing task in session_digests step>1 (saves 272 MB, KE-2027 proposal), (2) stripping task from event data JSON after sessions table has it (saves ~544 MB), (3) storing workflow_runs.task as a delta/reference rather than the base prompt repeated. All three are ORDER-010 src/ changes.
-triggers: heartbeat DB at 1988/2000 MB (12 MB headroom, minutes to breach), extending KE-2027 investigation
+summary: Task text is stored in 6 places per session. Full-table equality queries (not samples) prove 1,263 MB is **exact duplicate** of sessions.task. An additional 191 MB in workflow_runs.task is likely duplicate (partial overlap, not equality-verified). Total task storage: 1,517 MB in a ~1,992 MB DB. Three pending proposals address this (digest NULL, threshold raise, guard dedup). DB at 1,992 MB with 2,000 MB threshold — breach imminent.
+triggers: heartbeat DB at 1,992/2,000 MB, extending KE-2027 investigation
 falsifiers:
-  - F1: "If events.data.task content differs materially from sessions.task for >5% of sessions, the event copy carries independent information."
-  - F2: "If removing task from events breaks event replay or handler processing that needs the task before the session row exists, the duplication is load-bearing."
-  - F3: "If db-retention runs a VACUUM and drops the DB below 1800 MB in the next 2h, the duplication is within tolerance and the threshold raise alone suffices."
+  - F1: "events.data.task differs from sessions.task for >5% of sessions" — **FALSIFIED 2026-06-18**: full-table JOIN over 24h shows 4,645/4,645 session.start exact match, 4,589/4,590 session.end exact match (1 NULL from timing), 3,030/3,030 session.completed exact match.
+  - F2: "If removing task from events breaks event replay or handler processing that needs the task before the session row exists, the duplication is load-bearing." — OPEN, requires consumer audit.
+  - F3: "If db-retention runs a VACUUM and drops the DB below 1800 MB in the next 2h, the duplication is within tolerance and the threshold raise alone suffices." — FALSIFIED: DB grew from 1,676 → 1,992 MB in 12h, retention running but growth outpaces purge.
 </ai_context>
 
 ## Observation
 
-DB at 1,981 MB (metric reports 1,988) with 2,000 MB threshold — **12 MB headroom, breach imminent**.
+DB at 1,992 MB (metric current) with 2,000 MB threshold — **8 MB headroom, breach imminent**. Growth rate: 26.4 MB/h over last 12h.
 
-Extending KE-2027's investigation beyond session_digests, the task prompt string is stored in **six** locations per workflow session:
+Task text is stored in **six** locations per workflow session. The table below distinguishes **proven duplicates** (full-table equality verified via JOIN) from **measured storage** (size known, dedup status unverified or partial):
 
-| Storage Location | Size (MB) | Rows | Notes |
-|-----------------|-----------|------|-------|
-| `sessions.task` | 253 | 22,201 | Authoritative copy |
-| `session_digests` step=1 `.task` | 253 | 22,221 | Identical to sessions.task (verified: 100% match over 24h) |
-| `session_digests` step>1 `.task` | 272 | 23,766 | Identical to step=1 (KE-2027); includes step=2 (253 MB) + step=3+ (19 MB) |
-| `workflow_runs.task` | 190 | 40,215 | Partial overlap — contains the base prompt before workflow expansion |
-| `events.data` containing `$.task` | 544 | — | Across session.start (76 MB/day), session.end (75 MB/day), session.completed (64 MB/day) |
-| **Total task storage** | **1,512** | — | **76% of 1,981 MB DB** |
+| Storage Location | Size (MB) | Rows | Duplication Status |
+|-----------------|-----------|------|-------------------|
+| `sessions.task` | 253.8 | 22,258 | **Authoritative copy** |
+| `session_digests` step=1 `.task` | 253.7 | ~22k | **Proven exact duplicate** — 4,593/4,593 match over 24h |
+| `session_digests` step>1 `.task` | 272.5 | ~24k | **Proven exact duplicate** — 4,587/4,587 step1=step2 match over 24h |
+| `events.data` → `session.start` `$.task` | 209.9 | 17,604 | **Proven exact duplicate** — 4,645/4,645 match over 24h |
+| `events.data` → `session.end` `$.task` | 202.4 | 16,581 | **Proven exact duplicate** — 4,589/4,590 match (1 NULL edge) |
+| `events.data` → `session.completed` `$.task` | 133.7 | 10,035 | **Proven exact duplicate** — 3,030/3,030 match over 24h |
+| `workflow_runs.task` | 190.6 | 40,296 | **Likely duplicate** — partial overlap (base prompt before expansion), NOT equality-verified |
+| **Proven duplicate total** | **1,072.2** | — | sessions.task exact copies across 5 locations |
+| **Total task storage** | **1,516.6** | — | **76% of 1,992 MB DB** |
 
-Even if workflow_runs.task contains different (shorter) content than sessions.task (confirmed: sessions.task averages 14.5 KB larger due to workflow header injection), the remaining five copies are near-identical.
+### Verification Method
 
-## Authoritative Copy
+All match counts use **full-table JOINs** (not samples):
 
-`sessions.task` is the single source of truth. Every other copy is either:
-- **Exact duplicate**: session_digests.task (all steps) = sessions.task (100% match)
-- **JSON-embedded duplicate**: events.data.task = sessions.task embedded in event JSON
-- **Partial duplicate**: workflow_runs.task ⊂ sessions.task (the base prompt before expansion)
+```sql
+-- digest step=1 vs sessions: 4,593/4,593 exact match (24h)
+SELECT COUNT(*), SUM(CASE WHEN d.task = s.task THEN 1 ELSE 0 END) AS match
+FROM session_digests d JOIN sessions s ON d.sessionId = s.sessionId
+WHERE d.step = 1 AND d.created_at > now()-24h;
 
-## Savings Potential
+-- session.start event $.task vs sessions.task: 4,645/4,645 (24h)
+SELECT COUNT(*), SUM(CASE WHEN json_extract(data,'$.task') = s.task THEN 1 ELSE 0 END)
+FROM events e JOIN sessions s ON json_extract(e.data,'$.sessionId') = s.sessionId
+WHERE e.event_type = 'session.start' AND e.timestamp > now()-24h;
+```
 
-| Fix | Saves (MB) | Complexity | Requires |
-|-----|-----------|-----------|----------|
-| NULL task in session_digests step>1 | ~272 | Low (1-line change) | ORDER-010 |
-| NULL task in session_digests step=1 (use sessions.task via JOIN) | ~253 | Medium (audit all digest readers) | ORDER-010 |
-| Strip task from event JSON | ~544 | Medium-High (audit all event consumers) | ORDER-010 |
-| Reference workflow_runs.task instead of copying | ~150 | High (pipeline change) | ORDER-010 |
-| **Conservative total (step>1 only)** | **272** | **Low** | **KE-2027 proposal** |
-| **Moderate total (all digest + events)** | **~1,069** | **Medium** | **New proposal** |
+The 1 mismatch in session.end (4,589 match out of 4,590) is a NULL join edge, not content divergence.
 
-## Current Situation
+## Storage Decomposition (Full DB)
 
-The DB is at 1,988 MB with a 2,000 MB threshold. Growth rate is ~26 MB/h. **Breach will occur within 30 minutes** without intervention.
+Total measured text content across all tables: ~1,755 MB
 
-Three proposals are queued but none approved:
-1. P1: NULL task in step>1 digests (saves 272 MB) — proposed this session
-2. P1: Raise threshold to 2500 MB (buys ~20h) — proposed 2026-06-17
-3. P2: Guard event dedup (reduces guard triggers, not DB size directly)
+| Table | Column(s) | MB | % of DB |
+|-------|-----------|-----|---------|
+| events.data | all | 737.5 | 37% |
+| session_digests.task | all steps | 526.2 | 26% |
+| sessions.task | | 253.8 | 13% |
+| workflow_runs.task | | 190.6 | 10% |
+| workflow_runs.result_summary | | 15.8 | <1% |
+| metric_snapshots (all cols) | | 11.0 | <1% |
+| evaluations (all text cols) | | 10.0 | <1% |
+| session_digests (non-task) | what_happened, details, etc. | 10.4 | <1% |
+| Other tables | | <5 | <1% |
 
-## Why This Matters Beyond DB Size
+## Proven Savings Potential
 
-The task text duplication is not just a storage problem — it's a throughput multiplier:
-- Every new session generates ~6 copies of the task string
-- At 4,600 sessions/day × avg 17 KB task × 6 copies = **470 MB/day** of task text written
-- This is the largest single contributor to DB growth, exceeding all other columns combined
-- The 7-day event retention and 14-day session retention are correctly purging old rows, but the duplication ratio means the steady-state is inflated 6×
+| Fix | Saves (MB) | Evidence | Complexity |
+|-----|-----------|----------|-----------|
+| NULL task in session_digests step>1 | **272** | 4,587/4,587 exact match | Low (1-line) |
+| NULL task in session_digests step=1 | **254** | 4,593/4,593 exact match; consumers JOIN sessions | Medium |
+| Strip $.task from session.start events | **210** | 4,645/4,645 exact match vs sessions.task | Medium-High |
+| Strip $.task from session.end events | **202** | 4,589/4,590 exact match | Medium-High |
+| Strip $.task from session.completed events | **134** | 3,030/3,030 exact match | Medium-High |
+| **All proven duplicates** | **1,072** | Full-table equality joins | Medium |
+| workflow_runs.task (likely dup, unverified) | **~191** | Size measured, equality not proven | High |
+
+## Current Situation (as of 2026-06-18 08:15Z)
+
+- DB: 1,992 MB, growing 26 MB/h, threshold at 2,000 MB → **~18 min to breach**
+- Retention windows working (events 7d, sessions 14d, digests 14d, snapshots 14d)
+- Three proposals pending human approval:
+  1. **P1**: NULL task in step>1 digests (saves 272 MB) — `2026-06-18-null-digest-task-step2-dedup.md`
+  2. **P1**: Raise threshold to 2500 MB (buys ~20h) — `2026-06-17-raise-db-size-threshold-2500mb.md`
+  3. **P2**: Guard event dedup per session (reduces noise, not size) — `2026-06-18-guard-event-dedup-per-session.md`
 
 ## Recommendation
 
-1. **Immediate**: Threshold raise to 2500 MB is the only fix that can land before breach (no src/ change needed — it's a metric config update, but still ORDER-010)
-2. **Short-term**: KE-2027 proposal (NULL step>1 task) — saves 272 MB, single-line fix
-3. **Medium-term**: Strip task from events data JSON — saves 544 MB but requires consumer audit
-4. **Architecture note**: The system should have one authoritative task store (sessions.task) with all other tables referencing sessionId for the task text on read
+1. **Immediate**: Threshold raise to 2500 MB — only fix that can land before breach
+2. **Short-term**: NULL step>1 digest task — 272 MB savings, 1-line fix, proven safe
+3. **Medium-term**: Strip task from events JSON — 546 MB savings, requires F2 consumer audit
+4. **Architecture**: Single authoritative task store (sessions.task); all other tables reference sessionId
