@@ -346,7 +346,7 @@
     "intervalMs": 21600000,
     "handler": "project-creative-audit",
     "agent": "may",
-    "enabled": true,
+    "enabled": false,
     "message": "[cron:project-creative-audit] Broad proposal-only review for project issues fixed rules may miss.",
     "description": "Select one open project and run May's semantic fallback audit. The workflow writes proposal comments only; normal project owner review applies changes.",
     "handlerConfig": {
@@ -361,7 +361,8 @@
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/projects.md"
-    ]
+    ],
+    "_disabled_reason": "Redundant with project-steward + may-agent.app review. 2026-06-18"
   },
   {
     "name": "metric-alert-reactor",
@@ -385,7 +386,7 @@
     "type": "job",
     "handler": "closed-loop-steward",
     "agent": "may",
-    "enabled": true,
+    "enabled": false,
     "intervalMs": 600000,
     "message": "[cron:closed-loop-steward] Audit whether red metrics and failed deliveries are moving toward closure.",
     "description": "May-owned closed-loop audit. Handler builds live context from open metric alerts, failed deliveries, and owner activity. Frequency can be tuned independently from heartbeat.",
@@ -398,7 +399,8 @@
     "context": [
       "projects/may-agent.app/project.json",
       "projects/may-agent.app/docs/2a-design/metrics.md"
-    ]
+    ],
+    "_disabled_reason": "97 sessions/day — most expensive handler. Redundant with metric-alert-reactor + may-agent.app owner review. 2026-06-18"
   },
   {
     "name": "session-recovery",
