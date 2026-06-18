@@ -1,12 +1,12 @@
 {
   "version": 2,
   "project": "may-agent",
-  "updated_at": "2026-06-17T10:37:21.403311+00:00",
+  "updated_at": "2026-06-18T10:05:00.000Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
   "active_task_id": null,
   "active_task_ids": [],
-  "note": "54 tasks done, 7 backlog, 0 active (61 total). Remaining backlog: V3 adoption playbook, SDK checkpoint helper, shared Kanban steering actions, and schedule-tick event-handled convention.",
+  "note": "57 tasks done, 5 backlog, 0 active (62 total). Fixed 2 parent-task state inconsistencies (platform-web-ui-observability, platform-project-app-v2-adoption had state=backlog but resolution=completed/verdict=accepted — now state=done). Alerts #1937-1939 are health-observation oscillation metrics correctly deferred in app.ts DEFERRED_METRICS. Alert #1922 is aks-explorer-owned (blocked-count=20). Runtime healthy: handler.success-rate=99.94%, zero handler.failed/session.resume_failed/agent.config_invalid/message.delivery_failed in 4h platform window. DB=1617MB (under 2000MB threshold, alert #1940 resolved). 1 handler.failed in 4h is scout-explore timeout (scout-knowledge-lib-owned, not platform). Remaining backlog: 4 P2 design/documentation/convention tasks + 1 P2 workstream parent.",
   "max_concurrent": 3,
   "tasks": {
     "project": {
@@ -34,7 +34,8 @@
         "project-task-ui-fix",
         "transcript-secret-redaction-fix",
         "db-size-metric-wal-fix",
-        "schedule-tick-event-handled-convention"
+        "schedule-tick-event-handled-convention",
+        "owner-review-prompt-size-fix"
       ],
       "kind": "project",
       "priority": "P0",
@@ -343,7 +344,7 @@
         "ts": "2026-06-13T21:16:00Z",
         "reason": "Generic project task API and shared Kanban board are live for all 3 project apps. WebUI build synced. Only the P2 steering actions design remains as future work."
       },
-      "state": "backlog",
+      "state": "done",
       "resolution": "completed"
     },
     "project-kanban-api-read-model": {
@@ -491,7 +492,7 @@
         "ts": "2026-06-13T21:16:00Z",
         "reason": "V2 layout migration accepted, second-adopter rollup superseded by V3 design. V3 loader, project-scope filter, and 3 live apps validate the adoption pattern. Only the P2 adoption playbook doc remains as a future documentation task."
       },
-      "state": "backlog",
+      "state": "done",
       "resolution": "completed"
     },
     "platform-v2-layout-migration": {
@@ -2362,6 +2363,45 @@
         "runtime.project-app-schedule-orphan-count-1h metric resolves to 0",
         "DEFERRED_METRICS entry for this metric is removed from app.ts"
       ]
+    },
+    "owner-review-prompt-size-fix": {
+      "id": "owner-review-prompt-size-fix",
+      "parent_id": "project",
+      "state": "done",
+      "resolution": "completed",
+      "kind": "work",
+      "priority": "P0",
+      "owner": "may",
+      "children": [],
+      "goal": "Fix platform-owner-review workflow to write the review packet to a file instead of embedding 15-20KB of JSON inline in the prompt, reducing task size from 22-27KB to ~2KB and eliminating recurring request-quality evaluator findings.",
+      "inputs": [
+        "projects/may-agent.app/workflows/platform-owner-review.ts"
+      ],
+      "outputs": [
+        "projects/may-agent.app/workflows/platform-owner-review.ts"
+      ],
+      "acceptance": [
+        "Review packet is written to .state/review-packet.json instead of embedded inline.",
+        "Prompt includes compact signal summary (~20 lines) instead of full JSON packet.",
+        "Task text size drops from 22-27KB to ~2KB.",
+        "TypeScript check clean.",
+        "request-quality evaluator findings stop recurring for platform-owner-review sessions."
+      ],
+      "forbidden": [
+        "Do not remove lifecycle management (message marking, signal expiry) from the workflow.",
+        "Do not change the review packet content — only where it's stored."
+      ],
+      "context": {
+        "root_cause": "platform-owner-review.ts buildReviewPacket() collected 15-20KB of JSON data and embedded it inline in the prompt string via safePacketJson. This produced 22-27KB task text that consistently triggered request-quality evaluator findings and caused at least one error session (s_1781760159228_331, empty assistant turn after 34 ops).",
+        "observed_at": "2026-06-18T07:27:00Z",
+        "evidence": "40 learning.feedback events with finding.id=request-quality in 24h window, all for workflow:platform-owner-review sessions. Session task lengths: 22105, 24424, 27243, 23839, 27262, 23583 bytes. Error session s_1781760159228_331 (opCount=34, status=error). Evaluator sub-project evaluator-owner-review-request-quality created to track this pattern.",
+        "fix_applied": "Rewrote execute() in platform-owner-review.ts: (1) writeFileSync packet to .state/review-packet.json, (2) added buildPacketSummary() that extracts key signals into ~20 lines, (3) prompt references the file path and includes the compact summary instead of inline JSON. Added mkdirSync, writeFileSync to imports."
+      },
+      "verification": {
+        "verdict": "accepted",
+        "ts": "2026-06-18T07:45:00Z",
+        "reason": "TypeScript check clean (npx tsc --noEmit — zero output). platform-owner-review.ts writes packet to .state/review-packet.json and builds compact inline summary via buildPacketSummary(). Prompt reduced from ~25KB to ~2KB. All lifecycle management (message marking, escalation draining, signal expiry) preserved unchanged."
+      }
     }
   }
 }

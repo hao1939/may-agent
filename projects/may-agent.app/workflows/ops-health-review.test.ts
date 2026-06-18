@@ -181,6 +181,111 @@ describe("ops-health-review", () => {
     });
   });
 
+  it("filters out project-agent escalations from stale-escalation signal", async () => {
+    const { appDir, db, emitted, ctx, close } = setup();
+    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
+
+    // aks-explorer escalation — should be filtered out (project-level, not platform)
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        "runtime:session-finish",
+        JSON.stringify({
+          escalationId: "esc_aks",
+          sourceAgent: "aks-explorer",
+          reason: "needs ARM auth",
+        }),
+        twoHoursAgo,
+      ],
+    );
+
+    // Another project-agent escalation
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        "runtime:session-finish",
+        JSON.stringify({
+          escalationId: "esc_scout",
+          sourceAgent: "scout",
+          reason: "needs file",
+        }),
+        twoHoursAgo,
+      ],
+    );
+
+    const result = await execute(ctx);
+    close();
+
+    // No signals should fire — both escalations are from project agents, not platform
+    expect(result).toEqual({
+      type: "done",
+      summary: "Ops health observer recorded packet with no owner wake.",
+    });
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+    ]);
+  });
+
+  it("still wakes for platform-sourced (no sourceAgent) stale escalations", async () => {
+    const { db, emitted, ctx, close } = setup();
+    const twoHoursAgo = Date.now() - 2 * 60 * 60_000;
+
+    // Platform escalation with no sourceAgent — should trigger the signal
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        "telegram",
+        JSON.stringify({
+          escalationId: "esc_platform",
+          reason: "human needs reply",
+        }),
+        twoHoursAgo,
+      ],
+    );
+
+    // Project-agent escalation that should be filtered out
+    db.run(
+      "INSERT INTO events (event_type, owner, source, data, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [
+        "escalation.created",
+        "agent:may",
+        "runtime:session-finish",
+        JSON.stringify({
+          escalationId: "esc_aks2",
+          sourceAgent: "aks-explorer",
+          reason: "needs ARM auth",
+        }),
+        twoHoursAgo,
+      ],
+    );
+
+    await execute(ctx);
+    close();
+
+    // Should fire exactly 1 signal for the platform escalation
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+      "project.owner.requested",
+    ]);
+    expect(emitted[1]).toMatchObject({
+      type: "project.owner.requested",
+      params: {
+        signals: [
+          expect.objectContaining({
+            kind: "stale-escalation",
+            severity: "P1",
+          }),
+        ],
+      },
+    });
+  });
+
   it("wakes the owner for open P0 May-owned metric alerts", async () => {
     const { db, emitted, ctx, close } = setup();
     const now = Date.now();

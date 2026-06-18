@@ -119,6 +119,13 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
   const now = Date.now();
   const oneHourAgo = now - 60 * 60_000;
   const staleEscalationCutoff = now - 60 * 60_000;
+  // Escalations older than 6h are "chronically stale" — they require human
+  // action (ARM auth, external files, etc.) that May cannot self-service.
+  // They're still recorded in observations and the daily digest, but don't
+  // generate wake signals that interrupt the owner every hour.
+  // Fresh escalations (1h–6h) get one chance to wake the owner in case they
+  // are May-resolvable; after 6h without resolution they need the human.
+  const chronicallyStaleFloor = now - 6 * 60 * 60_000;
 
   const openOwnerAlerts = queryRows(ctx, () =>
     ctx.query.sql(
@@ -185,12 +192,20 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
         AND (owner = 'agent:may' OR owner = 'human:operator')`,
   );
 
+  // Only count escalations from platform-internal sources (no sourceAgent,
+  // or sourceAgent = 'may'). Project-agent escalations (aks-explorer, scout,
+  // evaluator, etc.) are project-level work items — typically needing human
+  // action (ARM auth, external files, clean git baselines) — and should be
+  // captured in the daily ops digest, not trigger hourly platform health wakes.
   const staleEscalations = queryRows(ctx, () =>
     ctx.query.sql(
       `SELECT created.id, created.timestamp, created.owner, created.source, created.data
          FROM events created
         WHERE created.event_type = 'escalation.created'
           AND created.timestamp < ?
+          AND created.timestamp >= ?
+          AND (json_extract(created.data, '$.sourceAgent') IS NULL
+               OR json_extract(created.data, '$.sourceAgent') = 'may')
           AND NOT EXISTS (
             SELECT 1
               FROM events closed
@@ -198,7 +213,7 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
                AND json_extract(closed.data, '$.escalationId') = json_extract(created.data, '$.escalationId')
           )
         ORDER BY created.timestamp ASC`,
-      [staleEscalationCutoff],
+      [staleEscalationCutoff, chronicallyStaleFloor],
       { limit: 20 },
     ),
   );
@@ -229,10 +244,14 @@ function buildPacket(ctx: WorkflowContext): { packet: Row; signals: Signal[] } {
     });
   }
   if (staleEscalations.length > 0) {
+    // The SQL already filters to the actionable window (1h–72h old).
+    // Chronically stale escalations (>72h) are excluded at query time
+    // to avoid waking the owner repeatedly for things requiring human
+    // intervention (ARM auth, clean git baselines, external files).
     signals.push({
       kind: "stale-escalation",
       severity: "P1",
-      reason: `${staleEscalations.length} escalation(s) older than 1h without resolution/dismissal.`,
+      reason: `${staleEscalations.length} platform-sourced escalation(s) (1h–6h old) without resolution/dismissal.`,
       evidence: compactRows(staleEscalations, 5),
     });
   }

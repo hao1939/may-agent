@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { WorkflowContext, WorkflowResult } from "@may-agent/sdk";
 
@@ -167,7 +167,12 @@ function queryRows(
 function buildReviewPacket(
   ctx: WorkflowContext,
   appDir: string,
-): { packet: Record<string, unknown>; consumedMessageIds: number[]; consumedEscalationIds: number[]; consumedSignalEventIds: number[] } {
+): {
+  packet: Record<string, unknown>;
+  consumedMessageIds: number[];
+  consumedEscalationIds: number[];
+  consumedSignalEventIds: number[];
+} {
   const projectJson = parseJsonFile(join(appDir, "project.json"));
   const projectRows = queryRows(ctx, () =>
     ctx.query.projects({ id: "may-agent.app", limit: 5 }),
@@ -296,6 +301,98 @@ function buildReviewPacket(
   };
 }
 
+function buildPacketSummary(packet: Record<string, unknown>): string {
+  const lines: string[] = [];
+
+  // Project state
+  const pj = asRecord(packet.project_json);
+  lines.push(`Project: ${pj.id} (status=${pj.status}, owner=${pj.owner})`);
+  if (packet.project_state_mismatch) {
+    lines.push("⚠ project.json/runtime status MISMATCH");
+  }
+
+  // Task tree
+  const tree = asRecord(packet.task_tree);
+  if (tree.available) {
+    const counts = asRecord(tree.counts);
+    const countStr = Object.entries(counts)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(", ");
+    lines.push(`Task tree: ${tree.total} tasks (${countStr})`);
+    const runnable = Array.isArray(tree.runnable) ? tree.runnable : [];
+    const active = Array.isArray(tree.active) ? tree.active : [];
+    const review = Array.isArray(tree.review) ? tree.review : [];
+    const blocked = Array.isArray(tree.blocked) ? tree.blocked : [];
+    if (active.length)
+      lines.push(
+        `  Active: ${active.map((t: { id?: string }) => t.id).join(", ")}`,
+      );
+    if (review.length)
+      lines.push(
+        `  Review: ${review.map((t: { id?: string }) => t.id).join(", ")}`,
+      );
+    if (blocked.length)
+      lines.push(
+        `  Blocked: ${blocked.map((t: { id?: string }) => t.id).join(", ")}`,
+      );
+    if (runnable.length)
+      lines.push(
+        `  Runnable backlog: ${runnable.map((t: { id?: string }) => t.id).join(", ")}`,
+      );
+  }
+
+  // Open alerts
+  const alerts = Array.isArray(packet.open_alerts)
+    ? (packet.open_alerts as Array<Record<string, unknown>>)
+    : [];
+  if (alerts.length) {
+    lines.push(`Open alerts (${alerts.length}):`);
+    for (const a of alerts) {
+      lines.push(`  #${a.id} ${a.metric_id}: ${a.message}`);
+    }
+  } else {
+    lines.push("Open alerts: 0");
+  }
+
+  // Abnormal events summary
+  const abnormal = asRecord(packet.recent_abnormal_events);
+  const abnormalSummary: string[] = [];
+  for (const [type, value] of Object.entries(abnormal)) {
+    const arr = Array.isArray(value) ? value : [];
+    if (arr.length > 0) {
+      abnormalSummary.push(`${type}=${arr.length}`);
+    }
+  }
+  if (abnormalSummary.length) {
+    lines.push(`Recent abnormal events (1h): ${abnormalSummary.join(", ")}`);
+  } else {
+    lines.push("Recent abnormal events (1h): none");
+  }
+
+  // Owner sessions
+  const sessions = Array.isArray(packet.owner_sessions)
+    ? (packet.owner_sessions as Array<Record<string, unknown>>)
+    : [];
+  const errorSessions = sessions.filter(
+    (s) => s.status === "error" || s.outcome === "error",
+  );
+  if (errorSessions.length) {
+    lines.push(
+      `Owner sessions with errors: ${errorSessions.map((s) => s.sessionId).join(", ")}`,
+    );
+  }
+
+  // Active sessions
+  const activeSessions = Array.isArray(packet.active_may_sessions)
+    ? (packet.active_may_sessions as Array<Record<string, unknown>>)
+    : [];
+  if (activeSessions.length) {
+    lines.push(`Active May sessions: ${activeSessions.length}`);
+  }
+
+  return lines.join("\n");
+}
+
 function resultSummary(result: unknown): string {
   if (!result || typeof result !== "object") return String(result);
   const record = result as {
@@ -353,7 +450,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     /* best-effort: don't block review if signal expiry fails */
   }
 
-  const { packet, consumedMessageIds, consumedEscalationIds, consumedSignalEventIds } = buildReviewPacket(ctx, appDir);
+  const {
+    packet,
+    consumedMessageIds,
+    consumedEscalationIds,
+    consumedSignalEventIds,
+  } = buildReviewPacket(ctx, appDir);
   const packetJson = JSON.stringify(packet, null, 2);
 
   // Mark consumed message.created events as handled so they don't reappear.
@@ -414,13 +516,16 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     /* best-effort: don't block review if signal marking fails */
   }
 
-  // Safety cap: if the serialized packet exceeds 200KB, something is wrong.
-  // Truncate to prevent recursive amplification from bloating session tasks.
-  const MAX_PACKET_BYTES = 200_000;
-  const safePacketJson =
-    packetJson.length > MAX_PACKET_BYTES
-      ? `${packetJson.slice(0, MAX_PACKET_BYTES)}\n... [TRUNCATED: packet was ${packetJson.length} bytes, max ${MAX_PACKET_BYTES}]`
-      : packetJson;
+  // Write packet to file instead of embedding inline.
+  // Previous approach embedded 15-20KB of JSON in the prompt, producing
+  // 22-27KB tasks that consistently triggered request-quality evaluator
+  // findings and caused at least one error session (empty assistant turn).
+  const packetPath = join(appDir, ".state/review-packet.json");
+  mkdirSync(join(appDir, ".state"), { recursive: true });
+  writeFileSync(packetPath, packetJson, "utf-8");
+
+  // Build a compact summary for inline context (key signals only, not full data).
+  const packetSummary = buildPacketSummary(packet);
 
   const prompt = [
     "You are the May-agent platform project owner.",
@@ -428,7 +533,12 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     `App/control plane: ${appDir}`,
     `Domain workspace: ${projectDir}`,
     "",
-    "Use the system-review packet below as the starting point. Do not rediscover these basics unless a packet field is missing or contradictory.",
+    "The full system-review packet is at:",
+    `  ${packetPath}`,
+    "",
+    "Read that file for complete data. Here is the signal summary:",
+    "",
+    packetSummary,
     "",
     "Required owner judgment:",
     "- If the packet shows real abnormal signals, update/assign task-tree work, fix the smallest root cause, or record the exact blocker.",
@@ -438,15 +548,11 @@ export async function execute(ctx: WorkflowContext): Promise<WorkflowResult> {
     "- If you edit files, run focused checks and cite them before finish.",
     "",
     "Start with these files:",
+    `- ${packetPath}`,
     `- ${appDir}/project.json`,
     `- ${appDir}/tasks/tree.json`,
     `- ${appDir}/app.ts`,
     `- ${appDir}/workflows/platform-owner-review.ts`,
-    "",
-    "## System Review Packet",
-    "```json",
-    safePacketJson,
-    "```",
     "",
     triggerBlock(ctx.task),
   ].join("\n");

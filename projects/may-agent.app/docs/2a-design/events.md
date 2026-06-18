@@ -1114,7 +1114,8 @@ at least one responsible consumer accepted the event.
 Only a subscriber that is taking responsibility for the event should report
 acceptance:
 the matching project-app handler, the targeted runtime/session handler, the
-owner inbox/default-owner handler, or an explicit no-op handler. Broad
+event-pair tracker for lifecycle-shaped events, the owner inbox/default-owner
+handler for addressed owner work, or an explicit no-op handler. Broad
 subscribers such as DbWriter, UI tailing, logging, and passive metrics readers
 must not report acceptance, because that would hide routing gaps.
 
@@ -1276,7 +1277,8 @@ problem-solver results (no closure tracking), or stale workflow runs.
 8. Heartbeat/review emits follow-up events such as `message.consumed`,
    `message.reviewed`, `project.feedback.reviewed`, or `project.owner.reviewed`
 9. Periodic sweep marks unaccepted events past TTL as `unhandled`
-10. Pair tracker opens/closes `event_pair_runs` from naming/key conventions
+10. Pair tracker accepts lifecycle-shaped events and opens/closes
+    `event_pair_runs` from naming/key conventions
 11. Periodic sweep finds orphan openings (no closing event) → surfaces
 12. Ops health packet includes unhandled count + owner-inbox orphan count +
    lifecycle orphan count
