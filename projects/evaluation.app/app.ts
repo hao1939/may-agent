@@ -60,21 +60,10 @@ async function routeEvaluationEvent(
     );
   }
 
-  if (event.type === "metric.breach") {
-    return ctx.emit(
-      evaluationReviewRequested("metric-breach", {
-        metric: eventDetails(event),
-      }),
-    );
-  }
-
-  if (event.type === "metric.recovered") {
-    return ctx.emit(
-      evaluationReviewRequested("metric-recovered", {
-        metric: eventDetails(event),
-      }),
-    );
-  }
+  // metric.breach and metric.recovered are routed by the project-app-loader's
+  // default metric feedback routing (isOwnerMetricFeedback). No explicit
+  // subscription or onEvent handler needed — the loader routes evaluator-owned
+  // metrics to this app's owner automatically.
 
   if (event.type === "project.action.invoked") {
     return ctx.emit(
@@ -254,8 +243,6 @@ export default defineProjectApp({
     "evaluation.tick",
     "evaluation.aftermath.scan",
     "evaluation.deep.scan",
-    "metric.breach",
-    "metric.recovered",
     { type: "project.owner.requested", project: projectId },
     { type: "project.planning.requested", project: projectId },
     { type: "project.action.invoked", project: projectId },
@@ -294,16 +281,6 @@ export default defineProjectApp({
         event: "project.planning.requested",
         emits: ["evaluation.tick"],
         description: "Legacy planning alias wakes evaluation heartbeat.",
-      },
-      {
-        event: "metric.breach",
-        emits: ["evaluation.tick"],
-        description: "Metric breaches become evaluation health-review ticks.",
-      },
-      {
-        event: "metric.recovered",
-        emits: ["evaluation.tick"],
-        description: "Metric recoveries become evaluation health-review ticks.",
       },
       {
         event: "project.action.invoked",
