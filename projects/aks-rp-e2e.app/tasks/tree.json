@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-18T10:08:44.526Z",
+  "updated_at": "2026-06-18T10:08:53.216Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": null,
+  "active_task_id": "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
   "tasks": {
     "project": {
       "id": "project",
@@ -212,7 +212,7 @@
         "reopened_by": "human-steering",
         "reopen_reason": "Prior project-ceiling judgment was stale. Cover all Go e2ev3 scenarios, not only modeled paths or the VM REST positive slice."
       },
-      "state": "review"
+      "state": "active"
     },
     "spec-runner-and-replays": {
       "id": "spec-runner-and-replays",
@@ -23069,7 +23069,7 @@
     "feature-knowledge-and-specs": {
       "id": "feature-knowledge-and-specs",
       "parent_id": "project",
-      "state": "review",
+      "state": "active",
       "kind": "durable_lane",
       "priority": "P1",
       "children": [
@@ -24174,7 +24174,8 @@
         "ccp-coredns-metrics-endpoint-owner-checkpoint-rerun-20260618d",
         "rp-snapshot-owner-checkpoint-rerun-20260618d",
         "rp-cluster-lifecycle-update-tags-owner-checkpoint-rerun-20260618d",
-        "rp-nodepool-lifecycle-draft-trio-owner-checkpoint-rerun-20260618e"
+        "rp-nodepool-lifecycle-draft-trio-owner-checkpoint-rerun-20260618e",
+        "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618"
       ],
       "goal": "Keep project UI and human review surfaces useful for inspecting feature intent, specs, execution, feedback, and steering.",
       "inputs": [],
@@ -119778,7 +119779,7 @@
     "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618": {
       "id": "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119800,13 +119801,22 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-18T10:08:44.368Z",
-        "created_by": "task-tree-tool"
-      }
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618_20260618100853",
+        "assigned_at": "2026-06-18T10:08:53.018Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+      ]
     },
     "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618": {
       "id": "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "active",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119828,11 +119838,51 @@
       "depends_on": [],
       "trace": {
         "created_at": "2026-06-18T10:08:44.518Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618_20260618100852",
+        "assigned_at": "2026-06-18T10:08:52.858Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618"
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618"
+      ]
+    },
+    "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618": {
+      "id": "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618",
+      "parent_id": "user-review-workspace",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Record the exact external/source resume condition for VM prerelease row 64 Addonv2 ASM CRUD so the branch does not silently attach to the existing enable-lifecycle family without source-equivalence proof, and route future handwritten/native evidence toward either truthful attachment or a dedicated Addonv2 CRUD landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked note cites the accepted row-64 source packet, names the exact missing proof for Scenario_Addonv2_Azure_Service_Mesh_CRUD versus Scenario_Traffic_AzureServiceMesh_Enable_Lifecycle, and records the precise resume condition for attachment or dedicated-spec branching.",
+        "Task remains a bounded source-holder/user-review wait node only; it does not reopen broad ASM rediscovery or claim repo-local equivalence that the current evidence does not support."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "review:vm-prerelease-addonv2-asm-crud-source"
+      ],
+      "depends_on": [],
+      "blocker": "External/source unblock required: provide handwritten, native, or authoritative-equivalent source evidence that proves whether Scenario_Addonv2_Azure_Service_Mesh_CRUD is source-equivalent to Scenario_Traffic_AzureServiceMesh_Enable_Lifecycle, including the exact CRUD assertion bundle. Resume only when that proof can justify exact attachment to the existing ASM enable-lifecycle family or clearly requires a dedicated Addonv2 CRUD spec branch.",
+      "trace": {
+        "created_at": "2026-06-18T10:08:53.208Z",
         "created_by": "task-tree-tool"
       }
     }
   },
-  "active_task_ids": [],
+  "active_task_ids": [
+    "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+    "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+  ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {
       "goal": "Execute KMS v2 Managed HSM replay against staging.",

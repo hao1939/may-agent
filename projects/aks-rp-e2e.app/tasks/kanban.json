@@ -1,37 +1,40 @@
 {
   "version": 1,
-  "generated_at": "2026-06-18T10:08:44.610Z",
-  "tree_updated_at": "2026-06-18T10:08:44.526Z",
+  "generated_at": "2026-06-18T10:08:53.295Z",
+  "tree_updated_at": "2026-06-18T10:08:53.216Z",
   "kanban": {
-    "total_cards": 2131,
-    "tree_total": 2173,
+    "total_cards": 2132,
+    "tree_total": 2174,
     "tree_status_counts": {
-      "review": 4,
-      "blocked": 69,
+      "active": 4,
+      "blocked": 70,
       "done": 2096,
-      "backlog": 4
+      "review": 2,
+      "backlog": 2
     },
     "status_counts": {
       "done": 2063,
-      "blocked": 63,
-      "backlog": 4,
+      "blocked": 64,
+      "active": 2,
+      "backlog": 2,
       "review": 1
     },
     "column_counts": {
-      "backlog": 4,
-      "in-progress": 0,
+      "backlog": 2,
+      "in-progress": 2,
       "review": 5,
-      "blocked": 59,
+      "blocked": 60,
       "done": 2063
     },
     "card_ids_by_column": {
       "backlog": [
-        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
-        "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
         "vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
         "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618"
       ],
-      "in-progress": [],
+      "in-progress": [
+        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+        "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+      ],
       "review": [
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
         "trusted-access-dataplane-token-gateway-runtime-unblock-20260617",
@@ -80,6 +83,7 @@
         "rp-nodepool-lifecycle-rollback-live-rerun-await-nonempty-history-20260617",
         "traffic-alb-controller-handwritten-source-packet-unblock-20260617",
         "vm-prerelease-addonv2-asm-cni-exact-source-unblock-20260617",
+        "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618",
         "vm-prerelease-addonv2-asm-exact-source-unblock-20260617",
         "vm-prerelease-addonv2-asm-lifecycle-exact-source-unblock-20260617",
         "vm-prerelease-agic-overlay-source-holder-response-await-20260618",

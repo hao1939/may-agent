@@ -332,4 +332,42 @@ describe("ops-health-review", () => {
       },
     });
   });
+
+  it("wakes the owner for event delivery health failures", async () => {
+    const { db, emitted, ctx, close } = setup();
+    const now = Date.now();
+    db.run(
+      `INSERT INTO events
+       (event_type, owner, source, data, timestamp, delivery_status, delivery_note)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        "custom.requested",
+        "agent:may",
+        "test",
+        JSON.stringify({ requestId: "req_unaccepted" }),
+        now - 5 * 60_000,
+        "unhandled",
+        "no responsible consumer accepted event before timeout",
+      ],
+    );
+
+    await execute(ctx);
+    close();
+
+    expect(emitted.map((event) => event.type)).toEqual([
+      "project.ops_health.observed",
+      "project.owner.requested",
+    ]);
+    expect(emitted[1]).toMatchObject({
+      type: "project.owner.requested",
+      params: {
+        signals: [
+          expect.objectContaining({
+            kind: "event-delivery-unaccepted",
+            severity: "P1",
+          }),
+        ],
+      },
+    });
+  });
 });
