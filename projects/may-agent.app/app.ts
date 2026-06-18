@@ -134,13 +134,10 @@ async function routeMayAgentEvent(
       // (guard noise scoping). Remove these once the scoping fix lands.
       "guard.triggered-count-24h",
       "guard.warned-count-24h",
-      // Category 3: schedule-orphan false positive — may-agent.app and
-      // aks-rp-e2e.app don't mark triggering events as "handled" even
-      // though workflow_runs execute successfully. The measurement counts
-      // these pending events as orphans. Root cause is a missing event-
-      // marking convention (evaluation.app has it, others don't).
-      // Tracked as task: schedule-tick-event-handled-convention.
-      // Remove once the convention fix lands.
+      // Category 3: schedule-orphan — measurement fixed to count
+      // handler.completed for the self-handler as valid follow-up proof.
+      // Keeping deferred until next metrics-snapshot confirms value=0.
+      // Remove once confirmed recovered.
       "runtime.project-app-schedule-orphan-count-1h",
       // Category 4: escalation pending count measures a human-action
       // backlog. All pending escalations require human-provided artifacts

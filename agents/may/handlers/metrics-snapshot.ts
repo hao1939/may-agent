@@ -1380,6 +1380,7 @@ export const create: HandlerModule["create"] = (
                AND follow.timestamp <= s.timestamp + 2 * 60 * 1000
                AND follow.event_type IN (
                  'handler.started',
+                 'handler.completed',
                  'handler.workflow_dispatched',
                  'project.owner.requested',
                  'project.ops_health.observed',
@@ -1390,6 +1391,15 @@ export const create: HandlerModule["create"] = (
                    follow.event_type = 'handler.started'
                    AND json_valid(follow.data)
                    AND json_extract(follow.data, '$.handler') NOT IN (
+                     s.app_id || '-schedule-' || s.schedule_id,
+                     s.app_id || '-' || s.schedule_id
+                   )
+                   AND follow.owner = s.owner
+                 )
+                 OR (
+                   follow.event_type = 'handler.completed'
+                   AND json_valid(follow.data)
+                   AND json_extract(follow.data, '$.handler') IN (
                      s.app_id || '-schedule-' || s.schedule_id,
                      s.app_id || '-' || s.schedule_id
                    )
