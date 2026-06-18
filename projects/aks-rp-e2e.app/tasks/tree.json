@@ -1,10 +1,10 @@
 {
   "version": 2,
   "project": "aks-rp-e2e",
-  "updated_at": "2026-06-18T10:08:53.216Z",
+  "updated_at": "2026-06-18T12:18:59.422Z",
   "project_lifecycle": "active",
   "root_task_id": "project",
-  "active_task_id": "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+  "active_task_id": "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
   "tasks": {
     "project": {
       "id": "project",
@@ -20177,7 +20177,8 @@
       "outputs": [
         "features/",
         "model/knowledge-map/model.json",
-        "evidence/archive/"
+        "evidence/archive/",
+        "../aks-rp-e2e/features/rp-cluster-lifecycle/preflight-validation.yaml"
       ],
       "acceptance": [
         "Feature YAML created with source scenario, behaviors, and assertions.",
@@ -23680,7 +23681,21 @@
         "vm-prerelease-addonv2-asm-crud-source-packet-20260618",
         "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
         "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
-        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618"
+        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+        "rp-cluster-lifecycle-sibling-feature-packet-repair-20260618",
+        "vm-prerelease-osm-source-frontier-candidate-landing-20260618",
+        "natgw-v2-byoip-boundary-map-refresh-20260618",
+        "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+        "vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618",
+        "vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618",
+        "vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618",
+        "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
+        "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
+        "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618",
+        "vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618",
+        "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
       ],
       "goal": "Learn AKS feature intent and maintain source-grounded feature packets, input/expectation paths, and runnable test specs.",
       "inputs": [],
@@ -50860,7 +50875,11 @@
       "goal": "Explore source/material for path.rp-cluster-lifecycle.nodeless-cluster-crud which is in diagnosed state. Use existing artifacts: specs/rp-nodeless-cluster-crud.json and replays/rp-nodeless-cluster-crud.ts. Determine from source and evidence whether the diagnosis leads to a runnable retry, an environment fix, or a terminal gap classification. Update the feature packet and knowledge model accordingly.",
       "inputs": [],
       "outputs": [
-        "features/,specs/,replays/,evidence/archive/"
+        "features/",
+        "specs/",
+        "replays/",
+        "evidence/archive/",
+        "../aks-rp-e2e/features/rp-cluster-lifecycle/nodeless-cluster-crud.yaml"
       ],
       "acceptance": [
         "Feature packet documents the diagnosed issue and resolution path. Either a concrete runner retry is ready, or the path is reclassified with evidence to a terminal state. Knowledge model updated."
@@ -109287,7 +109306,9 @@
       "goal": "Normalize the adjacent RP cluster-lifecycle successor feature files for create-get-delete and upgrade-k8s-version so each branch explicitly cites its exact supporting spec/replay/evidence set, current evidence state, and one precise repo-local next action, following the accepted adjacent remainder successor note without reopening update-tags or API-quartet work.",
       "inputs": [],
       "outputs": [
-        "../aks-rp-e2e/evidence/archive/rp-cluster-lifecycle-adjacent-successor-feature-normalization-20260618.md"
+        "../aks-rp-e2e/evidence/archive/rp-cluster-lifecycle-adjacent-successor-feature-normalization-20260618.md",
+        "../aks-rp-e2e/features/rp-cluster-lifecycle/create-get-delete.yaml",
+        "../aks-rp-e2e/features/rp-cluster-lifecycle/upgrade-k8s-version.yaml"
       ],
       "acceptance": [
         "Archive note cites the accepted adjacent replay remainder successor packet plus the two feature files and exact supporting spec/replay/evidence surfaces for create-get-delete and upgrade-k8s-version.",
@@ -112192,7 +112213,7 @@
     "vm-prerelease-wave1-mixedsku-autozone-spec-batch1-20260618": {
       "id": "vm-prerelease-wave1-mixedsku-autozone-spec-batch1-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "review",
+      "state": "blocked",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -112225,7 +112246,8 @@
         "created_by": "task-tree-tool",
         "promoted_at": "2026-06-18T07:45:57.498Z",
         "promoted_by": "task-tree-tool"
-      }
+      },
+      "blocker": "Blocked on exact external/source recovery for the remaining unresolved Wave 1 rows: rows 27/29/30 still require handwritten or authoritative-equivalent scenario-body proof to separate upgrade/base/deallocate from row-28 mixed-SKU scale coverage, and rows 31/32 now resolve only to the accepted narrow auto-zone dependency where row-31 source/body recovery must define the auto-zone delta before row 32 can be attached as an exact composition branch."
     },
     "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618": {
       "id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
@@ -118924,7 +118946,7 @@
     "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618": {
       "id": "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
       "parent_id": "vm-prerelease-wave1-msi-ssh-localdns-ilbbackendpool-spec-batch1-20260618",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -118950,7 +118972,32 @@
         "created_at": "2026-06-18T09:43:43.253Z",
         "created_by": "task-tree-tool",
         "promoted_at": "2026-06-18T10:06:03.540Z",
-        "promoted_by": "task-tree-tool"
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618_20260618101331",
+        "assigned_at": "2026-06-18T10:13:31.403Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618_20260618101331",
+        "worker_started_at": "2026-06-18T10:14:32.269Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Produced the requested row-44 archive note at evidence/archive/vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618.md, recovering the strongest repo-local request/expectation lineage for Scenario_IPBasedLBBackendPool_VirtualMachine and contrasting it against LocalDNS, multiple-SLB, and outbound-custom-IP false equivalents.",
+        "last_worker_completed_at": "2026-06-18T10:16:31.695Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:17:06.789Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note recovers row 44 ledger lineage, names the exact request path properties.networkProfile.loadBalancerProfile.backendPoolType with persisted nodeIPConfiguration expectation surface, contrasts LocalDNS/multiple-SLB/outbound-custom-IP false equivalents, and leaves one exact source-backed landing successor."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:17:06.789Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note recovers row 44 ledger lineage, names the exact request path properties.networkProfile.loadBalancerProfile.backendPoolType with persisted nodeIPConfiguration expectation surface, contrasts LocalDNS/multiple-SLB/outbound-custom-IP false equivalents, and leaves one exact source-backed landing successor."
       }
     },
     "ccp-coredns-metrics-endpoint-checkpoint-land-20260618c": {
@@ -119476,7 +119523,7 @@
     "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618": {
       "id": "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
       "parent_id": "vm-prerelease-wave1-mixedsku-autozone-spec-batch1-20260618",
-      "state": "review",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119513,12 +119560,21 @@
         "last_worker_claim": "done",
         "last_worker_summary": "Wrote the requested row-32 archive disposition note at evidence/archive/vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618.md, classifying row 32 as a blocked composition dependency on row-31 source/body recovery and citing the exact ledger, baseline, and blocker anchors.",
         "last_worker_completed_at": "2026-06-18T10:08:10.629Z",
-        "last_worker_evidence": []
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:10:07.529Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the exact row-32 ledger/source anchors, the accepted row-31 blocker packet, and rows 28/29/30 mixed-SKU baseline, and it truthfully concludes row 32 remains a blocked composition dependency on row-31 source/body recovery instead of overclaiming existing coverage."
       },
       "session_id": "s_task_vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
       "session_history": [
         "s_task_vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:10:07.529Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the exact row-32 ledger/source anchors, the accepted row-31 blocker packet, and rows 28/29/30 mixed-SKU baseline, and it truthfully concludes row 32 remains a blocked composition dependency on row-31 source/body recovery instead of overclaiming existing coverage."
+      }
     },
     "vm-prerelease-wave1-ppg-native-source-holder-blocker-20260618": {
       "id": "vm-prerelease-wave1-ppg-native-source-holder-blocker-20260618",
@@ -119580,7 +119636,7 @@
     "vm-prerelease-addonv2-row62-ledger-reconcile-20260618": {
       "id": "vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "backlog",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119605,7 +119661,32 @@
         "created_at": "2026-06-18T10:04:48.184Z",
         "created_by": "task-tree-tool",
         "promoted_at": "2026-06-18T10:06:03.540Z",
-        "promoted_by": "task-tree-tool"
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-row62-ledger-reconcile-20260618_20260618100920",
+        "assigned_at": "2026-06-18T10:09:20.138Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-row62-ledger-reconcile-20260618_20260618100920",
+        "worker_started_at": "2026-06-18T10:09:21.205Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Promoted VM prerelease row 62 into the prerelease coverage ledger and feature-set config, and wrote an archive note proving the exact spec/replay/source lineage for `Scenario_Addonv2_ACI_Connector`.",
+        "last_worker_completed_at": "2026-06-18T10:13:06.479Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:14:19.458Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: archive note proves row 62 was promoted into the prerelease coverage ledger with exact spec.serverless-virtual-nodes.addonv2-aci-connector -> replays/serverless-addonv2-aci-connector.ts -> Scenario_Addonv2_ACI_Connector lineage and regenerated downstream prerelease surfaces, all repo-local."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-row62-ledger-reconcile-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:14:19.458Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: archive note proves row 62 was promoted into the prerelease coverage ledger with exact spec.serverless-virtual-nodes.addonv2-aci-connector -> replays/serverless-addonv2-aci-connector.ts -> Scenario_Addonv2_ACI_Connector lineage and regenerated downstream prerelease surfaces, all repo-local."
       }
     },
     "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618": {
@@ -119779,7 +119860,7 @@
     "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618": {
       "id": "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119806,17 +119887,33 @@
         "assigned_at": "2026-06-18T10:08:53.018Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+        "last_session": "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618_20260618100853",
+        "worker_started_at": "2026-06-18T10:09:20.555Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Authored the row-63 app-monitoring family seed by adding a new feature packet, draft spec, replay/check surface, spec-index registration, and an archive note proving Scenario_Addonv2_Azure_Monitor_Metrics now lands under app-monitoring with dual-VM-pool shape kept as variant metadata.",
+        "last_worker_completed_at": "2026-06-18T10:13:07.211Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:14:19.970Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted: archive note proves row 63 now has a bounded app-monitoring feature/spec/replay/index landing anchored to Scenario_Addonv2_Azure_Monitor_Metrics, preserves dual-VM-pool shape as variant metadata, and records the exact bounded follow-up without cloud execution."
       },
       "session_id": "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
       "session_history": [
         "s_task_vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:14:19.970Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted: archive note proves row 63 now has a bounded app-monitoring feature/spec/replay/index landing anchored to Scenario_Addonv2_Azure_Monitor_Metrics, preserves dual-VM-pool shape as variant metadata, and records the exact bounded follow-up without cloud execution."
+      }
     },
     "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618": {
       "id": "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
       "parent_id": "feature-knowledge-and-specs",
-      "state": "active",
+      "state": "done",
       "kind": "domain_leaf",
       "priority": "P2",
       "owner": "aks-explorer",
@@ -119843,12 +119940,28 @@
         "assigned_at": "2026-06-18T10:08:52.858Z",
         "assigned_by": "planner",
         "assigned_worker": "aks-explorer",
-        "last_session": "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618"
+        "last_session": "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618_20260618100852",
+        "worker_started_at": "2026-06-18T10:09:20.370Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Landed the repo-local canonical Addonv2 ASM overlay draft for row 69 by adding a dedicated source packet, draft spec, replay stub, index registration, and archive note; verified check-mode passes and row 106 remains variant-only metadata.",
+        "last_worker_completed_at": "2026-06-18T10:18:44.521Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:19:21.239Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive evidence proves the canonical row-69 Addonv2 ASM overlay branch landed repo-local source/spec/replay/index surfaces, preserved Azure CNI overlay plus enable_cilium=false semantics, kept row 106 variant-only metadata, and left only the exact handwritten/source-equivalent behavior-body successor."
       },
       "session_id": "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
       "session_history": [
         "s_task_vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618"
-      ]
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:19:21.239Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive evidence proves the canonical row-69 Addonv2 ASM overlay branch landed repo-local source/spec/replay/index surfaces, preserved Azure CNI overlay plus enable_cilium=false semantics, kept row 106 variant-only metadata, and left only the exact handwritten/source-equivalent behavior-body successor."
+      }
     },
     "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618": {
       "id": "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618",
@@ -119877,11 +119990,584 @@
         "created_at": "2026-06-18T10:08:53.208Z",
         "created_by": "task-tree-tool"
       }
+    },
+    "rp-cluster-lifecycle-sibling-feature-packet-repair-20260618": {
+      "id": "rp-cluster-lifecycle-sibling-feature-packet-repair-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Repair or clear the five remaining dirty sibling feature packet files under features/rp-cluster-lifecycle/ (api-quartet, create-get-delete, upgrade-k8s-version, nodeless-cluster-crud, preflight-validation) so the shared rp-cluster-lifecycle feature slice can be rerun through domain:checkpoint truthfully, showing whether features/rp-cluster-lifecycle.yaml can stop being held or recording the one exact remaining hold surface.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-cluster-lifecycle-sibling-feature-packet-repair-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted dirty-slice ownership reconciliation plus every touched sibling feature packet file, and any repo edits stay bounded to the five named features/rp-cluster-lifecycle/*.yaml surfaces (and directly required lineage/index updates, if any) rather than reopening update-tags or the accepted quartet exact files.",
+        "Work reruns bun run domain:checkpoint -- --json after the sibling repair/cleanup and records the before/after helper state for features/rp-cluster-lifecycle.yaml and each touched sibling packet file, proving whether the shared feature slice is cleaner or naming the exact remaining hold owner.",
+        "If the shared feature file still cannot become helper-clean, the note ends with one exact successor or blocker tied to the remaining filepath(s); work stays repo-local and performs no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:rp-cluster-lifecycle",
+        "artifact:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:12:13.919Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rp-cluster-lifecycle-sibling-feature-packet-repair-20260618_20260618101214",
+        "assigned_at": "2026-06-18T10:12:14.105Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-cluster-lifecycle-sibling-feature-packet-repair-20260618",
+        "worker_started_attempt_id": "a_rp-cluster-lifecycle-sibling-feature-packet-repair-20260618_20260618101214",
+        "worker_started_at": "2026-06-18T10:12:32.310Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Applied the bounded accepted-task output repairs for the remaining RP cluster-lifecycle sibling packet owners in /app/projects/aks-rp-e2e.app, then wrote and verified a durable archive note proving all five sibling packet files plus the shared parent become candidate once this active task closes.",
+        "last_worker_completed_at": "2026-06-18T10:16:26.038Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:17:06.543Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note proves all five rp-cluster-lifecycle sibling packet files now have exact accepted owners, reran domain:checkpoint live, and simulated post-close helper state shows the five siblings plus features/rp-cluster-lifecycle.yaml become candidate once this task closes."
+      },
+      "session_id": "s_task_rp-cluster-lifecycle-sibling-feature-packet-repair-20260618",
+      "session_history": [
+        "s_task_rp-cluster-lifecycle-sibling-feature-packet-repair-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:17:06.543Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note proves all five rp-cluster-lifecycle sibling packet files now have exact accepted owners, reran domain:checkpoint live, and simulated post-close helper state shows the five siblings plus features/rp-cluster-lifecycle.yaml become candidate once this task closes."
+      }
+    },
+    "vm-prerelease-osm-source-frontier-candidate-landing-20260618": {
+      "id": "vm-prerelease-osm-source-frontier-candidate-landing-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Route the two newly candidate-clean VM-prerelease OSM source-frontier packet YAMLs into the smallest truthful next feature/spec branch updates, using the accepted output-ownership repair as the anchor and recording for each packet whether it can land immediately or still narrows to one exact handwritten-source blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-osm-source-frontier-candidate-landing-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted output-ownership repair artifact plus the two exact candidate-clean OSM source-frontier packet YAML paths and every touched feature/spec/replay/index file.",
+        "For each packet, work either lands the smallest truthful branch update or records one exact remaining blocker or successor without reopening unrelated app-routing branches.",
+        "If repo files change, work reruns bun run domain:checkpoint -- --json and records helper status for the touched packet and feature surfaces; repo-local only, no cloud execution."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:app-routing-vm-prerelease-osm"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:15:38.137Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-osm-source-frontier-candidate-landing-20260618_20260618101538",
+        "assigned_at": "2026-06-18T10:15:38.332Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-osm-source-frontier-candidate-landing-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-osm-source-frontier-candidate-landing-20260618_20260618101538",
+        "worker_started_at": "2026-06-18T10:16:22.578Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the requested archive note at evidence/archive/vm-prerelease-osm-source-frontier-candidate-landing-20260618.md, routing both VM-prerelease OSM source-frontier packet YAMLs to their already-landed canonical branches and narrowing each to its exact remaining handwritten-source blocker. Re-ran domain checkpoint and recorded that both packet rows and the touched App Routing slice are now helper-recommended as candidate while preserving the blocker boundaries.",
+        "last_worker_completed_at": "2026-06-18T10:20:06.837Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:21:57.727Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-osm-source-frontier-candidate-landing-20260618.md shows both candidate-clean OSM source-frontier packets were already landed on their canonical row-87/row-89 feature/spec/replay branches, reran domain:checkpoint, and narrowed each branch to its exact existing handwritten-source blocker without reopening unrelated app-routing work."
+      },
+      "session_id": "s_task_vm-prerelease-osm-source-frontier-candidate-landing-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-osm-source-frontier-candidate-landing-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:21:57.727Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-osm-source-frontier-candidate-landing-20260618.md shows both candidate-clean OSM source-frontier packets were already landed on their canonical row-87/row-89 feature/spec/replay branches, reran domain:checkpoint, and narrowed each branch to its exact existing handwritten-source blocker without reopening unrelated app-routing work."
+      }
+    },
+    "natgw-v2-byoip-boundary-map-refresh-20260618": {
+      "id": "natgw-v2-byoip-boundary-map-refresh-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Consolidate the NAT Gateway V2 BYO IP family boundary from accepted evidence and current model state so the project has one repo-local artifact separating supported BYO prefix behavior, unsupported single-IP and dual-stack BYO-IP surfaces, their exact input distinctions, and the smallest next probe or resume signal.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/natgw-v2-byoip-boundary-map-refresh-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites current model status for path.net-integration.natgw-v2-byoip, path.net-integration.natgw-v2-byoip-prefix, and path.net-integration.natgw-v2-ds-byoip-v4ip-v6ip plus the accepted supporting evidence/model files used.",
+        "Note explicitly separates accepted inputs, rejected or gap inputs, expected versus observed behavior, and names the exact distinction between BYO public IP prefix, BYO public IP, and dual-stack BYO IP surfaces without widening into unrelated outbound migration branches.",
+        "Work stays repo-local and leaves one exact successor or retest condition grounded in existing evidence/model state rather than a broad investigation."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:natgw-v2-byoip-family"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:15:58.940Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_natgw-v2-byoip-boundary-map-refresh-20260618_20260618101559",
+        "assigned_at": "2026-06-18T10:15:59.182Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_natgw-v2-byoip-boundary-map-refresh-20260618",
+        "worker_started_attempt_id": "a_natgw-v2-byoip-boundary-map-refresh-20260618_20260618101559",
+        "worker_started_at": "2026-06-18T10:16:22.760Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested repo-local NAT Gateway V2 BYOIP family boundary note at evidence/archive/natgw-v2-byoip-boundary-map-refresh-20260618.md, consolidating current accepted model state, exact BYO input distinctions, expected-vs-observed behavior, and one narrow resume signal.",
+        "last_worker_completed_at": "2026-06-18T10:17:56.530Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:18:28.407Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: archive note cites the current model/view state, supporting feature/evidence files, and exact BYO public IP vs public IP prefix vs dual-stack BYO IP input distinctions, separates supported managed NATGW V2 control paths from the three terminal product-gap create-contract surfaces, and leaves the precise resume signal as future AKS RP/API support for the tested BYO attachment fields."
+      },
+      "session_id": "s_task_natgw-v2-byoip-boundary-map-refresh-20260618",
+      "session_history": [
+        "s_task_natgw-v2-byoip-boundary-map-refresh-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:18:28.407Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: archive note cites the current model/view state, supporting feature/evidence files, and exact BYO public IP vs public IP prefix vs dual-stack BYO IP input distinctions, separates supported managed NATGW V2 control paths from the three terminal product-gap create-contract surfaces, and leaves the precise resume signal as future AKS RP/API support for the tested BYO attachment fields."
+      }
+    },
+    "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618": {
+      "id": "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Attach the six exact RP nodepool draft-trio spec/replay outputs to done task go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617, rerun domain:checkpoint, and record whether the draft trio plus features/rp-nodepool-lifecycle.yaml stop showing helper hold/needs-planner-review or name the exact remaining filepath-level mismatch.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted lineage note evidence/archive/rp-nodepool-draft-trio-helper-ownership-lineage-20260618.md, lists the six exact spec/replay output paths attached to go-e2ev3-ccp-traffic-rp-artifact-reconciliation-20260617, and records the owning task before/after state from task-tree show.",
+        "Work reruns bun run --silent domain:checkpoint -- --json after the output-ownership repair and records the helper recommendation/state for the RP nodepool trio surfaces plus features/rp-nodepool-lifecycle.yaml, proving whether the metadata repair cleared the checkpoint issue or naming the one exact remaining mismatch.",
+        "Work stays repo-local, does not broaden into rollback or unrelated RP families, and ends with one exact successor only if a remaining helper mismatch survives the bounded metadata repair."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:rp-nodepool-lifecycle",
+        "artifact:domain-checkpoint"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:17:07.056Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260618101707",
+        "assigned_at": "2026-06-18T10:17:07.308Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+        "worker_started_attempt_id": "a_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618_20260618101707",
+        "worker_started_at": "2026-06-18T10:17:42.778Z"
+      },
+      "session_id": "s_task_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+      "session_history": [
+        "s_task_rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618"
+      ]
+    },
+    "vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618": {
+      "id": "vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Turn the accepted row-44 IPBasedLBBackendPool source packet into the smallest truthful source-backed landing candidate by locating or importing the direct scenario/body evidence for cloudproviderplans.Scenario_IPBasedLBBackendPool, then either drafting the narrow cloud-provider backendPoolType feature/spec/replay branch or recording the one exact remaining source blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted packet evidence/archive/vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618.md and any newly recovered direct source/body evidence for cloudproviderplans.Scenario_IPBasedLBBackendPool, explicitly confirming or correcting the reconstructed request path properties.networkProfile.loadBalancerProfile.backendPoolType and expected persisted value surface.",
+        "Work either lands the smallest truthful repo-local branch update for the row-44 backend-pool-type contract or records one exact remaining source blocker without misrouting the row into LocalDNS, multiple-SLB, or outbound-custom-IP branches.",
+        "Repo-local only, no cloud execution, and if repo files change the note names every touched feature/spec/replay/index file."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:virtualmachines",
+        "feature:cloud-provider",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:17:07.527Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618_20260618101707",
+        "assigned_at": "2026-06-18T10:17:07.834Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618_20260618101707",
+        "worker_started_at": "2026-06-18T10:17:42.606Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Wrote the row-44 backendPoolType landing note under evidence/archive, confirming the reconstructed backendPoolType=nodeIPConfiguration contract and documenting the single exact remaining blocker: missing direct repo-local source/body evidence for cloudproviderplans.Scenario_IPBasedLBBackendPool.",
+        "last_worker_completed_at": "2026-06-18T10:19:08.586Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:19:38.911Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: the archive note truthfully did not land a row-44 branch because it proved the reconstructed backendPoolType=nodeIPConfiguration contract still lacks one direct repo-local source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool, leaving a single precise source-recovery successor."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:19:38.911Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: the archive note truthfully did not land a row-44 branch because it proved the reconstructed backendPoolType=nodeIPConfiguration contract still lacks one direct repo-local source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool, leaving a single precise source-recovery successor."
+      }
+    },
+    "vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618": {
+      "id": "vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the handwritten or authoritative-equivalent body for Scenario_Addonv2_ASM_Azure_CNI_Overlay so path.traffic-azure-service-mesh.addonv2-overlay can attach one exact ASM behavior bundle truthfully instead of remaining source-grounded substrate-only coverage.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted canonical landing artifact evidence/archive/vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618.md plus the exact recovered handwritten or authoritative-equivalent source body/proof for Scenario_Addonv2_ASM_Azure_CNI_Overlay, naming every touched feature/spec/replay/index file.",
+        "Work either lands the smallest truthful behavior-bundle attachment for path.traffic-azure-service-mesh.addonv2-overlay or records one exact remaining external/source blocker without broadening into non-overlay ASM families or live execution.",
+        "Repo-local only, no cloud execution; if repo files change, the note records the exact bundle attached or the exact unresolved behavior boundary still blocking attachment."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:traffic-azure-service-mesh"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:19:21.455Z",
+        "created_by": "task-tree-tool",
+        "promoted_at": "2026-06-18T10:19:25.680Z",
+        "promoted_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618_20260618101925",
+        "assigned_at": "2026-06-18T10:19:25.870Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618_20260618101925",
+        "worker_started_at": "2026-06-18T10:19:49.519Z",
+        "last_worker_result": "blocked",
+        "last_worker_claim": "blocked",
+        "last_worker_summary": "Wrote a blocker archive note at evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md after re-auditing the canonical overlay landing and confirming no repo-local handwritten or authoritative-equivalent body exists for Scenario_Addonv2_ASM_Azure_CNI_Overlay.",
+        "last_worker_completed_at": "2026-06-18T10:21:22.188Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:24:04.108Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md proves the canonical row-69 overlay landing is already correct, documents the exact missing Scenario_Addonv2_ASM_Azure_CNI_Overlay source body, and narrows the branch to blocked leaf vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618 instead of broadening ASM work."
+      },
+      "session_id": "s_task_vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:24:04.108Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md proves the canonical row-69 overlay landing is already correct, documents the exact missing Scenario_Addonv2_ASM_Azure_CNI_Overlay source body, and narrows the branch to blocked leaf vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618 instead of broadening ASM work."
+      }
+    },
+    "vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618": {
+      "id": "vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "done",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover or import one durable repo-local source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool that directly proves or corrects the row-44 contract around properties.networkProfile.loadBalancerProfile.backendPoolType and the expected persisted value surface, so the branch can move from reconstructed packet to truthful source-backed landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites the accepted row-44 landing review artifact evidence/archive/vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618.md plus one durable repo-local handwritten, imported, or authoritative-equivalent source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool, naming every touched evidence/spec/feature/replay/index file.",
+        "Work either proves the current reconstruction properties.networkProfile.loadBalancerProfile.backendPoolType -> nodeIPConfiguration well enough to enable a narrow row-44 branch landing, or records one exact remaining external/source-holder blocker without misrouting the row into LocalDNS, multiple-SLB, or outbound-custom-IP branches.",
+        "Repo-local only, no cloud execution; if a landing becomes justified, the note identifies the smallest truthful next branch surfaces, otherwise it leaves one exact blocker only."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cloud-provider",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:19:39.215Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618_20260618101939",
+        "assigned_at": "2026-06-18T10:19:39.521Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618",
+        "worker_started_attempt_id": "a_vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618_20260618101939",
+        "worker_started_at": "2026-06-18T10:19:49.317Z",
+        "last_worker_result": "done",
+        "last_worker_claim": "done",
+        "last_worker_summary": "Created the requested row-44 direct-source recovery archive note at evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md, documenting that the repo still lacks a direct source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool and that row 44 remains blocked on that single gap.",
+        "last_worker_completed_at": "2026-06-18T10:21:05.396Z",
+        "last_worker_evidence": [],
+        "reviewed_at": "2026-06-18T10:24:04.317Z",
+        "reviewed_by": "task-tree-tool",
+        "review_summary": "Accepted review: evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md confirms row 44 still lacks a direct source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool, keeps the reconstructed backendPoolType -> nodeIPConfiguration contract narrow, and rolls the branch forward as blocker vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618."
+      },
+      "session_id": "s_task_vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618"
+      ],
+      "resolution": "completed",
+      "done_at": "2026-06-18T10:24:04.317Z",
+      "done_by": "task-tree-tool",
+      "context": {
+        "acceptance_note": "Accepted review: evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md confirms row 44 still lacks a direct source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool, keeps the reconstructed backendPoolType -> nodeIPConfiguration contract narrow, and rolls the branch forward as blocker vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618."
+      }
+    },
+    "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618": {
+      "id": "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "active",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Resolve the exact repo-local contradiction around VM prerelease AutoScaling row 125 (Scenario_AutoScaling_Service_Principal) by tracing every preserved matrix/spec/source hint behind the row name versus use_shared_identity=true substrate, then deciding whether the branch can truthfully collapse to a known variant or must remain one exact source blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md plus every exact row-125 matrix/spec/source surface reviewed and states the contradiction in evidence-backed terms, not guesses.",
+        "Work ends with one truthful branch decision only: either identify the smallest exact canonical variant linkage that can cover row 125 repo-locally, or record one exact remaining handwritten/source-equivalent blocker and why row 124 cannot absorb it yet.",
+        "Repo-local only, no cloud execution and no broad autoscaling family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger surfaces."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:21:57.949Z",
+        "created_by": "task-tree-tool",
+        "current_attempt_id": "a_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618_20260618102158",
+        "assigned_at": "2026-06-18T10:21:58.156Z",
+        "assigned_by": "planner",
+        "assigned_worker": "aks-explorer",
+        "last_session": "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
+      },
+      "session_id": "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618",
+      "session_history": [
+        "s_task_vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
+      ]
+    },
+    "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618": {
+      "id": "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful repo-local canonical branch for VM prerelease AutoScaling row 126 (Scenario_AutoScaling_Profile) by mapping exact autoScalerProfile source anchors, adjacent accepted specs, and row-local substrate so the branch can either land one row-126-specific spec/replay slice or narrow to one exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md, the exact row-126 matrix anchor, and every adjacent autoScalerProfile source/spec packet used to judge reuse or non-reuse.",
+        "Work either lands the smallest truthful row-126 canonical spec/replay or variant linkage for autoScalerProfile semantics, or records one exact blocker/successor proving why landing is still source-limited; do not bundle rows 127-129 into the same conclusion unless exact reuse is proven.",
+        "Repo-local only, no cloud execution and no broad family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger/index surfaces and any required bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:autoscaling",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T10:21:58.420Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618": {
+      "id": "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold path.traffic-azure-service-mesh.addonv2-overlay on the exact missing handwritten or authoritative-equivalent source dependency until Scenario_Addonv2_ASM_Azure_CNI_Overlay proves which ASM assertion bundle actually applies to the overlay/non-Cilium substrate.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618.md and evidence/archive/vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618.md, recording that row 69 substrate is grounded but no repo-local handwritten or authoritative-equivalent body yet proves which ASM behavior bundle applies.",
+        "Resume condition is precise: provide one exact handwritten or authoritative-equivalent source excerpt for Scenario_Addonv2_ASM_Azure_CNI_Overlay (or its exact implementation body) that proves the row-69 assertion flow closely enough to attach one already-modeled ASM behavior bundle truthfully.",
+        "Task remains a blocker only; no cloud execution, no non-overlay ASM broadening, and no duplicate feature/spec/replay edits until the source gap closes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:traffic-azure-service-mesh",
+        "path:path.traffic-azure-service-mesh.addonv2-overlay"
+      ],
+      "depends_on": [],
+      "blocker": "External/source unblock required: provide one exact handwritten or authoritative-equivalent source excerpt for Scenario_Addonv2_ASM_Azure_CNI_Overlay, or the exact implementation body behind addonv2 azure service mesh cni testing, proving which ASM assertions actually run on the overlay + enable_cilium=false substrate so one existing ASM behavior bundle can be attached truthfully.",
+      "trace": {
+        "created_at": "2026-06-18T10:24:03.700Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618": {
+      "id": "vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "blocked",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Hold the VM prerelease row-44 backendPoolType branch on the one missing durable repo-local source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool before promoting the reconstructed backendPoolType -> nodeIPConfiguration contract to a truthful source-backed landing.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md"
+      ],
+      "acceptance": [
+        "Blocked leaf cites evidence/archive/vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618.md and evidence/archive/vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618.md, recording that the reconstructed row-44 contract is stable but still lacks a direct source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool.",
+        "Resume condition is precise: recover or import one durable repo-local handwritten, imported, or authoritative-equivalent source/body attachment proving or correcting the row-44 field/value pair without rerouting the branch into LocalDNS, multiple-SLB, or outbound-custom-IP coverage.",
+        "Task remains a blocker only; repo-local only, no cloud execution, and no new feature/spec/replay landing claims until the source/body gap closes."
+      ],
+      "forbidden": [],
+      "conflict_scope": [
+        "feature:cloud-provider",
+        "feature:virtualmachines",
+        "ledger:virtualmachine-prerelease"
+      ],
+      "depends_on": [],
+      "blocker": "External/source unblock required: recover or import one durable repo-local handwritten, imported, or authoritative-equivalent source/body attachment for cloudproviderplans.Scenario_IPBasedLBBackendPool that proves or corrects the row-44 properties.networkProfile.loadBalancerProfile.backendPoolType -> nodeIPConfiguration contract without rerouting the branch into LocalDNS, multiple-SLB, or outbound-custom-IP coverage.",
+      "trace": {
+        "created_at": "2026-06-18T10:24:03.906Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618": {
+      "id": "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful repo-local canonical branch for VM prerelease AutoScaling row 127 (Scenario_AutoScaling_Profile_AgentPool_Ops) by mapping exact autoScalerProfile agentpool-ops source anchors, adjacent accepted specs, and row-local substrate so the branch can either land one row-127-specific spec/replay slice or narrow to one exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md, the exact row-127 matrix anchor, and every adjacent autoScalerProfile agentpool-ops source/spec packet used to judge reuse or non-reuse.",
+        "Work either lands the smallest truthful row-127 canonical spec/replay or variant linkage for autoScalerProfile agentpool-ops semantics, or records one exact blocker/successor proving why landing is still source-limited; do not collapse row 127 into row 126/128/129 without exact reuse proof.",
+        "Repo-local only, no cloud execution and no broad family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger/index surfaces and any required bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T12:18:59.092Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618": {
+      "id": "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful repo-local canonical branch for VM prerelease AutoScaling row 128 (Scenario_AutoScaling_Profile_Defaulting) by mapping exact autoScalerProfile defaulting source anchors, adjacent accepted specs, and row-local substrate so the branch can either land one row-128-specific spec/replay slice or narrow to one exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md, the exact row-128 matrix anchor, and every adjacent autoScalerProfile defaulting source/spec packet used to judge reuse or non-reuse.",
+        "Work either lands the smallest truthful row-128 canonical spec/replay or variant linkage for autoScalerProfile defaulting semantics, or records one exact blocker/successor proving why landing is still source-limited; do not collapse row 128 into row 126/127/129 without exact reuse proof.",
+        "Repo-local only, no cloud execution and no broad family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger/index surfaces and any required bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T12:18:59.253Z",
+        "created_by": "task-tree-tool"
+      }
+    },
+    "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618": {
+      "id": "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618",
+      "parent_id": "feature-knowledge-and-specs",
+      "state": "backlog",
+      "kind": "domain_leaf",
+      "priority": "P2",
+      "owner": "aks-explorer",
+      "children": [],
+      "goal": "Recover the smallest truthful repo-local canonical branch for VM prerelease AutoScaling row 129 (Scenario_AutoScaling_Profile_Resetting) by mapping exact autoScalerProfile resetting source anchors, adjacent accepted specs, and row-local substrate so the branch can either land one row-129-specific spec/replay slice or narrow to one exact blocker.",
+      "inputs": [],
+      "outputs": [
+        "../aks-rp-e2e/evidence/archive/vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618.md"
+      ],
+      "acceptance": [
+        "Archive note cites evidence/archive/vm-prerelease-autoscaling-spec-batch1-20260618.md, the exact row-129 matrix anchor, and every adjacent autoScalerProfile resetting source/spec packet used to judge reuse or non-reuse.",
+        "Work either lands the smallest truthful row-129 canonical spec/replay or variant linkage for autoScalerProfile resetting semantics, or records one exact blocker/successor proving why landing is still source-limited; do not collapse row 129 into row 126/127/128 without exact reuse proof.",
+        "Repo-local only, no cloud execution and no broad family rewrite; if repo files change, the note lists the exact touched spec/replay/ledger/index surfaces and any required bounded verification command."
+      ],
+      "forbidden": [],
+      "conflict_scope": [],
+      "depends_on": [],
+      "trace": {
+        "created_at": "2026-06-18T12:18:59.416Z",
+        "created_by": "task-tree-tool"
+      }
     }
   },
   "active_task_ids": [
-    "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
-    "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+    "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+    "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
   ],
   "archive": {
     "kms-v2-managed-hsm-staging-20260611": {

@@ -1,46 +1,45 @@
 {
   "version": 1,
-  "generated_at": "2026-06-18T10:08:53.295Z",
-  "tree_updated_at": "2026-06-18T10:08:53.216Z",
+  "generated_at": "2026-06-18T12:19:02.095Z",
+  "tree_updated_at": "2026-06-18T12:18:59.422Z",
   "kanban": {
-    "total_cards": 2132,
-    "tree_total": 2174,
+    "total_cards": 2146,
+    "tree_total": 2188,
     "tree_status_counts": {
       "active": 4,
-      "blocked": 70,
-      "done": 2096,
-      "review": 2,
-      "backlog": 2
+      "blocked": 73,
+      "done": 2107,
+      "backlog": 4
     },
     "status_counts": {
-      "done": 2063,
-      "blocked": 64,
+      "done": 2074,
+      "blocked": 66,
       "active": 2,
-      "backlog": 2,
-      "review": 1
+      "backlog": 4
     },
     "column_counts": {
-      "backlog": 2,
+      "backlog": 4,
       "in-progress": 2,
-      "review": 5,
-      "blocked": 60,
-      "done": 2063
+      "review": 4,
+      "blocked": 62,
+      "done": 2074
     },
     "card_ids_by_column": {
       "backlog": [
-        "vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
-        "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618"
+        "vm-prerelease-autoscaling-row126-profile-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row127-agentpool-ops-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row128-defaulting-canonical-branch-scout-20260618",
+        "vm-prerelease-autoscaling-row129-resetting-canonical-branch-scout-20260618"
       ],
       "in-progress": [
-        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
-        "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618"
+        "rp-nodepool-trio-output-ownership-attach-and-checkpoint-20260618",
+        "vm-prerelease-autoscaling-row125-service-principal-contradiction-reconcile-20260618"
       ],
       "review": [
         "network-swift-v2-scale-validation-smallshape-live-rerun-gated-20260617",
         "trusted-access-dataplane-token-gateway-runtime-unblock-20260617",
         "vm-prerelease-policy-addon-pubsub-spec-implementation-20260617",
-        "vm-prerelease-virtual-node-addon-source-unblock-20260617",
-        "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618"
+        "vm-prerelease-virtual-node-addon-source-unblock-20260617"
       ],
       "blocked": [
         "aad-rbac-managed-v2-reset-stable-empty-rerun-await-aad-env-20260617",
@@ -86,6 +85,7 @@
         "vm-prerelease-addonv2-asm-crud-source-equivalence-unblock-20260618",
         "vm-prerelease-addonv2-asm-exact-source-unblock-20260617",
         "vm-prerelease-addonv2-asm-lifecycle-exact-source-unblock-20260617",
+        "vm-prerelease-addonv2-asm-overlay-handwritten-source-blocker-20260618",
         "vm-prerelease-agic-overlay-source-holder-response-await-20260618",
         "vm-prerelease-approuting-osm-external-exact-source-blocker-20260617",
         "vm-prerelease-azure-keyvault-secrets-provider-handwritten-source-blocker-20260618",
@@ -102,7 +102,8 @@
         "vm-prerelease-wave1-agentpool-operations-source-holder-blocker-20260618",
         "vm-prerelease-wave1-kscr-source-excerpt-unblock-20260618",
         "vm-prerelease-wave1-ppg-native-source-holder-blocker-20260618",
-        "vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618"
+        "vm-prerelease-wave1-row35-msiplans-native-source-holder-blocker-20260618",
+        "vm-prerelease-wave1-row44-backendpooltype-source-body-blocker-20260618"
       ],
       "done": [
         "all-spec-verification-and-evidence-closure",
@@ -1129,6 +1130,7 @@
         "model-verdict-reconciliation-20260616",
         "nap-default-machines-pool-cleanup-full-boundary-and-resume-packet-20260617",
         "nap-full-machines-cleanup-compound-gate-verdict-repair-20260617",
+        "natgw-v2-byoip-boundary-map-refresh-20260618",
         "natgw-v2-byoip-diagnosis-classify-20260616",
         "natgw-v2-byoip-model-gap-surface-reconcile-20260617",
         "natgw-v2-byoip-prefix-staging-exec-backlog-20260615",
@@ -1563,6 +1565,7 @@
         "rp-cluster-lifecycle-feature-sibling-helper-repair-20260618",
         "rp-cluster-lifecycle-first-checkpoint-slice-verify-20260618",
         "rp-cluster-lifecycle-orphan-family-recovery-packet-20260618",
+        "rp-cluster-lifecycle-sibling-feature-packet-repair-20260618",
         "rp-cluster-lifecycle-untracked-family-ownership-inventory-20260618",
         "rp-cluster-lifecycle-untracked-slice-triage-20260618",
         "rp-cluster-lifecycle-update-tags-checkpoint-hold-isolation-20260618c",
@@ -1976,9 +1979,13 @@
         "vm-prerelease-addonv2-asm-lifecycle-source-packet-20260617",
         "vm-prerelease-addonv2-asm-network-overlay-source-packet-20260618",
         "vm-prerelease-addonv2-asm-network-source-packet-20260617",
+        "vm-prerelease-addonv2-asm-overlay-canonical-landing-20260618",
+        "vm-prerelease-addonv2-asm-overlay-handwritten-body-recovery-20260618",
         "vm-prerelease-addonv2-asm-pod-subnet-cilium-neutral-substrate-packet-20260617",
+        "vm-prerelease-addonv2-azure-monitor-metrics-family-seed-authoring-20260618",
         "vm-prerelease-addonv2-azure-monitor-metrics-source-packet-20260618",
         "vm-prerelease-addonv2-family-spec-batch1-20260618",
+        "vm-prerelease-addonv2-row62-ledger-reconcile-20260618",
         "vm-prerelease-agentpool-rollback-vm-contract-authoring-20260617",
         "vm-prerelease-agentpool-rollback-vm-source-packet-20260617",
         "vm-prerelease-agic-overlay-authoritative-source-ask-packet-20260618",
@@ -2059,6 +2066,7 @@
         "vm-prerelease-open-service-mesh-addon-source-packet-20260617",
         "vm-prerelease-osm-live-output-ownership-apply-verify-20260618",
         "vm-prerelease-osm-live-output-ownership-apply-verify-metadata-lane-20260618",
+        "vm-prerelease-osm-source-frontier-candidate-landing-20260618",
         "vm-prerelease-osm-source-frontier-live-output-ownership-apply-20260618",
         "vm-prerelease-osm-source-frontier-output-ownership-repair-20260618",
         "vm-prerelease-osm-source-packet-output-targets-and-tooling-check-20260618",
@@ -2116,9 +2124,13 @@
         "vm-prerelease-wave1-ppg-source-packet-20260618",
         "vm-prerelease-wave1-rollback-coverage-reconcile-20260618",
         "vm-prerelease-wave1-row31-autozone-single-sku-source-packet-20260618",
+        "vm-prerelease-wave1-row32-autozone-mixed-sku-composition-disposition-20260618",
         "vm-prerelease-wave1-row35-msiplans-equivalence-proof-20260618",
         "vm-prerelease-wave1-row35-system-assigned-source-body-confirmation-20260618",
         "vm-prerelease-wave1-row35-system-assigned-source-boundary-20260618b",
+        "vm-prerelease-wave1-row44-backendpooltype-direct-source-recovery-20260618",
+        "vm-prerelease-wave1-row44-backendpooltype-source-backed-landing-20260618",
+        "vm-prerelease-wave1-row44-ipbasedlbbackendpool-source-packet-20260618",
         "vm-prerelease-wave1-row52-localdns-azurelinux-ledger-attachment-20260618",
         "vm-prerelease-windows-core-lineage-packet-20260618",
         "vm-prerelease-windows-k8s-base-canonical-landing-20260618",
