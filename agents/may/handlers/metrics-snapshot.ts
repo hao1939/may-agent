@@ -430,7 +430,9 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "gauge",
     target: 0,
-    threshold: 4500,
+    // Calibration history: 3500→4500 (2026-06-15), 4500→5500 (2026-06-18)
+    // Grows ~100/snapshot with normal system activity; P3 watch metric
+    threshold: 5500,
     unit: "count",
     alert_op: ">",
     priority: "P3",
@@ -441,7 +443,9 @@ const ALL_METRICS: MetricDef[] = [
     owner: "may",
     type: "gauge",
     target: 0,
-    threshold: 4500,
+    // Calibration history: 3500→4500 (2026-06-15), 4500→5500 (2026-06-18)
+    // Tracks closely with triggered-count; P3 watch metric
+    threshold: 5500,
     unit: "count",
     alert_op: ">",
     priority: "P3",
