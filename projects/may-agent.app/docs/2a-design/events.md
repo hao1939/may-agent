@@ -904,39 +904,37 @@ Approved 2026-06-04 via `shared/work-queue.md`; proposal at
 - KE-455 — every event-only handler has fired zero times
 - KE-468 — `project.iteration` has two incompatible payload shapes
 
-## Proposal: Infra Ensures Every Event is Consumed (2026-06-18)
+## Proposal: Event Delivery and Completion Tracking (2026-06-18)
 
-### The Simple Rule
+### Two Things Infra Tracks
+
+**1. Was the event consumed?** (ack)
 
 Every event that enters the bus must reach a consumer. If it doesn't,
 infra notices and escalates.
 
 ```
 event emitted → bus delivers to subscribers
-             → consumed by at least one subscriber → done
-             → no subscriber consumed it → unhandled
-             → unhandled → default owner investigates
+             → at least one subscriber acks → consumed
+             → no subscriber acks → unhandled → default owner
 ```
 
-Infra doesn't need to know whether the event is a trace, signal, request,
-or state transition. It doesn't need to know what the consumer does with it.
-It just answers one question: **was it consumed?**
+**2. Was the work completed?** (done — for paired events only)
 
-### Current Gap
+Some events start work that has a defined end. Infra tracks the pair:
 
-The bus fires and forgets. Subscribers react in-memory. Nobody records
-whether any subscriber actually processed the event. If all subscribers
-skip it (wrong filter, missing handler, routing gap), the event silently
-disappears. 255K events sit at `pending` because nothing ever writes back
-"consumed."
+```
+opening event → work in progress → closing event → done
+             → no closing event within timeout → orphan → surface
+```
 
-### The Fix: Bus-Level Consumption Tracking
+### Ack: Universal Delivery Tracking
 
 When `bus.emit(event)` runs:
 
 1. Event is persisted to DB with `status = 'pending'`
 2. Bus delivers to all subscribers
-3. If any subscriber signals consumption → mark `handled`
+3. If any subscriber signals consumption → mark `acked`
 4. If no subscriber consumed → remains `pending`
 5. Periodic sweep: `pending` events older than TTL → mark `unhandled`
 6. `unhandled` events → surface to default owner (may)
@@ -951,71 +949,95 @@ bus.subscribe((event, ack) => {
 });
 ```
 
-`ack()` means "I consumed this event." The bus records who consumed it.
-If nobody calls `ack()`, the event is unhandled.
+Infra doesn't care what kind of event it is. It just ensures every event
+reaches a mailbox. Dead letters go to the postmaster.
+
+### Done: Paired Event Completion
+
+Some events come in pairs — an opening and a closing. Infra already has
+these but doesn't track orphans systematically:
+
+| Opening event | Closing event | Entity |
+|--------------|---------------|--------|
+| `session.start` | `session.end` | session |
+| `handler.started` | `handler.completed` | handler run |
+| `handler.workflow_dispatched` | `handler.completed` | workflow run |
+| `escalation.created` | `escalation.resolved` | escalation |
+| `project.task.assigned` | `project.task.completed` | task attempt |
+| `project.problem.requested` | `project.problem.resolved/escalated/unknown` | problem investigation |
+
+When the opening event fires, infra starts a completion clock. When the
+closing event fires, the pair is complete. If the closing event doesn't
+arrive within the expected window, infra surfaces an orphan.
+
+This already works for sessions (`session-recovery` finds stuck running
+sessions) and handler runs. The pattern just needs to generalize:
+
+```
+opening event → record (entity, opened_at, expected_close_within)
+closing event → match by correlation key → mark complete
+sweep         → opened too long without close → orphan → surface
+```
+
+The correlation key is domain-specific:
+- Sessions: `sessionId`
+- Handlers: `workflowRunId`
+- Escalations: `dedupKey` or `escalationId`
+- Tasks: `taskId` + `attemptId`
+- Problems: `problemKey`
+
+### What Doesn't Need Done Tracking
+
+Most events are **unpaired** — they record a fact with no expected follow-up:
+
+- `metric.breach` → ack is enough. The `metric_alerts` entity tracks
+  open/resolved separately.
+- `guard.triggered` → ack is enough. It's a log entry.
+- `project.owner.requested` → ack is enough. What the owner does is
+  the owner's judgment, tracked in the task tree.
+- `evaluation.reviewed` → ack is enough. The evaluation entity stores
+  the verdict.
+
+Don't add done tracking to these. The entity tables already own that state.
+
+### Current Gap
+
+The bus fires and forgets. Subscribers react in-memory. Nobody records
+whether any subscriber actually processed the event. 255K events sit at
+`pending` because nothing ever writes back.
+
+For paired events, `session-recovery` already detects orphan sessions.
+But no equivalent exists for escalations (400+ accumulated unresolved),
+problem-solver results (no closure tracking), or stale workflow runs.
 
 ### What This Gives Us
 
-- **Unhandled event detection**: if a new event type is emitted but no
-  subscriber handles it, infra knows within one TTL window.
-- **Routing gap detection**: if an app's `events[]` filter is too narrow
-  and misses an event it should handle, the event shows up as unhandled.
-- **Dead letter visibility**: the default owner (may) sees unhandled
-  events and decides: add a handler, fix routing, or classify as noise.
-- **No per-event-type tracking logic**: infra treats all events the same.
-  The consumer decides what to do. Infra just ensures delivery.
-
-### What Consumers Do (Not Infra's Job)
-
-What happens after consumption is the consumer's concern:
-
-- **Trace event**: consumer acks, does nothing else. The ack itself is
-  the record.
-- **State transition**: consumer acks, updates entity state (alert,
-  session, task).
-- **Signal**: consumer acks, routes to owner for judgment.
-- **Request**: consumer acks, dispatches work, tracks response in
-  its own domain (task tree, escalation table, etc.).
-
-Infra doesn't distinguish these. It just ensures the event reached
-someone.
-
-### Default Owner
-
-Unhandled events escalate to the default owner (may). May's ops-health
-review decides:
-
-- Is this a routing gap? → fix the app's event subscription
-- Is this a new event type nobody handles? → add a handler or mark terminal
-- Is this noise? → add to a suppress list
-
-### TTL
-
-Events without a consumer within their TTL window are unhandled:
-
-| Urgency | Default TTL |
-|---------|-------------|
-| `immediate` | 5 min |
-| `high` | 30 min |
-| `normal` | 2 hours |
-| `low` | 24 hours |
-
-Trace events (handler.started, session.start, etc.) can use a short TTL
-or be acked immediately by the DbWriter subscriber since persistence IS
-their consumption.
+- **Unhandled event detection**: new event type with no subscriber →
+  infra knows within one TTL window.
+- **Routing gap detection**: app filter too narrow → event unhandled →
+  visible.
+- **Orphan detection**: opening event without closing event → stuck work
+  → visible. Generalizes what `session-recovery` already does.
+- **No per-event-type logic**: infra treats all acks the same. Paired
+  event registration is declarative — just a table of opening/closing
+  event types with correlation key and timeout.
 
 ### Implementation
 
-1. Add `ack` callback parameter to bus subscriber functions
-2. DbWriter acks all events it persists (persistence = consumption for traces)
-3. Cron handler dispatcher acks events it dispatches to handlers
-4. App event router acks events it routes to onEvent or workflow handlers
-5. Periodic sweep marks un-acked events past TTL as `unhandled`
-6. Ops health packet surfaces unhandled event count
+1. Add `ack` callback to bus subscribers
+2. DbWriter acks all events it persists (persistence = consumption)
+3. Cron handler dispatcher acks events it dispatches
+4. App event router acks events it routes
+5. Periodic sweep marks un-acked past TTL as `unhandled`
+6. Register paired event types with correlation keys and timeouts
+7. Periodic sweep finds orphan openings (no closing event) → surfaces
+8. Ops health packet includes unhandled count + orphan count
 
 ### What This Is Not
 
 - Not event sourcing — events are still a log, not a state store
 - Not a message queue — bus is still in-memory pub/sub
-- Not per-event-type logic — infra treats all events the same way
-- Not blocking — ack is fire-and-forget, doesn't slow the bus
+- Not per-event-type logic — ack is universal, pairs are declarative
+- Not blocking — ack and pair tracking are fire-and-forget DB updates
+- Not replacing entity state — sessions, alerts, tasks still own their
+  state machines. Pair tracking just detects orphans.
