@@ -906,18 +906,47 @@ Approved 2026-06-04 via `shared/work-queue.md`; proposal at
 
 ## Proposal: Event Delivery and Completion Tracking (2026-06-18)
 
+### Event Rule
+
+An event exists because something can react.
+
+If the system only needs history, UI timeline, or metrics, write
+state/log/metric records directly. Do not send that through the event bus.
+DbWriter is persistence for events that already exist; it is not the reason to
+create an event and it is not a consumer.
+
+Every event that enters the bus must have a responsible consumer. The consumer
+does not have to be a project owner; it can be an infra component or a default
+owner route. For example, `session.end` is a valid event because completion
+tracking, cleanup, evaluation, or recovery logic may react to it.
+
+Events can also be extension interfaces. A project or runtime may emit a stable
+event so optional handlers can subscribe later. That is still valid, but the
+event must not disappear into the bus: if no specialized handler is installed,
+the default owner/observer path must consume it and decide whether to ignore,
+record, or act. If no component or extension point can ever react, it should be
+a log/state update instead of an event.
+
+```
+event emitted → bus delivers to subscribers
+             → responsible subscriber acks → consumed
+             → no responsible ack → unhandled → owner
+```
+
 ### Two Things Infra Tracks
 
 **1. Was the event consumed?** (ack)
 
-Every event that enters the bus must reach a consumer. If it doesn't,
-infra notices and escalates.
+A responsible consumer is the handler/owner/runtime component that reacts to the
+event. DbWriter, UI tailing, logging, and passive metrics readers do not count.
 
-```
-event emitted → bus delivers to subscribers
-             → at least one subscriber acks → consumed
-             → no subscriber acks → unhandled → default owner
-```
+Examples:
+
+- `project.owner.requested` → project owner/planner reacts
+- `metric.breach` → metric owner or ops review reacts
+- `session.end` → session completion tracking/evaluator/recovery reacts
+- `escalation.resolved` → escalation tracker closes the open escalation
+- `runtime.restart.requested` → runtime control handler reacts
 
 **2. Was the work completed?** (done — for paired events only)
 
@@ -928,16 +957,16 @@ opening event → work in progress → closing event → done
              → no closing event within timeout → orphan → surface
 ```
 
-### Ack: Universal Delivery Tracking
+### Ack: Delivery Tracking
 
 When `bus.emit(event)` runs:
 
-1. Event is persisted to DB with `status = 'pending'`
+1. DbWriter stores the event for recovery and audit
 2. Bus delivers to all subscribers
-3. If any subscriber signals consumption → mark `acked`
-4. If no subscriber consumed → remains `pending`
-5. Periodic sweep: `pending` events older than TTL → mark `unhandled`
-6. `unhandled` events → surface to default owner (may)
+3. If a responsible consumer signals consumption → mark `acked`
+4. If no responsible consumer consumed the event before TTL → mark `unhandled`
+5. `unhandled` events → surface to the event owner, then May if there is no
+   specific owner route
 
 Subscriber consumption is a simple callback:
 
@@ -949,8 +978,40 @@ bus.subscribe((event, ack) => {
 });
 ```
 
-Infra doesn't care what kind of event it is. It just ensures every event
-reaches a mailbox. Dead letters go to the postmaster.
+Only a subscriber that is taking responsibility for the event should ack it:
+the matching project-app handler, the targeted runtime/session handler, the
+owner inbox/default-owner handler, or an explicit no-op handler. Broad
+subscribers such as DbWriter, UI tailing, logging, and passive metrics readers
+must not ack, because that would hide routing gaps.
+
+Infra does not decide the domain outcome. It only verifies that events reached a
+responsible consumer. Dead letters go to the owner path.
+
+### What Should Be An Event
+
+Use an event when crossing a boundary, waking a reaction, or exposing an
+extension point:
+
+- human or UI asks the runtime to do something
+- project app asks its owner to review/replan/act
+- metric detector asks the metric owner to investigate a breach
+- worker completion should wake planner/owner/problem handling
+- opening or closing work should update completion/orphan tracking, cleanup,
+  or evaluation
+- runtime command should wake a runtime component
+- stable lifecycle hooks let optional project/runtime handlers react
+
+Do not use an event just to remember that code reached a line. Use state,
+logs, traces, metrics, or entity records for that.
+
+So the rule is:
+
+```text
+no reaction needed          → write state/log/metric, do not emit an event
+reaction possible/needed    → emit event; responsible consumer must ack
+event opens work with an end → consumer acks; pair tracker waits for close
+event closes existing work   → pair tracker/cleanup/evaluator consumes it
+```
 
 ### Done: Paired Event Completion
 
@@ -961,10 +1022,10 @@ these but doesn't track orphans systematically:
 |--------------|---------------|--------|
 | `session.start` | `session.end` | session |
 | `handler.started` | `handler.completed` | handler run |
-| `handler.workflow_dispatched` | `handler.completed` | workflow run |
-| `escalation.created` | `escalation.resolved` | escalation |
+| `handler.workflow_dispatched` | workflow/session terminal state | workflow run |
+| `escalation.created` | `escalation.resolved` or `escalation.dismissed` | escalation |
 | `project.task.assigned` | `project.task.completed` | task attempt |
-| `project.problem.requested` | `project.problem.resolved/escalated/unknown` | problem investigation |
+| `project.problem.requested` | `project.problem.escalated` or future `project.problem.resolved` | problem investigation |
 
 When the opening event fires, infra starts a completion clock. When the
 closing event fires, the pair is complete. If the closing event doesn't
@@ -981,24 +1042,25 @@ sweep         → opened too long without close → orphan → surface
 
 The correlation key is domain-specific:
 - Sessions: `sessionId`
-- Handlers: `workflowRunId`
+- Handler runs: handler run id when present, otherwise handler name + start timestamp
+- Workflow runs: `workflowRunId`
 - Escalations: `dedupKey` or `escalationId`
 - Tasks: `taskId` + `attemptId`
 - Problems: `problemKey`
 
 ### What Doesn't Need Done Tracking
 
-Most events are **unpaired** — they record a fact with no expected follow-up:
+Some events are **unpaired** — they have a consumer but no completion clock:
 
-- `metric.breach` → ack is enough. The `metric_alerts` entity tracks
-  open/resolved separately.
-- `guard.triggered` → ack is enough. It's a log entry.
+- `metric.breach` → metric owner reacts. The `metric_alerts` entity tracks
+  open/resolved separately, so pair tracking is not needed.
 - `project.owner.requested` → ack is enough. What the owner does is
   the owner's judgment, tracked in the task tree.
 - `evaluation.reviewed` → ack is enough. The evaluation entity stores
   the verdict.
 
-Don't add done tracking to these. The entity tables already own that state.
+Don't add done tracking to these. The responsible consumer and entity tables
+already own that state.
 
 ### Current Gap
 
@@ -1025,13 +1087,15 @@ problem-solver results (no closure tracking), or stale workflow runs.
 ### Implementation
 
 1. Add `ack` callback to bus subscribers
-2. DbWriter acks all events it persists (persistence = consumption)
-3. Cron handler dispatcher acks events it dispatches
-4. App event router acks events it routes
-5. Periodic sweep marks un-acked past TTL as `unhandled`
-6. Register paired event types with correlation keys and timeouts
-7. Periodic sweep finds orphan openings (no closing event) → surfaces
-8. Ops health packet includes unhandled count + orphan count
+2. DbWriter stores every event for recovery/audit and never acks consumption
+3. Define the responsible consumer for each event type or route pattern
+4. Cron handler dispatcher acks events it dispatches to a matching handler
+5. App event router acks events it routes to a matching project app
+6. Owner/default-owner inbox acks events that no target handler owns
+7. Periodic sweep marks un-acked events past TTL as `unhandled`
+8. Register paired event types with correlation keys and timeouts
+9. Periodic sweep finds orphan openings (no closing event) → surfaces
+10. Ops health packet includes unhandled count + orphan count
 
 ### What This Is Not
 
