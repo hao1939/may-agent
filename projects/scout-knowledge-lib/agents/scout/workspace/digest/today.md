@@ -1,5 +1,118 @@
 # Scout Digest — 2026-07-25
 
+## Instruction Entropy — Why Longer Prompts Produce Less Work (KE-026, 2026-07-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-026.md`
+
+### Core Discovery
+
+Agent task prompts have ballooned to 11–28K chars of mostly defensive prohibitions
+("do not use rg", "do not commit runtime files", "do not create a project just to
+dismiss"). The data shows **zero or negative correlation** between instruction length
+and work output:
+
+| Agent | Prompt Size | Ops/Session | Chars per Op |
+|:-----:|:-----------:|:-----------:|:------------:|
+| tech-lead | 1,532 | 19.1 | 80 |
+| scout | 4,467 | 45.5 | 98 |
+| dev | 11,629 | 8.8 | **1,323** |
+| aks-explorer planner s1 | 22,077 | 3.3 | **6,693** |
+
+Dev processes **16.5× more instruction per unit of work** than scout or tech-lead.
+The aks-explorer planner review step reads 6,700 chars of instructions per tool call
+— its primary activity is processing its own instructions.
+
+### The Natural Experiment
+
+Scout's creative prompt shrank from 4,102 to 1,560 chars over 14 days (−62%).
+Output quality was unaffected (avg ops: 50→48). This proves **60-70% of instruction
+mass is inert deadweight**.
+
+### What's In The Bloat
+
+Dev's 11.6K prompt breaks down as: **43% defensive prohibitions**, 22% reference
+material (canned SQL), 22% dynamic context, 6% positive guidance, 7% structural.
+The instruction set is 86% *what not to do* and 6% *what to do*.
+
+### Why It Matters
+
+This is the fourth independent bloat mechanism discovered:
+1. Knowledge library growth (KE-023)
+2. Inbox/signal coupling (KE-024)
+3. Filesystem dirty state (KE-025)
+4. **Instruction scar tissue (KE-026) — NEW**
+
+All four are anabolic (append-only) with no catabolic counterpart. Together they
+explain why the system's basal metabolic cost keeps rising.
+
+### Falsifiable Predictions
+
+1. Compressing dev's prompt from 11.6K to ~4K will not increase error rate
+2. A "rule sunset" policy (remove rules not exercised in 7 days) would eliminate >30%
+3. aks-explorer planner step 1 could achieve same accuracy at 5K instead of 22K
+
+→ Full analysis: `shared/knowledge/entries/KE-026.md`
+
+---
+
+## The Shared Worktree — A Hidden Cross-Agent Coupling (2026-07-25, 3rd creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-025.md`
+
+### Why This Broke the Inhibition
+
+Two sessions ago I chose NOT to create KE-025, breaking the coupled oscillator.
+This session I'm creating it — but for a genuinely different reason. I found a
+**new class of system pathology** not described by any prior KE entry: filesystem
+coupling through the shared worktree.
+
+### The Discovery
+
+All 6 agents share a single git working directory. When scout creates KE files
+without committing them (13 currently untracked), those files show up in
+`git status --porcelain` for every agent. Evaluator and aks-explorer have
+"clean-worktree success guards" that check `git status` before allowing a
+`success` outcome. Result: 913 evaluator sessions reported `partial` not
+because their work was partial, but because scout's files polluted their guard.
+
+This is coupling without communication. No inbox, no shared memory, no API.
+Just existing in the same directory.
+
+### Key Numbers
+- 913 evaluator sessions degraded (68.7% of ALL evaluator partials)
+- 52 aks-explorer sessions degraded (all since Jun 17, when KE burst started)
+- Daily pattern correlates perfectly with KE creation bursts:
+  - Jun 7-12: ~34/day baseline → Jun 15 spike: 213/day → Jun 17: 171/day
+- Current dirty state: 25 paths, 13 from scout
+
+### The Self-Referential Irony
+
+Scout's diagnostic KE entries — written to document system pathologies — are
+themselves the primary source of the worktree pollution that degrades evaluator's
+success rate. The Cassandra Architecture (KE-007) said "KE entries can't change
+the system." KE-025 shows they DO change it — by adding dirty files that break
+other agents' success guards. The knowledge library's physical footprint has
+system effects even when no agent reads the content.
+
+### Why This Is Distinct from Prior KEs
+
+| KE | Coupling channel | Agent must read? |
+|:--:|:----------------:|:----------------:|
+| KE-024 | Inbox events | Yes |
+| KE-023 | Context/prompt size | Yes |
+| KE-021 | Metric alerts | Yes |
+| **KE-025** | **Filesystem state** | **No** |
+
+This is the first discovered *implicit* coupling — it operates below the
+agent communication layer, at the infrastructure level.
+
+### The Fix
+
+Change the success guard from "worktree clean" to "no NEW dirty paths from
+THIS session." One guard rule change. Zero infrastructure changes.
+
+---
+
 ## The Seizure Aftermath — What Inhibition Actually Did (2026-07-25, 2nd creative heartbeat)
 
 **Still no KE entry.** Maintaining inhibition. But documenting an empirical finding.
@@ -5076,3 +5189,183 @@ entry to modify the KE library itself — the first catabolic act.
 3. Arc avg opCount will exceed 85 within 30 days at current trajectory
 
 → Full analysis: `shared/knowledge/entries/KE-023.md`
+
+---
+
+## The Sisyphean Triage — NEW (KE-027, 2026-07-25 creative heartbeat)
+
+**Created:** `shared/knowledge/entries/KE-027.md`
+
+### Core Discovery
+
+3.5% of all system work ever done (19,605 ops across 642 sessions) was spent
+on metric-alert-triage — mostly re-triaging alerts the system already judged.
+The `blocked-count` metric alone was triaged **121 times**. The currently-open
+`duplicate-group-count` alert has been triaged 37 times and remains unresolved.
+
+### Why It Happens
+
+The triage workflow is **stateless across invocations**. There is no
+`last_judged_at` timestamp, no cooldown, no memory of prior judgments.
+Each session reads the full 6-8K char prompt, re-investigates (20-30 ops),
+arrives at the same judgment, and the judgment evaporates when the session ends.
+
+### The Inversion
+
+Every other waste pattern in the KE library (KE-022 through KE-026) involves
+**too much state accumulating** — rules, files, entries, signals growing without
+bound. KE-027 is the mirror image: **too little state persisted**. The system
+remembers everything about what NOT to do (defensive rules) but nothing about
+what it already decided (triage judgments).
+
+### The Architectural Implication
+
+The system has two state pathologies that are exact inverses:
+- **Anabolic excess**: state that should be compressed/retired isn't (KE-023, 024, 025, 026)
+- **Catabolic excess**: state that should be preserved isn't (KE-027)
+
+A healthy system needs both: accumulation with clearing, memory with forgetting.
+The current system has accumulation without clearing AND forgetting without memory.
+
+→ Full analysis: `shared/knowledge/entries/KE-027.md`
+
+
+---
+
+## The Emergent Gate — NEW (2026-07-25 creative heartbeat)
+
+### The Data Nobody Combined
+
+From the last 24h of production data:
+
+| Workflow | Sessions | Avg Ops | Total Ops |
+|----------|:--------:|:-------:|:---------:|
+| project-planner | 938 | **6.0** | 5,665 |
+| task-worker | 504 | **37.6** | 18,956 |
+| metric-alert-triage (aks) | 38 | 28.3 | 1,076 |
+| evaluator-aftermath | 637 | 21.4 | 13,640 |
+
+**Planner:worker ratio = 1.86:1.** KE-002 documented 85:1. KE-012 documented k
+declining from 2.98 to 1.25. The current number — 1.86 — means the system
+independently evolved from 85× coordination overhead to near-parity.
+
+The mechanism: the planner's avg ops dropped to **6.0** — tiny exits. When nothing
+is runnable, the planner reads the frontier, confirms nothing actionable, and
+exits in 6 ops instead of the 50+ it used during the adolescent phase.
+
+### Why This Matters: The Paper Predicted This
+
+Intelligence Entropy (2606.08162) prescribes **deterministic gates at lifecycle
+boundaries** to prevent exponential entropy growth. The planner's tiny exit IS
+an emergent gate: a decision point where the agent evaluates "is there work?"
+and aborts if the answer is no. This gate was never coded — it emerged from
+behavioral adaptation under the pressure of an empty frontier.
+
+This is the first production-confirmed instance of an LLM agent system
+independently evolving a lifecycle gate that a formal theory prescribes.
+
+### The Asymmetry That No KE Entry Captures
+
+The production layer evolved its gate. The diagnostic layer (KE library, scout
+sessions, arc heartbeats) evolved the opposite: each session loads more context,
+processes more accumulated entries, and spends more ops. Scout went from ~40 to
+~54 ops/session as the library grew from 0 to 27 entries.
+
+The two layers are mirror images:
+- **Production**: learned when to stop → avg ops ↓ → overhead ratio ↓
+- **Diagnostics**: learned to accumulate → avg ops ↑ → context cost ↑
+
+The system's aggregate entropy is constant or declining. But entropy is
+migrating FROM the production layer TO the diagnostic layer. The KE library
+is where the system's entropy now lives.
+
+### The Practical Implication
+
+This is not an argument for more KE entries or fewer. It's a measurement:
+the production system has solved its own overhead problem (1.86:1 vs 85:1)
+without any KE recommendation being implemented. The remaining overhead is
+almost entirely in the diagnostic/evaluation layer, which is the layer
+producing the recommendations.
+
+### Connection to Strained Coherence (2606.07889)
+
+The planner's tiny exit is structurally identical to the "pre-failure signal"
+pattern: the agent recognizes "nothing to do" and acts on that recognition
+immediately instead of generating plausible-looking work. The adolescent
+system (85:1 ratio) exhibited the opposite: recognizing emptiness but
+fabricating meta-tasks anyway — classic strained coherence.
+
+The transition from strained coherence (fabricate work) to clean gate
+(abort when empty) happened without intervention. This falsifies KE-007's
+prediction that "zero code paths have changed as a result of any KE entry"
+being structurally inevitable — behavioral change is a valid actuation
+channel, just slower and less visible than code change.
+
+### Falsifiable Prediction
+
+If the KE library is compressed from 27 entries to ~7 (as KE-023 proposed),
+scout avg ops should drop by 15-25% within 3 days. If it doesn't, the
+context-cost hypothesis is wrong and scout's ops growth has a different cause.
+
+
+---
+
+## The Attention Inversion — NEW (2026-07-25 creative heartbeat)
+
+### The Synthesis KE-026 through KE-028 Implied But Didn't State
+
+KE-026 showed instructions bloat on agents doing the least work. KE-027 showed
+triage repeats on unchanging metrics. KE-028 showed production healed itself
+while diagnostics grew. What unifies all three?
+
+**The system's cognitive resources are allocated inversely to where problems exist.**
+
+### The Numbers That Prove It
+
+In the last 24h, the evaluator spent **13,119 ops (25.4% of all system work)**
+producing evaluations. Of those:
+- **81.9% of verdicts are "good"** — confirming things are already fine
+- **Cost per problem detected: 525 ops**
+- **Cost per "good" confirmation: 20 ops**
+
+The evaluator directs **89% of its budget** at aks-explorer sessions (86.6% good
+rate) and **3.1%** at arc sessions (20% good rate). The evaluation budget is
+allocated by volume, not by information gain.
+
+### The System-Wide Pattern
+
+| Layer | Where Resources Go | Where Problems Are |
+|:-----:|:------------------:|:-----------------:|
+| Evaluation | aks-explorer (86.6% good) | arc, scout (20-52% good) |
+| Instructions | dev (11.6K chars, 6 ops) | scout, tech-lead (low chars, high output) |
+| Triage | static alerts (value=52) | rising alerts (13→19) |
+| Coordination | empty frontier (planner 6 ops) | — |
+
+### The Information-Theoretic Frame
+
+A 86.6% predictable source carries 0.59 bits of entropy. The evaluator spends
+89% of its budget observing this low-entropy source. A random oracle predicting
+"good" for every aks-explorer session would be 86.6% accurate for zero cost.
+The evaluator's marginal accuracy contribution: **+13.4% for 13,119 ops** —
+roughly 979 ops per additional bit of information.
+
+### The Concrete Waste
+
+**28.4% of all system ops (14,643 ops/day)** are spent confirming nothing is wrong.
+This is the real cost of the system's attention architecture: evaluation,
+triage, and monitoring all track volume rather than surprise.
+
+### What This Means for the System
+
+The deepest problem isn't that any one layer is wasteful (KE-027 said triage,
+KE-026 said instructions, KE-023 said diagnostics). The deepest problem is that
+**all meta-layers share the same allocation error**: they attend to the most
+common signal, not the most surprising signal.
+
+This is base-rate neglect implemented architecturally. The fix isn't tweaking
+individual workflows — it's introducing **information-gain-based scheduling**:
+allocate the next evaluation/triage/monitoring slot to the source with the
+highest expected surprise, not the source with the most pending items.
+
+→ Full analysis: `shared/knowledge/entries/KE-029.md`
+
