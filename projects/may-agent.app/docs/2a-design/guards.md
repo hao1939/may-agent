@@ -390,6 +390,37 @@ is disproportionate.
 Without it, a 6th threshold calibration is needed within hours.
 See KE-2021.
 
+**Snapshot 2026-06-18 ~02:00Z** (24h window, 4589 total, **threshold breached**):
+
+| Signal | 24h Count | 6h Count | 6h Share |
+|--------|-------:|-------:|------:|
+| READ_DEDUP (combined) | 2098 | 657 | 47% |
+| FINISH_UNCOMMITTED | 826 | 176 | 13% |
+| SESSION_BASH_CAT | 735 | 231 | 16% |
+| GHOST_DELIVERABLE | 377 | 165 | 12% |
+| SESSION_BASH_GREP | 235 | 80 | 6% |
+| SESSION_READ | 205 | 65 | 5% |
+| OTHER | 113 | 36 | 3% |
+
+Per-agent (1h): aks-explorer 97 done, evaluator 61 done, may 11, scout 5.
+aks-explorer at 106 sessions/hour (growing from ~128/hr avg in KE-2021).
+
+**New pattern**: GHOST_DELIVERABLE is 91.5% planner sessions (345/377,
+see KE-2022). 330 unique planner sessions out of 1524 (21.7%) claim
+2-3 evidence files they didn't write. Unlike READ_DEDUP, per-session
+dedup won't help — each session triggers ~1 event. Needs planner
+workflow or prompt fix.
+
+Combined projected reduction from filed fixes:
+- READ_DEDUP dedup: ~1716 events/day
+- Planner ghost deliverable fix: ~345 events/day
+- **Post-fix projected total: ~2495/day** (threshold 4500, 44% headroom)
+
+Both guard alerts (triggered + warned) are **open, unresolved**.
+DB at 1828 MB (91.4% of 2000 threshold).
+3 proposals pending ORDER-010 approval: threshold 4500→6000 (stopgap),
+per-session dedup (structural), DB threshold 2000→2500.
+
 ### Known issue: guard name conflation
 
 Tool-level guards all emit `guard: "beforeToolCall"` instead of their
